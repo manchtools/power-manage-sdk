@@ -15,12 +15,21 @@ enum ActionType {
   // Future action types will be added here
 }
 
+// Rollback policy for actions
+enum RollbackPolicy {
+  ROLLBACK_POLICY_UNSPECIFIED = 0;  // Default: no automatic rollback
+  ROLLBACK_POLICY_NONE = 1;         // Never rollback on failure
+  ROLLBACK_POLICY_ON_FAILURE = 2;   // Rollback if action fails
+  ROLLBACK_POLICY_ALWAYS = 3;       // Always rollback (useful for testing)
+}
+
 // Package action parameters (used by APT and DNF)
 message PackageActionParams {
   string package_name = 1;              // e.g., "nginx", "vim"
   string version = 2;                   // e.g., "1.18.0", "latest"
   VersionSpecifier version_specifier = 3;
   DesiredState desired_state = 4;
+  RollbackPolicy rollback_policy = 5;   // What to do on failure
 }
 
 // Generic action definition
@@ -61,6 +70,36 @@ message ActionState {
   optional google.protobuf.Timestamp last_executed = 22;
 }
 
+// Pre-execution snapshot for rollback support
+message PreExecutionSnapshot {
+  ActionId action_id = 1;
+  google.protobuf.Timestamp captured_at = 2;
+
+  // Package-specific snapshot data
+  oneof snapshot_data {
+    PackageSnapshot package_snapshot = 10;
+  }
+}
+
+// Snapshot of package state before execution
+message PackageSnapshot {
+  string package_name = 1;
+  bool was_installed = 2;
+  optional string installed_version = 3;
+  // For DNF: the transaction ID before the action
+  optional int64 dnf_transaction_id = 4;
+}
+
+// Result of a rollback attempt
+message RollbackResult {
+  bool attempted = 1;          // Whether rollback was attempted
+  bool success = 2;            // Whether rollback succeeded
+  optional string error_message = 3;
+  string stdout = 4;
+  string stderr = 5;
+  optional ActionState state_after_rollback = 6;
+}
+
 // Result of executing an action
 message ActionResult {
   ActionId action_id = 1;
@@ -71,4 +110,8 @@ message ActionResult {
   int64 duration_ms = 6;
   google.protobuf.Timestamp executed_at = 7;
   optional ActionState state_after = 8;
+
+  // Rollback information
+  optional PreExecutionSnapshot snapshot = 9;
+  optional RollbackResult rollback = 10;
 }
