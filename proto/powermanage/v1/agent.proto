@@ -1,0 +1,168 @@
+syntax = "proto3";
+
+package powermanage.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+
+import "powermanage/v1/common.proto";
+import "powermanage/v1/actions.proto";
+import "google/protobuf/timestamp.proto";
+
+// =============================================================================
+// BIDIRECTIONAL STREAM SERVICE
+// =============================================================================
+
+service AgentService {
+  // Single bidirectional stream for all agent-server communication
+  rpc AgentStream(stream AgentMessage) returns (stream ServerMessage);
+
+  // Registration endpoint (unary, used before stream is established)
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+}
+
+// =============================================================================
+// AGENT -> SERVER MESSAGES
+// =============================================================================
+
+message AgentMessage {
+  // Correlation ID for request-response matching
+  string correlation_id = 1;
+
+  oneof payload {
+    // Initial handshake when stream opens
+    AgentHandshake handshake = 10;
+
+    // Heartbeat/keepalive
+    AgentHeartbeat heartbeat = 11;
+
+    // Action execution result
+    ActionResult action_result = 12;
+
+    // Batch of log entries
+    LogBatch log_batch = 13;
+
+    // Current state report (periodic or on-demand)
+    StateReport state_report = 14;
+
+    // Acknowledgment of received server message
+    Acknowledgment ack = 15;
+  }
+}
+
+message AgentHandshake {
+  AgentId agent_id = 1;
+  string agent_version = 2;
+  string hostname = 3;
+  string os_info = 4; // e.g., "Ubuntu 22.04", "Fedora 39"
+  google.protobuf.Timestamp boot_time = 5;
+}
+
+message AgentHeartbeat {
+  google.protobuf.Timestamp timestamp = 1;
+  uint64 uptime_seconds = 2;
+  uint32 pending_actions = 3;
+  uint32 pending_logs = 4;
+}
+
+message LogBatch {
+  repeated LogEntry entries = 1;
+}
+
+message StateReport {
+  repeated ActionState action_states = 1;
+  google.protobuf.Timestamp reported_at = 2;
+  bool is_reconciliation_run = 3; // True if from 30-min periodic check
+}
+
+message Acknowledgment {
+  string message_id = 1;
+  bool success = 2;
+  optional string error = 3;
+}
+
+// =============================================================================
+// SERVER -> AGENT MESSAGES
+// =============================================================================
+
+message ServerMessage {
+  // Message ID for acknowledgment
+  string message_id = 1;
+
+  oneof payload {
+    // Response to handshake
+    ServerHandshakeResponse handshake_response = 10;
+
+    // Heartbeat response
+    ServerHeartbeatResponse heartbeat_response = 11;
+
+    // Push new or updated action
+    ActionPush action_push = 12;
+
+    // Remove an action
+    ActionRemove action_remove = 13;
+
+    // Request immediate state check
+    StateCheckRequest state_check_request = 14;
+
+    // Request immediate reconciliation
+    ReconcileRequest reconcile_request = 15;
+
+    // Batch of actions (initial sync or bulk update)
+    ActionBatch action_batch = 16;
+  }
+}
+
+message ServerHandshakeResponse {
+  bool accepted = 1;
+  optional string rejection_reason = 2;
+  google.protobuf.Timestamp server_time = 3;
+  uint32 reconciliation_interval_seconds = 4; // Server can override default
+}
+
+message ServerHeartbeatResponse {
+  google.protobuf.Timestamp server_time = 1;
+}
+
+message ActionPush {
+  Action action = 1;
+  bool execute_immediately = 2; // If true, don't wait for reconciliation
+}
+
+message ActionRemove {
+  ActionId action_id = 1;
+}
+
+message StateCheckRequest {
+  repeated ActionId action_ids = 1; // Empty means all actions
+}
+
+message ReconcileRequest {
+  repeated ActionId action_ids = 1; // Empty means all actions
+}
+
+message ActionBatch {
+  repeated Action actions = 1;
+  bool replace_all = 2; // If true, replace entire action set
+}
+
+// =============================================================================
+// REGISTRATION
+// =============================================================================
+
+message RegisterRequest {
+  string registration_token = 1; // One-time token from admin/web GUI
+  bytes csr = 2;                 // Certificate Signing Request (PEM)
+  string hostname = 3;
+  string os_info = 4;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  optional string error_message = 2;
+
+  // On success:
+  bytes signed_certificate = 3;  // Signed client certificate (PEM)
+  bytes ca_certificate = 4;      // CA certificate for server verification (PEM)
+  string server_address = 5;     // gRPC server address for future connections
+  AgentId agent_id = 6;          // Assigned agent ID
+}

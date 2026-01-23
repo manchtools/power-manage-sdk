@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package powermanage.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+
+import "powermanage/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Action type enumeration
+enum ActionType {
+  ACTION_TYPE_UNSPECIFIED = 0;
+  ACTION_TYPE_APT = 1;
+  ACTION_TYPE_DNF = 2;
+  // Future action types will be added here
+}
+
+// Package action parameters (used by APT and DNF)
+message PackageActionParams {
+  string package_name = 1;              // e.g., "nginx", "vim"
+  string version = 2;                   // e.g., "1.18.0", "latest"
+  VersionSpecifier version_specifier = 3;
+  DesiredState desired_state = 4;
+}
+
+// Generic action definition
+message Action {
+  ActionId id = 1;
+  ActionType type = 2;
+
+  // Action-specific parameters (oneof for type safety)
+  oneof params {
+    PackageActionParams package_params = 10;
+    // Future action params will be added here
+  }
+
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 21;
+}
+
+// Current state of a package (as detected on the system)
+message PackageCurrentState {
+  bool is_installed = 1;
+  optional string installed_version = 2; // Only set if installed
+}
+
+// Action state combining desired and current
+message ActionState {
+  ActionId action_id = 1;
+  ActionType type = 2;
+
+  // Current state (oneof for type safety)
+  oneof current_state {
+    PackageCurrentState package_state = 10;
+  }
+
+  // Whether current matches desired
+  bool in_desired_state = 20;
+
+  google.protobuf.Timestamp last_checked = 21;
+  optional google.protobuf.Timestamp last_executed = 22;
+}
+
+// Result of executing an action
+message ActionResult {
+  ActionId action_id = 1;
+  ExecutionStatus status = 2;
+  optional string error_message = 3;
+  string stdout = 4;
+  string stderr = 5;
+  int64 duration_ms = 6;
+  google.protobuf.Timestamp executed_at = 7;
+  optional ActionState state_after = 8;
+}

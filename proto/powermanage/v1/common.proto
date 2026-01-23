@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package powermanage.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+
+import "google/protobuf/timestamp.proto";
+
+// Unique identifier for an agent
+message AgentId {
+  string id = 1; // UUID
+}
+
+// Unique identifier for an action instance
+message ActionId {
+  string id = 1; // UUID
+}
+
+// Execution result status
+enum ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+  EXECUTION_STATUS_SUCCESS = 1;
+  EXECUTION_STATUS_FAILED = 2;
+  EXECUTION_STATUS_SKIPPED = 3; // No action needed, state already matches
+  EXECUTION_STATUS_PENDING = 4;
+}
+
+// Log severity levels
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG = 1;
+  LOG_LEVEL_INFO = 2;
+  LOG_LEVEL_WARN = 3;
+  LOG_LEVEL_ERROR = 4;
+}
+
+// Structured log entry
+message LogEntry {
+  string id = 1; // UUID
+  google.protobuf.Timestamp timestamp = 2;
+  LogLevel level = 3;
+  string message = 4;
+  optional ActionId action_id = 5; // Associated action if applicable
+  map<string, string> metadata = 6; // Additional structured data
+}
+
+// Version comparison specifier
+enum VersionSpecifier {
+  VERSION_SPECIFIER_UNSPECIFIED = 0;
+  VERSION_SPECIFIER_EXACT = 1;   // Must be exactly this version
+  VERSION_SPECIFIER_MINIMUM = 2; // Must be at least this version
+  VERSION_SPECIFIER_MAXIMUM = 3; // Must be at most this version
+}
+
+// Desired state for an action
+enum DesiredState {
+  DESIRED_STATE_UNSPECIFIED = 0;
+  DESIRED_STATE_INSTALLED = 1;
+  DESIRED_STATE_REMOVED = 2;
+}
