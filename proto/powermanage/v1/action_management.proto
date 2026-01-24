@@ -1,0 +1,450 @@
+syntax = "proto3";
+
+package powermanage.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+
+import "google/protobuf/timestamp.proto";
+import "powermanage/v1/actions.proto";
+
+// =============================================================================
+// ACTION MANAGEMENT SERVICE
+// Manages action definitions (templates that can be assigned to devices)
+// =============================================================================
+
+service ActionManagementService {
+  // Create a managed action
+  rpc CreateManagedAction(CreateManagedActionRequest) returns (CreateManagedActionResponse);
+
+  // Get managed action by ID
+  rpc GetManagedAction(GetManagedActionRequest) returns (GetManagedActionResponse);
+
+  // List managed actions
+  rpc ListManagedActions(ListManagedActionsRequest) returns (ListManagedActionsResponse);
+
+  // Update managed action
+  rpc UpdateManagedAction(UpdateManagedActionRequest) returns (UpdateManagedActionResponse);
+
+  // Delete managed action
+  rpc DeleteManagedAction(DeleteManagedActionRequest) returns (DeleteManagedActionResponse);
+}
+
+// =============================================================================
+// ACTION SET SERVICE
+// Groups of actions that are applied together
+// =============================================================================
+
+service ActionSetService {
+  // Create an action set
+  rpc CreateActionSet(CreateActionSetRequest) returns (CreateActionSetResponse);
+
+  // Get action set by ID
+  rpc GetActionSet(GetActionSetRequest) returns (GetActionSetResponse);
+
+  // List action sets
+  rpc ListActionSets(ListActionSetsRequest) returns (ListActionSetsResponse);
+
+  // Update action set
+  rpc UpdateActionSet(UpdateActionSetRequest) returns (UpdateActionSetResponse);
+
+  // Delete action set
+  rpc DeleteActionSet(DeleteActionSetRequest) returns (DeleteActionSetResponse);
+
+  // Add actions to set
+  rpc AddActionsToSet(AddActionsToSetRequest) returns (AddActionsToSetResponse);
+
+  // Remove actions from set
+  rpc RemoveActionsFromSet(RemoveActionsFromSetRequest) returns (RemoveActionsFromSetResponse);
+}
+
+// =============================================================================
+// DEFINITION SERVICE
+// Collections of action sets (e.g., "Web Server", "Database Server")
+// =============================================================================
+
+service DefinitionService {
+  // Create a definition
+  rpc CreateDefinition(CreateDefinitionRequest) returns (CreateDefinitionResponse);
+
+  // Get definition by ID
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
+
+  // List definitions
+  rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse);
+
+  // Update definition
+  rpc UpdateDefinition(UpdateDefinitionRequest) returns (UpdateDefinitionResponse);
+
+  // Delete definition
+  rpc DeleteDefinition(DeleteDefinitionRequest) returns (DeleteDefinitionResponse);
+
+  // Add action sets to definition
+  rpc AddActionSetsToDefinition(AddActionSetsToDefinitionRequest) returns (AddActionSetsToDefinitionResponse);
+
+  // Remove action sets from definition
+  rpc RemoveActionSetsFromDefinition(RemoveActionSetsFromDefinitionRequest) returns (RemoveActionSetsFromDefinitionResponse);
+}
+
+// =============================================================================
+// ASSIGNMENT SERVICE
+// Links actions/sets/definitions to devices/groups
+// =============================================================================
+
+service AssignmentService {
+  // Create an assignment
+  rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse);
+
+  // List assignments
+  rpc ListAssignments(ListAssignmentsRequest) returns (ListAssignmentsResponse);
+
+  // Delete an assignment
+  rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse);
+
+  // Get effective actions for a device (resolves all assignments)
+  rpc GetEffectiveActions(GetEffectiveActionsRequest) returns (GetEffectiveActionsResponse);
+}
+
+// =============================================================================
+// MANAGED ACTION (stored action template)
+// =============================================================================
+
+message ManagedAction {
+  string id = 1;
+  string name = 2;           // Human-readable name
+  string description = 3;
+  ActionType type = 4;
+
+  // Action parameters
+  oneof params {
+    PackageActionParams package_params = 10;
+  }
+
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 21;
+}
+
+message CreateManagedActionRequest {
+  string name = 1;
+  string description = 2;
+  ActionType type = 3;
+
+  oneof params {
+    PackageActionParams package_params = 10;
+  }
+}
+
+message CreateManagedActionResponse {
+  ManagedAction managed_action = 1;
+}
+
+message GetManagedActionRequest {
+  string action_id = 1;
+}
+
+message GetManagedActionResponse {
+  ManagedAction managed_action = 1;
+}
+
+message ListManagedActionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional ActionType type_filter = 3;
+  optional string search = 4;
+}
+
+message ListManagedActionsResponse {
+  repeated ManagedAction managed_actions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateManagedActionRequest {
+  string action_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+
+  oneof params {
+    PackageActionParams package_params = 10;
+  }
+}
+
+message UpdateManagedActionResponse {
+  ManagedAction managed_action = 1;
+}
+
+message DeleteManagedActionRequest {
+  string action_id = 1;
+}
+
+message DeleteManagedActionResponse {
+  bool success = 1;
+}
+
+// =============================================================================
+// ACTION SET (group of actions)
+// =============================================================================
+
+message ActionSet {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+
+  // Actions in this set
+  repeated ManagedAction actions = 10;
+
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 21;
+}
+
+message CreateActionSetRequest {
+  string name = 1;
+  string description = 2;
+  // Initial action IDs to include
+  repeated string action_ids = 3;
+}
+
+message CreateActionSetResponse {
+  ActionSet action_set = 1;
+}
+
+message GetActionSetRequest {
+  string action_set_id = 1;
+}
+
+message GetActionSetResponse {
+  ActionSet action_set = 1;
+}
+
+message ListActionSetsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string search = 3;
+}
+
+message ListActionSetsResponse {
+  repeated ActionSet action_sets = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateActionSetRequest {
+  string action_set_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message UpdateActionSetResponse {
+  ActionSet action_set = 1;
+}
+
+message DeleteActionSetRequest {
+  string action_set_id = 1;
+}
+
+message DeleteActionSetResponse {
+  bool success = 1;
+}
+
+message AddActionsToSetRequest {
+  string action_set_id = 1;
+  repeated string action_ids = 2;
+}
+
+message AddActionsToSetResponse {
+  ActionSet action_set = 1;
+}
+
+message RemoveActionsFromSetRequest {
+  string action_set_id = 1;
+  repeated string action_ids = 2;
+}
+
+message RemoveActionsFromSetResponse {
+  ActionSet action_set = 1;
+}
+
+// =============================================================================
+// DEFINITION (collection of action sets)
+// =============================================================================
+
+message Definition {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+
+  // Action sets in this definition
+  repeated ActionSet action_sets = 10;
+
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 21;
+}
+
+message CreateDefinitionRequest {
+  string name = 1;
+  string description = 2;
+  // Initial action set IDs to include
+  repeated string action_set_ids = 3;
+}
+
+message CreateDefinitionResponse {
+  Definition definition = 1;
+}
+
+message GetDefinitionRequest {
+  string definition_id = 1;
+}
+
+message GetDefinitionResponse {
+  Definition definition = 1;
+}
+
+message ListDefinitionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string search = 3;
+}
+
+message ListDefinitionsResponse {
+  repeated Definition definitions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateDefinitionRequest {
+  string definition_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message UpdateDefinitionResponse {
+  Definition definition = 1;
+}
+
+message DeleteDefinitionRequest {
+  string definition_id = 1;
+}
+
+message DeleteDefinitionResponse {
+  bool success = 1;
+}
+
+message AddActionSetsToDefinitionRequest {
+  string definition_id = 1;
+  repeated string action_set_ids = 2;
+}
+
+message AddActionSetsToDefinitionResponse {
+  Definition definition = 1;
+}
+
+message RemoveActionSetsFromDefinitionRequest {
+  string definition_id = 1;
+  repeated string action_set_ids = 2;
+}
+
+message RemoveActionSetsFromDefinitionResponse {
+  Definition definition = 1;
+}
+
+// =============================================================================
+// ASSIGNMENTS
+// =============================================================================
+
+// What is being assigned
+enum AssignmentSourceType {
+  ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0;
+  ASSIGNMENT_SOURCE_TYPE_ACTION = 1;
+  ASSIGNMENT_SOURCE_TYPE_ACTION_SET = 2;
+  ASSIGNMENT_SOURCE_TYPE_DEFINITION = 3;
+}
+
+// What it's being assigned to
+enum AssignmentTargetType {
+  ASSIGNMENT_TARGET_TYPE_UNSPECIFIED = 0;
+  ASSIGNMENT_TARGET_TYPE_DEVICE = 1;
+  ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP = 2;
+}
+
+message Assignment {
+  string id = 1;
+
+  // Source (what is being assigned)
+  AssignmentSourceType source_type = 2;
+  string source_id = 3;
+  string source_name = 4;  // Denormalized for display
+
+  // Target (what it's assigned to)
+  AssignmentTargetType target_type = 5;
+  string target_id = 6;
+  string target_name = 7;  // Denormalized for display
+
+  // Priority for conflict resolution (higher = wins)
+  int32 priority = 10;
+
+  google.protobuf.Timestamp created_at = 20;
+}
+
+message CreateAssignmentRequest {
+  AssignmentSourceType source_type = 1;
+  string source_id = 2;
+  AssignmentTargetType target_type = 3;
+  string target_id = 4;
+  int32 priority = 5;
+}
+
+message CreateAssignmentResponse {
+  Assignment assignment = 1;
+}
+
+message ListAssignmentsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  // Filter by source
+  optional AssignmentSourceType source_type = 3;
+  optional string source_id = 4;
+  // Filter by target
+  optional AssignmentTargetType target_type = 5;
+  optional string target_id = 6;
+}
+
+message ListAssignmentsResponse {
+  repeated Assignment assignments = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message DeleteAssignmentRequest {
+  string assignment_id = 1;
+}
+
+message DeleteAssignmentResponse {
+  bool success = 1;
+}
+
+// =============================================================================
+// EFFECTIVE ACTIONS
+// =============================================================================
+
+message GetEffectiveActionsRequest {
+  string device_id = 1;
+}
+
+message GetEffectiveActionsResponse {
+  // Final list of actions for the device
+  repeated EffectiveAction effective_actions = 1;
+}
+
+// An action with its assignment chain
+message EffectiveAction {
+  // The action to apply
+  Action action = 1;
+  // How this action was assigned (for debugging/display)
+  repeated AssignmentPath assignment_paths = 2;
+}
+
+// Shows the assignment chain for an action
+message AssignmentPath {
+  // e.g., "Definition: Web Server" -> "ActionSet: Security" -> "Action: Install nginx"
+  repeated string path_elements = 1;
+  Assignment assignment = 2;
+}

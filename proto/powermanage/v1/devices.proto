@@ -1,0 +1,211 @@
+syntax = "proto3";
+
+package powermanage.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+
+import "google/protobuf/timestamp.proto";
+import "powermanage/v1/common.proto";
+
+// =============================================================================
+// DEVICE MANAGEMENT SERVICE
+// =============================================================================
+
+service DeviceService {
+  // List all devices
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+
+  // Get device by ID
+  rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
+
+  // Update device metadata (labels, display name)
+  rpc UpdateDevice(UpdateDeviceRequest) returns (UpdateDeviceResponse);
+
+  // Delete device (revokes certificate)
+  rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse);
+
+  // Generate registration token for agent enrollment
+  rpc CreateRegistrationToken(CreateRegistrationTokenRequest) returns (CreateRegistrationTokenResponse);
+
+  // List registration tokens
+  rpc ListRegistrationTokens(ListRegistrationTokensRequest) returns (ListRegistrationTokensResponse);
+
+  // Revoke a registration token
+  rpc RevokeRegistrationToken(RevokeRegistrationTokenRequest) returns (RevokeRegistrationTokenResponse);
+
+  // Get device's action execution history
+  rpc GetDeviceHistory(GetDeviceHistoryRequest) returns (GetDeviceHistoryResponse);
+}
+
+// =============================================================================
+// DEVICE STATUS
+// =============================================================================
+
+enum DeviceStatus {
+  DEVICE_STATUS_UNSPECIFIED = 0;
+  DEVICE_STATUS_ONLINE = 1;      // Connected and responding
+  DEVICE_STATUS_OFFLINE = 2;     // Not connected
+  DEVICE_STATUS_ERROR = 3;       // Connected but in error state
+  DEVICE_STATUS_PENDING = 4;     // Registered but never connected
+}
+
+// =============================================================================
+// DEVICE DATA
+// =============================================================================
+
+message Device {
+  string id = 1;  // Same as AgentId
+  string hostname = 2;
+  string display_name = 3;
+  string os_info = 4;
+  DeviceStatus status = 5;
+  map<string, string> labels = 6;  // User-defined labels for grouping
+
+  // Connection info
+  optional google.protobuf.Timestamp last_seen_at = 10;
+  optional string agent_version = 11;
+  optional google.protobuf.Timestamp boot_time = 12;
+
+  // Certificate info
+  google.protobuf.Timestamp cert_expires_at = 13;
+
+  // Timestamps
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 21;
+}
+
+// =============================================================================
+// DEVICE CRUD
+// =============================================================================
+
+message ListDevicesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  // Filter by status
+  optional DeviceStatus status_filter = 3;
+  // Filter by label (key=value)
+  map<string, string> label_filter = 4;
+  // Search hostname/display_name
+  optional string search = 5;
+}
+
+message ListDevicesResponse {
+  repeated Device devices = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetDeviceRequest {
+  string device_id = 1;
+}
+
+message GetDeviceResponse {
+  Device device = 1;
+  // Current action states for this device
+  repeated ActionSummary action_summaries = 2;
+}
+
+// Summary of an action assigned to a device
+message ActionSummary {
+  ActionId action_id = 1;
+  string action_name = 2;
+  bool in_desired_state = 3;
+  optional google.protobuf.Timestamp last_executed = 4;
+  optional ExecutionStatus last_status = 5;
+}
+
+message UpdateDeviceRequest {
+  string device_id = 1;
+  optional string display_name = 2;
+  // Labels to set (replaces all labels)
+  map<string, string> labels = 3;
+  // If true, only update provided labels without removing existing ones
+  bool merge_labels = 4;
+}
+
+message UpdateDeviceResponse {
+  Device device = 1;
+}
+
+message DeleteDeviceRequest {
+  string device_id = 1;
+}
+
+message DeleteDeviceResponse {
+  bool success = 1;
+}
+
+// =============================================================================
+// REGISTRATION TOKENS
+// =============================================================================
+
+message RegistrationToken {
+  string id = 1;
+  string token = 2;  // The actual token for agent registration
+  string description = 3;  // Admin note about what this is for
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  bool used = 6;
+  optional google.protobuf.Timestamp used_at = 7;
+  optional string device_id = 8;  // Device that used this token
+}
+
+message CreateRegistrationTokenRequest {
+  string description = 1;
+  // Duration in seconds (default 24h)
+  optional int64 expires_in_seconds = 2;
+}
+
+message CreateRegistrationTokenResponse {
+  RegistrationToken registration_token = 1;
+}
+
+message ListRegistrationTokensRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional bool include_used = 3;
+  optional bool include_expired = 4;
+}
+
+message ListRegistrationTokensResponse {
+  repeated RegistrationToken registration_tokens = 1;
+  string next_page_token = 2;
+}
+
+message RevokeRegistrationTokenRequest {
+  string token_id = 1;
+}
+
+message RevokeRegistrationTokenResponse {
+  bool success = 1;
+}
+
+// =============================================================================
+// DEVICE HISTORY
+// =============================================================================
+
+message GetDeviceHistoryRequest {
+  string device_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  // Filter by action
+  optional string action_id = 4;
+  // Filter by time range
+  optional google.protobuf.Timestamp from = 5;
+  optional google.protobuf.Timestamp to = 6;
+}
+
+message GetDeviceHistoryResponse {
+  repeated DeviceHistoryEntry entries = 1;
+  string next_page_token = 2;
+}
+
+message DeviceHistoryEntry {
+  string id = 1;
+  ActionId action_id = 2;
+  ExecutionStatus status = 3;
+  optional string error_message = 4;
+  int64 duration_ms = 5;
+  google.protobuf.Timestamp executed_at = 6;
+  bool is_reconciliation_run = 7;
+}
