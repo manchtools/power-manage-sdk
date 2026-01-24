@@ -1,36 +1,67 @@
-.PHONY: all clean generate deps
+.PHONY: all clean generate deps deps-ts generate-go generate-ts verify
 
 PROTO_DIR := proto
-GEN_DIR := gen/go
+GEN_DIR_GO := gen/go
+GEN_DIR_TS := gen/ts
 PROTO_FILES := $(shell find $(PROTO_DIR) -name '*.proto')
 
 # Tool versions
 PROTOC_GEN_GO_VERSION := v1.32.0
 PROTOC_GEN_GO_GRPC_VERSION := v1.3.0
+PROTOC_GEN_CONNECT_GO_VERSION := v1.16.0
 
 all: generate
 
 deps:
-	@echo "Installing protoc plugins..."
+	@echo "Installing Go protoc plugins..."
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_VERSION)
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION)
+	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@$(PROTOC_GEN_CONNECT_GO_VERSION)
 
-generate: deps
+deps-ts:
+	@echo "Installing TypeScript protoc plugins..."
+	@if ! command -v npm &> /dev/null; then \
+		echo "npm not found, skipping TypeScript deps"; \
+	else \
+		npm install -g @bufbuild/protoc-gen-es @connectrpc/protoc-gen-connect-es; \
+	fi
+
+generate: generate-go generate-ts
+
+generate-go: deps
 	@echo "Generating Go code from proto files..."
-	@mkdir -p $(GEN_DIR)/powermanage/v1
+	@mkdir -p $(GEN_DIR_GO)/powermanage/v1
 	protoc \
 		--proto_path=$(PROTO_DIR) \
-		--go_out=$(GEN_DIR) \
+		--go_out=$(GEN_DIR_GO) \
 		--go_opt=paths=source_relative \
-		--go-grpc_out=$(GEN_DIR) \
+		--go-grpc_out=$(GEN_DIR_GO) \
 		--go-grpc_opt=paths=source_relative \
+		--connect-go_out=$(GEN_DIR_GO) \
+		--connect-go_opt=paths=source_relative \
 		$(PROTO_FILES)
-	@echo "Generation complete."
+	@echo "Go generation complete."
+
+generate-ts: deps-ts
+	@echo "Generating TypeScript code from proto files..."
+	@if ! command -v npm &> /dev/null; then \
+		echo "npm not found, skipping TypeScript generation"; \
+	else \
+		mkdir -p $(GEN_DIR_TS)/powermanage/v1; \
+		protoc \
+			--proto_path=$(PROTO_DIR) \
+			--es_out=$(GEN_DIR_TS) \
+			--es_opt=target=ts \
+			--connect-es_out=$(GEN_DIR_TS) \
+			--connect-es_opt=target=ts \
+			$(PROTO_FILES); \
+		echo "TypeScript generation complete."; \
+	fi
 
 clean:
 	@echo "Cleaning generated files..."
-	rm -rf $(GEN_DIR)
+	rm -rf $(GEN_DIR_GO) $(GEN_DIR_TS)
 
 # Verify generated code compiles
 verify: generate
-	cd $(GEN_DIR) && go build ./...
+	cd $(GEN_DIR_GO) && go build ./...
