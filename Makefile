@@ -23,7 +23,7 @@ deps-ts:
 	@if ! command -v npm &> /dev/null; then \
 		echo "npm not found, skipping TypeScript deps"; \
 	else \
-		npm install -g @bufbuild/protoc-gen-es @connectrpc/protoc-gen-connect-es; \
+		npm install; \
 	fi
 
 generate: generate-go generate-ts
@@ -47,9 +47,11 @@ generate-ts: deps-ts
 	@if ! command -v npm &> /dev/null; then \
 		echo "npm not found, skipping TypeScript generation"; \
 	else \
-		mkdir -p $(GEN_DIR_TS)/powermanage/v1; \
+		mkdir -p $(GEN_DIR_TS); \
 		protoc \
 			--proto_path=$(PROTO_DIR) \
+			--plugin=protoc-gen-es=./node_modules/.bin/protoc-gen-es \
+			--plugin=protoc-gen-connect-es=./node_modules/.bin/protoc-gen-connect-es \
 			--es_out=$(GEN_DIR_TS) \
 			--es_opt=target=ts \
 			--connect-es_out=$(GEN_DIR_TS) \
