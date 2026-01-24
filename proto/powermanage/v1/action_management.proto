@@ -365,6 +365,14 @@ enum AssignmentTargetType {
   ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP = 2;
 }
 
+// Assignment state determines how actions are presented/enforced
+enum AssignmentState {
+  ASSIGNMENT_STATE_UNSPECIFIED = 0;
+  ASSIGNMENT_STATE_REQUIRED = 1;    // Must be applied, auto-enforced by agent
+  ASSIGNMENT_STATE_AVAILABLE = 2;   // User can trigger manually from web app
+  ASSIGNMENT_STATE_ABSENT = 3;      // Must NOT be present, agent will remove
+}
+
 message Assignment {
   string id = 1;
 
@@ -381,6 +389,9 @@ message Assignment {
   // Priority for conflict resolution (higher = wins)
   int32 priority = 10;
 
+  // Assignment state (required, available, absent)
+  AssignmentState state = 11;
+
   google.protobuf.Timestamp created_at = 20;
 }
 
@@ -390,6 +401,7 @@ message CreateAssignmentRequest {
   AssignmentTargetType target_type = 3;
   string target_id = 4;
   int32 priority = 5;
+  AssignmentState state = 6;
 }
 
 message CreateAssignmentResponse {
@@ -440,6 +452,8 @@ message EffectiveAction {
   Action action = 1;
   // How this action was assigned (for debugging/display)
   repeated AssignmentPath assignment_paths = 2;
+  // Resolved state for this action (based on highest priority assignment)
+  AssignmentState state = 3;
 }
 
 // Shows the assignment chain for an action
