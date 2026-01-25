@@ -171,11 +171,15 @@ export class Device extends Message<Device> {
  */
 export class ListDevicesRequest extends Message<ListDevicesRequest> {
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 1;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
@@ -196,6 +200,7 @@ export class ListDevicesRequest extends Message<ListDevicesRequest> {
 
   /**
    * Search hostname/display_name
+   * @gotags: validate:"omitempty,max=100"
    *
    * @generated from field: optional string search = 5;
    */
@@ -287,6 +292,8 @@ export class ListDevicesResponse extends Message<ListDevicesResponse> {
  */
 export class GetDeviceRequest extends Message<GetDeviceRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId = "";
@@ -432,11 +439,15 @@ export class ActionSummary extends Message<ActionSummary> {
  */
 export class UpdateDeviceRequest extends Message<UpdateDeviceRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=1,max=100"
+   *
    * @generated from field: optional string display_name = 2;
    */
   displayName?: string;
@@ -528,6 +539,8 @@ export class UpdateDeviceResponse extends Message<UpdateDeviceResponse> {
  */
 export class DeleteDeviceRequest extends Message<DeleteDeviceRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId = "";
@@ -687,12 +700,15 @@ export class RegistrationToken extends Message<RegistrationToken> {
  */
 export class CreateRegistrationTokenRequest extends Message<CreateRegistrationTokenRequest> {
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: string description = 1;
    */
   description = "";
 
   /**
    * Duration in seconds (default 24h)
+   * @gotags: validate:"omitempty,min=60,max=604800"
    *
    * @generated from field: optional int64 expires_in_seconds = 2;
    */
@@ -867,6 +883,8 @@ export class ListRegistrationTokensResponse extends Message<ListRegistrationToke
  */
 export class RevokeRegistrationTokenRequest extends Message<RevokeRegistrationTokenRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string token_id = 1;
    */
   tokenId = "";
@@ -941,16 +959,22 @@ export class RevokeRegistrationTokenResponse extends Message<RevokeRegistrationT
  */
 export class GetDeviceHistoryRequest extends Message<GetDeviceHistoryRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 2;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 3;
    */
   pageToken = "";

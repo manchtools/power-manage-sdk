@@ -44,6 +44,7 @@ proto3.util.setEnumType(UserRole, "powermanage.v1.UserRole", [
 export class BeginRegistrationRequest extends Message<BeginRegistrationRequest> {
   /**
    * Registration code provided by admin
+   * @gotags: validate:"required,min=1"
    *
    * @generated from field: string registration_code = 1;
    */
@@ -138,6 +139,7 @@ export class BeginRegistrationResponse extends Message<BeginRegistrationResponse
 export class FinishRegistrationRequest extends Message<FinishRegistrationRequest> {
   /**
    * Session ID from BeginRegistration
+   * @gotags: validate:"required,min=1"
    *
    * @generated from field: string session_id = 1;
    */
@@ -145,6 +147,7 @@ export class FinishRegistrationRequest extends Message<FinishRegistrationRequest
 
   /**
    * Attestation response from browser as JSON
+   * @gotags: validate:"required,json"
    *
    * @generated from field: string attestation_json = 2;
    */
@@ -322,6 +325,7 @@ export class BeginLoginResponse extends Message<BeginLoginResponse> {
 export class FinishLoginRequest extends Message<FinishLoginRequest> {
   /**
    * Session ID from BeginLogin
+   * @gotags: validate:"required,min=1"
    *
    * @generated from field: string session_id = 1;
    */
@@ -329,6 +333,7 @@ export class FinishLoginRequest extends Message<FinishLoginRequest> {
 
   /**
    * Assertion response from browser as JSON
+   * @gotags: validate:"required,json"
    *
    * @generated from field: string assertion_json = 2;
    */

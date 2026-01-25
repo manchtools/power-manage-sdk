@@ -36,6 +36,7 @@ service AuthService {
 
 message BeginRegistrationRequest {
   // Registration code provided by admin
+  // @gotags: validate:"required,min=1"
   string registration_code = 1;
 }
 
@@ -50,8 +51,10 @@ message BeginRegistrationResponse {
 
 message FinishRegistrationRequest {
   // Session ID from BeginRegistration
+  // @gotags: validate:"required,min=1"
   string session_id = 1;
   // Attestation response from browser as JSON
+  // @gotags: validate:"required,json"
   string attestation_json = 2;
 }
 
@@ -80,8 +83,10 @@ message BeginLoginResponse {
 
 message FinishLoginRequest {
   // Session ID from BeginLogin
+  // @gotags: validate:"required,min=1"
   string session_id = 1;
   // Assertion response from browser as JSON
+  // @gotags: validate:"required,json"
   string assertion_json = 2;
 }
 

@@ -299,9 +299,12 @@ type CreateManagedActionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name        string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description string     `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	Type        ActionType `protobuf:"varint,3,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty"`
+	// @gotags: validate:"required,min=1,max=100"
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=100"`
+	// @gotags: validate:"omitempty,max=500"
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=500"`
+	// @gotags: validate:"required"
+	Type ActionType `protobuf:"varint,3,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty" validate:"required"`
 	// Types that are assignable to Params:
 	//
 	//	*CreateManagedActionRequest_PackageParams
@@ -437,7 +440,8 @@ type GetManagedActionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *GetManagedActionRequest) Reset() {
@@ -531,10 +535,13 @@ type ListManagedActionsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PageSize   int32       `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken  string      `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken  string      `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	TypeFilter *ActionType `protobuf:"varint,3,opt,name=type_filter,json=typeFilter,proto3,enum=powermanage.v1.ActionType,oneof" json:"type_filter,omitempty"`
-	Search     *string     `protobuf:"bytes,4,opt,name=search,proto3,oneof" json:"search,omitempty"`
+	// @gotags: validate:"omitempty,max=100"
+	Search *string `protobuf:"bytes,4,opt,name=search,proto3,oneof" json:"search,omitempty" validate:"omitempty,max=100"`
 }
 
 func (x *ListManagedActionsRequest) Reset() {
@@ -665,9 +672,12 @@ type UpdateManagedActionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionId    string  `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	Name        *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Description *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=1,max=100"
+	Name *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty" validate:"omitempty,min=1,max=100"`
+	// @gotags: validate:"omitempty,max=500"
+	Description *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty" validate:"omitempty,max=500"`
 	// Types that are assignable to Params:
 	//
 	//	*UpdateManagedActionRequest_PackageParams
@@ -803,7 +813,8 @@ type DeleteManagedActionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *DeleteManagedActionRequest) Reset() {
@@ -985,8 +996,10 @@ type CreateActionSetRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// @gotags: validate:"required,min=1,max=100"
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=100"`
+	// @gotags: validate:"omitempty,max=500"
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=500"`
 	// Initial action IDs to include
 	ActionIds []string `protobuf:"bytes,3,rep,name=action_ids,json=actionIds,proto3" json:"action_ids,omitempty"`
 }
@@ -1096,7 +1109,8 @@ type GetActionSetRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *GetActionSetRequest) Reset() {
@@ -1190,9 +1204,12 @@ type ListActionSetsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PageSize  int32   `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken string  `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	Search    *string `protobuf:"bytes,3,opt,name=search,proto3,oneof" json:"search,omitempty"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,max=100"
+	Search *string `protobuf:"bytes,3,opt,name=search,proto3,oneof" json:"search,omitempty" validate:"omitempty,max=100"`
 }
 
 func (x *ListActionSetsRequest) Reset() {
@@ -1316,9 +1333,12 @@ type UpdateActionSetRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionSetId string  `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty"`
-	Name        *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Description *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=1,max=100"
+	Name *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty" validate:"omitempty,min=1,max=100"`
+	// @gotags: validate:"omitempty,max=500"
+	Description *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty" validate:"omitempty,max=500"`
 }
 
 func (x *UpdateActionSetRequest) Reset() {
@@ -1426,7 +1446,8 @@ type DeleteActionSetRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *DeleteActionSetRequest) Reset() {
@@ -1520,8 +1541,10 @@ type AddActionsToSetRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionSetId string   `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty"`
-	ActionIds   []string `protobuf:"bytes,2,rep,name=action_ids,json=actionIds,proto3" json:"action_ids,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"required,min=1,dive,required"
+	ActionIds []string `protobuf:"bytes,2,rep,name=action_ids,json=actionIds,proto3" json:"action_ids,omitempty" validate:"required,min=1,dive,required"`
 }
 
 func (x *AddActionsToSetRequest) Reset() {
@@ -1622,8 +1645,10 @@ type RemoveActionsFromSetRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActionSetId string   `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty"`
-	ActionIds   []string `protobuf:"bytes,2,rep,name=action_ids,json=actionIds,proto3" json:"action_ids,omitempty"`
+	// @gotags: validate:"required,min=1"
+	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"required,min=1,dive,required"
+	ActionIds []string `protobuf:"bytes,2,rep,name=action_ids,json=actionIds,proto3" json:"action_ids,omitempty" validate:"required,min=1,dive,required"`
 }
 
 func (x *RemoveActionsFromSetRequest) Reset() {
@@ -1812,8 +1837,10 @@ type CreateDefinitionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// @gotags: validate:"required,min=1,max=100"
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=100"`
+	// @gotags: validate:"omitempty,max=500"
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=500"`
 	// Initial action set IDs to include
 	ActionSetIds []string `protobuf:"bytes,3,rep,name=action_set_ids,json=actionSetIds,proto3" json:"action_set_ids,omitempty"`
 }
@@ -1923,7 +1950,8 @@ type GetDefinitionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *GetDefinitionRequest) Reset() {
@@ -2017,9 +2045,12 @@ type ListDefinitionsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PageSize  int32   `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken string  `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	Search    *string `protobuf:"bytes,3,opt,name=search,proto3,oneof" json:"search,omitempty"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,max=100"
+	Search *string `protobuf:"bytes,3,opt,name=search,proto3,oneof" json:"search,omitempty" validate:"omitempty,max=100"`
 }
 
 func (x *ListDefinitionsRequest) Reset() {
@@ -2143,9 +2174,12 @@ type UpdateDefinitionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DefinitionId string  `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty"`
-	Name         *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Description  *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=1,max=100"
+	Name *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty" validate:"omitempty,min=1,max=100"`
+	// @gotags: validate:"omitempty,max=500"
+	Description *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty" validate:"omitempty,max=500"`
 }
 
 func (x *UpdateDefinitionRequest) Reset() {
@@ -2253,7 +2287,8 @@ type DeleteDefinitionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *DeleteDefinitionRequest) Reset() {
@@ -2347,8 +2382,10 @@ type AddActionSetsToDefinitionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DefinitionId string   `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty"`
-	ActionSetIds []string `protobuf:"bytes,2,rep,name=action_set_ids,json=actionSetIds,proto3" json:"action_set_ids,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"required,min=1,dive,required"
+	ActionSetIds []string `protobuf:"bytes,2,rep,name=action_set_ids,json=actionSetIds,proto3" json:"action_set_ids,omitempty" validate:"required,min=1,dive,required"`
 }
 
 func (x *AddActionSetsToDefinitionRequest) Reset() {
@@ -2449,8 +2486,10 @@ type RemoveActionSetsFromDefinitionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DefinitionId string   `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty"`
-	ActionSetIds []string `protobuf:"bytes,2,rep,name=action_set_ids,json=actionSetIds,proto3" json:"action_set_ids,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"required,min=1,dive,required"
+	ActionSetIds []string `protobuf:"bytes,2,rep,name=action_set_ids,json=actionSetIds,proto3" json:"action_set_ids,omitempty" validate:"required,min=1,dive,required"`
 }
 
 func (x *RemoveActionSetsFromDefinitionRequest) Reset() {
@@ -2674,12 +2713,18 @@ type CreateAssignmentRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SourceType AssignmentSourceType `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty"`
-	SourceId   string               `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
-	TargetType AssignmentTargetType `protobuf:"varint,3,opt,name=target_type,json=targetType,proto3,enum=powermanage.v1.AssignmentTargetType" json:"target_type,omitempty"`
-	TargetId   string               `protobuf:"bytes,4,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
-	Priority   int32                `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty"`
-	State      AssignmentState      `protobuf:"varint,6,opt,name=state,proto3,enum=powermanage.v1.AssignmentState" json:"state,omitempty"`
+	// @gotags: validate:"required,oneof=1 2 3"
+	SourceType AssignmentSourceType `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"required,oneof=1 2 3"`
+	// @gotags: validate:"required,min=1"
+	SourceId string `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"required,oneof=1 2"
+	TargetType AssignmentTargetType `protobuf:"varint,3,opt,name=target_type,json=targetType,proto3,enum=powermanage.v1.AssignmentTargetType" json:"target_type,omitempty" validate:"required,oneof=1 2"`
+	// @gotags: validate:"required,min=1"
+	TargetId string `protobuf:"bytes,4,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=0,max=1000"
+	Priority int32 `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,min=0,max=1000"`
+	// @gotags: validate:"omitempty,oneof=0 1 2 3"
+	State AssignmentState `protobuf:"varint,6,opt,name=state,proto3,enum=powermanage.v1.AssignmentState" json:"state,omitempty" validate:"omitempty,oneof=0 1 2 3"`
 }
 
 func (x *CreateAssignmentRequest) Reset() {
@@ -2808,8 +2853,10 @@ type ListAssignmentsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PageSize  int32  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Filter by source
 	SourceType *AssignmentSourceType `protobuf:"varint,3,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType,oneof" json:"source_type,omitempty"`
 	SourceId   *string               `protobuf:"bytes,4,opt,name=source_id,json=sourceId,proto3,oneof" json:"source_id,omitempty"`
@@ -2960,7 +3007,8 @@ type DeleteAssignmentRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	AssignmentId string `protobuf:"bytes,1,opt,name=assignment_id,json=assignmentId,proto3" json:"assignment_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	AssignmentId string `protobuf:"bytes,1,opt,name=assignment_id,json=assignmentId,proto3" json:"assignment_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *DeleteAssignmentRequest) Reset() {
@@ -3054,7 +3102,8 @@ type GetEffectiveActionsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *GetEffectiveActionsRequest) Reset() {

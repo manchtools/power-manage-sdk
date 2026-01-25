@@ -77,7 +77,8 @@ type BeginRegistrationRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Registration code provided by admin
-	RegistrationCode string `protobuf:"bytes,1,opt,name=registration_code,json=registrationCode,proto3" json:"registration_code,omitempty"`
+	// @gotags: validate:"required,min=1"
+	RegistrationCode string `protobuf:"bytes,1,opt,name=registration_code,json=registrationCode,proto3" json:"registration_code,omitempty" validate:"required,min=1"`
 }
 
 func (x *BeginRegistrationRequest) Reset() {
@@ -191,9 +192,11 @@ type FinishRegistrationRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Session ID from BeginRegistration
-	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,min=1"`
 	// Attestation response from browser as JSON
-	AttestationJson string `protobuf:"bytes,2,opt,name=attestation_json,json=attestationJson,proto3" json:"attestation_json,omitempty"`
+	// @gotags: validate:"required,json"
+	AttestationJson string `protobuf:"bytes,2,opt,name=attestation_json,json=attestationJson,proto3" json:"attestation_json,omitempty" validate:"required,json"`
 }
 
 func (x *FinishRegistrationRequest) Reset() {
@@ -417,9 +420,11 @@ type FinishLoginRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Session ID from BeginLogin
-	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,min=1"`
 	// Assertion response from browser as JSON
-	AssertionJson string `protobuf:"bytes,2,opt,name=assertion_json,json=assertionJson,proto3" json:"assertion_json,omitempty"`
+	// @gotags: validate:"required,json"
+	AssertionJson string `protobuf:"bytes,2,opt,name=assertion_json,json=assertionJson,proto3" json:"assertion_json,omitempty" validate:"required,json"`
 }
 
 func (x *FinishLoginRequest) Reset() {

@@ -79,13 +79,16 @@ message Device {
 // =============================================================================
 
 message ListDevicesRequest {
+  // @gotags: validate:"omitempty,min=0,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
   // Filter by status
   optional DeviceStatus status_filter = 3;
   // Filter by label (key=value)
   map<string, string> label_filter = 4;
   // Search hostname/display_name
+  // @gotags: validate:"omitempty,max=100"
   optional string search = 5;
 }
 
@@ -96,6 +99,7 @@ message ListDevicesResponse {
 }
 
 message GetDeviceRequest {
+  // @gotags: validate:"required,min=1"
   string device_id = 1;
 }
 
@@ -115,7 +119,9 @@ message ActionSummary {
 }
 
 message UpdateDeviceRequest {
+  // @gotags: validate:"required,min=1"
   string device_id = 1;
+  // @gotags: validate:"omitempty,min=1,max=100"
   optional string display_name = 2;
   // Labels to set (replaces all labels)
   map<string, string> labels = 3;
@@ -128,6 +134,7 @@ message UpdateDeviceResponse {
 }
 
 message DeleteDeviceRequest {
+  // @gotags: validate:"required,min=1"
   string device_id = 1;
 }
 
@@ -151,8 +158,10 @@ message RegistrationToken {
 }
 
 message CreateRegistrationTokenRequest {
+  // @gotags: validate:"omitempty,max=500"
   string description = 1;
   // Duration in seconds (default 24h)
+  // @gotags: validate:"omitempty,min=60,max=604800"
   optional int64 expires_in_seconds = 2;
 }
 
@@ -173,6 +182,7 @@ message ListRegistrationTokensResponse {
 }
 
 message RevokeRegistrationTokenRequest {
+  // @gotags: validate:"required,min=1"
   string token_id = 1;
 }
 
@@ -185,8 +195,11 @@ message RevokeRegistrationTokenResponse {
 // =============================================================================
 
 message GetDeviceHistoryRequest {
+  // @gotags: validate:"required,min=1"
   string device_id = 1;
+  // @gotags: validate:"omitempty,min=0,max=100"
   int32 page_size = 2;
+  // @gotags: validate:"omitempty"
   string page_token = 3;
   // Filter by action
   optional string action_id = 4;
