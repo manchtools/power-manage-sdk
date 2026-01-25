@@ -124,8 +124,11 @@ message ManagedAction {
 }
 
 message CreateManagedActionRequest {
+  // @gotags: validate:"required,min=1,max=100"
   string name = 1;
+  // @gotags: validate:"omitempty,max=500"
   string description = 2;
+  // @gotags: validate:"required"
   ActionType type = 3;
 
   oneof params {
@@ -138,6 +141,7 @@ message CreateManagedActionResponse {
 }
 
 message GetManagedActionRequest {
+  // @gotags: validate:"required,min=1"
   string action_id = 1;
 }
 
@@ -146,9 +150,12 @@ message GetManagedActionResponse {
 }
 
 message ListManagedActionsRequest {
+  // @gotags: validate:"omitempty,min=0,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
   optional ActionType type_filter = 3;
+  // @gotags: validate:"omitempty,max=100"
   optional string search = 4;
 }
 
@@ -159,8 +166,11 @@ message ListManagedActionsResponse {
 }
 
 message UpdateManagedActionRequest {
+  // @gotags: validate:"required,min=1"
   string action_id = 1;
+  // @gotags: validate:"omitempty,min=1,max=100"
   optional string name = 2;
+  // @gotags: validate:"omitempty,max=500"
   optional string description = 3;
 
   oneof params {
@@ -173,6 +183,7 @@ message UpdateManagedActionResponse {
 }
 
 message DeleteManagedActionRequest {
+  // @gotags: validate:"required,min=1"
   string action_id = 1;
 }
 
@@ -197,7 +208,9 @@ message ActionSet {
 }
 
 message CreateActionSetRequest {
+  // @gotags: validate:"required,min=1,max=100"
   string name = 1;
+  // @gotags: validate:"omitempty,max=500"
   string description = 2;
   // Initial action IDs to include
   repeated string action_ids = 3;
@@ -208,6 +221,7 @@ message CreateActionSetResponse {
 }
 
 message GetActionSetRequest {
+  // @gotags: validate:"required,min=1"
   string action_set_id = 1;
 }
 
@@ -216,8 +230,11 @@ message GetActionSetResponse {
 }
 
 message ListActionSetsRequest {
+  // @gotags: validate:"omitempty,min=0,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
+  // @gotags: validate:"omitempty,max=100"
   optional string search = 3;
 }
 
@@ -228,8 +245,11 @@ message ListActionSetsResponse {
 }
 
 message UpdateActionSetRequest {
+  // @gotags: validate:"required,min=1"
   string action_set_id = 1;
+  // @gotags: validate:"omitempty,min=1,max=100"
   optional string name = 2;
+  // @gotags: validate:"omitempty,max=500"
   optional string description = 3;
 }
 
@@ -238,6 +258,7 @@ message UpdateActionSetResponse {
 }
 
 message DeleteActionSetRequest {
+  // @gotags: validate:"required,min=1"
   string action_set_id = 1;
 }
 
@@ -246,7 +267,9 @@ message DeleteActionSetResponse {
 }
 
 message AddActionsToSetRequest {
+  // @gotags: validate:"required,min=1"
   string action_set_id = 1;
+  // @gotags: validate:"required,min=1,dive,required"
   repeated string action_ids = 2;
 }
 
@@ -255,7 +278,9 @@ message AddActionsToSetResponse {
 }
 
 message RemoveActionsFromSetRequest {
+  // @gotags: validate:"required,min=1"
   string action_set_id = 1;
+  // @gotags: validate:"required,min=1,dive,required"
   repeated string action_ids = 2;
 }
 
@@ -280,7 +305,9 @@ message Definition {
 }
 
 message CreateDefinitionRequest {
+  // @gotags: validate:"required,min=1,max=100"
   string name = 1;
+  // @gotags: validate:"omitempty,max=500"
   string description = 2;
   // Initial action set IDs to include
   repeated string action_set_ids = 3;
@@ -291,6 +318,7 @@ message CreateDefinitionResponse {
 }
 
 message GetDefinitionRequest {
+  // @gotags: validate:"required,min=1"
   string definition_id = 1;
 }
 
@@ -299,8 +327,11 @@ message GetDefinitionResponse {
 }
 
 message ListDefinitionsRequest {
+  // @gotags: validate:"omitempty,min=0,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
+  // @gotags: validate:"omitempty,max=100"
   optional string search = 3;
 }
 
@@ -311,8 +342,11 @@ message ListDefinitionsResponse {
 }
 
 message UpdateDefinitionRequest {
+  // @gotags: validate:"required,min=1"
   string definition_id = 1;
+  // @gotags: validate:"omitempty,min=1,max=100"
   optional string name = 2;
+  // @gotags: validate:"omitempty,max=500"
   optional string description = 3;
 }
 
@@ -321,6 +355,7 @@ message UpdateDefinitionResponse {
 }
 
 message DeleteDefinitionRequest {
+  // @gotags: validate:"required,min=1"
   string definition_id = 1;
 }
 
@@ -329,7 +364,9 @@ message DeleteDefinitionResponse {
 }
 
 message AddActionSetsToDefinitionRequest {
+  // @gotags: validate:"required,min=1"
   string definition_id = 1;
+  // @gotags: validate:"required,min=1,dive,required"
   repeated string action_set_ids = 2;
 }
 
@@ -338,7 +375,9 @@ message AddActionSetsToDefinitionResponse {
 }
 
 message RemoveActionSetsFromDefinitionRequest {
+  // @gotags: validate:"required,min=1"
   string definition_id = 1;
+  // @gotags: validate:"required,min=1,dive,required"
   repeated string action_set_ids = 2;
 }
 
@@ -396,11 +435,17 @@ message Assignment {
 }
 
 message CreateAssignmentRequest {
+  // @gotags: validate:"required,oneof=1 2 3"
   AssignmentSourceType source_type = 1;
+  // @gotags: validate:"required,min=1"
   string source_id = 2;
+  // @gotags: validate:"required,oneof=1 2"
   AssignmentTargetType target_type = 3;
+  // @gotags: validate:"required,min=1"
   string target_id = 4;
+  // @gotags: validate:"omitempty,min=0,max=1000"
   int32 priority = 5;
+  // @gotags: validate:"omitempty,oneof=0 1 2 3"
   AssignmentState state = 6;
 }
 
@@ -409,7 +454,9 @@ message CreateAssignmentResponse {
 }
 
 message ListAssignmentsRequest {
+  // @gotags: validate:"omitempty,min=0,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
   // Filter by source
   optional AssignmentSourceType source_type = 3;
@@ -426,6 +473,7 @@ message ListAssignmentsResponse {
 }
 
 message DeleteAssignmentRequest {
+  // @gotags: validate:"required,min=1"
   string assignment_id = 1;
 }
 
@@ -438,6 +486,7 @@ message DeleteAssignmentResponse {
 // =============================================================================
 
 message GetEffectiveActionsRequest {
+  // @gotags: validate:"required,min=1"
   string device_id = 1;
 }
 

@@ -1,4 +1,4 @@
-.PHONY: all clean generate deps deps-ts generate-go generate-ts verify
+.PHONY: all clean generate deps deps-ts generate-go generate-ts verify inject-tags
 
 PROTO_DIR := proto
 GEN_DIR_GO := gen/go
@@ -17,6 +17,7 @@ deps:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_VERSION)
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION)
 	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@$(PROTOC_GEN_CONNECT_GO_VERSION)
+	go install github.com/favadi/protoc-go-inject-tag@latest
 
 deps-ts:
 	@echo "Installing TypeScript protoc plugins..."
@@ -26,7 +27,7 @@ deps-ts:
 		npm install; \
 	fi
 
-generate: generate-go generate-ts
+generate: generate-go inject-tags generate-ts
 
 generate-go: deps
 	@echo "Generating Go code from proto files..."
@@ -41,6 +42,12 @@ generate-go: deps
 		--connect-go_opt=paths=source_relative \
 		$(PROTO_FILES)
 	@echo "Go generation complete."
+
+# Inject validation tags using protoc-go-inject-tag
+inject-tags:
+	@echo "Injecting validation tags into generated Go code..."
+	@find $(GEN_DIR_GO) -name "*.pb.go" -exec protoc-go-inject-tag -input={} \;
+	@echo "Validation tags injected."
 
 generate-ts: deps-ts
 	@echo "Generating TypeScript code from proto files..."

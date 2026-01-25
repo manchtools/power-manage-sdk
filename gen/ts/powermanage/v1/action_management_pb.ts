@@ -197,16 +197,22 @@ export class ManagedAction extends Message<ManagedAction> {
  */
 export class CreateManagedActionRequest extends Message<CreateManagedActionRequest> {
   /**
+   * @gotags: validate:"required,min=1,max=100"
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: string description = 2;
    */
   description = "";
 
   /**
+   * @gotags: validate:"required"
+   *
    * @generated from field: powermanage.v1.ActionType type = 3;
    */
   type = ActionType.UNSPECIFIED;
@@ -295,6 +301,8 @@ export class CreateManagedActionResponse extends Message<CreateManagedActionResp
  */
 export class GetManagedActionRequest extends Message<GetManagedActionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_id = 1;
    */
   actionId = "";
@@ -369,11 +377,15 @@ export class GetManagedActionResponse extends Message<GetManagedActionResponse> 
  */
 export class ListManagedActionsRequest extends Message<ListManagedActionsRequest> {
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 1;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
@@ -384,6 +396,8 @@ export class ListManagedActionsRequest extends Message<ListManagedActionsRequest
   typeFilter?: ActionType;
 
   /**
+   * @gotags: validate:"omitempty,max=100"
+   *
    * @generated from field: optional string search = 4;
    */
   search?: string;
@@ -473,16 +487,22 @@ export class ListManagedActionsResponse extends Message<ListManagedActionsRespon
  */
 export class UpdateManagedActionRequest extends Message<UpdateManagedActionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_id = 1;
    */
   actionId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=1,max=100"
+   *
    * @generated from field: optional string name = 2;
    */
   name?: string;
 
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: optional string description = 3;
    */
   description?: string;
@@ -571,6 +591,8 @@ export class UpdateManagedActionResponse extends Message<UpdateManagedActionResp
  */
 export class DeleteManagedActionRequest extends Message<DeleteManagedActionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_id = 1;
    */
   actionId = "";
@@ -714,11 +736,15 @@ export class ActionSet extends Message<ActionSet> {
  */
 export class CreateActionSetRequest extends Message<CreateActionSetRequest> {
   /**
+   * @gotags: validate:"required,min=1,max=100"
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: string description = 2;
    */
   description = "";
@@ -802,6 +828,8 @@ export class CreateActionSetResponse extends Message<CreateActionSetResponse> {
  */
 export class GetActionSetRequest extends Message<GetActionSetRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_set_id = 1;
    */
   actionSetId = "";
@@ -876,16 +904,22 @@ export class GetActionSetResponse extends Message<GetActionSetResponse> {
  */
 export class ListActionSetsRequest extends Message<ListActionSetsRequest> {
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 1;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
 
   /**
+   * @gotags: validate:"omitempty,max=100"
+   *
    * @generated from field: optional string search = 3;
    */
   search?: string;
@@ -974,16 +1008,22 @@ export class ListActionSetsResponse extends Message<ListActionSetsResponse> {
  */
 export class UpdateActionSetRequest extends Message<UpdateActionSetRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_set_id = 1;
    */
   actionSetId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=1,max=100"
+   *
    * @generated from field: optional string name = 2;
    */
   name?: string;
 
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: optional string description = 3;
    */
   description?: string;
@@ -1060,6 +1100,8 @@ export class UpdateActionSetResponse extends Message<UpdateActionSetResponse> {
  */
 export class DeleteActionSetRequest extends Message<DeleteActionSetRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_set_id = 1;
    */
   actionSetId = "";
@@ -1134,11 +1176,15 @@ export class DeleteActionSetResponse extends Message<DeleteActionSetResponse> {
  */
 export class AddActionsToSetRequest extends Message<AddActionsToSetRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_set_id = 1;
    */
   actionSetId = "";
 
   /**
+   * @gotags: validate:"required,min=1,dive,required"
+   *
    * @generated from field: repeated string action_ids = 2;
    */
   actionIds: string[] = [];
@@ -1214,11 +1260,15 @@ export class AddActionsToSetResponse extends Message<AddActionsToSetResponse> {
  */
 export class RemoveActionsFromSetRequest extends Message<RemoveActionsFromSetRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string action_set_id = 1;
    */
   actionSetId = "";
 
   /**
+   * @gotags: validate:"required,min=1,dive,required"
+   *
    * @generated from field: repeated string action_ids = 2;
    */
   actionIds: string[] = [];
@@ -1363,11 +1413,15 @@ export class Definition extends Message<Definition> {
  */
 export class CreateDefinitionRequest extends Message<CreateDefinitionRequest> {
   /**
+   * @gotags: validate:"required,min=1,max=100"
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: string description = 2;
    */
   description = "";
@@ -1451,6 +1505,8 @@ export class CreateDefinitionResponse extends Message<CreateDefinitionResponse> 
  */
 export class GetDefinitionRequest extends Message<GetDefinitionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string definition_id = 1;
    */
   definitionId = "";
@@ -1525,16 +1581,22 @@ export class GetDefinitionResponse extends Message<GetDefinitionResponse> {
  */
 export class ListDefinitionsRequest extends Message<ListDefinitionsRequest> {
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 1;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
 
   /**
+   * @gotags: validate:"omitempty,max=100"
+   *
    * @generated from field: optional string search = 3;
    */
   search?: string;
@@ -1623,16 +1685,22 @@ export class ListDefinitionsResponse extends Message<ListDefinitionsResponse> {
  */
 export class UpdateDefinitionRequest extends Message<UpdateDefinitionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string definition_id = 1;
    */
   definitionId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=1,max=100"
+   *
    * @generated from field: optional string name = 2;
    */
   name?: string;
 
   /**
+   * @gotags: validate:"omitempty,max=500"
+   *
    * @generated from field: optional string description = 3;
    */
   description?: string;
@@ -1709,6 +1777,8 @@ export class UpdateDefinitionResponse extends Message<UpdateDefinitionResponse> 
  */
 export class DeleteDefinitionRequest extends Message<DeleteDefinitionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string definition_id = 1;
    */
   definitionId = "";
@@ -1783,11 +1853,15 @@ export class DeleteDefinitionResponse extends Message<DeleteDefinitionResponse> 
  */
 export class AddActionSetsToDefinitionRequest extends Message<AddActionSetsToDefinitionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string definition_id = 1;
    */
   definitionId = "";
 
   /**
+   * @gotags: validate:"required,min=1,dive,required"
+   *
    * @generated from field: repeated string action_set_ids = 2;
    */
   actionSetIds: string[] = [];
@@ -1863,11 +1937,15 @@ export class AddActionSetsToDefinitionResponse extends Message<AddActionSetsToDe
  */
 export class RemoveActionSetsFromDefinitionRequest extends Message<RemoveActionSetsFromDefinitionRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string definition_id = 1;
    */
   definitionId = "";
 
   /**
+   * @gotags: validate:"required,min=1,dive,required"
+   *
    * @generated from field: repeated string action_set_ids = 2;
    */
   actionSetIds: string[] = [];
@@ -2046,31 +2124,43 @@ export class Assignment extends Message<Assignment> {
  */
 export class CreateAssignmentRequest extends Message<CreateAssignmentRequest> {
   /**
+   * @gotags: validate:"required,oneof=1 2 3"
+   *
    * @generated from field: powermanage.v1.AssignmentSourceType source_type = 1;
    */
   sourceType = AssignmentSourceType.UNSPECIFIED;
 
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string source_id = 2;
    */
   sourceId = "";
 
   /**
+   * @gotags: validate:"required,oneof=1 2"
+   *
    * @generated from field: powermanage.v1.AssignmentTargetType target_type = 3;
    */
   targetType = AssignmentTargetType.UNSPECIFIED;
 
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string target_id = 4;
    */
   targetId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=0,max=1000"
+   *
    * @generated from field: int32 priority = 5;
    */
   priority = 0;
 
   /**
+   * @gotags: validate:"omitempty,oneof=0 1 2 3"
+   *
    * @generated from field: powermanage.v1.AssignmentState state = 6;
    */
   state = AssignmentState.UNSPECIFIED;
@@ -2150,11 +2240,15 @@ export class CreateAssignmentResponse extends Message<CreateAssignmentResponse> 
  */
 export class ListAssignmentsRequest extends Message<ListAssignmentsRequest> {
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 1;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
@@ -2270,6 +2364,8 @@ export class ListAssignmentsResponse extends Message<ListAssignmentsResponse> {
  */
 export class DeleteAssignmentRequest extends Message<DeleteAssignmentRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string assignment_id = 1;
    */
   assignmentId = "";
@@ -2344,6 +2440,8 @@ export class DeleteAssignmentResponse extends Message<DeleteAssignmentResponse> 
  */
 export class GetEffectiveActionsRequest extends Message<GetEffectiveActionsRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId = "";

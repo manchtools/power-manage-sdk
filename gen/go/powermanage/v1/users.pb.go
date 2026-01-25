@@ -26,9 +26,12 @@ type CreateUserRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Username    string   `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	DisplayName string   `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Role        UserRole `protobuf:"varint,3,opt,name=role,proto3,enum=powermanage.v1.UserRole" json:"role,omitempty"`
+	// @gotags: validate:"required,min=3,max=50,alphanum"
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=3,max=50,alphanum"`
+	// @gotags: validate:"required,min=1,max=100"
+	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty" validate:"required,min=1,max=100"`
+	// @gotags: validate:"required,oneof=0 1 2"
+	Role UserRole `protobuf:"varint,3,opt,name=role,proto3,enum=powermanage.v1.UserRole" json:"role,omitempty" validate:"required,oneof=0 1 2"`
 	// If true, also generate a registration code
 	GenerateRegistrationCode bool `protobuf:"varint,4,opt,name=generate_registration_code,json=generateRegistrationCode,proto3" json:"generate_registration_code,omitempty"`
 }
@@ -154,7 +157,8 @@ type GetUserRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *GetUserRequest) Reset() {
@@ -248,8 +252,10 @@ type ListUsersRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PageSize  int32  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Filter by role
 	RoleFilter *UserRole `protobuf:"varint,3,opt,name=role_filter,json=roleFilter,proto3,enum=powermanage.v1.UserRole,oneof" json:"role_filter,omitempty"`
 }
@@ -375,8 +381,10 @@ type UpdateUserRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId      string    `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName *string   `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
+	// @gotags: validate:"required,min=1"
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=1,max=100"
+	DisplayName *string   `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty" validate:"omitempty,min=1,max=100"`
 	Role        *UserRole `protobuf:"varint,3,opt,name=role,proto3,enum=powermanage.v1.UserRole,oneof" json:"role,omitempty"` // Admin only
 }
 
@@ -485,7 +493,8 @@ type DeleteUserRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *DeleteUserRequest) Reset() {
@@ -682,9 +691,11 @@ type CreateRegistrationCodeRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,min=1"`
 	// Duration in seconds (default 24h)
-	ExpiresInSeconds *int64 `protobuf:"varint,2,opt,name=expires_in_seconds,json=expiresInSeconds,proto3,oneof" json:"expires_in_seconds,omitempty"`
+	// @gotags: validate:"omitempty,min=60,max=604800"
+	ExpiresInSeconds *int64 `protobuf:"varint,2,opt,name=expires_in_seconds,json=expiresInSeconds,proto3,oneof" json:"expires_in_seconds,omitempty" validate:"omitempty,min=60,max=604800"`
 }
 
 func (x *CreateRegistrationCodeRequest) Reset() {
@@ -921,7 +932,8 @@ type RevokeRegistrationCodeRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	CodeId string `protobuf:"bytes,1,opt,name=code_id,json=codeId,proto3" json:"code_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	CodeId string `protobuf:"bytes,1,opt,name=code_id,json=codeId,proto3" json:"code_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *RevokeRegistrationCodeRequest) Reset() {
@@ -1110,7 +1122,8 @@ type RevokeCredentialRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	CredentialId string `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	CredentialId string `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *RevokeCredentialRequest) Reset() {
@@ -1204,8 +1217,10 @@ type RenameCredentialRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	CredentialId string `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
-	NewName      string `protobuf:"bytes,2,opt,name=new_name,json=newName,proto3" json:"new_name,omitempty"`
+	// @gotags: validate:"required,min=1"
+	CredentialId string `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"required,min=1,max=100"
+	NewName string `protobuf:"bytes,2,opt,name=new_name,json=newName,proto3" json:"new_name,omitempty" validate:"required,min=1,max=100"`
 }
 
 func (x *RenameCredentialRequest) Reset() {

@@ -219,14 +219,17 @@ type ListDevicesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PageSize  int32  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Filter by status
 	StatusFilter *DeviceStatus `protobuf:"varint,3,opt,name=status_filter,json=statusFilter,proto3,enum=powermanage.v1.DeviceStatus,oneof" json:"status_filter,omitempty"`
 	// Filter by label (key=value)
 	LabelFilter map[string]string `protobuf:"bytes,4,rep,name=label_filter,json=labelFilter,proto3" json:"label_filter,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Search hostname/display_name
-	Search *string `protobuf:"bytes,5,opt,name=search,proto3,oneof" json:"search,omitempty"`
+	// @gotags: validate:"omitempty,max=100"
+	Search *string `protobuf:"bytes,5,opt,name=search,proto3,oneof" json:"search,omitempty" validate:"omitempty,max=100"`
 }
 
 func (x *ListDevicesRequest) Reset() {
@@ -364,7 +367,8 @@ type GetDeviceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *GetDeviceRequest) Reset() {
@@ -547,8 +551,10 @@ type UpdateDeviceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DeviceId    string  `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	DisplayName *string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=1,max=100"
+	DisplayName *string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty" validate:"omitempty,min=1,max=100"`
 	// Labels to set (replaces all labels)
 	Labels map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// If true, only update provided labels without removing existing ones
@@ -667,7 +673,8 @@ type DeleteDeviceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *DeleteDeviceRequest) Reset() {
@@ -864,9 +871,11 @@ type CreateRegistrationTokenRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Description string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
+	// @gotags: validate:"omitempty,max=500"
+	Description string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=500"`
 	// Duration in seconds (default 24h)
-	ExpiresInSeconds *int64 `protobuf:"varint,2,opt,name=expires_in_seconds,json=expiresInSeconds,proto3,oneof" json:"expires_in_seconds,omitempty"`
+	// @gotags: validate:"omitempty,min=60,max=604800"
+	ExpiresInSeconds *int64 `protobuf:"varint,2,opt,name=expires_in_seconds,json=expiresInSeconds,proto3,oneof" json:"expires_in_seconds,omitempty" validate:"omitempty,min=60,max=604800"`
 }
 
 func (x *CreateRegistrationTokenRequest) Reset() {
@@ -1093,7 +1102,8 @@ type RevokeRegistrationTokenRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TokenId string `protobuf:"bytes,1,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
+	// @gotags: validate:"required,min=1"
+	TokenId string `protobuf:"bytes,1,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty" validate:"required,min=1"`
 }
 
 func (x *RevokeRegistrationTokenRequest) Reset() {
@@ -1187,9 +1197,12 @@ type GetDeviceHistoryRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DeviceId  string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	PageSize  int32  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// @gotags: validate:"required,min=1"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,min=0,max=100"
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Filter by action
 	ActionId *string `protobuf:"bytes,4,opt,name=action_id,json=actionId,proto3,oneof" json:"action_id,omitempty"`
 	// Filter by time range

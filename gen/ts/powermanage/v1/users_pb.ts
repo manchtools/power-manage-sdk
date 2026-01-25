@@ -12,16 +12,22 @@ import { User, UserRole, WebAuthnCredential } from "./auth_pb.js";
  */
 export class CreateUserRequest extends Message<CreateUserRequest> {
   /**
+   * @gotags: validate:"required,min=3,max=50,alphanum"
+   *
    * @generated from field: string username = 1;
    */
   username = "";
 
   /**
+   * @gotags: validate:"required,min=1,max=100"
+   *
    * @generated from field: string display_name = 2;
    */
   displayName = "";
 
   /**
+   * @gotags: validate:"required,oneof=0 1 2"
+   *
    * @generated from field: powermanage.v1.UserRole role = 3;
    */
   role = UserRole.UNSPECIFIED;
@@ -114,6 +120,8 @@ export class CreateUserResponse extends Message<CreateUserResponse> {
  */
 export class GetUserRequest extends Message<GetUserRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string user_id = 1;
    */
   userId = "";
@@ -188,11 +196,15 @@ export class GetUserResponse extends Message<GetUserResponse> {
  */
 export class ListUsersRequest extends Message<ListUsersRequest> {
   /**
+   * @gotags: validate:"omitempty,min=0,max=100"
+   *
    * @generated from field: int32 page_size = 1;
    */
   pageSize = 0;
 
   /**
+   * @gotags: validate:"omitempty"
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
@@ -288,11 +300,15 @@ export class ListUsersResponse extends Message<ListUsersResponse> {
  */
 export class UpdateUserRequest extends Message<UpdateUserRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string user_id = 1;
    */
   userId = "";
 
   /**
+   * @gotags: validate:"omitempty,min=1,max=100"
+   *
    * @generated from field: optional string display_name = 2;
    */
   displayName?: string;
@@ -376,6 +392,8 @@ export class UpdateUserResponse extends Message<UpdateUserResponse> {
  */
 export class DeleteUserRequest extends Message<DeleteUserRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string user_id = 1;
    */
   userId = "";
@@ -533,12 +551,15 @@ export class RegistrationCode extends Message<RegistrationCode> {
  */
 export class CreateRegistrationCodeRequest extends Message<CreateRegistrationCodeRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string user_id = 1;
    */
   userId = "";
 
   /**
    * Duration in seconds (default 24h)
+   * @gotags: validate:"omitempty,min=60,max=604800"
    *
    * @generated from field: optional int64 expires_in_seconds = 2;
    */
@@ -723,6 +744,8 @@ export class ListRegistrationCodesResponse extends Message<ListRegistrationCodes
  */
 export class RevokeRegistrationCodeRequest extends Message<RevokeRegistrationCodeRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string code_id = 1;
    */
   codeId = "";
@@ -873,6 +896,8 @@ export class ListCredentialsResponse extends Message<ListCredentialsResponse> {
  */
 export class RevokeCredentialRequest extends Message<RevokeCredentialRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string credential_id = 1;
    */
   credentialId = "";
@@ -947,11 +972,15 @@ export class RevokeCredentialResponse extends Message<RevokeCredentialResponse> 
  */
 export class RenameCredentialRequest extends Message<RenameCredentialRequest> {
   /**
+   * @gotags: validate:"required,min=1"
+   *
    * @generated from field: string credential_id = 1;
    */
   credentialId = "";
 
   /**
+   * @gotags: validate:"required,min=1,max=100"
+   *
    * @generated from field: string new_name = 2;
    */
   newName = "";
