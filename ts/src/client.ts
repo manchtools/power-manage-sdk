@@ -46,11 +46,8 @@ export class PowerManageClient {
   public readonly assignments: Client<typeof AssignmentService>;
 
   constructor(options: PowerManageClientOptions = {}) {
-    const serverUrl = options.serverUrl || getConfigStore().getServerUrl();
-
-    if (!serverUrl) {
-      throw new Error('Server URL not configured. Set it via options or ConfigStore.');
-    }
+    // Use configured URL, or empty string for same-origin requests (via proxy)
+    const serverUrl = options.serverUrl ?? getConfigStore().getServerUrl() ?? '';
 
     this.transport = createConnectTransport({
       baseUrl: serverUrl,
