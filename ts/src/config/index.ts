@@ -4,6 +4,7 @@ const STORAGE_KEY = 'pm_config';
 
 export interface AppConfig {
   serverUrl: string;
+  configured?: boolean; // true after user completes setup (allows empty serverUrl for proxy)
   theme?: 'light' | 'dark' | 'system';
   locale?: string;
 }
@@ -37,19 +38,21 @@ export class ConfigStore {
   }
 
   /**
-   * Check if server URL is configured.
+   * Check if setup has been completed.
+   * Returns true if user went through setup (even with empty URL for proxy mode).
    */
   isConfigured(): boolean {
-    return !!this.config.serverUrl;
+    return this.config.configured === true;
   }
 
   /**
-   * Set the server URL.
+   * Set the server URL and mark as configured.
    */
   setServerUrl(url: string): void {
     // Normalize URL (remove trailing slash)
     const normalized = url.replace(/\/+$/, '');
     this.config.serverUrl = normalized;
+    this.config.configured = true;
     this.persist();
     this.notify();
   }
@@ -88,7 +91,7 @@ export class ConfigStore {
    * Clear all configuration.
    */
   clear(): void {
-    this.config = { serverUrl: '' };
+    this.config = { serverUrl: '', configured: false };
     localStorage.removeItem(STORAGE_KEY);
     this.notify();
   }
@@ -113,7 +116,7 @@ export class ConfigStore {
     } catch {
       // Ignore parse errors
     }
-    return { serverUrl: '' };
+    return { serverUrl: '', configured: false };
   }
 
   private persist(): void {
