@@ -79,7 +79,7 @@ message Device {
 // =============================================================================
 
 message ListDevicesRequest {
-  // @gotags: validate:"omitempty,min=0,max=100"
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 1;
   // @gotags: validate:"omitempty"
   string page_token = 2;
@@ -197,7 +197,7 @@ message RevokeRegistrationTokenResponse {
 message GetDeviceHistoryRequest {
   // @gotags: validate:"required,min=1"
   string device_id = 1;
-  // @gotags: validate:"omitempty,min=0,max=100"
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 2;
   // @gotags: validate:"omitempty"
   string page_token = 3;

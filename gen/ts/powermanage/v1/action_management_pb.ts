@@ -377,7 +377,7 @@ export class GetManagedActionResponse extends Message<GetManagedActionResponse> 
  */
 export class ListManagedActionsRequest extends Message<ListManagedActionsRequest> {
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 1;
    */
@@ -904,7 +904,7 @@ export class GetActionSetResponse extends Message<GetActionSetResponse> {
  */
 export class ListActionSetsRequest extends Message<ListActionSetsRequest> {
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 1;
    */
@@ -1581,7 +1581,7 @@ export class GetDefinitionResponse extends Message<GetDefinitionResponse> {
  */
 export class ListDefinitionsRequest extends Message<ListDefinitionsRequest> {
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 1;
    */
@@ -2240,7 +2240,7 @@ export class CreateAssignmentResponse extends Message<CreateAssignmentResponse> 
  */
 export class ListAssignmentsRequest extends Message<ListAssignmentsRequest> {
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 1;
    */

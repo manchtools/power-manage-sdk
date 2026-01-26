@@ -219,8 +219,8 @@ type ListDevicesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// @gotags: validate:"omitempty,min=0,max=100"
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty,gte=0,lte=100"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=0,lte=100"`
 	// @gotags: validate:"omitempty"
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Filter by status
@@ -1199,8 +1199,8 @@ type GetDeviceHistoryRequest struct {
 
 	// @gotags: validate:"required,min=1"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,min=1"`
-	// @gotags: validate:"omitempty,min=0,max=100"
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=0,max=100"`
+	// @gotags: validate:"omitempty,gte=0,lte=100"
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=0,lte=100"`
 	// @gotags: validate:"omitempty"
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Filter by action
