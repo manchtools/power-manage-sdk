@@ -11,7 +11,7 @@ export async function cacheDevices(): Promise<CachedDevice[]> {
   const db = getDB();
 
   const response = await client.devices.listDevices({
-    pageSize: 1000,
+    pageSize: 100,
   });
 
   const cachedAt = new Date();
