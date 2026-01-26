@@ -171,7 +171,7 @@ export class Device extends Message<Device> {
  */
 export class ListDevicesRequest extends Message<ListDevicesRequest> {
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 1;
    */
@@ -966,7 +966,7 @@ export class GetDeviceHistoryRequest extends Message<GetDeviceHistoryRequest> {
   deviceId = "";
 
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 2;
    */

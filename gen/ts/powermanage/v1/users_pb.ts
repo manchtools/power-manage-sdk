@@ -196,7 +196,7 @@ export class GetUserResponse extends Message<GetUserResponse> {
  */
 export class ListUsersRequest extends Message<ListUsersRequest> {
   /**
-   * @gotags: validate:"omitempty,min=0,max=100"
+   * @gotags: validate:"omitempty,gte=0,lte=100"
    *
    * @generated from field: int32 page_size = 1;
    */

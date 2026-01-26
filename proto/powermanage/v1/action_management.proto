@@ -150,7 +150,7 @@ message GetManagedActionResponse {
 }
 
 message ListManagedActionsRequest {
-  // @gotags: validate:"omitempty,min=0,max=100"
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 1;
   // @gotags: validate:"omitempty"
   string page_token = 2;
@@ -230,7 +230,7 @@ message GetActionSetResponse {
 }
 
 message ListActionSetsRequest {
-  // @gotags: validate:"omitempty,min=0,max=100"
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 1;
   // @gotags: validate:"omitempty"
   string page_token = 2;
@@ -327,7 +327,7 @@ message GetDefinitionResponse {
 }
 
 message ListDefinitionsRequest {
-  // @gotags: validate:"omitempty,min=0,max=100"
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 1;
   // @gotags: validate:"omitempty"
   string page_token = 2;
@@ -454,7 +454,7 @@ message CreateAssignmentResponse {
 }
 
 message ListAssignmentsRequest {
-  // @gotags: validate:"omitempty,min=0,max=100"
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 1;
   // @gotags: validate:"omitempty"
   string page_token = 2;
