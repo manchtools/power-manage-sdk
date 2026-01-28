@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: powermanage/v1/actions.proto
+// source: pm/v1/actions.proto
 
-package powermanagev1
+package pmv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -75,11 +75,11 @@ func (x ActionType) String() string {
 }
 
 func (ActionType) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[0].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[0].Descriptor()
 }
 
 func (ActionType) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[0]
+	return &file_pm_v1_actions_proto_enumTypes[0]
 }
 
 func (x ActionType) Number() protoreflect.EnumNumber {
@@ -88,7 +88,7 @@ func (x ActionType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActionType.Descriptor instead.
 func (ActionType) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{0}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{0}
 }
 
 type SystemdUnitState int32
@@ -127,11 +127,11 @@ func (x SystemdUnitState) String() string {
 }
 
 func (SystemdUnitState) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[1].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[1].Descriptor()
 }
 
 func (SystemdUnitState) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[1]
+	return &file_pm_v1_actions_proto_enumTypes[1]
 }
 
 func (x SystemdUnitState) Number() protoreflect.EnumNumber {
@@ -140,7 +140,7 @@ func (x SystemdUnitState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SystemdUnitState.Descriptor instead.
 func (SystemdUnitState) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
 type Action struct {
@@ -148,9 +148,9 @@ type Action struct {
 	// @gotags: validate:"required"
 	Id *ActionId `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required"`
 	// @gotags: validate:"required,ne=0"
-	Type ActionType `protobuf:"varint,2,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty" validate:"required,ne=0"`
+	Type ActionType `protobuf:"varint,2,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty" validate:"required,ne=0"`
 	// @gotags: validate:"omitempty"
-	DesiredState DesiredState `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState DesiredState `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0,lte=3600"
 	TimeoutSeconds int32 `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty" validate:"omitempty,gte=0,lte=3600"`
 	// Type-specific parameters
@@ -169,7 +169,7 @@ type Action struct {
 
 func (x *Action) Reset() {
 	*x = Action{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[0]
+	mi := &file_pm_v1_actions_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -181,7 +181,7 @@ func (x *Action) String() string {
 func (*Action) ProtoMessage() {}
 
 func (x *Action) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[0]
+	mi := &file_pm_v1_actions_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -194,7 +194,7 @@ func (x *Action) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Action.ProtoReflect.Descriptor instead.
 func (*Action) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{0}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Action) GetId() *ActionId {
@@ -327,7 +327,7 @@ type PackageParams struct {
 
 func (x *PackageParams) Reset() {
 	*x = PackageParams{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[1]
+	mi := &file_pm_v1_actions_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +339,7 @@ func (x *PackageParams) String() string {
 func (*PackageParams) ProtoMessage() {}
 
 func (x *PackageParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[1]
+	mi := &file_pm_v1_actions_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +352,7 @@ func (x *PackageParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageParams.ProtoReflect.Descriptor instead.
 func (*PackageParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *PackageParams) GetName() string {
@@ -397,7 +397,7 @@ type AppInstallParams struct {
 
 func (x *AppInstallParams) Reset() {
 	*x = AppInstallParams{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[2]
+	mi := &file_pm_v1_actions_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +409,7 @@ func (x *AppInstallParams) String() string {
 func (*AppInstallParams) ProtoMessage() {}
 
 func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[2]
+	mi := &file_pm_v1_actions_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +422,7 @@ func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppInstallParams.ProtoReflect.Descriptor instead.
 func (*AppInstallParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AppInstallParams) GetUrl() string {
@@ -464,7 +464,7 @@ type ShellParams struct {
 
 func (x *ShellParams) Reset() {
 	*x = ShellParams{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[3]
+	mi := &file_pm_v1_actions_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -476,7 +476,7 @@ func (x *ShellParams) String() string {
 func (*ShellParams) ProtoMessage() {}
 
 func (x *ShellParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[3]
+	mi := &file_pm_v1_actions_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +489,7 @@ func (x *ShellParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShellParams.ProtoReflect.Descriptor instead.
 func (*ShellParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ShellParams) GetScript() string {
@@ -532,7 +532,7 @@ type SystemdParams struct {
 	// @gotags: validate:"required,min=1,max=255"
 	UnitName string `protobuf:"bytes,1,opt,name=unit_name,json=unitName,proto3" json:"unit_name,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"omitempty"
-	DesiredState SystemdUnitState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.SystemdUnitState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState SystemdUnitState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.SystemdUnitState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty"
 	Enable bool `protobuf:"varint,3,opt,name=enable,proto3" json:"enable,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,max=65536"
@@ -543,7 +543,7 @@ type SystemdParams struct {
 
 func (x *SystemdParams) Reset() {
 	*x = SystemdParams{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[4]
+	mi := &file_pm_v1_actions_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -555,7 +555,7 @@ func (x *SystemdParams) String() string {
 func (*SystemdParams) ProtoMessage() {}
 
 func (x *SystemdParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[4]
+	mi := &file_pm_v1_actions_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -568,7 +568,7 @@ func (x *SystemdParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemdParams.ProtoReflect.Descriptor instead.
 func (*SystemdParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SystemdParams) GetUnitName() string {
@@ -617,7 +617,7 @@ type FileParams struct {
 
 func (x *FileParams) Reset() {
 	*x = FileParams{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[5]
+	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -629,7 +629,7 @@ func (x *FileParams) String() string {
 func (*FileParams) ProtoMessage() {}
 
 func (x *FileParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[5]
+	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -642,7 +642,7 @@ func (x *FileParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileParams.ProtoReflect.Descriptor instead.
 func (*FileParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *FileParams) GetPath() string {
@@ -685,7 +685,7 @@ type ActionResult struct {
 	// @gotags: validate:"required"
 	ActionId *ActionId `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required"`
 	// @gotags: validate:"required"
-	Status ExecutionStatus `protobuf:"varint,2,opt,name=status,proto3,enum=powermanage.v1.ExecutionStatus" json:"status,omitempty" validate:"required"`
+	Status ExecutionStatus `protobuf:"varint,2,opt,name=status,proto3,enum=pm.v1.ExecutionStatus" json:"status,omitempty" validate:"required"`
 	// @gotags: validate:"omitempty,max=4096"
 	Error string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty" validate:"omitempty,max=4096"`
 	// @gotags: validate:"omitempty"
@@ -700,7 +700,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_powermanage_v1_actions_proto_msgTypes[6]
+	mi := &file_pm_v1_actions_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -712,7 +712,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_actions_proto_msgTypes[6]
+	mi := &file_pm_v1_actions_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -725,7 +725,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -770,22 +770,22 @@ func (x *ActionResult) GetDurationMs() int64 {
 	return 0
 }
 
-var File_powermanage_v1_actions_proto protoreflect.FileDescriptor
+var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
-const file_powermanage_v1_actions_proto_rawDesc = "" +
+const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x1cpowermanage/v1/actions.proto\x12\x0epowermanage.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bpowermanage/v1/common.proto\"\xeb\x03\n" +
-	"\x06Action\x12(\n" +
-	"\x02id\x18\x01 \x01(\v2\x18.powermanage.v1.ActionIdR\x02id\x12.\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\x04type\x12A\n" +
-	"\rdesired_state\x18\x03 \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12'\n" +
-	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x129\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xa3\x03\n" +
+	"\x06Action\x12\x1f\n" +
+	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
+	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
+	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x120\n" +
 	"\apackage\x18\n" +
-	" \x01(\v2\x1d.powermanage.v1.PackageParamsH\x00R\apackage\x124\n" +
-	"\x03app\x18\v \x01(\v2 .powermanage.v1.AppInstallParamsH\x00R\x03app\x123\n" +
-	"\x05shell\x18\f \x01(\v2\x1b.powermanage.v1.ShellParamsH\x00R\x05shell\x129\n" +
-	"\asystemd\x18\r \x01(\v2\x1d.powermanage.v1.SystemdParamsH\x00R\asystemd\x120\n" +
-	"\x04file\x18\x0e \x01(\v2\x1a.powermanage.v1.FileParamsH\x00R\x04fileB\b\n" +
+	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04fileB\b\n" +
 	"\x06params\"x\n" +
 	"\rPackageParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
@@ -795,19 +795,19 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
-	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xa4\x02\n" +
+	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\x9b\x02\n" +
 	"\vShellParams\x12\x16\n" +
 	"\x06script\x18\x01 \x01(\tR\x06script\x12 \n" +
 	"\vinterpreter\x18\x02 \x01(\tR\vinterpreter\x12\x1e\n" +
 	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x12+\n" +
-	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12N\n" +
-	"\venvironment\x18\x05 \x03(\v2,.powermanage.v1.ShellParams.EnvironmentEntryR\venvironment\x1a>\n" +
+	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12E\n" +
+	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xae\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +
 	"\rSystemdParams\x12\x1b\n" +
-	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12E\n" +
-	"\rdesired_state\x18\x02 \x01(\x0e2 .powermanage.v1.SystemdUnitStateR\fdesiredState\x12\x16\n" +
+	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12<\n" +
+	"\rdesired_state\x18\x02 \x01(\x0e2\x17.pm.v1.SystemdUnitStateR\fdesiredState\x12\x16\n" +
 	"\x06enable\x18\x03 \x01(\bR\x06enable\x12!\n" +
 	"\funit_content\x18\x04 \x01(\tR\vunitContent\"z\n" +
 	"\n" +
@@ -816,12 +816,12 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x14\n" +
 	"\x05owner\x18\x03 \x01(\tR\x05owner\x12\x14\n" +
 	"\x05group\x18\x04 \x01(\tR\x05group\x12\x12\n" +
-	"\x04mode\x18\x05 \x01(\tR\x04mode\"\xab\x02\n" +
-	"\fActionResult\x125\n" +
-	"\taction_id\x18\x01 \x01(\v2\x18.powermanage.v1.ActionIdR\bactionId\x127\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x1f.powermanage.v1.ExecutionStatusR\x06status\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\x125\n" +
-	"\x06output\x18\x04 \x01(\v2\x1d.powermanage.v1.CommandOutputR\x06output\x12=\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x90\x02\n" +
+	"\fActionResult\x12,\n" +
+	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12,\n" +
+	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
 	"durationMs*\xd0\x01\n" +
@@ -839,54 +839,54 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03BLZJgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
-	file_powermanage_v1_actions_proto_rawDescOnce sync.Once
-	file_powermanage_v1_actions_proto_rawDescData []byte
+	file_pm_v1_actions_proto_rawDescOnce sync.Once
+	file_pm_v1_actions_proto_rawDescData []byte
 )
 
-func file_powermanage_v1_actions_proto_rawDescGZIP() []byte {
-	file_powermanage_v1_actions_proto_rawDescOnce.Do(func() {
-		file_powermanage_v1_actions_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_actions_proto_rawDesc), len(file_powermanage_v1_actions_proto_rawDesc)))
+func file_pm_v1_actions_proto_rawDescGZIP() []byte {
+	file_pm_v1_actions_proto_rawDescOnce.Do(func() {
+		file_pm_v1_actions_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)))
 	})
-	return file_powermanage_v1_actions_proto_rawDescData
+	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_powermanage_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_powermanage_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_powermanage_v1_actions_proto_goTypes = []any{
-	(ActionType)(0),               // 0: powermanage.v1.ActionType
-	(SystemdUnitState)(0),         // 1: powermanage.v1.SystemdUnitState
-	(*Action)(nil),                // 2: powermanage.v1.Action
-	(*PackageParams)(nil),         // 3: powermanage.v1.PackageParams
-	(*AppInstallParams)(nil),      // 4: powermanage.v1.AppInstallParams
-	(*ShellParams)(nil),           // 5: powermanage.v1.ShellParams
-	(*SystemdParams)(nil),         // 6: powermanage.v1.SystemdParams
-	(*FileParams)(nil),            // 7: powermanage.v1.FileParams
-	(*ActionResult)(nil),          // 8: powermanage.v1.ActionResult
-	nil,                           // 9: powermanage.v1.ShellParams.EnvironmentEntry
-	(*ActionId)(nil),              // 10: powermanage.v1.ActionId
-	(DesiredState)(0),             // 11: powermanage.v1.DesiredState
-	(ExecutionStatus)(0),          // 12: powermanage.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 13: powermanage.v1.CommandOutput
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_pm_v1_actions_proto_goTypes = []any{
+	(ActionType)(0),               // 0: pm.v1.ActionType
+	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
+	(*Action)(nil),                // 2: pm.v1.Action
+	(*PackageParams)(nil),         // 3: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 4: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 5: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 6: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 7: pm.v1.FileParams
+	(*ActionResult)(nil),          // 8: pm.v1.ActionResult
+	nil,                           // 9: pm.v1.ShellParams.EnvironmentEntry
+	(*ActionId)(nil),              // 10: pm.v1.ActionId
+	(DesiredState)(0),             // 11: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 12: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 13: pm.v1.CommandOutput
 	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
 }
-var file_powermanage_v1_actions_proto_depIdxs = []int32{
-	10, // 0: powermanage.v1.Action.id:type_name -> powermanage.v1.ActionId
-	0,  // 1: powermanage.v1.Action.type:type_name -> powermanage.v1.ActionType
-	11, // 2: powermanage.v1.Action.desired_state:type_name -> powermanage.v1.DesiredState
-	3,  // 3: powermanage.v1.Action.package:type_name -> powermanage.v1.PackageParams
-	4,  // 4: powermanage.v1.Action.app:type_name -> powermanage.v1.AppInstallParams
-	5,  // 5: powermanage.v1.Action.shell:type_name -> powermanage.v1.ShellParams
-	6,  // 6: powermanage.v1.Action.systemd:type_name -> powermanage.v1.SystemdParams
-	7,  // 7: powermanage.v1.Action.file:type_name -> powermanage.v1.FileParams
-	9,  // 8: powermanage.v1.ShellParams.environment:type_name -> powermanage.v1.ShellParams.EnvironmentEntry
-	1,  // 9: powermanage.v1.SystemdParams.desired_state:type_name -> powermanage.v1.SystemdUnitState
-	10, // 10: powermanage.v1.ActionResult.action_id:type_name -> powermanage.v1.ActionId
-	12, // 11: powermanage.v1.ActionResult.status:type_name -> powermanage.v1.ExecutionStatus
-	13, // 12: powermanage.v1.ActionResult.output:type_name -> powermanage.v1.CommandOutput
-	14, // 13: powermanage.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+var file_pm_v1_actions_proto_depIdxs = []int32{
+	10, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
+	11, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	3,  // 3: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	4,  // 4: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	5,  // 5: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	6,  // 6: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
+	7,  // 7: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	9,  // 8: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 9: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	10, // 10: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	12, // 11: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	13, // 12: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	14, // 13: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
 	14, // [14:14] is the sub-list for method output_type
 	14, // [14:14] is the sub-list for method input_type
 	14, // [14:14] is the sub-list for extension type_name
@@ -894,13 +894,13 @@ var file_powermanage_v1_actions_proto_depIdxs = []int32{
 	0,  // [0:14] is the sub-list for field type_name
 }
 
-func init() { file_powermanage_v1_actions_proto_init() }
-func file_powermanage_v1_actions_proto_init() {
-	if File_powermanage_v1_actions_proto != nil {
+func init() { file_pm_v1_actions_proto_init() }
+func file_pm_v1_actions_proto_init() {
+	if File_pm_v1_actions_proto != nil {
 		return
 	}
-	file_powermanage_v1_common_proto_init()
-	file_powermanage_v1_actions_proto_msgTypes[0].OneofWrappers = []any{
+	file_pm_v1_common_proto_init()
+	file_pm_v1_actions_proto_msgTypes[0].OneofWrappers = []any{
 		(*Action_Package)(nil),
 		(*Action_App)(nil),
 		(*Action_Shell)(nil),
@@ -911,18 +911,18 @@ func file_powermanage_v1_actions_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_actions_proto_rawDesc), len(file_powermanage_v1_actions_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_powermanage_v1_actions_proto_goTypes,
-		DependencyIndexes: file_powermanage_v1_actions_proto_depIdxs,
-		EnumInfos:         file_powermanage_v1_actions_proto_enumTypes,
-		MessageInfos:      file_powermanage_v1_actions_proto_msgTypes,
+		GoTypes:           file_pm_v1_actions_proto_goTypes,
+		DependencyIndexes: file_pm_v1_actions_proto_depIdxs,
+		EnumInfos:         file_pm_v1_actions_proto_enumTypes,
+		MessageInfos:      file_pm_v1_actions_proto_msgTypes,
 	}.Build()
-	File_powermanage_v1_actions_proto = out.File
-	file_powermanage_v1_actions_proto_goTypes = nil
-	file_powermanage_v1_actions_proto_depIdxs = nil
+	File_pm_v1_actions_proto = out.File
+	file_pm_v1_actions_proto_goTypes = nil
+	file_pm_v1_actions_proto_depIdxs = nil
 }

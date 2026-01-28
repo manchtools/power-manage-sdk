@@ -13,13 +13,13 @@ import (
 	"connectrpc.com/connect"
 	"github.com/oklog/ulid/v2"
 
-	pb "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1"
-	"github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1/powermanagev1connect"
+	pb "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
+	"github.com/manchtools/power-manage/sdk/gen/go/pm/v1/pmv1connect"
 )
 
 // Client provides methods to communicate with the power-manage server.
 type Client struct {
-	client    powermanagev1connect.AgentServiceClient
+	client    pmv1connect.AgentServiceClient
 	deviceID  string
 	authToken string
 
@@ -36,7 +36,7 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 		opt.apply(c, &httpClient)
 	}
 
-	c.client = powermanagev1connect.NewAgentServiceClient(httpClient, serverURL)
+	c.client = pmv1connect.NewAgentServiceClient(httpClient, serverURL)
 	return c
 }
 

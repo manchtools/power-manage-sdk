@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: powermanage/v1/common.proto
+// source: pm/v1/common.proto
 
-package powermanagev1
+package pmv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -67,11 +67,11 @@ func (x ExecutionStatus) String() string {
 }
 
 func (ExecutionStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_common_proto_enumTypes[0].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[0].Descriptor()
 }
 
 func (ExecutionStatus) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_common_proto_enumTypes[0]
+	return &file_pm_v1_common_proto_enumTypes[0]
 }
 
 func (x ExecutionStatus) Number() protoreflect.EnumNumber {
@@ -80,7 +80,7 @@ func (x ExecutionStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExecutionStatus.Descriptor instead.
 func (ExecutionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_common_proto_rawDescGZIP(), []int{0}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{0}
 }
 
 // Desired state for stateful actions
@@ -114,11 +114,11 @@ func (x DesiredState) String() string {
 }
 
 func (DesiredState) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_common_proto_enumTypes[1].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[1].Descriptor()
 }
 
 func (DesiredState) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_common_proto_enumTypes[1]
+	return &file_pm_v1_common_proto_enumTypes[1]
 }
 
 func (x DesiredState) Number() protoreflect.EnumNumber {
@@ -127,7 +127,7 @@ func (x DesiredState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DesiredState.Descriptor instead.
 func (DesiredState) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_common_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
 // Unique identifier for an action instance
@@ -141,7 +141,7 @@ type ActionId struct {
 
 func (x *ActionId) Reset() {
 	*x = ActionId{}
-	mi := &file_powermanage_v1_common_proto_msgTypes[0]
+	mi := &file_pm_v1_common_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +153,7 @@ func (x *ActionId) String() string {
 func (*ActionId) ProtoMessage() {}
 
 func (x *ActionId) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_common_proto_msgTypes[0]
+	mi := &file_pm_v1_common_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +166,7 @@ func (x *ActionId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionId.ProtoReflect.Descriptor instead.
 func (*ActionId) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_common_proto_rawDescGZIP(), []int{0}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ActionId) GetValue() string {
@@ -187,7 +187,7 @@ type DeviceId struct {
 
 func (x *DeviceId) Reset() {
 	*x = DeviceId{}
-	mi := &file_powermanage_v1_common_proto_msgTypes[1]
+	mi := &file_pm_v1_common_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -199,7 +199,7 @@ func (x *DeviceId) String() string {
 func (*DeviceId) ProtoMessage() {}
 
 func (x *DeviceId) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_common_proto_msgTypes[1]
+	mi := &file_pm_v1_common_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -212,7 +212,7 @@ func (x *DeviceId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeviceId.ProtoReflect.Descriptor instead.
 func (*DeviceId) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_common_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DeviceId) GetValue() string {
@@ -237,7 +237,7 @@ type CommandOutput struct {
 
 func (x *CommandOutput) Reset() {
 	*x = CommandOutput{}
-	mi := &file_powermanage_v1_common_proto_msgTypes[2]
+	mi := &file_pm_v1_common_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -249,7 +249,7 @@ func (x *CommandOutput) String() string {
 func (*CommandOutput) ProtoMessage() {}
 
 func (x *CommandOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_common_proto_msgTypes[2]
+	mi := &file_pm_v1_common_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -262,7 +262,7 @@ func (x *CommandOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandOutput.ProtoReflect.Descriptor instead.
 func (*CommandOutput) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CommandOutput) GetExitCode() int32 {
@@ -286,11 +286,11 @@ func (x *CommandOutput) GetStderr() string {
 	return ""
 }
 
-var File_powermanage_v1_common_proto protoreflect.FileDescriptor
+var File_pm_v1_common_proto protoreflect.FileDescriptor
 
-const file_powermanage_v1_common_proto_rawDesc = "" +
+const file_pm_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x1bpowermanage/v1/common.proto\x12\x0epowermanage.v1\" \n" +
+	"\x12pm/v1/common.proto\x12\x05pm.v1\" \n" +
 	"\bActionId\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\" \n" +
 	"\bDeviceId\x12\x14\n" +
@@ -309,30 +309,30 @@ const file_powermanage_v1_common_proto_rawDesc = "" +
 	"\x18EXECUTION_STATUS_TIMEOUT\x10\x06*C\n" +
 	"\fDesiredState\x12\x19\n" +
 	"\x15DESIRED_STATE_PRESENT\x10\x00\x12\x18\n" +
-	"\x14DESIRED_STATE_ABSENT\x10\x01BLZJgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x14DESIRED_STATE_ABSENT\x10\x01B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
-	file_powermanage_v1_common_proto_rawDescOnce sync.Once
-	file_powermanage_v1_common_proto_rawDescData []byte
+	file_pm_v1_common_proto_rawDescOnce sync.Once
+	file_pm_v1_common_proto_rawDescData []byte
 )
 
-func file_powermanage_v1_common_proto_rawDescGZIP() []byte {
-	file_powermanage_v1_common_proto_rawDescOnce.Do(func() {
-		file_powermanage_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_common_proto_rawDesc), len(file_powermanage_v1_common_proto_rawDesc)))
+func file_pm_v1_common_proto_rawDescGZIP() []byte {
+	file_pm_v1_common_proto_rawDescOnce.Do(func() {
+		file_pm_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)))
 	})
-	return file_powermanage_v1_common_proto_rawDescData
+	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_powermanage_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_powermanage_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_powermanage_v1_common_proto_goTypes = []any{
-	(ExecutionStatus)(0),  // 0: powermanage.v1.ExecutionStatus
-	(DesiredState)(0),     // 1: powermanage.v1.DesiredState
-	(*ActionId)(nil),      // 2: powermanage.v1.ActionId
-	(*DeviceId)(nil),      // 3: powermanage.v1.DeviceId
-	(*CommandOutput)(nil), // 4: powermanage.v1.CommandOutput
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_pm_v1_common_proto_goTypes = []any{
+	(ExecutionStatus)(0),  // 0: pm.v1.ExecutionStatus
+	(DesiredState)(0),     // 1: pm.v1.DesiredState
+	(*ActionId)(nil),      // 2: pm.v1.ActionId
+	(*DeviceId)(nil),      // 3: pm.v1.DeviceId
+	(*CommandOutput)(nil), // 4: pm.v1.CommandOutput
 }
-var file_powermanage_v1_common_proto_depIdxs = []int32{
+var file_pm_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -340,27 +340,27 @@ var file_powermanage_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_powermanage_v1_common_proto_init() }
-func file_powermanage_v1_common_proto_init() {
-	if File_powermanage_v1_common_proto != nil {
+func init() { file_pm_v1_common_proto_init() }
+func file_pm_v1_common_proto_init() {
+	if File_pm_v1_common_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_common_proto_rawDesc), len(file_powermanage_v1_common_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_powermanage_v1_common_proto_goTypes,
-		DependencyIndexes: file_powermanage_v1_common_proto_depIdxs,
-		EnumInfos:         file_powermanage_v1_common_proto_enumTypes,
-		MessageInfos:      file_powermanage_v1_common_proto_msgTypes,
+		GoTypes:           file_pm_v1_common_proto_goTypes,
+		DependencyIndexes: file_pm_v1_common_proto_depIdxs,
+		EnumInfos:         file_pm_v1_common_proto_enumTypes,
+		MessageInfos:      file_pm_v1_common_proto_msgTypes,
 	}.Build()
-	File_powermanage_v1_common_proto = out.File
-	file_powermanage_v1_common_proto_goTypes = nil
-	file_powermanage_v1_common_proto_depIdxs = nil
+	File_pm_v1_common_proto = out.File
+	file_pm_v1_common_proto_goTypes = nil
+	file_pm_v1_common_proto_depIdxs = nil
 }
