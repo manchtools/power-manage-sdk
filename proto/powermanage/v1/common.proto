@@ -4,8 +4,6 @@ package powermanage.v1;
 
 option go_package = "github.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
 
-import "google/protobuf/timestamp.proto";
-
 // Unique identifier for an action instance
 message ActionId {
   // @gotags: validate:"required,ulid"
