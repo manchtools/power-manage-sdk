@@ -5,7 +5,7 @@ A Go library for interacting with Linux package managers (apt, dnf) with structu
 ## Installation
 
 ```go
-import "github.com/yourorg/power-manage/sdk/go/pkg"
+import "github.com/manchtools/power-manage/sdk/go/pkg"
 ```
 
 ## Quick Start

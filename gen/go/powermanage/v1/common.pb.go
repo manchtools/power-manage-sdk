@@ -309,7 +309,7 @@ const file_powermanage_v1_common_proto_rawDesc = "" +
 	"\x18EXECUTION_STATUS_TIMEOUT\x10\x06*C\n" +
 	"\fDesiredState\x12\x19\n" +
 	"\x15DESIRED_STATE_PRESENT\x10\x00\x12\x18\n" +
-	"\x14DESIRED_STATE_ABSENT\x10\x01BIZGgithub.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x14DESIRED_STATE_ABSENT\x10\x01BIZGgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
 	file_powermanage_v1_common_proto_rawDescOnce sync.Once

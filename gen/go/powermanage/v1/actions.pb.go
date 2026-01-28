@@ -819,7 +819,7 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03BIZGgithub.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03BIZGgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
 	file_powermanage_v1_actions_proto_rawDescOnce sync.Once
