@@ -1100,7 +1100,7 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\x10OS_QUERY_OP_GLOB\x10\b2\xa8\x01\n" +
 	"\fAgentService\x12I\n" +
 	"\x06Stream\x12\x1c.powermanage.v1.AgentMessage\x1a\x1d.powermanage.v1.ServerMessage(\x010\x01\x12M\n" +
-	"\bRegister\x12\x1f.powermanage.v1.RegisterRequest\x1a .powermanage.v1.RegisterResponseBIZGgithub.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\bRegister\x12\x1f.powermanage.v1.RegisterRequest\x1a .powermanage.v1.RegisterResponseBIZGgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
 	file_powermanage_v1_agent_proto_rawDescOnce sync.Once

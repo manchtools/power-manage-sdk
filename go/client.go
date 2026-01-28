@@ -13,8 +13,8 @@ import (
 	"connectrpc.com/connect"
 	"github.com/oklog/ulid/v2"
 
-	pb "github.com/yourorg/power-manage/sdk/gen/go/powermanage/v1"
-	"github.com/yourorg/power-manage/sdk/gen/go/powermanage/v1/powermanagev1connect"
+	pb "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1"
+	"github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1/powermanagev1connect"
 )
 
 // Client provides methods to communicate with the power-manage server.

@@ -1,4 +1,4 @@
-module github.com/yourorg/power-manage/sdk
+module github.com/manchtools/power-manage/sdk
 
 go 1.23
 
