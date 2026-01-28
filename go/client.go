@@ -13,7 +13,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/oklog/ulid/v2"
 
-	pb "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
 	"github.com/manchtools/power-manage/sdk/gen/go/pm/v1/pmv1connect"
 )
 
@@ -24,7 +24,7 @@ type Client struct {
 	authToken string
 
 	mu     sync.RWMutex
-	stream *connect.BidiStreamForClient[pb.AgentMessage, pb.ServerMessage]
+	stream *connect.BidiStreamForClient[pm.AgentMessage, pm.ServerMessage]
 }
 
 // NewClient creates a new SDK client.
@@ -69,8 +69,8 @@ func WithAuth(deviceID, authToken string) ClientOption {
 }
 
 // Register registers a new agent with the server.
-func (c *Client) Register(ctx context.Context, token, hostname, agentVersion string) (*pb.RegisterResponse, error) {
-	req := connect.NewRequest(&pb.RegisterRequest{
+func (c *Client) Register(ctx context.Context, token, hostname, agentVersion string) (*pm.RegisterResponse, error) {
+	req := connect.NewRequest(&pm.RegisterRequest{
 		Token:        token,
 		Hostname:     hostname,
 		AgentVersion: agentVersion,
@@ -92,13 +92,13 @@ func (c *Client) Register(ctx context.Context, token, hostname, agentVersion str
 // StreamHandler handles messages received from the server.
 type StreamHandler interface {
 	// OnWelcome is called when the server sends a welcome message.
-	OnWelcome(ctx context.Context, welcome *pb.Welcome) error
+	OnWelcome(ctx context.Context, welcome *pm.Welcome) error
 	// OnAction is called when the server dispatches an action.
-	OnAction(ctx context.Context, action *pb.Action) (*pb.ActionResult, error)
+	OnAction(ctx context.Context, action *pm.Action) (*pm.ActionResult, error)
 	// OnQuery is called when the server sends an OS query.
-	OnQuery(ctx context.Context, query *pb.OSQuery) (*pb.OSQueryResult, error)
+	OnQuery(ctx context.Context, query *pm.OSQuery) (*pm.OSQueryResult, error)
 	// OnError is called when the server sends an error.
-	OnError(ctx context.Context, err *pb.Error) error
+	OnError(ctx context.Context, err *pm.Error) error
 }
 
 // Connect establishes a bidirectional stream with the server.
@@ -128,11 +128,11 @@ func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) e
 		return errors.New("not connected")
 	}
 
-	msg := &pb.AgentMessage{
+	msg := &pm.AgentMessage{
 		Id: NewULID(),
-		Payload: &pb.AgentMessage_Hello{
-			Hello: &pb.Hello{
-				DeviceId:     &pb.DeviceId{Value: deviceID},
+		Payload: &pm.AgentMessage_Hello{
+			Hello: &pm.Hello{
+				DeviceId:     &pm.DeviceId{Value: deviceID},
 				AgentVersion: agentVersion,
 				Hostname:     hostname,
 				AuthToken:    authToken,
@@ -144,7 +144,7 @@ func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) e
 }
 
 // SendHeartbeat sends a heartbeat message to the server.
-func (c *Client) SendHeartbeat(ctx context.Context, hb *pb.Heartbeat) error {
+func (c *Client) SendHeartbeat(ctx context.Context, hb *pm.Heartbeat) error {
 	c.mu.RLock()
 	stream := c.stream
 	c.mu.RUnlock()
@@ -153,9 +153,9 @@ func (c *Client) SendHeartbeat(ctx context.Context, hb *pb.Heartbeat) error {
 		return errors.New("not connected")
 	}
 
-	msg := &pb.AgentMessage{
+	msg := &pm.AgentMessage{
 		Id: NewULID(),
-		Payload: &pb.AgentMessage_Heartbeat{
+		Payload: &pm.AgentMessage_Heartbeat{
 			Heartbeat: hb,
 		},
 	}
@@ -164,7 +164,7 @@ func (c *Client) SendHeartbeat(ctx context.Context, hb *pb.Heartbeat) error {
 }
 
 // SendActionResult sends an action result to the server.
-func (c *Client) SendActionResult(ctx context.Context, result *pb.ActionResult) error {
+func (c *Client) SendActionResult(ctx context.Context, result *pm.ActionResult) error {
 	c.mu.RLock()
 	stream := c.stream
 	c.mu.RUnlock()
@@ -173,9 +173,9 @@ func (c *Client) SendActionResult(ctx context.Context, result *pb.ActionResult) 
 		return errors.New("not connected")
 	}
 
-	msg := &pb.AgentMessage{
+	msg := &pm.AgentMessage{
 		Id: NewULID(),
-		Payload: &pb.AgentMessage_ActionResult{
+		Payload: &pm.AgentMessage_ActionResult{
 			ActionResult: result,
 		},
 	}
@@ -184,7 +184,7 @@ func (c *Client) SendActionResult(ctx context.Context, result *pb.ActionResult) 
 }
 
 // SendQueryResult sends an OS query result to the server.
-func (c *Client) SendQueryResult(ctx context.Context, result *pb.OSQueryResult) error {
+func (c *Client) SendQueryResult(ctx context.Context, result *pm.OSQueryResult) error {
 	c.mu.RLock()
 	stream := c.stream
 	c.mu.RUnlock()
@@ -193,9 +193,9 @@ func (c *Client) SendQueryResult(ctx context.Context, result *pb.OSQueryResult) 
 		return errors.New("not connected")
 	}
 
-	msg := &pb.AgentMessage{
+	msg := &pm.AgentMessage{
 		Id: NewULID(),
-		Payload: &pb.AgentMessage_QueryResult{
+		Payload: &pm.AgentMessage_QueryResult{
 			QueryResult: result,
 		},
 	}
@@ -204,7 +204,7 @@ func (c *Client) SendQueryResult(ctx context.Context, result *pb.OSQueryResult) 
 }
 
 // Receive receives the next message from the server.
-func (c *Client) Receive(ctx context.Context) (*pb.ServerMessage, error) {
+func (c *Client) Receive(ctx context.Context) (*pm.ServerMessage, error) {
 	c.mu.RLock()
 	stream := c.stream
 	c.mu.RUnlock()
@@ -259,7 +259,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 			case <-heartbeatCtx.Done():
 				return
 			case <-ticker.C:
-				hb := &pb.Heartbeat{}
+				hb := &pm.Heartbeat{}
 				// Handler can populate heartbeat data if needed
 				if err := c.SendHeartbeat(heartbeatCtx, hb); err != nil {
 					return
@@ -282,12 +282,12 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		}
 
 		switch p := msg.Payload.(type) {
-		case *pb.ServerMessage_Welcome:
+		case *pm.ServerMessage_Welcome:
 			if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
 				return fmt.Errorf("handle welcome: %w", err)
 			}
 
-		case *pb.ServerMessage_Action:
+		case *pm.ServerMessage_Action:
 			result, err := handler.OnAction(ctx, p.Action.Action)
 			if err != nil {
 				return fmt.Errorf("handle action: %w", err)
@@ -298,7 +298,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 				}
 			}
 
-		case *pb.ServerMessage_Query:
+		case *pm.ServerMessage_Query:
 			result, err := handler.OnQuery(ctx, p.Query)
 			if err != nil {
 				return fmt.Errorf("handle query: %w", err)
@@ -309,7 +309,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 				}
 			}
 
-		case *pb.ServerMessage_Error:
+		case *pm.ServerMessage_Error:
 			if err := handler.OnError(ctx, p.Error); err != nil {
 				return fmt.Errorf("handle error: %w", err)
 			}
