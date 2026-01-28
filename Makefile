@@ -13,7 +13,7 @@ install-tools:
 generate: generate-go inject-tags
 
 generate-go:
-	@mkdir -p $(GEN_DIR)/go
+	@mkdir -p $(GEN_DIR)/go/pm/v1
 	protoc \
 		--proto_path=$(PROTO_DIR) \
 		--go_out=$(GEN_DIR)/go \
