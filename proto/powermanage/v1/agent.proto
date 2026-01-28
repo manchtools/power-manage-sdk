@@ -2,167 +2,523 @@ syntax = "proto3";
 
 package powermanage.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+option go_package = "github.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
 
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 import "powermanage/v1/common.proto";
 import "powermanage/v1/actions.proto";
-import "google/protobuf/timestamp.proto";
 
-// =============================================================================
-// BIDIRECTIONAL STREAM SERVICE
-// =============================================================================
+// ============================================================================
+// Agent Service - Bidirectional streaming for agent-server communication
+// ============================================================================
 
 service AgentService {
-  // Single bidirectional stream for all agent-server communication
+  // Primary bidirectional stream for agent-server communication
+  // Agent connects and maintains persistent connection for receiving actions
   rpc AgentStream(stream AgentMessage) returns (stream ServerMessage);
 
-  // Registration endpoint (unary, used before stream is established)
-  rpc Register(RegisterRequest) returns (RegisterResponse);
+  // One-time registration for new agents
+  rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+
+  // Report action results (fallback for when stream is interrupted)
+  rpc ReportActionResult(ReportActionResultRequest) returns (ReportActionResultResponse);
+
+  // Get pending actions (fallback for reconnection scenarios)
+  rpc GetPendingActions(GetPendingActionsRequest) returns (GetPendingActionsResponse);
 }
 
-// =============================================================================
-// AGENT -> SERVER MESSAGES
-// =============================================================================
+// ============================================================================
+// Agent -> Server Messages
+// ============================================================================
 
 message AgentMessage {
-  // Correlation ID for request-response matching
+  // @gotags: validate:"required,ulid"
   string correlation_id = 1;
 
   oneof payload {
-    // Initial handshake when stream opens
-    AgentHandshake handshake = 10;
-
-    // Heartbeat/keepalive
+    // @gotags: validate:"omitempty"
+    AgentHello hello = 10;
+    // @gotags: validate:"omitempty"
     AgentHeartbeat heartbeat = 11;
+    // @gotags: validate:"omitempty"
+    AgentGoodbye goodbye = 12;
 
-    // Action execution result
-    ActionResult action_result = 12;
+    // @gotags: validate:"omitempty"
+    StateReport state_report = 20;
+    // @gotags: validate:"omitempty"
+    CapabilityReport capability_report = 21;
 
-    // Batch of log entries
-    LogBatch log_batch = 13;
+    // @gotags: validate:"omitempty"
+    ActionAcknowledgement action_ack = 30;
+    // @gotags: validate:"omitempty"
+    ActionProgress action_progress = 31;
+    // @gotags: validate:"omitempty"
+    ActionResultReport action_result = 32;
 
-    // Current state report (periodic or on-demand)
-    StateReport state_report = 14;
-
-    // Acknowledgment of received server message
-    Acknowledgment ack = 15;
+    // @gotags: validate:"omitempty"
+    ActionRequest action_request = 40;
   }
+
+  // @gotags: validate:"omitempty"
+  google.protobuf.Timestamp timestamp = 50;
 }
 
-message AgentHandshake {
-  AgentId agent_id = 1;
+message AgentHello {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+  // @gotags: validate:"required,min=1,max=32"
   string agent_version = 2;
+  // @gotags: validate:"required,min=1,max=253,hostname_rfc1123"
   string hostname = 3;
-  string os_info = 4; // e.g., "Ubuntu 22.04", "Fedora 39"
-  google.protobuf.Timestamp boot_time = 5;
+
+  // Linux platform information
+  // @gotags: validate:"required"
+  LinuxPlatformInfo platform = 4;
+
+  // Authentication
+  // @gotags: validate:"omitempty,max=4096"
+  string auth_token = 10;
+  // @gotags: validate:"omitempty,max=8192"
+  bytes client_certificate = 11;
+
+  // Reconnection
+  // @gotags: validate:"omitempty"
+  bool is_reconnect = 12;
+  // @gotags: validate:"omitempty,ulid"
+  string last_correlation_id = 13;
+}
+
+message LinuxPlatformInfo {
+  // Distribution info (from /etc/os-release)
+  // @gotags: validate:"required,min=1,max=64,lowercase"
+  string distro_id = 1;
+  // @gotags: validate:"omitempty,max=128"
+  string distro_name = 2;
+  // @gotags: validate:"omitempty,max=64"
+  string distro_version = 3;
+  // @gotags: validate:"omitempty,max=64,lowercase"
+  string distro_codename = 4;
+  // @gotags: validate:"omitempty,max=128"
+  string distro_id_like = 5;
+
+  // System info
+  // @gotags: validate:"required,oneof=x86_64 aarch64 armv7l i686"
+  string architecture = 6;
+  // @gotags: validate:"omitempty,max=64"
+  string kernel_version = 7;
+
+  // Hardware info
+  // @gotags: validate:"omitempty,gte=1"
+  int32 cpu_cores = 10;
+  // @gotags: validate:"omitempty,gte=0"
+  int64 memory_bytes = 11;
+  // @gotags: validate:"omitempty,gte=0"
+  int64 disk_bytes = 12;
+
+  // Init system (should be systemd for modern Linux)
+  // @gotags: validate:"omitempty,max=32"
+  string init_system = 15;
+  // @gotags: validate:"omitempty,max=32"
+  string systemd_version = 16;
+
+  // Package managers available
+  // @gotags: validate:"omitempty,dive,oneof=apt dnf pacman zypper flatpak snap"
+  repeated string package_managers = 20;
+
+  // SELinux/AppArmor status
+  // @gotags: validate:"omitempty,oneof=selinux apparmor none"
+  string security_module = 25;
+  // @gotags: validate:"omitempty"
+  bool security_enforcing = 26;
 }
 
 message AgentHeartbeat {
-  google.protobuf.Timestamp timestamp = 1;
-  uint64 uptime_seconds = 2;
-  uint32 pending_actions = 3;
-  uint32 pending_logs = 4;
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration uptime = 1;
+
+  // Current load
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  float cpu_usage_percent = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  float memory_usage_percent = 3;
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  float disk_usage_percent = 4;
+
+  // Linux-specific metrics
+  // @gotags: validate:"omitempty,gte=0"
+  float load_average_1m = 5;
+  // @gotags: validate:"omitempty,gte=0"
+  float load_average_5m = 6;
+  // @gotags: validate:"omitempty,gte=0"
+  float load_average_15m = 7;
+
+  // Action queue status
+  // @gotags: validate:"omitempty,gte=0"
+  int32 pending_actions = 10;
+  // @gotags: validate:"omitempty,gte=0"
+  int32 running_actions = 11;
+
+  // Health indicators
+  // @gotags: validate:"omitempty"
+  bool healthy = 15;
+  // @gotags: validate:"omitempty,dive,max=255"
+  repeated string health_issues = 16;
 }
 
-message LogBatch {
-  repeated LogEntry entries = 1;
+message AgentGoodbye {
+  // @gotags: validate:"omitempty"
+  GoodbyeReason reason = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string message = 2;
+}
+
+enum GoodbyeReason {
+  GOODBYE_REASON_UNSPECIFIED = 0;
+  GOODBYE_REASON_SHUTDOWN = 1;
+  GOODBYE_REASON_RESTART = 2;
+  GOODBYE_REASON_UPGRADE = 3;
+  GOODBYE_REASON_ERROR = 4;
+  GOODBYE_REASON_MAINTENANCE = 5;
 }
 
 message StateReport {
+  // @gotags: validate:"omitempty,dive"
   repeated ActionState action_states = 1;
-  google.protobuf.Timestamp reported_at = 2;
-  bool is_reconciliation_run = 3; // True if from 30-min periodic check
+
+  // @gotags: validate:"omitempty,max=255"
+  string reconciliation_token = 2;
+  // @gotags: validate:"omitempty"
+  bool is_full_report = 3;
 }
 
-message Acknowledgment {
-  string message_id = 1;
-  bool success = 2;
-  optional string error = 3;
+message CapabilityReport {
+  // @gotags: validate:"omitempty,dive"
+  repeated ActionType supported_actions = 1;
+
+  // @gotags: validate:"omitempty,dive"
+  repeated HandlerInfo handlers = 2;
+
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys"
+  map<string, bool> features = 3;
+
+  // Linux-specific capabilities
+  // @gotags: validate:"omitempty"
+  bool has_systemd = 10;
+  // @gotags: validate:"omitempty"
+  bool has_selinux = 11;
+  // @gotags: validate:"omitempty"
+  bool has_apparmor = 12;
+  // @gotags: validate:"omitempty,dive,max=255,startswith=/"
+  repeated string available_shells = 13;
 }
 
-// =============================================================================
-// SERVER -> AGENT MESSAGES
-// =============================================================================
+message HandlerInfo {
+  // @gotags: validate:"required,min=1,max=255"
+  string handler_id = 1;
+  // @gotags: validate:"omitempty,max=128"
+  string version = 2;
+  // @gotags: validate:"omitempty,dive,max=255"
+  repeated string supported_params = 3;
+}
+
+message ActionAcknowledgement {
+  // @gotags: validate:"required"
+  ActionId action_id = 1;
+  // @gotags: validate:"required,ne=0"
+  AckStatus status = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string message = 3;
+}
+
+enum AckStatus {
+  ACK_STATUS_UNSPECIFIED = 0;
+  ACK_STATUS_ACCEPTED = 1;
+  ACK_STATUS_REJECTED = 2;
+  ACK_STATUS_DEFERRED = 3;
+}
+
+message ActionProgress {
+  // @gotags: validate:"required"
+  ActionId action_id = 1;
+
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 percent_complete = 2;
+  // @gotags: validate:"omitempty,max=255"
+  string current_step = 3;
+  // @gotags: validate:"omitempty,max=1024"
+  string status_message = 4;
+
+  // @gotags: validate:"omitempty"
+  google.protobuf.Timestamp estimated_completion = 5;
+
+  // @gotags: validate:"omitempty,max=65536"
+  string stdout_chunk = 10;
+  // @gotags: validate:"omitempty,max=65536"
+  string stderr_chunk = 11;
+}
+
+message ActionResultReport {
+  // @gotags: validate:"required"
+  ActionResult result = 1;
+}
+
+message ActionRequest {
+  // @gotags: validate:"omitempty,dive"
+  repeated ActionType requested_types = 1;
+  // @gotags: validate:"omitempty,gte=1,lte=100"
+  int32 max_actions = 2;
+}
+
+// ============================================================================
+// Server -> Agent Messages
+// ============================================================================
 
 message ServerMessage {
-  // Message ID for acknowledgment
-  string message_id = 1;
+  // @gotags: validate:"required,ulid"
+  string correlation_id = 1;
 
   oneof payload {
-    // Response to handshake
-    ServerHandshakeResponse handshake_response = 10;
+    // @gotags: validate:"omitempty"
+    ServerHello hello = 10;
+    // @gotags: validate:"omitempty"
+    ServerHeartbeatAck heartbeat_ack = 11;
 
-    // Heartbeat response
-    ServerHeartbeatResponse heartbeat_response = 11;
+    // @gotags: validate:"omitempty"
+    ConfigurationUpdate config_update = 20;
 
-    // Push new or updated action
-    ActionPush action_push = 12;
+    // @gotags: validate:"omitempty"
+    ActionDispatch action_dispatch = 30;
+    // @gotags: validate:"omitempty"
+    ActionCancel action_cancel = 31;
+    // @gotags: validate:"omitempty"
+    ActionUpdate action_update = 32;
 
-    // Remove an action
-    ActionRemove action_remove = 13;
+    // @gotags: validate:"omitempty"
+    StateRequest state_request = 40;
+    // @gotags: validate:"omitempty"
+    CapabilityRequest capability_request = 41;
 
-    // Request immediate state check
-    StateCheckRequest state_check_request = 14;
-
-    // Request immediate reconciliation
-    ReconcileRequest reconcile_request = 15;
-
-    // Batch of actions (initial sync or bulk update)
-    ActionBatch action_batch = 16;
+    // @gotags: validate:"omitempty"
+    ServerError error = 50;
   }
+
+  // @gotags: validate:"omitempty"
+  google.protobuf.Timestamp timestamp = 60;
 }
 
-message ServerHandshakeResponse {
-  bool accepted = 1;
-  optional string rejection_reason = 2;
-  google.protobuf.Timestamp server_time = 3;
-  uint32 reconciliation_interval_seconds = 4; // Server can override default
+message ServerHello {
+  // @gotags: validate:"required,min=1,max=32"
+  string server_version = 1;
+  // @gotags: validate:"required,ulid"
+  string server_id = 2;
+
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration heartbeat_interval = 3;
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration reconnect_backoff_max = 4;
+
+  // @gotags: validate:"omitempty,dive"
+  repeated Action pending_actions = 10;
 }
 
-message ServerHeartbeatResponse {
-  google.protobuf.Timestamp server_time = 1;
+message ServerHeartbeatAck {
+  // @gotags: validate:"omitempty"
+  google.protobuf.Timestamp received_at = 1;
+
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration suggested_heartbeat_interval = 2;
 }
 
-message ActionPush {
-  Action action = 1;
-  bool execute_immediately = 2; // If true, don't wait for reconciliation
+message ConfigurationUpdate {
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration action_check_interval = 1;
+  // @gotags: validate:"omitempty,gte=1,lte=10"
+  int32 max_concurrent_actions = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=10"
+  int32 max_action_retries = 3;
+
+  // @gotags: validate:"omitempty"
+  LogLevel log_level = 4;
+  // @gotags: validate:"omitempty"
+  bool enable_telemetry = 5;
+
+  // @gotags: validate:"omitempty"
+  bool auto_update_enabled = 10;
+  // @gotags: validate:"omitempty,oneof=stable beta nightly"
+  string update_channel = 11;
 }
 
-message ActionRemove {
-  ActionId action_id = 1;
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG = 1;
+  LOG_LEVEL_INFO = 2;
+  LOG_LEVEL_WARN = 3;
+  LOG_LEVEL_ERROR = 4;
 }
 
-message StateCheckRequest {
-  repeated ActionId action_ids = 1; // Empty means all actions
-}
-
-message ReconcileRequest {
-  repeated ActionId action_ids = 1; // Empty means all actions
-}
-
-message ActionBatch {
+message ActionDispatch {
+  // @gotags: validate:"required,min=1,dive"
   repeated Action actions = 1;
-  bool replace_all = 2; // If true, replace entire action set
+
+  // @gotags: validate:"omitempty"
+  bool immediate = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=1000"
+  int32 priority = 3;
+  // @gotags: validate:"omitempty"
+  bool allow_concurrent = 4;
+
+  // @gotags: validate:"omitempty,dive"
+  repeated ActionDependency dependencies = 10;
 }
 
-// =============================================================================
-// REGISTRATION
-// =============================================================================
+message ActionDependency {
+  // @gotags: validate:"required"
+  ActionId action_id = 1;
+  // @gotags: validate:"required"
+  ActionId depends_on = 2;
+  // @gotags: validate:"omitempty"
+  DependencyType type = 3;
+}
 
-message RegisterRequest {
-  string registration_token = 1; // One-time token from admin/web GUI
-  bytes csr = 2;                 // Certificate Signing Request (PEM)
+enum DependencyType {
+  DEPENDENCY_TYPE_UNSPECIFIED = 0;
+  DEPENDENCY_TYPE_SUCCESS = 1;
+  DEPENDENCY_TYPE_COMPLETION = 2;
+  DEPENDENCY_TYPE_FAILURE = 3;
+}
+
+message ActionCancel {
+  // @gotags: validate:"required"
+  ActionId action_id = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string reason = 2;
+  // @gotags: validate:"omitempty"
+  bool force = 3;
+}
+
+message ActionUpdate {
+  // @gotags: validate:"required"
+  ActionId action_id = 1;
+
+  // @gotags: validate:"required"
+  Action updated_action = 2;
+
+  // @gotags: validate:"omitempty,dive,max=64"
+  repeated string updated_fields = 3;
+}
+
+message StateRequest {
+  // @gotags: validate:"omitempty,dive"
+  repeated ActionId action_ids = 1;
+
+  // @gotags: validate:"omitempty"
+  bool full_report = 2;
+
+  // @gotags: validate:"omitempty,max=255"
+  string since_token = 3;
+}
+
+message CapabilityRequest {
+  // @gotags: validate:"omitempty"
+  bool include_handlers = 1;
+}
+
+message ServerError {
+  // @gotags: validate:"required,min=1,max=64"
+  string code = 1;
+  // @gotags: validate:"required,min=1,max=1024"
+  string message = 2;
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=4096"
+  map<string, string> details = 3;
+
+  // @gotags: validate:"omitempty"
+  bool retryable = 4;
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration retry_after = 5;
+}
+
+// ============================================================================
+// Registration
+// ============================================================================
+
+message RegisterAgentRequest {
+  // @gotags: validate:"required_without=InviteCode,omitempty,max=255"
+  string bootstrap_token = 1;
+  // @gotags: validate:"required_without=BootstrapToken,omitempty,max=64"
+  string invite_code = 2;
+
+  // @gotags: validate:"required,min=1,max=253,hostname_rfc1123"
   string hostname = 3;
-  string os_info = 4;
+  // @gotags: validate:"required"
+  LinuxPlatformInfo platform = 4;
+  // @gotags: validate:"required,min=1,max=32"
+  string agent_version = 5;
+
+  // @gotags: validate:"omitempty"
+  DeviceId device_id = 6;
+
+  // @gotags: validate:"omitempty,dive,keys,max=63,endkeys,max=255"
+  map<string, string> labels = 10;
 }
 
-message RegisterResponse {
-  bool success = 1;
-  optional string error_message = 2;
+message RegisterAgentResponse {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
 
-  // On success:
-  bytes signed_certificate = 3;  // Signed client certificate (PEM)
-  bytes ca_certificate = 4;      // CA certificate for server verification (PEM)
-  string server_address = 5;     // gRPC server address for future connections
-  AgentId agent_id = 6;          // Assigned agent ID
+  // @gotags: validate:"required,min=1,max=4096"
+  string auth_token = 2;
+  // @gotags: validate:"omitempty,max=8192"
+  bytes client_certificate = 3;
+  // @gotags: validate:"omitempty,max=4096"
+  bytes client_private_key = 4;
+
+  // @gotags: validate:"omitempty,max=8192"
+  bytes ca_certificate = 5;
+
+  // @gotags: validate:"omitempty"
+  ConfigurationUpdate initial_config = 10;
+}
+
+// ============================================================================
+// Fallback RPCs
+// ============================================================================
+
+message ReportActionResultRequest {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+  // @gotags: validate:"required_without=Results"
+  ActionResult result = 2;
+
+  // @gotags: validate:"required_without=Result,omitempty,dive"
+  repeated ActionResult results = 3;
+}
+
+message ReportActionResultResponse {
+  // @gotags: validate:"omitempty"
+  bool success = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string error_message = 2;
+
+  // @gotags: validate:"omitempty,dive"
+  repeated Action next_actions = 3;
+}
+
+message GetPendingActionsRequest {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+
+  // @gotags: validate:"omitempty,dive"
+  repeated ActionType types = 2;
+
+  // @gotags: validate:"omitempty,gte=1,lte=100"
+  int32 max_actions = 3;
+}
+
+message GetPendingActionsResponse {
+  // @gotags: validate:"omitempty,dive"
+  repeated Action actions = 1;
+
+  // @gotags: validate:"omitempty"
+  bool has_more = 2;
 }
