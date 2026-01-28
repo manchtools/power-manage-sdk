@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: powermanage/v1/agent.proto
+// source: pm/v1/agent.proto
 
-package powermanagev1
+package pmv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -73,11 +73,11 @@ func (x OSQueryOp) String() string {
 }
 
 func (OSQueryOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_agent_proto_enumTypes[0].Descriptor()
+	return file_pm_v1_agent_proto_enumTypes[0].Descriptor()
 }
 
 func (OSQueryOp) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_agent_proto_enumTypes[0]
+	return &file_pm_v1_agent_proto_enumTypes[0]
 }
 
 func (x OSQueryOp) Number() protoreflect.EnumNumber {
@@ -86,7 +86,7 @@ func (x OSQueryOp) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OSQueryOp.Descriptor instead.
 func (OSQueryOp) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{0}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
 type AgentMessage struct {
@@ -106,7 +106,7 @@ type AgentMessage struct {
 
 func (x *AgentMessage) Reset() {
 	*x = AgentMessage{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[0]
+	mi := &file_pm_v1_agent_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -118,7 +118,7 @@ func (x *AgentMessage) String() string {
 func (*AgentMessage) ProtoMessage() {}
 
 func (x *AgentMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[0]
+	mi := &file_pm_v1_agent_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -131,7 +131,7 @@ func (x *AgentMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentMessage.ProtoReflect.Descriptor instead.
 func (*AgentMessage) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{0}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *AgentMessage) GetId() string {
@@ -232,7 +232,7 @@ type Hello struct {
 
 func (x *Hello) Reset() {
 	*x = Hello{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[1]
+	mi := &file_pm_v1_agent_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -244,7 +244,7 @@ func (x *Hello) String() string {
 func (*Hello) ProtoMessage() {}
 
 func (x *Hello) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[1]
+	mi := &file_pm_v1_agent_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -257,7 +257,7 @@ func (x *Hello) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Hello.ProtoReflect.Descriptor instead.
 func (*Hello) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Hello) GetDeviceId() *DeviceId {
@@ -304,7 +304,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[2]
+	mi := &file_pm_v1_agent_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -316,7 +316,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[2]
+	mi := &file_pm_v1_agent_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +329,7 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Heartbeat) GetUptime() *durationpb.Duration {
@@ -377,7 +377,7 @@ type ServerMessage struct {
 
 func (x *ServerMessage) Reset() {
 	*x = ServerMessage{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[3]
+	mi := &file_pm_v1_agent_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -389,7 +389,7 @@ func (x *ServerMessage) String() string {
 func (*ServerMessage) ProtoMessage() {}
 
 func (x *ServerMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[3]
+	mi := &file_pm_v1_agent_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -402,7 +402,7 @@ func (x *ServerMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerMessage.ProtoReflect.Descriptor instead.
 func (*ServerMessage) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ServerMessage) GetId() string {
@@ -499,7 +499,7 @@ type Welcome struct {
 
 func (x *Welcome) Reset() {
 	*x = Welcome{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[4]
+	mi := &file_pm_v1_agent_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -511,7 +511,7 @@ func (x *Welcome) String() string {
 func (*Welcome) ProtoMessage() {}
 
 func (x *Welcome) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[4]
+	mi := &file_pm_v1_agent_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -524,7 +524,7 @@ func (x *Welcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Welcome.ProtoReflect.Descriptor instead.
 func (*Welcome) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Welcome) GetServerVersion() string {
@@ -551,7 +551,7 @@ type ActionDispatch struct {
 
 func (x *ActionDispatch) Reset() {
 	*x = ActionDispatch{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[5]
+	mi := &file_pm_v1_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -563,7 +563,7 @@ func (x *ActionDispatch) String() string {
 func (*ActionDispatch) ProtoMessage() {}
 
 func (x *ActionDispatch) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[5]
+	mi := &file_pm_v1_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -576,7 +576,7 @@ func (x *ActionDispatch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionDispatch.ProtoReflect.Descriptor instead.
 func (*ActionDispatch) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ActionDispatch) GetAction() *Action {
@@ -598,7 +598,7 @@ type Error struct {
 
 func (x *Error) Reset() {
 	*x = Error{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[6]
+	mi := &file_pm_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -610,7 +610,7 @@ func (x *Error) String() string {
 func (*Error) ProtoMessage() {}
 
 func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[6]
+	mi := &file_pm_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -623,7 +623,7 @@ func (x *Error) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Error.ProtoReflect.Descriptor instead.
 func (*Error) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Error) GetCode() string {
@@ -658,7 +658,7 @@ type OSQuery struct {
 
 func (x *OSQuery) Reset() {
 	*x = OSQuery{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[7]
+	mi := &file_pm_v1_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -670,7 +670,7 @@ func (x *OSQuery) String() string {
 func (*OSQuery) ProtoMessage() {}
 
 func (x *OSQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[7]
+	mi := &file_pm_v1_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,7 +683,7 @@ func (x *OSQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQuery.ProtoReflect.Descriptor instead.
 func (*OSQuery) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *OSQuery) GetQueryId() string {
@@ -726,7 +726,7 @@ type OSQueryCondition struct {
 	// @gotags: validate:"required,min=1,max=64"
 	Column string `protobuf:"bytes,1,opt,name=column,proto3" json:"column,omitempty" validate:"required,min=1,max=64"`
 	// @gotags: validate:"required"
-	Op OSQueryOp `protobuf:"varint,2,opt,name=op,proto3,enum=powermanage.v1.OSQueryOp" json:"op,omitempty" validate:"required"`
+	Op OSQueryOp `protobuf:"varint,2,opt,name=op,proto3,enum=pm.v1.OSQueryOp" json:"op,omitempty" validate:"required"`
 	// @gotags: validate:"required,max=4096"
 	Value         string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty" validate:"required,max=4096"`
 	unknownFields protoimpl.UnknownFields
@@ -735,7 +735,7 @@ type OSQueryCondition struct {
 
 func (x *OSQueryCondition) Reset() {
 	*x = OSQueryCondition{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[8]
+	mi := &file_pm_v1_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -747,7 +747,7 @@ func (x *OSQueryCondition) String() string {
 func (*OSQueryCondition) ProtoMessage() {}
 
 func (x *OSQueryCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[8]
+	mi := &file_pm_v1_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -760,7 +760,7 @@ func (x *OSQueryCondition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryCondition.ProtoReflect.Descriptor instead.
 func (*OSQueryCondition) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *OSQueryCondition) GetColumn() string {
@@ -800,7 +800,7 @@ type OSQueryResult struct {
 
 func (x *OSQueryResult) Reset() {
 	*x = OSQueryResult{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[9]
+	mi := &file_pm_v1_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -812,7 +812,7 @@ func (x *OSQueryResult) String() string {
 func (*OSQueryResult) ProtoMessage() {}
 
 func (x *OSQueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[9]
+	mi := &file_pm_v1_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -825,7 +825,7 @@ func (x *OSQueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryResult.ProtoReflect.Descriptor instead.
 func (*OSQueryResult) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *OSQueryResult) GetQueryId() string {
@@ -866,7 +866,7 @@ type OSQueryRow struct {
 
 func (x *OSQueryRow) Reset() {
 	*x = OSQueryRow{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[10]
+	mi := &file_pm_v1_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -878,7 +878,7 @@ func (x *OSQueryRow) String() string {
 func (*OSQueryRow) ProtoMessage() {}
 
 func (x *OSQueryRow) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[10]
+	mi := &file_pm_v1_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -891,7 +891,7 @@ func (x *OSQueryRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryRow.ProtoReflect.Descriptor instead.
 func (*OSQueryRow) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *OSQueryRow) GetData() map[string]string {
@@ -915,7 +915,7 @@ type RegisterRequest struct {
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[11]
+	mi := &file_pm_v1_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +927,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[11]
+	mi := &file_pm_v1_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +940,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{11}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RegisterRequest) GetToken() string {
@@ -976,7 +976,7 @@ type RegisterResponse struct {
 
 func (x *RegisterResponse) Reset() {
 	*x = RegisterResponse{}
-	mi := &file_powermanage_v1_agent_proto_msgTypes[12]
+	mi := &file_pm_v1_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -988,7 +988,7 @@ func (x *RegisterResponse) String() string {
 func (*RegisterResponse) ProtoMessage() {}
 
 func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_agent_proto_msgTypes[12]
+	mi := &file_pm_v1_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1001,7 +1001,7 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *RegisterResponse) GetDeviceId() *DeviceId {
@@ -1018,21 +1018,21 @@ func (x *RegisterResponse) GetAuthToken() string {
 	return ""
 }
 
-var File_powermanage_v1_agent_proto protoreflect.FileDescriptor
+var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
-const file_powermanage_v1_agent_proto_rawDesc = "" +
+const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x1apowermanage/v1/agent.proto\x12\x0epowermanage.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bpowermanage/v1/common.proto\x1a\x1cpowermanage/v1/actions.proto\"\x9c\x02\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xf8\x01\n" +
 	"\fAgentMessage\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12-\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
-	" \x01(\v2\x15.powermanage.v1.HelloH\x00R\x05hello\x129\n" +
-	"\theartbeat\x18\v \x01(\v2\x19.powermanage.v1.HeartbeatH\x00R\theartbeat\x12C\n" +
-	"\raction_result\x18\x14 \x01(\v2\x1c.powermanage.v1.ActionResultH\x00R\factionResult\x12B\n" +
-	"\fquery_result\x18\x1e \x01(\v2\x1d.powermanage.v1.OSQueryResultH\x00R\vqueryResultB\t\n" +
-	"\apayload\"\x9e\x01\n" +
-	"\x05Hello\x125\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x18.powermanage.v1.DeviceIdR\bdeviceId\x12#\n" +
+	" \x01(\v2\f.pm.v1.HelloH\x00R\x05hello\x120\n" +
+	"\theartbeat\x18\v \x01(\v2\x10.pm.v1.HeartbeatH\x00R\theartbeat\x12:\n" +
+	"\raction_result\x18\x14 \x01(\v2\x13.pm.v1.ActionResultH\x00R\factionResult\x129\n" +
+	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResultB\t\n" +
+	"\apayload\"\x95\x01\n" +
+	"\x05Hello\x12,\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12#\n" +
 	"\ragent_version\x18\x02 \x01(\tR\fagentVersion\x12\x1a\n" +
 	"\bhostname\x18\x03 \x01(\tR\bhostname\x12\x1d\n" +
 	"\n" +
@@ -1042,50 +1042,50 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\vcpu_percent\x18\x02 \x01(\x02R\n" +
 	"cpuPercent\x12%\n" +
 	"\x0ememory_percent\x18\x03 \x01(\x02R\rmemoryPercent\x12!\n" +
-	"\fdisk_percent\x18\x04 \x01(\x02R\vdiskPercent\"\xf9\x01\n" +
+	"\fdisk_percent\x18\x04 \x01(\x02R\vdiskPercent\"\xd5\x01\n" +
 	"\rServerMessage\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x123\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\awelcome\x18\n" +
-	" \x01(\v2\x17.powermanage.v1.WelcomeH\x00R\awelcome\x128\n" +
-	"\x06action\x18\x14 \x01(\v2\x1e.powermanage.v1.ActionDispatchH\x00R\x06action\x12/\n" +
-	"\x05query\x18\x1e \x01(\v2\x17.powermanage.v1.OSQueryH\x00R\x05query\x12-\n" +
-	"\x05error\x18( \x01(\v2\x15.powermanage.v1.ErrorH\x00R\x05errorB\t\n" +
+	" \x01(\v2\x0e.pm.v1.WelcomeH\x00R\awelcome\x12/\n" +
+	"\x06action\x18\x14 \x01(\v2\x15.pm.v1.ActionDispatchH\x00R\x06action\x12&\n" +
+	"\x05query\x18\x1e \x01(\v2\x0e.pm.v1.OSQueryH\x00R\x05query\x12$\n" +
+	"\x05error\x18( \x01(\v2\f.pm.v1.ErrorH\x00R\x05errorB\t\n" +
 	"\apayload\"z\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
-	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"@\n" +
-	"\x0eActionDispatch\x12.\n" +
-	"\x06action\x18\x01 \x01(\v2\x16.powermanage.v1.ActionR\x06action\"5\n" +
+	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"7\n" +
+	"\x0eActionDispatch\x12%\n" +
+	"\x06action\x18\x01 \x01(\v2\r.pm.v1.ActionR\x06action\"5\n" +
 	"\x05Error\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xa2\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\x99\x01\n" +
 	"\aOSQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05table\x12\x18\n" +
-	"\acolumns\x18\x03 \x03(\tR\acolumns\x126\n" +
-	"\x05where\x18\x04 \x03(\v2 .powermanage.v1.OSQueryConditionR\x05where\x12\x14\n" +
-	"\x05limit\x18\x05 \x01(\x05R\x05limit\"k\n" +
+	"\acolumns\x18\x03 \x03(\tR\acolumns\x12-\n" +
+	"\x05where\x18\x04 \x03(\v2\x17.pm.v1.OSQueryConditionR\x05where\x12\x14\n" +
+	"\x05limit\x18\x05 \x01(\x05R\x05limit\"b\n" +
 	"\x10OSQueryCondition\x12\x16\n" +
-	"\x06column\x18\x01 \x01(\tR\x06column\x12)\n" +
-	"\x02op\x18\x02 \x01(\x0e2\x19.powermanage.v1.OSQueryOpR\x02op\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\"\x8a\x01\n" +
+	"\x06column\x18\x01 \x01(\tR\x06column\x12 \n" +
+	"\x02op\x18\x02 \x01(\x0e2\x10.pm.v1.OSQueryOpR\x02op\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\tR\x05value\"\x81\x01\n" +
 	"\rOSQueryResult\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\x12.\n" +
-	"\x04rows\x18\x04 \x03(\v2\x1a.powermanage.v1.OSQueryRowR\x04rows\"\x7f\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12%\n" +
+	"\x04rows\x18\x04 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"v\n" +
 	"\n" +
-	"OSQueryRow\x128\n" +
-	"\x04data\x18\x01 \x03(\v2$.powermanage.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
+	"OSQueryRow\x12/\n" +
+	"\x04data\x18\x01 \x03(\v2\x1b.pm.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
-	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\"h\n" +
-	"\x10RegisterResponse\x125\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x18.powermanage.v1.DeviceIdR\bdeviceId\x12\x1d\n" +
+	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\"_\n" +
+	"\x10RegisterResponse\x12,\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12\x1d\n" +
 	"\n" +
 	"auth_token\x18\x02 \x01(\tR\tauthToken*\xcc\x01\n" +
 	"\tOSQueryOp\x12\x1b\n" +
@@ -1097,68 +1097,68 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\x0eOS_QUERY_OP_GE\x10\x05\x12\x12\n" +
 	"\x0eOS_QUERY_OP_LE\x10\x06\x12\x14\n" +
 	"\x10OS_QUERY_OP_LIKE\x10\a\x12\x14\n" +
-	"\x10OS_QUERY_OP_GLOB\x10\b2\xa8\x01\n" +
-	"\fAgentService\x12I\n" +
-	"\x06Stream\x12\x1c.powermanage.v1.AgentMessage\x1a\x1d.powermanage.v1.ServerMessage(\x010\x01\x12M\n" +
-	"\bRegister\x12\x1f.powermanage.v1.RegisterRequest\x1a .powermanage.v1.RegisterResponseBLZJgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x10OS_QUERY_OP_GLOB\x10\b2\x84\x01\n" +
+	"\fAgentService\x127\n" +
+	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12;\n" +
+	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
-	file_powermanage_v1_agent_proto_rawDescOnce sync.Once
-	file_powermanage_v1_agent_proto_rawDescData []byte
+	file_pm_v1_agent_proto_rawDescOnce sync.Once
+	file_pm_v1_agent_proto_rawDescData []byte
 )
 
-func file_powermanage_v1_agent_proto_rawDescGZIP() []byte {
-	file_powermanage_v1_agent_proto_rawDescOnce.Do(func() {
-		file_powermanage_v1_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_agent_proto_rawDesc), len(file_powermanage_v1_agent_proto_rawDesc)))
+func file_pm_v1_agent_proto_rawDescGZIP() []byte {
+	file_pm_v1_agent_proto_rawDescOnce.Do(func() {
+		file_pm_v1_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)))
 	})
-	return file_powermanage_v1_agent_proto_rawDescData
+	return file_pm_v1_agent_proto_rawDescData
 }
 
-var file_powermanage_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_powermanage_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
-var file_powermanage_v1_agent_proto_goTypes = []any{
-	(OSQueryOp)(0),              // 0: powermanage.v1.OSQueryOp
-	(*AgentMessage)(nil),        // 1: powermanage.v1.AgentMessage
-	(*Hello)(nil),               // 2: powermanage.v1.Hello
-	(*Heartbeat)(nil),           // 3: powermanage.v1.Heartbeat
-	(*ServerMessage)(nil),       // 4: powermanage.v1.ServerMessage
-	(*Welcome)(nil),             // 5: powermanage.v1.Welcome
-	(*ActionDispatch)(nil),      // 6: powermanage.v1.ActionDispatch
-	(*Error)(nil),               // 7: powermanage.v1.Error
-	(*OSQuery)(nil),             // 8: powermanage.v1.OSQuery
-	(*OSQueryCondition)(nil),    // 9: powermanage.v1.OSQueryCondition
-	(*OSQueryResult)(nil),       // 10: powermanage.v1.OSQueryResult
-	(*OSQueryRow)(nil),          // 11: powermanage.v1.OSQueryRow
-	(*RegisterRequest)(nil),     // 12: powermanage.v1.RegisterRequest
-	(*RegisterResponse)(nil),    // 13: powermanage.v1.RegisterResponse
-	nil,                         // 14: powermanage.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),        // 15: powermanage.v1.ActionResult
-	(*DeviceId)(nil),            // 16: powermanage.v1.DeviceId
+var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_pm_v1_agent_proto_goTypes = []any{
+	(OSQueryOp)(0),              // 0: pm.v1.OSQueryOp
+	(*AgentMessage)(nil),        // 1: pm.v1.AgentMessage
+	(*Hello)(nil),               // 2: pm.v1.Hello
+	(*Heartbeat)(nil),           // 3: pm.v1.Heartbeat
+	(*ServerMessage)(nil),       // 4: pm.v1.ServerMessage
+	(*Welcome)(nil),             // 5: pm.v1.Welcome
+	(*ActionDispatch)(nil),      // 6: pm.v1.ActionDispatch
+	(*Error)(nil),               // 7: pm.v1.Error
+	(*OSQuery)(nil),             // 8: pm.v1.OSQuery
+	(*OSQueryCondition)(nil),    // 9: pm.v1.OSQueryCondition
+	(*OSQueryResult)(nil),       // 10: pm.v1.OSQueryResult
+	(*OSQueryRow)(nil),          // 11: pm.v1.OSQueryRow
+	(*RegisterRequest)(nil),     // 12: pm.v1.RegisterRequest
+	(*RegisterResponse)(nil),    // 13: pm.v1.RegisterResponse
+	nil,                         // 14: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),        // 15: pm.v1.ActionResult
+	(*DeviceId)(nil),            // 16: pm.v1.DeviceId
 	(*durationpb.Duration)(nil), // 17: google.protobuf.Duration
-	(*Action)(nil),              // 18: powermanage.v1.Action
+	(*Action)(nil),              // 18: pm.v1.Action
 }
-var file_powermanage_v1_agent_proto_depIdxs = []int32{
-	2,  // 0: powermanage.v1.AgentMessage.hello:type_name -> powermanage.v1.Hello
-	3,  // 1: powermanage.v1.AgentMessage.heartbeat:type_name -> powermanage.v1.Heartbeat
-	15, // 2: powermanage.v1.AgentMessage.action_result:type_name -> powermanage.v1.ActionResult
-	10, // 3: powermanage.v1.AgentMessage.query_result:type_name -> powermanage.v1.OSQueryResult
-	16, // 4: powermanage.v1.Hello.device_id:type_name -> powermanage.v1.DeviceId
-	17, // 5: powermanage.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	5,  // 6: powermanage.v1.ServerMessage.welcome:type_name -> powermanage.v1.Welcome
-	6,  // 7: powermanage.v1.ServerMessage.action:type_name -> powermanage.v1.ActionDispatch
-	8,  // 8: powermanage.v1.ServerMessage.query:type_name -> powermanage.v1.OSQuery
-	7,  // 9: powermanage.v1.ServerMessage.error:type_name -> powermanage.v1.Error
-	17, // 10: powermanage.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	18, // 11: powermanage.v1.ActionDispatch.action:type_name -> powermanage.v1.Action
-	9,  // 12: powermanage.v1.OSQuery.where:type_name -> powermanage.v1.OSQueryCondition
-	0,  // 13: powermanage.v1.OSQueryCondition.op:type_name -> powermanage.v1.OSQueryOp
-	11, // 14: powermanage.v1.OSQueryResult.rows:type_name -> powermanage.v1.OSQueryRow
-	14, // 15: powermanage.v1.OSQueryRow.data:type_name -> powermanage.v1.OSQueryRow.DataEntry
-	16, // 16: powermanage.v1.RegisterResponse.device_id:type_name -> powermanage.v1.DeviceId
-	1,  // 17: powermanage.v1.AgentService.Stream:input_type -> powermanage.v1.AgentMessage
-	12, // 18: powermanage.v1.AgentService.Register:input_type -> powermanage.v1.RegisterRequest
-	4,  // 19: powermanage.v1.AgentService.Stream:output_type -> powermanage.v1.ServerMessage
-	13, // 20: powermanage.v1.AgentService.Register:output_type -> powermanage.v1.RegisterResponse
+var file_pm_v1_agent_proto_depIdxs = []int32{
+	2,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
+	3,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
+	15, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	10, // 3: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
+	16, // 4: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	17, // 5: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	5,  // 6: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	6,  // 7: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	8,  // 8: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	7,  // 9: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	17, // 10: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	18, // 11: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	9,  // 12: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	0,  // 13: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
+	11, // 14: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	14, // 15: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	16, // 16: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
+	1,  // 17: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	12, // 18: pm.v1.AgentService.Register:input_type -> pm.v1.RegisterRequest
+	4,  // 19: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	13, // 20: pm.v1.AgentService.Register:output_type -> pm.v1.RegisterResponse
 	19, // [19:21] is the sub-list for method output_type
 	17, // [17:19] is the sub-list for method input_type
 	17, // [17:17] is the sub-list for extension type_name
@@ -1166,20 +1166,20 @@ var file_powermanage_v1_agent_proto_depIdxs = []int32{
 	0,  // [0:17] is the sub-list for field type_name
 }
 
-func init() { file_powermanage_v1_agent_proto_init() }
-func file_powermanage_v1_agent_proto_init() {
-	if File_powermanage_v1_agent_proto != nil {
+func init() { file_pm_v1_agent_proto_init() }
+func file_pm_v1_agent_proto_init() {
+	if File_pm_v1_agent_proto != nil {
 		return
 	}
-	file_powermanage_v1_common_proto_init()
-	file_powermanage_v1_actions_proto_init()
-	file_powermanage_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
+	file_pm_v1_common_proto_init()
+	file_pm_v1_actions_proto_init()
+	file_pm_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
 		(*AgentMessage_Hello)(nil),
 		(*AgentMessage_Heartbeat)(nil),
 		(*AgentMessage_ActionResult)(nil),
 		(*AgentMessage_QueryResult)(nil),
 	}
-	file_powermanage_v1_agent_proto_msgTypes[3].OneofWrappers = []any{
+	file_pm_v1_agent_proto_msgTypes[3].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
 		(*ServerMessage_Action)(nil),
 		(*ServerMessage_Query)(nil),
@@ -1189,18 +1189,18 @@ func file_powermanage_v1_agent_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_agent_proto_rawDesc), len(file_powermanage_v1_agent_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_powermanage_v1_agent_proto_goTypes,
-		DependencyIndexes: file_powermanage_v1_agent_proto_depIdxs,
-		EnumInfos:         file_powermanage_v1_agent_proto_enumTypes,
-		MessageInfos:      file_powermanage_v1_agent_proto_msgTypes,
+		GoTypes:           file_pm_v1_agent_proto_goTypes,
+		DependencyIndexes: file_pm_v1_agent_proto_depIdxs,
+		EnumInfos:         file_pm_v1_agent_proto_enumTypes,
+		MessageInfos:      file_pm_v1_agent_proto_msgTypes,
 	}.Build()
-	File_powermanage_v1_agent_proto = out.File
-	file_powermanage_v1_agent_proto_goTypes = nil
-	file_powermanage_v1_agent_proto_depIdxs = nil
+	File_pm_v1_agent_proto = out.File
+	file_pm_v1_agent_proto_goTypes = nil
+	file_pm_v1_agent_proto_depIdxs = nil
 }

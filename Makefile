@@ -20,10 +20,10 @@ generate-go:
 		--go_opt=paths=source_relative \
 		--connect-go_out=$(GEN_DIR)/go \
 		--connect-go_opt=paths=source_relative \
-		$(PROTO_DIR)/powermanage/v1/*.proto
+		$(PROTO_DIR)/pm/v1/*.proto
 
 inject-tags:
-	protoc-go-inject-tag -input="$(GEN_DIR)/go/powermanage/v1/*.pb.go"
+	protoc-go-inject-tag -input="$(GEN_DIR)/go/pm/v1/*.pb.go"
 
 clean:
 	rm -rf $(GEN_DIR)

@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package powermanage.v1;
+package pm.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
 // Unique identifier for an action instance
 message ActionId {

@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package powermanage.v1;
+package pm.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
 import "google/protobuf/timestamp.proto";
-import "powermanage/v1/common.proto";
+import "pm/v1/common.proto";
 
 // ============================================================================
 // Action Types
