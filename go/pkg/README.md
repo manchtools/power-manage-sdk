@@ -1,6 +1,6 @@
 # Package Manager SDK
 
-A Go library for interacting with Linux package managers (apt, dnf) with structured data output.
+A Go library for interacting with Linux package managers (apt, dnf) with structured data output and a fluent builder API.
 
 ## Installation
 
@@ -11,201 +11,168 @@ import "github.com/manchtools/power-manage/sdk/go/pkg"
 ## Quick Start
 
 ```go
-// Auto-detect the system's package manager
-pm, err := pkg.Detect()
+// Auto-detect and create a package manager with builder API
+pm, err := pkg.New()
 if err != nil {
     log.Fatal(err)
 }
 
-// Get package manager info
-name, version, _ := pm.Info()
-fmt.Printf("Using %s %s\n", name, version)
-```
-
-## Usage
-
-### Install Packages
-
-```go
 // Install latest version
-result, err := pm.Install("nginx", "curl")
+result, err := pm.Install("nginx").Run()
 
 // Install specific version
-result, err := pm.InstallVersion("nginx", pkg.InstallOptions{
-    Version: "1.24.0-1",
-})
+result, err := pm.Install("nginx").Version("1.24.0-1").Run()
 
-// Install specific version with downgrade support
-result, err := pm.InstallVersion("nginx", pkg.InstallOptions{
-    Version:        "1.22.0-1",
-    AllowDowngrade: true,
-})
+// Install with downgrade support
+result, err := pm.Install("nginx").Version("1.22.0-1").AllowDowngrade().Run()
 ```
 
-### List Available Versions
+## Builder API
+
+The builder pattern provides a fluent interface for package operations:
+
+### Install
 
 ```go
-info, err := pm.ListVersions("nginx")
-if err != nil {
-    log.Fatal(err)
+// Install latest
+pm.Install("nginx").Run()
+
+// Install specific version
+pm.Install("nginx").Version("1.24.0-1").Run()
+
+// Install older version (downgrade)
+pm.Install("nginx").Version("1.22.0-1").AllowDowngrade().Run()
+```
+
+### Remove
+
+```go
+// Remove package
+pm.Remove("nginx").Run()
+
+// Remove multiple packages
+pm.Remove("nginx", "curl", "wget").Run()
+
+// Purge (remove with config files, apt only)
+pm.Remove("nginx").Purge().Run()
+```
+
+### Upgrade
+
+```go
+// Upgrade all packages
+pm.Upgrade().Run()
+
+// Upgrade specific packages
+pm.Upgrade("nginx", "curl").Run()
+```
+
+### Pin/Unpin
+
+```go
+// Pin packages to prevent upgrades
+pm.Pin("nginx", "curl").Run()
+
+// Unpin to allow upgrades
+pm.Unpin("nginx").Run()
+```
+
+## Direct Manager Access
+
+The `PackageManager` embeds the `Manager` interface, so you can still access all methods directly:
+
+```go
+pm, _ := pkg.New()
+
+// Builder API
+pm.Install("nginx").Version("1.24.0").Run()
+
+// Direct access
+packages, _ := pm.List()
+versions, _ := pm.ListVersions("nginx")
+pinned, _ := pm.IsPinned("nginx")
+```
+
+## Low-Level Manager Interface
+
+For more control, use the Manager interface directly:
+
+```go
+// Auto-detect
+manager, err := pkg.Detect()
+
+// Or use specific implementations
+apt := pkg.NewApt()
+dnf := pkg.NewDnf()
+
+// All Manager methods available
+manager.Install("nginx")
+manager.InstallVersion("nginx", pkg.InstallOptions{
+    Version:        "1.24.0-1",
+    AllowDowngrade: true,
+})
+manager.Remove("nginx")
+manager.List()
+manager.ListVersions("nginx")
+manager.Pin("nginx")
+```
+
+## Query Methods
+
+```go
+pm, _ := pkg.New()
+
+// List installed packages
+packages, _ := pm.List()
+for _, p := range packages {
+    fmt.Printf("%s %s (pinned: %v)\n", p.Name, p.Version, p.Pinned)
 }
 
-fmt.Printf("Package: %s\n", info.Name)
+// List available versions
+info, _ := pm.ListVersions("nginx")
 fmt.Printf("Installed: %s\n", info.Installed)
-fmt.Println("Available versions:")
 for _, v := range info.Versions {
     fmt.Printf("  %s (%s)\n", v.Version, v.Repository)
 }
-```
 
-### Get Installed Version
+// Get installed version
+version, _ := pm.GetInstalledVersion("nginx")
 
-```go
-version, err := pm.GetInstalledVersion("nginx")
-if err != nil {
-    fmt.Println("Package not installed")
-} else {
-    fmt.Printf("Installed version: %s\n", version)
-}
-```
+// Check if installed
+installed, _ := pm.IsInstalled("nginx")
 
-### Pin Packages (Prevent Upgrades)
-
-```go
-// Pin a package to prevent automatic upgrades
-result, err := pm.Pin("nginx", "curl")
-
-// Check if a package is pinned
+// Check if pinned
 pinned, _ := pm.IsPinned("nginx")
-fmt.Printf("nginx pinned: %v\n", pinned)
 
-// List all pinned packages
+// List pinned packages
 pinnedPkgs, _ := pm.ListPinned()
-for _, p := range pinnedPkgs {
-    fmt.Printf("%s %s (pinned)\n", p.Name, p.Version)
-}
 
-// Unpin to allow upgrades again
-result, err := pm.Unpin("nginx")
-```
-
-### List Installed Packages
-
-```go
-packages, err := pm.List()
-if err != nil {
-    log.Fatal(err)
-}
-
-for _, p := range packages {
-    pinStatus := ""
-    if p.Pinned {
-        pinStatus = " [pinned]"
-    }
-    fmt.Printf("%-30s %-20s%s\n", p.Name, p.Version, pinStatus)
-}
-```
-
-### Search for Packages
-
-```go
-results, err := pm.Search("nginx")
-if err != nil {
-    log.Fatal(err)
-}
-
-for _, r := range results {
-    fmt.Printf("%s: %s\n", r.Name, r.Description)
-}
-```
-
-### Remove Packages
-
-```go
-result, err := pm.Remove("nginx")
-if err != nil {
-    log.Printf("Remove failed: %s", result.Stderr)
-}
-```
-
-### Check for Updates
-
-```go
-// Update package database
-pm.Update()
-
-// List available upgrades
-updates, err := pm.ListUpgradable()
-if err != nil {
-    log.Fatal(err)
-}
-
+// List upgradable packages
+updates, _ := pm.ListUpgradable()
 for _, u := range updates {
     fmt.Printf("%s: %s -> %s\n", u.Name, u.CurrentVersion, u.NewVersion)
 }
 
-// Upgrade all packages
-result, err := pm.Upgrade()
+// Search packages
+results, _ := pm.Search("nginx")
 
-// Or upgrade specific packages
-result, err := pm.Upgrade("nginx", "curl")
+// Get package details
+p, _ := pm.Show("nginx")
 ```
 
-### Get Package Details
+## Context Support
 
 ```go
-p, err := pm.Show("nginx")
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Printf("Name: %s\n", p.Name)
-fmt.Printf("Version: %s\n", p.Version)
-fmt.Printf("Status: %s\n", p.Status)
-fmt.Printf("Pinned: %v\n", p.Pinned)
-fmt.Printf("Size: %d bytes\n", p.Size)
-fmt.Printf("Description: %s\n", p.Description)
-```
-
-### Check if Package is Installed
-
-```go
-installed, err := pm.IsInstalled("nginx")
-if installed {
-    fmt.Println("nginx is installed")
-}
-```
-
-## Using Specific Package Managers
-
-```go
-// Use apt directly
-apt := pkg.NewApt()
-packages, _ := apt.List()
-
-// Use dnf directly
-dnf := pkg.NewDnf()
-packages, _ := dnf.List()
-
-// With context for timeouts
 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 defer cancel()
 
+// With context
 apt := pkg.NewAptWithContext(ctx)
 dnf := pkg.NewDnfWithContext(ctx)
-```
 
-## Detection Helpers
-
-```go
-// Check which package manager is available
-if pkg.IsApt() {
-    fmt.Println("Debian/Ubuntu system")
-}
-
-if pkg.IsDnf() {
-    fmt.Println("Fedora/RHEL system")
-}
+// Or via Detect
+manager, _ := pkg.DetectWithContext(ctx)
+pm := pkg.NewPackageManager(manager)
 ```
 
 ## Types
@@ -218,22 +185,10 @@ type Package struct {
     Version      string
     Architecture string
     Description  string
-    Status       string // "installed", "available", "pinned"
+    Status       string // "installed", "available"
     Size         int64  // bytes
     Repository   string
-    Pinned       bool   // whether the package is held/versionlocked
-}
-```
-
-### PackageUpdate
-
-```go
-type PackageUpdate struct {
-    Name           string
-    CurrentVersion string
-    NewVersion     string
-    Architecture   string
-    Repository     string
+    Pinned       bool   // held/versionlocked
 }
 ```
 
@@ -243,33 +198,13 @@ type PackageUpdate struct {
 type VersionInfo struct {
     Name      string
     Versions  []AvailableVersion
-    Installed string // currently installed version
+    Installed string
 }
 
 type AvailableVersion struct {
     Version    string
     Repository string
     Size       int64
-}
-```
-
-### InstallOptions
-
-```go
-type InstallOptions struct {
-    Version        string // specific version to install (empty for latest)
-    AllowDowngrade bool   // allow downgrading if installed version is higher
-}
-```
-
-### SearchResult
-
-```go
-type SearchResult struct {
-    Name        string
-    Version     string
-    Description string
-    Repository  string
 }
 ```
 
@@ -296,19 +231,13 @@ type CommandResult struct {
 
 ### Version Formats
 
-- **apt**: Use exact version string from `apt-cache madison`, e.g., `1.24.0-1ubuntu1`
+- **apt**: Use exact version from `apt-cache madison`, e.g., `1.24.0-1ubuntu1`
 - **dnf**: Use version-release format, e.g., `1.24.0-1.fc39`
 
 ### Pinning Requirements
 
 - **apt**: No additional setup required
-- **dnf**: Requires `python3-dnf-plugin-versionlock` package:
+- **dnf**: Requires `python3-dnf-plugin-versionlock`:
   ```bash
   dnf install python3-dnf-plugin-versionlock
   ```
-
-### Downgrading
-
-When using `AllowDowngrade: true`:
-- **apt**: Uses `--allow-downgrades` flag
-- **dnf**: Uses `--allowerasing` flag, falls back to `dnf downgrade` if needed
