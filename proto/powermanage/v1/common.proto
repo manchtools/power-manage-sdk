@@ -2,59 +2,56 @@ syntax = "proto3";
 
 package powermanage.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
+option go_package = "github.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
 
 import "google/protobuf/timestamp.proto";
 
-// Unique identifier for an agent
-message AgentId {
-  string id = 1; // UUID
-}
-
 // Unique identifier for an action instance
 message ActionId {
-  string id = 1; // UUID
+  // @gotags: validate:"required,ulid"
+  string value = 1;
 }
 
-// Execution result status
+// Unique identifier for a device/agent
+message DeviceId {
+  // @gotags: validate:"required,ulid"
+  string value = 1;
+}
+
+// Execution status for any action
 enum ExecutionStatus {
   EXECUTION_STATUS_UNSPECIFIED = 0;
-  EXECUTION_STATUS_SUCCESS = 1;
-  EXECUTION_STATUS_FAILED = 2;
-  EXECUTION_STATUS_SKIPPED = 3; // No action needed, state already matches
-  EXECUTION_STATUS_PENDING = 4;
+  EXECUTION_STATUS_PENDING = 1;
+  EXECUTION_STATUS_RUNNING = 2;
+  EXECUTION_STATUS_SUCCESS = 3;
+  EXECUTION_STATUS_FAILED = 4;
+  EXECUTION_STATUS_SKIPPED = 5;
+  EXECUTION_STATUS_CANCELLED = 6;
+  EXECUTION_STATUS_TIMEOUT = 7;
 }
 
-// Log severity levels
-enum LogLevel {
-  LOG_LEVEL_UNSPECIFIED = 0;
-  LOG_LEVEL_DEBUG = 1;
-  LOG_LEVEL_INFO = 2;
-  LOG_LEVEL_WARN = 3;
-  LOG_LEVEL_ERROR = 4;
-}
-
-// Structured log entry
-message LogEntry {
-  string id = 1; // UUID
-  google.protobuf.Timestamp timestamp = 2;
-  LogLevel level = 3;
-  string message = 4;
-  optional ActionId action_id = 5; // Associated action if applicable
-  map<string, string> metadata = 6; // Additional structured data
-}
-
-// Version comparison specifier
-enum VersionSpecifier {
-  VERSION_SPECIFIER_UNSPECIFIED = 0;
-  VERSION_SPECIFIER_EXACT = 1;   // Must be exactly this version
-  VERSION_SPECIFIER_MINIMUM = 2; // Must be at least this version
-  VERSION_SPECIFIER_MAXIMUM = 3; // Must be at most this version
-}
-
-// Desired state for an action
+// Desired state for stateful actions
 enum DesiredState {
   DESIRED_STATE_UNSPECIFIED = 0;
-  DESIRED_STATE_INSTALLED = 1;
-  DESIRED_STATE_REMOVED = 2;
+  DESIRED_STATE_PRESENT = 1;   // Install/create/enable
+  DESIRED_STATE_ABSENT = 2;    // Remove/delete/disable
+  DESIRED_STATE_LATEST = 3;    // Ensure latest version
+}
+
+// Rollback policy for actions
+enum RollbackPolicy {
+  ROLLBACK_POLICY_ON_FAILURE = 0;  // Rollback only on failure
+  ROLLBACK_POLICY_NONE = 1;        // Never rollback
+}
+
+// Output from command execution
+message CommandOutput {
+  // @gotags: validate:"omitempty"
+  int32 exit_code = 1;
+  // @gotags: validate:"omitempty,max=1048576"
+  string stdout = 2;
+  // @gotags: validate:"omitempty,max=1048576"
+  string stderr = 3;
+  // @gotags: validate:"omitempty,gte=0"
+  int64 duration_ms = 4;
 }
