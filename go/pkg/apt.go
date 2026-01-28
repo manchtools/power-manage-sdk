@@ -74,6 +74,15 @@ func (a *Apt) Remove(packages ...string) (*CommandResult, error) {
 	return a.run("apt-get", args...)
 }
 
+// Purge removes packages including configuration files.
+func (a *Apt) Purge(packages ...string) (*CommandResult, error) {
+	if len(packages) == 0 {
+		return &CommandResult{Success: true}, nil
+	}
+	args := append([]string{"purge", "-y"}, packages...)
+	return a.run("apt-get", args...)
+}
+
 // Update updates the package database.
 func (a *Apt) Update() (*CommandResult, error) {
 	return a.run("apt-get", "update")
