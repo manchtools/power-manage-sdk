@@ -316,7 +316,11 @@ type PackageParams struct {
 	// @gotags: validate:"required,min=1,max=255"
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"omitempty,max=128"
-	Version       string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty" validate:"omitempty,max=128"`
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty" validate:"omitempty,max=128"`
+	// @gotags: validate:"omitempty"
+	AllowDowngrade bool `protobuf:"varint,3,opt,name=allow_downgrade,json=allowDowngrade,proto3" json:"allow_downgrade,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty"
+	Pin           bool `protobuf:"varint,4,opt,name=pin,proto3" json:"pin,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -363,6 +367,20 @@ func (x *PackageParams) GetVersion() string {
 		return x.Version
 	}
 	return ""
+}
+
+func (x *PackageParams) GetAllowDowngrade() bool {
+	if x != nil {
+		return x.AllowDowngrade
+	}
+	return false
+}
+
+func (x *PackageParams) GetPin() bool {
+	if x != nil {
+		return x.Pin
+	}
+	return false
 }
 
 type AppInstallParams struct {
@@ -768,10 +786,12 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x05shell\x18\f \x01(\v2\x1b.powermanage.v1.ShellParamsH\x00R\x05shell\x129\n" +
 	"\asystemd\x18\r \x01(\v2\x1d.powermanage.v1.SystemdParamsH\x00R\asystemd\x120\n" +
 	"\x04file\x18\x0e \x01(\v2\x1a.powermanage.v1.FileParamsH\x00R\x04fileB\b\n" +
-	"\x06params\"=\n" +
+	"\x06params\"x\n" +
 	"\rPackageParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\"p\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12'\n" +
+	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12\x10\n" +
+	"\x03pin\x18\x04 \x01(\bR\x03pin\"p\n" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
@@ -819,7 +839,7 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03BIZGgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03BLZJgithub.com/manchtools/power-manage/sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
 	file_powermanage_v1_actions_proto_rawDescOnce sync.Once

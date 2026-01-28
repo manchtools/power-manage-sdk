@@ -66,6 +66,10 @@ message PackageParams {
   string name = 1;
   // @gotags: validate:"omitempty,max=128"
   string version = 2;
+  // @gotags: validate:"omitempty"
+  bool allow_downgrade = 3;
+  // @gotags: validate:"omitempty"
+  bool pin = 4;
 }
 
 message AppInstallParams {
