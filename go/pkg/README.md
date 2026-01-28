@@ -24,6 +24,71 @@ fmt.Printf("Using %s %s\n", name, version)
 
 ## Usage
 
+### Install Packages
+
+```go
+// Install latest version
+result, err := pm.Install("nginx", "curl")
+
+// Install specific version
+result, err := pm.InstallVersion("nginx", pkg.InstallOptions{
+    Version: "1.24.0-1",
+})
+
+// Install specific version with downgrade support
+result, err := pm.InstallVersion("nginx", pkg.InstallOptions{
+    Version:        "1.22.0-1",
+    AllowDowngrade: true,
+})
+```
+
+### List Available Versions
+
+```go
+info, err := pm.ListVersions("nginx")
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Package: %s\n", info.Name)
+fmt.Printf("Installed: %s\n", info.Installed)
+fmt.Println("Available versions:")
+for _, v := range info.Versions {
+    fmt.Printf("  %s (%s)\n", v.Version, v.Repository)
+}
+```
+
+### Get Installed Version
+
+```go
+version, err := pm.GetInstalledVersion("nginx")
+if err != nil {
+    fmt.Println("Package not installed")
+} else {
+    fmt.Printf("Installed version: %s\n", version)
+}
+```
+
+### Pin Packages (Prevent Upgrades)
+
+```go
+// Pin a package to prevent automatic upgrades
+result, err := pm.Pin("nginx", "curl")
+
+// Check if a package is pinned
+pinned, _ := pm.IsPinned("nginx")
+fmt.Printf("nginx pinned: %v\n", pinned)
+
+// List all pinned packages
+pinnedPkgs, _ := pm.ListPinned()
+for _, p := range pinnedPkgs {
+    fmt.Printf("%s %s (pinned)\n", p.Name, p.Version)
+}
+
+// Unpin to allow upgrades again
+result, err := pm.Unpin("nginx")
+```
+
 ### List Installed Packages
 
 ```go
@@ -33,7 +98,11 @@ if err != nil {
 }
 
 for _, p := range packages {
-    fmt.Printf("%-30s %-20s %s\n", p.Name, p.Version, p.Architecture)
+    pinStatus := ""
+    if p.Pinned {
+        pinStatus = " [pinned]"
+    }
+    fmt.Printf("%-30s %-20s%s\n", p.Name, p.Version, pinStatus)
 }
 ```
 
@@ -48,16 +117,6 @@ if err != nil {
 for _, r := range results {
     fmt.Printf("%s: %s\n", r.Name, r.Description)
 }
-```
-
-### Install Packages
-
-```go
-result, err := pm.Install("nginx", "curl")
-if err != nil {
-    log.Printf("Install failed: %s", result.Stderr)
-}
-fmt.Printf("Success: %v, Duration: %v\n", result.Success, result.Duration)
 ```
 
 ### Remove Packages
@@ -95,16 +154,17 @@ result, err := pm.Upgrade("nginx", "curl")
 ### Get Package Details
 
 ```go
-pkg, err := pm.Show("nginx")
+p, err := pm.Show("nginx")
 if err != nil {
     log.Fatal(err)
 }
 
-fmt.Printf("Name: %s\n", pkg.Name)
-fmt.Printf("Version: %s\n", pkg.Version)
-fmt.Printf("Status: %s\n", pkg.Status)
-fmt.Printf("Size: %d bytes\n", pkg.Size)
-fmt.Printf("Description: %s\n", pkg.Description)
+fmt.Printf("Name: %s\n", p.Name)
+fmt.Printf("Version: %s\n", p.Version)
+fmt.Printf("Status: %s\n", p.Status)
+fmt.Printf("Pinned: %v\n", p.Pinned)
+fmt.Printf("Size: %d bytes\n", p.Size)
+fmt.Printf("Description: %s\n", p.Description)
 ```
 
 ### Check if Package is Installed
@@ -158,9 +218,10 @@ type Package struct {
     Version      string
     Architecture string
     Description  string
-    Status       string // "installed" or "available"
+    Status       string // "installed", "available", "pinned"
     Size         int64  // bytes
     Repository   string
+    Pinned       bool   // whether the package is held/versionlocked
 }
 ```
 
@@ -173,6 +234,31 @@ type PackageUpdate struct {
     NewVersion     string
     Architecture   string
     Repository     string
+}
+```
+
+### VersionInfo
+
+```go
+type VersionInfo struct {
+    Name      string
+    Versions  []AvailableVersion
+    Installed string // currently installed version
+}
+
+type AvailableVersion struct {
+    Version    string
+    Repository string
+    Size       int64
+}
+```
+
+### InstallOptions
+
+```go
+type InstallOptions struct {
+    Version        string // specific version to install (empty for latest)
+    AllowDowngrade bool   // allow downgrading if installed version is higher
 }
 ```
 
@@ -201,7 +287,28 @@ type CommandResult struct {
 
 ## Supported Package Managers
 
-| Manager | Systems | Detection |
-|---------|---------|-----------|
-| apt | Debian, Ubuntu, Linux Mint | `/usr/bin/apt-get` |
-| dnf | Fedora, RHEL 8+, CentOS Stream | `/usr/bin/dnf` |
+| Manager | Systems | Detection | Pinning |
+|---------|---------|-----------|---------|
+| apt | Debian, Ubuntu, Linux Mint | `/usr/bin/apt-get` | `apt-mark hold/unhold` |
+| dnf | Fedora, RHEL 8+, CentOS Stream | `/usr/bin/dnf` | `dnf versionlock` (requires plugin) |
+
+## Notes
+
+### Version Formats
+
+- **apt**: Use exact version string from `apt-cache madison`, e.g., `1.24.0-1ubuntu1`
+- **dnf**: Use version-release format, e.g., `1.24.0-1.fc39`
+
+### Pinning Requirements
+
+- **apt**: No additional setup required
+- **dnf**: Requires `python3-dnf-plugin-versionlock` package:
+  ```bash
+  dnf install python3-dnf-plugin-versionlock
+  ```
+
+### Downgrading
+
+When using `AllowDowngrade: true`:
+- **apt**: Uses `--allow-downgrades` flag
+- **dnf**: Uses `--allowerasing` flag, falls back to `dnf downgrade` if needed
