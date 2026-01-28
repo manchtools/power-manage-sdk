@@ -10,515 +10,186 @@ import "powermanage/v1/common.proto";
 import "powermanage/v1/actions.proto";
 
 // ============================================================================
-// Agent Service - Bidirectional streaming for agent-server communication
+// Agent Service
 // ============================================================================
 
 service AgentService {
-  // Primary bidirectional stream for agent-server communication
-  // Agent connects and maintains persistent connection for receiving actions
-  rpc AgentStream(stream AgentMessage) returns (stream ServerMessage);
+  // Bidirectional stream for agent-server communication
+  rpc Stream(stream AgentMessage) returns (stream ServerMessage);
 
-  // One-time registration for new agents
-  rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
-
-  // Report action results (fallback for when stream is interrupted)
-  rpc ReportActionResult(ReportActionResultRequest) returns (ReportActionResultResponse);
-
-  // Get pending actions (fallback for reconnection scenarios)
-  rpc GetPendingActions(GetPendingActionsRequest) returns (GetPendingActionsResponse);
+  // One-time agent registration
+  rpc Register(RegisterRequest) returns (RegisterResponse);
 }
 
 // ============================================================================
-// Agent -> Server Messages
+// Agent -> Server
 // ============================================================================
 
 message AgentMessage {
   // @gotags: validate:"required,ulid"
-  string correlation_id = 1;
+  string id = 1;
 
   oneof payload {
     // @gotags: validate:"omitempty"
-    AgentHello hello = 10;
+    Hello hello = 10;
     // @gotags: validate:"omitempty"
-    AgentHeartbeat heartbeat = 11;
+    Heartbeat heartbeat = 11;
     // @gotags: validate:"omitempty"
-    AgentGoodbye goodbye = 12;
-
+    ActionResult action_result = 20;
     // @gotags: validate:"omitempty"
-    StateReport state_report = 20;
-    // @gotags: validate:"omitempty"
-    CapabilityReport capability_report = 21;
-
-    // @gotags: validate:"omitempty"
-    ActionAcknowledgement action_ack = 30;
-    // @gotags: validate:"omitempty"
-    ActionProgress action_progress = 31;
-    // @gotags: validate:"omitempty"
-    ActionResultReport action_result = 32;
-
-    // @gotags: validate:"omitempty"
-    ActionRequest action_request = 40;
+    OSQueryResult query_result = 30;
   }
-
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp timestamp = 50;
 }
 
-message AgentHello {
+message Hello {
   // @gotags: validate:"required"
   DeviceId device_id = 1;
   // @gotags: validate:"required,min=1,max=32"
   string agent_version = 2;
-  // @gotags: validate:"required,min=1,max=253,hostname_rfc1123"
+  // @gotags: validate:"required,min=1,max=253"
   string hostname = 3;
-
-  // Linux platform information
-  // @gotags: validate:"required"
-  LinuxPlatformInfo platform = 4;
-
-  // Authentication
   // @gotags: validate:"omitempty,max=4096"
-  string auth_token = 10;
-  // @gotags: validate:"omitempty,max=8192"
-  bytes client_certificate = 11;
-
-  // Reconnection
-  // @gotags: validate:"omitempty"
-  bool is_reconnect = 12;
-  // @gotags: validate:"omitempty,ulid"
-  string last_correlation_id = 13;
+  string auth_token = 4;
 }
 
-message LinuxPlatformInfo {
-  // Distribution info (from /etc/os-release)
-  // @gotags: validate:"required,min=1,max=64,lowercase"
-  string distro_id = 1;
-  // @gotags: validate:"omitempty,max=128"
-  string distro_name = 2;
-  // @gotags: validate:"omitempty,max=64"
-  string distro_version = 3;
-  // @gotags: validate:"omitempty,max=64,lowercase"
-  string distro_codename = 4;
-  // @gotags: validate:"omitempty,max=128"
-  string distro_id_like = 5;
-
-  // System info
-  // @gotags: validate:"required,oneof=x86_64 aarch64 armv7l i686"
-  string architecture = 6;
-  // @gotags: validate:"omitempty,max=64"
-  string kernel_version = 7;
-
-  // Hardware info
-  // @gotags: validate:"omitempty,gte=1"
-  int32 cpu_cores = 10;
-  // @gotags: validate:"omitempty,gte=0"
-  int64 memory_bytes = 11;
-  // @gotags: validate:"omitempty,gte=0"
-  int64 disk_bytes = 12;
-
-  // Init system (should be systemd for modern Linux)
-  // @gotags: validate:"omitempty,max=32"
-  string init_system = 15;
-  // @gotags: validate:"omitempty,max=32"
-  string systemd_version = 16;
-
-  // Package managers available
-  // @gotags: validate:"omitempty,dive,oneof=apt dnf pacman zypper flatpak snap"
-  repeated string package_managers = 20;
-
-  // SELinux/AppArmor status
-  // @gotags: validate:"omitempty,oneof=selinux apparmor none"
-  string security_module = 25;
-  // @gotags: validate:"omitempty"
-  bool security_enforcing = 26;
-}
-
-message AgentHeartbeat {
+message Heartbeat {
   // @gotags: validate:"omitempty"
   google.protobuf.Duration uptime = 1;
-
-  // Current load
   // @gotags: validate:"omitempty,gte=0,lte=100"
-  float cpu_usage_percent = 2;
+  float cpu_percent = 2;
   // @gotags: validate:"omitempty,gte=0,lte=100"
-  float memory_usage_percent = 3;
+  float memory_percent = 3;
   // @gotags: validate:"omitempty,gte=0,lte=100"
-  float disk_usage_percent = 4;
-
-  // Linux-specific metrics
-  // @gotags: validate:"omitempty,gte=0"
-  float load_average_1m = 5;
-  // @gotags: validate:"omitempty,gte=0"
-  float load_average_5m = 6;
-  // @gotags: validate:"omitempty,gte=0"
-  float load_average_15m = 7;
-
-  // Action queue status
-  // @gotags: validate:"omitempty,gte=0"
-  int32 pending_actions = 10;
-  // @gotags: validate:"omitempty,gte=0"
-  int32 running_actions = 11;
-
-  // Health indicators
-  // @gotags: validate:"omitempty"
-  bool healthy = 15;
-  // @gotags: validate:"omitempty,dive,max=255"
-  repeated string health_issues = 16;
-}
-
-message AgentGoodbye {
-  // @gotags: validate:"omitempty"
-  GoodbyeReason reason = 1;
-  // @gotags: validate:"omitempty,max=1024"
-  string message = 2;
-}
-
-enum GoodbyeReason {
-  GOODBYE_REASON_UNSPECIFIED = 0;
-  GOODBYE_REASON_SHUTDOWN = 1;
-  GOODBYE_REASON_RESTART = 2;
-  GOODBYE_REASON_UPGRADE = 3;
-  GOODBYE_REASON_ERROR = 4;
-  GOODBYE_REASON_MAINTENANCE = 5;
-}
-
-message StateReport {
-  // @gotags: validate:"omitempty,dive"
-  repeated ActionState action_states = 1;
-
-  // @gotags: validate:"omitempty,max=255"
-  string reconciliation_token = 2;
-  // @gotags: validate:"omitempty"
-  bool is_full_report = 3;
-}
-
-message CapabilityReport {
-  // @gotags: validate:"omitempty,dive"
-  repeated ActionType supported_actions = 1;
-
-  // @gotags: validate:"omitempty,dive"
-  repeated HandlerInfo handlers = 2;
-
-  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys"
-  map<string, bool> features = 3;
-
-  // Linux-specific capabilities
-  // @gotags: validate:"omitempty"
-  bool has_systemd = 10;
-  // @gotags: validate:"omitempty"
-  bool has_selinux = 11;
-  // @gotags: validate:"omitempty"
-  bool has_apparmor = 12;
-  // @gotags: validate:"omitempty,dive,max=255,startswith=/"
-  repeated string available_shells = 13;
-}
-
-message HandlerInfo {
-  // @gotags: validate:"required,min=1,max=255"
-  string handler_id = 1;
-  // @gotags: validate:"omitempty,max=128"
-  string version = 2;
-  // @gotags: validate:"omitempty,dive,max=255"
-  repeated string supported_params = 3;
-}
-
-message ActionAcknowledgement {
-  // @gotags: validate:"required"
-  ActionId action_id = 1;
-  // @gotags: validate:"required,ne=0"
-  AckStatus status = 2;
-  // @gotags: validate:"omitempty,max=1024"
-  string message = 3;
-}
-
-enum AckStatus {
-  ACK_STATUS_UNSPECIFIED = 0;
-  ACK_STATUS_ACCEPTED = 1;
-  ACK_STATUS_REJECTED = 2;
-  ACK_STATUS_DEFERRED = 3;
-}
-
-message ActionProgress {
-  // @gotags: validate:"required"
-  ActionId action_id = 1;
-
-  // @gotags: validate:"omitempty,gte=0,lte=100"
-  int32 percent_complete = 2;
-  // @gotags: validate:"omitempty,max=255"
-  string current_step = 3;
-  // @gotags: validate:"omitempty,max=1024"
-  string status_message = 4;
-
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp estimated_completion = 5;
-
-  // @gotags: validate:"omitempty,max=65536"
-  string stdout_chunk = 10;
-  // @gotags: validate:"omitempty,max=65536"
-  string stderr_chunk = 11;
-}
-
-message ActionResultReport {
-  // @gotags: validate:"required"
-  ActionResult result = 1;
-}
-
-message ActionRequest {
-  // @gotags: validate:"omitempty,dive"
-  repeated ActionType requested_types = 1;
-  // @gotags: validate:"omitempty,gte=1,lte=100"
-  int32 max_actions = 2;
+  float disk_percent = 4;
 }
 
 // ============================================================================
-// Server -> Agent Messages
+// Server -> Agent
 // ============================================================================
 
 message ServerMessage {
   // @gotags: validate:"required,ulid"
-  string correlation_id = 1;
+  string id = 1;
 
   oneof payload {
     // @gotags: validate:"omitempty"
-    ServerHello hello = 10;
+    Welcome welcome = 10;
     // @gotags: validate:"omitempty"
-    ServerHeartbeatAck heartbeat_ack = 11;
-
+    ActionDispatch action = 20;
     // @gotags: validate:"omitempty"
-    ConfigurationUpdate config_update = 20;
-
+    OSQuery query = 30;
     // @gotags: validate:"omitempty"
-    ActionDispatch action_dispatch = 30;
-    // @gotags: validate:"omitempty"
-    ActionCancel action_cancel = 31;
-    // @gotags: validate:"omitempty"
-    ActionUpdate action_update = 32;
-
-    // @gotags: validate:"omitempty"
-    StateRequest state_request = 40;
-    // @gotags: validate:"omitempty"
-    CapabilityRequest capability_request = 41;
-
-    // @gotags: validate:"omitempty"
-    ServerError error = 50;
+    Error error = 40;
   }
-
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp timestamp = 60;
 }
 
-message ServerHello {
+message Welcome {
   // @gotags: validate:"required,min=1,max=32"
   string server_version = 1;
-  // @gotags: validate:"required,ulid"
-  string server_id = 2;
-
   // @gotags: validate:"omitempty"
-  google.protobuf.Duration heartbeat_interval = 3;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Duration reconnect_backoff_max = 4;
-
-  // @gotags: validate:"omitempty,dive"
-  repeated Action pending_actions = 10;
-}
-
-message ServerHeartbeatAck {
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp received_at = 1;
-
-  // @gotags: validate:"omitempty"
-  google.protobuf.Duration suggested_heartbeat_interval = 2;
-}
-
-message ConfigurationUpdate {
-  // @gotags: validate:"omitempty"
-  google.protobuf.Duration action_check_interval = 1;
-  // @gotags: validate:"omitempty,gte=1,lte=10"
-  int32 max_concurrent_actions = 2;
-  // @gotags: validate:"omitempty,gte=0,lte=10"
-  int32 max_action_retries = 3;
-
-  // @gotags: validate:"omitempty"
-  LogLevel log_level = 4;
-  // @gotags: validate:"omitempty"
-  bool enable_telemetry = 5;
-
-  // @gotags: validate:"omitempty"
-  bool auto_update_enabled = 10;
-  // @gotags: validate:"omitempty,oneof=stable beta nightly"
-  string update_channel = 11;
-}
-
-enum LogLevel {
-  LOG_LEVEL_UNSPECIFIED = 0;
-  LOG_LEVEL_DEBUG = 1;
-  LOG_LEVEL_INFO = 2;
-  LOG_LEVEL_WARN = 3;
-  LOG_LEVEL_ERROR = 4;
+  google.protobuf.Duration heartbeat_interval = 2;
 }
 
 message ActionDispatch {
-  // @gotags: validate:"required,min=1,dive"
-  repeated Action actions = 1;
-
-  // @gotags: validate:"omitempty"
-  bool immediate = 2;
-  // @gotags: validate:"omitempty,gte=0,lte=1000"
-  int32 priority = 3;
-  // @gotags: validate:"omitempty"
-  bool allow_concurrent = 4;
-
-  // @gotags: validate:"omitempty,dive"
-  repeated ActionDependency dependencies = 10;
-}
-
-message ActionDependency {
   // @gotags: validate:"required"
-  ActionId action_id = 1;
-  // @gotags: validate:"required"
-  ActionId depends_on = 2;
-  // @gotags: validate:"omitempty"
-  DependencyType type = 3;
+  Action action = 1;
 }
 
-enum DependencyType {
-  DEPENDENCY_TYPE_UNSPECIFIED = 0;
-  DEPENDENCY_TYPE_SUCCESS = 1;
-  DEPENDENCY_TYPE_COMPLETION = 2;
-  DEPENDENCY_TYPE_FAILURE = 3;
-}
-
-message ActionCancel {
-  // @gotags: validate:"required"
-  ActionId action_id = 1;
-  // @gotags: validate:"omitempty,max=1024"
-  string reason = 2;
-  // @gotags: validate:"omitempty"
-  bool force = 3;
-}
-
-message ActionUpdate {
-  // @gotags: validate:"required"
-  ActionId action_id = 1;
-
-  // @gotags: validate:"required"
-  Action updated_action = 2;
-
-  // @gotags: validate:"omitempty,dive,max=64"
-  repeated string updated_fields = 3;
-}
-
-message StateRequest {
-  // @gotags: validate:"omitempty,dive"
-  repeated ActionId action_ids = 1;
-
-  // @gotags: validate:"omitempty"
-  bool full_report = 2;
-
-  // @gotags: validate:"omitempty,max=255"
-  string since_token = 3;
-}
-
-message CapabilityRequest {
-  // @gotags: validate:"omitempty"
-  bool include_handlers = 1;
-}
-
-message ServerError {
+message Error {
   // @gotags: validate:"required,min=1,max=64"
   string code = 1;
   // @gotags: validate:"required,min=1,max=1024"
   string message = 2;
-  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=4096"
-  map<string, string> details = 3;
-
-  // @gotags: validate:"omitempty"
-  bool retryable = 4;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Duration retry_after = 5;
 }
+
+// ============================================================================
+// OS Query (osquery-compatible)
+// ============================================================================
+
+message OSQuery {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string table = 2;
+  // @gotags: validate:"omitempty,dive,max=64"
+  repeated string columns = 3;
+  // @gotags: validate:"omitempty,dive"
+  repeated OSQueryCondition where = 4;
+  // @gotags: validate:"omitempty,gte=0,lte=10000"
+  int32 limit = 5;
+}
+
+message OSQueryCondition {
+  // @gotags: validate:"required,min=1,max=64"
+  string column = 1;
+  // @gotags: validate:"required"
+  OSQueryOp op = 2;
+  // @gotags: validate:"required,max=4096"
+  string value = 3;
+}
+
+enum OSQueryOp {
+  OS_QUERY_OP_UNSPECIFIED = 0;
+  OS_QUERY_OP_EQ = 1;
+  OS_QUERY_OP_NE = 2;
+  OS_QUERY_OP_GT = 3;
+  OS_QUERY_OP_LT = 4;
+  OS_QUERY_OP_GE = 5;
+  OS_QUERY_OP_LE = 6;
+  OS_QUERY_OP_LIKE = 7;
+  OS_QUERY_OP_GLOB = 8;
+}
+
+message OSQueryResult {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  // @gotags: validate:"omitempty"
+  bool success = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string error = 3;
+  // @gotags: validate:"omitempty,dive"
+  repeated OSQueryRow rows = 4;
+}
+
+message OSQueryRow {
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=65536"
+  map<string, string> data = 1;
+}
+
+// ============================================================================
+// Standard OS Query Tables
+// ============================================================================
+//
+// os_version: name, version, major, minor, patch, arch, platform, platform_like
+// system_info: hostname, cpu_type, cpu_brand, cpu_cores, physical_memory
+// kernel_info: version, path
+// uptime: days, hours, minutes, seconds, total_seconds
+// users: uid, gid, username, directory, shell
+// processes: pid, name, path, cmdline, state, uid, parent
+// packages: name, version, arch, source
+// deb_packages: name, version, arch, status
+// rpm_packages: name, version, release, arch
+// systemd_units: id, type, load_state, active_state, sub_state
+// listening_ports: pid, port, protocol, address
+// mounts: device, path, type
+// memory_info: memory_total, memory_free, swap_total, swap_free
 
 // ============================================================================
 // Registration
 // ============================================================================
 
-message RegisterAgentRequest {
-  // @gotags: validate:"required_without=InviteCode,omitempty,max=255"
-  string bootstrap_token = 1;
-  // @gotags: validate:"required_without=BootstrapToken,omitempty,max=64"
-  string invite_code = 2;
-
-  // @gotags: validate:"required,min=1,max=253,hostname_rfc1123"
-  string hostname = 3;
-  // @gotags: validate:"required"
-  LinuxPlatformInfo platform = 4;
+message RegisterRequest {
+  // @gotags: validate:"required,max=255"
+  string token = 1;
+  // @gotags: validate:"required,min=1,max=253"
+  string hostname = 2;
   // @gotags: validate:"required,min=1,max=32"
-  string agent_version = 5;
-
-  // @gotags: validate:"omitempty"
-  DeviceId device_id = 6;
-
-  // @gotags: validate:"omitempty,dive,keys,max=63,endkeys,max=255"
-  map<string, string> labels = 10;
+  string agent_version = 3;
 }
 
-message RegisterAgentResponse {
+message RegisterResponse {
   // @gotags: validate:"required"
   DeviceId device_id = 1;
-
   // @gotags: validate:"required,min=1,max=4096"
   string auth_token = 2;
-  // @gotags: validate:"omitempty,max=8192"
-  bytes client_certificate = 3;
-  // @gotags: validate:"omitempty,max=4096"
-  bytes client_private_key = 4;
-
-  // @gotags: validate:"omitempty,max=8192"
-  bytes ca_certificate = 5;
-
-  // @gotags: validate:"omitempty"
-  ConfigurationUpdate initial_config = 10;
-}
-
-// ============================================================================
-// Fallback RPCs
-// ============================================================================
-
-message ReportActionResultRequest {
-  // @gotags: validate:"required"
-  DeviceId device_id = 1;
-  // @gotags: validate:"required_without=Results"
-  ActionResult result = 2;
-
-  // @gotags: validate:"required_without=Result,omitempty,dive"
-  repeated ActionResult results = 3;
-}
-
-message ReportActionResultResponse {
-  // @gotags: validate:"omitempty"
-  bool success = 1;
-  // @gotags: validate:"omitempty,max=1024"
-  string error_message = 2;
-
-  // @gotags: validate:"omitempty,dive"
-  repeated Action next_actions = 3;
-}
-
-message GetPendingActionsRequest {
-  // @gotags: validate:"required"
-  DeviceId device_id = 1;
-
-  // @gotags: validate:"omitempty,dive"
-  repeated ActionType types = 2;
-
-  // @gotags: validate:"omitempty,gte=1,lte=100"
-  int32 max_actions = 3;
-}
-
-message GetPendingActionsResponse {
-  // @gotags: validate:"omitempty,dive"
-  repeated Action actions = 1;
-
-  // @gotags: validate:"omitempty"
-  bool has_more = 2;
 }

@@ -26,22 +26,13 @@ enum ExecutionStatus {
   EXECUTION_STATUS_SUCCESS = 3;
   EXECUTION_STATUS_FAILED = 4;
   EXECUTION_STATUS_SKIPPED = 5;
-  EXECUTION_STATUS_CANCELLED = 6;
-  EXECUTION_STATUS_TIMEOUT = 7;
+  EXECUTION_STATUS_TIMEOUT = 6;
 }
 
 // Desired state for stateful actions
 enum DesiredState {
-  DESIRED_STATE_UNSPECIFIED = 0;
-  DESIRED_STATE_PRESENT = 1;   // Install/create/enable
-  DESIRED_STATE_ABSENT = 2;    // Remove/delete/disable
-  DESIRED_STATE_LATEST = 3;    // Ensure latest version
-}
-
-// Rollback policy for actions
-enum RollbackPolicy {
-  ROLLBACK_POLICY_ON_FAILURE = 0;  // Rollback only on failure
-  ROLLBACK_POLICY_NONE = 1;        // Never rollback
+  DESIRED_STATE_PRESENT = 0;  // Install/create/enable
+  DESIRED_STATE_ABSENT = 1;   // Remove/delete/disable
 }
 
 // Output from command execution
@@ -52,6 +43,4 @@ message CommandOutput {
   string stdout = 2;
   // @gotags: validate:"omitempty,max=1048576"
   string stderr = 3;
-  // @gotags: validate:"omitempty,gte=0"
-  int64 duration_ms = 4;
 }

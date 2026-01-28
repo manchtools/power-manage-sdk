@@ -5,46 +5,36 @@ package powermanage.v1;
 option go_package = "github.com/yourorg/power-manage/sdk/gen/go/powermanage/v1;powermanagev1";
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
 import "google/protobuf/struct.proto";
 import "powermanage/v1/common.proto";
 
 // ============================================================================
-// Action Types - Extensible enum for different action categories
+// Action Types
 // ============================================================================
 
 enum ActionType {
   ACTION_TYPE_UNSPECIFIED = 0;
 
-  // Package management actions (1-99)
-  ACTION_TYPE_APT = 1;          // Debian/Ubuntu apt
-  ACTION_TYPE_DNF = 2;          // Fedora/RHEL dnf
-  ACTION_TYPE_PACMAN = 3;       // Arch Linux pacman
-  ACTION_TYPE_ZYPPER = 4;       // openSUSE zypper
-  ACTION_TYPE_FLATPAK = 6;      // Flatpak
-  ACTION_TYPE_SNAP = 7;         // Snap packages
+  // Package management (1-99)
+  ACTION_TYPE_PACKAGE = 1;      // Generic package (apt/dnf/pacman based on distro)
 
-  // Application installation actions (100-199)
-  ACTION_TYPE_APP_IMAGE = 100;  // AppImage installation
-  ACTION_TYPE_DEB = 103;        // Direct .deb installation
-  ACTION_TYPE_RPM = 104;        // Direct .rpm installation
-  ACTION_TYPE_TAR = 105;        // Tarball extraction/installation
+  // Application installation (100-199)
+  ACTION_TYPE_APP_IMAGE = 100;  // AppImage
+  ACTION_TYPE_DEB = 101;        // Direct .deb
+  ACTION_TYPE_RPM = 102;        // Direct .rpm
 
-  // Script/command actions (200-299)
-  ACTION_TYPE_SHELL = 200;      // Shell script execution
+  // Scripts (200-299)
+  ACTION_TYPE_SHELL = 200;      // Shell script
 
-  // Service management (300-399)
-  ACTION_TYPE_SYSTEMD = 300;    // Systemd service management
+  // Services (300-399)
+  ACTION_TYPE_SYSTEMD = 300;    // Systemd unit
 
-  // Configuration actions (400-499)
-  ACTION_TYPE_FILE = 400;       // File management (create/modify/delete)
-
-  // Custom/plugin actions (1000+)
-  ACTION_TYPE_CUSTOM = 1000;    // Custom action with arbitrary params
+  // Files (400-499)
+  ACTION_TYPE_FILE = 400;       // File management
 }
 
 // ============================================================================
-// Action Definition - The core action message with extensible parameters
+// Action - Pushed from server to agent
 // ============================================================================
 
 message Action {
@@ -52,539 +42,101 @@ message Action {
   ActionId id = 1;
   // @gotags: validate:"required,ne=0"
   ActionType type = 2;
-  // @gotags: validate:"required,min=1,max=255"
-  string name = 3;
-  // @gotags: validate:"omitempty,max=1024"
-  string description = 4;
 
-  // Execution configuration
   // @gotags: validate:"omitempty"
-  DesiredState desired_state = 5;
-  // @gotags: validate:"omitempty"
-  RollbackPolicy rollback_policy = 6;
-  // @gotags: validate:"omitempty,gte=0,lte=86400"
-  int32 timeout_seconds = 7;
-  // @gotags: validate:"omitempty,gte=0,lte=10"
-  int32 retry_count = 8;
+  DesiredState desired_state = 3;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
-  int32 retry_delay_seconds = 9;
+  int32 timeout_seconds = 4;
 
-  // Type-specific parameters - use oneof for type safety
-  // New action types add their params here
+  // Type-specific parameters
   oneof params {
-    PackageActionParams package_params = 10;
-    AppInstallParams app_install_params = 11;
-    ShellActionParams shell_params = 12;
-    SystemdServiceParams systemd_params = 13;
-    FileActionParams file_params = 14;
-    CustomActionParams custom_params = 15;
+    PackageParams package = 10;
+    AppInstallParams app = 11;
+    ShellParams shell = 12;
+    SystemdParams systemd = 13;
+    FileParams file = 14;
   }
-
-  // Conditions for execution
-  // @gotags: validate:"omitempty,dive"
-  repeated ExecutionCondition conditions = 20;
-
-  // Metadata
-  // @gotags: validate:"omitempty"
-  Metadata metadata = 21;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp created_at = 22;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp updated_at = 23;
 }
 
 // ============================================================================
-// Package Management Parameters
+// Action Parameters
 // ============================================================================
 
-message PackageActionParams {
+message PackageParams {
   // @gotags: validate:"required,min=1,max=255"
-  string package_name = 1;
-
-  // Version specification
-  oneof version_spec {
-    // @gotags: validate:"omitempty,max=128"
-    string exact_version = 2;
-    // @gotags: validate:"omitempty,max=128"
-    string minimum_version = 3;
-    // @gotags: validate:"omitempty,max=256"
-    string version_range = 4;
-  }
-
-  // Additional options
-  // @gotags: validate:"omitempty"
-  bool allow_downgrade = 5;
-  // @gotags: validate:"omitempty"
-  bool install_recommends = 6;
-  // @gotags: validate:"omitempty"
-  bool install_suggests = 7;
-  // @gotags: validate:"omitempty,dive,max=255"
-  repeated string extra_args = 8;
-
-  // Repository configuration
-  // @gotags: validate:"omitempty,max=255"
-  string repository = 9;
-  // @gotags: validate:"omitempty"
-  bool update_cache = 10;
-}
-
-// ============================================================================
-// Application Installation Parameters
-// ============================================================================
-
-message AppInstallParams {
-  // Source of the application
-  oneof source {
-    // @gotags: validate:"omitempty,url"
-    string url = 1;
-    // @gotags: validate:"omitempty,unix_addr"
-    string local_path = 2;
-    // @gotags: validate:"omitempty"
-    ArtifactReference artifact = 3;
-  }
-
-  // Verification
-  // @gotags: validate:"omitempty,len=64,hexadecimal"
-  string checksum_sha256 = 5;
-  // @gotags: validate:"omitempty,len=128,hexadecimal"
-  string checksum_sha512 = 6;
-  // @gotags: validate:"omitempty,url"
-  string gpg_signature_url = 7;
-
-  // Installation options
-  // @gotags: validate:"omitempty,unix_addr,startswith=/"
-  string install_path = 10;
-  // @gotags: validate:"omitempty"
-  bool create_desktop_entry = 11;
-  // @gotags: validate:"omitempty"
-  bool add_to_path = 12;
-  // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
-  map<string, string> environment = 13;
-
-  // Pre/post installation scripts
-  // @gotags: validate:"omitempty,max=65536"
-  string pre_install_script = 20;
-  // @gotags: validate:"omitempty,max=65536"
-  string post_install_script = 21;
-}
-
-message ArtifactReference {
-  // @gotags: validate:"required,min=1,max=255"
-  string artifact_id = 1;
+  string name = 1;
   // @gotags: validate:"omitempty,max=128"
   string version = 2;
-  // @gotags: validate:"omitempty,oneof=stable beta nightly dev"
-  string channel = 3;
 }
 
-// ============================================================================
-// Shell/Script Execution Parameters
-// ============================================================================
+message AppInstallParams {
+  // @gotags: validate:"required,url"
+  string url = 1;
+  // @gotags: validate:"omitempty,len=64,hexadecimal"
+  string checksum_sha256 = 2;
+  // @gotags: validate:"omitempty,startswith=/"
+  string install_path = 3;
+}
 
-message ShellActionParams {
-  // Script content or reference
-  oneof script_source {
-    // @gotags: validate:"omitempty,max=1048576"
-    string inline_script = 1;
-    // @gotags: validate:"omitempty,url"
-    string script_url = 2;
-    // @gotags: validate:"omitempty,unix_addr,startswith=/"
-    string script_path = 3;
-  }
-
+message ShellParams {
+  // @gotags: validate:"required,max=1048576"
+  string script = 1;
   // @gotags: validate:"omitempty,max=255"
-  string interpreter = 4;
-  // @gotags: validate:"omitempty,dive,max=4096"
-  repeated string args = 5;
+  string interpreter = 2;
+  // @gotags: validate:"omitempty"
+  bool run_as_root = 3;
+  // @gotags: validate:"omitempty,startswith=/"
+  string working_directory = 4;
   // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
-  map<string, string> environment = 6;
-  // @gotags: validate:"omitempty,unix_addr,startswith=/"
-  string working_directory = 7;
+  map<string, string> environment = 5;
+}
 
-  // Execution options
+message SystemdParams {
+  // @gotags: validate:"required,min=1,max=255"
+  string unit_name = 1;
   // @gotags: validate:"omitempty"
-  bool run_as_root = 10;
-  // @gotags: validate:"omitempty,max=32"
-  string run_as_user = 11;
-  // @gotags: validate:"omitempty,gte=0,lte=86400"
-  int32 timeout_seconds = 12;
-
-  // Idempotency
+  SystemdUnitState desired_state = 2;
+  // @gotags: validate:"omitempty"
+  bool enable = 3;
   // @gotags: validate:"omitempty,max=65536"
-  string check_script = 15;
-  // @gotags: validate:"omitempty,dive,gte=0,lte=255"
-  repeated int32 success_exit_codes = 16;
+  string unit_content = 4;
 }
 
-// ============================================================================
-// Systemd Service Management Parameters
-// ============================================================================
-
-message SystemdServiceParams {
-  // @gotags: validate:"required,min=1,max=255,endswith=.service|endswith=.timer|endswith=.socket"
-  string service_name = 1;
-
-  // @gotags: validate:"omitempty"
-  SystemdServiceState desired_state = 2;
-  // @gotags: validate:"omitempty"
-  bool enable_on_boot = 3;
-
-  // Unit file management
-  // @gotags: validate:"omitempty,max=65536"
-  string unit_file_content = 10;
-  // @gotags: validate:"omitempty,unix_addr,startswith=/"
-  string unit_file_path = 11;
-
-  // Restart options
-  // @gotags: validate:"omitempty"
-  bool restart_on_config_change = 12;
-  // @gotags: validate:"omitempty,gte=0,lte=3600"
-  int32 restart_delay_seconds = 13;
-
-  // Systemd-specific options
-  // @gotags: validate:"omitempty"
-  bool daemon_reload = 14;
-  // @gotags: validate:"omitempty"
-  bool mask_service = 15;
+enum SystemdUnitState {
+  SYSTEMD_UNIT_STATE_UNSPECIFIED = 0;
+  SYSTEMD_UNIT_STATE_STARTED = 1;
+  SYSTEMD_UNIT_STATE_STOPPED = 2;
+  SYSTEMD_UNIT_STATE_RESTARTED = 3;
 }
 
-enum SystemdServiceState {
-  SYSTEMD_SERVICE_STATE_UNSPECIFIED = 0;
-  SYSTEMD_SERVICE_STATE_STARTED = 1;
-  SYSTEMD_SERVICE_STATE_STOPPED = 2;
-  SYSTEMD_SERVICE_STATE_RESTARTED = 3;
-  SYSTEMD_SERVICE_STATE_RELOADED = 4;
-}
-
-// ============================================================================
-// File Management Parameters
-// ============================================================================
-
-message FileActionParams {
-  // @gotags: validate:"required,unix_addr,startswith=/"
+message FileParams {
+  // @gotags: validate:"required,startswith=/"
   string path = 1;
-
-  oneof content_source {
-    // @gotags: validate:"omitempty,max=10485760"
-    string content = 2;
-    // @gotags: validate:"omitempty,url"
-    string content_url = 3;
-    // @gotags: validate:"omitempty,max=10485760"
-    string template = 4;
-  }
-
-  // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=65536"
-  map<string, string> template_vars = 5;
-
-  // File attributes (Linux-specific)
-  // @gotags: validate:"omitempty,max=32"
-  string owner = 10;
-  // @gotags: validate:"omitempty,max=32"
-  string group = 11;
-  // @gotags: validate:"omitempty,len=4,numeric"
-  string mode = 12;
-
-  // SELinux context (optional)
-  // @gotags: validate:"omitempty,max=255"
-  string selinux_context = 13;
-
-  // Directory options
-  // @gotags: validate:"omitempty"
-  bool create_parents = 14;
-  // @gotags: validate:"omitempty"
-  bool is_directory = 15;
-
-  // Backup
-  // @gotags: validate:"omitempty"
-  bool backup_existing = 16;
-  // @gotags: validate:"omitempty,max=32"
-  string backup_suffix = 17;
-
-  // Symlink support
-  // @gotags: validate:"omitempty"
-  bool is_symlink = 18;
-  // @gotags: validate:"omitempty,unix_addr"
-  string symlink_target = 19;
-}
-
-// ============================================================================
-// Custom Action Parameters - For plugin/extensibility
-// ============================================================================
-
-message CustomActionParams {
-  // @gotags: validate:"required,min=1,max=255"
-  string action_handler = 1;
-  // @gotags: validate:"omitempty,max=128"
-  string handler_version = 2;
-
-  // Flexible parameter passing
-  // @gotags: validate:"omitempty"
-  google.protobuf.Struct params = 3;
-
-  // Alternative: strongly-typed via Any
-  // @gotags: validate:"omitempty"
-  google.protobuf.Any typed_params = 4;
-
-  // Plugin metadata
-  // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
-  map<string, string> handler_config = 5;
-}
-
-// ============================================================================
-// Execution Conditions
-// ============================================================================
-
-message ExecutionCondition {
-  oneof condition {
-    // @gotags: validate:"omitempty"
-    DistroCondition distro = 1;
-    // @gotags: validate:"omitempty"
-    FileCondition file = 2;
-    // @gotags: validate:"omitempty"
-    CommandCondition command = 3;
-    // @gotags: validate:"omitempty"
-    EnvironmentCondition environment = 4;
-    // @gotags: validate:"omitempty"
-    TimeCondition time = 5;
-    // @gotags: validate:"omitempty"
-    SystemdCondition systemd = 6;
-  }
-
-  // @gotags: validate:"omitempty"
-  bool negate = 10;
-}
-
-message DistroCondition {
-  // Linux distribution matching
-  // @gotags: validate:"omitempty,dive,min=1,max=64"
-  repeated string distro_ids = 1;
-  // @gotags: validate:"omitempty,dive,min=1,max=64"
-  repeated string distro_families = 2;
-  // @gotags: validate:"omitempty,dive,oneof=x86_64 aarch64 armv7l i686"
-  repeated string architectures = 3;
-  // @gotags: validate:"omitempty,max=64"
-  string min_version = 4;
-  // @gotags: validate:"omitempty,max=64"
-  string max_version = 5;
-}
-
-message FileCondition {
-  // @gotags: validate:"required,unix_addr,startswith=/"
-  string path = 1;
-  // @gotags: validate:"required,ne=0"
-  FileConditionType type = 2;
-}
-
-enum FileConditionType {
-  FILE_CONDITION_TYPE_UNSPECIFIED = 0;
-  FILE_CONDITION_TYPE_EXISTS = 1;
-  FILE_CONDITION_TYPE_NOT_EXISTS = 2;
-  FILE_CONDITION_TYPE_IS_FILE = 3;
-  FILE_CONDITION_TYPE_IS_DIRECTORY = 4;
-  FILE_CONDITION_TYPE_IS_EXECUTABLE = 5;
-  FILE_CONDITION_TYPE_IS_SYMLINK = 6;
-}
-
-message CommandCondition {
-  // @gotags: validate:"required,min=1,max=4096"
-  string command = 1;
-  // @gotags: validate:"omitempty,dive,gte=0,lte=255"
-  repeated int32 expected_exit_codes = 2;
-}
-
-message EnvironmentCondition {
-  // @gotags: validate:"required,min=1,max=255"
-  string variable = 1;
-  // @gotags: validate:"omitempty,max=4096"
-  string expected_value = 2;
-  // @gotags: validate:"omitempty"
-  bool regex_match = 3;
-}
-
-message TimeCondition {
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp not_before = 1;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp not_after = 2;
-  // @gotags: validate:"omitempty,dive,gte=0,lte=23"
-  repeated int32 allowed_hours = 3;
-  // @gotags: validate:"omitempty,dive,gte=0,lte=6"
-  repeated int32 allowed_days_of_week = 4;
-}
-
-message SystemdCondition {
-  // @gotags: validate:"required,min=1,max=255"
-  string service_name = 1;
-  // @gotags: validate:"omitempty"
-  SystemdServiceState expected_state = 2;
-  // @gotags: validate:"omitempty"
-  bool expected_enabled = 3;
-}
-
-// ============================================================================
-// Action State and Results
-// ============================================================================
-
-message ActionState {
-  // @gotags: validate:"required"
-  ActionId action_id = 1;
-  // @gotags: validate:"required,ne=0"
-  ActionType type = 2;
-
-  // @gotags: validate:"omitempty"
-  bool in_desired_state = 3;
-  // @gotags: validate:"omitempty"
-  ExecutionStatus last_status = 4;
-  // @gotags: validate:"omitempty,max=1024"
-  string status_message = 5;
-
-  // Type-specific state
-  oneof current_state {
-    // @gotags: validate:"omitempty"
-    PackageCurrentState package_state = 10;
-    // @gotags: validate:"omitempty"
-    SystemdCurrentState systemd_state = 11;
-    // @gotags: validate:"omitempty"
-    FileCurrentState file_state = 12;
-    // @gotags: validate:"omitempty"
-    CustomCurrentState custom_state = 13;
-  }
-
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp last_checked = 20;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp last_executed = 21;
-  // @gotags: validate:"omitempty,gte=0"
-  int32 execution_count = 22;
-  // @gotags: validate:"omitempty,gte=0"
-  int32 failure_count = 23;
-}
-
-message PackageCurrentState {
-  // @gotags: validate:"omitempty"
-  bool installed = 1;
-  // @gotags: validate:"omitempty,max=128"
-  string installed_version = 2;
-  // @gotags: validate:"omitempty,max=128"
-  string available_version = 3;
-}
-
-message SystemdCurrentState {
-  // @gotags: validate:"omitempty"
-  SystemdServiceState state = 1;
-  // @gotags: validate:"omitempty"
-  bool enabled = 2;
-  // @gotags: validate:"omitempty,max=16"
-  string main_pid = 3;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp started_at = 4;
-  // @gotags: validate:"omitempty,max=32"
-  string load_state = 5;
-  // @gotags: validate:"omitempty,max=32"
-  string active_state = 6;
-  // @gotags: validate:"omitempty,max=32"
-  string sub_state = 7;
-}
-
-message FileCurrentState {
-  // @gotags: validate:"omitempty"
-  bool exists = 1;
-  // @gotags: validate:"omitempty,max=128"
-  string checksum = 2;
+  // @gotags: validate:"omitempty,max=10485760"
+  string content = 2;
   // @gotags: validate:"omitempty,max=32"
   string owner = 3;
   // @gotags: validate:"omitempty,max=32"
   string group = 4;
-  // @gotags: validate:"omitempty,len=4,numeric"
+  // @gotags: validate:"omitempty,max=4"
   string mode = 5;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp modified_at = 6;
-  // @gotags: validate:"omitempty,max=255"
-  string selinux_context = 7;
-}
-
-message CustomCurrentState {
-  // @gotags: validate:"omitempty"
-  google.protobuf.Struct state = 1;
 }
 
 // ============================================================================
-// Action Execution Result
+// Action Result - Sent from agent to server
 // ============================================================================
 
 message ActionResult {
   // @gotags: validate:"required"
   ActionId action_id = 1;
-  // @gotags: validate:"required,ne=0"
+  // @gotags: validate:"required"
   ExecutionStatus status = 2;
-
   // @gotags: validate:"omitempty,max=4096"
-  string error_message = 3;
-  // @gotags: validate:"omitempty,max=128"
-  string error_code = 4;
-
+  string error = 3;
   // @gotags: validate:"omitempty"
-  CommandOutput output = 5;
-
-  // State after execution
+  CommandOutput output = 4;
   // @gotags: validate:"omitempty"
-  ActionState state_after = 10;
-
-  // Rollback information
-  // @gotags: validate:"omitempty"
-  PreExecutionSnapshot snapshot = 11;
-  // @gotags: validate:"omitempty"
-  RollbackResult rollback = 12;
-
-  // Timing
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp started_at = 20;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp completed_at = 21;
+  google.protobuf.Timestamp completed_at = 5;
   // @gotags: validate:"omitempty,gte=0"
-  int64 duration_ms = 22;
-  // @gotags: validate:"omitempty,gte=1"
-  int32 attempt_number = 23;
-}
-
-message PreExecutionSnapshot {
-  // @gotags: validate:"required,ne=0"
-  ActionType type = 1;
-  // @gotags: validate:"omitempty"
-  google.protobuf.Timestamp captured_at = 2;
-
-  oneof snapshot {
-    // @gotags: validate:"omitempty"
-    PackageCurrentState package_snapshot = 10;
-    // @gotags: validate:"omitempty"
-    SystemdCurrentState systemd_snapshot = 11;
-    // @gotags: validate:"omitempty"
-    FileSnapshot file_snapshot = 12;
-    // @gotags: validate:"omitempty"
-    google.protobuf.Struct custom_snapshot = 13;
-  }
-
-  // For transactional package managers (DNF)
-  // @gotags: validate:"omitempty,max=64"
-  string transaction_id = 20;
-}
-
-message FileSnapshot {
-  // @gotags: validate:"omitempty"
-  FileCurrentState state = 1;
-  // @gotags: validate:"omitempty,max=64"
-  bytes content_hash = 2;
-  // @gotags: validate:"omitempty,unix_addr,startswith=/"
-  string backup_path = 3;
-}
-
-message RollbackResult {
-  // @gotags: validate:"omitempty"
-  bool attempted = 1;
-  // @gotags: validate:"omitempty"
-  bool success = 2;
-  // @gotags: validate:"omitempty,max=4096"
-  string error_message = 3;
-  // @gotags: validate:"omitempty"
-  ActionState state_after_rollback = 4;
+  int64 duration_ms = 6;
 }
