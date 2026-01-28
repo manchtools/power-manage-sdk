@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -38,13 +39,36 @@ func (d *Dnf) Info() (name, version string, err error) {
 	return "dnf", "", nil
 }
 
-// Install installs packages.
+// Install installs packages (latest version).
 func (d *Dnf) Install(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"install", "-y"}, packages...)
 	return d.run(args...)
+}
+
+// InstallVersion installs a package with specific version options.
+func (d *Dnf) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	pkgSpec := name
+	if opts.Version != "" {
+		pkgSpec = fmt.Sprintf("%s-%s", name, opts.Version)
+	}
+
+	args := []string{"install", "-y"}
+	if opts.AllowDowngrade {
+		args = append(args, "--allowerasing")
+	}
+	args = append(args, pkgSpec)
+
+	result, err := d.run(args...)
+
+	// If downgrade is allowed and install failed, try explicit downgrade
+	if opts.AllowDowngrade && err != nil && opts.Version != "" {
+		return d.run("downgrade", "-y", pkgSpec)
+	}
+
+	return result, err
 }
 
 // Remove removes packages.
@@ -74,7 +98,6 @@ func (d *Dnf) Upgrade(packages ...string) (*CommandResult, error) {
 func (d *Dnf) Search(query string) ([]SearchResult, error) {
 	out, err := exec.CommandContext(d.ctx, "dnf", "search", "-q", query).Output()
 	if err != nil {
-		// dnf search returns exit code 1 if no results
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			return nil, nil
 		}
@@ -85,11 +108,9 @@ func (d *Dnf) Search(query string) ([]SearchResult, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
-		// Skip header lines
 		if strings.HasPrefix(line, "=") || line == "" {
 			continue
 		}
-		// format: name.arch : description
 		parts := strings.SplitN(line, " : ", 2)
 		if len(parts) < 2 {
 			continue
@@ -111,6 +132,8 @@ func (d *Dnf) List() ([]Package, error) {
 		return nil, err
 	}
 
+	pinnedPkgs, _ := d.getPinnedSet()
+
 	var packages []Package
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	for scanner.Scan() {
@@ -130,6 +153,7 @@ func (d *Dnf) List() ([]Package, error) {
 			Status:       "installed",
 			Size:         size,
 			Description:  desc,
+			Pinned:       pinnedPkgs[fields[0]],
 		})
 	}
 	return packages, nil
@@ -139,7 +163,6 @@ func (d *Dnf) List() ([]Package, error) {
 func (d *Dnf) ListUpgradable() ([]PackageUpdate, error) {
 	out, err := exec.CommandContext(d.ctx, "dnf", "check-update", "-q").Output()
 	if err != nil {
-		// exit code 100 means updates available, 0 means no updates
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() != 100 {
 			return nil, err
 		}
@@ -152,7 +175,6 @@ func (d *Dnf) ListUpgradable() ([]PackageUpdate, error) {
 		if line == "" {
 			continue
 		}
-		// format: name.arch  version  repo
 		fields := strings.Fields(line)
 		if len(fields) < 3 {
 			continue
@@ -164,11 +186,7 @@ func (d *Dnf) ListUpgradable() ([]PackageUpdate, error) {
 			arch = nameParts[len(nameParts)-1]
 		}
 
-		// Get current version
-		currentVersion := ""
-		if installed, _ := d.getInstalledVersion(name); installed != "" {
-			currentVersion = installed
-		}
+		currentVersion, _ := d.GetInstalledVersion(name)
 
 		updates = append(updates, PackageUpdate{
 			Name:           name,
@@ -214,7 +232,49 @@ func (d *Dnf) Show(name string) (*Package, error) {
 		pkg.Status = "installed"
 	}
 
+	pkg.Pinned, _ = d.IsPinned(name)
+
 	return pkg, nil
+}
+
+// ListVersions lists all available versions of a package.
+func (d *Dnf) ListVersions(name string) (*VersionInfo, error) {
+	out, err := exec.CommandContext(d.ctx, "dnf", "list", "--showduplicates", "-q", name).Output()
+	if err != nil {
+		return nil, err
+	}
+
+	info := &VersionInfo{Name: name}
+	info.Installed, _ = d.GetInstalledVersion(name)
+
+	seen := make(map[string]bool)
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" || strings.HasPrefix(line, "Installed") || strings.HasPrefix(line, "Available") {
+			continue
+		}
+		// format: name.arch  version  repo
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+
+		version := fields[1]
+		repo := fields[2]
+
+		if seen[version] {
+			continue
+		}
+		seen[version] = true
+
+		info.Versions = append(info.Versions, AvailableVersion{
+			Version:    version,
+			Repository: repo,
+		})
+	}
+
+	return info, nil
 }
 
 // IsInstalled checks if a package is installed.
@@ -223,12 +283,109 @@ func (d *Dnf) IsInstalled(name string) (bool, error) {
 	return err == nil, nil
 }
 
-func (d *Dnf) getInstalledVersion(name string) (string, error) {
+// GetInstalledVersion returns the installed version of a package.
+func (d *Dnf) GetInstalledVersion(name string) (string, error) {
 	out, err := exec.CommandContext(d.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
 	if err != nil {
 		return "", err
 	}
-	return string(out), nil
+	return strings.TrimSpace(string(out)), nil
+}
+
+// Pin prevents a package from being upgraded (dnf versionlock).
+func (d *Dnf) Pin(packages ...string) (*CommandResult, error) {
+	if len(packages) == 0 {
+		return &CommandResult{Success: true}, nil
+	}
+	args := append([]string{"versionlock", "add"}, packages...)
+	return d.run(args...)
+}
+
+// Unpin allows a package to be upgraded again (dnf versionlock delete).
+func (d *Dnf) Unpin(packages ...string) (*CommandResult, error) {
+	if len(packages) == 0 {
+		return &CommandResult{Success: true}, nil
+	}
+	args := append([]string{"versionlock", "delete"}, packages...)
+	return d.run(args...)
+}
+
+// ListPinned lists all pinned (versionlocked) packages.
+func (d *Dnf) ListPinned() ([]Package, error) {
+	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
+	if err != nil {
+		// versionlock plugin might not be installed
+		return nil, err
+	}
+
+	var packages []Package
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		// Format varies, try to extract package name
+		// Could be: package-version-release.arch or just package name
+		parts := strings.Split(line, "-")
+		name := parts[0]
+		if len(parts) > 2 {
+			// Likely has version-release, name might have dashes
+			// Try to find where version starts (usually a digit)
+			for i := 1; i < len(parts); i++ {
+				if len(parts[i]) > 0 && parts[i][0] >= '0' && parts[i][0] <= '9' {
+					name = strings.Join(parts[:i], "-")
+					break
+				}
+			}
+		}
+
+		version, _ := d.GetInstalledVersion(name)
+		packages = append(packages, Package{
+			Name:    name,
+			Version: version,
+			Status:  "installed",
+			Pinned:  true,
+		})
+	}
+	return packages, nil
+}
+
+// IsPinned checks if a package is pinned (versionlocked).
+func (d *Dnf) IsPinned(name string) (bool, error) {
+	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
+	if err != nil {
+		return false, nil // versionlock plugin might not be installed
+	}
+	return strings.Contains(string(out), name), nil
+}
+
+func (d *Dnf) getPinnedSet() (map[string]bool, error) {
+	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
+	if err != nil {
+		return nil, nil
+	}
+
+	pinned := make(map[string]bool)
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "-")
+		name := parts[0]
+		if len(parts) > 2 {
+			for i := 1; i < len(parts); i++ {
+				if len(parts[i]) > 0 && parts[i][0] >= '0' && parts[i][0] <= '9' {
+					name = strings.Join(parts[:i], "-")
+					break
+				}
+			}
+		}
+		pinned[name] = true
+	}
+	return pinned, nil
 }
 
 func (d *Dnf) run(args ...string) (*CommandResult, error) {

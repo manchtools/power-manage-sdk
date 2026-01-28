@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -32,7 +33,6 @@ func (a *Apt) Info() (name, version string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	// apt 2.6.1 (amd64)
 	parts := strings.Fields(string(out))
 	if len(parts) >= 2 {
 		return "apt", parts[1], nil
@@ -40,12 +40,28 @@ func (a *Apt) Info() (name, version string, err error) {
 	return "apt", "", nil
 }
 
-// Install installs packages.
+// Install installs packages (latest version).
 func (a *Apt) Install(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"install", "-y"}, packages...)
+	return a.run("apt-get", args...)
+}
+
+// InstallVersion installs a package with specific version options.
+func (a *Apt) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	pkgSpec := name
+	if opts.Version != "" {
+		pkgSpec = fmt.Sprintf("%s=%s", name, opts.Version)
+	}
+
+	args := []string{"install", "-y"}
+	if opts.AllowDowngrade {
+		args = append(args, "--allow-downgrades")
+	}
+	args = append(args, pkgSpec)
+
 	return a.run("apt-get", args...)
 }
 
@@ -83,7 +99,6 @@ func (a *Apt) Search(query string) ([]SearchResult, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
-		// format: package-name - description
 		parts := strings.SplitN(line, " - ", 2)
 		if len(parts) < 2 {
 			continue
@@ -103,6 +118,8 @@ func (a *Apt) List() ([]Package, error) {
 		return nil, err
 	}
 
+	pinnedPkgs, _ := a.getPinnedSet()
+
 	var packages []Package
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	for scanner.Scan() {
@@ -110,7 +127,6 @@ func (a *Apt) List() ([]Package, error) {
 		if len(fields) < 5 {
 			continue
 		}
-		// Only include installed packages
 		if !strings.Contains(fields[3], "installed") {
 			continue
 		}
@@ -119,14 +135,16 @@ func (a *Apt) List() ([]Package, error) {
 		if len(fields) > 5 {
 			desc = fields[5]
 		}
-		packages = append(packages, Package{
+		pkg := Package{
 			Name:         fields[0],
 			Version:      fields[1],
 			Architecture: fields[2],
 			Status:       "installed",
-			Size:         size * 1024, // dpkg reports in KB
+			Size:         size * 1024,
 			Description:  desc,
-		})
+			Pinned:       pinnedPkgs[fields[0]],
+		}
+		packages = append(packages, pkg)
 	}
 	return packages, nil
 }
@@ -140,10 +158,8 @@ func (a *Apt) ListUpgradable() ([]PackageUpdate, error) {
 
 	var updates []PackageUpdate
 	scanner := bufio.NewScanner(bytes.NewReader(out))
-	// Skip header line "Listing..."
-	scanner.Scan()
+	scanner.Scan() // Skip header
 
-	// format: package/repo version arch [upgradable from: old-version]
 	re := regexp.MustCompile(`^([^/]+)/(\S+)\s+(\S+)\s+(\S+)\s+\[upgradable from: ([^\]]+)\]`)
 	for scanner.Scan() {
 		matches := re.FindStringSubmatch(scanner.Text())
@@ -193,13 +209,128 @@ func (a *Apt) Show(name string) (*Package, error) {
 		pkg.Status = "available"
 	}
 
+	pkg.Pinned, _ = a.IsPinned(name)
+
 	return pkg, nil
+}
+
+// ListVersions lists all available versions of a package.
+func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
+	out, err := exec.CommandContext(a.ctx, "apt-cache", "madison", name).Output()
+	if err != nil {
+		return nil, err
+	}
+
+	info := &VersionInfo{Name: name}
+	info.Installed, _ = a.GetInstalledVersion(name)
+
+	seen := make(map[string]bool)
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		// format: package | version | repository
+		fields := strings.Split(scanner.Text(), "|")
+		if len(fields) < 3 {
+			continue
+		}
+		version := strings.TrimSpace(fields[1])
+		repo := strings.TrimSpace(fields[2])
+
+		if seen[version] {
+			continue
+		}
+		seen[version] = true
+
+		info.Versions = append(info.Versions, AvailableVersion{
+			Version:    version,
+			Repository: repo,
+		})
+	}
+
+	return info, nil
 }
 
 // IsInstalled checks if a package is installed.
 func (a *Apt) IsInstalled(name string) (bool, error) {
 	err := exec.CommandContext(a.ctx, "dpkg", "-s", name).Run()
 	return err == nil, nil
+}
+
+// GetInstalledVersion returns the installed version of a package.
+func (a *Apt) GetInstalledVersion(name string) (string, error) {
+	out, err := exec.CommandContext(a.ctx, "dpkg-query", "-W", "-f=${Version}", name).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// Pin prevents a package from being upgraded (apt-mark hold).
+func (a *Apt) Pin(packages ...string) (*CommandResult, error) {
+	if len(packages) == 0 {
+		return &CommandResult{Success: true}, nil
+	}
+	args := append([]string{"hold"}, packages...)
+	return a.run("apt-mark", args...)
+}
+
+// Unpin allows a package to be upgraded again (apt-mark unhold).
+func (a *Apt) Unpin(packages ...string) (*CommandResult, error) {
+	if len(packages) == 0 {
+		return &CommandResult{Success: true}, nil
+	}
+	args := append([]string{"unhold"}, packages...)
+	return a.run("apt-mark", args...)
+}
+
+// ListPinned lists all pinned (held) packages.
+func (a *Apt) ListPinned() ([]Package, error) {
+	out, err := exec.CommandContext(a.ctx, "apt-mark", "showhold").Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var packages []Package
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		name := strings.TrimSpace(scanner.Text())
+		if name == "" {
+			continue
+		}
+		version, _ := a.GetInstalledVersion(name)
+		packages = append(packages, Package{
+			Name:    name,
+			Version: version,
+			Status:  "installed",
+			Pinned:  true,
+		})
+	}
+	return packages, nil
+}
+
+// IsPinned checks if a package is pinned (held).
+func (a *Apt) IsPinned(name string) (bool, error) {
+	out, err := exec.CommandContext(a.ctx, "apt-mark", "showhold", name).Output()
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(out)) == name, nil
+}
+
+func (a *Apt) getPinnedSet() (map[string]bool, error) {
+	out, err := exec.CommandContext(a.ctx, "apt-mark", "showhold").Output()
+	if err != nil {
+		return nil, err
+	}
+
+	pinned := make(map[string]bool)
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		name := strings.TrimSpace(scanner.Text())
+		if name != "" {
+			pinned[name] = true
+		}
+	}
+	return pinned, nil
 }
 
 func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
