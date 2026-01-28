@@ -237,7 +237,4 @@ type CommandResult struct {
 ### Pinning Requirements
 
 - **apt**: No additional setup required
-- **dnf**: Requires `python3-dnf-plugin-versionlock`:
-  ```bash
-  dnf install python3-dnf-plugin-versionlock
-  ```
+- **dnf**: Uses `python3-dnf-plugin-versionlock` (automatically installed when pinning is first used)

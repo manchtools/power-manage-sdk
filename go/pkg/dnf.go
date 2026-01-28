@@ -292,29 +292,53 @@ func (d *Dnf) GetInstalledVersion(name string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// ensureVersionLock installs the versionlock plugin if not already installed.
+func (d *Dnf) ensureVersionLock() error {
+	// Check if versionlock command works
+	err := exec.CommandContext(d.ctx, "dnf", "versionlock", "--help").Run()
+	if err == nil {
+		return nil // plugin already installed
+	}
+
+	// Install the plugin
+	_, err = d.run("install", "-y", "python3-dnf-plugin-versionlock")
+	return err
+}
+
 // Pin prevents a package from being upgraded (dnf versionlock).
+// Automatically installs the versionlock plugin if not present.
 func (d *Dnf) Pin(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
+	}
+	if err := d.ensureVersionLock(); err != nil {
+		return nil, err
 	}
 	args := append([]string{"versionlock", "add"}, packages...)
 	return d.run(args...)
 }
 
 // Unpin allows a package to be upgraded again (dnf versionlock delete).
+// Automatically installs the versionlock plugin if not present.
 func (d *Dnf) Unpin(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
+	}
+	if err := d.ensureVersionLock(); err != nil {
+		return nil, err
 	}
 	args := append([]string{"versionlock", "delete"}, packages...)
 	return d.run(args...)
 }
 
 // ListPinned lists all pinned (versionlocked) packages.
+// Automatically installs the versionlock plugin if not present.
 func (d *Dnf) ListPinned() ([]Package, error) {
+	if err := d.ensureVersionLock(); err != nil {
+		return nil, err
+	}
 	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
 	if err != nil {
-		// versionlock plugin might not be installed
 		return nil, err
 	}
 
