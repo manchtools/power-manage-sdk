@@ -1,6 +1,6 @@
 module github.com/manchtools/power-manage/sdk
 
-go 1.23
+go 1.25
 
 require (
 	connectrpc.com/connect v1.18.1
