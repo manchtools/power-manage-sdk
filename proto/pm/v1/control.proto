@@ -1,0 +1,438 @@
+syntax = "proto3";
+
+package pm.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+
+import "google/protobuf/timestamp.proto";
+import "pm/v1/common.proto";
+import "pm/v1/actions.proto";
+
+// ============================================================================
+// Authentication
+// ============================================================================
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  User user = 1;
+}
+
+// ============================================================================
+// Users
+// ============================================================================
+
+message User {
+  string id = 1;
+  string email = 2;
+  string role = 3;  // "admin" or "user"
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_login_at = 5;
+  bool disabled = 6;
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string password = 2;
+  string role = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Granular user updates
+message UpdateUserEmailRequest {
+  string id = 1;
+  string email = 2;
+}
+
+message UpdateUserPasswordRequest {
+  string id = 1;
+  string current_password = 2;  // Required for self-update
+  string new_password = 3;
+}
+
+message UpdateUserRoleRequest {
+  string id = 1;
+  string role = 2;  // "admin" or "user"
+}
+
+message SetUserDisabledRequest {
+  string id = 1;
+  bool disabled = 2;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {}
+
+// ============================================================================
+// Devices
+// ============================================================================
+
+message Device {
+  string id = 1;
+  string hostname = 2;
+  string agent_version = 3;
+  string status = 4;  // "online", "offline"
+  google.protobuf.Timestamp registered_at = 5;
+  google.protobuf.Timestamp last_seen_at = 6;
+  google.protobuf.Timestamp cert_expires_at = 7;
+  map<string, string> labels = 8;
+}
+
+message ListDevicesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string status_filter = 3;  // optional: "online", "offline"
+  map<string, string> label_filter = 4;
+}
+
+message ListDevicesResponse {
+  repeated Device devices = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetDeviceRequest {
+  string id = 1;
+}
+
+message GetDeviceResponse {
+  Device device = 1;
+}
+
+// Granular device updates
+message SetDeviceLabelRequest {
+  string id = 1;
+  string key = 2;
+  string value = 3;
+}
+
+message RemoveDeviceLabelRequest {
+  string id = 1;
+  string key = 2;
+}
+
+message UpdateDeviceResponse {
+  Device device = 1;
+}
+
+message DeleteDeviceRequest {
+  string id = 1;
+}
+
+message DeleteDeviceResponse {}
+
+// ============================================================================
+// Registration Tokens
+// ============================================================================
+
+message RegistrationToken {
+  string id = 1;
+  string value = 2;  // Only returned on creation
+  string name = 3;
+  bool one_time = 4;
+  int32 max_uses = 5;  // 0 = unlimited
+  int32 current_uses = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  string created_by = 9;
+  bool disabled = 10;
+}
+
+message CreateTokenRequest {
+  string name = 1;
+  bool one_time = 2;
+  int32 max_uses = 3;  // 0 = unlimited (for reusable tokens)
+  google.protobuf.Timestamp expires_at = 4;  // optional
+}
+
+message CreateTokenResponse {
+  RegistrationToken token = 1;
+}
+
+message ListTokensRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  bool include_disabled = 3;
+}
+
+message ListTokensResponse {
+  repeated RegistrationToken tokens = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetTokenRequest {
+  string id = 1;
+}
+
+message GetTokenResponse {
+  RegistrationToken token = 1;
+}
+
+// Granular token updates
+message RenameTokenRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message SetTokenDisabledRequest {
+  string id = 1;
+  bool disabled = 2;
+}
+
+message UpdateTokenResponse {
+  RegistrationToken token = 1;
+}
+
+message DeleteTokenRequest {
+  string id = 1;
+}
+
+message DeleteTokenResponse {}
+
+// ============================================================================
+// Action Definitions (Reusable Templates)
+// ============================================================================
+
+message ActionDefinition {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  ActionType type = 4;
+  DesiredState desired_state = 5;
+  oneof params {
+    PackageParams package = 10;
+    AppInstallParams app = 11;
+    ShellParams shell = 12;
+    SystemdParams systemd = 13;
+    FileParams file = 14;
+  }
+  int32 timeout_seconds = 6;
+  google.protobuf.Timestamp created_at = 7;
+  string created_by = 8;
+}
+
+message CreateDefinitionRequest {
+  string name = 1;
+  string description = 2;
+  ActionType type = 3;
+  DesiredState desired_state = 4;
+  oneof params {
+    PackageParams package = 10;
+    AppInstallParams app = 11;
+    ShellParams shell = 12;
+    SystemdParams systemd = 13;
+    FileParams file = 14;
+  }
+  int32 timeout_seconds = 5;
+}
+
+message CreateDefinitionResponse {
+  ActionDefinition definition = 1;
+}
+
+message GetDefinitionRequest {
+  string id = 1;
+}
+
+message GetDefinitionResponse {
+  ActionDefinition definition = 1;
+}
+
+message ListDefinitionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  ActionType type_filter = 3;
+}
+
+message ListDefinitionsResponse {
+  repeated ActionDefinition definitions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Granular definition updates (params are immutable - create new definition)
+message RenameDefinitionRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message UpdateDefinitionDescriptionRequest {
+  string id = 1;
+  string description = 2;
+}
+
+message UpdateDefinitionResponse {
+  ActionDefinition definition = 1;
+}
+
+message DeleteDefinitionRequest {
+  string id = 1;
+}
+
+message DeleteDefinitionResponse {}
+
+// ============================================================================
+// Action Dispatch & Execution
+// ============================================================================
+
+message ActionExecution {
+  string id = 1;
+  string device_id = 2;
+  string definition_id = 3;
+  ActionType type = 4;
+  ExecutionStatus status = 5;
+  string error = 6;
+  CommandOutput output = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp dispatched_at = 9;
+  google.protobuf.Timestamp completed_at = 10;
+  int64 duration_ms = 11;
+  string created_by = 12;
+}
+
+message DispatchActionRequest {
+  string device_id = 1;
+  // Either use a definition or inline action
+  oneof action_source {
+    string definition_id = 2;
+    Action inline_action = 3;
+  }
+}
+
+message DispatchActionResponse {
+  ActionExecution execution = 1;
+}
+
+message DispatchToMultipleRequest {
+  repeated string device_ids = 1;
+  oneof action_source {
+    string definition_id = 2;
+    Action inline_action = 3;
+  }
+}
+
+message DispatchToMultipleResponse {
+  repeated ActionExecution executions = 1;
+}
+
+message GetExecutionRequest {
+  string id = 1;
+}
+
+message GetExecutionResponse {
+  ActionExecution execution = 1;
+}
+
+message ListExecutionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string device_id = 3;  // optional filter
+  ExecutionStatus status_filter = 4;
+}
+
+message ListExecutionsResponse {
+  repeated ActionExecution executions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// ============================================================================
+// Service Definition
+// ============================================================================
+
+service ControlService {
+  // Authentication
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+
+  // Users
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);
+  rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
+  rpc UpdateUserRole(UpdateUserRoleRequest) returns (UpdateUserResponse);
+  rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+
+  // Devices
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
+  rpc SetDeviceLabel(SetDeviceLabelRequest) returns (UpdateDeviceResponse);
+  rpc RemoveDeviceLabel(RemoveDeviceLabelRequest) returns (UpdateDeviceResponse);
+  rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse);
+
+  // Registration Tokens
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc GetToken(GetTokenRequest) returns (GetTokenResponse);
+  rpc ListTokens(ListTokensRequest) returns (ListTokensResponse);
+  rpc RenameToken(RenameTokenRequest) returns (UpdateTokenResponse);
+  rpc SetTokenDisabled(SetTokenDisabledRequest) returns (UpdateTokenResponse);
+  rpc DeleteToken(DeleteTokenRequest) returns (DeleteTokenResponse);
+
+  // Action Definitions
+  rpc CreateDefinition(CreateDefinitionRequest) returns (CreateDefinitionResponse);
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
+  rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse);
+  rpc RenameDefinition(RenameDefinitionRequest) returns (UpdateDefinitionResponse);
+  rpc UpdateDefinitionDescription(UpdateDefinitionDescriptionRequest) returns (UpdateDefinitionResponse);
+  rpc DeleteDefinition(DeleteDefinitionRequest) returns (DeleteDefinitionResponse);
+
+  // Action Dispatch & Execution
+  rpc DispatchAction(DispatchActionRequest) returns (DispatchActionResponse);
+  rpc DispatchToMultiple(DispatchToMultipleRequest) returns (DispatchToMultipleResponse);
+  rpc GetExecution(GetExecutionRequest) returns (GetExecutionResponse);
+  rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse);
+}
