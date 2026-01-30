@@ -908,7 +908,11 @@ type RegisterRequest struct {
 	// @gotags: validate:"required,min=1,max=253"
 	Hostname string `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty" validate:"required,min=1,max=253"`
 	// @gotags: validate:"required,min=1,max=32"
-	AgentVersion  string `protobuf:"bytes,3,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty" validate:"required,min=1,max=32"`
+	AgentVersion string `protobuf:"bytes,3,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty" validate:"required,min=1,max=32"`
+	// Certificate Signing Request (PEM-encoded PKCS#10)
+	// Agent generates its own key pair and sends CSR for signing
+	// @gotags: validate:"required"
+	Csr           []byte `protobuf:"bytes,4,opt,name=csr,proto3" json:"csr,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -964,12 +968,25 @@ func (x *RegisterRequest) GetAgentVersion() string {
 	return ""
 }
 
+func (x *RegisterRequest) GetCsr() []byte {
+	if x != nil {
+		return x.Csr
+	}
+	return nil
+}
+
 type RegisterResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
 	DeviceId *DeviceId `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required"`
-	// @gotags: validate:"required,min=1,max=4096"
-	AuthToken     string `protobuf:"bytes,2,opt,name=auth_token,json=authToken,proto3" json:"auth_token,omitempty" validate:"required,min=1,max=4096"`
+	// @gotags: validate:"omitempty,max=4096"
+	AuthToken string `protobuf:"bytes,2,opt,name=auth_token,json=authToken,proto3" json:"auth_token,omitempty" validate:"omitempty,max=4096"` // Deprecated: use mTLS certificates instead
+	// mTLS credentials issued by control server
+	// @gotags: validate:"required"
+	CaCert []byte `protobuf:"bytes,3,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"required"` // CA certificate (PEM)
+	// Signed device certificate (PEM) - private key stays on agent
+	// @gotags: validate:"required"
+	Certificate   []byte `protobuf:"bytes,4,opt,name=certificate,proto3" json:"certificate,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1016,6 +1033,20 @@ func (x *RegisterResponse) GetAuthToken() string {
 		return x.AuthToken
 	}
 	return ""
+}
+
+func (x *RegisterResponse) GetCaCert() []byte {
+	if x != nil {
+		return x.CaCert
+	}
+	return nil
+}
+
+func (x *RegisterResponse) GetCertificate() []byte {
+	if x != nil {
+		return x.Certificate
+	}
+	return nil
 }
 
 var File_pm_v1_agent_proto protoreflect.FileDescriptor
@@ -1079,15 +1110,18 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x04data\x18\x01 \x03(\v2\x1b.pm.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"z\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
-	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\"_\n" +
+	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\x12\x10\n" +
+	"\x03csr\x18\x04 \x01(\fR\x03csr\"\x9a\x01\n" +
 	"\x10RegisterResponse\x12,\n" +
 	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12\x1d\n" +
 	"\n" +
-	"auth_token\x18\x02 \x01(\tR\tauthToken*\xcc\x01\n" +
+	"auth_token\x18\x02 \x01(\tR\tauthToken\x12\x17\n" +
+	"\aca_cert\x18\x03 \x01(\fR\x06caCert\x12 \n" +
+	"\vcertificate\x18\x04 \x01(\fR\vcertificate*\xcc\x01\n" +
 	"\tOSQueryOp\x12\x1b\n" +
 	"\x17OS_QUERY_OP_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eOS_QUERY_OP_EQ\x10\x01\x12\x12\n" +
