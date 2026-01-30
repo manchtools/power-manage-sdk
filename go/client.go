@@ -116,12 +116,57 @@ func WithTLSConfig(tlsConfig *tls.Config) ClientOption {
 	}}
 }
 
+// WithMTLSFromPEM configures mTLS using PEM-encoded certificate data.
+// This is useful when certificates are stored in memory (e.g., from registration response).
+func WithMTLSFromPEM(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return nil, fmt.Errorf("parse client certificate: %w", err)
+	}
+
+	caPool := x509.NewCertPool()
+	if !caPool.AppendCertsFromPEM(caPEM) {
+		return nil, errors.New("failed to parse CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caPool,
+		MinVersion:   tls.VersionTLS13,
+	}
+
+	return &funcOption{func(c *Client, httpClient **http.Client) {
+		*httpClient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		}
+	}}, nil
+}
+
+// WithInsecureSkipVerify disables TLS certificate verification.
+// WARNING: Only use this for development/testing!
+func WithInsecureSkipVerify() ClientOption {
+	return &funcOption{func(c *Client, httpClient **http.Client) {
+		*httpClient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		}
+	}}
+}
+
 // Register registers a new agent with the server.
-func (c *Client) Register(ctx context.Context, token, hostname, agentVersion string) (*pm.RegisterResponse, error) {
+// The csr parameter should be a PEM-encoded PKCS#10 Certificate Signing Request.
+// The agent generates its own key pair and sends only the CSR; the private key never leaves the agent.
+func (c *Client) Register(ctx context.Context, token, hostname, agentVersion string, csr []byte) (*pm.RegisterResponse, error) {
 	req := connect.NewRequest(&pm.RegisterRequest{
 		Token:        token,
 		Hostname:     hostname,
 		AgentVersion: agentVersion,
+		Csr:          csr,
 	})
 
 	resp, err := c.client.Register(ctx, req)

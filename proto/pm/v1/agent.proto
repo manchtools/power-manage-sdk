@@ -184,11 +184,21 @@ message RegisterRequest {
   string hostname = 2;
   // @gotags: validate:"required,min=1,max=32"
   string agent_version = 3;
+  // Certificate Signing Request (PEM-encoded PKCS#10)
+  // Agent generates its own key pair and sends CSR for signing
+  // @gotags: validate:"required"
+  bytes csr = 4;
 }
 
 message RegisterResponse {
   // @gotags: validate:"required"
   DeviceId device_id = 1;
-  // @gotags: validate:"required,min=1,max=4096"
-  string auth_token = 2;
+  // @gotags: validate:"omitempty,max=4096"
+  string auth_token = 2;  // Deprecated: use mTLS certificates instead
+  // mTLS credentials issued by control server
+  // @gotags: validate:"required"
+  bytes ca_cert = 3;       // CA certificate (PEM)
+  // Signed device certificate (PEM) - private key stays on agent
+  // @gotags: validate:"required"
+  bytes certificate = 4;
 }
