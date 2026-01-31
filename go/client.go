@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -15,6 +16,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/net/http2"
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
 	"github.com/manchtools/power-manage/sdk/gen/go/pm/v1/pmv1connect"
@@ -152,6 +154,26 @@ func WithInsecureSkipVerify() ClientOption {
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: true,
+				},
+			},
+		}
+	}}
+}
+
+// WithH2C configures the client to use HTTP/2 cleartext (h2c) without TLS.
+// This is useful for development/testing when connecting to servers that
+// use h2c instead of HTTPS.
+// WARNING: Only use this for development/testing - data is not encrypted!
+func WithH2C() ClientOption {
+	return &funcOption{func(c *Client, httpClient **http.Client) {
+		*httpClient = &http.Client{
+			Transport: &http2.Transport{
+				// Allow h2c (HTTP/2 without TLS)
+				AllowHTTP: true,
+				// Use a custom DialTLSContext that returns a plain TCP connection
+				DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+					var d net.Dialer
+					return d.DialContext(ctx, network, addr)
 				},
 			},
 		}
