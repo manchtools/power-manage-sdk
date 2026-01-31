@@ -76,6 +76,12 @@ const (
 	// ControlServiceRemoveDeviceLabelProcedure is the fully-qualified name of the ControlService's
 	// RemoveDeviceLabel RPC.
 	ControlServiceRemoveDeviceLabelProcedure = "/pm.v1.ControlService/RemoveDeviceLabel"
+	// ControlServiceAssignDeviceProcedure is the fully-qualified name of the ControlService's
+	// AssignDevice RPC.
+	ControlServiceAssignDeviceProcedure = "/pm.v1.ControlService/AssignDevice"
+	// ControlServiceUnassignDeviceProcedure is the fully-qualified name of the ControlService's
+	// UnassignDevice RPC.
+	ControlServiceUnassignDeviceProcedure = "/pm.v1.ControlService/UnassignDevice"
 	// ControlServiceDeleteDeviceProcedure is the fully-qualified name of the ControlService's
 	// DeleteDevice RPC.
 	ControlServiceDeleteDeviceProcedure = "/pm.v1.ControlService/DeleteDevice"
@@ -148,6 +154,8 @@ type ControlServiceClient interface {
 	GetDevice(context.Context, *connect.Request[v1.GetDeviceRequest]) (*connect.Response[v1.GetDeviceResponse], error)
 	SetDeviceLabel(context.Context, *connect.Request[v1.SetDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
+	AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error)
+	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
 	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
@@ -269,6 +277,18 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceRemoveDeviceLabelProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("RemoveDeviceLabel")),
+			connect.WithClientOptions(opts...),
+		),
+		assignDevice: connect.NewClient[v1.AssignDeviceRequest, v1.AssignDeviceResponse](
+			httpClient,
+			baseURL+ControlServiceAssignDeviceProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AssignDevice")),
+			connect.WithClientOptions(opts...),
+		),
+		unassignDevice: connect.NewClient[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse](
+			httpClient,
+			baseURL+ControlServiceUnassignDeviceProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UnassignDevice")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteDevice: connect.NewClient[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse](
@@ -393,6 +413,8 @@ type controlServiceClient struct {
 	getDevice                   *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
 	setDeviceLabel              *connect.Client[v1.SetDeviceLabelRequest, v1.UpdateDeviceResponse]
 	removeDeviceLabel           *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
+	assignDevice                *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
+	unassignDevice              *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
 	deleteDevice                *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
 	createToken                 *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
 	getToken                    *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
@@ -485,6 +507,16 @@ func (c *controlServiceClient) SetDeviceLabel(ctx context.Context, req *connect.
 // RemoveDeviceLabel calls pm.v1.ControlService.RemoveDeviceLabel.
 func (c *controlServiceClient) RemoveDeviceLabel(ctx context.Context, req *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
 	return c.removeDeviceLabel.CallUnary(ctx, req)
+}
+
+// AssignDevice calls pm.v1.ControlService.AssignDevice.
+func (c *controlServiceClient) AssignDevice(ctx context.Context, req *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error) {
+	return c.assignDevice.CallUnary(ctx, req)
+}
+
+// UnassignDevice calls pm.v1.ControlService.UnassignDevice.
+func (c *controlServiceClient) UnassignDevice(ctx context.Context, req *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error) {
+	return c.unassignDevice.CallUnary(ctx, req)
 }
 
 // DeleteDevice calls pm.v1.ControlService.DeleteDevice.
@@ -592,6 +624,8 @@ type ControlServiceHandler interface {
 	GetDevice(context.Context, *connect.Request[v1.GetDeviceRequest]) (*connect.Response[v1.GetDeviceResponse], error)
 	SetDeviceLabel(context.Context, *connect.Request[v1.SetDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
+	AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error)
+	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
 	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
@@ -709,6 +743,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceRemoveDeviceLabelProcedure,
 		svc.RemoveDeviceLabel,
 		connect.WithSchema(controlServiceMethods.ByName("RemoveDeviceLabel")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAssignDeviceHandler := connect.NewUnaryHandler(
+		ControlServiceAssignDeviceProcedure,
+		svc.AssignDevice,
+		connect.WithSchema(controlServiceMethods.ByName("AssignDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUnassignDeviceHandler := connect.NewUnaryHandler(
+		ControlServiceUnassignDeviceProcedure,
+		svc.UnassignDevice,
+		connect.WithSchema(controlServiceMethods.ByName("UnassignDevice")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceDeleteDeviceHandler := connect.NewUnaryHandler(
@@ -845,6 +891,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceSetDeviceLabelHandler.ServeHTTP(w, r)
 		case ControlServiceRemoveDeviceLabelProcedure:
 			controlServiceRemoveDeviceLabelHandler.ServeHTTP(w, r)
+		case ControlServiceAssignDeviceProcedure:
+			controlServiceAssignDeviceHandler.ServeHTTP(w, r)
+		case ControlServiceUnassignDeviceProcedure:
+			controlServiceUnassignDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDeviceProcedure:
 			controlServiceDeleteDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceCreateTokenProcedure:
@@ -946,6 +996,14 @@ func (UnimplementedControlServiceHandler) SetDeviceLabel(context.Context, *conne
 
 func (UnimplementedControlServiceHandler) RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveDeviceLabel is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AssignDevice is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UnassignDevice is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error) {
