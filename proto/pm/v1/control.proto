@@ -13,7 +13,9 @@ import "pm/v1/actions.proto";
 // ============================================================================
 
 message LoginRequest {
+  // @gotags: validate:"required,email"
   string email = 1;
+  // @gotags: validate:"required,min=8"
   string password = 2;
 }
 
@@ -25,6 +27,7 @@ message LoginResponse {
 }
 
 message RefreshTokenRequest {
+  // @gotags: validate:"required"
   string refresh_token = 1;
 }
 
@@ -53,8 +56,11 @@ message User {
 }
 
 message CreateUserRequest {
+  // @gotags: validate:"required,email"
   string email = 1;
+  // @gotags: validate:"required,min=8"
   string password = 2;
+  // @gotags: validate:"required,oneof=admin user"
   string role = 3;
 }
 
@@ -63,6 +69,7 @@ message CreateUserResponse {
 }
 
 message GetUserRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
@@ -71,7 +78,9 @@ message GetUserResponse {
 }
 
 message ListUsersRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
 }
 
@@ -83,22 +92,30 @@ message ListUsersResponse {
 
 // Granular user updates
 message UpdateUserEmailRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"required,email"
   string email = 2;
 }
 
 message UpdateUserPasswordRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"omitempty,min=8"
   string current_password = 2;  // Required for self-update
+  // @gotags: validate:"required,min=8"
   string new_password = 3;
 }
 
 message UpdateUserRoleRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"required,oneof=admin user"
   string role = 2;  // "admin" or "user"
 }
 
 message SetUserDisabledRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
   bool disabled = 2;
 }
@@ -108,6 +125,7 @@ message UpdateUserResponse {
 }
 
 message DeleteUserRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
@@ -130,8 +148,11 @@ message Device {
 }
 
 message ListDevicesRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
+  // @gotags: validate:"omitempty,oneof=online offline"
   string status_filter = 3;  // optional: "online", "offline"
   map<string, string> label_filter = 4;
 }
@@ -143,6 +164,7 @@ message ListDevicesResponse {
 }
 
 message GetDeviceRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
@@ -152,13 +174,18 @@ message GetDeviceResponse {
 
 // Granular device updates
 message SetDeviceLabelRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"required,min=1,max=64"
   string key = 2;
+  // @gotags: validate:"required,max=256"
   string value = 3;
 }
 
 message RemoveDeviceLabelRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"required,min=1,max=64"
   string key = 2;
 }
 
@@ -167,6 +194,7 @@ message UpdateDeviceResponse {
 }
 
 message DeleteDeviceRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
@@ -174,7 +202,9 @@ message DeleteDeviceResponse {}
 
 // Device assignment (admin-only)
 message AssignDeviceRequest {
+  // @gotags: validate:"required,ulid"
   string device_id = 1;
+  // @gotags: validate:"required,ulid"
   string user_id = 2;
 }
 
@@ -183,6 +213,7 @@ message AssignDeviceResponse {
 }
 
 message UnassignDeviceRequest {
+  // @gotags: validate:"required,ulid"
   string device_id = 1;
 }
 
@@ -209,8 +240,10 @@ message RegistrationToken {
 }
 
 message CreateTokenRequest {
+  // @gotags: validate:"required,min=1,max=128"
   string name = 1;
   bool one_time = 2;
+  // @gotags: validate:"omitempty,min=0"
   int32 max_uses = 3;  // 0 = unlimited (for reusable tokens)
   google.protobuf.Timestamp expires_at = 4;  // optional
 }
@@ -220,7 +253,9 @@ message CreateTokenResponse {
 }
 
 message ListTokensRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
   bool include_disabled = 3;
 }
@@ -232,6 +267,7 @@ message ListTokensResponse {
 }
 
 message GetTokenRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
@@ -241,11 +277,14 @@ message GetTokenResponse {
 
 // Granular token updates
 message RenameTokenRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"required,min=1,max=128"
   string name = 2;
 }
 
 message SetTokenDisabledRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
   bool disabled = 2;
 }
@@ -255,16 +294,17 @@ message UpdateTokenResponse {
 }
 
 message DeleteTokenRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
 message DeleteTokenResponse {}
 
 // ============================================================================
-// Action Definitions (Reusable Templates)
+// Actions (Single Executable - renamed from ActionDefinition)
 // ============================================================================
 
-message ActionDefinition {
+message ManagedAction {
   string id = 1;
   string name = 2;
   string description = 3;
@@ -282,65 +322,500 @@ message ActionDefinition {
   string created_by = 8;
 }
 
-message CreateDefinitionRequest {
+message CreateActionRequest {
+  // @gotags: validate:"required,min=1,max=255"
   string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  // @gotags: validate:"required,ne=0"
   ActionType type = 3;
+  // @gotags: validate:"omitempty"
   DesiredState desired_state = 4;
+  // @gotags: validate:"omitempty,gte=0,lte=3600"
+  int32 timeout_seconds = 5;
+
   oneof params {
+    // @gotags: validate:"omitempty"
     PackageParams package = 10;
+    // @gotags: validate:"omitempty"
     AppInstallParams app = 11;
+    // @gotags: validate:"omitempty"
     ShellParams shell = 12;
+    // @gotags: validate:"omitempty"
     SystemdParams systemd = 13;
+    // @gotags: validate:"omitempty"
     FileParams file = 14;
   }
-  int32 timeout_seconds = 5;
 }
 
-message CreateDefinitionResponse {
-  ActionDefinition definition = 1;
+message CreateActionResponse {
+  ManagedAction action = 1;
 }
 
-message GetDefinitionRequest {
+message GetActionRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
-message GetDefinitionResponse {
-  ActionDefinition definition = 1;
+message GetActionResponse {
+  ManagedAction action = 1;
 }
 
-message ListDefinitionsRequest {
+message ListActionsRequest {
+  // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
   ActionType type_filter = 3;
 }
 
-message ListDefinitionsResponse {
-  repeated ActionDefinition definitions = 1;
+message ListActionsResponse {
+  repeated ManagedAction actions = 1;
   string next_page_token = 2;
   int32 total_count = 3;
 }
 
-// Granular definition updates (params are immutable - create new definition)
-message RenameDefinitionRequest {
+message RenameActionRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 2;
+}
+
+message UpdateActionDescriptionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message UpdateActionParamsRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty"
+  DesiredState desired_state = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=3600"
+  int32 timeout_seconds = 3;
+
+  oneof params {
+    // @gotags: validate:"omitempty"
+    PackageParams package = 10;
+    // @gotags: validate:"omitempty"
+    AppInstallParams app = 11;
+    // @gotags: validate:"omitempty"
+    ShellParams shell = 12;
+    // @gotags: validate:"omitempty"
+    SystemdParams systemd = 13;
+    // @gotags: validate:"omitempty"
+    FileParams file = 14;
+  }
+}
+
+message UpdateActionResponse {
+  ManagedAction action = 1;
+}
+
+message DeleteActionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteActionResponse {}
+
+// ============================================================================
+// Action Sets (Collection of Actions)
+// ============================================================================
+
+message ActionSet {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 member_count = 4;
+  google.protobuf.Timestamp created_at = 5;
+  string created_by = 6;
+}
+
+message ActionSetMember {
+  // @gotags: validate:"required,ulid"
+  string action_id = 1;
+  // @gotags: validate:"omitempty,gte=0"
+  int32 sort_order = 2;
+}
+
+message CreateActionSetRequest {
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateActionSetResponse {
+  ActionSet set = 1;
+}
+
+message GetActionSetRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetActionSetResponse {
+  ActionSet set = 1;
+  repeated ActionSetMember members = 2;
+}
+
+message ListActionSetsRequest {
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListActionSetsResponse {
+  repeated ActionSet sets = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RenameActionSetRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 2;
+}
+
+message UpdateActionSetDescriptionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message UpdateActionSetResponse {
+  ActionSet set = 1;
+}
+
+message DeleteActionSetRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteActionSetResponse {}
+
+message AddActionToSetRequest {
+  // @gotags: validate:"required,ulid"
+  string set_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+  // @gotags: validate:"omitempty,gte=0"
+  int32 sort_order = 3;
+}
+
+message AddActionToSetResponse {
+  ActionSet set = 1;
+}
+
+message RemoveActionFromSetRequest {
+  // @gotags: validate:"required,ulid"
+  string set_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+}
+
+message RemoveActionFromSetResponse {
+  ActionSet set = 1;
+}
+
+message ReorderActionInSetRequest {
+  // @gotags: validate:"required,ulid"
+  string set_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+  // @gotags: validate:"required,gte=0"
+  int32 new_order = 3;
+}
+
+message ReorderActionInSetResponse {
+  ActionSet set = 1;
+}
+
+// ============================================================================
+// Definitions (Collection of Action Sets)
+// ============================================================================
+
+message Definition {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 member_count = 4;
+  google.protobuf.Timestamp created_at = 5;
+  string created_by = 6;
+}
+
+message DefinitionMember {
+  // @gotags: validate:"required,ulid"
+  string action_set_id = 1;
+  // @gotags: validate:"omitempty,gte=0"
+  int32 sort_order = 2;
+}
+
+message CreateDefinitionRequest {
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateDefinitionResponse {
+  Definition definition = 1;
+}
+
+message GetDefinitionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetDefinitionResponse {
+  Definition definition = 1;
+  repeated DefinitionMember members = 2;
+}
+
+message ListDefinitionsRequest {
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListDefinitionsResponse {
+  repeated Definition definitions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RenameDefinitionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=255"
   string name = 2;
 }
 
 message UpdateDefinitionDescriptionRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"omitempty,max=1024"
   string description = 2;
 }
 
 message UpdateDefinitionResponse {
-  ActionDefinition definition = 1;
+  Definition definition = 1;
 }
 
 message DeleteDefinitionRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
 message DeleteDefinitionResponse {}
+
+message AddActionSetToDefinitionRequest {
+  // @gotags: validate:"required,ulid"
+  string definition_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_set_id = 2;
+  // @gotags: validate:"omitempty,gte=0"
+  int32 sort_order = 3;
+}
+
+message AddActionSetToDefinitionResponse {
+  Definition definition = 1;
+}
+
+message RemoveActionSetFromDefinitionRequest {
+  // @gotags: validate:"required,ulid"
+  string definition_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_set_id = 2;
+}
+
+message RemoveActionSetFromDefinitionResponse {
+  Definition definition = 1;
+}
+
+message ReorderActionSetInDefinitionRequest {
+  // @gotags: validate:"required,ulid"
+  string definition_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_set_id = 2;
+  // @gotags: validate:"required,gte=0"
+  int32 new_order = 3;
+}
+
+message ReorderActionSetInDefinitionResponse {
+  Definition definition = 1;
+}
+
+// ============================================================================
+// Device Groups
+// ============================================================================
+
+message DeviceGroup {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 member_count = 4;
+  google.protobuf.Timestamp created_at = 5;
+  string created_by = 6;
+}
+
+message CreateDeviceGroupRequest {
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateDeviceGroupResponse {
+  DeviceGroup group = 1;
+}
+
+message GetDeviceGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetDeviceGroupResponse {
+  DeviceGroup group = 1;
+  repeated string device_ids = 2;
+}
+
+message ListDeviceGroupsRequest {
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListDeviceGroupsResponse {
+  repeated DeviceGroup groups = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RenameDeviceGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 2;
+}
+
+message UpdateDeviceGroupDescriptionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message UpdateDeviceGroupResponse {
+  DeviceGroup group = 1;
+}
+
+message DeleteDeviceGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteDeviceGroupResponse {}
+
+message AddDeviceToGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string device_id = 2;
+}
+
+message AddDeviceToGroupResponse {
+  DeviceGroup group = 1;
+}
+
+message RemoveDeviceFromGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string device_id = 2;
+}
+
+message RemoveDeviceFromGroupResponse {
+  DeviceGroup group = 1;
+}
+
+// ============================================================================
+// Assignments (Link actions/sets/definitions to devices/groups)
+// ============================================================================
+
+message Assignment {
+  string id = 1;
+  string source_type = 2;  // "definition", "action_set", or "action"
+  string source_id = 3;
+  string target_type = 4;  // "device" or "device_group"
+  string target_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+  string created_by = 7;
+}
+
+message CreateAssignmentRequest {
+  // @gotags: validate:"required,oneof=definition action_set action"
+  string source_type = 1;
+  // @gotags: validate:"required,ulid"
+  string source_id = 2;
+  // @gotags: validate:"required,oneof=device device_group"
+  string target_type = 3;
+  // @gotags: validate:"required,ulid"
+  string target_id = 4;
+}
+
+message CreateAssignmentResponse {
+  Assignment assignment = 1;
+}
+
+message DeleteAssignmentRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteAssignmentResponse {}
+
+message ListAssignmentsRequest {
+  // @gotags: validate:"omitempty,oneof=definition action_set action"
+  string source_type = 1;
+  // @gotags: validate:"omitempty,ulid"
+  string source_id = 2;
+  // @gotags: validate:"omitempty,oneof=device device_group"
+  string target_type = 3;
+  // @gotags: validate:"omitempty,ulid"
+  string target_id = 4;
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 page_size = 5;
+  // @gotags: validate:"omitempty"
+  string page_token = 6;
+}
+
+message ListAssignmentsResponse {
+  repeated Assignment assignments = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Get all resolved actions for a device (expands groups, definitions, sets)
+message GetDeviceAssignmentsRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceAssignmentsResponse {
+  repeated ManagedAction actions = 1;
+  repeated ActionSet action_sets = 2;
+  repeated Definition definitions = 3;
+}
 
 // ============================================================================
 // Action Dispatch & Execution
@@ -349,7 +824,7 @@ message DeleteDefinitionResponse {}
 message ActionExecution {
   string id = 1;
   string device_id = 2;
-  string definition_id = 3;
+  string action_id = 3;  // Reference to ManagedAction
   ActionType type = 4;
   ExecutionStatus status = 5;
   string error = 6;
@@ -362,10 +837,12 @@ message ActionExecution {
 }
 
 message DispatchActionRequest {
+  // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // Either use a definition or inline action
+  // Either use an action or inline action
   oneof action_source {
-    string definition_id = 2;
+    // @gotags: validate:"omitempty,ulid"
+    string action_id = 2;  // Reference to ManagedAction
     Action inline_action = 3;
   }
 }
@@ -375,9 +852,11 @@ message DispatchActionResponse {
 }
 
 message DispatchToMultipleRequest {
+  // @gotags: validate:"required,min=1,dive,ulid"
   repeated string device_ids = 1;
   oneof action_source {
-    string definition_id = 2;
+    // @gotags: validate:"omitempty,ulid"
+    string action_id = 2;  // Reference to ManagedAction
     Action inline_action = 3;
   }
 }
@@ -386,7 +865,61 @@ message DispatchToMultipleResponse {
   repeated ActionExecution executions = 1;
 }
 
+// Dispatch all actions assigned to a device (resolves definitions, sets, groups)
+message DispatchAssignedActionsRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message DispatchAssignedActionsResponse {
+  repeated ActionExecution executions = 1;
+}
+
+// Dispatch all actions from an action set to a device
+message DispatchActionSetRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_set_id = 2;
+}
+
+message DispatchActionSetResponse {
+  repeated ActionExecution executions = 1;
+}
+
+// Dispatch all actions from a definition to a device
+message DispatchDefinitionRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,ulid"
+  string definition_id = 2;
+}
+
+message DispatchDefinitionResponse {
+  repeated ActionExecution executions = 1;
+}
+
+// Dispatch to a device group
+message DispatchToGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  oneof action_source {
+    // @gotags: validate:"omitempty,ulid"
+    string action_id = 2;
+    // @gotags: validate:"omitempty,ulid"
+    string action_set_id = 3;
+    // @gotags: validate:"omitempty,ulid"
+    string definition_id = 4;
+    Action inline_action = 5;
+  }
+}
+
+message DispatchToGroupResponse {
+  repeated ActionExecution executions = 1;
+}
+
 message GetExecutionRequest {
+  // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
@@ -395,8 +928,11 @@ message GetExecutionResponse {
 }
 
 message ListExecutionsRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
   int32 page_size = 1;
+  // @gotags: validate:"omitempty"
   string page_token = 2;
+  // @gotags: validate:"omitempty,ulid"
   string device_id = 3;  // optional filter
   ExecutionStatus status_filter = 4;
 }
@@ -444,17 +980,60 @@ service ControlService {
   rpc SetTokenDisabled(SetTokenDisabledRequest) returns (UpdateTokenResponse);
   rpc DeleteToken(DeleteTokenRequest) returns (DeleteTokenResponse);
 
-  // Action Definitions
+  // Actions (single executable)
+  rpc CreateAction(CreateActionRequest) returns (CreateActionResponse);
+  rpc GetAction(GetActionRequest) returns (GetActionResponse);
+  rpc ListActions(ListActionsRequest) returns (ListActionsResponse);
+  rpc RenameAction(RenameActionRequest) returns (UpdateActionResponse);
+  rpc UpdateActionDescription(UpdateActionDescriptionRequest) returns (UpdateActionResponse);
+  rpc UpdateActionParams(UpdateActionParamsRequest) returns (UpdateActionResponse);
+  rpc DeleteAction(DeleteActionRequest) returns (DeleteActionResponse);
+
+  // Action Sets (collection of actions)
+  rpc CreateActionSet(CreateActionSetRequest) returns (CreateActionSetResponse);
+  rpc GetActionSet(GetActionSetRequest) returns (GetActionSetResponse);
+  rpc ListActionSets(ListActionSetsRequest) returns (ListActionSetsResponse);
+  rpc RenameActionSet(RenameActionSetRequest) returns (UpdateActionSetResponse);
+  rpc UpdateActionSetDescription(UpdateActionSetDescriptionRequest) returns (UpdateActionSetResponse);
+  rpc DeleteActionSet(DeleteActionSetRequest) returns (DeleteActionSetResponse);
+  rpc AddActionToSet(AddActionToSetRequest) returns (AddActionToSetResponse);
+  rpc RemoveActionFromSet(RemoveActionFromSetRequest) returns (RemoveActionFromSetResponse);
+  rpc ReorderActionInSet(ReorderActionInSetRequest) returns (ReorderActionInSetResponse);
+
+  // Definitions (collection of action sets)
   rpc CreateDefinition(CreateDefinitionRequest) returns (CreateDefinitionResponse);
   rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
   rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse);
   rpc RenameDefinition(RenameDefinitionRequest) returns (UpdateDefinitionResponse);
   rpc UpdateDefinitionDescription(UpdateDefinitionDescriptionRequest) returns (UpdateDefinitionResponse);
   rpc DeleteDefinition(DeleteDefinitionRequest) returns (DeleteDefinitionResponse);
+  rpc AddActionSetToDefinition(AddActionSetToDefinitionRequest) returns (AddActionSetToDefinitionResponse);
+  rpc RemoveActionSetFromDefinition(RemoveActionSetFromDefinitionRequest) returns (RemoveActionSetFromDefinitionResponse);
+  rpc ReorderActionSetInDefinition(ReorderActionSetInDefinitionRequest) returns (ReorderActionSetInDefinitionResponse);
+
+  // Device Groups
+  rpc CreateDeviceGroup(CreateDeviceGroupRequest) returns (CreateDeviceGroupResponse);
+  rpc GetDeviceGroup(GetDeviceGroupRequest) returns (GetDeviceGroupResponse);
+  rpc ListDeviceGroups(ListDeviceGroupsRequest) returns (ListDeviceGroupsResponse);
+  rpc RenameDeviceGroup(RenameDeviceGroupRequest) returns (UpdateDeviceGroupResponse);
+  rpc UpdateDeviceGroupDescription(UpdateDeviceGroupDescriptionRequest) returns (UpdateDeviceGroupResponse);
+  rpc DeleteDeviceGroup(DeleteDeviceGroupRequest) returns (DeleteDeviceGroupResponse);
+  rpc AddDeviceToGroup(AddDeviceToGroupRequest) returns (AddDeviceToGroupResponse);
+  rpc RemoveDeviceFromGroup(RemoveDeviceFromGroupRequest) returns (RemoveDeviceFromGroupResponse);
+
+  // Assignments
+  rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse);
+  rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse);
+  rpc ListAssignments(ListAssignmentsRequest) returns (ListAssignmentsResponse);
+  rpc GetDeviceAssignments(GetDeviceAssignmentsRequest) returns (GetDeviceAssignmentsResponse);
 
   // Action Dispatch & Execution
   rpc DispatchAction(DispatchActionRequest) returns (DispatchActionResponse);
   rpc DispatchToMultiple(DispatchToMultipleRequest) returns (DispatchToMultipleResponse);
+  rpc DispatchAssignedActions(DispatchAssignedActionsRequest) returns (DispatchAssignedActionsResponse);
+  rpc DispatchActionSet(DispatchActionSetRequest) returns (DispatchActionSetResponse);
+  rpc DispatchDefinition(DispatchDefinitionRequest) returns (DispatchDefinitionResponse);
+  rpc DispatchToGroup(DispatchToGroupRequest) returns (DispatchToGroupResponse);
   rpc GetExecution(GetExecutionRequest) returns (GetExecutionResponse);
   rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse);
 }

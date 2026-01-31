@@ -102,6 +102,54 @@ const (
 	// ControlServiceDeleteTokenProcedure is the fully-qualified name of the ControlService's
 	// DeleteToken RPC.
 	ControlServiceDeleteTokenProcedure = "/pm.v1.ControlService/DeleteToken"
+	// ControlServiceCreateActionProcedure is the fully-qualified name of the ControlService's
+	// CreateAction RPC.
+	ControlServiceCreateActionProcedure = "/pm.v1.ControlService/CreateAction"
+	// ControlServiceGetActionProcedure is the fully-qualified name of the ControlService's GetAction
+	// RPC.
+	ControlServiceGetActionProcedure = "/pm.v1.ControlService/GetAction"
+	// ControlServiceListActionsProcedure is the fully-qualified name of the ControlService's
+	// ListActions RPC.
+	ControlServiceListActionsProcedure = "/pm.v1.ControlService/ListActions"
+	// ControlServiceRenameActionProcedure is the fully-qualified name of the ControlService's
+	// RenameAction RPC.
+	ControlServiceRenameActionProcedure = "/pm.v1.ControlService/RenameAction"
+	// ControlServiceUpdateActionDescriptionProcedure is the fully-qualified name of the
+	// ControlService's UpdateActionDescription RPC.
+	ControlServiceUpdateActionDescriptionProcedure = "/pm.v1.ControlService/UpdateActionDescription"
+	// ControlServiceUpdateActionParamsProcedure is the fully-qualified name of the ControlService's
+	// UpdateActionParams RPC.
+	ControlServiceUpdateActionParamsProcedure = "/pm.v1.ControlService/UpdateActionParams"
+	// ControlServiceDeleteActionProcedure is the fully-qualified name of the ControlService's
+	// DeleteAction RPC.
+	ControlServiceDeleteActionProcedure = "/pm.v1.ControlService/DeleteAction"
+	// ControlServiceCreateActionSetProcedure is the fully-qualified name of the ControlService's
+	// CreateActionSet RPC.
+	ControlServiceCreateActionSetProcedure = "/pm.v1.ControlService/CreateActionSet"
+	// ControlServiceGetActionSetProcedure is the fully-qualified name of the ControlService's
+	// GetActionSet RPC.
+	ControlServiceGetActionSetProcedure = "/pm.v1.ControlService/GetActionSet"
+	// ControlServiceListActionSetsProcedure is the fully-qualified name of the ControlService's
+	// ListActionSets RPC.
+	ControlServiceListActionSetsProcedure = "/pm.v1.ControlService/ListActionSets"
+	// ControlServiceRenameActionSetProcedure is the fully-qualified name of the ControlService's
+	// RenameActionSet RPC.
+	ControlServiceRenameActionSetProcedure = "/pm.v1.ControlService/RenameActionSet"
+	// ControlServiceUpdateActionSetDescriptionProcedure is the fully-qualified name of the
+	// ControlService's UpdateActionSetDescription RPC.
+	ControlServiceUpdateActionSetDescriptionProcedure = "/pm.v1.ControlService/UpdateActionSetDescription"
+	// ControlServiceDeleteActionSetProcedure is the fully-qualified name of the ControlService's
+	// DeleteActionSet RPC.
+	ControlServiceDeleteActionSetProcedure = "/pm.v1.ControlService/DeleteActionSet"
+	// ControlServiceAddActionToSetProcedure is the fully-qualified name of the ControlService's
+	// AddActionToSet RPC.
+	ControlServiceAddActionToSetProcedure = "/pm.v1.ControlService/AddActionToSet"
+	// ControlServiceRemoveActionFromSetProcedure is the fully-qualified name of the ControlService's
+	// RemoveActionFromSet RPC.
+	ControlServiceRemoveActionFromSetProcedure = "/pm.v1.ControlService/RemoveActionFromSet"
+	// ControlServiceReorderActionInSetProcedure is the fully-qualified name of the ControlService's
+	// ReorderActionInSet RPC.
+	ControlServiceReorderActionInSetProcedure = "/pm.v1.ControlService/ReorderActionInSet"
 	// ControlServiceCreateDefinitionProcedure is the fully-qualified name of the ControlService's
 	// CreateDefinition RPC.
 	ControlServiceCreateDefinitionProcedure = "/pm.v1.ControlService/CreateDefinition"
@@ -120,12 +168,69 @@ const (
 	// ControlServiceDeleteDefinitionProcedure is the fully-qualified name of the ControlService's
 	// DeleteDefinition RPC.
 	ControlServiceDeleteDefinitionProcedure = "/pm.v1.ControlService/DeleteDefinition"
+	// ControlServiceAddActionSetToDefinitionProcedure is the fully-qualified name of the
+	// ControlService's AddActionSetToDefinition RPC.
+	ControlServiceAddActionSetToDefinitionProcedure = "/pm.v1.ControlService/AddActionSetToDefinition"
+	// ControlServiceRemoveActionSetFromDefinitionProcedure is the fully-qualified name of the
+	// ControlService's RemoveActionSetFromDefinition RPC.
+	ControlServiceRemoveActionSetFromDefinitionProcedure = "/pm.v1.ControlService/RemoveActionSetFromDefinition"
+	// ControlServiceReorderActionSetInDefinitionProcedure is the fully-qualified name of the
+	// ControlService's ReorderActionSetInDefinition RPC.
+	ControlServiceReorderActionSetInDefinitionProcedure = "/pm.v1.ControlService/ReorderActionSetInDefinition"
+	// ControlServiceCreateDeviceGroupProcedure is the fully-qualified name of the ControlService's
+	// CreateDeviceGroup RPC.
+	ControlServiceCreateDeviceGroupProcedure = "/pm.v1.ControlService/CreateDeviceGroup"
+	// ControlServiceGetDeviceGroupProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceGroup RPC.
+	ControlServiceGetDeviceGroupProcedure = "/pm.v1.ControlService/GetDeviceGroup"
+	// ControlServiceListDeviceGroupsProcedure is the fully-qualified name of the ControlService's
+	// ListDeviceGroups RPC.
+	ControlServiceListDeviceGroupsProcedure = "/pm.v1.ControlService/ListDeviceGroups"
+	// ControlServiceRenameDeviceGroupProcedure is the fully-qualified name of the ControlService's
+	// RenameDeviceGroup RPC.
+	ControlServiceRenameDeviceGroupProcedure = "/pm.v1.ControlService/RenameDeviceGroup"
+	// ControlServiceUpdateDeviceGroupDescriptionProcedure is the fully-qualified name of the
+	// ControlService's UpdateDeviceGroupDescription RPC.
+	ControlServiceUpdateDeviceGroupDescriptionProcedure = "/pm.v1.ControlService/UpdateDeviceGroupDescription"
+	// ControlServiceDeleteDeviceGroupProcedure is the fully-qualified name of the ControlService's
+	// DeleteDeviceGroup RPC.
+	ControlServiceDeleteDeviceGroupProcedure = "/pm.v1.ControlService/DeleteDeviceGroup"
+	// ControlServiceAddDeviceToGroupProcedure is the fully-qualified name of the ControlService's
+	// AddDeviceToGroup RPC.
+	ControlServiceAddDeviceToGroupProcedure = "/pm.v1.ControlService/AddDeviceToGroup"
+	// ControlServiceRemoveDeviceFromGroupProcedure is the fully-qualified name of the ControlService's
+	// RemoveDeviceFromGroup RPC.
+	ControlServiceRemoveDeviceFromGroupProcedure = "/pm.v1.ControlService/RemoveDeviceFromGroup"
+	// ControlServiceCreateAssignmentProcedure is the fully-qualified name of the ControlService's
+	// CreateAssignment RPC.
+	ControlServiceCreateAssignmentProcedure = "/pm.v1.ControlService/CreateAssignment"
+	// ControlServiceDeleteAssignmentProcedure is the fully-qualified name of the ControlService's
+	// DeleteAssignment RPC.
+	ControlServiceDeleteAssignmentProcedure = "/pm.v1.ControlService/DeleteAssignment"
+	// ControlServiceListAssignmentsProcedure is the fully-qualified name of the ControlService's
+	// ListAssignments RPC.
+	ControlServiceListAssignmentsProcedure = "/pm.v1.ControlService/ListAssignments"
+	// ControlServiceGetDeviceAssignmentsProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceAssignments RPC.
+	ControlServiceGetDeviceAssignmentsProcedure = "/pm.v1.ControlService/GetDeviceAssignments"
 	// ControlServiceDispatchActionProcedure is the fully-qualified name of the ControlService's
 	// DispatchAction RPC.
 	ControlServiceDispatchActionProcedure = "/pm.v1.ControlService/DispatchAction"
 	// ControlServiceDispatchToMultipleProcedure is the fully-qualified name of the ControlService's
 	// DispatchToMultiple RPC.
 	ControlServiceDispatchToMultipleProcedure = "/pm.v1.ControlService/DispatchToMultiple"
+	// ControlServiceDispatchAssignedActionsProcedure is the fully-qualified name of the
+	// ControlService's DispatchAssignedActions RPC.
+	ControlServiceDispatchAssignedActionsProcedure = "/pm.v1.ControlService/DispatchAssignedActions"
+	// ControlServiceDispatchActionSetProcedure is the fully-qualified name of the ControlService's
+	// DispatchActionSet RPC.
+	ControlServiceDispatchActionSetProcedure = "/pm.v1.ControlService/DispatchActionSet"
+	// ControlServiceDispatchDefinitionProcedure is the fully-qualified name of the ControlService's
+	// DispatchDefinition RPC.
+	ControlServiceDispatchDefinitionProcedure = "/pm.v1.ControlService/DispatchDefinition"
+	// ControlServiceDispatchToGroupProcedure is the fully-qualified name of the ControlService's
+	// DispatchToGroup RPC.
+	ControlServiceDispatchToGroupProcedure = "/pm.v1.ControlService/DispatchToGroup"
 	// ControlServiceGetExecutionProcedure is the fully-qualified name of the ControlService's
 	// GetExecution RPC.
 	ControlServiceGetExecutionProcedure = "/pm.v1.ControlService/GetExecution"
@@ -164,16 +269,55 @@ type ControlServiceClient interface {
 	RenameToken(context.Context, *connect.Request[v1.RenameTokenRequest]) (*connect.Response[v1.UpdateTokenResponse], error)
 	SetTokenDisabled(context.Context, *connect.Request[v1.SetTokenDisabledRequest]) (*connect.Response[v1.UpdateTokenResponse], error)
 	DeleteToken(context.Context, *connect.Request[v1.DeleteTokenRequest]) (*connect.Response[v1.DeleteTokenResponse], error)
-	// Action Definitions
+	// Actions (single executable)
+	CreateAction(context.Context, *connect.Request[v1.CreateActionRequest]) (*connect.Response[v1.CreateActionResponse], error)
+	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
+	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
+	RenameAction(context.Context, *connect.Request[v1.RenameActionRequest]) (*connect.Response[v1.UpdateActionResponse], error)
+	UpdateActionDescription(context.Context, *connect.Request[v1.UpdateActionDescriptionRequest]) (*connect.Response[v1.UpdateActionResponse], error)
+	UpdateActionParams(context.Context, *connect.Request[v1.UpdateActionParamsRequest]) (*connect.Response[v1.UpdateActionResponse], error)
+	DeleteAction(context.Context, *connect.Request[v1.DeleteActionRequest]) (*connect.Response[v1.DeleteActionResponse], error)
+	// Action Sets (collection of actions)
+	CreateActionSet(context.Context, *connect.Request[v1.CreateActionSetRequest]) (*connect.Response[v1.CreateActionSetResponse], error)
+	GetActionSet(context.Context, *connect.Request[v1.GetActionSetRequest]) (*connect.Response[v1.GetActionSetResponse], error)
+	ListActionSets(context.Context, *connect.Request[v1.ListActionSetsRequest]) (*connect.Response[v1.ListActionSetsResponse], error)
+	RenameActionSet(context.Context, *connect.Request[v1.RenameActionSetRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
+	UpdateActionSetDescription(context.Context, *connect.Request[v1.UpdateActionSetDescriptionRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
+	DeleteActionSet(context.Context, *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error)
+	AddActionToSet(context.Context, *connect.Request[v1.AddActionToSetRequest]) (*connect.Response[v1.AddActionToSetResponse], error)
+	RemoveActionFromSet(context.Context, *connect.Request[v1.RemoveActionFromSetRequest]) (*connect.Response[v1.RemoveActionFromSetResponse], error)
+	ReorderActionInSet(context.Context, *connect.Request[v1.ReorderActionInSetRequest]) (*connect.Response[v1.ReorderActionInSetResponse], error)
+	// Definitions (collection of action sets)
 	CreateDefinition(context.Context, *connect.Request[v1.CreateDefinitionRequest]) (*connect.Response[v1.CreateDefinitionResponse], error)
 	GetDefinition(context.Context, *connect.Request[v1.GetDefinitionRequest]) (*connect.Response[v1.GetDefinitionResponse], error)
 	ListDefinitions(context.Context, *connect.Request[v1.ListDefinitionsRequest]) (*connect.Response[v1.ListDefinitionsResponse], error)
 	RenameDefinition(context.Context, *connect.Request[v1.RenameDefinitionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	UpdateDefinitionDescription(context.Context, *connect.Request[v1.UpdateDefinitionDescriptionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	DeleteDefinition(context.Context, *connect.Request[v1.DeleteDefinitionRequest]) (*connect.Response[v1.DeleteDefinitionResponse], error)
+	AddActionSetToDefinition(context.Context, *connect.Request[v1.AddActionSetToDefinitionRequest]) (*connect.Response[v1.AddActionSetToDefinitionResponse], error)
+	RemoveActionSetFromDefinition(context.Context, *connect.Request[v1.RemoveActionSetFromDefinitionRequest]) (*connect.Response[v1.RemoveActionSetFromDefinitionResponse], error)
+	ReorderActionSetInDefinition(context.Context, *connect.Request[v1.ReorderActionSetInDefinitionRequest]) (*connect.Response[v1.ReorderActionSetInDefinitionResponse], error)
+	// Device Groups
+	CreateDeviceGroup(context.Context, *connect.Request[v1.CreateDeviceGroupRequest]) (*connect.Response[v1.CreateDeviceGroupResponse], error)
+	GetDeviceGroup(context.Context, *connect.Request[v1.GetDeviceGroupRequest]) (*connect.Response[v1.GetDeviceGroupResponse], error)
+	ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error)
+	RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	DeleteDeviceGroup(context.Context, *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error)
+	AddDeviceToGroup(context.Context, *connect.Request[v1.AddDeviceToGroupRequest]) (*connect.Response[v1.AddDeviceToGroupResponse], error)
+	RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error)
+	// Assignments
+	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
+	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
+	ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error)
+	GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error)
 	// Action Dispatch & Execution
 	DispatchAction(context.Context, *connect.Request[v1.DispatchActionRequest]) (*connect.Response[v1.DispatchActionResponse], error)
 	DispatchToMultiple(context.Context, *connect.Request[v1.DispatchToMultipleRequest]) (*connect.Response[v1.DispatchToMultipleResponse], error)
+	DispatchAssignedActions(context.Context, *connect.Request[v1.DispatchAssignedActionsRequest]) (*connect.Response[v1.DispatchAssignedActionsResponse], error)
+	DispatchActionSet(context.Context, *connect.Request[v1.DispatchActionSetRequest]) (*connect.Response[v1.DispatchActionSetResponse], error)
+	DispatchDefinition(context.Context, *connect.Request[v1.DispatchDefinitionRequest]) (*connect.Response[v1.DispatchDefinitionResponse], error)
+	DispatchToGroup(context.Context, *connect.Request[v1.DispatchToGroupRequest]) (*connect.Response[v1.DispatchToGroupResponse], error)
 	GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error)
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 }
@@ -333,6 +477,102 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("DeleteToken")),
 			connect.WithClientOptions(opts...),
 		),
+		createAction: connect.NewClient[v1.CreateActionRequest, v1.CreateActionResponse](
+			httpClient,
+			baseURL+ControlServiceCreateActionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateAction")),
+			connect.WithClientOptions(opts...),
+		),
+		getAction: connect.NewClient[v1.GetActionRequest, v1.GetActionResponse](
+			httpClient,
+			baseURL+ControlServiceGetActionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetAction")),
+			connect.WithClientOptions(opts...),
+		),
+		listActions: connect.NewClient[v1.ListActionsRequest, v1.ListActionsResponse](
+			httpClient,
+			baseURL+ControlServiceListActionsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListActions")),
+			connect.WithClientOptions(opts...),
+		),
+		renameAction: connect.NewClient[v1.RenameActionRequest, v1.UpdateActionResponse](
+			httpClient,
+			baseURL+ControlServiceRenameActionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RenameAction")),
+			connect.WithClientOptions(opts...),
+		),
+		updateActionDescription: connect.NewClient[v1.UpdateActionDescriptionRequest, v1.UpdateActionResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateActionDescriptionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateActionDescription")),
+			connect.WithClientOptions(opts...),
+		),
+		updateActionParams: connect.NewClient[v1.UpdateActionParamsRequest, v1.UpdateActionResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateActionParamsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateActionParams")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteAction: connect.NewClient[v1.DeleteActionRequest, v1.DeleteActionResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteActionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteAction")),
+			connect.WithClientOptions(opts...),
+		),
+		createActionSet: connect.NewClient[v1.CreateActionSetRequest, v1.CreateActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceCreateActionSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateActionSet")),
+			connect.WithClientOptions(opts...),
+		),
+		getActionSet: connect.NewClient[v1.GetActionSetRequest, v1.GetActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceGetActionSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetActionSet")),
+			connect.WithClientOptions(opts...),
+		),
+		listActionSets: connect.NewClient[v1.ListActionSetsRequest, v1.ListActionSetsResponse](
+			httpClient,
+			baseURL+ControlServiceListActionSetsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListActionSets")),
+			connect.WithClientOptions(opts...),
+		),
+		renameActionSet: connect.NewClient[v1.RenameActionSetRequest, v1.UpdateActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceRenameActionSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RenameActionSet")),
+			connect.WithClientOptions(opts...),
+		),
+		updateActionSetDescription: connect.NewClient[v1.UpdateActionSetDescriptionRequest, v1.UpdateActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateActionSetDescriptionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateActionSetDescription")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteActionSet: connect.NewClient[v1.DeleteActionSetRequest, v1.DeleteActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteActionSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteActionSet")),
+			connect.WithClientOptions(opts...),
+		),
+		addActionToSet: connect.NewClient[v1.AddActionToSetRequest, v1.AddActionToSetResponse](
+			httpClient,
+			baseURL+ControlServiceAddActionToSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddActionToSet")),
+			connect.WithClientOptions(opts...),
+		),
+		removeActionFromSet: connect.NewClient[v1.RemoveActionFromSetRequest, v1.RemoveActionFromSetResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveActionFromSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveActionFromSet")),
+			connect.WithClientOptions(opts...),
+		),
+		reorderActionInSet: connect.NewClient[v1.ReorderActionInSetRequest, v1.ReorderActionInSetResponse](
+			httpClient,
+			baseURL+ControlServiceReorderActionInSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ReorderActionInSet")),
+			connect.WithClientOptions(opts...),
+		),
 		createDefinition: connect.NewClient[v1.CreateDefinitionRequest, v1.CreateDefinitionResponse](
 			httpClient,
 			baseURL+ControlServiceCreateDefinitionProcedure,
@@ -369,6 +609,96 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("DeleteDefinition")),
 			connect.WithClientOptions(opts...),
 		),
+		addActionSetToDefinition: connect.NewClient[v1.AddActionSetToDefinitionRequest, v1.AddActionSetToDefinitionResponse](
+			httpClient,
+			baseURL+ControlServiceAddActionSetToDefinitionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddActionSetToDefinition")),
+			connect.WithClientOptions(opts...),
+		),
+		removeActionSetFromDefinition: connect.NewClient[v1.RemoveActionSetFromDefinitionRequest, v1.RemoveActionSetFromDefinitionResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveActionSetFromDefinitionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveActionSetFromDefinition")),
+			connect.WithClientOptions(opts...),
+		),
+		reorderActionSetInDefinition: connect.NewClient[v1.ReorderActionSetInDefinitionRequest, v1.ReorderActionSetInDefinitionResponse](
+			httpClient,
+			baseURL+ControlServiceReorderActionSetInDefinitionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ReorderActionSetInDefinition")),
+			connect.WithClientOptions(opts...),
+		),
+		createDeviceGroup: connect.NewClient[v1.CreateDeviceGroupRequest, v1.CreateDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceCreateDeviceGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateDeviceGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		getDeviceGroup: connect.NewClient[v1.GetDeviceGroupRequest, v1.GetDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		listDeviceGroups: connect.NewClient[v1.ListDeviceGroupsRequest, v1.ListDeviceGroupsResponse](
+			httpClient,
+			baseURL+ControlServiceListDeviceGroupsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListDeviceGroups")),
+			connect.WithClientOptions(opts...),
+		),
+		renameDeviceGroup: connect.NewClient[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceRenameDeviceGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RenameDeviceGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		updateDeviceGroupDescription: connect.NewClient[v1.UpdateDeviceGroupDescriptionRequest, v1.UpdateDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateDeviceGroupDescriptionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateDeviceGroupDescription")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteDeviceGroup: connect.NewClient[v1.DeleteDeviceGroupRequest, v1.DeleteDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteDeviceGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteDeviceGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		addDeviceToGroup: connect.NewClient[v1.AddDeviceToGroupRequest, v1.AddDeviceToGroupResponse](
+			httpClient,
+			baseURL+ControlServiceAddDeviceToGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddDeviceToGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		removeDeviceFromGroup: connect.NewClient[v1.RemoveDeviceFromGroupRequest, v1.RemoveDeviceFromGroupResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveDeviceFromGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveDeviceFromGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		createAssignment: connect.NewClient[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse](
+			httpClient,
+			baseURL+ControlServiceCreateAssignmentProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateAssignment")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteAssignment: connect.NewClient[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteAssignmentProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteAssignment")),
+			connect.WithClientOptions(opts...),
+		),
+		listAssignments: connect.NewClient[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse](
+			httpClient,
+			baseURL+ControlServiceListAssignmentsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListAssignments")),
+			connect.WithClientOptions(opts...),
+		),
+		getDeviceAssignments: connect.NewClient[v1.GetDeviceAssignmentsRequest, v1.GetDeviceAssignmentsResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceAssignmentsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceAssignments")),
+			connect.WithClientOptions(opts...),
+		),
 		dispatchAction: connect.NewClient[v1.DispatchActionRequest, v1.DispatchActionResponse](
 			httpClient,
 			baseURL+ControlServiceDispatchActionProcedure,
@@ -379,6 +709,30 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceDispatchToMultipleProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("DispatchToMultiple")),
+			connect.WithClientOptions(opts...),
+		),
+		dispatchAssignedActions: connect.NewClient[v1.DispatchAssignedActionsRequest, v1.DispatchAssignedActionsResponse](
+			httpClient,
+			baseURL+ControlServiceDispatchAssignedActionsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DispatchAssignedActions")),
+			connect.WithClientOptions(opts...),
+		),
+		dispatchActionSet: connect.NewClient[v1.DispatchActionSetRequest, v1.DispatchActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceDispatchActionSetProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DispatchActionSet")),
+			connect.WithClientOptions(opts...),
+		),
+		dispatchDefinition: connect.NewClient[v1.DispatchDefinitionRequest, v1.DispatchDefinitionResponse](
+			httpClient,
+			baseURL+ControlServiceDispatchDefinitionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DispatchDefinition")),
+			connect.WithClientOptions(opts...),
+		),
+		dispatchToGroup: connect.NewClient[v1.DispatchToGroupRequest, v1.DispatchToGroupResponse](
+			httpClient,
+			baseURL+ControlServiceDispatchToGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DispatchToGroup")),
 			connect.WithClientOptions(opts...),
 		),
 		getExecution: connect.NewClient[v1.GetExecutionRequest, v1.GetExecutionResponse](
@@ -398,40 +752,75 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // controlServiceClient implements ControlServiceClient.
 type controlServiceClient struct {
-	login                       *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	refreshToken                *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
-	getCurrentUser              *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
-	createUser                  *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
-	getUser                     *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
-	listUsers                   *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
-	updateUserEmail             *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
-	updateUserPassword          *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
-	updateUserRole              *connect.Client[v1.UpdateUserRoleRequest, v1.UpdateUserResponse]
-	setUserDisabled             *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
-	deleteUser                  *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
-	listDevices                 *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
-	getDevice                   *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
-	setDeviceLabel              *connect.Client[v1.SetDeviceLabelRequest, v1.UpdateDeviceResponse]
-	removeDeviceLabel           *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
-	assignDevice                *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
-	unassignDevice              *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
-	deleteDevice                *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
-	createToken                 *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
-	getToken                    *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
-	listTokens                  *connect.Client[v1.ListTokensRequest, v1.ListTokensResponse]
-	renameToken                 *connect.Client[v1.RenameTokenRequest, v1.UpdateTokenResponse]
-	setTokenDisabled            *connect.Client[v1.SetTokenDisabledRequest, v1.UpdateTokenResponse]
-	deleteToken                 *connect.Client[v1.DeleteTokenRequest, v1.DeleteTokenResponse]
-	createDefinition            *connect.Client[v1.CreateDefinitionRequest, v1.CreateDefinitionResponse]
-	getDefinition               *connect.Client[v1.GetDefinitionRequest, v1.GetDefinitionResponse]
-	listDefinitions             *connect.Client[v1.ListDefinitionsRequest, v1.ListDefinitionsResponse]
-	renameDefinition            *connect.Client[v1.RenameDefinitionRequest, v1.UpdateDefinitionResponse]
-	updateDefinitionDescription *connect.Client[v1.UpdateDefinitionDescriptionRequest, v1.UpdateDefinitionResponse]
-	deleteDefinition            *connect.Client[v1.DeleteDefinitionRequest, v1.DeleteDefinitionResponse]
-	dispatchAction              *connect.Client[v1.DispatchActionRequest, v1.DispatchActionResponse]
-	dispatchToMultiple          *connect.Client[v1.DispatchToMultipleRequest, v1.DispatchToMultipleResponse]
-	getExecution                *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
-	listExecutions              *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
+	login                         *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
+	getCurrentUser                *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
+	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
+	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
+	updateUserEmail               *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
+	updateUserPassword            *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
+	updateUserRole                *connect.Client[v1.UpdateUserRoleRequest, v1.UpdateUserResponse]
+	setUserDisabled               *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
+	deleteUser                    *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
+	listDevices                   *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
+	getDevice                     *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
+	setDeviceLabel                *connect.Client[v1.SetDeviceLabelRequest, v1.UpdateDeviceResponse]
+	removeDeviceLabel             *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
+	assignDevice                  *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
+	unassignDevice                *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
+	deleteDevice                  *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
+	createToken                   *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
+	getToken                      *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
+	listTokens                    *connect.Client[v1.ListTokensRequest, v1.ListTokensResponse]
+	renameToken                   *connect.Client[v1.RenameTokenRequest, v1.UpdateTokenResponse]
+	setTokenDisabled              *connect.Client[v1.SetTokenDisabledRequest, v1.UpdateTokenResponse]
+	deleteToken                   *connect.Client[v1.DeleteTokenRequest, v1.DeleteTokenResponse]
+	createAction                  *connect.Client[v1.CreateActionRequest, v1.CreateActionResponse]
+	getAction                     *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
+	listActions                   *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
+	renameAction                  *connect.Client[v1.RenameActionRequest, v1.UpdateActionResponse]
+	updateActionDescription       *connect.Client[v1.UpdateActionDescriptionRequest, v1.UpdateActionResponse]
+	updateActionParams            *connect.Client[v1.UpdateActionParamsRequest, v1.UpdateActionResponse]
+	deleteAction                  *connect.Client[v1.DeleteActionRequest, v1.DeleteActionResponse]
+	createActionSet               *connect.Client[v1.CreateActionSetRequest, v1.CreateActionSetResponse]
+	getActionSet                  *connect.Client[v1.GetActionSetRequest, v1.GetActionSetResponse]
+	listActionSets                *connect.Client[v1.ListActionSetsRequest, v1.ListActionSetsResponse]
+	renameActionSet               *connect.Client[v1.RenameActionSetRequest, v1.UpdateActionSetResponse]
+	updateActionSetDescription    *connect.Client[v1.UpdateActionSetDescriptionRequest, v1.UpdateActionSetResponse]
+	deleteActionSet               *connect.Client[v1.DeleteActionSetRequest, v1.DeleteActionSetResponse]
+	addActionToSet                *connect.Client[v1.AddActionToSetRequest, v1.AddActionToSetResponse]
+	removeActionFromSet           *connect.Client[v1.RemoveActionFromSetRequest, v1.RemoveActionFromSetResponse]
+	reorderActionInSet            *connect.Client[v1.ReorderActionInSetRequest, v1.ReorderActionInSetResponse]
+	createDefinition              *connect.Client[v1.CreateDefinitionRequest, v1.CreateDefinitionResponse]
+	getDefinition                 *connect.Client[v1.GetDefinitionRequest, v1.GetDefinitionResponse]
+	listDefinitions               *connect.Client[v1.ListDefinitionsRequest, v1.ListDefinitionsResponse]
+	renameDefinition              *connect.Client[v1.RenameDefinitionRequest, v1.UpdateDefinitionResponse]
+	updateDefinitionDescription   *connect.Client[v1.UpdateDefinitionDescriptionRequest, v1.UpdateDefinitionResponse]
+	deleteDefinition              *connect.Client[v1.DeleteDefinitionRequest, v1.DeleteDefinitionResponse]
+	addActionSetToDefinition      *connect.Client[v1.AddActionSetToDefinitionRequest, v1.AddActionSetToDefinitionResponse]
+	removeActionSetFromDefinition *connect.Client[v1.RemoveActionSetFromDefinitionRequest, v1.RemoveActionSetFromDefinitionResponse]
+	reorderActionSetInDefinition  *connect.Client[v1.ReorderActionSetInDefinitionRequest, v1.ReorderActionSetInDefinitionResponse]
+	createDeviceGroup             *connect.Client[v1.CreateDeviceGroupRequest, v1.CreateDeviceGroupResponse]
+	getDeviceGroup                *connect.Client[v1.GetDeviceGroupRequest, v1.GetDeviceGroupResponse]
+	listDeviceGroups              *connect.Client[v1.ListDeviceGroupsRequest, v1.ListDeviceGroupsResponse]
+	renameDeviceGroup             *connect.Client[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse]
+	updateDeviceGroupDescription  *connect.Client[v1.UpdateDeviceGroupDescriptionRequest, v1.UpdateDeviceGroupResponse]
+	deleteDeviceGroup             *connect.Client[v1.DeleteDeviceGroupRequest, v1.DeleteDeviceGroupResponse]
+	addDeviceToGroup              *connect.Client[v1.AddDeviceToGroupRequest, v1.AddDeviceToGroupResponse]
+	removeDeviceFromGroup         *connect.Client[v1.RemoveDeviceFromGroupRequest, v1.RemoveDeviceFromGroupResponse]
+	createAssignment              *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
+	deleteAssignment              *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
+	listAssignments               *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
+	getDeviceAssignments          *connect.Client[v1.GetDeviceAssignmentsRequest, v1.GetDeviceAssignmentsResponse]
+	dispatchAction                *connect.Client[v1.DispatchActionRequest, v1.DispatchActionResponse]
+	dispatchToMultiple            *connect.Client[v1.DispatchToMultipleRequest, v1.DispatchToMultipleResponse]
+	dispatchAssignedActions       *connect.Client[v1.DispatchAssignedActionsRequest, v1.DispatchAssignedActionsResponse]
+	dispatchActionSet             *connect.Client[v1.DispatchActionSetRequest, v1.DispatchActionSetResponse]
+	dispatchDefinition            *connect.Client[v1.DispatchDefinitionRequest, v1.DispatchDefinitionResponse]
+	dispatchToGroup               *connect.Client[v1.DispatchToGroupRequest, v1.DispatchToGroupResponse]
+	getExecution                  *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
+	listExecutions                *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
 }
 
 // Login calls pm.v1.ControlService.Login.
@@ -554,6 +943,86 @@ func (c *controlServiceClient) DeleteToken(ctx context.Context, req *connect.Req
 	return c.deleteToken.CallUnary(ctx, req)
 }
 
+// CreateAction calls pm.v1.ControlService.CreateAction.
+func (c *controlServiceClient) CreateAction(ctx context.Context, req *connect.Request[v1.CreateActionRequest]) (*connect.Response[v1.CreateActionResponse], error) {
+	return c.createAction.CallUnary(ctx, req)
+}
+
+// GetAction calls pm.v1.ControlService.GetAction.
+func (c *controlServiceClient) GetAction(ctx context.Context, req *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error) {
+	return c.getAction.CallUnary(ctx, req)
+}
+
+// ListActions calls pm.v1.ControlService.ListActions.
+func (c *controlServiceClient) ListActions(ctx context.Context, req *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error) {
+	return c.listActions.CallUnary(ctx, req)
+}
+
+// RenameAction calls pm.v1.ControlService.RenameAction.
+func (c *controlServiceClient) RenameAction(ctx context.Context, req *connect.Request[v1.RenameActionRequest]) (*connect.Response[v1.UpdateActionResponse], error) {
+	return c.renameAction.CallUnary(ctx, req)
+}
+
+// UpdateActionDescription calls pm.v1.ControlService.UpdateActionDescription.
+func (c *controlServiceClient) UpdateActionDescription(ctx context.Context, req *connect.Request[v1.UpdateActionDescriptionRequest]) (*connect.Response[v1.UpdateActionResponse], error) {
+	return c.updateActionDescription.CallUnary(ctx, req)
+}
+
+// UpdateActionParams calls pm.v1.ControlService.UpdateActionParams.
+func (c *controlServiceClient) UpdateActionParams(ctx context.Context, req *connect.Request[v1.UpdateActionParamsRequest]) (*connect.Response[v1.UpdateActionResponse], error) {
+	return c.updateActionParams.CallUnary(ctx, req)
+}
+
+// DeleteAction calls pm.v1.ControlService.DeleteAction.
+func (c *controlServiceClient) DeleteAction(ctx context.Context, req *connect.Request[v1.DeleteActionRequest]) (*connect.Response[v1.DeleteActionResponse], error) {
+	return c.deleteAction.CallUnary(ctx, req)
+}
+
+// CreateActionSet calls pm.v1.ControlService.CreateActionSet.
+func (c *controlServiceClient) CreateActionSet(ctx context.Context, req *connect.Request[v1.CreateActionSetRequest]) (*connect.Response[v1.CreateActionSetResponse], error) {
+	return c.createActionSet.CallUnary(ctx, req)
+}
+
+// GetActionSet calls pm.v1.ControlService.GetActionSet.
+func (c *controlServiceClient) GetActionSet(ctx context.Context, req *connect.Request[v1.GetActionSetRequest]) (*connect.Response[v1.GetActionSetResponse], error) {
+	return c.getActionSet.CallUnary(ctx, req)
+}
+
+// ListActionSets calls pm.v1.ControlService.ListActionSets.
+func (c *controlServiceClient) ListActionSets(ctx context.Context, req *connect.Request[v1.ListActionSetsRequest]) (*connect.Response[v1.ListActionSetsResponse], error) {
+	return c.listActionSets.CallUnary(ctx, req)
+}
+
+// RenameActionSet calls pm.v1.ControlService.RenameActionSet.
+func (c *controlServiceClient) RenameActionSet(ctx context.Context, req *connect.Request[v1.RenameActionSetRequest]) (*connect.Response[v1.UpdateActionSetResponse], error) {
+	return c.renameActionSet.CallUnary(ctx, req)
+}
+
+// UpdateActionSetDescription calls pm.v1.ControlService.UpdateActionSetDescription.
+func (c *controlServiceClient) UpdateActionSetDescription(ctx context.Context, req *connect.Request[v1.UpdateActionSetDescriptionRequest]) (*connect.Response[v1.UpdateActionSetResponse], error) {
+	return c.updateActionSetDescription.CallUnary(ctx, req)
+}
+
+// DeleteActionSet calls pm.v1.ControlService.DeleteActionSet.
+func (c *controlServiceClient) DeleteActionSet(ctx context.Context, req *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error) {
+	return c.deleteActionSet.CallUnary(ctx, req)
+}
+
+// AddActionToSet calls pm.v1.ControlService.AddActionToSet.
+func (c *controlServiceClient) AddActionToSet(ctx context.Context, req *connect.Request[v1.AddActionToSetRequest]) (*connect.Response[v1.AddActionToSetResponse], error) {
+	return c.addActionToSet.CallUnary(ctx, req)
+}
+
+// RemoveActionFromSet calls pm.v1.ControlService.RemoveActionFromSet.
+func (c *controlServiceClient) RemoveActionFromSet(ctx context.Context, req *connect.Request[v1.RemoveActionFromSetRequest]) (*connect.Response[v1.RemoveActionFromSetResponse], error) {
+	return c.removeActionFromSet.CallUnary(ctx, req)
+}
+
+// ReorderActionInSet calls pm.v1.ControlService.ReorderActionInSet.
+func (c *controlServiceClient) ReorderActionInSet(ctx context.Context, req *connect.Request[v1.ReorderActionInSetRequest]) (*connect.Response[v1.ReorderActionInSetResponse], error) {
+	return c.reorderActionInSet.CallUnary(ctx, req)
+}
+
 // CreateDefinition calls pm.v1.ControlService.CreateDefinition.
 func (c *controlServiceClient) CreateDefinition(ctx context.Context, req *connect.Request[v1.CreateDefinitionRequest]) (*connect.Response[v1.CreateDefinitionResponse], error) {
 	return c.createDefinition.CallUnary(ctx, req)
@@ -584,6 +1053,81 @@ func (c *controlServiceClient) DeleteDefinition(ctx context.Context, req *connec
 	return c.deleteDefinition.CallUnary(ctx, req)
 }
 
+// AddActionSetToDefinition calls pm.v1.ControlService.AddActionSetToDefinition.
+func (c *controlServiceClient) AddActionSetToDefinition(ctx context.Context, req *connect.Request[v1.AddActionSetToDefinitionRequest]) (*connect.Response[v1.AddActionSetToDefinitionResponse], error) {
+	return c.addActionSetToDefinition.CallUnary(ctx, req)
+}
+
+// RemoveActionSetFromDefinition calls pm.v1.ControlService.RemoveActionSetFromDefinition.
+func (c *controlServiceClient) RemoveActionSetFromDefinition(ctx context.Context, req *connect.Request[v1.RemoveActionSetFromDefinitionRequest]) (*connect.Response[v1.RemoveActionSetFromDefinitionResponse], error) {
+	return c.removeActionSetFromDefinition.CallUnary(ctx, req)
+}
+
+// ReorderActionSetInDefinition calls pm.v1.ControlService.ReorderActionSetInDefinition.
+func (c *controlServiceClient) ReorderActionSetInDefinition(ctx context.Context, req *connect.Request[v1.ReorderActionSetInDefinitionRequest]) (*connect.Response[v1.ReorderActionSetInDefinitionResponse], error) {
+	return c.reorderActionSetInDefinition.CallUnary(ctx, req)
+}
+
+// CreateDeviceGroup calls pm.v1.ControlService.CreateDeviceGroup.
+func (c *controlServiceClient) CreateDeviceGroup(ctx context.Context, req *connect.Request[v1.CreateDeviceGroupRequest]) (*connect.Response[v1.CreateDeviceGroupResponse], error) {
+	return c.createDeviceGroup.CallUnary(ctx, req)
+}
+
+// GetDeviceGroup calls pm.v1.ControlService.GetDeviceGroup.
+func (c *controlServiceClient) GetDeviceGroup(ctx context.Context, req *connect.Request[v1.GetDeviceGroupRequest]) (*connect.Response[v1.GetDeviceGroupResponse], error) {
+	return c.getDeviceGroup.CallUnary(ctx, req)
+}
+
+// ListDeviceGroups calls pm.v1.ControlService.ListDeviceGroups.
+func (c *controlServiceClient) ListDeviceGroups(ctx context.Context, req *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error) {
+	return c.listDeviceGroups.CallUnary(ctx, req)
+}
+
+// RenameDeviceGroup calls pm.v1.ControlService.RenameDeviceGroup.
+func (c *controlServiceClient) RenameDeviceGroup(ctx context.Context, req *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return c.renameDeviceGroup.CallUnary(ctx, req)
+}
+
+// UpdateDeviceGroupDescription calls pm.v1.ControlService.UpdateDeviceGroupDescription.
+func (c *controlServiceClient) UpdateDeviceGroupDescription(ctx context.Context, req *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return c.updateDeviceGroupDescription.CallUnary(ctx, req)
+}
+
+// DeleteDeviceGroup calls pm.v1.ControlService.DeleteDeviceGroup.
+func (c *controlServiceClient) DeleteDeviceGroup(ctx context.Context, req *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error) {
+	return c.deleteDeviceGroup.CallUnary(ctx, req)
+}
+
+// AddDeviceToGroup calls pm.v1.ControlService.AddDeviceToGroup.
+func (c *controlServiceClient) AddDeviceToGroup(ctx context.Context, req *connect.Request[v1.AddDeviceToGroupRequest]) (*connect.Response[v1.AddDeviceToGroupResponse], error) {
+	return c.addDeviceToGroup.CallUnary(ctx, req)
+}
+
+// RemoveDeviceFromGroup calls pm.v1.ControlService.RemoveDeviceFromGroup.
+func (c *controlServiceClient) RemoveDeviceFromGroup(ctx context.Context, req *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error) {
+	return c.removeDeviceFromGroup.CallUnary(ctx, req)
+}
+
+// CreateAssignment calls pm.v1.ControlService.CreateAssignment.
+func (c *controlServiceClient) CreateAssignment(ctx context.Context, req *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
+	return c.createAssignment.CallUnary(ctx, req)
+}
+
+// DeleteAssignment calls pm.v1.ControlService.DeleteAssignment.
+func (c *controlServiceClient) DeleteAssignment(ctx context.Context, req *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error) {
+	return c.deleteAssignment.CallUnary(ctx, req)
+}
+
+// ListAssignments calls pm.v1.ControlService.ListAssignments.
+func (c *controlServiceClient) ListAssignments(ctx context.Context, req *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error) {
+	return c.listAssignments.CallUnary(ctx, req)
+}
+
+// GetDeviceAssignments calls pm.v1.ControlService.GetDeviceAssignments.
+func (c *controlServiceClient) GetDeviceAssignments(ctx context.Context, req *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error) {
+	return c.getDeviceAssignments.CallUnary(ctx, req)
+}
+
 // DispatchAction calls pm.v1.ControlService.DispatchAction.
 func (c *controlServiceClient) DispatchAction(ctx context.Context, req *connect.Request[v1.DispatchActionRequest]) (*connect.Response[v1.DispatchActionResponse], error) {
 	return c.dispatchAction.CallUnary(ctx, req)
@@ -592,6 +1136,26 @@ func (c *controlServiceClient) DispatchAction(ctx context.Context, req *connect.
 // DispatchToMultiple calls pm.v1.ControlService.DispatchToMultiple.
 func (c *controlServiceClient) DispatchToMultiple(ctx context.Context, req *connect.Request[v1.DispatchToMultipleRequest]) (*connect.Response[v1.DispatchToMultipleResponse], error) {
 	return c.dispatchToMultiple.CallUnary(ctx, req)
+}
+
+// DispatchAssignedActions calls pm.v1.ControlService.DispatchAssignedActions.
+func (c *controlServiceClient) DispatchAssignedActions(ctx context.Context, req *connect.Request[v1.DispatchAssignedActionsRequest]) (*connect.Response[v1.DispatchAssignedActionsResponse], error) {
+	return c.dispatchAssignedActions.CallUnary(ctx, req)
+}
+
+// DispatchActionSet calls pm.v1.ControlService.DispatchActionSet.
+func (c *controlServiceClient) DispatchActionSet(ctx context.Context, req *connect.Request[v1.DispatchActionSetRequest]) (*connect.Response[v1.DispatchActionSetResponse], error) {
+	return c.dispatchActionSet.CallUnary(ctx, req)
+}
+
+// DispatchDefinition calls pm.v1.ControlService.DispatchDefinition.
+func (c *controlServiceClient) DispatchDefinition(ctx context.Context, req *connect.Request[v1.DispatchDefinitionRequest]) (*connect.Response[v1.DispatchDefinitionResponse], error) {
+	return c.dispatchDefinition.CallUnary(ctx, req)
+}
+
+// DispatchToGroup calls pm.v1.ControlService.DispatchToGroup.
+func (c *controlServiceClient) DispatchToGroup(ctx context.Context, req *connect.Request[v1.DispatchToGroupRequest]) (*connect.Response[v1.DispatchToGroupResponse], error) {
+	return c.dispatchToGroup.CallUnary(ctx, req)
 }
 
 // GetExecution calls pm.v1.ControlService.GetExecution.
@@ -634,16 +1198,55 @@ type ControlServiceHandler interface {
 	RenameToken(context.Context, *connect.Request[v1.RenameTokenRequest]) (*connect.Response[v1.UpdateTokenResponse], error)
 	SetTokenDisabled(context.Context, *connect.Request[v1.SetTokenDisabledRequest]) (*connect.Response[v1.UpdateTokenResponse], error)
 	DeleteToken(context.Context, *connect.Request[v1.DeleteTokenRequest]) (*connect.Response[v1.DeleteTokenResponse], error)
-	// Action Definitions
+	// Actions (single executable)
+	CreateAction(context.Context, *connect.Request[v1.CreateActionRequest]) (*connect.Response[v1.CreateActionResponse], error)
+	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
+	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
+	RenameAction(context.Context, *connect.Request[v1.RenameActionRequest]) (*connect.Response[v1.UpdateActionResponse], error)
+	UpdateActionDescription(context.Context, *connect.Request[v1.UpdateActionDescriptionRequest]) (*connect.Response[v1.UpdateActionResponse], error)
+	UpdateActionParams(context.Context, *connect.Request[v1.UpdateActionParamsRequest]) (*connect.Response[v1.UpdateActionResponse], error)
+	DeleteAction(context.Context, *connect.Request[v1.DeleteActionRequest]) (*connect.Response[v1.DeleteActionResponse], error)
+	// Action Sets (collection of actions)
+	CreateActionSet(context.Context, *connect.Request[v1.CreateActionSetRequest]) (*connect.Response[v1.CreateActionSetResponse], error)
+	GetActionSet(context.Context, *connect.Request[v1.GetActionSetRequest]) (*connect.Response[v1.GetActionSetResponse], error)
+	ListActionSets(context.Context, *connect.Request[v1.ListActionSetsRequest]) (*connect.Response[v1.ListActionSetsResponse], error)
+	RenameActionSet(context.Context, *connect.Request[v1.RenameActionSetRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
+	UpdateActionSetDescription(context.Context, *connect.Request[v1.UpdateActionSetDescriptionRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
+	DeleteActionSet(context.Context, *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error)
+	AddActionToSet(context.Context, *connect.Request[v1.AddActionToSetRequest]) (*connect.Response[v1.AddActionToSetResponse], error)
+	RemoveActionFromSet(context.Context, *connect.Request[v1.RemoveActionFromSetRequest]) (*connect.Response[v1.RemoveActionFromSetResponse], error)
+	ReorderActionInSet(context.Context, *connect.Request[v1.ReorderActionInSetRequest]) (*connect.Response[v1.ReorderActionInSetResponse], error)
+	// Definitions (collection of action sets)
 	CreateDefinition(context.Context, *connect.Request[v1.CreateDefinitionRequest]) (*connect.Response[v1.CreateDefinitionResponse], error)
 	GetDefinition(context.Context, *connect.Request[v1.GetDefinitionRequest]) (*connect.Response[v1.GetDefinitionResponse], error)
 	ListDefinitions(context.Context, *connect.Request[v1.ListDefinitionsRequest]) (*connect.Response[v1.ListDefinitionsResponse], error)
 	RenameDefinition(context.Context, *connect.Request[v1.RenameDefinitionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	UpdateDefinitionDescription(context.Context, *connect.Request[v1.UpdateDefinitionDescriptionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	DeleteDefinition(context.Context, *connect.Request[v1.DeleteDefinitionRequest]) (*connect.Response[v1.DeleteDefinitionResponse], error)
+	AddActionSetToDefinition(context.Context, *connect.Request[v1.AddActionSetToDefinitionRequest]) (*connect.Response[v1.AddActionSetToDefinitionResponse], error)
+	RemoveActionSetFromDefinition(context.Context, *connect.Request[v1.RemoveActionSetFromDefinitionRequest]) (*connect.Response[v1.RemoveActionSetFromDefinitionResponse], error)
+	ReorderActionSetInDefinition(context.Context, *connect.Request[v1.ReorderActionSetInDefinitionRequest]) (*connect.Response[v1.ReorderActionSetInDefinitionResponse], error)
+	// Device Groups
+	CreateDeviceGroup(context.Context, *connect.Request[v1.CreateDeviceGroupRequest]) (*connect.Response[v1.CreateDeviceGroupResponse], error)
+	GetDeviceGroup(context.Context, *connect.Request[v1.GetDeviceGroupRequest]) (*connect.Response[v1.GetDeviceGroupResponse], error)
+	ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error)
+	RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	DeleteDeviceGroup(context.Context, *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error)
+	AddDeviceToGroup(context.Context, *connect.Request[v1.AddDeviceToGroupRequest]) (*connect.Response[v1.AddDeviceToGroupResponse], error)
+	RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error)
+	// Assignments
+	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
+	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
+	ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error)
+	GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error)
 	// Action Dispatch & Execution
 	DispatchAction(context.Context, *connect.Request[v1.DispatchActionRequest]) (*connect.Response[v1.DispatchActionResponse], error)
 	DispatchToMultiple(context.Context, *connect.Request[v1.DispatchToMultipleRequest]) (*connect.Response[v1.DispatchToMultipleResponse], error)
+	DispatchAssignedActions(context.Context, *connect.Request[v1.DispatchAssignedActionsRequest]) (*connect.Response[v1.DispatchAssignedActionsResponse], error)
+	DispatchActionSet(context.Context, *connect.Request[v1.DispatchActionSetRequest]) (*connect.Response[v1.DispatchActionSetResponse], error)
+	DispatchDefinition(context.Context, *connect.Request[v1.DispatchDefinitionRequest]) (*connect.Response[v1.DispatchDefinitionResponse], error)
+	DispatchToGroup(context.Context, *connect.Request[v1.DispatchToGroupRequest]) (*connect.Response[v1.DispatchToGroupResponse], error)
 	GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error)
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 }
@@ -799,6 +1402,102 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("DeleteToken")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceCreateActionHandler := connect.NewUnaryHandler(
+		ControlServiceCreateActionProcedure,
+		svc.CreateAction,
+		connect.WithSchema(controlServiceMethods.ByName("CreateAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetActionHandler := connect.NewUnaryHandler(
+		ControlServiceGetActionProcedure,
+		svc.GetAction,
+		connect.WithSchema(controlServiceMethods.ByName("GetAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListActionsHandler := connect.NewUnaryHandler(
+		ControlServiceListActionsProcedure,
+		svc.ListActions,
+		connect.WithSchema(controlServiceMethods.ByName("ListActions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRenameActionHandler := connect.NewUnaryHandler(
+		ControlServiceRenameActionProcedure,
+		svc.RenameAction,
+		connect.WithSchema(controlServiceMethods.ByName("RenameAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateActionDescriptionHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateActionDescriptionProcedure,
+		svc.UpdateActionDescription,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateActionDescription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateActionParamsHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateActionParamsProcedure,
+		svc.UpdateActionParams,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateActionParams")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteActionHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteActionProcedure,
+		svc.DeleteAction,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateActionSetHandler := connect.NewUnaryHandler(
+		ControlServiceCreateActionSetProcedure,
+		svc.CreateActionSet,
+		connect.WithSchema(controlServiceMethods.ByName("CreateActionSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetActionSetHandler := connect.NewUnaryHandler(
+		ControlServiceGetActionSetProcedure,
+		svc.GetActionSet,
+		connect.WithSchema(controlServiceMethods.ByName("GetActionSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListActionSetsHandler := connect.NewUnaryHandler(
+		ControlServiceListActionSetsProcedure,
+		svc.ListActionSets,
+		connect.WithSchema(controlServiceMethods.ByName("ListActionSets")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRenameActionSetHandler := connect.NewUnaryHandler(
+		ControlServiceRenameActionSetProcedure,
+		svc.RenameActionSet,
+		connect.WithSchema(controlServiceMethods.ByName("RenameActionSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateActionSetDescriptionHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateActionSetDescriptionProcedure,
+		svc.UpdateActionSetDescription,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateActionSetDescription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteActionSetHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteActionSetProcedure,
+		svc.DeleteActionSet,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteActionSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAddActionToSetHandler := connect.NewUnaryHandler(
+		ControlServiceAddActionToSetProcedure,
+		svc.AddActionToSet,
+		connect.WithSchema(controlServiceMethods.ByName("AddActionToSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveActionFromSetHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveActionFromSetProcedure,
+		svc.RemoveActionFromSet,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveActionFromSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceReorderActionInSetHandler := connect.NewUnaryHandler(
+		ControlServiceReorderActionInSetProcedure,
+		svc.ReorderActionInSet,
+		connect.WithSchema(controlServiceMethods.ByName("ReorderActionInSet")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceCreateDefinitionHandler := connect.NewUnaryHandler(
 		ControlServiceCreateDefinitionProcedure,
 		svc.CreateDefinition,
@@ -835,6 +1534,96 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("DeleteDefinition")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceAddActionSetToDefinitionHandler := connect.NewUnaryHandler(
+		ControlServiceAddActionSetToDefinitionProcedure,
+		svc.AddActionSetToDefinition,
+		connect.WithSchema(controlServiceMethods.ByName("AddActionSetToDefinition")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveActionSetFromDefinitionHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveActionSetFromDefinitionProcedure,
+		svc.RemoveActionSetFromDefinition,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveActionSetFromDefinition")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceReorderActionSetInDefinitionHandler := connect.NewUnaryHandler(
+		ControlServiceReorderActionSetInDefinitionProcedure,
+		svc.ReorderActionSetInDefinition,
+		connect.WithSchema(controlServiceMethods.ByName("ReorderActionSetInDefinition")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateDeviceGroupHandler := connect.NewUnaryHandler(
+		ControlServiceCreateDeviceGroupProcedure,
+		svc.CreateDeviceGroup,
+		connect.WithSchema(controlServiceMethods.ByName("CreateDeviceGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetDeviceGroupHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceGroupProcedure,
+		svc.GetDeviceGroup,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListDeviceGroupsHandler := connect.NewUnaryHandler(
+		ControlServiceListDeviceGroupsProcedure,
+		svc.ListDeviceGroups,
+		connect.WithSchema(controlServiceMethods.ByName("ListDeviceGroups")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRenameDeviceGroupHandler := connect.NewUnaryHandler(
+		ControlServiceRenameDeviceGroupProcedure,
+		svc.RenameDeviceGroup,
+		connect.WithSchema(controlServiceMethods.ByName("RenameDeviceGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateDeviceGroupDescriptionHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateDeviceGroupDescriptionProcedure,
+		svc.UpdateDeviceGroupDescription,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateDeviceGroupDescription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteDeviceGroupHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteDeviceGroupProcedure,
+		svc.DeleteDeviceGroup,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteDeviceGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAddDeviceToGroupHandler := connect.NewUnaryHandler(
+		ControlServiceAddDeviceToGroupProcedure,
+		svc.AddDeviceToGroup,
+		connect.WithSchema(controlServiceMethods.ByName("AddDeviceToGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveDeviceFromGroupHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveDeviceFromGroupProcedure,
+		svc.RemoveDeviceFromGroup,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveDeviceFromGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateAssignmentHandler := connect.NewUnaryHandler(
+		ControlServiceCreateAssignmentProcedure,
+		svc.CreateAssignment,
+		connect.WithSchema(controlServiceMethods.ByName("CreateAssignment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteAssignmentHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteAssignmentProcedure,
+		svc.DeleteAssignment,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteAssignment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListAssignmentsHandler := connect.NewUnaryHandler(
+		ControlServiceListAssignmentsProcedure,
+		svc.ListAssignments,
+		connect.WithSchema(controlServiceMethods.ByName("ListAssignments")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetDeviceAssignmentsHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceAssignmentsProcedure,
+		svc.GetDeviceAssignments,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceAssignments")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceDispatchActionHandler := connect.NewUnaryHandler(
 		ControlServiceDispatchActionProcedure,
 		svc.DispatchAction,
@@ -845,6 +1634,30 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceDispatchToMultipleProcedure,
 		svc.DispatchToMultiple,
 		connect.WithSchema(controlServiceMethods.ByName("DispatchToMultiple")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDispatchAssignedActionsHandler := connect.NewUnaryHandler(
+		ControlServiceDispatchAssignedActionsProcedure,
+		svc.DispatchAssignedActions,
+		connect.WithSchema(controlServiceMethods.ByName("DispatchAssignedActions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDispatchActionSetHandler := connect.NewUnaryHandler(
+		ControlServiceDispatchActionSetProcedure,
+		svc.DispatchActionSet,
+		connect.WithSchema(controlServiceMethods.ByName("DispatchActionSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDispatchDefinitionHandler := connect.NewUnaryHandler(
+		ControlServiceDispatchDefinitionProcedure,
+		svc.DispatchDefinition,
+		connect.WithSchema(controlServiceMethods.ByName("DispatchDefinition")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDispatchToGroupHandler := connect.NewUnaryHandler(
+		ControlServiceDispatchToGroupProcedure,
+		svc.DispatchToGroup,
+		connect.WithSchema(controlServiceMethods.ByName("DispatchToGroup")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceGetExecutionHandler := connect.NewUnaryHandler(
@@ -909,6 +1722,38 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceSetTokenDisabledHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteTokenProcedure:
 			controlServiceDeleteTokenHandler.ServeHTTP(w, r)
+		case ControlServiceCreateActionProcedure:
+			controlServiceCreateActionHandler.ServeHTTP(w, r)
+		case ControlServiceGetActionProcedure:
+			controlServiceGetActionHandler.ServeHTTP(w, r)
+		case ControlServiceListActionsProcedure:
+			controlServiceListActionsHandler.ServeHTTP(w, r)
+		case ControlServiceRenameActionProcedure:
+			controlServiceRenameActionHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateActionDescriptionProcedure:
+			controlServiceUpdateActionDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateActionParamsProcedure:
+			controlServiceUpdateActionParamsHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteActionProcedure:
+			controlServiceDeleteActionHandler.ServeHTTP(w, r)
+		case ControlServiceCreateActionSetProcedure:
+			controlServiceCreateActionSetHandler.ServeHTTP(w, r)
+		case ControlServiceGetActionSetProcedure:
+			controlServiceGetActionSetHandler.ServeHTTP(w, r)
+		case ControlServiceListActionSetsProcedure:
+			controlServiceListActionSetsHandler.ServeHTTP(w, r)
+		case ControlServiceRenameActionSetProcedure:
+			controlServiceRenameActionSetHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateActionSetDescriptionProcedure:
+			controlServiceUpdateActionSetDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteActionSetProcedure:
+			controlServiceDeleteActionSetHandler.ServeHTTP(w, r)
+		case ControlServiceAddActionToSetProcedure:
+			controlServiceAddActionToSetHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveActionFromSetProcedure:
+			controlServiceRemoveActionFromSetHandler.ServeHTTP(w, r)
+		case ControlServiceReorderActionInSetProcedure:
+			controlServiceReorderActionInSetHandler.ServeHTTP(w, r)
 		case ControlServiceCreateDefinitionProcedure:
 			controlServiceCreateDefinitionHandler.ServeHTTP(w, r)
 		case ControlServiceGetDefinitionProcedure:
@@ -921,10 +1766,48 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateDefinitionDescriptionHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDefinitionProcedure:
 			controlServiceDeleteDefinitionHandler.ServeHTTP(w, r)
+		case ControlServiceAddActionSetToDefinitionProcedure:
+			controlServiceAddActionSetToDefinitionHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveActionSetFromDefinitionProcedure:
+			controlServiceRemoveActionSetFromDefinitionHandler.ServeHTTP(w, r)
+		case ControlServiceReorderActionSetInDefinitionProcedure:
+			controlServiceReorderActionSetInDefinitionHandler.ServeHTTP(w, r)
+		case ControlServiceCreateDeviceGroupProcedure:
+			controlServiceCreateDeviceGroupHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceGroupProcedure:
+			controlServiceGetDeviceGroupHandler.ServeHTTP(w, r)
+		case ControlServiceListDeviceGroupsProcedure:
+			controlServiceListDeviceGroupsHandler.ServeHTTP(w, r)
+		case ControlServiceRenameDeviceGroupProcedure:
+			controlServiceRenameDeviceGroupHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateDeviceGroupDescriptionProcedure:
+			controlServiceUpdateDeviceGroupDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteDeviceGroupProcedure:
+			controlServiceDeleteDeviceGroupHandler.ServeHTTP(w, r)
+		case ControlServiceAddDeviceToGroupProcedure:
+			controlServiceAddDeviceToGroupHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveDeviceFromGroupProcedure:
+			controlServiceRemoveDeviceFromGroupHandler.ServeHTTP(w, r)
+		case ControlServiceCreateAssignmentProcedure:
+			controlServiceCreateAssignmentHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteAssignmentProcedure:
+			controlServiceDeleteAssignmentHandler.ServeHTTP(w, r)
+		case ControlServiceListAssignmentsProcedure:
+			controlServiceListAssignmentsHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceAssignmentsProcedure:
+			controlServiceGetDeviceAssignmentsHandler.ServeHTTP(w, r)
 		case ControlServiceDispatchActionProcedure:
 			controlServiceDispatchActionHandler.ServeHTTP(w, r)
 		case ControlServiceDispatchToMultipleProcedure:
 			controlServiceDispatchToMultipleHandler.ServeHTTP(w, r)
+		case ControlServiceDispatchAssignedActionsProcedure:
+			controlServiceDispatchAssignedActionsHandler.ServeHTTP(w, r)
+		case ControlServiceDispatchActionSetProcedure:
+			controlServiceDispatchActionSetHandler.ServeHTTP(w, r)
+		case ControlServiceDispatchDefinitionProcedure:
+			controlServiceDispatchDefinitionHandler.ServeHTTP(w, r)
+		case ControlServiceDispatchToGroupProcedure:
+			controlServiceDispatchToGroupHandler.ServeHTTP(w, r)
 		case ControlServiceGetExecutionProcedure:
 			controlServiceGetExecutionHandler.ServeHTTP(w, r)
 		case ControlServiceListExecutionsProcedure:
@@ -1034,6 +1917,70 @@ func (UnimplementedControlServiceHandler) DeleteToken(context.Context, *connect.
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteToken is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) CreateAction(context.Context, *connect.Request[v1.CreateActionRequest]) (*connect.Response[v1.CreateActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateAction is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetAction is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListActions is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RenameAction(context.Context, *connect.Request[v1.RenameActionRequest]) (*connect.Response[v1.UpdateActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RenameAction is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateActionDescription(context.Context, *connect.Request[v1.UpdateActionDescriptionRequest]) (*connect.Response[v1.UpdateActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateActionDescription is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateActionParams(context.Context, *connect.Request[v1.UpdateActionParamsRequest]) (*connect.Response[v1.UpdateActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateActionParams is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteAction(context.Context, *connect.Request[v1.DeleteActionRequest]) (*connect.Response[v1.DeleteActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteAction is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateActionSet(context.Context, *connect.Request[v1.CreateActionSetRequest]) (*connect.Response[v1.CreateActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateActionSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetActionSet(context.Context, *connect.Request[v1.GetActionSetRequest]) (*connect.Response[v1.GetActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetActionSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListActionSets(context.Context, *connect.Request[v1.ListActionSetsRequest]) (*connect.Response[v1.ListActionSetsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListActionSets is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RenameActionSet(context.Context, *connect.Request[v1.RenameActionSetRequest]) (*connect.Response[v1.UpdateActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RenameActionSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateActionSetDescription(context.Context, *connect.Request[v1.UpdateActionSetDescriptionRequest]) (*connect.Response[v1.UpdateActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateActionSetDescription is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteActionSet(context.Context, *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteActionSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AddActionToSet(context.Context, *connect.Request[v1.AddActionToSetRequest]) (*connect.Response[v1.AddActionToSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddActionToSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveActionFromSet(context.Context, *connect.Request[v1.RemoveActionFromSetRequest]) (*connect.Response[v1.RemoveActionFromSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveActionFromSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ReorderActionInSet(context.Context, *connect.Request[v1.ReorderActionInSetRequest]) (*connect.Response[v1.ReorderActionInSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ReorderActionInSet is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) CreateDefinition(context.Context, *connect.Request[v1.CreateDefinitionRequest]) (*connect.Response[v1.CreateDefinitionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateDefinition is not implemented"))
 }
@@ -1058,12 +2005,88 @@ func (UnimplementedControlServiceHandler) DeleteDefinition(context.Context, *con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteDefinition is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) AddActionSetToDefinition(context.Context, *connect.Request[v1.AddActionSetToDefinitionRequest]) (*connect.Response[v1.AddActionSetToDefinitionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddActionSetToDefinition is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveActionSetFromDefinition(context.Context, *connect.Request[v1.RemoveActionSetFromDefinitionRequest]) (*connect.Response[v1.RemoveActionSetFromDefinitionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveActionSetFromDefinition is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ReorderActionSetInDefinition(context.Context, *connect.Request[v1.ReorderActionSetInDefinitionRequest]) (*connect.Response[v1.ReorderActionSetInDefinitionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ReorderActionSetInDefinition is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateDeviceGroup(context.Context, *connect.Request[v1.CreateDeviceGroupRequest]) (*connect.Response[v1.CreateDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateDeviceGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceGroup(context.Context, *connect.Request[v1.GetDeviceGroupRequest]) (*connect.Response[v1.GetDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceGroups is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RenameDeviceGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateDeviceGroupDescription is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteDeviceGroup(context.Context, *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteDeviceGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AddDeviceToGroup(context.Context, *connect.Request[v1.AddDeviceToGroupRequest]) (*connect.Response[v1.AddDeviceToGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddDeviceToGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveDeviceFromGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateAssignment is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteAssignment is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAssignments is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceAssignments is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) DispatchAction(context.Context, *connect.Request[v1.DispatchActionRequest]) (*connect.Response[v1.DispatchActionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchAction is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) DispatchToMultiple(context.Context, *connect.Request[v1.DispatchToMultipleRequest]) (*connect.Response[v1.DispatchToMultipleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchToMultiple is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DispatchAssignedActions(context.Context, *connect.Request[v1.DispatchAssignedActionsRequest]) (*connect.Response[v1.DispatchAssignedActionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchAssignedActions is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DispatchActionSet(context.Context, *connect.Request[v1.DispatchActionSetRequest]) (*connect.Response[v1.DispatchActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchActionSet is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DispatchDefinition(context.Context, *connect.Request[v1.DispatchDefinitionRequest]) (*connect.Response[v1.DispatchDefinitionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchDefinition is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DispatchToGroup(context.Context, *connect.Request[v1.DispatchToGroupRequest]) (*connect.Response[v1.DispatchToGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchToGroup is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error) {
