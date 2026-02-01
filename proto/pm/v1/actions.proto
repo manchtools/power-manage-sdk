@@ -16,6 +16,7 @@ enum ActionType {
 
   // Package management (1-99)
   ACTION_TYPE_PACKAGE = 1;      // Generic package (apt/dnf/pacman based on distro)
+  ACTION_TYPE_UPDATE = 2;       // System-wide package update (respects pinning)
 
   // Application installation (100-199)
   ACTION_TYPE_APP_IMAGE = 100;  // AppImage
@@ -47,6 +48,10 @@ message Action {
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 4;
 
+  // Scheduling configuration for autonomous agent execution
+  // @gotags: validate:"omitempty"
+  ActionSchedule schedule = 5;
+
   // Type-specific parameters
   oneof params {
     PackageParams package = 10;
@@ -54,7 +59,30 @@ message Action {
     ShellParams shell = 12;
     SystemdParams systemd = 13;
     FileParams file = 14;
+    UpdateParams update = 15;
   }
+}
+
+// ActionSchedule defines when an action should be executed by the agent.
+// Actions run autonomously on the agent even without server connection.
+message ActionSchedule {
+  // Cron expression for scheduled execution (e.g., "0 3 * * *" for 3am daily)
+  // If empty, uses default_interval_hours instead.
+  // @gotags: validate:"omitempty,max=128"
+  string cron = 1;
+
+  // Default interval in hours between executions (default: 8 hours for drift prevention)
+  // Used when cron is not specified.
+  // @gotags: validate:"omitempty,gte=0,lte=8760"
+  int32 interval_hours = 2;
+
+  // Whether to run immediately when the action is first received
+  // @gotags: validate:"omitempty"
+  bool run_on_assign = 3;
+
+  // Whether to skip execution if the previous run was successful and no changes detected
+  // @gotags: validate:"omitempty"
+  bool skip_if_unchanged = 4;
 }
 
 // ============================================================================
@@ -123,6 +151,17 @@ message FileParams {
   string group = 4;
   // @gotags: validate:"omitempty,max=4"
   string mode = 5;
+}
+
+// UpdateParams configures system-wide package updates.
+// Respects version pinning (apt-mark hold / dnf versionlock).
+message UpdateParams {
+  // @gotags: validate:"omitempty"
+  bool security_only = 1;         // Only install security updates (if supported)
+  // @gotags: validate:"omitempty"
+  bool autoremove = 2;            // Remove unused dependencies after update
+  // @gotags: validate:"omitempty"
+  bool reboot_if_required = 3;    // Reboot system if updates require it
 }
 
 // ============================================================================

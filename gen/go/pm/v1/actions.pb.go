@@ -28,6 +28,7 @@ const (
 	ActionType_ACTION_TYPE_UNSPECIFIED ActionType = 0
 	// Package management (1-99)
 	ActionType_ACTION_TYPE_PACKAGE ActionType = 1 // Generic package (apt/dnf/pacman based on distro)
+	ActionType_ACTION_TYPE_UPDATE  ActionType = 2 // System-wide package update (respects pinning)
 	// Application installation (100-199)
 	ActionType_ACTION_TYPE_APP_IMAGE ActionType = 100 // AppImage
 	ActionType_ACTION_TYPE_DEB       ActionType = 101 // Direct .deb
@@ -45,6 +46,7 @@ var (
 	ActionType_name = map[int32]string{
 		0:   "ACTION_TYPE_UNSPECIFIED",
 		1:   "ACTION_TYPE_PACKAGE",
+		2:   "ACTION_TYPE_UPDATE",
 		100: "ACTION_TYPE_APP_IMAGE",
 		101: "ACTION_TYPE_DEB",
 		102: "ACTION_TYPE_RPM",
@@ -55,6 +57,7 @@ var (
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
 		"ACTION_TYPE_PACKAGE":     1,
+		"ACTION_TYPE_UPDATE":      2,
 		"ACTION_TYPE_APP_IMAGE":   100,
 		"ACTION_TYPE_DEB":         101,
 		"ACTION_TYPE_RPM":         102,
@@ -153,6 +156,9 @@ type Action struct {
 	DesiredState DesiredState `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0,lte=3600"
 	TimeoutSeconds int32 `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty" validate:"omitempty,gte=0,lte=3600"`
+	// Scheduling configuration for autonomous agent execution
+	// @gotags: validate:"omitempty"
+	Schedule *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty"`
 	// Type-specific parameters
 	//
 	// Types that are valid to be assigned to Params:
@@ -162,6 +168,7 @@ type Action struct {
 	//	*Action_Shell
 	//	*Action_Systemd
 	//	*Action_File
+	//	*Action_Update
 	Params        isAction_Params `protobuf_oneof:"params"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -225,6 +232,13 @@ func (x *Action) GetTimeoutSeconds() int32 {
 	return 0
 }
 
+func (x *Action) GetSchedule() *ActionSchedule {
+	if x != nil {
+		return x.Schedule
+	}
+	return nil
+}
+
 func (x *Action) GetParams() isAction_Params {
 	if x != nil {
 		return x.Params
@@ -277,6 +291,15 @@ func (x *Action) GetFile() *FileParams {
 	return nil
 }
 
+func (x *Action) GetUpdate() *UpdateParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Update); ok {
+			return x.Update
+		}
+	}
+	return nil
+}
+
 type isAction_Params interface {
 	isAction_Params()
 }
@@ -301,6 +324,10 @@ type Action_File struct {
 	File *FileParams `protobuf:"bytes,14,opt,name=file,proto3,oneof"`
 }
 
+type Action_Update struct {
+	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -310,6 +337,88 @@ func (*Action_Shell) isAction_Params() {}
 func (*Action_Systemd) isAction_Params() {}
 
 func (*Action_File) isAction_Params() {}
+
+func (*Action_Update) isAction_Params() {}
+
+// ActionSchedule defines when an action should be executed by the agent.
+// Actions run autonomously on the agent even without server connection.
+type ActionSchedule struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Cron expression for scheduled execution (e.g., "0 3 * * *" for 3am daily)
+	// If empty, uses default_interval_hours instead.
+	// @gotags: validate:"omitempty,max=128"
+	Cron string `protobuf:"bytes,1,opt,name=cron,proto3" json:"cron,omitempty" validate:"omitempty,max=128"`
+	// Default interval in hours between executions (default: 8 hours for drift prevention)
+	// Used when cron is not specified.
+	// @gotags: validate:"omitempty,gte=0,lte=8760"
+	IntervalHours int32 `protobuf:"varint,2,opt,name=interval_hours,json=intervalHours,proto3" json:"interval_hours,omitempty" validate:"omitempty,gte=0,lte=8760"`
+	// Whether to run immediately when the action is first received
+	// @gotags: validate:"omitempty"
+	RunOnAssign bool `protobuf:"varint,3,opt,name=run_on_assign,json=runOnAssign,proto3" json:"run_on_assign,omitempty" validate:"omitempty"`
+	// Whether to skip execution if the previous run was successful and no changes detected
+	// @gotags: validate:"omitempty"
+	SkipIfUnchanged bool `protobuf:"varint,4,opt,name=skip_if_unchanged,json=skipIfUnchanged,proto3" json:"skip_if_unchanged,omitempty" validate:"omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ActionSchedule) Reset() {
+	*x = ActionSchedule{}
+	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActionSchedule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActionSchedule) ProtoMessage() {}
+
+func (x *ActionSchedule) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActionSchedule.ProtoReflect.Descriptor instead.
+func (*ActionSchedule) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ActionSchedule) GetCron() string {
+	if x != nil {
+		return x.Cron
+	}
+	return ""
+}
+
+func (x *ActionSchedule) GetIntervalHours() int32 {
+	if x != nil {
+		return x.IntervalHours
+	}
+	return 0
+}
+
+func (x *ActionSchedule) GetRunOnAssign() bool {
+	if x != nil {
+		return x.RunOnAssign
+	}
+	return false
+}
+
+func (x *ActionSchedule) GetSkipIfUnchanged() bool {
+	if x != nil {
+		return x.SkipIfUnchanged
+	}
+	return false
+}
 
 type PackageParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -327,7 +436,7 @@ type PackageParams struct {
 
 func (x *PackageParams) Reset() {
 	*x = PackageParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	mi := &file_pm_v1_actions_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +448,7 @@ func (x *PackageParams) String() string {
 func (*PackageParams) ProtoMessage() {}
 
 func (x *PackageParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	mi := &file_pm_v1_actions_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +461,7 @@ func (x *PackageParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageParams.ProtoReflect.Descriptor instead.
 func (*PackageParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PackageParams) GetName() string {
@@ -397,7 +506,7 @@ type AppInstallParams struct {
 
 func (x *AppInstallParams) Reset() {
 	*x = AppInstallParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[2]
+	mi := &file_pm_v1_actions_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +518,7 @@ func (x *AppInstallParams) String() string {
 func (*AppInstallParams) ProtoMessage() {}
 
 func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[2]
+	mi := &file_pm_v1_actions_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +531,7 @@ func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppInstallParams.ProtoReflect.Descriptor instead.
 func (*AppInstallParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AppInstallParams) GetUrl() string {
@@ -464,7 +573,7 @@ type ShellParams struct {
 
 func (x *ShellParams) Reset() {
 	*x = ShellParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[3]
+	mi := &file_pm_v1_actions_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -476,7 +585,7 @@ func (x *ShellParams) String() string {
 func (*ShellParams) ProtoMessage() {}
 
 func (x *ShellParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[3]
+	mi := &file_pm_v1_actions_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +598,7 @@ func (x *ShellParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShellParams.ProtoReflect.Descriptor instead.
 func (*ShellParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ShellParams) GetScript() string {
@@ -543,7 +652,7 @@ type SystemdParams struct {
 
 func (x *SystemdParams) Reset() {
 	*x = SystemdParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[4]
+	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -555,7 +664,7 @@ func (x *SystemdParams) String() string {
 func (*SystemdParams) ProtoMessage() {}
 
 func (x *SystemdParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[4]
+	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -568,7 +677,7 @@ func (x *SystemdParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemdParams.ProtoReflect.Descriptor instead.
 func (*SystemdParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SystemdParams) GetUnitName() string {
@@ -617,7 +726,7 @@ type FileParams struct {
 
 func (x *FileParams) Reset() {
 	*x = FileParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[5]
+	mi := &file_pm_v1_actions_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -629,7 +738,7 @@ func (x *FileParams) String() string {
 func (*FileParams) ProtoMessage() {}
 
 func (x *FileParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[5]
+	mi := &file_pm_v1_actions_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -642,7 +751,7 @@ func (x *FileParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileParams.ProtoReflect.Descriptor instead.
 func (*FileParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *FileParams) GetPath() string {
@@ -680,6 +789,71 @@ func (x *FileParams) GetMode() string {
 	return ""
 }
 
+// UpdateParams configures system-wide package updates.
+// Respects version pinning (apt-mark hold / dnf versionlock).
+type UpdateParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"omitempty"
+	SecurityOnly bool `protobuf:"varint,1,opt,name=security_only,json=securityOnly,proto3" json:"security_only,omitempty" validate:"omitempty"` // Only install security updates (if supported)
+	// @gotags: validate:"omitempty"
+	Autoremove bool `protobuf:"varint,2,opt,name=autoremove,proto3" json:"autoremove,omitempty" validate:"omitempty"` // Remove unused dependencies after update
+	// @gotags: validate:"omitempty"
+	RebootIfRequired bool `protobuf:"varint,3,opt,name=reboot_if_required,json=rebootIfRequired,proto3" json:"reboot_if_required,omitempty" validate:"omitempty"` // Reboot system if updates require it
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UpdateParams) Reset() {
+	*x = UpdateParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateParams) ProtoMessage() {}
+
+func (x *UpdateParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateParams.ProtoReflect.Descriptor instead.
+func (*UpdateParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateParams) GetSecurityOnly() bool {
+	if x != nil {
+		return x.SecurityOnly
+	}
+	return false
+}
+
+func (x *UpdateParams) GetAutoremove() bool {
+	if x != nil {
+		return x.Autoremove
+	}
+	return false
+}
+
+func (x *UpdateParams) GetRebootIfRequired() bool {
+	if x != nil {
+		return x.RebootIfRequired
+	}
+	return false
+}
+
 type ActionResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -700,7 +874,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[6]
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -712,7 +886,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[6]
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -725,7 +899,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -774,19 +948,26 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xa3\x03\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x85\x04\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
 	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
-	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x120\n" +
+	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
+	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
 	"\apackage\x18\n" +
 	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
 	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
 	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
 	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
-	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04fileB\b\n" +
-	"\x06params\"x\n" +
+	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06updateB\b\n" +
+	"\x06params\"\x9b\x01\n" +
+	"\x0eActionSchedule\x12\x12\n" +
+	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
+	"\x0einterval_hours\x18\x02 \x01(\x05R\rintervalHours\x12\"\n" +
+	"\rrun_on_assign\x18\x03 \x01(\bR\vrunOnAssign\x12*\n" +
+	"\x11skip_if_unchanged\x18\x04 \x01(\bR\x0fskipIfUnchanged\"x\n" +
 	"\rPackageParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12'\n" +
@@ -816,7 +997,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x14\n" +
 	"\x05owner\x18\x03 \x01(\tR\x05owner\x12\x14\n" +
 	"\x05group\x18\x04 \x01(\tR\x05group\x12\x12\n" +
-	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x90\x02\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x81\x01\n" +
+	"\fUpdateParams\x12#\n" +
+	"\rsecurity_only\x18\x01 \x01(\bR\fsecurityOnly\x12\x1e\n" +
+	"\n" +
+	"autoremove\x18\x02 \x01(\bR\n" +
+	"autoremove\x12,\n" +
+	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"\x90\x02\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -824,11 +1011,12 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
-	"durationMs*\xd0\x01\n" +
+	"durationMs*\xe8\x01\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
-	"\x13ACTION_TYPE_PACKAGE\x10\x01\x12\x19\n" +
+	"\x13ACTION_TYPE_PACKAGE\x10\x01\x12\x16\n" +
+	"\x12ACTION_TYPE_UPDATE\x10\x02\x12\x19\n" +
 	"\x15ACTION_TYPE_APP_IMAGE\x10d\x12\x13\n" +
 	"\x0fACTION_TYPE_DEB\x10e\x12\x13\n" +
 	"\x0fACTION_TYPE_RPM\x10f\x12\x16\n" +
@@ -854,44 +1042,48 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
 	(*Action)(nil),                // 2: pm.v1.Action
-	(*PackageParams)(nil),         // 3: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 4: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 5: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 6: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 7: pm.v1.FileParams
-	(*ActionResult)(nil),          // 8: pm.v1.ActionResult
-	nil,                           // 9: pm.v1.ShellParams.EnvironmentEntry
-	(*ActionId)(nil),              // 10: pm.v1.ActionId
-	(DesiredState)(0),             // 11: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 12: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 13: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
+	(*ActionSchedule)(nil),        // 3: pm.v1.ActionSchedule
+	(*PackageParams)(nil),         // 4: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 5: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 6: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 7: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 8: pm.v1.FileParams
+	(*UpdateParams)(nil),          // 9: pm.v1.UpdateParams
+	(*ActionResult)(nil),          // 10: pm.v1.ActionResult
+	nil,                           // 11: pm.v1.ShellParams.EnvironmentEntry
+	(*ActionId)(nil),              // 12: pm.v1.ActionId
+	(DesiredState)(0),             // 13: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 14: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 15: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	10, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	12, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	11, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	3,  // 3: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	4,  // 4: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	5,  // 5: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	6,  // 6: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
-	7,  // 7: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	9,  // 8: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 9: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	10, // 10: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	12, // 11: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	13, // 12: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	14, // 13: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	13, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	3,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	4,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	5,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	6,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	7,  // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
+	8,  // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	9,  // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	11, // 10: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 11: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	12, // 12: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	14, // 13: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	15, // 14: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	16, // 15: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -906,6 +1098,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Shell)(nil),
 		(*Action_Systemd)(nil),
 		(*Action_File)(nil),
+		(*Action_Update)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -913,7 +1106,7 @@ func file_pm_v1_actions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
