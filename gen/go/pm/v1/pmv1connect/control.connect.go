@@ -192,6 +192,9 @@ const (
 	// ControlServiceUpdateDeviceGroupDescriptionProcedure is the fully-qualified name of the
 	// ControlService's UpdateDeviceGroupDescription RPC.
 	ControlServiceUpdateDeviceGroupDescriptionProcedure = "/pm.v1.ControlService/UpdateDeviceGroupDescription"
+	// ControlServiceUpdateDeviceGroupQueryProcedure is the fully-qualified name of the ControlService's
+	// UpdateDeviceGroupQuery RPC.
+	ControlServiceUpdateDeviceGroupQueryProcedure = "/pm.v1.ControlService/UpdateDeviceGroupQuery"
 	// ControlServiceDeleteDeviceGroupProcedure is the fully-qualified name of the ControlService's
 	// DeleteDeviceGroup RPC.
 	ControlServiceDeleteDeviceGroupProcedure = "/pm.v1.ControlService/DeleteDeviceGroup"
@@ -201,6 +204,12 @@ const (
 	// ControlServiceRemoveDeviceFromGroupProcedure is the fully-qualified name of the ControlService's
 	// RemoveDeviceFromGroup RPC.
 	ControlServiceRemoveDeviceFromGroupProcedure = "/pm.v1.ControlService/RemoveDeviceFromGroup"
+	// ControlServiceValidateDynamicQueryProcedure is the fully-qualified name of the ControlService's
+	// ValidateDynamicQuery RPC.
+	ControlServiceValidateDynamicQueryProcedure = "/pm.v1.ControlService/ValidateDynamicQuery"
+	// ControlServiceEvaluateDynamicGroupProcedure is the fully-qualified name of the ControlService's
+	// EvaluateDynamicGroup RPC.
+	ControlServiceEvaluateDynamicGroupProcedure = "/pm.v1.ControlService/EvaluateDynamicGroup"
 	// ControlServiceCreateAssignmentProcedure is the fully-qualified name of the ControlService's
 	// CreateAssignment RPC.
 	ControlServiceCreateAssignmentProcedure = "/pm.v1.ControlService/CreateAssignment"
@@ -303,9 +312,12 @@ type ControlServiceClient interface {
 	ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error)
 	RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	UpdateDeviceGroupQuery(context.Context, *connect.Request[v1.UpdateDeviceGroupQueryRequest]) (*connect.Response[v1.UpdateDeviceGroupQueryResponse], error)
 	DeleteDeviceGroup(context.Context, *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error)
 	AddDeviceToGroup(context.Context, *connect.Request[v1.AddDeviceToGroupRequest]) (*connect.Response[v1.AddDeviceToGroupResponse], error)
 	RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error)
+	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
+	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -657,6 +669,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("UpdateDeviceGroupDescription")),
 			connect.WithClientOptions(opts...),
 		),
+		updateDeviceGroupQuery: connect.NewClient[v1.UpdateDeviceGroupQueryRequest, v1.UpdateDeviceGroupQueryResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateDeviceGroupQueryProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateDeviceGroupQuery")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteDeviceGroup: connect.NewClient[v1.DeleteDeviceGroupRequest, v1.DeleteDeviceGroupResponse](
 			httpClient,
 			baseURL+ControlServiceDeleteDeviceGroupProcedure,
@@ -673,6 +691,18 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceRemoveDeviceFromGroupProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("RemoveDeviceFromGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		validateDynamicQuery: connect.NewClient[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse](
+			httpClient,
+			baseURL+ControlServiceValidateDynamicQueryProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ValidateDynamicQuery")),
+			connect.WithClientOptions(opts...),
+		),
+		evaluateDynamicGroup: connect.NewClient[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse](
+			httpClient,
+			baseURL+ControlServiceEvaluateDynamicGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicGroup")),
 			connect.WithClientOptions(opts...),
 		),
 		createAssignment: connect.NewClient[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse](
@@ -806,9 +836,12 @@ type controlServiceClient struct {
 	listDeviceGroups              *connect.Client[v1.ListDeviceGroupsRequest, v1.ListDeviceGroupsResponse]
 	renameDeviceGroup             *connect.Client[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse]
 	updateDeviceGroupDescription  *connect.Client[v1.UpdateDeviceGroupDescriptionRequest, v1.UpdateDeviceGroupResponse]
+	updateDeviceGroupQuery        *connect.Client[v1.UpdateDeviceGroupQueryRequest, v1.UpdateDeviceGroupQueryResponse]
 	deleteDeviceGroup             *connect.Client[v1.DeleteDeviceGroupRequest, v1.DeleteDeviceGroupResponse]
 	addDeviceToGroup              *connect.Client[v1.AddDeviceToGroupRequest, v1.AddDeviceToGroupResponse]
 	removeDeviceFromGroup         *connect.Client[v1.RemoveDeviceFromGroupRequest, v1.RemoveDeviceFromGroupResponse]
+	validateDynamicQuery          *connect.Client[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse]
+	evaluateDynamicGroup          *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
 	createAssignment              *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
 	deleteAssignment              *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
 	listAssignments               *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
@@ -1093,6 +1126,11 @@ func (c *controlServiceClient) UpdateDeviceGroupDescription(ctx context.Context,
 	return c.updateDeviceGroupDescription.CallUnary(ctx, req)
 }
 
+// UpdateDeviceGroupQuery calls pm.v1.ControlService.UpdateDeviceGroupQuery.
+func (c *controlServiceClient) UpdateDeviceGroupQuery(ctx context.Context, req *connect.Request[v1.UpdateDeviceGroupQueryRequest]) (*connect.Response[v1.UpdateDeviceGroupQueryResponse], error) {
+	return c.updateDeviceGroupQuery.CallUnary(ctx, req)
+}
+
 // DeleteDeviceGroup calls pm.v1.ControlService.DeleteDeviceGroup.
 func (c *controlServiceClient) DeleteDeviceGroup(ctx context.Context, req *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error) {
 	return c.deleteDeviceGroup.CallUnary(ctx, req)
@@ -1106,6 +1144,16 @@ func (c *controlServiceClient) AddDeviceToGroup(ctx context.Context, req *connec
 // RemoveDeviceFromGroup calls pm.v1.ControlService.RemoveDeviceFromGroup.
 func (c *controlServiceClient) RemoveDeviceFromGroup(ctx context.Context, req *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error) {
 	return c.removeDeviceFromGroup.CallUnary(ctx, req)
+}
+
+// ValidateDynamicQuery calls pm.v1.ControlService.ValidateDynamicQuery.
+func (c *controlServiceClient) ValidateDynamicQuery(ctx context.Context, req *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error) {
+	return c.validateDynamicQuery.CallUnary(ctx, req)
+}
+
+// EvaluateDynamicGroup calls pm.v1.ControlService.EvaluateDynamicGroup.
+func (c *controlServiceClient) EvaluateDynamicGroup(ctx context.Context, req *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error) {
+	return c.evaluateDynamicGroup.CallUnary(ctx, req)
 }
 
 // CreateAssignment calls pm.v1.ControlService.CreateAssignment.
@@ -1232,9 +1280,12 @@ type ControlServiceHandler interface {
 	ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error)
 	RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	UpdateDeviceGroupQuery(context.Context, *connect.Request[v1.UpdateDeviceGroupQueryRequest]) (*connect.Response[v1.UpdateDeviceGroupQueryResponse], error)
 	DeleteDeviceGroup(context.Context, *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error)
 	AddDeviceToGroup(context.Context, *connect.Request[v1.AddDeviceToGroupRequest]) (*connect.Response[v1.AddDeviceToGroupResponse], error)
 	RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error)
+	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
+	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -1582,6 +1633,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("UpdateDeviceGroupDescription")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceUpdateDeviceGroupQueryHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateDeviceGroupQueryProcedure,
+		svc.UpdateDeviceGroupQuery,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateDeviceGroupQuery")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceDeleteDeviceGroupHandler := connect.NewUnaryHandler(
 		ControlServiceDeleteDeviceGroupProcedure,
 		svc.DeleteDeviceGroup,
@@ -1598,6 +1655,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceRemoveDeviceFromGroupProcedure,
 		svc.RemoveDeviceFromGroup,
 		connect.WithSchema(controlServiceMethods.ByName("RemoveDeviceFromGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceValidateDynamicQueryHandler := connect.NewUnaryHandler(
+		ControlServiceValidateDynamicQueryProcedure,
+		svc.ValidateDynamicQuery,
+		connect.WithSchema(controlServiceMethods.ByName("ValidateDynamicQuery")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceEvaluateDynamicGroupHandler := connect.NewUnaryHandler(
+		ControlServiceEvaluateDynamicGroupProcedure,
+		svc.EvaluateDynamicGroup,
+		connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicGroup")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceCreateAssignmentHandler := connect.NewUnaryHandler(
@@ -1782,12 +1851,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRenameDeviceGroupHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateDeviceGroupDescriptionProcedure:
 			controlServiceUpdateDeviceGroupDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateDeviceGroupQueryProcedure:
+			controlServiceUpdateDeviceGroupQueryHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDeviceGroupProcedure:
 			controlServiceDeleteDeviceGroupHandler.ServeHTTP(w, r)
 		case ControlServiceAddDeviceToGroupProcedure:
 			controlServiceAddDeviceToGroupHandler.ServeHTTP(w, r)
 		case ControlServiceRemoveDeviceFromGroupProcedure:
 			controlServiceRemoveDeviceFromGroupHandler.ServeHTTP(w, r)
+		case ControlServiceValidateDynamicQueryProcedure:
+			controlServiceValidateDynamicQueryHandler.ServeHTTP(w, r)
+		case ControlServiceEvaluateDynamicGroupProcedure:
+			controlServiceEvaluateDynamicGroupHandler.ServeHTTP(w, r)
 		case ControlServiceCreateAssignmentProcedure:
 			controlServiceCreateAssignmentHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteAssignmentProcedure:
@@ -2037,6 +2112,10 @@ func (UnimplementedControlServiceHandler) UpdateDeviceGroupDescription(context.C
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateDeviceGroupDescription is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) UpdateDeviceGroupQuery(context.Context, *connect.Request[v1.UpdateDeviceGroupQueryRequest]) (*connect.Response[v1.UpdateDeviceGroupQueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateDeviceGroupQuery is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) DeleteDeviceGroup(context.Context, *connect.Request[v1.DeleteDeviceGroupRequest]) (*connect.Response[v1.DeleteDeviceGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteDeviceGroup is not implemented"))
 }
@@ -2047,6 +2126,14 @@ func (UnimplementedControlServiceHandler) AddDeviceToGroup(context.Context, *con
 
 func (UnimplementedControlServiceHandler) RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveDeviceFromGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ValidateDynamicQuery is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.EvaluateDynamicGroup is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {

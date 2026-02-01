@@ -665,6 +665,8 @@ message DeviceGroup {
   int32 member_count = 4;
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
+  bool is_dynamic = 7;  // True if membership is determined by dynamic_query
+  string dynamic_query = 8;  // Query for dynamic membership (verbose syntax)
 }
 
 message CreateDeviceGroupRequest {
@@ -672,6 +674,10 @@ message CreateDeviceGroupRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  // If true, membership is determined by dynamic_query instead of manual assignment
+  bool is_dynamic = 3;
+  // @gotags: validate:"omitempty,max=4096"
+  string dynamic_query = 4;  // Query for dynamic membership (see docs for syntax)
 }
 
 message CreateDeviceGroupResponse {
@@ -746,6 +752,44 @@ message RemoveDeviceFromGroupRequest {
 
 message RemoveDeviceFromGroupResponse {
   DeviceGroup group = 1;
+}
+
+// Update a device group's dynamic query
+message UpdateDeviceGroupQueryRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // If true, membership is determined by dynamic_query instead of manual assignment
+  bool is_dynamic = 2;
+  // @gotags: validate:"omitempty,max=4096"
+  string dynamic_query = 3;  // Query for dynamic membership (see docs for syntax)
+}
+
+message UpdateDeviceGroupQueryResponse {
+  DeviceGroup group = 1;
+}
+
+// Validate a dynamic query without creating a group
+message ValidateDynamicQueryRequest {
+  // @gotags: validate:"required,max=4096"
+  string query = 1;
+}
+
+message ValidateDynamicQueryResponse {
+  bool valid = 1;
+  string error = 2;  // Error message if not valid
+  int32 matching_device_count = 3;  // Number of devices that would match
+}
+
+// Trigger re-evaluation of a dynamic group
+message EvaluateDynamicGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message EvaluateDynamicGroupResponse {
+  DeviceGroup group = 1;
+  int32 devices_added = 2;
+  int32 devices_removed = 3;
 }
 
 // ============================================================================
@@ -1017,9 +1061,12 @@ service ControlService {
   rpc ListDeviceGroups(ListDeviceGroupsRequest) returns (ListDeviceGroupsResponse);
   rpc RenameDeviceGroup(RenameDeviceGroupRequest) returns (UpdateDeviceGroupResponse);
   rpc UpdateDeviceGroupDescription(UpdateDeviceGroupDescriptionRequest) returns (UpdateDeviceGroupResponse);
+  rpc UpdateDeviceGroupQuery(UpdateDeviceGroupQueryRequest) returns (UpdateDeviceGroupQueryResponse);
   rpc DeleteDeviceGroup(DeleteDeviceGroupRequest) returns (DeleteDeviceGroupResponse);
   rpc AddDeviceToGroup(AddDeviceToGroupRequest) returns (AddDeviceToGroupResponse);
   rpc RemoveDeviceFromGroup(RemoveDeviceFromGroupRequest) returns (RemoveDeviceFromGroupResponse);
+  rpc ValidateDynamicQuery(ValidateDynamicQueryRequest) returns (ValidateDynamicQueryResponse);
+  rpc EvaluateDynamicGroup(EvaluateDynamicGroupRequest) returns (EvaluateDynamicGroupResponse);
 
   // Assignments
   rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse);
