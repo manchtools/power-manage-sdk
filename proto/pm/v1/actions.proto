@@ -90,7 +90,9 @@ message ActionSchedule {
 // ============================================================================
 
 message PackageParams {
-  // @gotags: validate:"required,min=1,max=255"
+  // Generic package name (used if manager-specific names not provided)
+  // If set, this name is used for all package managers.
+  // @gotags: validate:"omitempty,max=255"
   string name = 1;
   // @gotags: validate:"omitempty,max=128"
   string version = 2;
@@ -98,6 +100,17 @@ message PackageParams {
   bool allow_downgrade = 3;
   // @gotags: validate:"omitempty"
   bool pin = 4;
+
+  // Manager-specific package names (override generic name)
+  // If a manager-specific name is empty, that manager will be skipped.
+  // @gotags: validate:"omitempty,max=255"
+  string apt_name = 10;    // Debian/Ubuntu (apt/apt-get)
+  // @gotags: validate:"omitempty,max=255"
+  string dnf_name = 11;    // Fedora/RHEL (dnf/yum)
+  // @gotags: validate:"omitempty,max=255"
+  string pacman_name = 12; // Arch Linux (pacman)
+  // @gotags: validate:"omitempty,max=255"
+  string zypper_name = 13; // openSUSE (zypper)
 }
 
 message AppInstallParams {
