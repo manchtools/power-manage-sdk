@@ -17,6 +17,7 @@ enum ActionType {
   // Package management (1-99)
   ACTION_TYPE_PACKAGE = 1;      // Generic package (apt/dnf/pacman based on distro)
   ACTION_TYPE_UPDATE = 2;       // System-wide package update (respects pinning)
+  ACTION_TYPE_REPOSITORY = 3;   // External repository configuration
 
   // Application installation (100-199)
   ACTION_TYPE_APP_IMAGE = 100;  // AppImage
@@ -60,6 +61,7 @@ message Action {
     SystemdParams systemd = 13;
     FileParams file = 14;
     UpdateParams update = 15;
+    RepositoryParams repository = 16;
   }
 }
 
@@ -175,6 +177,146 @@ message UpdateParams {
   bool autoremove = 2;            // Remove unused dependencies after update
   // @gotags: validate:"omitempty"
   bool reboot_if_required = 3;    // Reboot system if updates require it
+}
+
+// RepositoryParams configures external package repositories.
+// Each package manager has its own configuration format.
+message RepositoryParams {
+  // Repository name/identifier (used for file naming)
+  // @gotags: validate:"required,min=1,max=64,alphanum"
+  string name = 1;
+
+  // APT repository configuration (Debian/Ubuntu)
+  // @gotags: validate:"omitempty"
+  AptRepository apt = 10;
+
+  // DNF/YUM repository configuration (Fedora/RHEL)
+  // @gotags: validate:"omitempty"
+  DnfRepository dnf = 11;
+
+  // Pacman repository configuration (Arch Linux)
+  // @gotags: validate:"omitempty"
+  PacmanRepository pacman = 12;
+
+  // Zypper repository configuration (openSUSE)
+  // @gotags: validate:"omitempty"
+  ZypperRepository zypper = 13;
+}
+
+// AptRepository configures a Debian/Ubuntu APT repository.
+message AptRepository {
+  // Repository URL (e.g., "https://packages.example.com/apt")
+  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  string url = 1;
+
+  // Distribution codename (e.g., "jammy", "bookworm")
+  // @gotags: validate:"omitempty,max=64"
+  string distribution = 2;
+
+  // Components (e.g., "main", "contrib", "non-free")
+  // @gotags: validate:"omitempty,dive,max=64"
+  repeated string components = 3;
+
+  // GPG key URL for repository signing
+  // @gotags: validate:"omitempty,url"
+  string gpg_key_url = 4;
+
+  // GPG key content (ASCII-armored, alternative to gpg_key_url)
+  // @gotags: validate:"omitempty,max=65536"
+  string gpg_key = 5;
+
+  // Whether to use signed-by (modern) or trusted=yes (legacy, less secure)
+  // @gotags: validate:"omitempty"
+  bool trusted = 6;
+
+  // Architecture filter (e.g., "amd64", "arm64")
+  // @gotags: validate:"omitempty,max=32"
+  string arch = 7;
+
+  // Set to true to disable/skip this repository manager
+  // @gotags: validate:"omitempty"
+  bool disabled = 8;
+}
+
+// DnfRepository configures a Fedora/RHEL DNF/YUM repository.
+message DnfRepository {
+  // Base URL for the repository
+  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  string baseurl = 1;
+
+  // Repository description
+  // @gotags: validate:"omitempty,max=255"
+  string description = 2;
+
+  // Whether the repository is enabled (default true)
+  // @gotags: validate:"omitempty"
+  bool enabled = 3;
+
+  // Whether to check GPG signatures
+  // @gotags: validate:"omitempty"
+  bool gpgcheck = 4;
+
+  // GPG key URL
+  // @gotags: validate:"omitempty,url"
+  string gpgkey = 5;
+
+  // Module hotfixes (for modular content)
+  // @gotags: validate:"omitempty"
+  bool module_hotfixes = 6;
+
+  // Set to true to disable/skip this repository manager
+  // @gotags: validate:"omitempty"
+  bool disabled = 7;
+}
+
+// PacmanRepository configures an Arch Linux pacman repository.
+message PacmanRepository {
+  // Server URL (can include $repo and $arch variables)
+  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  string server = 1;
+
+  // SigLevel (e.g., "Optional TrustAll", "Required DatabaseOptional")
+  // @gotags: validate:"omitempty,max=128"
+  string sig_level = 2;
+
+  // Set to true to disable/skip this repository manager
+  // @gotags: validate:"omitempty"
+  bool disabled = 3;
+}
+
+// ZypperRepository configures an openSUSE zypper repository.
+message ZypperRepository {
+  // Repository URL
+  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  string url = 1;
+
+  // Repository description/alias
+  // @gotags: validate:"omitempty,max=255"
+  string description = 2;
+
+  // Whether to enable the repository (default true)
+  // @gotags: validate:"omitempty"
+  bool enabled = 3;
+
+  // Whether to auto-refresh the repository
+  // @gotags: validate:"omitempty"
+  bool autorefresh = 4;
+
+  // Whether to check GPG signatures
+  // @gotags: validate:"omitempty"
+  bool gpgcheck = 5;
+
+  // GPG key URL
+  // @gotags: validate:"omitempty,url"
+  string gpgkey = 6;
+
+  // Repository type (e.g., "rpm-md", "yast2")
+  // @gotags: validate:"omitempty,max=32"
+  string type = 7;
+
+  // Set to true to disable/skip this repository manager
+  // @gotags: validate:"omitempty"
+  bool disabled = 8;
 }
 
 // ============================================================================
