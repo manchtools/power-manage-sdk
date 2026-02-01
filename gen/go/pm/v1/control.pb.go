@@ -5522,6 +5522,8 @@ type DeviceGroup struct {
 	MemberCount   int32                  `protobuf:"varint,4,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	CreatedBy     string                 `protobuf:"bytes,6,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	IsDynamic     bool                   `protobuf:"varint,7,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`         // True if membership is determined by dynamic_query
+	DynamicQuery  string                 `protobuf:"bytes,8,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty"` // Query for dynamic membership (verbose syntax)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5598,12 +5600,30 @@ func (x *DeviceGroup) GetCreatedBy() string {
 	return ""
 }
 
+func (x *DeviceGroup) GetIsDynamic() bool {
+	if x != nil {
+		return x.IsDynamic
+	}
+	return false
+}
+
+func (x *DeviceGroup) GetDynamicQuery() string {
+	if x != nil {
+		return x.DynamicQuery
+	}
+	return ""
+}
+
 type CreateDeviceGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,min=1,max=255"
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"omitempty,max=1024"
-	Description   string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=1024"`
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=1024"`
+	// If true, membership is determined by dynamic_query instead of manual assignment
+	IsDynamic bool `protobuf:"varint,3,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
+	// @gotags: validate:"omitempty,max=4096"
+	DynamicQuery  string `protobuf:"bytes,4,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty" validate:"omitempty,max=4096"` // Query for dynamic membership (see docs for syntax)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5648,6 +5668,20 @@ func (x *CreateDeviceGroupRequest) GetName() string {
 func (x *CreateDeviceGroupRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateDeviceGroupRequest) GetIsDynamic() bool {
+	if x != nil {
+		return x.IsDynamic
+	}
+	return false
+}
+
+func (x *CreateDeviceGroupRequest) GetDynamicQuery() string {
+	if x != nil {
+		return x.DynamicQuery
 	}
 	return ""
 }
@@ -6336,6 +6370,326 @@ func (x *RemoveDeviceFromGroupResponse) GetGroup() *DeviceGroup {
 	return nil
 }
 
+// Update a device group's dynamic query
+type UpdateDeviceGroupQueryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
+	// If true, membership is determined by dynamic_query instead of manual assignment
+	IsDynamic bool `protobuf:"varint,2,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
+	// @gotags: validate:"omitempty,max=4096"
+	DynamicQuery  string `protobuf:"bytes,3,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty" validate:"omitempty,max=4096"` // Query for dynamic membership (see docs for syntax)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateDeviceGroupQueryRequest) Reset() {
+	*x = UpdateDeviceGroupQueryRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[113]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateDeviceGroupQueryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateDeviceGroupQueryRequest) ProtoMessage() {}
+
+func (x *UpdateDeviceGroupQueryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[113]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateDeviceGroupQueryRequest.ProtoReflect.Descriptor instead.
+func (*UpdateDeviceGroupQueryRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{113}
+}
+
+func (x *UpdateDeviceGroupQueryRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateDeviceGroupQueryRequest) GetIsDynamic() bool {
+	if x != nil {
+		return x.IsDynamic
+	}
+	return false
+}
+
+func (x *UpdateDeviceGroupQueryRequest) GetDynamicQuery() string {
+	if x != nil {
+		return x.DynamicQuery
+	}
+	return ""
+}
+
+type UpdateDeviceGroupQueryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *DeviceGroup           `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateDeviceGroupQueryResponse) Reset() {
+	*x = UpdateDeviceGroupQueryResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[114]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateDeviceGroupQueryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateDeviceGroupQueryResponse) ProtoMessage() {}
+
+func (x *UpdateDeviceGroupQueryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[114]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateDeviceGroupQueryResponse.ProtoReflect.Descriptor instead.
+func (*UpdateDeviceGroupQueryResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{114}
+}
+
+func (x *UpdateDeviceGroupQueryResponse) GetGroup() *DeviceGroup {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+// Validate a dynamic query without creating a group
+type ValidateDynamicQueryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,max=4096"
+	Query         string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"required,max=4096"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateDynamicQueryRequest) Reset() {
+	*x = ValidateDynamicQueryRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[115]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateDynamicQueryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateDynamicQueryRequest) ProtoMessage() {}
+
+func (x *ValidateDynamicQueryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[115]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateDynamicQueryRequest.ProtoReflect.Descriptor instead.
+func (*ValidateDynamicQueryRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{115}
+}
+
+func (x *ValidateDynamicQueryRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+type ValidateDynamicQueryResponse struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Valid               bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	Error               string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`                                                           // Error message if not valid
+	MatchingDeviceCount int32                  `protobuf:"varint,3,opt,name=matching_device_count,json=matchingDeviceCount,proto3" json:"matching_device_count,omitempty"` // Number of devices that would match
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ValidateDynamicQueryResponse) Reset() {
+	*x = ValidateDynamicQueryResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateDynamicQueryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateDynamicQueryResponse) ProtoMessage() {}
+
+func (x *ValidateDynamicQueryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateDynamicQueryResponse.ProtoReflect.Descriptor instead.
+func (*ValidateDynamicQueryResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{116}
+}
+
+func (x *ValidateDynamicQueryResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
+}
+
+func (x *ValidateDynamicQueryResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ValidateDynamicQueryResponse) GetMatchingDeviceCount() int32 {
+	if x != nil {
+		return x.MatchingDeviceCount
+	}
+	return 0
+}
+
+// Trigger re-evaluation of a dynamic group
+type EvaluateDynamicGroupRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	Id            string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EvaluateDynamicGroupRequest) Reset() {
+	*x = EvaluateDynamicGroupRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[117]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvaluateDynamicGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvaluateDynamicGroupRequest) ProtoMessage() {}
+
+func (x *EvaluateDynamicGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[117]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvaluateDynamicGroupRequest.ProtoReflect.Descriptor instead.
+func (*EvaluateDynamicGroupRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{117}
+}
+
+func (x *EvaluateDynamicGroupRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type EvaluateDynamicGroupResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Group          *DeviceGroup           `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	DevicesAdded   int32                  `protobuf:"varint,2,opt,name=devices_added,json=devicesAdded,proto3" json:"devices_added,omitempty"`
+	DevicesRemoved int32                  `protobuf:"varint,3,opt,name=devices_removed,json=devicesRemoved,proto3" json:"devices_removed,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *EvaluateDynamicGroupResponse) Reset() {
+	*x = EvaluateDynamicGroupResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[118]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvaluateDynamicGroupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvaluateDynamicGroupResponse) ProtoMessage() {}
+
+func (x *EvaluateDynamicGroupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[118]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvaluateDynamicGroupResponse.ProtoReflect.Descriptor instead.
+func (*EvaluateDynamicGroupResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{118}
+}
+
+func (x *EvaluateDynamicGroupResponse) GetGroup() *DeviceGroup {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+func (x *EvaluateDynamicGroupResponse) GetDevicesAdded() int32 {
+	if x != nil {
+		return x.DevicesAdded
+	}
+	return 0
+}
+
+func (x *EvaluateDynamicGroupResponse) GetDevicesRemoved() int32 {
+	if x != nil {
+		return x.DevicesRemoved
+	}
+	return 0
+}
+
 type Assignment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -6351,7 +6705,7 @@ type Assignment struct {
 
 func (x *Assignment) Reset() {
 	*x = Assignment{}
-	mi := &file_pm_v1_control_proto_msgTypes[113]
+	mi := &file_pm_v1_control_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6363,7 +6717,7 @@ func (x *Assignment) String() string {
 func (*Assignment) ProtoMessage() {}
 
 func (x *Assignment) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[113]
+	mi := &file_pm_v1_control_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6376,7 +6730,7 @@ func (x *Assignment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Assignment.ProtoReflect.Descriptor instead.
 func (*Assignment) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{113}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *Assignment) GetId() string {
@@ -6444,7 +6798,7 @@ type CreateAssignmentRequest struct {
 
 func (x *CreateAssignmentRequest) Reset() {
 	*x = CreateAssignmentRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[114]
+	mi := &file_pm_v1_control_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6456,7 +6810,7 @@ func (x *CreateAssignmentRequest) String() string {
 func (*CreateAssignmentRequest) ProtoMessage() {}
 
 func (x *CreateAssignmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[114]
+	mi := &file_pm_v1_control_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6469,7 +6823,7 @@ func (x *CreateAssignmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAssignmentRequest.ProtoReflect.Descriptor instead.
 func (*CreateAssignmentRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{114}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *CreateAssignmentRequest) GetSourceType() string {
@@ -6509,7 +6863,7 @@ type CreateAssignmentResponse struct {
 
 func (x *CreateAssignmentResponse) Reset() {
 	*x = CreateAssignmentResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[115]
+	mi := &file_pm_v1_control_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6521,7 +6875,7 @@ func (x *CreateAssignmentResponse) String() string {
 func (*CreateAssignmentResponse) ProtoMessage() {}
 
 func (x *CreateAssignmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[115]
+	mi := &file_pm_v1_control_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6534,7 +6888,7 @@ func (x *CreateAssignmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAssignmentResponse.ProtoReflect.Descriptor instead.
 func (*CreateAssignmentResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{115}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *CreateAssignmentResponse) GetAssignment() *Assignment {
@@ -6554,7 +6908,7 @@ type DeleteAssignmentRequest struct {
 
 func (x *DeleteAssignmentRequest) Reset() {
 	*x = DeleteAssignmentRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[116]
+	mi := &file_pm_v1_control_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6566,7 +6920,7 @@ func (x *DeleteAssignmentRequest) String() string {
 func (*DeleteAssignmentRequest) ProtoMessage() {}
 
 func (x *DeleteAssignmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[116]
+	mi := &file_pm_v1_control_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6579,7 +6933,7 @@ func (x *DeleteAssignmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAssignmentRequest.ProtoReflect.Descriptor instead.
 func (*DeleteAssignmentRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{116}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *DeleteAssignmentRequest) GetId() string {
@@ -6597,7 +6951,7 @@ type DeleteAssignmentResponse struct {
 
 func (x *DeleteAssignmentResponse) Reset() {
 	*x = DeleteAssignmentResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[117]
+	mi := &file_pm_v1_control_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6609,7 +6963,7 @@ func (x *DeleteAssignmentResponse) String() string {
 func (*DeleteAssignmentResponse) ProtoMessage() {}
 
 func (x *DeleteAssignmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[117]
+	mi := &file_pm_v1_control_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6622,7 +6976,7 @@ func (x *DeleteAssignmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAssignmentResponse.ProtoReflect.Descriptor instead.
 func (*DeleteAssignmentResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{117}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{123}
 }
 
 type ListAssignmentsRequest struct {
@@ -6645,7 +6999,7 @@ type ListAssignmentsRequest struct {
 
 func (x *ListAssignmentsRequest) Reset() {
 	*x = ListAssignmentsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[118]
+	mi := &file_pm_v1_control_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6657,7 +7011,7 @@ func (x *ListAssignmentsRequest) String() string {
 func (*ListAssignmentsRequest) ProtoMessage() {}
 
 func (x *ListAssignmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[118]
+	mi := &file_pm_v1_control_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6670,7 +7024,7 @@ func (x *ListAssignmentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAssignmentsRequest.ProtoReflect.Descriptor instead.
 func (*ListAssignmentsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{118}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *ListAssignmentsRequest) GetSourceType() string {
@@ -6726,7 +7080,7 @@ type ListAssignmentsResponse struct {
 
 func (x *ListAssignmentsResponse) Reset() {
 	*x = ListAssignmentsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[119]
+	mi := &file_pm_v1_control_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6738,7 +7092,7 @@ func (x *ListAssignmentsResponse) String() string {
 func (*ListAssignmentsResponse) ProtoMessage() {}
 
 func (x *ListAssignmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[119]
+	mi := &file_pm_v1_control_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6751,7 +7105,7 @@ func (x *ListAssignmentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAssignmentsResponse.ProtoReflect.Descriptor instead.
 func (*ListAssignmentsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{119}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *ListAssignmentsResponse) GetAssignments() []*Assignment {
@@ -6786,7 +7140,7 @@ type GetDeviceAssignmentsRequest struct {
 
 func (x *GetDeviceAssignmentsRequest) Reset() {
 	*x = GetDeviceAssignmentsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[120]
+	mi := &file_pm_v1_control_proto_msgTypes[126]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6798,7 +7152,7 @@ func (x *GetDeviceAssignmentsRequest) String() string {
 func (*GetDeviceAssignmentsRequest) ProtoMessage() {}
 
 func (x *GetDeviceAssignmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[120]
+	mi := &file_pm_v1_control_proto_msgTypes[126]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6811,7 +7165,7 @@ func (x *GetDeviceAssignmentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceAssignmentsRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceAssignmentsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{120}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *GetDeviceAssignmentsRequest) GetDeviceId() string {
@@ -6832,7 +7186,7 @@ type GetDeviceAssignmentsResponse struct {
 
 func (x *GetDeviceAssignmentsResponse) Reset() {
 	*x = GetDeviceAssignmentsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[121]
+	mi := &file_pm_v1_control_proto_msgTypes[127]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6844,7 +7198,7 @@ func (x *GetDeviceAssignmentsResponse) String() string {
 func (*GetDeviceAssignmentsResponse) ProtoMessage() {}
 
 func (x *GetDeviceAssignmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[121]
+	mi := &file_pm_v1_control_proto_msgTypes[127]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6857,7 +7211,7 @@ func (x *GetDeviceAssignmentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceAssignmentsResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceAssignmentsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{121}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *GetDeviceAssignmentsResponse) GetActions() []*ManagedAction {
@@ -6901,7 +7255,7 @@ type ActionExecution struct {
 
 func (x *ActionExecution) Reset() {
 	*x = ActionExecution{}
-	mi := &file_pm_v1_control_proto_msgTypes[122]
+	mi := &file_pm_v1_control_proto_msgTypes[128]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6913,7 +7267,7 @@ func (x *ActionExecution) String() string {
 func (*ActionExecution) ProtoMessage() {}
 
 func (x *ActionExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[122]
+	mi := &file_pm_v1_control_proto_msgTypes[128]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6926,7 +7280,7 @@ func (x *ActionExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionExecution.ProtoReflect.Descriptor instead.
 func (*ActionExecution) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{122}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *ActionExecution) GetId() string {
@@ -7030,7 +7384,7 @@ type DispatchActionRequest struct {
 
 func (x *DispatchActionRequest) Reset() {
 	*x = DispatchActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[123]
+	mi := &file_pm_v1_control_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7042,7 +7396,7 @@ func (x *DispatchActionRequest) String() string {
 func (*DispatchActionRequest) ProtoMessage() {}
 
 func (x *DispatchActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[123]
+	mi := &file_pm_v1_control_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7055,7 +7409,7 @@ func (x *DispatchActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionRequest.ProtoReflect.Descriptor instead.
 func (*DispatchActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{123}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *DispatchActionRequest) GetDeviceId() string {
@@ -7116,7 +7470,7 @@ type DispatchActionResponse struct {
 
 func (x *DispatchActionResponse) Reset() {
 	*x = DispatchActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[124]
+	mi := &file_pm_v1_control_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7128,7 +7482,7 @@ func (x *DispatchActionResponse) String() string {
 func (*DispatchActionResponse) ProtoMessage() {}
 
 func (x *DispatchActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[124]
+	mi := &file_pm_v1_control_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7141,7 +7495,7 @@ func (x *DispatchActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionResponse.ProtoReflect.Descriptor instead.
 func (*DispatchActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{124}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *DispatchActionResponse) GetExecution() *ActionExecution {
@@ -7166,7 +7520,7 @@ type DispatchToMultipleRequest struct {
 
 func (x *DispatchToMultipleRequest) Reset() {
 	*x = DispatchToMultipleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[125]
+	mi := &file_pm_v1_control_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7178,7 +7532,7 @@ func (x *DispatchToMultipleRequest) String() string {
 func (*DispatchToMultipleRequest) ProtoMessage() {}
 
 func (x *DispatchToMultipleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[125]
+	mi := &file_pm_v1_control_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7191,7 +7545,7 @@ func (x *DispatchToMultipleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToMultipleRequest.ProtoReflect.Descriptor instead.
 func (*DispatchToMultipleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{125}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *DispatchToMultipleRequest) GetDeviceIds() []string {
@@ -7252,7 +7606,7 @@ type DispatchToMultipleResponse struct {
 
 func (x *DispatchToMultipleResponse) Reset() {
 	*x = DispatchToMultipleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[126]
+	mi := &file_pm_v1_control_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7264,7 +7618,7 @@ func (x *DispatchToMultipleResponse) String() string {
 func (*DispatchToMultipleResponse) ProtoMessage() {}
 
 func (x *DispatchToMultipleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[126]
+	mi := &file_pm_v1_control_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7277,7 +7631,7 @@ func (x *DispatchToMultipleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToMultipleResponse.ProtoReflect.Descriptor instead.
 func (*DispatchToMultipleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{126}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *DispatchToMultipleResponse) GetExecutions() []*ActionExecution {
@@ -7298,7 +7652,7 @@ type DispatchAssignedActionsRequest struct {
 
 func (x *DispatchAssignedActionsRequest) Reset() {
 	*x = DispatchAssignedActionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[127]
+	mi := &file_pm_v1_control_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7310,7 +7664,7 @@ func (x *DispatchAssignedActionsRequest) String() string {
 func (*DispatchAssignedActionsRequest) ProtoMessage() {}
 
 func (x *DispatchAssignedActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[127]
+	mi := &file_pm_v1_control_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7323,7 +7677,7 @@ func (x *DispatchAssignedActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchAssignedActionsRequest.ProtoReflect.Descriptor instead.
 func (*DispatchAssignedActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{127}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *DispatchAssignedActionsRequest) GetDeviceId() string {
@@ -7342,7 +7696,7 @@ type DispatchAssignedActionsResponse struct {
 
 func (x *DispatchAssignedActionsResponse) Reset() {
 	*x = DispatchAssignedActionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[128]
+	mi := &file_pm_v1_control_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7354,7 +7708,7 @@ func (x *DispatchAssignedActionsResponse) String() string {
 func (*DispatchAssignedActionsResponse) ProtoMessage() {}
 
 func (x *DispatchAssignedActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[128]
+	mi := &file_pm_v1_control_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7367,7 +7721,7 @@ func (x *DispatchAssignedActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchAssignedActionsResponse.ProtoReflect.Descriptor instead.
 func (*DispatchAssignedActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{128}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *DispatchAssignedActionsResponse) GetExecutions() []*ActionExecution {
@@ -7390,7 +7744,7 @@ type DispatchActionSetRequest struct {
 
 func (x *DispatchActionSetRequest) Reset() {
 	*x = DispatchActionSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[129]
+	mi := &file_pm_v1_control_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7402,7 +7756,7 @@ func (x *DispatchActionSetRequest) String() string {
 func (*DispatchActionSetRequest) ProtoMessage() {}
 
 func (x *DispatchActionSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[129]
+	mi := &file_pm_v1_control_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7415,7 +7769,7 @@ func (x *DispatchActionSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionSetRequest.ProtoReflect.Descriptor instead.
 func (*DispatchActionSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{129}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *DispatchActionSetRequest) GetDeviceId() string {
@@ -7441,7 +7795,7 @@ type DispatchActionSetResponse struct {
 
 func (x *DispatchActionSetResponse) Reset() {
 	*x = DispatchActionSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[130]
+	mi := &file_pm_v1_control_proto_msgTypes[136]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7453,7 +7807,7 @@ func (x *DispatchActionSetResponse) String() string {
 func (*DispatchActionSetResponse) ProtoMessage() {}
 
 func (x *DispatchActionSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[130]
+	mi := &file_pm_v1_control_proto_msgTypes[136]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7466,7 +7820,7 @@ func (x *DispatchActionSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionSetResponse.ProtoReflect.Descriptor instead.
 func (*DispatchActionSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{130}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{136}
 }
 
 func (x *DispatchActionSetResponse) GetExecutions() []*ActionExecution {
@@ -7489,7 +7843,7 @@ type DispatchDefinitionRequest struct {
 
 func (x *DispatchDefinitionRequest) Reset() {
 	*x = DispatchDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[131]
+	mi := &file_pm_v1_control_proto_msgTypes[137]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7501,7 +7855,7 @@ func (x *DispatchDefinitionRequest) String() string {
 func (*DispatchDefinitionRequest) ProtoMessage() {}
 
 func (x *DispatchDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[131]
+	mi := &file_pm_v1_control_proto_msgTypes[137]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7514,7 +7868,7 @@ func (x *DispatchDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*DispatchDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{131}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{137}
 }
 
 func (x *DispatchDefinitionRequest) GetDeviceId() string {
@@ -7540,7 +7894,7 @@ type DispatchDefinitionResponse struct {
 
 func (x *DispatchDefinitionResponse) Reset() {
 	*x = DispatchDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[132]
+	mi := &file_pm_v1_control_proto_msgTypes[138]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7552,7 +7906,7 @@ func (x *DispatchDefinitionResponse) String() string {
 func (*DispatchDefinitionResponse) ProtoMessage() {}
 
 func (x *DispatchDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[132]
+	mi := &file_pm_v1_control_proto_msgTypes[138]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7565,7 +7919,7 @@ func (x *DispatchDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*DispatchDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{132}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{138}
 }
 
 func (x *DispatchDefinitionResponse) GetExecutions() []*ActionExecution {
@@ -7593,7 +7947,7 @@ type DispatchToGroupRequest struct {
 
 func (x *DispatchToGroupRequest) Reset() {
 	*x = DispatchToGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[133]
+	mi := &file_pm_v1_control_proto_msgTypes[139]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7605,7 +7959,7 @@ func (x *DispatchToGroupRequest) String() string {
 func (*DispatchToGroupRequest) ProtoMessage() {}
 
 func (x *DispatchToGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[133]
+	mi := &file_pm_v1_control_proto_msgTypes[139]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7618,7 +7972,7 @@ func (x *DispatchToGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToGroupRequest.ProtoReflect.Descriptor instead.
 func (*DispatchToGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{133}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{139}
 }
 
 func (x *DispatchToGroupRequest) GetGroupId() string {
@@ -7711,7 +8065,7 @@ type DispatchToGroupResponse struct {
 
 func (x *DispatchToGroupResponse) Reset() {
 	*x = DispatchToGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[134]
+	mi := &file_pm_v1_control_proto_msgTypes[140]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7723,7 +8077,7 @@ func (x *DispatchToGroupResponse) String() string {
 func (*DispatchToGroupResponse) ProtoMessage() {}
 
 func (x *DispatchToGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[134]
+	mi := &file_pm_v1_control_proto_msgTypes[140]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7736,7 +8090,7 @@ func (x *DispatchToGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToGroupResponse.ProtoReflect.Descriptor instead.
 func (*DispatchToGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{134}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{140}
 }
 
 func (x *DispatchToGroupResponse) GetExecutions() []*ActionExecution {
@@ -7756,7 +8110,7 @@ type GetExecutionRequest struct {
 
 func (x *GetExecutionRequest) Reset() {
 	*x = GetExecutionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[135]
+	mi := &file_pm_v1_control_proto_msgTypes[141]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7768,7 +8122,7 @@ func (x *GetExecutionRequest) String() string {
 func (*GetExecutionRequest) ProtoMessage() {}
 
 func (x *GetExecutionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[135]
+	mi := &file_pm_v1_control_proto_msgTypes[141]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7781,7 +8135,7 @@ func (x *GetExecutionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExecutionRequest.ProtoReflect.Descriptor instead.
 func (*GetExecutionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{135}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{141}
 }
 
 func (x *GetExecutionRequest) GetId() string {
@@ -7800,7 +8154,7 @@ type GetExecutionResponse struct {
 
 func (x *GetExecutionResponse) Reset() {
 	*x = GetExecutionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[136]
+	mi := &file_pm_v1_control_proto_msgTypes[142]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7812,7 +8166,7 @@ func (x *GetExecutionResponse) String() string {
 func (*GetExecutionResponse) ProtoMessage() {}
 
 func (x *GetExecutionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[136]
+	mi := &file_pm_v1_control_proto_msgTypes[142]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7825,7 +8179,7 @@ func (x *GetExecutionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExecutionResponse.ProtoReflect.Descriptor instead.
 func (*GetExecutionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{136}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{142}
 }
 
 func (x *GetExecutionResponse) GetExecution() *ActionExecution {
@@ -7850,7 +8204,7 @@ type ListExecutionsRequest struct {
 
 func (x *ListExecutionsRequest) Reset() {
 	*x = ListExecutionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[137]
+	mi := &file_pm_v1_control_proto_msgTypes[143]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7862,7 +8216,7 @@ func (x *ListExecutionsRequest) String() string {
 func (*ListExecutionsRequest) ProtoMessage() {}
 
 func (x *ListExecutionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[137]
+	mi := &file_pm_v1_control_proto_msgTypes[143]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7875,7 +8229,7 @@ func (x *ListExecutionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExecutionsRequest.ProtoReflect.Descriptor instead.
 func (*ListExecutionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{137}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{143}
 }
 
 func (x *ListExecutionsRequest) GetPageSize() int32 {
@@ -7917,7 +8271,7 @@ type ListExecutionsResponse struct {
 
 func (x *ListExecutionsResponse) Reset() {
 	*x = ListExecutionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[138]
+	mi := &file_pm_v1_control_proto_msgTypes[144]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7929,7 +8283,7 @@ func (x *ListExecutionsResponse) String() string {
 func (*ListExecutionsResponse) ProtoMessage() {}
 
 func (x *ListExecutionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[138]
+	mi := &file_pm_v1_control_proto_msgTypes[144]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7942,7 +8296,7 @@ func (x *ListExecutionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExecutionsResponse.ProtoReflect.Descriptor instead.
 func (*ListExecutionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{138}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{144}
 }
 
 func (x *ListExecutionsResponse) GetExecutions() []*ActionExecution {
@@ -8340,7 +8694,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"$ReorderActionSetInDefinitionResponse\x121\n" +
 	"\n" +
 	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
-	"definition\"\xd0\x01\n" +
+	"definition\"\x94\x02\n" +
 	"\vDeviceGroup\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -8349,10 +8703,16 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\x06 \x01(\tR\tcreatedBy\"P\n" +
+	"created_by\x18\x06 \x01(\tR\tcreatedBy\x12\x1d\n" +
+	"\n" +
+	"is_dynamic\x18\a \x01(\bR\tisDynamic\x12#\n" +
+	"\rdynamic_query\x18\b \x01(\tR\fdynamicQuery\"\x94\x01\n" +
 	"\x18CreateDeviceGroupRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"E\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"is_dynamic\x18\x03 \x01(\bR\tisDynamic\x12#\n" +
+	"\rdynamic_query\x18\x04 \x01(\tR\fdynamicQuery\"E\n" +
 	"\x19CreateDeviceGroupResponse\x12(\n" +
 	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"'\n" +
 	"\x15GetDeviceGroupRequest\x12\x0e\n" +
@@ -8390,7 +8750,26 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\"I\n" +
 	"\x1dRemoveDeviceFromGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"\xf2\x01\n" +
+	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"s\n" +
+	"\x1dUpdateDeviceGroupQueryRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"is_dynamic\x18\x02 \x01(\bR\tisDynamic\x12#\n" +
+	"\rdynamic_query\x18\x03 \x01(\tR\fdynamicQuery\"J\n" +
+	"\x1eUpdateDeviceGroupQueryResponse\x12(\n" +
+	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"3\n" +
+	"\x1bValidateDynamicQueryRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\"~\n" +
+	"\x1cValidateDynamicQueryResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x122\n" +
+	"\x15matching_device_count\x18\x03 \x01(\x05R\x13matchingDeviceCount\"-\n" +
+	"\x1bEvaluateDynamicGroupRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x96\x01\n" +
+	"\x1cEvaluateDynamicGroupResponse\x12(\n" +
+	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\x12#\n" +
+	"\rdevices_added\x18\x02 \x01(\x05R\fdevicesAdded\x12'\n" +
+	"\x0fdevices_removed\x18\x03 \x01(\x05R\x0edevicesRemoved\"\xf2\x01\n" +
 	"\n" +
 	"Assignment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
@@ -8521,7 +8900,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"executions\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount2\x9b,\n" +
+	"totalCount2\xc4.\n" +
 	"\x0eControlService\x122\n" +
 	"\x05Login\x12\x13.pm.v1.LoginRequest\x1a\x14.pm.v1.LoginResponse\x12G\n" +
 	"\fRefreshToken\x12\x1a.pm.v1.RefreshTokenRequest\x1a\x1b.pm.v1.RefreshTokenResponse\x12M\n" +
@@ -8579,10 +8958,13 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x0eGetDeviceGroup\x12\x1c.pm.v1.GetDeviceGroupRequest\x1a\x1d.pm.v1.GetDeviceGroupResponse\x12S\n" +
 	"\x10ListDeviceGroups\x12\x1e.pm.v1.ListDeviceGroupsRequest\x1a\x1f.pm.v1.ListDeviceGroupsResponse\x12V\n" +
 	"\x11RenameDeviceGroup\x12\x1f.pm.v1.RenameDeviceGroupRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12l\n" +
-	"\x1cUpdateDeviceGroupDescription\x12*.pm.v1.UpdateDeviceGroupDescriptionRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12V\n" +
+	"\x1cUpdateDeviceGroupDescription\x12*.pm.v1.UpdateDeviceGroupDescriptionRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12e\n" +
+	"\x16UpdateDeviceGroupQuery\x12$.pm.v1.UpdateDeviceGroupQueryRequest\x1a%.pm.v1.UpdateDeviceGroupQueryResponse\x12V\n" +
 	"\x11DeleteDeviceGroup\x12\x1f.pm.v1.DeleteDeviceGroupRequest\x1a .pm.v1.DeleteDeviceGroupResponse\x12S\n" +
 	"\x10AddDeviceToGroup\x12\x1e.pm.v1.AddDeviceToGroupRequest\x1a\x1f.pm.v1.AddDeviceToGroupResponse\x12b\n" +
-	"\x15RemoveDeviceFromGroup\x12#.pm.v1.RemoveDeviceFromGroupRequest\x1a$.pm.v1.RemoveDeviceFromGroupResponse\x12S\n" +
+	"\x15RemoveDeviceFromGroup\x12#.pm.v1.RemoveDeviceFromGroupRequest\x1a$.pm.v1.RemoveDeviceFromGroupResponse\x12_\n" +
+	"\x14ValidateDynamicQuery\x12\".pm.v1.ValidateDynamicQueryRequest\x1a#.pm.v1.ValidateDynamicQueryResponse\x12_\n" +
+	"\x14EvaluateDynamicGroup\x12\".pm.v1.EvaluateDynamicGroupRequest\x1a#.pm.v1.EvaluateDynamicGroupResponse\x12S\n" +
 	"\x10CreateAssignment\x12\x1e.pm.v1.CreateAssignmentRequest\x1a\x1f.pm.v1.CreateAssignmentResponse\x12S\n" +
 	"\x10DeleteAssignment\x12\x1e.pm.v1.DeleteAssignmentRequest\x1a\x1f.pm.v1.DeleteAssignmentResponse\x12P\n" +
 	"\x0fListAssignments\x12\x1d.pm.v1.ListAssignmentsRequest\x1a\x1e.pm.v1.ListAssignmentsResponse\x12_\n" +
@@ -8608,7 +8990,7 @@ func file_pm_v1_control_proto_rawDescGZIP() []byte {
 	return file_pm_v1_control_proto_rawDescData
 }
 
-var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 141)
+var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 147)
 var file_pm_v1_control_proto_goTypes = []any{
 	(*LoginRequest)(nil),                          // 0: pm.v1.LoginRequest
 	(*LoginResponse)(nil),                         // 1: pm.v1.LoginResponse
@@ -8723,101 +9105,107 @@ var file_pm_v1_control_proto_goTypes = []any{
 	(*AddDeviceToGroupResponse)(nil),              // 110: pm.v1.AddDeviceToGroupResponse
 	(*RemoveDeviceFromGroupRequest)(nil),          // 111: pm.v1.RemoveDeviceFromGroupRequest
 	(*RemoveDeviceFromGroupResponse)(nil),         // 112: pm.v1.RemoveDeviceFromGroupResponse
-	(*Assignment)(nil),                            // 113: pm.v1.Assignment
-	(*CreateAssignmentRequest)(nil),               // 114: pm.v1.CreateAssignmentRequest
-	(*CreateAssignmentResponse)(nil),              // 115: pm.v1.CreateAssignmentResponse
-	(*DeleteAssignmentRequest)(nil),               // 116: pm.v1.DeleteAssignmentRequest
-	(*DeleteAssignmentResponse)(nil),              // 117: pm.v1.DeleteAssignmentResponse
-	(*ListAssignmentsRequest)(nil),                // 118: pm.v1.ListAssignmentsRequest
-	(*ListAssignmentsResponse)(nil),               // 119: pm.v1.ListAssignmentsResponse
-	(*GetDeviceAssignmentsRequest)(nil),           // 120: pm.v1.GetDeviceAssignmentsRequest
-	(*GetDeviceAssignmentsResponse)(nil),          // 121: pm.v1.GetDeviceAssignmentsResponse
-	(*ActionExecution)(nil),                       // 122: pm.v1.ActionExecution
-	(*DispatchActionRequest)(nil),                 // 123: pm.v1.DispatchActionRequest
-	(*DispatchActionResponse)(nil),                // 124: pm.v1.DispatchActionResponse
-	(*DispatchToMultipleRequest)(nil),             // 125: pm.v1.DispatchToMultipleRequest
-	(*DispatchToMultipleResponse)(nil),            // 126: pm.v1.DispatchToMultipleResponse
-	(*DispatchAssignedActionsRequest)(nil),        // 127: pm.v1.DispatchAssignedActionsRequest
-	(*DispatchAssignedActionsResponse)(nil),       // 128: pm.v1.DispatchAssignedActionsResponse
-	(*DispatchActionSetRequest)(nil),              // 129: pm.v1.DispatchActionSetRequest
-	(*DispatchActionSetResponse)(nil),             // 130: pm.v1.DispatchActionSetResponse
-	(*DispatchDefinitionRequest)(nil),             // 131: pm.v1.DispatchDefinitionRequest
-	(*DispatchDefinitionResponse)(nil),            // 132: pm.v1.DispatchDefinitionResponse
-	(*DispatchToGroupRequest)(nil),                // 133: pm.v1.DispatchToGroupRequest
-	(*DispatchToGroupResponse)(nil),               // 134: pm.v1.DispatchToGroupResponse
-	(*GetExecutionRequest)(nil),                   // 135: pm.v1.GetExecutionRequest
-	(*GetExecutionResponse)(nil),                  // 136: pm.v1.GetExecutionResponse
-	(*ListExecutionsRequest)(nil),                 // 137: pm.v1.ListExecutionsRequest
-	(*ListExecutionsResponse)(nil),                // 138: pm.v1.ListExecutionsResponse
-	nil,                                           // 139: pm.v1.Device.LabelsEntry
-	nil,                                           // 140: pm.v1.ListDevicesRequest.LabelFilterEntry
-	(*timestamppb.Timestamp)(nil),                 // 141: google.protobuf.Timestamp
-	(ActionType)(0),                               // 142: pm.v1.ActionType
-	(DesiredState)(0),                             // 143: pm.v1.DesiredState
-	(*PackageParams)(nil),                         // 144: pm.v1.PackageParams
-	(*AppInstallParams)(nil),                      // 145: pm.v1.AppInstallParams
-	(*ShellParams)(nil),                           // 146: pm.v1.ShellParams
-	(*SystemdParams)(nil),                         // 147: pm.v1.SystemdParams
-	(*FileParams)(nil),                            // 148: pm.v1.FileParams
-	(ExecutionStatus)(0),                          // 149: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),                         // 150: pm.v1.CommandOutput
-	(*Action)(nil),                                // 151: pm.v1.Action
+	(*UpdateDeviceGroupQueryRequest)(nil),         // 113: pm.v1.UpdateDeviceGroupQueryRequest
+	(*UpdateDeviceGroupQueryResponse)(nil),        // 114: pm.v1.UpdateDeviceGroupQueryResponse
+	(*ValidateDynamicQueryRequest)(nil),           // 115: pm.v1.ValidateDynamicQueryRequest
+	(*ValidateDynamicQueryResponse)(nil),          // 116: pm.v1.ValidateDynamicQueryResponse
+	(*EvaluateDynamicGroupRequest)(nil),           // 117: pm.v1.EvaluateDynamicGroupRequest
+	(*EvaluateDynamicGroupResponse)(nil),          // 118: pm.v1.EvaluateDynamicGroupResponse
+	(*Assignment)(nil),                            // 119: pm.v1.Assignment
+	(*CreateAssignmentRequest)(nil),               // 120: pm.v1.CreateAssignmentRequest
+	(*CreateAssignmentResponse)(nil),              // 121: pm.v1.CreateAssignmentResponse
+	(*DeleteAssignmentRequest)(nil),               // 122: pm.v1.DeleteAssignmentRequest
+	(*DeleteAssignmentResponse)(nil),              // 123: pm.v1.DeleteAssignmentResponse
+	(*ListAssignmentsRequest)(nil),                // 124: pm.v1.ListAssignmentsRequest
+	(*ListAssignmentsResponse)(nil),               // 125: pm.v1.ListAssignmentsResponse
+	(*GetDeviceAssignmentsRequest)(nil),           // 126: pm.v1.GetDeviceAssignmentsRequest
+	(*GetDeviceAssignmentsResponse)(nil),          // 127: pm.v1.GetDeviceAssignmentsResponse
+	(*ActionExecution)(nil),                       // 128: pm.v1.ActionExecution
+	(*DispatchActionRequest)(nil),                 // 129: pm.v1.DispatchActionRequest
+	(*DispatchActionResponse)(nil),                // 130: pm.v1.DispatchActionResponse
+	(*DispatchToMultipleRequest)(nil),             // 131: pm.v1.DispatchToMultipleRequest
+	(*DispatchToMultipleResponse)(nil),            // 132: pm.v1.DispatchToMultipleResponse
+	(*DispatchAssignedActionsRequest)(nil),        // 133: pm.v1.DispatchAssignedActionsRequest
+	(*DispatchAssignedActionsResponse)(nil),       // 134: pm.v1.DispatchAssignedActionsResponse
+	(*DispatchActionSetRequest)(nil),              // 135: pm.v1.DispatchActionSetRequest
+	(*DispatchActionSetResponse)(nil),             // 136: pm.v1.DispatchActionSetResponse
+	(*DispatchDefinitionRequest)(nil),             // 137: pm.v1.DispatchDefinitionRequest
+	(*DispatchDefinitionResponse)(nil),            // 138: pm.v1.DispatchDefinitionResponse
+	(*DispatchToGroupRequest)(nil),                // 139: pm.v1.DispatchToGroupRequest
+	(*DispatchToGroupResponse)(nil),               // 140: pm.v1.DispatchToGroupResponse
+	(*GetExecutionRequest)(nil),                   // 141: pm.v1.GetExecutionRequest
+	(*GetExecutionResponse)(nil),                  // 142: pm.v1.GetExecutionResponse
+	(*ListExecutionsRequest)(nil),                 // 143: pm.v1.ListExecutionsRequest
+	(*ListExecutionsResponse)(nil),                // 144: pm.v1.ListExecutionsResponse
+	nil,                                           // 145: pm.v1.Device.LabelsEntry
+	nil,                                           // 146: pm.v1.ListDevicesRequest.LabelFilterEntry
+	(*timestamppb.Timestamp)(nil),                 // 147: google.protobuf.Timestamp
+	(ActionType)(0),                               // 148: pm.v1.ActionType
+	(DesiredState)(0),                             // 149: pm.v1.DesiredState
+	(*PackageParams)(nil),                         // 150: pm.v1.PackageParams
+	(*AppInstallParams)(nil),                      // 151: pm.v1.AppInstallParams
+	(*ShellParams)(nil),                           // 152: pm.v1.ShellParams
+	(*SystemdParams)(nil),                         // 153: pm.v1.SystemdParams
+	(*FileParams)(nil),                            // 154: pm.v1.FileParams
+	(ExecutionStatus)(0),                          // 155: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),                         // 156: pm.v1.CommandOutput
+	(*Action)(nil),                                // 157: pm.v1.Action
 }
 var file_pm_v1_control_proto_depIdxs = []int32{
-	141, // 0: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
+	147, // 0: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
 	6,   // 1: pm.v1.LoginResponse.user:type_name -> pm.v1.User
-	141, // 2: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	147, // 2: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
 	6,   // 3: pm.v1.GetCurrentUserResponse.user:type_name -> pm.v1.User
-	141, // 4: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	141, // 5: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	147, // 4: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	147, // 5: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	6,   // 6: pm.v1.CreateUserResponse.user:type_name -> pm.v1.User
 	6,   // 7: pm.v1.GetUserResponse.user:type_name -> pm.v1.User
 	6,   // 8: pm.v1.ListUsersResponse.users:type_name -> pm.v1.User
 	6,   // 9: pm.v1.UpdateUserResponse.user:type_name -> pm.v1.User
-	141, // 10: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
-	141, // 11: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	141, // 12: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
-	139, // 13: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
-	140, // 14: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
+	147, // 10: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
+	147, // 11: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	147, // 12: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
+	145, // 13: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
+	146, // 14: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
 	20,  // 15: pm.v1.ListDevicesResponse.devices:type_name -> pm.v1.Device
 	20,  // 16: pm.v1.GetDeviceResponse.device:type_name -> pm.v1.Device
 	20,  // 17: pm.v1.UpdateDeviceResponse.device:type_name -> pm.v1.Device
 	20,  // 18: pm.v1.AssignDeviceResponse.device:type_name -> pm.v1.Device
 	20,  // 19: pm.v1.UnassignDeviceResponse.device:type_name -> pm.v1.Device
-	141, // 20: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
-	141, // 21: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
-	141, // 22: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	147, // 20: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
+	147, // 21: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
+	147, // 22: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
 	34,  // 23: pm.v1.CreateTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	34,  // 24: pm.v1.ListTokensResponse.tokens:type_name -> pm.v1.RegistrationToken
 	34,  // 25: pm.v1.GetTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	34,  // 26: pm.v1.UpdateTokenResponse.token:type_name -> pm.v1.RegistrationToken
-	142, // 27: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
-	143, // 28: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
-	144, // 29: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
-	145, // 30: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
-	146, // 31: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
-	147, // 32: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
-	148, // 33: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
-	141, // 34: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	142, // 35: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
-	143, // 36: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
-	144, // 37: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
-	145, // 38: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
-	146, // 39: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
-	147, // 40: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
-	148, // 41: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
+	148, // 27: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
+	149, // 28: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
+	150, // 29: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
+	151, // 30: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
+	152, // 31: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
+	153, // 32: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
+	154, // 33: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
+	147, // 34: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	148, // 35: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
+	149, // 36: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
+	150, // 37: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
+	151, // 38: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
+	152, // 39: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
+	153, // 40: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
+	154, // 41: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
 	46,  // 42: pm.v1.CreateActionResponse.action:type_name -> pm.v1.ManagedAction
 	46,  // 43: pm.v1.GetActionResponse.action:type_name -> pm.v1.ManagedAction
-	142, // 44: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
+	148, // 44: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
 	46,  // 45: pm.v1.ListActionsResponse.actions:type_name -> pm.v1.ManagedAction
-	143, // 46: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
-	144, // 47: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
-	145, // 48: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
-	146, // 49: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
-	147, // 50: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
-	148, // 51: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
+	149, // 46: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
+	150, // 47: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
+	151, // 48: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
+	152, // 49: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
+	153, // 50: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
+	154, // 51: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
 	46,  // 52: pm.v1.UpdateActionResponse.action:type_name -> pm.v1.ManagedAction
-	141, // 53: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
+	147, // 53: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
 	59,  // 54: pm.v1.CreateActionSetResponse.set:type_name -> pm.v1.ActionSet
 	59,  // 55: pm.v1.GetActionSetResponse.set:type_name -> pm.v1.ActionSet
 	60,  // 56: pm.v1.GetActionSetResponse.members:type_name -> pm.v1.ActionSetMember
@@ -8826,7 +9214,7 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	59,  // 59: pm.v1.AddActionToSetResponse.set:type_name -> pm.v1.ActionSet
 	59,  // 60: pm.v1.RemoveActionFromSetResponse.set:type_name -> pm.v1.ActionSet
 	59,  // 61: pm.v1.ReorderActionInSetResponse.set:type_name -> pm.v1.ActionSet
-	141, // 62: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
+	147, // 62: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
 	78,  // 63: pm.v1.CreateDefinitionResponse.definition:type_name -> pm.v1.Definition
 	78,  // 64: pm.v1.GetDefinitionResponse.definition:type_name -> pm.v1.Definition
 	79,  // 65: pm.v1.GetDefinitionResponse.members:type_name -> pm.v1.DefinitionMember
@@ -8835,180 +9223,188 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	78,  // 68: pm.v1.AddActionSetToDefinitionResponse.definition:type_name -> pm.v1.Definition
 	78,  // 69: pm.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> pm.v1.Definition
 	78,  // 70: pm.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> pm.v1.Definition
-	141, // 71: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
+	147, // 71: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
 	97,  // 72: pm.v1.CreateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	97,  // 73: pm.v1.GetDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	97,  // 74: pm.v1.ListDeviceGroupsResponse.groups:type_name -> pm.v1.DeviceGroup
 	97,  // 75: pm.v1.UpdateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	97,  // 76: pm.v1.AddDeviceToGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	97,  // 77: pm.v1.RemoveDeviceFromGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	141, // 78: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
-	113, // 79: pm.v1.CreateAssignmentResponse.assignment:type_name -> pm.v1.Assignment
-	113, // 80: pm.v1.ListAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
-	46,  // 81: pm.v1.GetDeviceAssignmentsResponse.actions:type_name -> pm.v1.ManagedAction
-	59,  // 82: pm.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> pm.v1.ActionSet
-	78,  // 83: pm.v1.GetDeviceAssignmentsResponse.definitions:type_name -> pm.v1.Definition
-	142, // 84: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
-	149, // 85: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
-	150, // 86: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
-	141, // 87: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
-	141, // 88: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
-	141, // 89: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
-	151, // 90: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
-	122, // 91: pm.v1.DispatchActionResponse.execution:type_name -> pm.v1.ActionExecution
-	151, // 92: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
-	122, // 93: pm.v1.DispatchToMultipleResponse.executions:type_name -> pm.v1.ActionExecution
-	122, // 94: pm.v1.DispatchAssignedActionsResponse.executions:type_name -> pm.v1.ActionExecution
-	122, // 95: pm.v1.DispatchActionSetResponse.executions:type_name -> pm.v1.ActionExecution
-	122, // 96: pm.v1.DispatchDefinitionResponse.executions:type_name -> pm.v1.ActionExecution
-	151, // 97: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
-	122, // 98: pm.v1.DispatchToGroupResponse.executions:type_name -> pm.v1.ActionExecution
-	122, // 99: pm.v1.GetExecutionResponse.execution:type_name -> pm.v1.ActionExecution
-	149, // 100: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
-	122, // 101: pm.v1.ListExecutionsResponse.executions:type_name -> pm.v1.ActionExecution
-	0,   // 102: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
-	2,   // 103: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
-	4,   // 104: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
-	7,   // 105: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
-	9,   // 106: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
-	11,  // 107: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
-	13,  // 108: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
-	14,  // 109: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
-	15,  // 110: pm.v1.ControlService.UpdateUserRole:input_type -> pm.v1.UpdateUserRoleRequest
-	16,  // 111: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
-	18,  // 112: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
-	21,  // 113: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
-	23,  // 114: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
-	25,  // 115: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
-	26,  // 116: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
-	30,  // 117: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
-	32,  // 118: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
-	28,  // 119: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
-	35,  // 120: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
-	39,  // 121: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
-	37,  // 122: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
-	41,  // 123: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
-	42,  // 124: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
-	44,  // 125: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
-	47,  // 126: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
-	49,  // 127: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
-	51,  // 128: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
-	53,  // 129: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
-	54,  // 130: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
-	55,  // 131: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
-	57,  // 132: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
-	61,  // 133: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
-	63,  // 134: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
-	65,  // 135: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
-	67,  // 136: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
-	68,  // 137: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
-	70,  // 138: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
-	72,  // 139: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
-	74,  // 140: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
-	76,  // 141: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
-	80,  // 142: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
-	82,  // 143: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
-	84,  // 144: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
-	86,  // 145: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
-	87,  // 146: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
-	89,  // 147: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
-	91,  // 148: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
-	93,  // 149: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
-	95,  // 150: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
-	98,  // 151: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
-	100, // 152: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
-	102, // 153: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
-	104, // 154: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
-	105, // 155: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
-	107, // 156: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
-	109, // 157: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
-	111, // 158: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
-	114, // 159: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
-	116, // 160: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
-	118, // 161: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
-	120, // 162: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
-	123, // 163: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
-	125, // 164: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
-	127, // 165: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
-	129, // 166: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
-	131, // 167: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
-	133, // 168: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
-	135, // 169: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
-	137, // 170: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
-	1,   // 171: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
-	3,   // 172: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
-	5,   // 173: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
-	8,   // 174: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
-	10,  // 175: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
-	12,  // 176: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
-	17,  // 177: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
-	17,  // 178: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
-	17,  // 179: pm.v1.ControlService.UpdateUserRole:output_type -> pm.v1.UpdateUserResponse
-	17,  // 180: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
-	19,  // 181: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
-	22,  // 182: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
-	24,  // 183: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
-	27,  // 184: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	27,  // 185: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	31,  // 186: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
-	33,  // 187: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
-	29,  // 188: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
-	36,  // 189: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
-	40,  // 190: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
-	38,  // 191: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
-	43,  // 192: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
-	43,  // 193: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
-	45,  // 194: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
-	48,  // 195: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
-	50,  // 196: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
-	52,  // 197: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
-	56,  // 198: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
-	56,  // 199: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
-	56,  // 200: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
-	58,  // 201: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
-	62,  // 202: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
-	64,  // 203: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
-	66,  // 204: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
-	69,  // 205: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
-	69,  // 206: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
-	71,  // 207: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
-	73,  // 208: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
-	75,  // 209: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
-	77,  // 210: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
-	81,  // 211: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
-	83,  // 212: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
-	85,  // 213: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
-	88,  // 214: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
-	88,  // 215: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
-	90,  // 216: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
-	92,  // 217: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
-	94,  // 218: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
-	96,  // 219: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
-	99,  // 220: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
-	101, // 221: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
-	103, // 222: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
-	106, // 223: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
-	106, // 224: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
-	108, // 225: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
-	110, // 226: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
-	112, // 227: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
-	115, // 228: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
-	117, // 229: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
-	119, // 230: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
-	121, // 231: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
-	124, // 232: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
-	126, // 233: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
-	128, // 234: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
-	130, // 235: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
-	132, // 236: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
-	134, // 237: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
-	136, // 238: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
-	138, // 239: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
-	171, // [171:240] is the sub-list for method output_type
-	102, // [102:171] is the sub-list for method input_type
-	102, // [102:102] is the sub-list for extension type_name
-	102, // [102:102] is the sub-list for extension extendee
-	0,   // [0:102] is the sub-list for field type_name
+	97,  // 78: pm.v1.UpdateDeviceGroupQueryResponse.group:type_name -> pm.v1.DeviceGroup
+	97,  // 79: pm.v1.EvaluateDynamicGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	147, // 80: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
+	119, // 81: pm.v1.CreateAssignmentResponse.assignment:type_name -> pm.v1.Assignment
+	119, // 82: pm.v1.ListAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
+	46,  // 83: pm.v1.GetDeviceAssignmentsResponse.actions:type_name -> pm.v1.ManagedAction
+	59,  // 84: pm.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> pm.v1.ActionSet
+	78,  // 85: pm.v1.GetDeviceAssignmentsResponse.definitions:type_name -> pm.v1.Definition
+	148, // 86: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
+	155, // 87: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
+	156, // 88: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
+	147, // 89: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
+	147, // 90: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
+	147, // 91: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
+	157, // 92: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
+	128, // 93: pm.v1.DispatchActionResponse.execution:type_name -> pm.v1.ActionExecution
+	157, // 94: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
+	128, // 95: pm.v1.DispatchToMultipleResponse.executions:type_name -> pm.v1.ActionExecution
+	128, // 96: pm.v1.DispatchAssignedActionsResponse.executions:type_name -> pm.v1.ActionExecution
+	128, // 97: pm.v1.DispatchActionSetResponse.executions:type_name -> pm.v1.ActionExecution
+	128, // 98: pm.v1.DispatchDefinitionResponse.executions:type_name -> pm.v1.ActionExecution
+	157, // 99: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
+	128, // 100: pm.v1.DispatchToGroupResponse.executions:type_name -> pm.v1.ActionExecution
+	128, // 101: pm.v1.GetExecutionResponse.execution:type_name -> pm.v1.ActionExecution
+	155, // 102: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
+	128, // 103: pm.v1.ListExecutionsResponse.executions:type_name -> pm.v1.ActionExecution
+	0,   // 104: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
+	2,   // 105: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
+	4,   // 106: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
+	7,   // 107: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
+	9,   // 108: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
+	11,  // 109: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
+	13,  // 110: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
+	14,  // 111: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
+	15,  // 112: pm.v1.ControlService.UpdateUserRole:input_type -> pm.v1.UpdateUserRoleRequest
+	16,  // 113: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
+	18,  // 114: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
+	21,  // 115: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
+	23,  // 116: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
+	25,  // 117: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
+	26,  // 118: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
+	30,  // 119: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
+	32,  // 120: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
+	28,  // 121: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
+	35,  // 122: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
+	39,  // 123: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
+	37,  // 124: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
+	41,  // 125: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
+	42,  // 126: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
+	44,  // 127: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
+	47,  // 128: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
+	49,  // 129: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
+	51,  // 130: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
+	53,  // 131: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
+	54,  // 132: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
+	55,  // 133: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
+	57,  // 134: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
+	61,  // 135: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
+	63,  // 136: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
+	65,  // 137: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
+	67,  // 138: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
+	68,  // 139: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
+	70,  // 140: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
+	72,  // 141: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
+	74,  // 142: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
+	76,  // 143: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
+	80,  // 144: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
+	82,  // 145: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
+	84,  // 146: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
+	86,  // 147: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
+	87,  // 148: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
+	89,  // 149: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
+	91,  // 150: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
+	93,  // 151: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
+	95,  // 152: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
+	98,  // 153: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
+	100, // 154: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
+	102, // 155: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
+	104, // 156: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
+	105, // 157: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
+	113, // 158: pm.v1.ControlService.UpdateDeviceGroupQuery:input_type -> pm.v1.UpdateDeviceGroupQueryRequest
+	107, // 159: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
+	109, // 160: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
+	111, // 161: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
+	115, // 162: pm.v1.ControlService.ValidateDynamicQuery:input_type -> pm.v1.ValidateDynamicQueryRequest
+	117, // 163: pm.v1.ControlService.EvaluateDynamicGroup:input_type -> pm.v1.EvaluateDynamicGroupRequest
+	120, // 164: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
+	122, // 165: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
+	124, // 166: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
+	126, // 167: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
+	129, // 168: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
+	131, // 169: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
+	133, // 170: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
+	135, // 171: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
+	137, // 172: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
+	139, // 173: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
+	141, // 174: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
+	143, // 175: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
+	1,   // 176: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
+	3,   // 177: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
+	5,   // 178: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
+	8,   // 179: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
+	10,  // 180: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
+	12,  // 181: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
+	17,  // 182: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
+	17,  // 183: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
+	17,  // 184: pm.v1.ControlService.UpdateUserRole:output_type -> pm.v1.UpdateUserResponse
+	17,  // 185: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
+	19,  // 186: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
+	22,  // 187: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
+	24,  // 188: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
+	27,  // 189: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
+	27,  // 190: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
+	31,  // 191: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
+	33,  // 192: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
+	29,  // 193: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
+	36,  // 194: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
+	40,  // 195: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
+	38,  // 196: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
+	43,  // 197: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
+	43,  // 198: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
+	45,  // 199: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
+	48,  // 200: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
+	50,  // 201: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
+	52,  // 202: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
+	56,  // 203: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
+	56,  // 204: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
+	56,  // 205: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
+	58,  // 206: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
+	62,  // 207: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
+	64,  // 208: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
+	66,  // 209: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
+	69,  // 210: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
+	69,  // 211: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
+	71,  // 212: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
+	73,  // 213: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
+	75,  // 214: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
+	77,  // 215: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
+	81,  // 216: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
+	83,  // 217: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
+	85,  // 218: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
+	88,  // 219: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
+	88,  // 220: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
+	90,  // 221: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
+	92,  // 222: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
+	94,  // 223: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
+	96,  // 224: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
+	99,  // 225: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
+	101, // 226: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
+	103, // 227: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
+	106, // 228: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
+	106, // 229: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
+	114, // 230: pm.v1.ControlService.UpdateDeviceGroupQuery:output_type -> pm.v1.UpdateDeviceGroupQueryResponse
+	108, // 231: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
+	110, // 232: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
+	112, // 233: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
+	116, // 234: pm.v1.ControlService.ValidateDynamicQuery:output_type -> pm.v1.ValidateDynamicQueryResponse
+	118, // 235: pm.v1.ControlService.EvaluateDynamicGroup:output_type -> pm.v1.EvaluateDynamicGroupResponse
+	121, // 236: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
+	123, // 237: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
+	125, // 238: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
+	127, // 239: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
+	130, // 240: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
+	132, // 241: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
+	134, // 242: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
+	136, // 243: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
+	138, // 244: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
+	140, // 245: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
+	142, // 246: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
+	144, // 247: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
+	176, // [176:248] is the sub-list for method output_type
+	104, // [104:176] is the sub-list for method input_type
+	104, // [104:104] is the sub-list for extension type_name
+	104, // [104:104] is the sub-list for extension extendee
+	0,   // [0:104] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_control_proto_init() }
@@ -9039,15 +9435,15 @@ func file_pm_v1_control_proto_init() {
 		(*UpdateActionParamsRequest_Systemd)(nil),
 		(*UpdateActionParamsRequest_File)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[123].OneofWrappers = []any{
+	file_pm_v1_control_proto_msgTypes[129].OneofWrappers = []any{
 		(*DispatchActionRequest_ActionId)(nil),
 		(*DispatchActionRequest_InlineAction)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[125].OneofWrappers = []any{
+	file_pm_v1_control_proto_msgTypes[131].OneofWrappers = []any{
 		(*DispatchToMultipleRequest_ActionId)(nil),
 		(*DispatchToMultipleRequest_InlineAction)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[133].OneofWrappers = []any{
+	file_pm_v1_control_proto_msgTypes[139].OneofWrappers = []any{
 		(*DispatchToGroupRequest_ActionId)(nil),
 		(*DispatchToGroupRequest_ActionSetId)(nil),
 		(*DispatchToGroupRequest_DefinitionId)(nil),
@@ -9059,7 +9455,7 @@ func file_pm_v1_control_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_control_proto_rawDesc), len(file_pm_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   141,
+			NumMessages:   147,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
