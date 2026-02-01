@@ -14,17 +14,26 @@ import (
 
 // Apt implements the Manager interface for Debian-based systems.
 type Apt struct {
-	ctx context.Context
+	ctx     context.Context
+	useSudo bool
 }
 
 // NewApt creates a new Apt package manager.
+// By default, sudo is enabled for privileged operations.
 func NewApt() *Apt {
-	return &Apt{ctx: context.Background()}
+	return &Apt{ctx: context.Background(), useSudo: true}
 }
 
 // NewAptWithContext creates a new Apt package manager with context.
+// By default, sudo is enabled for privileged operations.
 func NewAptWithContext(ctx context.Context) *Apt {
-	return &Apt{ctx: ctx}
+	return &Apt{ctx: ctx, useSudo: true}
+}
+
+// WithSudo sets whether to use sudo for privileged operations.
+func (a *Apt) WithSudo(useSudo bool) *Apt {
+	a.useSudo = useSudo
+	return a
 }
 
 // Info returns apt version information.
@@ -344,7 +353,15 @@ func (a *Apt) getPinnedSet() (map[string]bool, error) {
 
 func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
 	start := time.Now()
-	c := exec.CommandContext(a.ctx, cmd, args...)
+
+	var c *exec.Cmd
+	if a.useSudo {
+		// Prepend sudo -n (non-interactive) to avoid password prompts
+		sudoArgs := append([]string{"-n", cmd}, args...)
+		c = exec.CommandContext(a.ctx, "sudo", sudoArgs...)
+	} else {
+		c = exec.CommandContext(a.ctx, cmd, args...)
+	}
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout

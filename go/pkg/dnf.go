@@ -13,17 +13,26 @@ import (
 
 // Dnf implements the Manager interface for Fedora/RHEL-based systems.
 type Dnf struct {
-	ctx context.Context
+	ctx     context.Context
+	useSudo bool
 }
 
 // NewDnf creates a new Dnf package manager.
+// By default, sudo is enabled for privileged operations.
 func NewDnf() *Dnf {
-	return &Dnf{ctx: context.Background()}
+	return &Dnf{ctx: context.Background(), useSudo: true}
 }
 
 // NewDnfWithContext creates a new Dnf package manager with context.
+// By default, sudo is enabled for privileged operations.
 func NewDnfWithContext(ctx context.Context) *Dnf {
-	return &Dnf{ctx: ctx}
+	return &Dnf{ctx: ctx, useSudo: true}
+}
+
+// WithSudo sets whether to use sudo for privileged operations.
+func (d *Dnf) WithSudo(useSudo bool) *Dnf {
+	d.useSudo = useSudo
+	return d
 }
 
 // Info returns dnf version information.
@@ -414,7 +423,15 @@ func (d *Dnf) getPinnedSet() (map[string]bool, error) {
 
 func (d *Dnf) run(args ...string) (*CommandResult, error) {
 	start := time.Now()
-	c := exec.CommandContext(d.ctx, "dnf", args...)
+
+	var c *exec.Cmd
+	if d.useSudo {
+		// Prepend sudo -n (non-interactive) to avoid password prompts
+		sudoArgs := append([]string{"-n", "dnf"}, args...)
+		c = exec.CommandContext(d.ctx, "sudo", sudoArgs...)
+	} else {
+		c = exec.CommandContext(d.ctx, "dnf", args...)
+	}
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout
