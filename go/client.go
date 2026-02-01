@@ -353,6 +353,26 @@ func (c *Client) SendQueryResult(ctx context.Context, result *pm.OSQueryResult) 
 	return stream.Send(msg)
 }
 
+// SendSecurityAlert sends a security alert to the server for audit logging.
+func (c *Client) SendSecurityAlert(ctx context.Context, alert *pm.SecurityAlert) error {
+	c.mu.RLock()
+	stream := c.stream
+	c.mu.RUnlock()
+
+	if stream == nil {
+		return errors.New("not connected")
+	}
+
+	msg := &pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_SecurityAlert{
+			SecurityAlert: alert,
+		},
+	}
+
+	return stream.Send(msg)
+}
+
 // Receive receives the next message from the server.
 func (c *Client) Receive(ctx context.Context) (*pm.ServerMessage, error) {
 	c.mu.RLock()
