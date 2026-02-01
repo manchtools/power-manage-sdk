@@ -221,6 +221,16 @@ type StreamHandler interface {
 	OnError(ctx context.Context, err *pm.Error) error
 }
 
+// StreamingHandler extends StreamHandler with streaming action support.
+// Handlers that implement this interface will receive a callback to stream
+// output chunks during action execution.
+type StreamingHandler interface {
+	StreamHandler
+	// OnActionWithStreaming is called when the server dispatches an action.
+	// The sendChunk callback can be used to stream output chunks during execution.
+	OnActionWithStreaming(ctx context.Context, action *pm.Action, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error)
+}
+
 // Connect establishes a bidirectional stream with the server.
 func (c *Client) Connect(ctx context.Context) error {
 	c.mu.Lock()
@@ -297,6 +307,26 @@ func (c *Client) SendActionResult(ctx context.Context, result *pm.ActionResult) 
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_ActionResult{
 			ActionResult: result,
+		},
+	}
+
+	return stream.Send(msg)
+}
+
+// SendOutputChunk sends an output chunk during action execution.
+func (c *Client) SendOutputChunk(ctx context.Context, chunk *pm.OutputChunk) error {
+	c.mu.RLock()
+	stream := c.stream
+	c.mu.RUnlock()
+
+	if stream == nil {
+		return errors.New("not connected")
+	}
+
+	msg := &pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_OutputChunk{
+			OutputChunk: chunk,
 		},
 	}
 
@@ -429,7 +459,20 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 				}
 
 			case *pm.ServerMessage_Action:
-				actionResult, err := handler.OnAction(ctx, p.Action.Action)
+				var actionResult *pm.ActionResult
+				var err error
+
+				// Check if handler supports streaming
+				if streamingHandler, ok := handler.(StreamingHandler); ok {
+					// Create a callback that sends output chunks
+					sendChunk := func(chunk *pm.OutputChunk) error {
+						return c.SendOutputChunk(ctx, chunk)
+					}
+					actionResult, err = streamingHandler.OnActionWithStreaming(ctx, p.Action.Action, sendChunk)
+				} else {
+					actionResult, err = handler.OnAction(ctx, p.Action.Action)
+				}
+
 				if err != nil {
 					return fmt.Errorf("handle action: %w", err)
 				}
