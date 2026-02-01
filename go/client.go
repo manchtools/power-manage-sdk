@@ -172,9 +172,14 @@ func WithH2C() ClientOption {
 				AllowHTTP: true,
 				// Use a custom DialTLSContext that returns a plain TCP connection
 				DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-					var d net.Dialer
+					d := net.Dialer{
+						Timeout:   30 * time.Second,
+						KeepAlive: 30 * time.Second,
+					}
 					return d.DialContext(ctx, network, addr)
 				},
+				// Disable connection pooling to avoid stale connections
+				DisableCompression: true,
 			},
 		}
 	}}
@@ -345,9 +350,11 @@ func (c *Client) Close() error {
 		return nil
 	}
 
-	err := c.stream.CloseRequest()
+	// Close both request and response sides of the stream
+	c.stream.CloseRequest()
+	c.stream.CloseResponse()
 	c.stream = nil
-	return err
+	return nil
 }
 
 // Run connects to the server and processes messages using the provided handler.
@@ -383,50 +390,70 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		}
 	}()
 
+	// Channel to receive messages from blocking Receive call
+	type receiveResult struct {
+		msg *pm.ServerMessage
+		err error
+	}
+	msgCh := make(chan receiveResult, 1)
+
+	// Start receive goroutine
+	go func() {
+		for {
+			msg, err := c.Receive(ctx)
+			select {
+			case msgCh <- receiveResult{msg, err}:
+			case <-ctx.Done():
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	// Process incoming messages
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
-		}
-
-		msg, err := c.Receive(ctx)
-		if err != nil {
-			return fmt.Errorf("receive: %w", err)
-		}
-
-		switch p := msg.Payload.(type) {
-		case *pm.ServerMessage_Welcome:
-			if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
-				return fmt.Errorf("handle welcome: %w", err)
+		case result := <-msgCh:
+			if result.err != nil {
+				return fmt.Errorf("receive: %w", result.err)
 			}
 
-		case *pm.ServerMessage_Action:
-			result, err := handler.OnAction(ctx, p.Action.Action)
-			if err != nil {
-				return fmt.Errorf("handle action: %w", err)
-			}
-			if result != nil {
-				if err := c.SendActionResult(ctx, result); err != nil {
-					return fmt.Errorf("send action result: %w", err)
+			switch p := result.msg.Payload.(type) {
+			case *pm.ServerMessage_Welcome:
+				if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
+					return fmt.Errorf("handle welcome: %w", err)
 				}
-			}
 
-		case *pm.ServerMessage_Query:
-			result, err := handler.OnQuery(ctx, p.Query)
-			if err != nil {
-				return fmt.Errorf("handle query: %w", err)
-			}
-			if result != nil {
-				if err := c.SendQueryResult(ctx, result); err != nil {
-					return fmt.Errorf("send query result: %w", err)
+			case *pm.ServerMessage_Action:
+				actionResult, err := handler.OnAction(ctx, p.Action.Action)
+				if err != nil {
+					return fmt.Errorf("handle action: %w", err)
 				}
-			}
+				if actionResult != nil {
+					if err := c.SendActionResult(ctx, actionResult); err != nil {
+						return fmt.Errorf("send action result: %w", err)
+					}
+				}
 
-		case *pm.ServerMessage_Error:
-			if err := handler.OnError(ctx, p.Error); err != nil {
-				return fmt.Errorf("handle error: %w", err)
+			case *pm.ServerMessage_Query:
+				queryResult, err := handler.OnQuery(ctx, p.Query)
+				if err != nil {
+					return fmt.Errorf("handle query: %w", err)
+				}
+				if queryResult != nil {
+					if err := c.SendQueryResult(ctx, queryResult); err != nil {
+						return fmt.Errorf("send query result: %w", err)
+					}
+				}
+
+			case *pm.ServerMessage_Error:
+				if err := handler.OnError(ctx, p.Error); err != nil {
+					return fmt.Errorf("handle error: %w", err)
+				}
 			}
 		}
 	}
