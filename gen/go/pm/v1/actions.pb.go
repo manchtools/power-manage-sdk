@@ -27,8 +27,9 @@ type ActionType int32
 const (
 	ActionType_ACTION_TYPE_UNSPECIFIED ActionType = 0
 	// Package management (1-99)
-	ActionType_ACTION_TYPE_PACKAGE ActionType = 1 // Generic package (apt/dnf/pacman based on distro)
-	ActionType_ACTION_TYPE_UPDATE  ActionType = 2 // System-wide package update (respects pinning)
+	ActionType_ACTION_TYPE_PACKAGE    ActionType = 1 // Generic package (apt/dnf/pacman based on distro)
+	ActionType_ACTION_TYPE_UPDATE     ActionType = 2 // System-wide package update (respects pinning)
+	ActionType_ACTION_TYPE_REPOSITORY ActionType = 3 // External repository configuration
 	// Application installation (100-199)
 	ActionType_ACTION_TYPE_APP_IMAGE ActionType = 100 // AppImage
 	ActionType_ACTION_TYPE_DEB       ActionType = 101 // Direct .deb
@@ -47,6 +48,7 @@ var (
 		0:   "ACTION_TYPE_UNSPECIFIED",
 		1:   "ACTION_TYPE_PACKAGE",
 		2:   "ACTION_TYPE_UPDATE",
+		3:   "ACTION_TYPE_REPOSITORY",
 		100: "ACTION_TYPE_APP_IMAGE",
 		101: "ACTION_TYPE_DEB",
 		102: "ACTION_TYPE_RPM",
@@ -58,6 +60,7 @@ var (
 		"ACTION_TYPE_UNSPECIFIED": 0,
 		"ACTION_TYPE_PACKAGE":     1,
 		"ACTION_TYPE_UPDATE":      2,
+		"ACTION_TYPE_REPOSITORY":  3,
 		"ACTION_TYPE_APP_IMAGE":   100,
 		"ACTION_TYPE_DEB":         101,
 		"ACTION_TYPE_RPM":         102,
@@ -169,6 +172,7 @@ type Action struct {
 	//	*Action_Systemd
 	//	*Action_File
 	//	*Action_Update
+	//	*Action_Repository
 	Params        isAction_Params `protobuf_oneof:"params"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -300,6 +304,15 @@ func (x *Action) GetUpdate() *UpdateParams {
 	return nil
 }
 
+func (x *Action) GetRepository() *RepositoryParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Repository); ok {
+			return x.Repository
+		}
+	}
+	return nil
+}
+
 type isAction_Params interface {
 	isAction_Params()
 }
@@ -328,6 +341,10 @@ type Action_Update struct {
 	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof"`
 }
 
+type Action_Repository struct {
+	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -339,6 +356,8 @@ func (*Action_Systemd) isAction_Params() {}
 func (*Action_File) isAction_Params() {}
 
 func (*Action_Update) isAction_Params() {}
+
+func (*Action_Repository) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -894,6 +913,502 @@ func (x *UpdateParams) GetRebootIfRequired() bool {
 	return false
 }
 
+// RepositoryParams configures external package repositories.
+// Each package manager has its own configuration format.
+type RepositoryParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Repository name/identifier (used for file naming)
+	// @gotags: validate:"required,min=1,max=64,alphanum"
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=64,alphanum"`
+	// APT repository configuration (Debian/Ubuntu)
+	// @gotags: validate:"omitempty"
+	Apt *AptRepository `protobuf:"bytes,10,opt,name=apt,proto3" json:"apt,omitempty" validate:"omitempty"`
+	// DNF/YUM repository configuration (Fedora/RHEL)
+	// @gotags: validate:"omitempty"
+	Dnf *DnfRepository `protobuf:"bytes,11,opt,name=dnf,proto3" json:"dnf,omitempty" validate:"omitempty"`
+	// Pacman repository configuration (Arch Linux)
+	// @gotags: validate:"omitempty"
+	Pacman *PacmanRepository `protobuf:"bytes,12,opt,name=pacman,proto3" json:"pacman,omitempty" validate:"omitempty"`
+	// Zypper repository configuration (openSUSE)
+	// @gotags: validate:"omitempty"
+	Zypper        *ZypperRepository `protobuf:"bytes,13,opt,name=zypper,proto3" json:"zypper,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RepositoryParams) Reset() {
+	*x = RepositoryParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RepositoryParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RepositoryParams) ProtoMessage() {}
+
+func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RepositoryParams.ProtoReflect.Descriptor instead.
+func (*RepositoryParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RepositoryParams) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *RepositoryParams) GetApt() *AptRepository {
+	if x != nil {
+		return x.Apt
+	}
+	return nil
+}
+
+func (x *RepositoryParams) GetDnf() *DnfRepository {
+	if x != nil {
+		return x.Dnf
+	}
+	return nil
+}
+
+func (x *RepositoryParams) GetPacman() *PacmanRepository {
+	if x != nil {
+		return x.Pacman
+	}
+	return nil
+}
+
+func (x *RepositoryParams) GetZypper() *ZypperRepository {
+	if x != nil {
+		return x.Zypper
+	}
+	return nil
+}
+
+// AptRepository configures a Debian/Ubuntu APT repository.
+type AptRepository struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Repository URL (e.g., "https://packages.example.com/apt")
+	// @gotags: validate:"required_without=Disabled,omitempty,url"
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty" validate:"required_without=Disabled,omitempty,url"`
+	// Distribution codename (e.g., "jammy", "bookworm")
+	// @gotags: validate:"omitempty,max=64"
+	Distribution string `protobuf:"bytes,2,opt,name=distribution,proto3" json:"distribution,omitempty" validate:"omitempty,max=64"`
+	// Components (e.g., "main", "contrib", "non-free")
+	// @gotags: validate:"omitempty,dive,max=64"
+	Components []string `protobuf:"bytes,3,rep,name=components,proto3" json:"components,omitempty" validate:"omitempty,dive,max=64"`
+	// GPG key URL for repository signing
+	// @gotags: validate:"omitempty,url"
+	GpgKeyUrl string `protobuf:"bytes,4,opt,name=gpg_key_url,json=gpgKeyUrl,proto3" json:"gpg_key_url,omitempty" validate:"omitempty,url"`
+	// GPG key content (ASCII-armored, alternative to gpg_key_url)
+	// @gotags: validate:"omitempty,max=65536"
+	GpgKey string `protobuf:"bytes,5,opt,name=gpg_key,json=gpgKey,proto3" json:"gpg_key,omitempty" validate:"omitempty,max=65536"`
+	// Whether to use signed-by (modern) or trusted=yes (legacy, less secure)
+	// @gotags: validate:"omitempty"
+	Trusted bool `protobuf:"varint,6,opt,name=trusted,proto3" json:"trusted,omitempty" validate:"omitempty"`
+	// Architecture filter (e.g., "amd64", "arm64")
+	// @gotags: validate:"omitempty,max=32"
+	Arch string `protobuf:"bytes,7,opt,name=arch,proto3" json:"arch,omitempty" validate:"omitempty,max=32"`
+	// Set to true to disable/skip this repository manager
+	// @gotags: validate:"omitempty"
+	Disabled      bool `protobuf:"varint,8,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AptRepository) Reset() {
+	*x = AptRepository{}
+	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AptRepository) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AptRepository) ProtoMessage() {}
+
+func (x *AptRepository) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AptRepository.ProtoReflect.Descriptor instead.
+func (*AptRepository) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *AptRepository) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *AptRepository) GetDistribution() string {
+	if x != nil {
+		return x.Distribution
+	}
+	return ""
+}
+
+func (x *AptRepository) GetComponents() []string {
+	if x != nil {
+		return x.Components
+	}
+	return nil
+}
+
+func (x *AptRepository) GetGpgKeyUrl() string {
+	if x != nil {
+		return x.GpgKeyUrl
+	}
+	return ""
+}
+
+func (x *AptRepository) GetGpgKey() string {
+	if x != nil {
+		return x.GpgKey
+	}
+	return ""
+}
+
+func (x *AptRepository) GetTrusted() bool {
+	if x != nil {
+		return x.Trusted
+	}
+	return false
+}
+
+func (x *AptRepository) GetArch() string {
+	if x != nil {
+		return x.Arch
+	}
+	return ""
+}
+
+func (x *AptRepository) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
+}
+
+// DnfRepository configures a Fedora/RHEL DNF/YUM repository.
+type DnfRepository struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Base URL for the repository
+	// @gotags: validate:"required_without=Disabled,omitempty,url"
+	Baseurl string `protobuf:"bytes,1,opt,name=baseurl,proto3" json:"baseurl,omitempty" validate:"required_without=Disabled,omitempty,url"`
+	// Repository description
+	// @gotags: validate:"omitempty,max=255"
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=255"`
+	// Whether the repository is enabled (default true)
+	// @gotags: validate:"omitempty"
+	Enabled bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty" validate:"omitempty"`
+	// Whether to check GPG signatures
+	// @gotags: validate:"omitempty"
+	Gpgcheck bool `protobuf:"varint,4,opt,name=gpgcheck,proto3" json:"gpgcheck,omitempty" validate:"omitempty"`
+	// GPG key URL
+	// @gotags: validate:"omitempty,url"
+	Gpgkey string `protobuf:"bytes,5,opt,name=gpgkey,proto3" json:"gpgkey,omitempty" validate:"omitempty,url"`
+	// Module hotfixes (for modular content)
+	// @gotags: validate:"omitempty"
+	ModuleHotfixes bool `protobuf:"varint,6,opt,name=module_hotfixes,json=moduleHotfixes,proto3" json:"module_hotfixes,omitempty" validate:"omitempty"`
+	// Set to true to disable/skip this repository manager
+	// @gotags: validate:"omitempty"
+	Disabled      bool `protobuf:"varint,7,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DnfRepository) Reset() {
+	*x = DnfRepository{}
+	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnfRepository) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnfRepository) ProtoMessage() {}
+
+func (x *DnfRepository) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DnfRepository.ProtoReflect.Descriptor instead.
+func (*DnfRepository) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DnfRepository) GetBaseurl() string {
+	if x != nil {
+		return x.Baseurl
+	}
+	return ""
+}
+
+func (x *DnfRepository) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *DnfRepository) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *DnfRepository) GetGpgcheck() bool {
+	if x != nil {
+		return x.Gpgcheck
+	}
+	return false
+}
+
+func (x *DnfRepository) GetGpgkey() string {
+	if x != nil {
+		return x.Gpgkey
+	}
+	return ""
+}
+
+func (x *DnfRepository) GetModuleHotfixes() bool {
+	if x != nil {
+		return x.ModuleHotfixes
+	}
+	return false
+}
+
+func (x *DnfRepository) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
+}
+
+// PacmanRepository configures an Arch Linux pacman repository.
+type PacmanRepository struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Server URL (can include $repo and $arch variables)
+	// @gotags: validate:"required_without=Disabled,omitempty,url"
+	Server string `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty" validate:"required_without=Disabled,omitempty,url"`
+	// SigLevel (e.g., "Optional TrustAll", "Required DatabaseOptional")
+	// @gotags: validate:"omitempty,max=128"
+	SigLevel string `protobuf:"bytes,2,opt,name=sig_level,json=sigLevel,proto3" json:"sig_level,omitempty" validate:"omitempty,max=128"`
+	// Set to true to disable/skip this repository manager
+	// @gotags: validate:"omitempty"
+	Disabled      bool `protobuf:"varint,3,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PacmanRepository) Reset() {
+	*x = PacmanRepository{}
+	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PacmanRepository) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PacmanRepository) ProtoMessage() {}
+
+func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PacmanRepository.ProtoReflect.Descriptor instead.
+func (*PacmanRepository) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *PacmanRepository) GetServer() string {
+	if x != nil {
+		return x.Server
+	}
+	return ""
+}
+
+func (x *PacmanRepository) GetSigLevel() string {
+	if x != nil {
+		return x.SigLevel
+	}
+	return ""
+}
+
+func (x *PacmanRepository) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
+}
+
+// ZypperRepository configures an openSUSE zypper repository.
+type ZypperRepository struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Repository URL
+	// @gotags: validate:"required_without=Disabled,omitempty,url"
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty" validate:"required_without=Disabled,omitempty,url"`
+	// Repository description/alias
+	// @gotags: validate:"omitempty,max=255"
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=255"`
+	// Whether to enable the repository (default true)
+	// @gotags: validate:"omitempty"
+	Enabled bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty" validate:"omitempty"`
+	// Whether to auto-refresh the repository
+	// @gotags: validate:"omitempty"
+	Autorefresh bool `protobuf:"varint,4,opt,name=autorefresh,proto3" json:"autorefresh,omitempty" validate:"omitempty"`
+	// Whether to check GPG signatures
+	// @gotags: validate:"omitempty"
+	Gpgcheck bool `protobuf:"varint,5,opt,name=gpgcheck,proto3" json:"gpgcheck,omitempty" validate:"omitempty"`
+	// GPG key URL
+	// @gotags: validate:"omitempty,url"
+	Gpgkey string `protobuf:"bytes,6,opt,name=gpgkey,proto3" json:"gpgkey,omitempty" validate:"omitempty,url"`
+	// Repository type (e.g., "rpm-md", "yast2")
+	// @gotags: validate:"omitempty,max=32"
+	Type string `protobuf:"bytes,7,opt,name=type,proto3" json:"type,omitempty" validate:"omitempty,max=32"`
+	// Set to true to disable/skip this repository manager
+	// @gotags: validate:"omitempty"
+	Disabled      bool `protobuf:"varint,8,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ZypperRepository) Reset() {
+	*x = ZypperRepository{}
+	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ZypperRepository) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ZypperRepository) ProtoMessage() {}
+
+func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ZypperRepository.ProtoReflect.Descriptor instead.
+func (*ZypperRepository) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ZypperRepository) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *ZypperRepository) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ZypperRepository) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *ZypperRepository) GetAutorefresh() bool {
+	if x != nil {
+		return x.Autorefresh
+	}
+	return false
+}
+
+func (x *ZypperRepository) GetGpgcheck() bool {
+	if x != nil {
+		return x.Gpgcheck
+	}
+	return false
+}
+
+func (x *ZypperRepository) GetGpgkey() string {
+	if x != nil {
+		return x.Gpgkey
+	}
+	return ""
+}
+
+func (x *ZypperRepository) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ZypperRepository) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
+}
+
 type ActionResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -914,7 +1429,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_pm_v1_actions_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -926,7 +1441,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_pm_v1_actions_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -939,7 +1454,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -988,7 +1503,7 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x85\x04\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xc0\x04\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -1001,7 +1516,10 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
 	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
 	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06updateB\b\n" +
+	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\n" +
+	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repositoryB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -1050,7 +1568,46 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
 	"autoremove\x18\x02 \x01(\bR\n" +
 	"autoremove\x12,\n" +
-	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"\x90\x02\n" +
+	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"\xd8\x01\n" +
+	"\x10RepositoryParams\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
+	"\x03apt\x18\n" +
+	" \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
+	"\x03dnf\x18\v \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
+	"\x06pacman\x18\f \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
+	"\x06zypper\x18\r \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
+	"\rAptRepository\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
+	"\fdistribution\x18\x02 \x01(\tR\fdistribution\x12\x1e\n" +
+	"\n" +
+	"components\x18\x03 \x03(\tR\n" +
+	"components\x12\x1e\n" +
+	"\vgpg_key_url\x18\x04 \x01(\tR\tgpgKeyUrl\x12\x17\n" +
+	"\agpg_key\x18\x05 \x01(\tR\x06gpgKey\x12\x18\n" +
+	"\atrusted\x18\x06 \x01(\bR\atrusted\x12\x12\n" +
+	"\x04arch\x18\a \x01(\tR\x04arch\x12\x1a\n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xde\x01\n" +
+	"\rDnfRepository\x12\x18\n" +
+	"\abaseurl\x18\x01 \x01(\tR\abaseurl\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\x12\x1a\n" +
+	"\bgpgcheck\x18\x04 \x01(\bR\bgpgcheck\x12\x16\n" +
+	"\x06gpgkey\x18\x05 \x01(\tR\x06gpgkey\x12'\n" +
+	"\x0fmodule_hotfixes\x18\x06 \x01(\bR\x0emoduleHotfixes\x12\x1a\n" +
+	"\bdisabled\x18\a \x01(\bR\bdisabled\"c\n" +
+	"\x10PacmanRepository\x12\x16\n" +
+	"\x06server\x18\x01 \x01(\tR\x06server\x12\x1b\n" +
+	"\tsig_level\x18\x02 \x01(\tR\bsigLevel\x12\x1a\n" +
+	"\bdisabled\x18\x03 \x01(\bR\bdisabled\"\xe6\x01\n" +
+	"\x10ZypperRepository\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\x12 \n" +
+	"\vautorefresh\x18\x04 \x01(\bR\vautorefresh\x12\x1a\n" +
+	"\bgpgcheck\x18\x05 \x01(\bR\bgpgcheck\x12\x16\n" +
+	"\x06gpgkey\x18\x06 \x01(\tR\x06gpgkey\x12\x12\n" +
+	"\x04type\x18\a \x01(\tR\x04type\x12\x1a\n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\x90\x02\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -1058,12 +1615,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
-	"durationMs*\xe8\x01\n" +
+	"durationMs*\x84\x02\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13ACTION_TYPE_PACKAGE\x10\x01\x12\x16\n" +
-	"\x12ACTION_TYPE_UPDATE\x10\x02\x12\x19\n" +
+	"\x12ACTION_TYPE_UPDATE\x10\x02\x12\x1a\n" +
+	"\x16ACTION_TYPE_REPOSITORY\x10\x03\x12\x19\n" +
 	"\x15ACTION_TYPE_APP_IMAGE\x10d\x12\x13\n" +
 	"\x0fACTION_TYPE_DEB\x10e\x12\x13\n" +
 	"\x0fACTION_TYPE_RPM\x10f\x12\x16\n" +
@@ -1089,7 +1647,7 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
@@ -1101,18 +1659,23 @@ var file_pm_v1_actions_proto_goTypes = []any{
 	(*SystemdParams)(nil),         // 7: pm.v1.SystemdParams
 	(*FileParams)(nil),            // 8: pm.v1.FileParams
 	(*UpdateParams)(nil),          // 9: pm.v1.UpdateParams
-	(*ActionResult)(nil),          // 10: pm.v1.ActionResult
-	nil,                           // 11: pm.v1.ShellParams.EnvironmentEntry
-	(*ActionId)(nil),              // 12: pm.v1.ActionId
-	(DesiredState)(0),             // 13: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 14: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 15: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
+	(*RepositoryParams)(nil),      // 10: pm.v1.RepositoryParams
+	(*AptRepository)(nil),         // 11: pm.v1.AptRepository
+	(*DnfRepository)(nil),         // 12: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),      // 13: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),      // 14: pm.v1.ZypperRepository
+	(*ActionResult)(nil),          // 15: pm.v1.ActionResult
+	nil,                           // 16: pm.v1.ShellParams.EnvironmentEntry
+	(*ActionId)(nil),              // 17: pm.v1.ActionId
+	(DesiredState)(0),             // 18: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 19: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 20: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	12, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	17, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	13, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	18, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
 	3,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
 	4,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
 	5,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
@@ -1120,17 +1683,22 @@ var file_pm_v1_actions_proto_depIdxs = []int32{
 	7,  // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
 	8,  // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
 	9,  // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	11, // 10: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 11: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	12, // 12: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	14, // 13: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	15, // 14: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	16, // 15: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	10, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	16, // 11: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 12: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	11, // 13: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	12, // 14: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	13, // 15: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	14, // 16: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	17, // 17: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	19, // 18: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	20, // 19: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	21, // 20: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -1146,6 +1714,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Systemd)(nil),
 		(*Action_File)(nil),
 		(*Action_Update)(nil),
+		(*Action_Repository)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1153,7 +1722,7 @@ func file_pm_v1_actions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

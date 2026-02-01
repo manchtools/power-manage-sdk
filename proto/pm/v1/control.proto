@@ -317,6 +317,7 @@ message ManagedAction {
     SystemdParams systemd = 13;
     FileParams file = 14;
     UpdateParams update = 15;
+    RepositoryParams repository = 16;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -351,6 +352,8 @@ message CreateActionRequest {
     FileParams file = 14;
     // @gotags: validate:"omitempty"
     UpdateParams update = 15;
+    // @gotags: validate:"omitempty"
+    RepositoryParams repository = 16;
   }
 }
 
@@ -418,6 +421,8 @@ message UpdateActionParamsRequest {
     FileParams file = 14;
     // @gotags: validate:"omitempty"
     UpdateParams update = 15;
+    // @gotags: validate:"omitempty"
+    RepositoryParams repository = 16;
   }
 }
 
