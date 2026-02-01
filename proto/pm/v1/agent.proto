@@ -36,8 +36,33 @@ message AgentMessage {
     // @gotags: validate:"omitempty"
     ActionResult action_result = 20;
     // @gotags: validate:"omitempty"
+    OutputChunk output_chunk = 21;
+    // @gotags: validate:"omitempty"
     OSQueryResult query_result = 30;
   }
+}
+
+// ============================================================================
+// Output Streaming
+// ============================================================================
+
+// Output stream type for stdout/stderr differentiation
+enum OutputStreamType {
+  OUTPUT_STREAM_TYPE_UNSPECIFIED = 0;
+  OUTPUT_STREAM_TYPE_STDOUT = 1;
+  OUTPUT_STREAM_TYPE_STDERR = 2;
+}
+
+// Output chunk sent during action execution (Agent -> Server)
+message OutputChunk {
+  // @gotags: validate:"required,ulid"
+  string execution_id = 1;
+  // @gotags: validate:"required,ne=0"
+  OutputStreamType stream = 2;
+  // @gotags: validate:"required,max=65536"
+  bytes data = 3;
+  // @gotags: validate:"gte=0"
+  int64 sequence = 4;
 }
 
 message Hello {
