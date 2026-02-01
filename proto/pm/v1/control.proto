@@ -316,10 +316,12 @@ message ManagedAction {
     ShellParams shell = 12;
     SystemdParams systemd = 13;
     FileParams file = 14;
+    UpdateParams update = 15;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
   string created_by = 8;
+  ActionSchedule schedule = 9;
 }
 
 message CreateActionRequest {
@@ -333,6 +335,8 @@ message CreateActionRequest {
   DesiredState desired_state = 4;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 5;
+  // @gotags: validate:"omitempty"
+  ActionSchedule schedule = 6;
 
   oneof params {
     // @gotags: validate:"omitempty"
@@ -345,6 +349,8 @@ message CreateActionRequest {
     SystemdParams systemd = 13;
     // @gotags: validate:"omitempty"
     FileParams file = 14;
+    // @gotags: validate:"omitempty"
+    UpdateParams update = 15;
   }
 }
 
@@ -396,6 +402,8 @@ message UpdateActionParamsRequest {
   DesiredState desired_state = 2;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 3;
+  // @gotags: validate:"omitempty"
+  ActionSchedule schedule = 4;
 
   oneof params {
     // @gotags: validate:"omitempty"
@@ -408,6 +416,8 @@ message UpdateActionParamsRequest {
     SystemdParams systemd = 13;
     // @gotags: validate:"omitempty"
     FileParams file = 14;
+    // @gotags: validate:"omitempty"
+    UpdateParams update = 15;
   }
 }
 
@@ -872,12 +882,13 @@ message ActionExecution {
   ActionType type = 4;
   ExecutionStatus status = 5;
   string error = 6;
-  CommandOutput output = 7;
+  CommandOutput output = 7;  // Final output (set on completion)
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp dispatched_at = 9;
   google.protobuf.Timestamp completed_at = 10;
   int64 duration_ms = 11;
   string created_by = 12;
+  CommandOutput live_output = 13;  // Streaming output received so far (useful when status is RUNNING)
 }
 
 message DispatchActionRequest {
