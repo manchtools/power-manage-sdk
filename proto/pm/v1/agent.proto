@@ -39,6 +39,8 @@ message AgentMessage {
     OutputChunk output_chunk = 21;
     // @gotags: validate:"omitempty"
     OSQueryResult query_result = 30;
+    // @gotags: validate:"omitempty"
+    SecurityAlert security_alert = 40;
   }
 }
 
@@ -85,6 +87,32 @@ message Heartbeat {
   float memory_percent = 3;
   // @gotags: validate:"omitempty,gte=0,lte=100"
   float disk_percent = 4;
+}
+
+// ============================================================================
+// Security Alerts
+// ============================================================================
+
+// Security alert types for audit logging
+enum SecurityAlertType {
+  SECURITY_ALERT_TYPE_UNSPECIFIED = 0;
+  // Someone attempted to reassign the agent to a different server
+  SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT = 1;
+  // Credential file tampering detected
+  SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING = 2;
+  // Invalid certificate presented
+  SECURITY_ALERT_TYPE_INVALID_CERTIFICATE = 3;
+}
+
+// Security alert sent from agent to server for audit logging
+message SecurityAlert {
+  // @gotags: validate:"required,ne=0"
+  SecurityAlertType type = 1;
+  // @gotags: validate:"required,min=1,max=1024"
+  string message = 2;
+  // Additional context as key-value pairs
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+  map<string, string> details = 3;
 }
 
 // ============================================================================

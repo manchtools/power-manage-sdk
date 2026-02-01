@@ -72,6 +72,62 @@ func (OutputStreamType) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
+// Security alert types for audit logging
+type SecurityAlertType int32
+
+const (
+	SecurityAlertType_SECURITY_ALERT_TYPE_UNSPECIFIED SecurityAlertType = 0
+	// Someone attempted to reassign the agent to a different server
+	SecurityAlertType_SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT SecurityAlertType = 1
+	// Credential file tampering detected
+	SecurityAlertType_SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING SecurityAlertType = 2
+	// Invalid certificate presented
+	SecurityAlertType_SECURITY_ALERT_TYPE_INVALID_CERTIFICATE SecurityAlertType = 3
+)
+
+// Enum value maps for SecurityAlertType.
+var (
+	SecurityAlertType_name = map[int32]string{
+		0: "SECURITY_ALERT_TYPE_UNSPECIFIED",
+		1: "SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT",
+		2: "SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING",
+		3: "SECURITY_ALERT_TYPE_INVALID_CERTIFICATE",
+	}
+	SecurityAlertType_value = map[string]int32{
+		"SECURITY_ALERT_TYPE_UNSPECIFIED":                 0,
+		"SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT": 1,
+		"SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING":        2,
+		"SECURITY_ALERT_TYPE_INVALID_CERTIFICATE":         3,
+	}
+)
+
+func (x SecurityAlertType) Enum() *SecurityAlertType {
+	p := new(SecurityAlertType)
+	*p = x
+	return p
+}
+
+func (x SecurityAlertType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SecurityAlertType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_agent_proto_enumTypes[1].Descriptor()
+}
+
+func (SecurityAlertType) Type() protoreflect.EnumType {
+	return &file_pm_v1_agent_proto_enumTypes[1]
+}
+
+func (x SecurityAlertType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SecurityAlertType.Descriptor instead.
+func (SecurityAlertType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{1}
+}
+
 type OSQueryOp int32
 
 const (
@@ -123,11 +179,11 @@ func (x OSQueryOp) String() string {
 }
 
 func (OSQueryOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[1].Descriptor()
+	return file_pm_v1_agent_proto_enumTypes[2].Descriptor()
 }
 
 func (OSQueryOp) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[1]
+	return &file_pm_v1_agent_proto_enumTypes[2]
 }
 
 func (x OSQueryOp) Number() protoreflect.EnumNumber {
@@ -136,7 +192,7 @@ func (x OSQueryOp) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OSQueryOp.Descriptor instead.
 func (OSQueryOp) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
 type AgentMessage struct {
@@ -150,6 +206,7 @@ type AgentMessage struct {
 	//	*AgentMessage_ActionResult
 	//	*AgentMessage_OutputChunk
 	//	*AgentMessage_QueryResult
+	//	*AgentMessage_SecurityAlert
 	Payload       isAgentMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -244,6 +301,15 @@ func (x *AgentMessage) GetQueryResult() *OSQueryResult {
 	return nil
 }
 
+func (x *AgentMessage) GetSecurityAlert() *SecurityAlert {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_SecurityAlert); ok {
+			return x.SecurityAlert
+		}
+	}
+	return nil
+}
+
 type isAgentMessage_Payload interface {
 	isAgentMessage_Payload()
 }
@@ -273,6 +339,11 @@ type AgentMessage_QueryResult struct {
 	QueryResult *OSQueryResult `protobuf:"bytes,30,opt,name=query_result,json=queryResult,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_SecurityAlert struct {
+	// @gotags: validate:"omitempty"
+	SecurityAlert *SecurityAlert `protobuf:"bytes,40,opt,name=security_alert,json=securityAlert,proto3,oneof" validate:"omitempty"`
+}
+
 func (*AgentMessage_Hello) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Heartbeat) isAgentMessage_Payload() {}
@@ -282,6 +353,8 @@ func (*AgentMessage_ActionResult) isAgentMessage_Payload() {}
 func (*AgentMessage_OutputChunk) isAgentMessage_Payload() {}
 
 func (*AgentMessage_QueryResult) isAgentMessage_Payload() {}
+
+func (*AgentMessage_SecurityAlert) isAgentMessage_Payload() {}
 
 // Output chunk sent during action execution (Agent -> Server)
 type OutputChunk struct {
@@ -500,6 +573,71 @@ func (x *Heartbeat) GetDiskPercent() float32 {
 	return 0
 }
 
+// Security alert sent from agent to server for audit logging
+type SecurityAlert struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ne=0"
+	Type SecurityAlertType `protobuf:"varint,1,opt,name=type,proto3,enum=pm.v1.SecurityAlertType" json:"type,omitempty" validate:"required,ne=0"`
+	// @gotags: validate:"required,min=1,max=1024"
+	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty" validate:"required,min=1,max=1024"`
+	// Additional context as key-value pairs
+	// @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+	Details       map[string]string `protobuf:"bytes,3,rep,name=details,proto3" json:"details,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=64,endkeys,max=1024"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecurityAlert) Reset() {
+	*x = SecurityAlert{}
+	mi := &file_pm_v1_agent_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecurityAlert) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecurityAlert) ProtoMessage() {}
+
+func (x *SecurityAlert) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecurityAlert.ProtoReflect.Descriptor instead.
+func (*SecurityAlert) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SecurityAlert) GetType() SecurityAlertType {
+	if x != nil {
+		return x.Type
+	}
+	return SecurityAlertType_SECURITY_ALERT_TYPE_UNSPECIFIED
+}
+
+func (x *SecurityAlert) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SecurityAlert) GetDetails() map[string]string {
+	if x != nil {
+		return x.Details
+	}
+	return nil
+}
+
 type ServerMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -517,7 +655,7 @@ type ServerMessage struct {
 
 func (x *ServerMessage) Reset() {
 	*x = ServerMessage{}
-	mi := &file_pm_v1_agent_proto_msgTypes[4]
+	mi := &file_pm_v1_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +667,7 @@ func (x *ServerMessage) String() string {
 func (*ServerMessage) ProtoMessage() {}
 
 func (x *ServerMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[4]
+	mi := &file_pm_v1_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +680,7 @@ func (x *ServerMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerMessage.ProtoReflect.Descriptor instead.
 func (*ServerMessage) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ServerMessage) GetId() string {
@@ -639,7 +777,7 @@ type Welcome struct {
 
 func (x *Welcome) Reset() {
 	*x = Welcome{}
-	mi := &file_pm_v1_agent_proto_msgTypes[5]
+	mi := &file_pm_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -651,7 +789,7 @@ func (x *Welcome) String() string {
 func (*Welcome) ProtoMessage() {}
 
 func (x *Welcome) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[5]
+	mi := &file_pm_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +802,7 @@ func (x *Welcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Welcome.ProtoReflect.Descriptor instead.
 func (*Welcome) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Welcome) GetServerVersion() string {
@@ -691,7 +829,7 @@ type ActionDispatch struct {
 
 func (x *ActionDispatch) Reset() {
 	*x = ActionDispatch{}
-	mi := &file_pm_v1_agent_proto_msgTypes[6]
+	mi := &file_pm_v1_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -703,7 +841,7 @@ func (x *ActionDispatch) String() string {
 func (*ActionDispatch) ProtoMessage() {}
 
 func (x *ActionDispatch) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[6]
+	mi := &file_pm_v1_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +854,7 @@ func (x *ActionDispatch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionDispatch.ProtoReflect.Descriptor instead.
 func (*ActionDispatch) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ActionDispatch) GetAction() *Action {
@@ -738,7 +876,7 @@ type Error struct {
 
 func (x *Error) Reset() {
 	*x = Error{}
-	mi := &file_pm_v1_agent_proto_msgTypes[7]
+	mi := &file_pm_v1_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -750,7 +888,7 @@ func (x *Error) String() string {
 func (*Error) ProtoMessage() {}
 
 func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[7]
+	mi := &file_pm_v1_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -763,7 +901,7 @@ func (x *Error) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Error.ProtoReflect.Descriptor instead.
 func (*Error) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Error) GetCode() string {
@@ -798,7 +936,7 @@ type OSQuery struct {
 
 func (x *OSQuery) Reset() {
 	*x = OSQuery{}
-	mi := &file_pm_v1_agent_proto_msgTypes[8]
+	mi := &file_pm_v1_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -810,7 +948,7 @@ func (x *OSQuery) String() string {
 func (*OSQuery) ProtoMessage() {}
 
 func (x *OSQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[8]
+	mi := &file_pm_v1_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -823,7 +961,7 @@ func (x *OSQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQuery.ProtoReflect.Descriptor instead.
 func (*OSQuery) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *OSQuery) GetQueryId() string {
@@ -875,7 +1013,7 @@ type OSQueryCondition struct {
 
 func (x *OSQueryCondition) Reset() {
 	*x = OSQueryCondition{}
-	mi := &file_pm_v1_agent_proto_msgTypes[9]
+	mi := &file_pm_v1_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +1025,7 @@ func (x *OSQueryCondition) String() string {
 func (*OSQueryCondition) ProtoMessage() {}
 
 func (x *OSQueryCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[9]
+	mi := &file_pm_v1_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,7 +1038,7 @@ func (x *OSQueryCondition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryCondition.ProtoReflect.Descriptor instead.
 func (*OSQueryCondition) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *OSQueryCondition) GetColumn() string {
@@ -940,7 +1078,7 @@ type OSQueryResult struct {
 
 func (x *OSQueryResult) Reset() {
 	*x = OSQueryResult{}
-	mi := &file_pm_v1_agent_proto_msgTypes[10]
+	mi := &file_pm_v1_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -952,7 +1090,7 @@ func (x *OSQueryResult) String() string {
 func (*OSQueryResult) ProtoMessage() {}
 
 func (x *OSQueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[10]
+	mi := &file_pm_v1_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -965,7 +1103,7 @@ func (x *OSQueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryResult.ProtoReflect.Descriptor instead.
 func (*OSQueryResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *OSQueryResult) GetQueryId() string {
@@ -1006,7 +1144,7 @@ type OSQueryRow struct {
 
 func (x *OSQueryRow) Reset() {
 	*x = OSQueryRow{}
-	mi := &file_pm_v1_agent_proto_msgTypes[11]
+	mi := &file_pm_v1_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1018,7 +1156,7 @@ func (x *OSQueryRow) String() string {
 func (*OSQueryRow) ProtoMessage() {}
 
 func (x *OSQueryRow) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[11]
+	mi := &file_pm_v1_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1031,7 +1169,7 @@ func (x *OSQueryRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryRow.ProtoReflect.Descriptor instead.
 func (*OSQueryRow) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{11}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *OSQueryRow) GetData() map[string]string {
@@ -1059,7 +1197,7 @@ type RegisterRequest struct {
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[12]
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1071,7 +1209,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[12]
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1084,7 +1222,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *RegisterRequest) GetToken() string {
@@ -1133,7 +1271,7 @@ type RegisterResponse struct {
 
 func (x *RegisterResponse) Reset() {
 	*x = RegisterResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1145,7 +1283,7 @@ func (x *RegisterResponse) String() string {
 func (*RegisterResponse) ProtoMessage() {}
 
 func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1158,7 +1296,7 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RegisterResponse) GetDeviceId() *DeviceId {
@@ -1193,7 +1331,7 @@ var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xb1\x02\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xf0\x02\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
@@ -1201,7 +1339,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\theartbeat\x18\v \x01(\v2\x10.pm.v1.HeartbeatH\x00R\theartbeat\x12:\n" +
 	"\raction_result\x18\x14 \x01(\v2\x13.pm.v1.ActionResultH\x00R\factionResult\x127\n" +
 	"\foutput_chunk\x18\x15 \x01(\v2\x12.pm.v1.OutputChunkH\x00R\voutputChunk\x129\n" +
-	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResultB\t\n" +
+	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResult\x12=\n" +
+	"\x0esecurity_alert\x18( \x01(\v2\x14.pm.v1.SecurityAlertH\x00R\rsecurityAlertB\t\n" +
 	"\apayload\"\x91\x01\n" +
 	"\vOutputChunk\x12!\n" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12/\n" +
@@ -1219,7 +1358,14 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\vcpu_percent\x18\x02 \x01(\x02R\n" +
 	"cpuPercent\x12%\n" +
 	"\x0ememory_percent\x18\x03 \x01(\x02R\rmemoryPercent\x12!\n" +
-	"\fdisk_percent\x18\x04 \x01(\x02R\vdiskPercent\"\xd5\x01\n" +
+	"\fdisk_percent\x18\x04 \x01(\x02R\vdiskPercent\"\xd0\x01\n" +
+	"\rSecurityAlert\x12,\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x18.pm.v1.SecurityAlertTypeR\x04type\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12;\n" +
+	"\adetails\x18\x03 \x03(\v2!.pm.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
+	"\fDetailsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd5\x01\n" +
 	"\rServerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\awelcome\x18\n" +
@@ -1271,7 +1417,12 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x10OutputStreamType\x12\"\n" +
 	"\x1eOUTPUT_STREAM_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19OUTPUT_STREAM_TYPE_STDOUT\x10\x01\x12\x1d\n" +
-	"\x19OUTPUT_STREAM_TYPE_STDERR\x10\x02*\xcc\x01\n" +
+	"\x19OUTPUT_STREAM_TYPE_STDERR\x10\x02*\xc8\x01\n" +
+	"\x11SecurityAlertType\x12#\n" +
+	"\x1fSECURITY_ALERT_TYPE_UNSPECIFIED\x10\x00\x123\n" +
+	"/SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT\x10\x01\x12,\n" +
+	"(SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING\x10\x02\x12+\n" +
+	"'SECURITY_ALERT_TYPE_INVALID_CERTIFICATE\x10\x03*\xcc\x01\n" +
 	"\tOSQueryOp\x12\x1b\n" +
 	"\x17OS_QUERY_OP_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eOS_QUERY_OP_EQ\x10\x01\x12\x12\n" +
@@ -1298,60 +1449,66 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 	return file_pm_v1_agent_proto_rawDescData
 }
 
-var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),       // 0: pm.v1.OutputStreamType
-	(OSQueryOp)(0),              // 1: pm.v1.OSQueryOp
-	(*AgentMessage)(nil),        // 2: pm.v1.AgentMessage
-	(*OutputChunk)(nil),         // 3: pm.v1.OutputChunk
-	(*Hello)(nil),               // 4: pm.v1.Hello
-	(*Heartbeat)(nil),           // 5: pm.v1.Heartbeat
-	(*ServerMessage)(nil),       // 6: pm.v1.ServerMessage
-	(*Welcome)(nil),             // 7: pm.v1.Welcome
-	(*ActionDispatch)(nil),      // 8: pm.v1.ActionDispatch
-	(*Error)(nil),               // 9: pm.v1.Error
-	(*OSQuery)(nil),             // 10: pm.v1.OSQuery
-	(*OSQueryCondition)(nil),    // 11: pm.v1.OSQueryCondition
-	(*OSQueryResult)(nil),       // 12: pm.v1.OSQueryResult
-	(*OSQueryRow)(nil),          // 13: pm.v1.OSQueryRow
-	(*RegisterRequest)(nil),     // 14: pm.v1.RegisterRequest
-	(*RegisterResponse)(nil),    // 15: pm.v1.RegisterResponse
-	nil,                         // 16: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),        // 17: pm.v1.ActionResult
-	(*DeviceId)(nil),            // 18: pm.v1.DeviceId
-	(*durationpb.Duration)(nil), // 19: google.protobuf.Duration
-	(*Action)(nil),              // 20: pm.v1.Action
+	(SecurityAlertType)(0),      // 1: pm.v1.SecurityAlertType
+	(OSQueryOp)(0),              // 2: pm.v1.OSQueryOp
+	(*AgentMessage)(nil),        // 3: pm.v1.AgentMessage
+	(*OutputChunk)(nil),         // 4: pm.v1.OutputChunk
+	(*Hello)(nil),               // 5: pm.v1.Hello
+	(*Heartbeat)(nil),           // 6: pm.v1.Heartbeat
+	(*SecurityAlert)(nil),       // 7: pm.v1.SecurityAlert
+	(*ServerMessage)(nil),       // 8: pm.v1.ServerMessage
+	(*Welcome)(nil),             // 9: pm.v1.Welcome
+	(*ActionDispatch)(nil),      // 10: pm.v1.ActionDispatch
+	(*Error)(nil),               // 11: pm.v1.Error
+	(*OSQuery)(nil),             // 12: pm.v1.OSQuery
+	(*OSQueryCondition)(nil),    // 13: pm.v1.OSQueryCondition
+	(*OSQueryResult)(nil),       // 14: pm.v1.OSQueryResult
+	(*OSQueryRow)(nil),          // 15: pm.v1.OSQueryRow
+	(*RegisterRequest)(nil),     // 16: pm.v1.RegisterRequest
+	(*RegisterResponse)(nil),    // 17: pm.v1.RegisterResponse
+	nil,                         // 18: pm.v1.SecurityAlert.DetailsEntry
+	nil,                         // 19: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),        // 20: pm.v1.ActionResult
+	(*DeviceId)(nil),            // 21: pm.v1.DeviceId
+	(*durationpb.Duration)(nil), // 22: google.protobuf.Duration
+	(*Action)(nil),              // 23: pm.v1.Action
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
-	4,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
-	5,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	17, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
-	3,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
-	12, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
-	0,  // 5: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	18, // 6: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	19, // 7: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	7,  // 8: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	8,  // 9: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	10, // 10: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	9,  // 11: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	19, // 12: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	20, // 13: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
-	11, // 14: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
-	1,  // 15: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	13, // 16: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	16, // 17: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	18, // 18: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
-	2,  // 19: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	14, // 20: pm.v1.AgentService.Register:input_type -> pm.v1.RegisterRequest
-	6,  // 21: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	15, // 22: pm.v1.AgentService.Register:output_type -> pm.v1.RegisterResponse
-	21, // [21:23] is the sub-list for method output_type
-	19, // [19:21] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
+	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
+	20, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
+	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
+	7,  // 5: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
+	0,  // 6: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
+	21, // 7: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	22, // 8: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 9: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
+	18, // 10: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	9,  // 11: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	10, // 12: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	12, // 13: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	11, // 14: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	22, // 15: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	23, // 16: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	13, // 17: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	2,  // 18: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
+	15, // 19: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	19, // 20: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	21, // 21: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
+	3,  // 22: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	16, // 23: pm.v1.AgentService.Register:input_type -> pm.v1.RegisterRequest
+	8,  // 24: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	17, // 25: pm.v1.AgentService.Register:output_type -> pm.v1.RegisterResponse
+	24, // [24:26] is the sub-list for method output_type
+	22, // [22:24] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -1367,8 +1524,9 @@ func file_pm_v1_agent_proto_init() {
 		(*AgentMessage_ActionResult)(nil),
 		(*AgentMessage_OutputChunk)(nil),
 		(*AgentMessage_QueryResult)(nil),
+		(*AgentMessage_SecurityAlert)(nil),
 	}
-	file_pm_v1_agent_proto_msgTypes[4].OneofWrappers = []any{
+	file_pm_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
 		(*ServerMessage_Action)(nil),
 		(*ServerMessage_Query)(nil),
@@ -1379,8 +1537,8 @@ func file_pm_v1_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   15,
+			NumEnums:      3,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
