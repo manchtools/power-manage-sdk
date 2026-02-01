@@ -40,3 +40,15 @@ func IsDnf() bool {
 	_, err := os.Stat("/usr/bin/dnf")
 	return err == nil
 }
+
+// IsPacman returns true if pacman is available.
+func IsPacman() bool {
+	_, err := os.Stat("/usr/bin/pacman")
+	return err == nil
+}
+
+// IsZypper returns true if zypper is available.
+func IsZypper() bool {
+	_, err := os.Stat("/usr/bin/zypper")
+	return err == nil
+}

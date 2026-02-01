@@ -422,14 +422,26 @@ func (x *ActionSchedule) GetSkipIfUnchanged() bool {
 
 type PackageParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,min=1,max=255"
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=255"`
+	// Generic package name (used if manager-specific names not provided)
+	// If set, this name is used for all package managers.
+	// @gotags: validate:"omitempty,max=255"
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"omitempty,max=255"`
 	// @gotags: validate:"omitempty,max=128"
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty" validate:"omitempty,max=128"`
 	// @gotags: validate:"omitempty"
 	AllowDowngrade bool `protobuf:"varint,3,opt,name=allow_downgrade,json=allowDowngrade,proto3" json:"allow_downgrade,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty"
-	Pin           bool `protobuf:"varint,4,opt,name=pin,proto3" json:"pin,omitempty" validate:"omitempty"`
+	Pin bool `protobuf:"varint,4,opt,name=pin,proto3" json:"pin,omitempty" validate:"omitempty"`
+	// Manager-specific package names (override generic name)
+	// If a manager-specific name is empty, that manager will be skipped.
+	// @gotags: validate:"omitempty,max=255"
+	AptName string `protobuf:"bytes,10,opt,name=apt_name,json=aptName,proto3" json:"apt_name,omitempty" validate:"omitempty,max=255"` // Debian/Ubuntu (apt/apt-get)
+	// @gotags: validate:"omitempty,max=255"
+	DnfName string `protobuf:"bytes,11,opt,name=dnf_name,json=dnfName,proto3" json:"dnf_name,omitempty" validate:"omitempty,max=255"` // Fedora/RHEL (dnf/yum)
+	// @gotags: validate:"omitempty,max=255"
+	PacmanName string `protobuf:"bytes,12,opt,name=pacman_name,json=pacmanName,proto3" json:"pacman_name,omitempty" validate:"omitempty,max=255"` // Arch Linux (pacman)
+	// @gotags: validate:"omitempty,max=255"
+	ZypperName    string `protobuf:"bytes,13,opt,name=zypper_name,json=zypperName,proto3" json:"zypper_name,omitempty" validate:"omitempty,max=255"` // openSUSE (zypper)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -490,6 +502,34 @@ func (x *PackageParams) GetPin() bool {
 		return x.Pin
 	}
 	return false
+}
+
+func (x *PackageParams) GetAptName() string {
+	if x != nil {
+		return x.AptName
+	}
+	return ""
+}
+
+func (x *PackageParams) GetDnfName() string {
+	if x != nil {
+		return x.DnfName
+	}
+	return ""
+}
+
+func (x *PackageParams) GetPacmanName() string {
+	if x != nil {
+		return x.PacmanName
+	}
+	return ""
+}
+
+func (x *PackageParams) GetZypperName() string {
+	if x != nil {
+		return x.ZypperName
+	}
+	return ""
 }
 
 type AppInstallParams struct {
@@ -967,12 +1007,19 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
 	"\x0einterval_hours\x18\x02 \x01(\x05R\rintervalHours\x12\"\n" +
 	"\rrun_on_assign\x18\x03 \x01(\bR\vrunOnAssign\x12*\n" +
-	"\x11skip_if_unchanged\x18\x04 \x01(\bR\x0fskipIfUnchanged\"x\n" +
+	"\x11skip_if_unchanged\x18\x04 \x01(\bR\x0fskipIfUnchanged\"\xf0\x01\n" +
 	"\rPackageParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12'\n" +
 	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12\x10\n" +
-	"\x03pin\x18\x04 \x01(\bR\x03pin\"p\n" +
+	"\x03pin\x18\x04 \x01(\bR\x03pin\x12\x19\n" +
+	"\bapt_name\x18\n" +
+	" \x01(\tR\aaptName\x12\x19\n" +
+	"\bdnf_name\x18\v \x01(\tR\adnfName\x12\x1f\n" +
+	"\vpacman_name\x18\f \x01(\tR\n" +
+	"pacmanName\x12\x1f\n" +
+	"\vzypper_name\x18\r \x01(\tR\n" +
+	"zypperName\"p\n" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
