@@ -145,6 +145,9 @@ message Device {
   google.protobuf.Timestamp cert_expires_at = 7;
   map<string, string> labels = 8;
   string assigned_user_id = 9;  // User this device is assigned to (empty = unassigned)
+  // Sync interval in minutes (0 = use default of 30 minutes)
+  // Agent will pull assigned actions at this interval
+  int32 sync_interval_minutes = 10;
 }
 
 message ListDevicesRequest {
@@ -219,6 +222,14 @@ message UnassignDeviceRequest {
 
 message UnassignDeviceResponse {
   Device device = 1;
+}
+
+// Update device sync interval
+message SetDeviceSyncIntervalRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"gte=0,lte=1440"
+  int32 sync_interval_minutes = 2;  // 0 = use default (30 min), max 24 hours
 }
 
 // ============================================================================
@@ -545,7 +556,7 @@ message ReorderActionInSetRequest {
   string set_id = 1;
   // @gotags: validate:"required,ulid"
   string action_id = 2;
-  // @gotags: validate:"required,gte=0"
+  // @gotags: validate:"gte=0"
   int32 new_order = 3;
 }
 
@@ -661,7 +672,7 @@ message ReorderActionSetInDefinitionRequest {
   string definition_id = 1;
   // @gotags: validate:"required,ulid"
   string action_set_id = 2;
-  // @gotags: validate:"required,gte=0"
+  // @gotags: validate:"gte=0"
   int32 new_order = 3;
 }
 
@@ -682,6 +693,9 @@ message DeviceGroup {
   string created_by = 6;
   bool is_dynamic = 7;  // True if membership is determined by dynamic_query
   string dynamic_query = 8;  // Query for dynamic membership (verbose syntax)
+  // Sync interval in minutes for devices in this group (0 = use device/default)
+  // Takes precedence over device-level setting
+  int32 sync_interval_minutes = 9;
 }
 
 message CreateDeviceGroupRequest {
@@ -805,6 +819,14 @@ message EvaluateDynamicGroupResponse {
   DeviceGroup group = 1;
   int32 devices_added = 2;
   int32 devices_removed = 3;
+}
+
+// Update device group sync interval
+message SetDeviceGroupSyncIntervalRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"gte=0,lte=1440"
+  int32 sync_interval_minutes = 2;  // 0 = use device/default, max 24 hours
 }
 
 // ============================================================================
@@ -1030,6 +1052,7 @@ service ControlService {
   rpc RemoveDeviceLabel(RemoveDeviceLabelRequest) returns (UpdateDeviceResponse);
   rpc AssignDevice(AssignDeviceRequest) returns (AssignDeviceResponse);
   rpc UnassignDevice(UnassignDeviceRequest) returns (UnassignDeviceResponse);
+  rpc SetDeviceSyncInterval(SetDeviceSyncIntervalRequest) returns (UpdateDeviceResponse);
   rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse);
 
   // Registration Tokens
@@ -1083,6 +1106,7 @@ service ControlService {
   rpc RemoveDeviceFromGroup(RemoveDeviceFromGroupRequest) returns (RemoveDeviceFromGroupResponse);
   rpc ValidateDynamicQuery(ValidateDynamicQueryRequest) returns (ValidateDynamicQueryResponse);
   rpc EvaluateDynamicGroup(EvaluateDynamicGroupRequest) returns (EvaluateDynamicGroupResponse);
+  rpc SetDeviceGroupSyncInterval(SetDeviceGroupSyncIntervalRequest) returns (UpdateDeviceGroupResponse);
 
   // Assignments
   rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse);

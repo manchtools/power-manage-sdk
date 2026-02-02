@@ -18,6 +18,10 @@ service AgentService {
 
   // One-time agent registration
   rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Sync assigned actions (called by agent after successful connection)
+  // Returns all actions currently assigned to the device for local storage
+  rpc SyncActions(SyncActionsRequest) returns (SyncActionsResponse);
 }
 
 // ============================================================================
@@ -254,4 +258,23 @@ message RegisterResponse {
   // Signed device certificate (PEM) - private key stays on agent
   // @gotags: validate:"required"
   bytes certificate = 4;
+}
+
+// ============================================================================
+// Action Sync (Agent pulls assigned actions from server)
+// ============================================================================
+
+message SyncActionsRequest {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+}
+
+message SyncActionsResponse {
+  // All actions currently assigned to this device
+  // The agent should replace its local action store with this list
+  repeated Action actions = 1;
+  // Effective sync interval in minutes for this device
+  // Agent should use this for the next sync interval
+  // 0 means use default (30 minutes)
+  int32 sync_interval_minutes = 2;
 }

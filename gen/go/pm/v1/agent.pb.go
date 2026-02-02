@@ -1327,6 +1327,108 @@ func (x *RegisterResponse) GetCertificate() []byte {
 	return nil
 }
 
+type SyncActionsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required"
+	DeviceId      *DeviceId `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncActionsRequest) Reset() {
+	*x = SyncActionsRequest{}
+	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncActionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncActionsRequest) ProtoMessage() {}
+
+func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncActionsRequest.ProtoReflect.Descriptor instead.
+func (*SyncActionsRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
+	if x != nil {
+		return x.DeviceId
+	}
+	return nil
+}
+
+type SyncActionsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// All actions currently assigned to this device
+	// The agent should replace its local action store with this list
+	Actions []*Action `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
+	// Effective sync interval in minutes for this device
+	// Agent should use this for the next sync interval
+	// 0 means use default (30 minutes)
+	SyncIntervalMinutes int32 `protobuf:"varint,2,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SyncActionsResponse) Reset() {
+	*x = SyncActionsResponse{}
+	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncActionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncActionsResponse) ProtoMessage() {}
+
+func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncActionsResponse.ProtoReflect.Descriptor instead.
+func (*SyncActionsResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SyncActionsResponse) GetActions() []*Action {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
+func (x *SyncActionsResponse) GetSyncIntervalMinutes() int32 {
+	if x != nil {
+		return x.SyncIntervalMinutes
+	}
+	return 0
+}
+
 var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
@@ -1413,7 +1515,12 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"auth_token\x18\x02 \x01(\tR\tauthToken\x12\x17\n" +
 	"\aca_cert\x18\x03 \x01(\fR\x06caCert\x12 \n" +
-	"\vcertificate\x18\x04 \x01(\fR\vcertificate*t\n" +
+	"\vcertificate\x18\x04 \x01(\fR\vcertificate\"B\n" +
+	"\x12SyncActionsRequest\x12,\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\"r\n" +
+	"\x13SyncActionsResponse\x12'\n" +
+	"\aactions\x18\x01 \x03(\v2\r.pm.v1.ActionR\aactions\x122\n" +
+	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes*t\n" +
 	"\x10OutputStreamType\x12\"\n" +
 	"\x1eOUTPUT_STREAM_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19OUTPUT_STREAM_TYPE_STDOUT\x10\x01\x12\x1d\n" +
@@ -1432,10 +1539,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eOS_QUERY_OP_GE\x10\x05\x12\x12\n" +
 	"\x0eOS_QUERY_OP_LE\x10\x06\x12\x14\n" +
 	"\x10OS_QUERY_OP_LIKE\x10\a\x12\x14\n" +
-	"\x10OS_QUERY_OP_GLOB\x10\b2\x84\x01\n" +
+	"\x10OS_QUERY_OP_GLOB\x10\b2\xca\x01\n" +
 	"\fAgentService\x127\n" +
 	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12;\n" +
-	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponse\x12D\n" +
+	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_agent_proto_rawDescOnce sync.Once
@@ -1450,7 +1558,7 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),       // 0: pm.v1.OutputStreamType
 	(SecurityAlertType)(0),      // 1: pm.v1.SecurityAlertType
@@ -1470,45 +1578,51 @@ var file_pm_v1_agent_proto_goTypes = []any{
 	(*OSQueryRow)(nil),          // 15: pm.v1.OSQueryRow
 	(*RegisterRequest)(nil),     // 16: pm.v1.RegisterRequest
 	(*RegisterResponse)(nil),    // 17: pm.v1.RegisterResponse
-	nil,                         // 18: pm.v1.SecurityAlert.DetailsEntry
-	nil,                         // 19: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),        // 20: pm.v1.ActionResult
-	(*DeviceId)(nil),            // 21: pm.v1.DeviceId
-	(*durationpb.Duration)(nil), // 22: google.protobuf.Duration
-	(*Action)(nil),              // 23: pm.v1.Action
+	(*SyncActionsRequest)(nil),  // 18: pm.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil), // 19: pm.v1.SyncActionsResponse
+	nil,                         // 20: pm.v1.SecurityAlert.DetailsEntry
+	nil,                         // 21: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),        // 22: pm.v1.ActionResult
+	(*DeviceId)(nil),            // 23: pm.v1.DeviceId
+	(*durationpb.Duration)(nil), // 24: google.protobuf.Duration
+	(*Action)(nil),              // 25: pm.v1.Action
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
 	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	20, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	22, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
 	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
 	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
 	7,  // 5: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
 	0,  // 6: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	21, // 7: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	22, // 8: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	23, // 7: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	24, // 8: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
 	1,  // 9: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	18, // 10: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	20, // 10: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
 	9,  // 11: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
 	10, // 12: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
 	12, // 13: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
 	11, // 14: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	22, // 15: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	23, // 16: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	24, // 15: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	25, // 16: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
 	13, // 17: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
 	2,  // 18: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
 	15, // 19: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	19, // 20: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	21, // 21: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
-	3,  // 22: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	16, // 23: pm.v1.AgentService.Register:input_type -> pm.v1.RegisterRequest
-	8,  // 24: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	17, // 25: pm.v1.AgentService.Register:output_type -> pm.v1.RegisterResponse
-	24, // [24:26] is the sub-list for method output_type
-	22, // [22:24] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	21, // 20: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	23, // 21: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
+	23, // 22: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	25, // 23: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 24: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	16, // 25: pm.v1.AgentService.Register:input_type -> pm.v1.RegisterRequest
+	18, // 26: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	8,  // 27: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	17, // 28: pm.v1.AgentService.Register:output_type -> pm.v1.RegisterResponse
+	19, // 29: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	27, // [27:30] is the sub-list for method output_type
+	24, // [24:27] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -1538,7 +1652,7 @@ func file_pm_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
