@@ -26,6 +26,16 @@ func DetectWithContext(ctx context.Context) (Manager, error) {
 		return NewDnfWithContext(ctx), nil
 	}
 
+	// Check for pacman (Arch Linux)
+	if _, err := os.Stat("/usr/bin/pacman"); err == nil {
+		return NewPacmanWithContext(ctx), nil
+	}
+
+	// Check for zypper (openSUSE/SLES)
+	if _, err := os.Stat("/usr/bin/zypper"); err == nil {
+		return NewZypperWithContext(ctx), nil
+	}
+
 	return nil, ErrNoPackageManager
 }
 
@@ -50,5 +60,11 @@ func IsPacman() bool {
 // IsZypper returns true if zypper is available.
 func IsZypper() bool {
 	_, err := os.Stat("/usr/bin/zypper")
+	return err == nil
+}
+
+// IsFlatpak returns true if flatpak is available.
+func IsFlatpak() bool {
+	_, err := os.Stat("/usr/bin/flatpak")
 	return err == nil
 }
