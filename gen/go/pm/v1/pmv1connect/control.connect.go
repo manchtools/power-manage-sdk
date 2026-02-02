@@ -82,6 +82,9 @@ const (
 	// ControlServiceUnassignDeviceProcedure is the fully-qualified name of the ControlService's
 	// UnassignDevice RPC.
 	ControlServiceUnassignDeviceProcedure = "/pm.v1.ControlService/UnassignDevice"
+	// ControlServiceSetDeviceSyncIntervalProcedure is the fully-qualified name of the ControlService's
+	// SetDeviceSyncInterval RPC.
+	ControlServiceSetDeviceSyncIntervalProcedure = "/pm.v1.ControlService/SetDeviceSyncInterval"
 	// ControlServiceDeleteDeviceProcedure is the fully-qualified name of the ControlService's
 	// DeleteDevice RPC.
 	ControlServiceDeleteDeviceProcedure = "/pm.v1.ControlService/DeleteDevice"
@@ -210,6 +213,9 @@ const (
 	// ControlServiceEvaluateDynamicGroupProcedure is the fully-qualified name of the ControlService's
 	// EvaluateDynamicGroup RPC.
 	ControlServiceEvaluateDynamicGroupProcedure = "/pm.v1.ControlService/EvaluateDynamicGroup"
+	// ControlServiceSetDeviceGroupSyncIntervalProcedure is the fully-qualified name of the
+	// ControlService's SetDeviceGroupSyncInterval RPC.
+	ControlServiceSetDeviceGroupSyncIntervalProcedure = "/pm.v1.ControlService/SetDeviceGroupSyncInterval"
 	// ControlServiceCreateAssignmentProcedure is the fully-qualified name of the ControlService's
 	// CreateAssignment RPC.
 	ControlServiceCreateAssignmentProcedure = "/pm.v1.ControlService/CreateAssignment"
@@ -270,6 +276,7 @@ type ControlServiceClient interface {
 	RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error)
 	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
+	SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
 	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
@@ -318,6 +325,7 @@ type ControlServiceClient interface {
 	RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error)
 	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
+	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -445,6 +453,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUnassignDeviceProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UnassignDevice")),
+			connect.WithClientOptions(opts...),
+		),
+		setDeviceSyncInterval: connect.NewClient[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse](
+			httpClient,
+			baseURL+ControlServiceSetDeviceSyncIntervalProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetDeviceSyncInterval")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteDevice: connect.NewClient[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse](
@@ -705,6 +719,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicGroup")),
 			connect.WithClientOptions(opts...),
 		),
+		setDeviceGroupSyncInterval: connect.NewClient[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceSetDeviceGroupSyncIntervalProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupSyncInterval")),
+			connect.WithClientOptions(opts...),
+		),
 		createAssignment: connect.NewClient[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse](
 			httpClient,
 			baseURL+ControlServiceCreateAssignmentProcedure,
@@ -799,6 +819,7 @@ type controlServiceClient struct {
 	removeDeviceLabel             *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
 	assignDevice                  *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
 	unassignDevice                *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
+	setDeviceSyncInterval         *connect.Client[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse]
 	deleteDevice                  *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
 	createToken                   *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
 	getToken                      *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
@@ -842,6 +863,7 @@ type controlServiceClient struct {
 	removeDeviceFromGroup         *connect.Client[v1.RemoveDeviceFromGroupRequest, v1.RemoveDeviceFromGroupResponse]
 	validateDynamicQuery          *connect.Client[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse]
 	evaluateDynamicGroup          *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
+	setDeviceGroupSyncInterval    *connect.Client[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse]
 	createAssignment              *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
 	deleteAssignment              *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
 	listAssignments               *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
@@ -939,6 +961,11 @@ func (c *controlServiceClient) AssignDevice(ctx context.Context, req *connect.Re
 // UnassignDevice calls pm.v1.ControlService.UnassignDevice.
 func (c *controlServiceClient) UnassignDevice(ctx context.Context, req *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error) {
 	return c.unassignDevice.CallUnary(ctx, req)
+}
+
+// SetDeviceSyncInterval calls pm.v1.ControlService.SetDeviceSyncInterval.
+func (c *controlServiceClient) SetDeviceSyncInterval(ctx context.Context, req *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
+	return c.setDeviceSyncInterval.CallUnary(ctx, req)
 }
 
 // DeleteDevice calls pm.v1.ControlService.DeleteDevice.
@@ -1156,6 +1183,11 @@ func (c *controlServiceClient) EvaluateDynamicGroup(ctx context.Context, req *co
 	return c.evaluateDynamicGroup.CallUnary(ctx, req)
 }
 
+// SetDeviceGroupSyncInterval calls pm.v1.ControlService.SetDeviceGroupSyncInterval.
+func (c *controlServiceClient) SetDeviceGroupSyncInterval(ctx context.Context, req *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return c.setDeviceGroupSyncInterval.CallUnary(ctx, req)
+}
+
 // CreateAssignment calls pm.v1.ControlService.CreateAssignment.
 func (c *controlServiceClient) CreateAssignment(ctx context.Context, req *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
 	return c.createAssignment.CallUnary(ctx, req)
@@ -1238,6 +1270,7 @@ type ControlServiceHandler interface {
 	RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error)
 	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
+	SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
 	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
@@ -1286,6 +1319,7 @@ type ControlServiceHandler interface {
 	RemoveDeviceFromGroup(context.Context, *connect.Request[v1.RemoveDeviceFromGroupRequest]) (*connect.Response[v1.RemoveDeviceFromGroupResponse], error)
 	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
+	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -1409,6 +1443,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUnassignDeviceProcedure,
 		svc.UnassignDevice,
 		connect.WithSchema(controlServiceMethods.ByName("UnassignDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSetDeviceSyncIntervalHandler := connect.NewUnaryHandler(
+		ControlServiceSetDeviceSyncIntervalProcedure,
+		svc.SetDeviceSyncInterval,
+		connect.WithSchema(controlServiceMethods.ByName("SetDeviceSyncInterval")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceDeleteDeviceHandler := connect.NewUnaryHandler(
@@ -1669,6 +1709,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicGroup")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceSetDeviceGroupSyncIntervalHandler := connect.NewUnaryHandler(
+		ControlServiceSetDeviceGroupSyncIntervalProcedure,
+		svc.SetDeviceGroupSyncInterval,
+		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupSyncInterval")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceCreateAssignmentHandler := connect.NewUnaryHandler(
 		ControlServiceCreateAssignmentProcedure,
 		svc.CreateAssignment,
@@ -1777,6 +1823,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceAssignDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceUnassignDeviceProcedure:
 			controlServiceUnassignDeviceHandler.ServeHTTP(w, r)
+		case ControlServiceSetDeviceSyncIntervalProcedure:
+			controlServiceSetDeviceSyncIntervalHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDeviceProcedure:
 			controlServiceDeleteDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceCreateTokenProcedure:
@@ -1863,6 +1911,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceValidateDynamicQueryHandler.ServeHTTP(w, r)
 		case ControlServiceEvaluateDynamicGroupProcedure:
 			controlServiceEvaluateDynamicGroupHandler.ServeHTTP(w, r)
+		case ControlServiceSetDeviceGroupSyncIntervalProcedure:
+			controlServiceSetDeviceGroupSyncIntervalHandler.ServeHTTP(w, r)
 		case ControlServiceCreateAssignmentProcedure:
 			controlServiceCreateAssignmentHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteAssignmentProcedure:
@@ -1962,6 +2012,10 @@ func (UnimplementedControlServiceHandler) AssignDevice(context.Context, *connect
 
 func (UnimplementedControlServiceHandler) UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UnassignDevice is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceSyncInterval is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error) {
@@ -2134,6 +2188,10 @@ func (UnimplementedControlServiceHandler) ValidateDynamicQuery(context.Context, 
 
 func (UnimplementedControlServiceHandler) EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.EvaluateDynamicGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupSyncInterval is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
