@@ -540,3 +540,40 @@ func (c *Client) AuthToken() string {
 	defer c.mu.RUnlock()
 	return c.authToken
 }
+
+// SyncActionsResult contains the result of a sync actions call.
+type SyncActionsResult struct {
+	// Actions is the list of actions currently assigned to this device
+	Actions []*pm.Action
+	// SyncIntervalMinutes is the effective sync interval for this device.
+	// 0 means use the default (30 minutes).
+	SyncIntervalMinutes int32
+}
+
+// SyncActions fetches all actions currently assigned to this device from the server.
+// This should be called after a successful connection to sync the local action store.
+// The returned actions should replace the agent's local action store entirely.
+// Also returns the effective sync interval for this device.
+func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
+	c.mu.RLock()
+	deviceID := c.deviceID
+	c.mu.RUnlock()
+
+	if deviceID == "" {
+		return nil, errors.New("device ID not set")
+	}
+
+	req := connect.NewRequest(&pm.SyncActionsRequest{
+		DeviceId: &pm.DeviceId{Value: deviceID},
+	})
+
+	resp, err := c.client.SyncActions(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("sync actions: %w", err)
+	}
+
+	return &SyncActionsResult{
+		Actions:             resp.Msg.Actions,
+		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
+	}, nil
+}
