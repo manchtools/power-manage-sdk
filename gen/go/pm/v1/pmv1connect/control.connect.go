@@ -38,6 +38,8 @@ const (
 	// ControlServiceRefreshTokenProcedure is the fully-qualified name of the ControlService's
 	// RefreshToken RPC.
 	ControlServiceRefreshTokenProcedure = "/pm.v1.ControlService/RefreshToken"
+	// ControlServiceLogoutProcedure is the fully-qualified name of the ControlService's Logout RPC.
+	ControlServiceLogoutProcedure = "/pm.v1.ControlService/Logout"
 	// ControlServiceGetCurrentUserProcedure is the fully-qualified name of the ControlService's
 	// GetCurrentUser RPC.
 	ControlServiceGetCurrentUserProcedure = "/pm.v1.ControlService/GetCurrentUser"
@@ -259,6 +261,7 @@ type ControlServiceClient interface {
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
+	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
@@ -363,6 +366,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceRefreshTokenProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("RefreshToken")),
+			connect.WithClientOptions(opts...),
+		),
+		logout: connect.NewClient[v1.LogoutRequest, v1.LogoutResponse](
+			httpClient,
+			baseURL+ControlServiceLogoutProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("Logout")),
 			connect.WithClientOptions(opts...),
 		),
 		getCurrentUser: connect.NewClient[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse](
@@ -804,6 +813,7 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 type controlServiceClient struct {
 	login                         *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
+	logout                        *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
 	getCurrentUser                *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
 	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
@@ -886,6 +896,11 @@ func (c *controlServiceClient) Login(ctx context.Context, req *connect.Request[v
 // RefreshToken calls pm.v1.ControlService.RefreshToken.
 func (c *controlServiceClient) RefreshToken(ctx context.Context, req *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error) {
 	return c.refreshToken.CallUnary(ctx, req)
+}
+
+// Logout calls pm.v1.ControlService.Logout.
+func (c *controlServiceClient) Logout(ctx context.Context, req *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
+	return c.logout.CallUnary(ctx, req)
 }
 
 // GetCurrentUser calls pm.v1.ControlService.GetCurrentUser.
@@ -1253,6 +1268,7 @@ type ControlServiceHandler interface {
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
+	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
@@ -1353,6 +1369,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceRefreshTokenProcedure,
 		svc.RefreshToken,
 		connect.WithSchema(controlServiceMethods.ByName("RefreshToken")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceLogoutHandler := connect.NewUnaryHandler(
+		ControlServiceLogoutProcedure,
+		svc.Logout,
+		connect.WithSchema(controlServiceMethods.ByName("Logout")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceGetCurrentUserHandler := connect.NewUnaryHandler(
@@ -1793,6 +1815,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceLoginHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshTokenProcedure:
 			controlServiceRefreshTokenHandler.ServeHTTP(w, r)
+		case ControlServiceLogoutProcedure:
+			controlServiceLogoutHandler.ServeHTTP(w, r)
 		case ControlServiceGetCurrentUserProcedure:
 			controlServiceGetCurrentUserHandler.ServeHTTP(w, r)
 		case ControlServiceCreateUserProcedure:
@@ -1952,6 +1976,10 @@ func (UnimplementedControlServiceHandler) Login(context.Context, *connect.Reques
 
 func (UnimplementedControlServiceHandler) RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RefreshToken is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.Logout is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {

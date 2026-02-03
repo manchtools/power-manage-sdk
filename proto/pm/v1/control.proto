@@ -34,7 +34,15 @@ message RefreshTokenRequest {
 message RefreshTokenResponse {
   string access_token = 1;
   google.protobuf.Timestamp expires_at = 2;
+  string refresh_token = 3;
 }
+
+message LogoutRequest {
+  // @gotags: validate:"required"
+  string refresh_token = 1;
+}
+
+message LogoutResponse {}
 
 message GetCurrentUserRequest {}
 
@@ -329,6 +337,8 @@ message ManagedAction {
     FileParams file = 14;
     UpdateParams update = 15;
     RepositoryParams repository = 16;
+    FlatpakParams flatpak = 17;
+    DirectoryParams directory = 18;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -365,6 +375,10 @@ message CreateActionRequest {
     UpdateParams update = 15;
     // @gotags: validate:"omitempty"
     RepositoryParams repository = 16;
+    // @gotags: validate:"omitempty"
+    FlatpakParams flatpak = 17;
+    // @gotags: validate:"omitempty"
+    DirectoryParams directory = 18;
   }
 }
 
@@ -434,6 +448,10 @@ message UpdateActionParamsRequest {
     UpdateParams update = 15;
     // @gotags: validate:"omitempty"
     RepositoryParams repository = 16;
+    // @gotags: validate:"omitempty"
+    FlatpakParams flatpak = 17;
+    // @gotags: validate:"omitempty"
+    DirectoryParams directory = 18;
   }
 }
 
@@ -1033,6 +1051,7 @@ service ControlService {
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
 
   // Users
