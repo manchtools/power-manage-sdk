@@ -34,12 +34,14 @@ const (
 	ActionType_ACTION_TYPE_APP_IMAGE ActionType = 100 // AppImage
 	ActionType_ACTION_TYPE_DEB       ActionType = 101 // Direct .deb
 	ActionType_ACTION_TYPE_RPM       ActionType = 102 // Direct .rpm
+	ActionType_ACTION_TYPE_FLATPAK   ActionType = 103 // Flatpak application
 	// Scripts (200-299)
 	ActionType_ACTION_TYPE_SHELL ActionType = 200 // Shell script
 	// Services (300-399)
 	ActionType_ACTION_TYPE_SYSTEMD ActionType = 300 // Systemd unit
 	// Files (400-499)
-	ActionType_ACTION_TYPE_FILE ActionType = 400 // File management
+	ActionType_ACTION_TYPE_FILE      ActionType = 400 // File management
+	ActionType_ACTION_TYPE_DIRECTORY ActionType = 401 // Directory management
 )
 
 // Enum value maps for ActionType.
@@ -52,9 +54,11 @@ var (
 		100: "ACTION_TYPE_APP_IMAGE",
 		101: "ACTION_TYPE_DEB",
 		102: "ACTION_TYPE_RPM",
+		103: "ACTION_TYPE_FLATPAK",
 		200: "ACTION_TYPE_SHELL",
 		300: "ACTION_TYPE_SYSTEMD",
 		400: "ACTION_TYPE_FILE",
+		401: "ACTION_TYPE_DIRECTORY",
 	}
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
@@ -64,9 +68,11 @@ var (
 		"ACTION_TYPE_APP_IMAGE":   100,
 		"ACTION_TYPE_DEB":         101,
 		"ACTION_TYPE_RPM":         102,
+		"ACTION_TYPE_FLATPAK":     103,
 		"ACTION_TYPE_SHELL":       200,
 		"ACTION_TYPE_SYSTEMD":     300,
 		"ACTION_TYPE_FILE":        400,
+		"ACTION_TYPE_DIRECTORY":   401,
 	}
 )
 
@@ -173,9 +179,16 @@ type Action struct {
 	//	*Action_File
 	//	*Action_Update
 	//	*Action_Repository
-	Params        isAction_Params `protobuf_oneof:"params"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	//	*Action_Flatpak
+	//	*Action_Directory
+	Params isAction_Params `protobuf_oneof:"params"`
+	// ECDSA signature over canonical action payload (signed by CA key).
+	// Used to verify actions were created by the control server.
+	Signature []byte `protobuf:"bytes,20,opt,name=signature,proto3" json:"signature,omitempty"`
+	// Canonical JSON params used for signature verification.
+	ParamsCanonical []byte `protobuf:"bytes,21,opt,name=params_canonical,json=paramsCanonical,proto3" json:"params_canonical,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Action) Reset() {
@@ -313,6 +326,38 @@ func (x *Action) GetRepository() *RepositoryParams {
 	return nil
 }
 
+func (x *Action) GetFlatpak() *FlatpakParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Flatpak); ok {
+			return x.Flatpak
+		}
+	}
+	return nil
+}
+
+func (x *Action) GetDirectory() *DirectoryParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Directory); ok {
+			return x.Directory
+		}
+	}
+	return nil
+}
+
+func (x *Action) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *Action) GetParamsCanonical() []byte {
+	if x != nil {
+		return x.ParamsCanonical
+	}
+	return nil
+}
+
 type isAction_Params interface {
 	isAction_Params()
 }
@@ -345,6 +390,14 @@ type Action_Repository struct {
 	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof"`
 }
 
+type Action_Flatpak struct {
+	Flatpak *FlatpakParams `protobuf:"bytes,17,opt,name=flatpak,proto3,oneof"`
+}
+
+type Action_Directory struct {
+	Directory *DirectoryParams `protobuf:"bytes,18,opt,name=directory,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -358,6 +411,10 @@ func (*Action_File) isAction_Params() {}
 func (*Action_Update) isAction_Params() {}
 
 func (*Action_Repository) isAction_Params() {}
+
+func (*Action_Flatpak) isAction_Params() {}
+
+func (*Action_Directory) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -848,6 +905,92 @@ func (x *FileParams) GetMode() string {
 	return ""
 }
 
+// DirectoryParams configures directory management.
+// Creates or removes directories with optional ownership and permissions.
+type DirectoryParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Directory path (must be absolute)
+	// @gotags: validate:"required,startswith=/"
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty" validate:"required,startswith=/"`
+	// @gotags: validate:"omitempty,max=32"
+	Owner string `protobuf:"bytes,2,opt,name=owner,proto3" json:"owner,omitempty" validate:"omitempty,max=32"`
+	// @gotags: validate:"omitempty,max=32"
+	Group string `protobuf:"bytes,3,opt,name=group,proto3" json:"group,omitempty" validate:"omitempty,max=32"`
+	// @gotags: validate:"omitempty,max=4"
+	Mode string `protobuf:"bytes,4,opt,name=mode,proto3" json:"mode,omitempty" validate:"omitempty,max=4"`
+	// Whether to create parent directories (like mkdir -p)
+	// Default: true
+	// @gotags: validate:"omitempty"
+	Recursive     bool `protobuf:"varint,5,opt,name=recursive,proto3" json:"recursive,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DirectoryParams) Reset() {
+	*x = DirectoryParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DirectoryParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DirectoryParams) ProtoMessage() {}
+
+func (x *DirectoryParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DirectoryParams.ProtoReflect.Descriptor instead.
+func (*DirectoryParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DirectoryParams) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *DirectoryParams) GetOwner() string {
+	if x != nil {
+		return x.Owner
+	}
+	return ""
+}
+
+func (x *DirectoryParams) GetGroup() string {
+	if x != nil {
+		return x.Group
+	}
+	return ""
+}
+
+func (x *DirectoryParams) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *DirectoryParams) GetRecursive() bool {
+	if x != nil {
+		return x.Recursive
+	}
+	return false
+}
+
 // UpdateParams configures system-wide package updates.
 // Respects version pinning (apt-mark hold / dnf versionlock).
 type UpdateParams struct {
@@ -864,7 +1007,7 @@ type UpdateParams struct {
 
 func (x *UpdateParams) Reset() {
 	*x = UpdateParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -876,7 +1019,7 @@ func (x *UpdateParams) String() string {
 func (*UpdateParams) ProtoMessage() {}
 
 func (x *UpdateParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -889,7 +1032,7 @@ func (x *UpdateParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateParams.ProtoReflect.Descriptor instead.
 func (*UpdateParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateParams) GetSecurityOnly() bool {
@@ -909,6 +1052,85 @@ func (x *UpdateParams) GetAutoremove() bool {
 func (x *UpdateParams) GetRebootIfRequired() bool {
 	if x != nil {
 		return x.RebootIfRequired
+	}
+	return false
+}
+
+// FlatpakParams configures Flatpak application installation.
+// Similar to AppImage but uses the Flatpak package manager.
+type FlatpakParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Application ID (e.g., "org.mozilla.firefox", "com.spotify.Client")
+	// @gotags: validate:"required,min=1,max=255"
+	AppId string `protobuf:"bytes,1,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty" validate:"required,min=1,max=255"`
+	// Remote/repository name (default: "flathub")
+	// @gotags: validate:"omitempty,max=64"
+	Remote string `protobuf:"bytes,2,opt,name=remote,proto3" json:"remote,omitempty" validate:"omitempty,max=64"`
+	// Whether to install system-wide (true) or user-only (false)
+	// Default: true (system-wide)
+	// @gotags: validate:"omitempty"
+	SystemWide bool `protobuf:"varint,3,opt,name=system_wide,json=systemWide,proto3" json:"system_wide,omitempty" validate:"omitempty"`
+	// Pin the application to prevent automatic updates
+	// @gotags: validate:"omitempty"
+	Pin           bool `protobuf:"varint,4,opt,name=pin,proto3" json:"pin,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlatpakParams) Reset() {
+	*x = FlatpakParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlatpakParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlatpakParams) ProtoMessage() {}
+
+func (x *FlatpakParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlatpakParams.ProtoReflect.Descriptor instead.
+func (*FlatpakParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *FlatpakParams) GetAppId() string {
+	if x != nil {
+		return x.AppId
+	}
+	return ""
+}
+
+func (x *FlatpakParams) GetRemote() string {
+	if x != nil {
+		return x.Remote
+	}
+	return ""
+}
+
+func (x *FlatpakParams) GetSystemWide() bool {
+	if x != nil {
+		return x.SystemWide
+	}
+	return false
+}
+
+func (x *FlatpakParams) GetPin() bool {
+	if x != nil {
+		return x.Pin
 	}
 	return false
 }
@@ -938,7 +1160,7 @@ type RepositoryParams struct {
 
 func (x *RepositoryParams) Reset() {
 	*x = RepositoryParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_pm_v1_actions_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -950,7 +1172,7 @@ func (x *RepositoryParams) String() string {
 func (*RepositoryParams) ProtoMessage() {}
 
 func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_pm_v1_actions_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -963,7 +1185,7 @@ func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryParams.ProtoReflect.Descriptor instead.
 func (*RepositoryParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RepositoryParams) GetName() string {
@@ -1034,7 +1256,7 @@ type AptRepository struct {
 
 func (x *AptRepository) Reset() {
 	*x = AptRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	mi := &file_pm_v1_actions_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1046,7 +1268,7 @@ func (x *AptRepository) String() string {
 func (*AptRepository) ProtoMessage() {}
 
 func (x *AptRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	mi := &file_pm_v1_actions_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1059,7 +1281,7 @@ func (x *AptRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AptRepository.ProtoReflect.Descriptor instead.
 func (*AptRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AptRepository) GetUrl() string {
@@ -1148,7 +1370,7 @@ type DnfRepository struct {
 
 func (x *DnfRepository) Reset() {
 	*x = DnfRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	mi := &file_pm_v1_actions_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1160,7 +1382,7 @@ func (x *DnfRepository) String() string {
 func (*DnfRepository) ProtoMessage() {}
 
 func (x *DnfRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	mi := &file_pm_v1_actions_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1173,7 +1395,7 @@ func (x *DnfRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DnfRepository.ProtoReflect.Descriptor instead.
 func (*DnfRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DnfRepository) GetBaseurl() string {
@@ -1243,7 +1465,7 @@ type PacmanRepository struct {
 
 func (x *PacmanRepository) Reset() {
 	*x = PacmanRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	mi := &file_pm_v1_actions_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1255,7 +1477,7 @@ func (x *PacmanRepository) String() string {
 func (*PacmanRepository) ProtoMessage() {}
 
 func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	mi := &file_pm_v1_actions_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1268,7 +1490,7 @@ func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PacmanRepository.ProtoReflect.Descriptor instead.
 func (*PacmanRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PacmanRepository) GetServer() string {
@@ -1325,7 +1547,7 @@ type ZypperRepository struct {
 
 func (x *ZypperRepository) Reset() {
 	*x = ZypperRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	mi := &file_pm_v1_actions_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1337,7 +1559,7 @@ func (x *ZypperRepository) String() string {
 func (*ZypperRepository) ProtoMessage() {}
 
 func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	mi := &file_pm_v1_actions_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1350,7 +1572,7 @@ func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ZypperRepository.ProtoReflect.Descriptor instead.
 func (*ZypperRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ZypperRepository) GetUrl() string {
@@ -1429,7 +1651,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[13]
+	mi := &file_pm_v1_actions_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1441,7 +1663,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[13]
+	mi := &file_pm_v1_actions_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1454,7 +1676,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{13}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -1503,7 +1725,7 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xc0\x04\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xf3\x05\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -1519,7 +1741,11 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
 	"\n" +
 	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repositoryB\b\n" +
+	"repository\x120\n" +
+	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12\x1c\n" +
+	"\tsignature\x18\x14 \x01(\fR\tsignature\x12)\n" +
+	"\x10params_canonical\x18\x15 \x01(\fR\x0fparamsCanonicalB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -1562,13 +1788,25 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x14\n" +
 	"\x05owner\x18\x03 \x01(\tR\x05owner\x12\x14\n" +
 	"\x05group\x18\x04 \x01(\tR\x05group\x12\x12\n" +
-	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x81\x01\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x83\x01\n" +
+	"\x0fDirectoryParams\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
+	"\x05owner\x18\x02 \x01(\tR\x05owner\x12\x14\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\x12\x12\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode\x12\x1c\n" +
+	"\trecursive\x18\x05 \x01(\bR\trecursive\"\x81\x01\n" +
 	"\fUpdateParams\x12#\n" +
 	"\rsecurity_only\x18\x01 \x01(\bR\fsecurityOnly\x12\x1e\n" +
 	"\n" +
 	"autoremove\x18\x02 \x01(\bR\n" +
 	"autoremove\x12,\n" +
-	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"\xd8\x01\n" +
+	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"q\n" +
+	"\rFlatpakParams\x12\x15\n" +
+	"\x06app_id\x18\x01 \x01(\tR\x05appId\x12\x16\n" +
+	"\x06remote\x18\x02 \x01(\tR\x06remote\x12\x1f\n" +
+	"\vsystem_wide\x18\x03 \x01(\bR\n" +
+	"systemWide\x12\x10\n" +
+	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xd8\x01\n" +
 	"\x10RepositoryParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
 	"\x03apt\x18\n" +
@@ -1615,7 +1853,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
-	"durationMs*\x84\x02\n" +
+	"durationMs*\xb9\x02\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -1624,10 +1862,12 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x16ACTION_TYPE_REPOSITORY\x10\x03\x12\x19\n" +
 	"\x15ACTION_TYPE_APP_IMAGE\x10d\x12\x13\n" +
 	"\x0fACTION_TYPE_DEB\x10e\x12\x13\n" +
-	"\x0fACTION_TYPE_RPM\x10f\x12\x16\n" +
+	"\x0fACTION_TYPE_RPM\x10f\x12\x17\n" +
+	"\x13ACTION_TYPE_FLATPAK\x10g\x12\x16\n" +
 	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x18\n" +
 	"\x13ACTION_TYPE_SYSTEMD\x10\xac\x02\x12\x15\n" +
-	"\x10ACTION_TYPE_FILE\x10\x90\x03*\x98\x01\n" +
+	"\x10ACTION_TYPE_FILE\x10\x90\x03\x12\x1a\n" +
+	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -1647,7 +1887,7 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
@@ -1658,47 +1898,51 @@ var file_pm_v1_actions_proto_goTypes = []any{
 	(*ShellParams)(nil),           // 6: pm.v1.ShellParams
 	(*SystemdParams)(nil),         // 7: pm.v1.SystemdParams
 	(*FileParams)(nil),            // 8: pm.v1.FileParams
-	(*UpdateParams)(nil),          // 9: pm.v1.UpdateParams
-	(*RepositoryParams)(nil),      // 10: pm.v1.RepositoryParams
-	(*AptRepository)(nil),         // 11: pm.v1.AptRepository
-	(*DnfRepository)(nil),         // 12: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),      // 13: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),      // 14: pm.v1.ZypperRepository
-	(*ActionResult)(nil),          // 15: pm.v1.ActionResult
-	nil,                           // 16: pm.v1.ShellParams.EnvironmentEntry
-	(*ActionId)(nil),              // 17: pm.v1.ActionId
-	(DesiredState)(0),             // 18: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 19: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 20: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
+	(*DirectoryParams)(nil),       // 9: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),          // 10: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),         // 11: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),      // 12: pm.v1.RepositoryParams
+	(*AptRepository)(nil),         // 13: pm.v1.AptRepository
+	(*DnfRepository)(nil),         // 14: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),      // 15: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),      // 16: pm.v1.ZypperRepository
+	(*ActionResult)(nil),          // 17: pm.v1.ActionResult
+	nil,                           // 18: pm.v1.ShellParams.EnvironmentEntry
+	(*ActionId)(nil),              // 19: pm.v1.ActionId
+	(DesiredState)(0),             // 20: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 21: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 22: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 23: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	17, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	19, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	18, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	20, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
 	3,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
 	4,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
 	5,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
 	6,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
 	7,  // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
 	8,  // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	9,  // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	10, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	16, // 11: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 12: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	11, // 13: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	12, // 14: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	13, // 15: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	14, // 16: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	17, // 17: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	19, // 18: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	20, // 19: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	21, // 20: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	21, // [21:21] is the sub-list for method output_type
-	21, // [21:21] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	10, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	12, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	11, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	9,  // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	18, // 13: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 14: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	13, // 15: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	14, // 16: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	15, // 17: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	16, // 18: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	19, // 19: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	21, // 20: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	22, // 21: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	23, // 22: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -1715,6 +1959,8 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_File)(nil),
 		(*Action_Update)(nil),
 		(*Action_Repository)(nil),
+		(*Action_Flatpak)(nil),
+		(*Action_Directory)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1722,7 +1968,7 @@ func file_pm_v1_actions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

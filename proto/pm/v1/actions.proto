@@ -23,6 +23,7 @@ enum ActionType {
   ACTION_TYPE_APP_IMAGE = 100;  // AppImage
   ACTION_TYPE_DEB = 101;        // Direct .deb
   ACTION_TYPE_RPM = 102;        // Direct .rpm
+  ACTION_TYPE_FLATPAK = 103;    // Flatpak application
 
   // Scripts (200-299)
   ACTION_TYPE_SHELL = 200;      // Shell script
@@ -32,6 +33,7 @@ enum ActionType {
 
   // Files (400-499)
   ACTION_TYPE_FILE = 400;       // File management
+  ACTION_TYPE_DIRECTORY = 401;  // Directory management
 }
 
 // ============================================================================
@@ -62,7 +64,15 @@ message Action {
     FileParams file = 14;
     UpdateParams update = 15;
     RepositoryParams repository = 16;
+    FlatpakParams flatpak = 17;
+    DirectoryParams directory = 18;
   }
+
+  // ECDSA signature over canonical action payload (signed by CA key).
+  // Used to verify actions were created by the control server.
+  bytes signature = 20;
+  // Canonical JSON params used for signature verification.
+  bytes params_canonical = 21;
 }
 
 // ActionSchedule defines when an action should be executed by the agent.
@@ -168,6 +178,24 @@ message FileParams {
   string mode = 5;
 }
 
+// DirectoryParams configures directory management.
+// Creates or removes directories with optional ownership and permissions.
+message DirectoryParams {
+  // Directory path (must be absolute)
+  // @gotags: validate:"required,startswith=/"
+  string path = 1;
+  // @gotags: validate:"omitempty,max=32"
+  string owner = 2;
+  // @gotags: validate:"omitempty,max=32"
+  string group = 3;
+  // @gotags: validate:"omitempty,max=4"
+  string mode = 4;
+  // Whether to create parent directories (like mkdir -p)
+  // Default: true
+  // @gotags: validate:"omitempty"
+  bool recursive = 5;
+}
+
 // UpdateParams configures system-wide package updates.
 // Respects version pinning (apt-mark hold / dnf versionlock).
 message UpdateParams {
@@ -177,6 +205,27 @@ message UpdateParams {
   bool autoremove = 2;            // Remove unused dependencies after update
   // @gotags: validate:"omitempty"
   bool reboot_if_required = 3;    // Reboot system if updates require it
+}
+
+// FlatpakParams configures Flatpak application installation.
+// Similar to AppImage but uses the Flatpak package manager.
+message FlatpakParams {
+  // Application ID (e.g., "org.mozilla.firefox", "com.spotify.Client")
+  // @gotags: validate:"required,min=1,max=255"
+  string app_id = 1;
+
+  // Remote/repository name (default: "flathub")
+  // @gotags: validate:"omitempty,max=64"
+  string remote = 2;
+
+  // Whether to install system-wide (true) or user-only (false)
+  // Default: true (system-wide)
+  // @gotags: validate:"omitempty"
+  bool system_wide = 3;
+
+  // Pin the application to prevent automatic updates
+  // @gotags: validate:"omitempty"
+  bool pin = 4;
 }
 
 // RepositoryParams configures external package repositories.
