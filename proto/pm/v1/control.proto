@@ -328,7 +328,8 @@ message ManagedAction {
   string name = 2;
   string description = 3;
   ActionType type = 4;
-  DesiredState desired_state = 5;
+  // Field 5 reserved: desired_state moved to assignments
+  reserved 5;
   oneof params {
     PackageParams package = 10;
     AppInstallParams app = 11;
@@ -353,8 +354,8 @@ message CreateActionRequest {
   string description = 2;
   // @gotags: validate:"required,ne=0"
   ActionType type = 3;
-  // @gotags: validate:"omitempty"
-  DesiredState desired_state = 4;
+  // Field 4 reserved: desired_state moved to assignments
+  reserved 4;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 5;
   // @gotags: validate:"omitempty"
@@ -426,8 +427,8 @@ message UpdateActionDescriptionRequest {
 message UpdateActionParamsRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
-  // @gotags: validate:"omitempty"
-  DesiredState desired_state = 2;
+  // Field 2 reserved: desired_state moved to assignments
+  reserved 2;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 3;
   // @gotags: validate:"omitempty"
@@ -859,6 +860,7 @@ message Assignment {
   string target_id = 5;
   google.protobuf.Timestamp created_at = 6;
   string created_by = 7;
+  AssignmentMode mode = 8;
 }
 
 message CreateAssignmentRequest {
@@ -870,6 +872,8 @@ message CreateAssignmentRequest {
   string target_type = 3;
   // @gotags: validate:"required,ulid"
   string target_id = 4;
+  // @gotags: validate:"omitempty"
+  AssignmentMode mode = 5;  // Defaults to PRESENT (0)
 }
 
 message CreateAssignmentResponse {
@@ -902,6 +906,51 @@ message ListAssignmentsResponse {
   repeated Assignment assignments = 1;
   string next_page_token = 2;
   int32 total_count = 3;
+}
+
+// ============================================================================
+// User Selections (for available assignments)
+// ============================================================================
+
+message UserSelection {
+  string id = 1;
+  string device_id = 2;
+  string source_type = 3;   // "action", "action_set", "definition"
+  string source_id = 4;
+  bool selected = 5;        // true=user wants it (present), false=user rejected (absent)
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message SetUserSelectionRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,oneof=definition action_set action"
+  string source_type = 2;
+  // @gotags: validate:"required,ulid"
+  string source_id = 3;
+  bool selected = 4;
+}
+
+message SetUserSelectionResponse {
+  UserSelection selection = 1;
+}
+
+message ListAvailableActionsRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message AvailableItem {
+  string source_type = 1;
+  string source_id = 2;
+  string source_name = 3;
+  string source_description = 4;
+  bool selected = 5;
+  repeated ManagedAction actions = 6;  // preview of contained actions
+}
+
+message ListAvailableActionsResponse {
+  repeated AvailableItem items = 1;
 }
 
 // Get all resolved actions for a device (expands groups, definitions, sets)
@@ -1132,6 +1181,10 @@ service ControlService {
   rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse);
   rpc ListAssignments(ListAssignmentsRequest) returns (ListAssignmentsResponse);
   rpc GetDeviceAssignments(GetDeviceAssignmentsRequest) returns (GetDeviceAssignmentsResponse);
+
+  // User Selections (for available assignments)
+  rpc SetUserSelection(SetUserSelectionRequest) returns (SetUserSelectionResponse);
+  rpc ListAvailableActions(ListAvailableActionsRequest) returns (ListAvailableActionsResponse);
 
   // Action Dispatch & Execution
   rpc DispatchAction(DispatchActionRequest) returns (DispatchActionResponse);

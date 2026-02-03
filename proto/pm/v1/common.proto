@@ -33,6 +33,13 @@ enum DesiredState {
   DESIRED_STATE_ABSENT = 1;   // Remove/delete/disable
 }
 
+// Assignment mode determines how an action is applied to a target
+enum AssignmentMode {
+  ASSIGNMENT_MODE_PRESENT = 0;   // Mandatory: must be applied (desired_state=PRESENT)
+  ASSIGNMENT_MODE_AVAILABLE = 1; // Catalog: user can choose to install
+  ASSIGNMENT_MODE_ABSENT = 2;    // Blocked: forcefully removed (desired_state=ABSENT)
+}
+
 // Output from command execution
 message CommandOutput {
   // @gotags: validate:"omitempty"
