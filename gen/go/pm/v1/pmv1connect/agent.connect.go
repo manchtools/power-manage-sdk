@@ -35,8 +35,6 @@ const (
 const (
 	// AgentServiceStreamProcedure is the fully-qualified name of the AgentService's Stream RPC.
 	AgentServiceStreamProcedure = "/pm.v1.AgentService/Stream"
-	// AgentServiceRegisterProcedure is the fully-qualified name of the AgentService's Register RPC.
-	AgentServiceRegisterProcedure = "/pm.v1.AgentService/Register"
 	// AgentServiceSyncActionsProcedure is the fully-qualified name of the AgentService's SyncActions
 	// RPC.
 	AgentServiceSyncActionsProcedure = "/pm.v1.AgentService/SyncActions"
@@ -46,8 +44,6 @@ const (
 type AgentServiceClient interface {
 	// Bidirectional stream for agent-server communication
 	Stream(context.Context) *connect.BidiStreamForClient[v1.AgentMessage, v1.ServerMessage]
-	// One-time agent registration
-	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Sync assigned actions (called by agent after successful connection)
 	// Returns all actions currently assigned to the device for local storage
 	SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
@@ -70,12 +66,6 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(agentServiceMethods.ByName("Stream")),
 			connect.WithClientOptions(opts...),
 		),
-		register: connect.NewClient[v1.RegisterRequest, v1.RegisterResponse](
-			httpClient,
-			baseURL+AgentServiceRegisterProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("Register")),
-			connect.WithClientOptions(opts...),
-		),
 		syncActions: connect.NewClient[v1.SyncActionsRequest, v1.SyncActionsResponse](
 			httpClient,
 			baseURL+AgentServiceSyncActionsProcedure,
@@ -88,18 +78,12 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 // agentServiceClient implements AgentServiceClient.
 type agentServiceClient struct {
 	stream      *connect.Client[v1.AgentMessage, v1.ServerMessage]
-	register    *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
 	syncActions *connect.Client[v1.SyncActionsRequest, v1.SyncActionsResponse]
 }
 
 // Stream calls pm.v1.AgentService.Stream.
 func (c *agentServiceClient) Stream(ctx context.Context) *connect.BidiStreamForClient[v1.AgentMessage, v1.ServerMessage] {
 	return c.stream.CallBidiStream(ctx)
-}
-
-// Register calls pm.v1.AgentService.Register.
-func (c *agentServiceClient) Register(ctx context.Context, req *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
-	return c.register.CallUnary(ctx, req)
 }
 
 // SyncActions calls pm.v1.AgentService.SyncActions.
@@ -111,8 +95,6 @@ func (c *agentServiceClient) SyncActions(ctx context.Context, req *connect.Reque
 type AgentServiceHandler interface {
 	// Bidirectional stream for agent-server communication
 	Stream(context.Context, *connect.BidiStream[v1.AgentMessage, v1.ServerMessage]) error
-	// One-time agent registration
-	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Sync assigned actions (called by agent after successful connection)
 	// Returns all actions currently assigned to the device for local storage
 	SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
@@ -131,12 +113,6 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(agentServiceMethods.ByName("Stream")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceRegisterHandler := connect.NewUnaryHandler(
-		AgentServiceRegisterProcedure,
-		svc.Register,
-		connect.WithSchema(agentServiceMethods.ByName("Register")),
-		connect.WithHandlerOptions(opts...),
-	)
 	agentServiceSyncActionsHandler := connect.NewUnaryHandler(
 		AgentServiceSyncActionsProcedure,
 		svc.SyncActions,
@@ -147,8 +123,6 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 		switch r.URL.Path {
 		case AgentServiceStreamProcedure:
 			agentServiceStreamHandler.ServeHTTP(w, r)
-		case AgentServiceRegisterProcedure:
-			agentServiceRegisterHandler.ServeHTTP(w, r)
 		case AgentServiceSyncActionsProcedure:
 			agentServiceSyncActionsHandler.ServeHTTP(w, r)
 		default:
@@ -162,10 +136,6 @@ type UnimplementedAgentServiceHandler struct{}
 
 func (UnimplementedAgentServiceHandler) Stream(context.Context, *connect.BidiStream[v1.AgentMessage, v1.ServerMessage]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.AgentService.Stream is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.AgentService.Register is not implemented"))
 }
 
 func (UnimplementedAgentServiceHandler) SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error) {

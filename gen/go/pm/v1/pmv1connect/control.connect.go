@@ -33,6 +33,8 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// ControlServiceRegisterProcedure is the fully-qualified name of the ControlService's Register RPC.
+	ControlServiceRegisterProcedure = "/pm.v1.ControlService/Register"
 	// ControlServiceLoginProcedure is the fully-qualified name of the ControlService's Login RPC.
 	ControlServiceLoginProcedure = "/pm.v1.ControlService/Login"
 	// ControlServiceRefreshTokenProcedure is the fully-qualified name of the ControlService's
@@ -264,6 +266,8 @@ const (
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
 type ControlServiceClient interface {
+	// Agent Registration
+	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
@@ -365,6 +369,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 	baseURL = strings.TrimRight(baseURL, "/")
 	controlServiceMethods := v1.File_pm_v1_control_proto.Services().ByName("ControlService").Methods()
 	return &controlServiceClient{
+		register: connect.NewClient[v1.RegisterRequest, v1.RegisterResponse](
+			httpClient,
+			baseURL+ControlServiceRegisterProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("Register")),
+			connect.WithClientOptions(opts...),
+		),
 		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
 			httpClient,
 			baseURL+ControlServiceLoginProcedure,
@@ -832,6 +842,7 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // controlServiceClient implements ControlServiceClient.
 type controlServiceClient struct {
+	register                      *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
 	login                         *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 	logout                        *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
@@ -909,6 +920,11 @@ type controlServiceClient struct {
 	dispatchToGroup               *connect.Client[v1.DispatchToGroupRequest, v1.DispatchToGroupResponse]
 	getExecution                  *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
 	listExecutions                *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
+}
+
+// Register calls pm.v1.ControlService.Register.
+func (c *controlServiceClient) Register(ctx context.Context, req *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
+	return c.register.CallUnary(ctx, req)
 }
 
 // Login calls pm.v1.ControlService.Login.
@@ -1298,6 +1314,8 @@ func (c *controlServiceClient) ListExecutions(ctx context.Context, req *connect.
 
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
+	// Agent Registration
+	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
@@ -1395,6 +1413,12 @@ type ControlServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	controlServiceMethods := v1.File_pm_v1_control_proto.Services().ByName("ControlService").Methods()
+	controlServiceRegisterHandler := connect.NewUnaryHandler(
+		ControlServiceRegisterProcedure,
+		svc.Register,
+		connect.WithSchema(controlServiceMethods.ByName("Register")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceLoginHandler := connect.NewUnaryHandler(
 		ControlServiceLoginProcedure,
 		svc.Login,
@@ -1859,6 +1883,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case ControlServiceRegisterProcedure:
+			controlServiceRegisterHandler.ServeHTTP(w, r)
 		case ControlServiceLoginProcedure:
 			controlServiceLoginHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshTokenProcedure:
@@ -2021,6 +2047,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 
 // UnimplementedControlServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedControlServiceHandler struct{}
+
+func (UnimplementedControlServiceHandler) Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.Register is not implemented"))
+}
 
 func (UnimplementedControlServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.Login is not implemented"))
