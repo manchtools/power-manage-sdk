@@ -1179,154 +1179,6 @@ func (x *OSQueryRow) GetData() map[string]string {
 	return nil
 }
 
-type RegisterRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,max=255"
-	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty" validate:"required,max=255"`
-	// @gotags: validate:"required,min=1,max=253"
-	Hostname string `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty" validate:"required,min=1,max=253"`
-	// @gotags: validate:"required,min=1,max=32"
-	AgentVersion string `protobuf:"bytes,3,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty" validate:"required,min=1,max=32"`
-	// Certificate Signing Request (PEM-encoded PKCS#10)
-	// Agent generates its own key pair and sends CSR for signing
-	// @gotags: validate:"required"
-	Csr           []byte `protobuf:"bytes,4,opt,name=csr,proto3" json:"csr,omitempty" validate:"required"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RegisterRequest) Reset() {
-	*x = RegisterRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RegisterRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegisterRequest) ProtoMessage() {}
-
-func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
-func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *RegisterRequest) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetHostname() string {
-	if x != nil {
-		return x.Hostname
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetAgentVersion() string {
-	if x != nil {
-		return x.AgentVersion
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetCsr() []byte {
-	if x != nil {
-		return x.Csr
-	}
-	return nil
-}
-
-type RegisterResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required"
-	DeviceId *DeviceId `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required"`
-	// @gotags: validate:"omitempty,max=4096"
-	AuthToken string `protobuf:"bytes,2,opt,name=auth_token,json=authToken,proto3" json:"auth_token,omitempty" validate:"omitempty,max=4096"` // Deprecated: use mTLS certificates instead
-	// mTLS credentials issued by control server
-	// @gotags: validate:"required"
-	CaCert []byte `protobuf:"bytes,3,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"required"` // CA certificate (PEM)
-	// Signed device certificate (PEM) - private key stays on agent
-	// @gotags: validate:"required"
-	Certificate   []byte `protobuf:"bytes,4,opt,name=certificate,proto3" json:"certificate,omitempty" validate:"required"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RegisterResponse) Reset() {
-	*x = RegisterResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RegisterResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegisterResponse) ProtoMessage() {}
-
-func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
-func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *RegisterResponse) GetDeviceId() *DeviceId {
-	if x != nil {
-		return x.DeviceId
-	}
-	return nil
-}
-
-func (x *RegisterResponse) GetAuthToken() string {
-	if x != nil {
-		return x.AuthToken
-	}
-	return ""
-}
-
-func (x *RegisterResponse) GetCaCert() []byte {
-	if x != nil {
-		return x.CaCert
-	}
-	return nil
-}
-
-func (x *RegisterResponse) GetCertificate() []byte {
-	if x != nil {
-		return x.Certificate
-	}
-	return nil
-}
-
 type SyncActionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -1337,7 +1189,7 @@ type SyncActionsRequest struct {
 
 func (x *SyncActionsRequest) Reset() {
 	*x = SyncActionsRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1349,7 +1201,7 @@ func (x *SyncActionsRequest) String() string {
 func (*SyncActionsRequest) ProtoMessage() {}
 
 func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1362,7 +1214,7 @@ func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsRequest.ProtoReflect.Descriptor instead.
 func (*SyncActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
@@ -1387,7 +1239,7 @@ type SyncActionsResponse struct {
 
 func (x *SyncActionsResponse) Reset() {
 	*x = SyncActionsResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1399,7 +1251,7 @@ func (x *SyncActionsResponse) String() string {
 func (*SyncActionsResponse) ProtoMessage() {}
 
 func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1412,7 +1264,7 @@ func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsResponse.ProtoReflect.Descriptor instead.
 func (*SyncActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{16}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SyncActionsResponse) GetActions() []*Action {
@@ -1504,18 +1356,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x04data\x18\x01 \x03(\v2\x1b.pm.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"z\n" +
-	"\x0fRegisterRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
-	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
-	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\x12\x10\n" +
-	"\x03csr\x18\x04 \x01(\fR\x03csr\"\x9a\x01\n" +
-	"\x10RegisterResponse\x12,\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12\x1d\n" +
-	"\n" +
-	"auth_token\x18\x02 \x01(\tR\tauthToken\x12\x17\n" +
-	"\aca_cert\x18\x03 \x01(\fR\x06caCert\x12 \n" +
-	"\vcertificate\x18\x04 \x01(\fR\vcertificate\"B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
 	"\x12SyncActionsRequest\x12,\n" +
 	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\"r\n" +
 	"\x13SyncActionsResponse\x12'\n" +
@@ -1539,10 +1380,9 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eOS_QUERY_OP_GE\x10\x05\x12\x12\n" +
 	"\x0eOS_QUERY_OP_LE\x10\x06\x12\x14\n" +
 	"\x10OS_QUERY_OP_LIKE\x10\a\x12\x14\n" +
-	"\x10OS_QUERY_OP_GLOB\x10\b2\xca\x01\n" +
+	"\x10OS_QUERY_OP_GLOB\x10\b2\x8d\x01\n" +
 	"\fAgentService\x127\n" +
-	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12;\n" +
-	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponse\x12D\n" +
+	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12D\n" +
 	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
@@ -1558,7 +1398,7 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),       // 0: pm.v1.OutputStreamType
 	(SecurityAlertType)(0),      // 1: pm.v1.SecurityAlertType
@@ -1576,53 +1416,48 @@ var file_pm_v1_agent_proto_goTypes = []any{
 	(*OSQueryCondition)(nil),    // 13: pm.v1.OSQueryCondition
 	(*OSQueryResult)(nil),       // 14: pm.v1.OSQueryResult
 	(*OSQueryRow)(nil),          // 15: pm.v1.OSQueryRow
-	(*RegisterRequest)(nil),     // 16: pm.v1.RegisterRequest
-	(*RegisterResponse)(nil),    // 17: pm.v1.RegisterResponse
-	(*SyncActionsRequest)(nil),  // 18: pm.v1.SyncActionsRequest
-	(*SyncActionsResponse)(nil), // 19: pm.v1.SyncActionsResponse
-	nil,                         // 20: pm.v1.SecurityAlert.DetailsEntry
-	nil,                         // 21: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),        // 22: pm.v1.ActionResult
-	(*DeviceId)(nil),            // 23: pm.v1.DeviceId
-	(*durationpb.Duration)(nil), // 24: google.protobuf.Duration
-	(*Action)(nil),              // 25: pm.v1.Action
+	(*SyncActionsRequest)(nil),  // 16: pm.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil), // 17: pm.v1.SyncActionsResponse
+	nil,                         // 18: pm.v1.SecurityAlert.DetailsEntry
+	nil,                         // 19: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),        // 20: pm.v1.ActionResult
+	(*DeviceId)(nil),            // 21: pm.v1.DeviceId
+	(*durationpb.Duration)(nil), // 22: google.protobuf.Duration
+	(*Action)(nil),              // 23: pm.v1.Action
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
 	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	22, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	20, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
 	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
 	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
 	7,  // 5: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
 	0,  // 6: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	23, // 7: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	24, // 8: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	21, // 7: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	22, // 8: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
 	1,  // 9: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	20, // 10: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	18, // 10: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
 	9,  // 11: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
 	10, // 12: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
 	12, // 13: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
 	11, // 14: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	24, // 15: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	25, // 16: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	22, // 15: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	23, // 16: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
 	13, // 17: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
 	2,  // 18: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
 	15, // 19: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	21, // 20: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	23, // 21: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
-	23, // 22: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	25, // 23: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
-	3,  // 24: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	16, // 25: pm.v1.AgentService.Register:input_type -> pm.v1.RegisterRequest
-	18, // 26: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	8,  // 27: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	17, // 28: pm.v1.AgentService.Register:output_type -> pm.v1.RegisterResponse
-	19, // 29: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	27, // [27:30] is the sub-list for method output_type
-	24, // [24:27] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	19, // 20: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	21, // 21: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	23, // 22: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 23: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	16, // 24: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	8,  // 25: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	17, // 26: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	25, // [25:27] is the sub-list for method output_type
+	23, // [23:25] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -1652,7 +1487,7 @@ func file_pm_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   19,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

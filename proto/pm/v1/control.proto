@@ -9,6 +9,39 @@ import "pm/v1/common.proto";
 import "pm/v1/actions.proto";
 
 // ============================================================================
+// Agent Registration (called by agent during first-time setup)
+// ============================================================================
+
+message RegisterRequest {
+  // @gotags: validate:"required,max=255"
+  string token = 1;
+  // @gotags: validate:"required,min=1,max=253"
+  string hostname = 2;
+  // @gotags: validate:"required,min=1,max=32"
+  string agent_version = 3;
+  // Certificate Signing Request (PEM-encoded PKCS#10)
+  // Agent generates its own key pair and sends CSR for signing
+  // @gotags: validate:"required"
+  bytes csr = 4;
+}
+
+message RegisterResponse {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+  // @gotags: validate:"omitempty,max=4096"
+  string auth_token = 2;  // Deprecated: use mTLS certificates instead
+  // mTLS credentials issued by control server
+  // @gotags: validate:"required"
+  bytes ca_cert = 3;       // CA certificate (PEM)
+  // Signed device certificate (PEM) - private key stays on agent
+  // @gotags: validate:"required"
+  bytes certificate = 4;
+  // Gateway URL for streaming connection (agent stores this for future connections)
+  // @gotags: validate:"required,url"
+  string gateway_url = 5;
+}
+
+// ============================================================================
 // Authentication
 // ============================================================================
 
@@ -1097,6 +1130,9 @@ message ListExecutionsResponse {
 // ============================================================================
 
 service ControlService {
+  // Agent Registration
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
