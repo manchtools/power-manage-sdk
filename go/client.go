@@ -185,10 +185,27 @@ func WithH2C() ClientOption {
 	}}
 }
 
-// Register registers a new agent with the server.
-// The csr parameter should be a PEM-encoded PKCS#10 Certificate Signing Request.
-// The agent generates its own key pair and sends only the CSR; the private key never leaves the agent.
-func (c *Client) Register(ctx context.Context, token, hostname, agentVersion string, csr []byte) (*pm.RegisterResponse, error) {
+// RegisterAgentResult contains the result of agent registration.
+type RegisterAgentResult struct {
+	DeviceID    string
+	CACert      []byte
+	Certificate []byte
+	GatewayURL  string
+}
+
+// RegisterAgent registers an agent with the control server.
+// This is a standalone function that uses ControlServiceClient (not AgentServiceClient).
+// The controlURL is the control server URL (where the web UI connects).
+// Returns the gateway URL that the agent should use for streaming.
+func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agentVersion string, csr []byte, opts ...ClientOption) (*RegisterAgentResult, error) {
+	c := &Client{}
+	httpClient := http.DefaultClient
+	for _, opt := range opts {
+		opt.apply(c, &httpClient)
+	}
+
+	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
+
 	req := connect.NewRequest(&pm.RegisterRequest{
 		Token:        token,
 		Hostname:     hostname,
@@ -196,17 +213,17 @@ func (c *Client) Register(ctx context.Context, token, hostname, agentVersion str
 		Csr:          csr,
 	})
 
-	resp, err := c.client.Register(ctx, req)
+	resp, err := controlClient.Register(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("register: %w", err)
 	}
 
-	c.mu.Lock()
-	c.deviceID = resp.Msg.DeviceId.Value
-	c.authToken = resp.Msg.AuthToken
-	c.mu.Unlock()
-
-	return resp.Msg, nil
+	return &RegisterAgentResult{
+		DeviceID:    resp.Msg.DeviceId.GetValue(),
+		CACert:      resp.Msg.CaCert,
+		Certificate: resp.Msg.Certificate,
+		GatewayURL:  resp.Msg.GatewayUrl,
+	}, nil
 }
 
 // StreamHandler handles messages received from the server.
