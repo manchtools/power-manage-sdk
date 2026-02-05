@@ -42,6 +42,9 @@ const (
 	// Files (400-499)
 	ActionType_ACTION_TYPE_FILE      ActionType = 400 // File management
 	ActionType_ACTION_TYPE_DIRECTORY ActionType = 401 // Directory management
+	// Instant actions (500-599) — agent-builtin, no parameters
+	ActionType_ACTION_TYPE_REBOOT ActionType = 500 // Reboot the device (5-minute delay)
+	ActionType_ACTION_TYPE_SYNC   ActionType = 501 // Trigger immediate agent sync
 )
 
 // Enum value maps for ActionType.
@@ -59,6 +62,8 @@ var (
 		300: "ACTION_TYPE_SYSTEMD",
 		400: "ACTION_TYPE_FILE",
 		401: "ACTION_TYPE_DIRECTORY",
+		500: "ACTION_TYPE_REBOOT",
+		501: "ACTION_TYPE_SYNC",
 	}
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
@@ -73,6 +78,8 @@ var (
 		"ACTION_TYPE_SYSTEMD":     300,
 		"ACTION_TYPE_FILE":        400,
 		"ACTION_TYPE_DIRECTORY":   401,
+		"ACTION_TYPE_REBOOT":      500,
+		"ACTION_TYPE_SYNC":        501,
 	}
 )
 
@@ -1853,7 +1860,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
-	"durationMs*\xb9\x02\n" +
+	"durationMs*\xe9\x02\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -1867,7 +1874,9 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x18\n" +
 	"\x13ACTION_TYPE_SYSTEMD\x10\xac\x02\x12\x15\n" +
 	"\x10ACTION_TYPE_FILE\x10\x90\x03\x12\x1a\n" +
-	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03*\x98\x01\n" +
+	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03\x12\x17\n" +
+	"\x12ACTION_TYPE_REBOOT\x10\xf4\x03\x12\x15\n" +
+	"\x10ACTION_TYPE_SYNC\x10\xf5\x03*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +

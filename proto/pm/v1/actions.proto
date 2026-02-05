@@ -34,6 +34,10 @@ enum ActionType {
   // Files (400-499)
   ACTION_TYPE_FILE = 400;       // File management
   ACTION_TYPE_DIRECTORY = 401;  // Directory management
+
+  // Instant actions (500-599) — agent-builtin, no parameters
+  ACTION_TYPE_REBOOT = 500;     // Reboot the device (5-minute delay)
+  ACTION_TYPE_SYNC = 501;       // Trigger immediate agent sync
 }
 
 // ============================================================================

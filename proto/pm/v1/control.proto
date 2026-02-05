@@ -1126,6 +1126,21 @@ message ListExecutionsResponse {
 }
 
 // ============================================================================
+// Instant Actions (agent-builtin, no parameters)
+// ============================================================================
+
+message DispatchInstantActionRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,ne=0"
+  ActionType instant_action = 2;
+}
+
+message DispatchInstantActionResponse {
+  ActionExecution execution = 1;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1229,6 +1244,7 @@ service ControlService {
   rpc DispatchActionSet(DispatchActionSetRequest) returns (DispatchActionSetResponse);
   rpc DispatchDefinition(DispatchDefinitionRequest) returns (DispatchDefinitionResponse);
   rpc DispatchToGroup(DispatchToGroupRequest) returns (DispatchToGroupResponse);
+  rpc DispatchInstantAction(DispatchInstantActionRequest) returns (DispatchInstantActionResponse);
   rpc GetExecution(GetExecutionRequest) returns (GetExecutionResponse);
   rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse);
 }
