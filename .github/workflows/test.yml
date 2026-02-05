@@ -1,0 +1,108 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run unit tests
+        run: go test -v -race -short ./...
+        working-directory: go/pkg
+
+  test-apt:
+    name: Integration Tests (apt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Update apt cache
+        run: sudo apt-get update
+
+      - name: Run integration tests
+        run: go test -v -race ./...
+        working-directory: go/pkg
+
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage-apt.out ./...
+        working-directory: go/pkg
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-apt
+          path: go/pkg/coverage-apt.out
+
+  test-dnf:
+    name: Integration Tests (dnf)
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Go
+        run: dnf install -y golang
+
+      - name: Update dnf cache
+        run: dnf makecache
+
+      - name: Run integration tests
+        run: go test -v ./...
+        working-directory: go/pkg
+
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage-dnf.out ./...
+        working-directory: go/pkg
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-dnf
+          path: go/pkg/coverage-dnf.out
+
+  coverage-report:
+    name: Coverage Report
+    needs: [test-apt, test-dnf]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Download apt coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-apt
+          path: coverage
+
+      - name: Download dnf coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-dnf
+          path: coverage
+
+      - name: Display coverage
+        run: |
+          echo "=== APT Coverage ==="
+          go tool cover -func=coverage/coverage-apt.out | tail -1
+          echo ""
+          echo "=== DNF Coverage ==="
+          go tool cover -func=coverage/coverage-dnf.out | tail -1
