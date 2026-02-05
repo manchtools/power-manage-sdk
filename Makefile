@@ -1,4 +1,4 @@
-.PHONY: generate generate-go clean install-tools
+.PHONY: generate generate-go generate-ts clean install-tools
 
 # Proto source directory
 PROTO_DIR := proto
@@ -10,7 +10,7 @@ install-tools:
 	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
 	go install github.com/favadi/protoc-go-inject-tag@latest
 
-generate: generate-go inject-tags
+generate: generate-go inject-tags generate-ts
 
 generate-go:
 	@mkdir -p $(GEN_DIR)/go/pm/v1
@@ -24,6 +24,9 @@ generate-go:
 
 inject-tags:
 	protoc-go-inject-tag -input="$(GEN_DIR)/go/pm/v1/*.pb.go"
+
+generate-ts:
+	npx @bufbuild/buf generate
 
 clean:
 	rm -rf $(GEN_DIR)
