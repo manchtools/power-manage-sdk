@@ -126,7 +126,12 @@ func WithMTLSFromPEM(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
 		return nil, fmt.Errorf("parse client certificate: %w", err)
 	}
 
-	caPool := x509.NewCertPool()
+	// Start from system roots so we also trust publicly-issued certificates
+	// (e.g. Let's Encrypt on a reverse proxy), then add the internal CA.
+	caPool, err := x509.SystemCertPool()
+	if err != nil {
+		caPool = x509.NewCertPool()
+	}
 	if !caPool.AppendCertsFromPEM(caPEM) {
 		return nil, errors.New("failed to parse CA certificate")
 	}
