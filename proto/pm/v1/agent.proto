@@ -1,0 +1,247 @@
+syntax = "proto3";
+
+package pm.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+
+import "google/protobuf/duration.proto";
+import "pm/v1/common.proto";
+import "pm/v1/actions.proto";
+
+// ============================================================================
+// Agent Service
+// ============================================================================
+
+service AgentService {
+  // Bidirectional stream for agent-server communication
+  rpc Stream(stream AgentMessage) returns (stream ServerMessage);
+
+  // Sync assigned actions (called by agent after successful connection)
+  // Returns all actions currently assigned to the device for local storage
+  rpc SyncActions(SyncActionsRequest) returns (SyncActionsResponse);
+}
+
+// ============================================================================
+// Agent -> Server
+// ============================================================================
+
+message AgentMessage {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+
+  oneof payload {
+    // @gotags: validate:"omitempty"
+    Hello hello = 10;
+    // @gotags: validate:"omitempty"
+    Heartbeat heartbeat = 11;
+    // @gotags: validate:"omitempty"
+    ActionResult action_result = 20;
+    // @gotags: validate:"omitempty"
+    OutputChunk output_chunk = 21;
+    // @gotags: validate:"omitempty"
+    OSQueryResult query_result = 30;
+    // @gotags: validate:"omitempty"
+    SecurityAlert security_alert = 40;
+  }
+}
+
+// ============================================================================
+// Output Streaming
+// ============================================================================
+
+// Output stream type for stdout/stderr differentiation
+enum OutputStreamType {
+  OUTPUT_STREAM_TYPE_UNSPECIFIED = 0;
+  OUTPUT_STREAM_TYPE_STDOUT = 1;
+  OUTPUT_STREAM_TYPE_STDERR = 2;
+}
+
+// Output chunk sent during action execution (Agent -> Server)
+message OutputChunk {
+  // @gotags: validate:"required,ulid"
+  string execution_id = 1;
+  // @gotags: validate:"required,ne=0"
+  OutputStreamType stream = 2;
+  // @gotags: validate:"required,max=65536"
+  bytes data = 3;
+  // @gotags: validate:"gte=0"
+  int64 sequence = 4;
+}
+
+message Hello {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+  // @gotags: validate:"required,min=1,max=32"
+  string agent_version = 2;
+  // @gotags: validate:"required,min=1,max=253"
+  string hostname = 3;
+  // @gotags: validate:"omitempty,max=4096"
+  string auth_token = 4;
+}
+
+message Heartbeat {
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration uptime = 1;
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  float cpu_percent = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  float memory_percent = 3;
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  float disk_percent = 4;
+}
+
+// ============================================================================
+// Security Alerts
+// ============================================================================
+
+// Security alert types for audit logging
+enum SecurityAlertType {
+  SECURITY_ALERT_TYPE_UNSPECIFIED = 0;
+  // Someone attempted to reassign the agent to a different server
+  SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT = 1;
+  // Credential file tampering detected
+  SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING = 2;
+  // Invalid certificate presented
+  SECURITY_ALERT_TYPE_INVALID_CERTIFICATE = 3;
+}
+
+// Security alert sent from agent to server for audit logging
+message SecurityAlert {
+  // @gotags: validate:"required,ne=0"
+  SecurityAlertType type = 1;
+  // @gotags: validate:"required,min=1,max=1024"
+  string message = 2;
+  // Additional context as key-value pairs
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+  map<string, string> details = 3;
+}
+
+// ============================================================================
+// Server -> Agent
+// ============================================================================
+
+message ServerMessage {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+
+  oneof payload {
+    // @gotags: validate:"omitempty"
+    Welcome welcome = 10;
+    // @gotags: validate:"omitempty"
+    ActionDispatch action = 20;
+    // @gotags: validate:"omitempty"
+    OSQuery query = 30;
+    // @gotags: validate:"omitempty"
+    Error error = 40;
+  }
+}
+
+message Welcome {
+  // @gotags: validate:"required,min=1,max=32"
+  string server_version = 1;
+  // @gotags: validate:"omitempty"
+  google.protobuf.Duration heartbeat_interval = 2;
+}
+
+message ActionDispatch {
+  // @gotags: validate:"required"
+  Action action = 1;
+}
+
+message Error {
+  // @gotags: validate:"required,min=1,max=64"
+  string code = 1;
+  // @gotags: validate:"required,min=1,max=1024"
+  string message = 2;
+}
+
+// ============================================================================
+// OS Query (osquery-compatible)
+// ============================================================================
+
+message OSQuery {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string table = 2;
+  // @gotags: validate:"omitempty,dive,max=64"
+  repeated string columns = 3;
+  // @gotags: validate:"omitempty,dive"
+  repeated OSQueryCondition where = 4;
+  // @gotags: validate:"omitempty,gte=0,lte=10000"
+  int32 limit = 5;
+}
+
+message OSQueryCondition {
+  // @gotags: validate:"required,min=1,max=64"
+  string column = 1;
+  // @gotags: validate:"required"
+  OSQueryOp op = 2;
+  // @gotags: validate:"required,max=4096"
+  string value = 3;
+}
+
+enum OSQueryOp {
+  OS_QUERY_OP_UNSPECIFIED = 0;
+  OS_QUERY_OP_EQ = 1;
+  OS_QUERY_OP_NE = 2;
+  OS_QUERY_OP_GT = 3;
+  OS_QUERY_OP_LT = 4;
+  OS_QUERY_OP_GE = 5;
+  OS_QUERY_OP_LE = 6;
+  OS_QUERY_OP_LIKE = 7;
+  OS_QUERY_OP_GLOB = 8;
+}
+
+message OSQueryResult {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  // @gotags: validate:"omitempty"
+  bool success = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string error = 3;
+  // @gotags: validate:"omitempty,dive"
+  repeated OSQueryRow rows = 4;
+}
+
+message OSQueryRow {
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=65536"
+  map<string, string> data = 1;
+}
+
+// ============================================================================
+// Standard OS Query Tables
+// ============================================================================
+//
+// os_version: name, version, major, minor, patch, arch, platform, platform_like
+// system_info: hostname, cpu_type, cpu_brand, cpu_cores, physical_memory
+// kernel_info: version, path
+// uptime: days, hours, minutes, seconds, total_seconds
+// users: uid, gid, username, directory, shell
+// processes: pid, name, path, cmdline, state, uid, parent
+// packages: name, version, arch, source
+// deb_packages: name, version, arch, status
+// rpm_packages: name, version, release, arch
+// systemd_units: id, type, load_state, active_state, sub_state
+// listening_ports: pid, port, protocol, address
+// mounts: device, path, type
+// memory_info: memory_total, memory_free, swap_total, swap_free
+
+// ============================================================================
+// Action Sync (Agent pulls assigned actions from server)
+// ============================================================================
+
+message SyncActionsRequest {
+  // @gotags: validate:"required"
+  DeviceId device_id = 1;
+}
+
+message SyncActionsResponse {
+  // All actions currently assigned to this device
+  // The agent should replace its local action store with this list
+  repeated Action actions = 1;
+  // Effective sync interval in minutes for this device
+  // Agent should use this for the next sync interval
+  // 0 means use default (30 minutes)
+  int32 sync_interval_minutes = 2;
+}

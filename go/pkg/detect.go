@@ -1,0 +1,70 @@
+package pkg
+
+import (
+	"context"
+	"errors"
+	"os"
+)
+
+// ErrNoPackageManager is returned when no supported package manager is found.
+var ErrNoPackageManager = errors.New("no supported package manager found")
+
+// Detect returns the appropriate package manager for the current system.
+func Detect() (Manager, error) {
+	return DetectWithContext(context.Background())
+}
+
+// DetectWithContext returns the appropriate package manager with context.
+func DetectWithContext(ctx context.Context) (Manager, error) {
+	// Check for apt (Debian/Ubuntu)
+	if _, err := os.Stat("/usr/bin/apt-get"); err == nil {
+		return NewAptWithContext(ctx), nil
+	}
+
+	// Check for dnf (Fedora/RHEL 8+)
+	if _, err := os.Stat("/usr/bin/dnf"); err == nil {
+		return NewDnfWithContext(ctx), nil
+	}
+
+	// Check for pacman (Arch Linux)
+	if _, err := os.Stat("/usr/bin/pacman"); err == nil {
+		return NewPacmanWithContext(ctx), nil
+	}
+
+	// Check for zypper (openSUSE/SLES)
+	if _, err := os.Stat("/usr/bin/zypper"); err == nil {
+		return NewZypperWithContext(ctx), nil
+	}
+
+	return nil, ErrNoPackageManager
+}
+
+// IsApt returns true if apt is available.
+func IsApt() bool {
+	_, err := os.Stat("/usr/bin/apt-get")
+	return err == nil
+}
+
+// IsDnf returns true if dnf is available.
+func IsDnf() bool {
+	_, err := os.Stat("/usr/bin/dnf")
+	return err == nil
+}
+
+// IsPacman returns true if pacman is available.
+func IsPacman() bool {
+	_, err := os.Stat("/usr/bin/pacman")
+	return err == nil
+}
+
+// IsZypper returns true if zypper is available.
+func IsZypper() bool {
+	_, err := os.Stat("/usr/bin/zypper")
+	return err == nil
+}
+
+// IsFlatpak returns true if flatpak is available.
+func IsFlatpak() bool {
+	_, err := os.Stat("/usr/bin/flatpak")
+	return err == nil
+}
