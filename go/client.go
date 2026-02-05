@@ -99,22 +99,14 @@ func WithMTLS(certFile, keyFile, caFile string) (ClientOption, error) {
 	}
 
 	return &funcOption{func(c *Client, httpClient **http.Client) {
-		*httpClient = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsConfig,
-			},
-		}
+		*httpClient = newHTTPClientWithTLS(tlsConfig)
 	}}, nil
 }
 
 // WithTLSConfig configures the client with a custom TLS configuration.
 func WithTLSConfig(tlsConfig *tls.Config) ClientOption {
 	return &funcOption{func(c *Client, httpClient **http.Client) {
-		*httpClient = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsConfig,
-			},
-		}
+		*httpClient = newHTTPClientWithTLS(tlsConfig)
 	}}
 }
 
@@ -143,11 +135,7 @@ func WithMTLSFromPEM(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
 	}
 
 	return &funcOption{func(c *Client, httpClient **http.Client) {
-		*httpClient = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsConfig,
-			},
-		}
+		*httpClient = newHTTPClientWithTLS(tlsConfig)
 	}}, nil
 }
 
@@ -155,14 +143,21 @@ func WithMTLSFromPEM(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
 // WARNING: Only use this for development/testing!
 func WithInsecureSkipVerify() ClientOption {
 	return &funcOption{func(c *Client, httpClient **http.Client) {
-		*httpClient = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		}
+		*httpClient = newHTTPClientWithTLS(&tls.Config{
+			InsecureSkipVerify: true,
+		})
 	}}
+}
+
+// newHTTPClientWithTLS creates an HTTP client with HTTP/2 support enabled.
+// A bare http.Transport with a custom TLSClientConfig disables Go's automatic
+// HTTP/2 negotiation, so we explicitly configure it via http2.ConfigureTransport.
+func newHTTPClientWithTLS(tlsConfig *tls.Config) *http.Client {
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+	http2.ConfigureTransport(transport)
+	return &http.Client{Transport: transport}
 }
 
 // WithH2C configures the client to use HTTP/2 cleartext (h2c) without TLS.
