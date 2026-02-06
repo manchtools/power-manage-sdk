@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/actions.proto.
  */
 export const file_pm_v1_actions: GenFile = /*@__PURE__*/
-  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSLZBAoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRInCgdwYWNrYWdlGAogASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgLIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgMIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgNIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGA4gASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgPIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYECABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgRIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYEiABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIRCglzaWduYXR1cmUYFCABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgVIAEoDEIICgZwYXJhbXMiaAoOQWN0aW9uU2NoZWR1bGUSDAoEY3JvbhgBIAEoCRIWCg5pbnRlcnZhbF9ob3VycxgCIAEoBRIVCg1ydW5fb25fYXNzaWduGAMgASgIEhkKEXNraXBfaWZfdW5jaGFuZ2VkGAQgASgIIqIBCg1QYWNrYWdlUGFyYW1zEgwKBG5hbWUYASABKAkSDwoHdmVyc2lvbhgCIAEoCRIXCg9hbGxvd19kb3duZ3JhZGUYAyABKAgSCwoDcGluGAQgASgIEhAKCGFwdF9uYW1lGAogASgJEhAKCGRuZl9uYW1lGAsgASgJEhMKC3BhY21hbl9uYW1lGAwgASgJEhMKC3p5cHBlcl9uYW1lGA0gASgJIk4KEEFwcEluc3RhbGxQYXJhbXMSCwoDdXJsGAEgASgJEhcKD2NoZWNrc3VtX3NoYTI1NhgCIAEoCRIUCgxpbnN0YWxsX3BhdGgYAyABKAki0AEKC1NoZWxsUGFyYW1zEg4KBnNjcmlwdBgBIAEoCRITCgtpbnRlcnByZXRlchgCIAEoCRITCgtydW5fYXNfcm9vdBgDIAEoCBIZChF3b3JraW5nX2RpcmVjdG9yeRgEIAEoCRI4CgtlbnZpcm9ubWVudBgFIAMoCzIjLnBtLnYxLlNoZWxsUGFyYW1zLkVudmlyb25tZW50RW50cnkaMgoQRW52aXJvbm1lbnRFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIngKDVN5c3RlbWRQYXJhbXMSEQoJdW5pdF9uYW1lGAEgASgJEi4KDWRlc2lyZWRfc3RhdGUYAiABKA4yFy5wbS52MS5TeXN0ZW1kVW5pdFN0YXRlEg4KBmVuYWJsZRgDIAEoCBIUCgx1bml0X2NvbnRlbnQYBCABKAkiVwoKRmlsZVBhcmFtcxIMCgRwYXRoGAEgASgJEg8KB2NvbnRlbnQYAiABKAkSDQoFb3duZXIYAyABKAkSDQoFZ3JvdXAYBCABKAkSDAoEbW9kZRgFIAEoCSJeCg9EaXJlY3RvcnlQYXJhbXMSDAoEcGF0aBgBIAEoCRINCgVvd25lchgCIAEoCRINCgVncm91cBgDIAEoCRIMCgRtb2RlGAQgASgJEhEKCXJlY3Vyc2l2ZRgFIAEoCCJVCgxVcGRhdGVQYXJhbXMSFQoNc2VjdXJpdHlfb25seRgBIAEoCBISCgphdXRvcmVtb3ZlGAIgASgIEhoKEnJlYm9vdF9pZl9yZXF1aXJlZBgDIAEoCCJRCg1GbGF0cGFrUGFyYW1zEg4KBmFwcF9pZBgBIAEoCRIOCgZyZW1vdGUYAiABKAkSEwoLc3lzdGVtX3dpZGUYAyABKAgSCwoDcGluGAQgASgIIrgBChBSZXBvc2l0b3J5UGFyYW1zEgwKBG5hbWUYASABKAkSIQoDYXB0GAogASgLMhQucG0udjEuQXB0UmVwb3NpdG9yeRIhCgNkbmYYCyABKAsyFC5wbS52MS5EbmZSZXBvc2l0b3J5EicKBnBhY21hbhgMIAEoCzIXLnBtLnYxLlBhY21hblJlcG9zaXRvcnkSJwoGenlwcGVyGA0gASgLMhcucG0udjEuWnlwcGVyUmVwb3NpdG9yeSKdAQoNQXB0UmVwb3NpdG9yeRILCgN1cmwYASABKAkSFAoMZGlzdHJpYnV0aW9uGAIgASgJEhIKCmNvbXBvbmVudHMYAyADKAkSEwoLZ3BnX2tleV91cmwYBCABKAkSDwoHZ3BnX2tleRgFIAEoCRIPCgd0cnVzdGVkGAYgASgIEgwKBGFyY2gYByABKAkSEAoIZGlzYWJsZWQYCCABKAgikwEKDURuZlJlcG9zaXRvcnkSDwoHYmFzZXVybBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhAKCGdwZ2NoZWNrGAQgASgIEg4KBmdwZ2tleRgFIAEoCRIXCg9tb2R1bGVfaG90Zml4ZXMYBiABKAgSEAoIZGlzYWJsZWQYByABKAgiRwoQUGFjbWFuUmVwb3NpdG9yeRIOCgZzZXJ2ZXIYASABKAkSEQoJc2lnX2xldmVsGAIgASgJEhAKCGRpc2FibGVkGAMgASgIIpwBChBaeXBwZXJSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhMKC2F1dG9yZWZyZXNoGAQgASgIEhAKCGdwZ2NoZWNrGAUgASgIEg4KBmdwZ2tleRgGIAEoCRIMCgR0eXBlGAcgASgJEhAKCGRpc2FibGVkGAggASgIItYBCgxBY3Rpb25SZXN1bHQSIgoJYWN0aW9uX2lkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSJgoGc3RhdHVzGAIgASgOMhYucG0udjEuRXhlY3V0aW9uU3RhdHVzEg0KBWVycm9yGAMgASgJEiQKBm91dHB1dBgEIAEoCzIULnBtLnYxLkNvbW1hbmRPdXRwdXQSMAoMY29tcGxldGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtkdXJhdGlvbl9tcxgGIAEoAyrpAgoKQWN0aW9uVHlwZRIbChdBQ1RJT05fVFlQRV9VTlNQRUNJRklFRBAAEhcKE0FDVElPTl9UWVBFX1BBQ0tBR0UQARIWChJBQ1RJT05fVFlQRV9VUERBVEUQAhIaChZBQ1RJT05fVFlQRV9SRVBPU0lUT1JZEAMSGQoVQUNUSU9OX1RZUEVfQVBQX0lNQUdFEGQSEwoPQUNUSU9OX1RZUEVfREVCEGUSEwoPQUNUSU9OX1RZUEVfUlBNEGYSFwoTQUNUSU9OX1RZUEVfRkxBVFBBSxBnEhYKEUFDVElPTl9UWVBFX1NIRUxMEMgBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMqmAEKEFN5c3RlbWRVbml0U3RhdGUSIgoeU1lTVEVNRF9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTWVNURU1EX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNZU1RFTURfVU5JVF9TVEFURV9SRVNUQVJURUQQA0I6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_common]);
+  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSL8BAoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRInCgdwYWNrYWdlGAogASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgLIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgMIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgNIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGA4gASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgPIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYECABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgRIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYEiABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBMgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEhEKCXNpZ25hdHVyZRgUIAEoDBIYChBwYXJhbXNfY2Fub25pY2FsGBUgASgMQggKBnBhcmFtcyJoCg5BY3Rpb25TY2hlZHVsZRIMCgRjcm9uGAEgASgJEhYKDmludGVydmFsX2hvdXJzGAIgASgFEhUKDXJ1bl9vbl9hc3NpZ24YAyABKAgSGQoRc2tpcF9pZl91bmNoYW5nZWQYBCABKAgiogEKDVBhY2thZ2VQYXJhbXMSDAoEbmFtZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgJEhcKD2FsbG93X2Rvd25ncmFkZRgDIAEoCBILCgNwaW4YBCABKAgSEAoIYXB0X25hbWUYCiABKAkSEAoIZG5mX25hbWUYCyABKAkSEwoLcGFjbWFuX25hbWUYDCABKAkSEwoLenlwcGVyX25hbWUYDSABKAkiTgoQQXBwSW5zdGFsbFBhcmFtcxILCgN1cmwYASABKAkSFwoPY2hlY2tzdW1fc2hhMjU2GAIgASgJEhQKDGluc3RhbGxfcGF0aBgDIAEoCSLQAQoLU2hlbGxQYXJhbXMSDgoGc2NyaXB0GAEgASgJEhMKC2ludGVycHJldGVyGAIgASgJEhMKC3J1bl9hc19yb290GAMgASgIEhkKEXdvcmtpbmdfZGlyZWN0b3J5GAQgASgJEjgKC2Vudmlyb25tZW50GAUgAygLMiMucG0udjEuU2hlbGxQYXJhbXMuRW52aXJvbm1lbnRFbnRyeRoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEieAoNU3lzdGVtZFBhcmFtcxIRCgl1bml0X25hbWUYASABKAkSLgoNZGVzaXJlZF9zdGF0ZRgCIAEoDjIXLnBtLnYxLlN5c3RlbWRVbml0U3RhdGUSDgoGZW5hYmxlGAMgASgIEhQKDHVuaXRfY29udGVudBgEIAEoCSJXCgpGaWxlUGFyYW1zEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoCRINCgVvd25lchgDIAEoCRINCgVncm91cBgEIAEoCRIMCgRtb2RlGAUgASgJIl4KD0RpcmVjdG9yeVBhcmFtcxIMCgRwYXRoGAEgASgJEg0KBW93bmVyGAIgASgJEg0KBWdyb3VwGAMgASgJEgwKBG1vZGUYBCABKAkSEQoJcmVjdXJzaXZlGAUgASgIIlUKDFVwZGF0ZVBhcmFtcxIVCg1zZWN1cml0eV9vbmx5GAEgASgIEhIKCmF1dG9yZW1vdmUYAiABKAgSGgoScmVib290X2lmX3JlcXVpcmVkGAMgASgIIlEKDUZsYXRwYWtQYXJhbXMSDgoGYXBwX2lkGAEgASgJEg4KBnJlbW90ZRgCIAEoCRITCgtzeXN0ZW1fd2lkZRgDIAEoCBILCgNwaW4YBCABKAgiuAEKEFJlcG9zaXRvcnlQYXJhbXMSDAoEbmFtZRgBIAEoCRIhCgNhcHQYCiABKAsyFC5wbS52MS5BcHRSZXBvc2l0b3J5EiEKA2RuZhgLIAEoCzIULnBtLnYxLkRuZlJlcG9zaXRvcnkSJwoGcGFjbWFuGAwgASgLMhcucG0udjEuUGFjbWFuUmVwb3NpdG9yeRInCgZ6eXBwZXIYDSABKAsyFy5wbS52MS5aeXBwZXJSZXBvc2l0b3J5Ip0BCg1BcHRSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRIUCgxkaXN0cmlidXRpb24YAiABKAkSEgoKY29tcG9uZW50cxgDIAMoCRITCgtncGdfa2V5X3VybBgEIAEoCRIPCgdncGdfa2V5GAUgASgJEg8KB3RydXN0ZWQYBiABKAgSDAoEYXJjaBgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCKTAQoNRG5mUmVwb3NpdG9yeRIPCgdiYXNldXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEAoIZ3BnY2hlY2sYBCABKAgSDgoGZ3Bna2V5GAUgASgJEhcKD21vZHVsZV9ob3RmaXhlcxgGIAEoCBIQCghkaXNhYmxlZBgHIAEoCCJHChBQYWNtYW5SZXBvc2l0b3J5Eg4KBnNlcnZlchgBIAEoCRIRCglzaWdfbGV2ZWwYAiABKAkSEAoIZGlzYWJsZWQYAyABKAginAEKEFp5cHBlclJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEwoLYXV0b3JlZnJlc2gYBCABKAgSEAoIZ3BnY2hlY2sYBSABKAgSDgoGZ3Bna2V5GAYgASgJEgwKBHR5cGUYByABKAkSEAoIZGlzYWJsZWQYCCABKAgi6gEKClVzZXJQYXJhbXMSEAoIdXNlcm5hbWUYASABKAkSCwoDdWlkGAIgASgFEgsKA2dpZBgDIAEoBRIQCghob21lX2RpchgEIAEoCRINCgVzaGVsbBgFIAEoCRIOCgZncm91cHMYBiADKAkSGwoTc3NoX2F1dGhvcml6ZWRfa2V5cxgHIAMoCRIPCgdjb21tZW50GAggASgJEhMKC3N5c3RlbV91c2VyGAkgASgIEhMKC2NyZWF0ZV9ob21lGAogASgIEhAKCGRpc2FibGVkGAsgASgIEhUKDXByaW1hcnlfZ3JvdXAYDCABKAki1gEKDEFjdGlvblJlc3VsdBIiCglhY3Rpb25faWQYASABKAsyDy5wbS52MS5BY3Rpb25JZBImCgZzdGF0dXMYAiABKA4yFi5wbS52MS5FeGVjdXRpb25TdGF0dXMSDQoFZXJyb3IYAyABKAkSJAoGb3V0cHV0GAQgASgLMhQucG0udjEuQ29tbWFuZE91dHB1dBIwCgxjb21wbGV0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKC2R1cmF0aW9uX21zGAYgASgDKoADCgpBY3Rpb25UeXBlEhsKF0FDVElPTl9UWVBFX1VOU1BFQ0lGSUVEEAASFwoTQUNUSU9OX1RZUEVfUEFDS0FHRRABEhYKEkFDVElPTl9UWVBFX1VQREFURRACEhoKFkFDVElPTl9UWVBFX1JFUE9TSVRPUlkQAxIZChVBQ1RJT05fVFlQRV9BUFBfSU1BR0UQZBITCg9BQ1RJT05fVFlQRV9ERUIQZRITCg9BQ1RJT05fVFlQRV9SUE0QZhIXChNBQ1RJT05fVFlQRV9GTEFUUEFLEGcSFgoRQUNUSU9OX1RZUEVfU0hFTEwQyAESGAoTQUNUSU9OX1RZUEVfU1lTVEVNRBCsAhIVChBBQ1RJT05fVFlQRV9GSUxFEJADEhoKFUFDVElPTl9UWVBFX0RJUkVDVE9SWRCRAxIXChJBQ1RJT05fVFlQRV9SRUJPT1QQ9AMSFQoQQUNUSU9OX1RZUEVfU1lOQxD1AxIVChBBQ1RJT05fVFlQRV9VU0VSENgEKpgBChBTeXN0ZW1kVW5pdFN0YXRlEiIKHlNZU1RFTURfVU5JVF9TVEFURV9VTlNQRUNJRklFRBAAEh4KGlNZU1RFTURfVU5JVF9TVEFURV9TVEFSVEVEEAESHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUT1BQRUQQAhIgChxTWVNURU1EX1VOSVRfU1RBVEVfUkVTVEFSVEVEEANCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.Action
@@ -115,6 +115,12 @@ export type Action = Message<"pm.v1.Action"> & {
      */
     value: DirectoryParams;
     case: "directory";
+  } | {
+    /**
+     * @generated from field: pm.v1.UserParams user = 19;
+     */
+    value: UserParams;
+    case: "user";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -899,6 +905,117 @@ export const ZypperRepositorySchema: GenMessage<ZypperRepository> = /*@__PURE__*
   messageDesc(file_pm_v1_actions, 14);
 
 /**
+ * UserParams configures user account management.
+ * Supports creating, updating, deactivating, and removing user accounts.
+ *
+ * @generated from message pm.v1.UserParams
+ */
+export type UserParams = Message<"pm.v1.UserParams"> & {
+  /**
+   * Username (required)
+   * @gotags: validate:"required,min=1,max=32,alphanum"
+   *
+   * @generated from field: string username = 1;
+   */
+  username: string;
+
+  /**
+   * User ID (optional - system assigns if not specified)
+   * @gotags: validate:"omitempty,gte=0,lte=65534"
+   *
+   * @generated from field: int32 uid = 2;
+   */
+  uid: number;
+
+  /**
+   * Primary group ID (optional - creates user's own group if not specified)
+   * @gotags: validate:"omitempty,gte=0,lte=65534"
+   *
+   * @generated from field: int32 gid = 3;
+   */
+  gid: number;
+
+  /**
+   * Home directory path (optional - defaults to /home/<username>)
+   * @gotags: validate:"omitempty,startswith=/"
+   *
+   * @generated from field: string home_dir = 4;
+   */
+  homeDir: string;
+
+  /**
+   * Login shell (optional - defaults to /bin/bash)
+   * @gotags: validate:"omitempty,startswith=/"
+   *
+   * @generated from field: string shell = 5;
+   */
+  shell: string;
+
+  /**
+   * Additional groups to add the user to
+   * @gotags: validate:"omitempty,dive,max=32"
+   *
+   * @generated from field: repeated string groups = 6;
+   */
+  groups: string[];
+
+  /**
+   * SSH authorized keys to add to ~/.ssh/authorized_keys
+   * @gotags: validate:"omitempty,dive,max=4096"
+   *
+   * @generated from field: repeated string ssh_authorized_keys = 7;
+   */
+  sshAuthorizedKeys: string[];
+
+  /**
+   * GECOS field / user comment (full name, etc.)
+   * @gotags: validate:"omitempty,max=255"
+   *
+   * @generated from field: string comment = 8;
+   */
+  comment: string;
+
+  /**
+   * Create as system user (UID < 1000, no home directory by default)
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: bool system_user = 9;
+   */
+  systemUser: boolean;
+
+  /**
+   * Create home directory (default: true for normal users, false for system users)
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: bool create_home = 10;
+   */
+  createHome: boolean;
+
+  /**
+   * Disable the user account (lock password, set shell to /usr/sbin/nologin)
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: bool disabled = 11;
+   */
+  disabled: boolean;
+
+  /**
+   * Primary group name (alternative to gid - creates group if needed)
+   * @gotags: validate:"omitempty,max=32"
+   *
+   * @generated from field: string primary_group = 12;
+   */
+  primaryGroup: string;
+};
+
+/**
+ * Describes the message pm.v1.UserParams.
+ * Use `create(UserParamsSchema)` to create a new message.
+ */
+export const UserParamsSchema: GenMessage<UserParams> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 15);
+
+/**
  * @generated from message pm.v1.ActionResult
  */
 export type ActionResult = Message<"pm.v1.ActionResult"> & {
@@ -950,7 +1067,7 @@ export type ActionResult = Message<"pm.v1.ActionResult"> & {
  * Use `create(ActionResultSchema)` to create a new message.
  */
 export const ActionResultSchema: GenMessage<ActionResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 15);
+  messageDesc(file_pm_v1_actions, 16);
 
 /**
  * @generated from enum pm.v1.ActionType
@@ -1063,6 +1180,15 @@ export enum ActionType {
    * @generated from enum value: ACTION_TYPE_SYNC = 501;
    */
   SYNC = 501,
+
+  /**
+   * System management (600-699)
+   *
+   * User account management
+   *
+   * @generated from enum value: ACTION_TYPE_USER = 600;
+   */
+  USER = 600,
 }
 
 /**

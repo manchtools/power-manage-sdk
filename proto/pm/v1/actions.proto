@@ -38,6 +38,9 @@ enum ActionType {
   // Instant actions (500-599) — agent-builtin, no parameters
   ACTION_TYPE_REBOOT = 500;     // Reboot the device (5-minute delay)
   ACTION_TYPE_SYNC = 501;       // Trigger immediate agent sync
+
+  // System management (600-699)
+  ACTION_TYPE_USER = 600;       // User account management
 }
 
 // ============================================================================
@@ -70,6 +73,7 @@ message Action {
     RepositoryParams repository = 16;
     FlatpakParams flatpak = 17;
     DirectoryParams directory = 18;
+    UserParams user = 19;
   }
 
   // ECDSA signature over canonical action payload (signed by CA key).
@@ -370,6 +374,58 @@ message ZypperRepository {
   // Set to true to disable/skip this repository manager
   // @gotags: validate:"omitempty"
   bool disabled = 8;
+}
+
+// UserParams configures user account management.
+// Supports creating, updating, deactivating, and removing user accounts.
+message UserParams {
+  // Username (required)
+  // @gotags: validate:"required,min=1,max=32,alphanum"
+  string username = 1;
+
+  // User ID (optional - system assigns if not specified)
+  // @gotags: validate:"omitempty,gte=0,lte=65534"
+  int32 uid = 2;
+
+  // Primary group ID (optional - creates user's own group if not specified)
+  // @gotags: validate:"omitempty,gte=0,lte=65534"
+  int32 gid = 3;
+
+  // Home directory path (optional - defaults to /home/<username>)
+  // @gotags: validate:"omitempty,startswith=/"
+  string home_dir = 4;
+
+  // Login shell (optional - defaults to /bin/bash)
+  // @gotags: validate:"omitempty,startswith=/"
+  string shell = 5;
+
+  // Additional groups to add the user to
+  // @gotags: validate:"omitempty,dive,max=32"
+  repeated string groups = 6;
+
+  // SSH authorized keys to add to ~/.ssh/authorized_keys
+  // @gotags: validate:"omitempty,dive,max=4096"
+  repeated string ssh_authorized_keys = 7;
+
+  // GECOS field / user comment (full name, etc.)
+  // @gotags: validate:"omitempty,max=255"
+  string comment = 8;
+
+  // Create as system user (UID < 1000, no home directory by default)
+  // @gotags: validate:"omitempty"
+  bool system_user = 9;
+
+  // Create home directory (default: true for normal users, false for system users)
+  // @gotags: validate:"omitempty"
+  bool create_home = 10;
+
+  // Disable the user account (lock password, set shell to /usr/sbin/nologin)
+  // @gotags: validate:"omitempty"
+  bool disabled = 11;
+
+  // Primary group name (alternative to gid - creates group if needed)
+  // @gotags: validate:"omitempty,max=32"
+  string primary_group = 12;
 }
 
 // ============================================================================
