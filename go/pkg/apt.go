@@ -16,6 +16,7 @@ import (
 type Apt struct {
 	ctx     context.Context
 	useSudo bool
+	aptCmd  string // cached apt command (apt or apt-get)
 }
 
 // NewApt creates a new Apt package manager.
@@ -50,28 +51,30 @@ func (a *Apt) Info() (name, version string, err error) {
 }
 
 // Install installs packages (latest version).
+// Uses --fix-broken to automatically resolve dependency issues.
 func (a *Apt) Install(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
-	args := append([]string{"install", "-y"}, packages...)
-	return a.run("apt-get", args...)
+	args := append([]string{"install", "-y", "--fix-broken"}, packages...)
+	return a.run("apt", args...)
 }
 
 // InstallVersion installs a package with specific version options.
+// Uses --fix-broken to automatically resolve dependency issues.
 func (a *Apt) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
 	pkgSpec := name
 	if opts.Version != "" {
 		pkgSpec = fmt.Sprintf("%s=%s", name, opts.Version)
 	}
 
-	args := []string{"install", "-y"}
+	args := []string{"install", "-y", "--fix-broken"}
 	if opts.AllowDowngrade {
 		args = append(args, "--allow-downgrades")
 	}
 	args = append(args, pkgSpec)
 
-	return a.run("apt-get", args...)
+	return a.run("apt", args...)
 }
 
 // Remove removes packages.
@@ -80,7 +83,7 @@ func (a *Apt) Remove(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"remove", "-y"}, packages...)
-	return a.run("apt-get", args...)
+	return a.run("apt", args...)
 }
 
 // Purge removes packages including configuration files.
@@ -89,26 +92,36 @@ func (a *Apt) Purge(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"purge", "-y"}, packages...)
-	return a.run("apt-get", args...)
+	return a.run("apt", args...)
 }
 
 // Update updates the package database.
 func (a *Apt) Update() (*CommandResult, error) {
-	return a.run("apt-get", "update")
+	return a.run("apt", "update")
 }
 
 // Upgrade upgrades packages.
 func (a *Apt) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
-		return a.run("apt-get", "upgrade", "-y")
+		return a.run("apt", "upgrade", "-y")
 	}
 	args := append([]string{"install", "-y", "--only-upgrade"}, packages...)
-	return a.run("apt-get", args...)
+	return a.run("apt", args...)
 }
 
 // Search searches for packages.
 func (a *Apt) Search(query string) ([]SearchResult, error) {
-	out, err := exec.CommandContext(a.ctx, "apt-cache", "search", query).Output()
+	var cmd string
+	var args []string
+	if a.hasApt() {
+		cmd = "apt"
+		args = []string{"search", "--names-only", query}
+	} else {
+		cmd = "apt-cache"
+		args = []string{"search", query}
+	}
+
+	out, err := exec.CommandContext(a.ctx, cmd, args...).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +210,14 @@ func (a *Apt) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (a *Apt) Show(name string) (*Package, error) {
-	out, err := exec.CommandContext(a.ctx, "apt-cache", "show", name).Output()
+	var cmd string
+	if a.hasApt() {
+		cmd = "apt"
+	} else {
+		cmd = "apt-cache"
+	}
+
+	out, err := exec.CommandContext(a.ctx, cmd, "show", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -351,8 +371,33 @@ func (a *Apt) getPinnedSet() (map[string]bool, error) {
 	return pinned, nil
 }
 
+// getAptCmd returns the preferred apt command (apt if available, apt-get as fallback).
+// The result is cached for subsequent calls.
+func (a *Apt) getAptCmd() string {
+	if a.aptCmd != "" {
+		return a.aptCmd
+	}
+	// Prefer apt if available
+	if _, err := exec.LookPath("apt"); err == nil {
+		a.aptCmd = "apt"
+	} else {
+		a.aptCmd = "apt-get"
+	}
+	return a.aptCmd
+}
+
+// hasApt returns true if the apt command is available.
+func (a *Apt) hasApt() bool {
+	return a.getAptCmd() == "apt"
+}
+
 func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
 	start := time.Now()
+
+	// Use preferred apt command for apt/apt-get operations
+	if cmd == "apt" || cmd == "apt-get" {
+		cmd = a.getAptCmd()
+	}
 
 	var c *exec.Cmd
 	if a.useSudo {
