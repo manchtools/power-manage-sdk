@@ -1021,6 +1021,8 @@ message ActionExecution {
   int64 duration_ms = 11;
   string created_by = 12;
   CommandOutput live_output = 13;  // Streaming output received so far (useful when status is RUNNING)
+  DesiredState desired_state = 14;  // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
+  bool changed = 15;  // Whether the execution made changes to the system (false = state was already as desired)
 }
 
 message DispatchActionRequest {

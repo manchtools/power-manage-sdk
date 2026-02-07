@@ -1829,7 +1829,9 @@ type ActionResult struct {
 	// @gotags: validate:"omitempty"
 	CompletedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0"
-	DurationMs    int64 `protobuf:"varint,6,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty" validate:"omitempty,gte=0"`
+	DurationMs int64 `protobuf:"varint,6,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty" validate:"omitempty,gte=0"`
+	// Whether the action made changes to the system (true) or state was already as desired (false)
+	Changed       bool `protobuf:"varint,7,opt,name=changed,proto3" json:"changed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1904,6 +1906,13 @@ func (x *ActionResult) GetDurationMs() int64 {
 		return x.DurationMs
 	}
 	return 0
+}
+
+func (x *ActionResult) GetChanged() bool {
+	if x != nil {
+		return x.Changed
+	}
+	return false
 }
 
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
@@ -2048,7 +2057,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
 	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\x90\x02\n" +
+	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\xaa\x02\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -2056,7 +2065,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
-	"durationMs*\x80\x03\n" +
+	"durationMs\x12\x18\n" +
+	"\achanged\x18\a \x01(\bR\achanged*\x80\x03\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +

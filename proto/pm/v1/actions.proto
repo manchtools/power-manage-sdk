@@ -445,4 +445,6 @@ message ActionResult {
   google.protobuf.Timestamp completed_at = 5;
   // @gotags: validate:"omitempty,gte=0"
   int64 duration_ms = 6;
+  // Whether the action made changes to the system (true) or state was already as desired (false)
+  bool changed = 7;
 }
