@@ -35,9 +35,9 @@ enum DesiredState {
 
 // Assignment mode determines how an action is applied to a target
 enum AssignmentMode {
-  ASSIGNMENT_MODE_PRESENT = 0;   // Mandatory: must be applied (desired_state=PRESENT)
-  ASSIGNMENT_MODE_AVAILABLE = 1; // Catalog: user can choose to install
-  ASSIGNMENT_MODE_ABSENT = 2;    // Blocked: forcefully removed (desired_state=ABSENT)
+  ASSIGNMENT_MODE_REQUIRED = 0;  // Mandatory: action will be applied
+  ASSIGNMENT_MODE_AVAILABLE = 1; // Optional: user can select
+  ASSIGNMENT_MODE_EXCLUDED = 2;  // Blocked: action won't be applied on this target
 }
 
 // Output from command execution

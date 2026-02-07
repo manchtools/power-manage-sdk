@@ -134,22 +134,22 @@ func (DesiredState) EnumDescriptor() ([]byte, []int) {
 type AssignmentMode int32
 
 const (
-	AssignmentMode_ASSIGNMENT_MODE_PRESENT   AssignmentMode = 0 // Mandatory: must be applied (desired_state=PRESENT)
-	AssignmentMode_ASSIGNMENT_MODE_AVAILABLE AssignmentMode = 1 // Catalog: user can choose to install
-	AssignmentMode_ASSIGNMENT_MODE_ABSENT    AssignmentMode = 2 // Blocked: forcefully removed (desired_state=ABSENT)
+	AssignmentMode_ASSIGNMENT_MODE_REQUIRED  AssignmentMode = 0 // Mandatory: action will be applied
+	AssignmentMode_ASSIGNMENT_MODE_AVAILABLE AssignmentMode = 1 // Optional: user can select
+	AssignmentMode_ASSIGNMENT_MODE_EXCLUDED  AssignmentMode = 2 // Blocked: action won't be applied on this target
 )
 
 // Enum value maps for AssignmentMode.
 var (
 	AssignmentMode_name = map[int32]string{
-		0: "ASSIGNMENT_MODE_PRESENT",
+		0: "ASSIGNMENT_MODE_REQUIRED",
 		1: "ASSIGNMENT_MODE_AVAILABLE",
-		2: "ASSIGNMENT_MODE_ABSENT",
+		2: "ASSIGNMENT_MODE_EXCLUDED",
 	}
 	AssignmentMode_value = map[string]int32{
-		"ASSIGNMENT_MODE_PRESENT":   0,
+		"ASSIGNMENT_MODE_REQUIRED":  0,
 		"ASSIGNMENT_MODE_AVAILABLE": 1,
-		"ASSIGNMENT_MODE_ABSENT":    2,
+		"ASSIGNMENT_MODE_EXCLUDED":  2,
 	}
 )
 
@@ -359,11 +359,11 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x18EXECUTION_STATUS_TIMEOUT\x10\x06*C\n" +
 	"\fDesiredState\x12\x19\n" +
 	"\x15DESIRED_STATE_PRESENT\x10\x00\x12\x18\n" +
-	"\x14DESIRED_STATE_ABSENT\x10\x01*h\n" +
-	"\x0eAssignmentMode\x12\x1b\n" +
-	"\x17ASSIGNMENT_MODE_PRESENT\x10\x00\x12\x1d\n" +
-	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1a\n" +
-	"\x16ASSIGNMENT_MODE_ABSENT\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x14DESIRED_STATE_ABSENT\x10\x01*k\n" +
+	"\x0eAssignmentMode\x12\x1c\n" +
+	"\x18ASSIGNMENT_MODE_REQUIRED\x10\x00\x12\x1d\n" +
+	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1c\n" +
+	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_common_proto_rawDescOnce sync.Once

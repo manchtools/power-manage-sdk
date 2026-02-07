@@ -361,8 +361,7 @@ message ManagedAction {
   string name = 2;
   string description = 3;
   ActionType type = 4;
-  // Field 5 reserved: desired_state moved to assignments
-  reserved 5;
+  DesiredState desired_state = 5;
   oneof params {
     PackageParams package = 10;
     AppInstallParams app = 11;
@@ -388,8 +387,8 @@ message CreateActionRequest {
   string description = 2;
   // @gotags: validate:"required,ne=0"
   ActionType type = 3;
-  // Field 4 reserved: desired_state moved to assignments
-  reserved 4;
+  // @gotags: validate:"omitempty"
+  DesiredState desired_state = 4;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 5;
   // @gotags: validate:"omitempty"
@@ -463,8 +462,8 @@ message UpdateActionDescriptionRequest {
 message UpdateActionParamsRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
-  // Field 2 reserved: desired_state moved to assignments
-  reserved 2;
+  // @gotags: validate:"omitempty"
+  DesiredState desired_state = 2;
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 3;
   // @gotags: validate:"omitempty"
