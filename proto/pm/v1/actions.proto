@@ -184,6 +184,13 @@ message FileParams {
   string group = 4;
   // @gotags: validate:"omitempty,max=4"
   string mode = 5;
+
+  // Managed block mode: if true, manages a content block within the file.
+  // PRESENT: appends content if not already present in file.
+  // ABSENT: removes only the content block, not the entire file.
+  // Ownership and mode are still enforced.
+  // @gotags: validate:"omitempty"
+  bool managed_block = 6;
 }
 
 // DirectoryParams configures directory management.
@@ -403,9 +410,8 @@ message UserParams {
   // @gotags: validate:"omitempty,dive,max=32"
   repeated string groups = 6;
 
-  // SSH authorized keys to add to ~/.ssh/authorized_keys
-  // @gotags: validate:"omitempty,dive,max=4096"
-  repeated string ssh_authorized_keys = 7;
+  // Field 7 was ssh_authorized_keys - removed, use FILE action instead
+  reserved 7;
 
   // GECOS field / user comment (full name, etc.)
   // @gotags: validate:"omitempty,max=255"

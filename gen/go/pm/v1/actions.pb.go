@@ -862,7 +862,13 @@ type FileParams struct {
 	// @gotags: validate:"omitempty,max=32"
 	Group string `protobuf:"bytes,4,opt,name=group,proto3" json:"group,omitempty" validate:"omitempty,max=32"`
 	// @gotags: validate:"omitempty,max=4"
-	Mode          string `protobuf:"bytes,5,opt,name=mode,proto3" json:"mode,omitempty" validate:"omitempty,max=4"`
+	Mode string `protobuf:"bytes,5,opt,name=mode,proto3" json:"mode,omitempty" validate:"omitempty,max=4"`
+	// Managed block mode: if true, manages a content block within the file.
+	// PRESENT: appends content if not already present in file.
+	// ABSENT: removes only the content block, not the entire file.
+	// Ownership and mode are still enforced.
+	// @gotags: validate:"omitempty"
+	ManagedBlock  bool `protobuf:"varint,6,opt,name=managed_block,json=managedBlock,proto3" json:"managed_block,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -930,6 +936,13 @@ func (x *FileParams) GetMode() string {
 		return x.Mode
 	}
 	return ""
+}
+
+func (x *FileParams) GetManagedBlock() bool {
+	if x != nil {
+		return x.ManagedBlock
+	}
+	return false
 }
 
 // DirectoryParams configures directory management.
@@ -1680,9 +1693,6 @@ type UserParams struct {
 	// Additional groups to add the user to
 	// @gotags: validate:"omitempty,dive,max=32"
 	Groups []string `protobuf:"bytes,6,rep,name=groups,proto3" json:"groups,omitempty" validate:"omitempty,dive,max=32"`
-	// SSH authorized keys to add to ~/.ssh/authorized_keys
-	// @gotags: validate:"omitempty,dive,max=4096"
-	SshAuthorizedKeys []string `protobuf:"bytes,7,rep,name=ssh_authorized_keys,json=sshAuthorizedKeys,proto3" json:"ssh_authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
 	// GECOS field / user comment (full name, etc.)
 	// @gotags: validate:"omitempty,max=255"
 	Comment string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty" validate:"omitempty,max=255"`
@@ -1770,13 +1780,6 @@ func (x *UserParams) GetShell() string {
 func (x *UserParams) GetGroups() []string {
 	if x != nil {
 		return x.Groups
-	}
-	return nil
-}
-
-func (x *UserParams) GetSshAuthorizedKeys() []string {
-	if x != nil {
-		return x.SshAuthorizedKeys
 	}
 	return nil
 }
@@ -1976,14 +1979,15 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12<\n" +
 	"\rdesired_state\x18\x02 \x01(\x0e2\x17.pm.v1.SystemdUnitStateR\fdesiredState\x12\x16\n" +
 	"\x06enable\x18\x03 \x01(\bR\x06enable\x12!\n" +
-	"\funit_content\x18\x04 \x01(\tR\vunitContent\"z\n" +
+	"\funit_content\x18\x04 \x01(\tR\vunitContent\"\x9f\x01\n" +
 	"\n" +
 	"FileParams\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x14\n" +
 	"\x05owner\x18\x03 \x01(\tR\x05owner\x12\x14\n" +
 	"\x05group\x18\x04 \x01(\tR\x05group\x12\x12\n" +
-	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x83\x01\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\x12#\n" +
+	"\rmanaged_block\x18\x06 \x01(\bR\fmanagedBlock\"\x83\x01\n" +
 	"\x0fDirectoryParams\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
 	"\x05owner\x18\x02 \x01(\tR\x05owner\x12\x14\n" +
@@ -2040,7 +2044,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\bgpgcheck\x18\x05 \x01(\bR\bgpgcheck\x12\x16\n" +
 	"\x06gpgkey\x18\x06 \x01(\tR\x06gpgkey\x12\x12\n" +
 	"\x04type\x18\a \x01(\tR\x04type\x12\x1a\n" +
-	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xe2\x02\n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xb8\x02\n" +
 	"\n" +
 	"UserParams\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x10\n" +
@@ -2048,8 +2052,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12\x19\n" +
 	"\bhome_dir\x18\x04 \x01(\tR\ahomeDir\x12\x14\n" +
 	"\x05shell\x18\x05 \x01(\tR\x05shell\x12\x16\n" +
-	"\x06groups\x18\x06 \x03(\tR\x06groups\x12.\n" +
-	"\x13ssh_authorized_keys\x18\a \x03(\tR\x11sshAuthorizedKeys\x12\x18\n" +
+	"\x06groups\x18\x06 \x03(\tR\x06groups\x12\x18\n" +
 	"\acomment\x18\b \x01(\tR\acomment\x12\x1f\n" +
 	"\vsystem_user\x18\t \x01(\bR\n" +
 	"systemUser\x12\x1f\n" +
@@ -2057,7 +2060,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
 	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\xaa\x02\n" +
+	"\rprimary_group\x18\f \x01(\tR\fprimaryGroupJ\x04\b\a\x10\b\"\xaa\x02\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
