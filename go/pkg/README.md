@@ -1,6 +1,6 @@
 # Package Manager SDK
 
-A Go library for interacting with Linux package managers (apt, dnf) with structured data output and a fluent builder API.
+A Go library for interacting with Linux package managers (apt, dnf, pacman, zypper, flatpak) with structured data output and a fluent builder API.
 
 ## Installation
 
@@ -104,6 +104,9 @@ manager, err := pkg.Detect()
 // Or use specific implementations
 apt := pkg.NewApt()
 dnf := pkg.NewDnf()
+pacman := pkg.NewPacman()
+zypper := pkg.NewZypper()
+flatpak := pkg.NewFlatpak()
 
 // All Manager methods available
 manager.Install("nginx")
@@ -226,6 +229,9 @@ type CommandResult struct {
 |---------|---------|-----------|---------|
 | apt | Debian, Ubuntu, Linux Mint | `/usr/bin/apt-get` | `apt-mark hold/unhold` |
 | dnf | Fedora, RHEL 8+, CentOS Stream | `/usr/bin/dnf` | `dnf versionlock` (requires plugin) |
+| pacman | Arch Linux, Manjaro | `/usr/bin/pacman` | `IgnorePkg` in pacman.conf |
+| zypper | openSUSE, SLES | `/usr/bin/zypper` | `zypper addlock/removelock` |
+| flatpak | Cross-distro | `/usr/bin/flatpak` | N/A |
 
 ## Notes
 
@@ -233,8 +239,14 @@ type CommandResult struct {
 
 - **apt**: Use exact version from `apt-cache madison`, e.g., `1.24.0-1ubuntu1`
 - **dnf**: Use version-release format, e.g., `1.24.0-1.fc39`
+- **pacman**: Use version from `pacman -Si`, e.g., `1.24.0-1`
+- **zypper**: Use version from `zypper info`, e.g., `1.24.0-1.1`
+- **flatpak**: Use application ID, e.g., `org.mozilla.firefox`
 
 ### Pinning Requirements
 
 - **apt**: No additional setup required
 - **dnf**: Uses `python3-dnf-plugin-versionlock` (automatically installed when pinning is first used)
+- **pacman**: Modifies `/etc/pacman.conf` (requires root)
+- **zypper**: No additional setup required
+- **flatpak**: Pinning not supported

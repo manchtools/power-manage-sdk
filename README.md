@@ -35,7 +35,7 @@ Four proto files define the entire API surface:
 | File | Purpose |
 |------|---------|
 | `common.proto` | ULID identifiers, execution status, assignment modes |
-| `actions.proto` | 10 action types (package, shell, systemd, file, app, update, repository, directory, flatpak), parameters, scheduling |
+| `actions.proto` | 15 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, reboot, sync, user), parameters, scheduling |
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries |
 | `control.proto` | `ControlService` — 50+ RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions |
 
