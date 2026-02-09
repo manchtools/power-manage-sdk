@@ -410,8 +410,9 @@ message UserParams {
   // @gotags: validate:"omitempty,dive,max=32"
   repeated string groups = 6;
 
-  // Field 7 was ssh_authorized_keys - removed, use FILE action instead
-  reserved 7;
+  // SSH authorized keys to add to ~/.ssh/authorized_keys
+  // @gotags: validate:"omitempty,dive,max=4096"
+  repeated string ssh_authorized_keys = 7;
 
   // GECOS field / user comment (full name, etc.)
   // @gotags: validate:"omitempty,max=255"
