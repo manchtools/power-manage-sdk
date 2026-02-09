@@ -1147,6 +1147,40 @@ message DispatchInstantActionResponse {
 }
 
 // ============================================================================
+// Audit Log
+// ============================================================================
+
+message AuditEvent {
+  string id = 1;
+  string event_type = 2;
+  string stream_type = 3;
+  string stream_id = 4;
+  string actor_type = 5;
+  string actor_id = 6;
+  string data = 7;
+  google.protobuf.Timestamp occurred_at = 8;
+}
+
+message ListAuditEventsRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+  // @gotags: validate:"omitempty"
+  string actor_id = 3;
+  // @gotags: validate:"omitempty"
+  string stream_type = 4;
+  // @gotags: validate:"omitempty"
+  string event_type = 5;
+}
+
+message ListAuditEventsResponse {
+  repeated AuditEvent events = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1253,4 +1287,7 @@ service ControlService {
   rpc DispatchInstantAction(DispatchInstantActionRequest) returns (DispatchInstantActionResponse);
   rpc GetExecution(GetExecutionRequest) returns (GetExecutionResponse);
   rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse);
+
+  // Audit Log
+  rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
 }

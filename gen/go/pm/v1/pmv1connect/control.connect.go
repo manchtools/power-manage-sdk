@@ -265,6 +265,9 @@ const (
 	// ControlServiceListExecutionsProcedure is the fully-qualified name of the ControlService's
 	// ListExecutions RPC.
 	ControlServiceListExecutionsProcedure = "/pm.v1.ControlService/ListExecutions"
+	// ControlServiceListAuditEventsProcedure is the fully-qualified name of the ControlService's
+	// ListAuditEvents RPC.
+	ControlServiceListAuditEventsProcedure = "/pm.v1.ControlService/ListAuditEvents"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -360,6 +363,8 @@ type ControlServiceClient interface {
 	DispatchInstantAction(context.Context, *connect.Request[v1.DispatchInstantActionRequest]) (*connect.Response[v1.DispatchInstantActionResponse], error)
 	GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error)
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
+	// Audit Log
+	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -847,6 +852,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListExecutions")),
 			connect.WithClientOptions(opts...),
 		),
+		listAuditEvents: connect.NewClient[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse](
+			httpClient,
+			baseURL+ControlServiceListAuditEventsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListAuditEvents")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -931,6 +942,7 @@ type controlServiceClient struct {
 	dispatchInstantAction         *connect.Client[v1.DispatchInstantActionRequest, v1.DispatchInstantActionResponse]
 	getExecution                  *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
 	listExecutions                *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
+	listAuditEvents               *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1328,6 +1340,11 @@ func (c *controlServiceClient) ListExecutions(ctx context.Context, req *connect.
 	return c.listExecutions.CallUnary(ctx, req)
 }
 
+// ListAuditEvents calls pm.v1.ControlService.ListAuditEvents.
+func (c *controlServiceClient) ListAuditEvents(ctx context.Context, req *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error) {
+	return c.listAuditEvents.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1421,6 +1438,8 @@ type ControlServiceHandler interface {
 	DispatchInstantAction(context.Context, *connect.Request[v1.DispatchInstantActionRequest]) (*connect.Response[v1.DispatchInstantActionResponse], error)
 	GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error)
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
+	// Audit Log
+	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -1904,6 +1923,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ListExecutions")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceListAuditEventsHandler := connect.NewUnaryHandler(
+		ControlServiceListAuditEventsProcedure,
+		svc.ListAuditEvents,
+		connect.WithSchema(controlServiceMethods.ByName("ListAuditEvents")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2064,6 +2089,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetExecutionHandler.ServeHTTP(w, r)
 		case ControlServiceListExecutionsProcedure:
 			controlServiceListExecutionsHandler.ServeHTTP(w, r)
+		case ControlServiceListAuditEventsProcedure:
+			controlServiceListAuditEventsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -2387,4 +2414,8 @@ func (UnimplementedControlServiceHandler) GetExecution(context.Context, *connect
 
 func (UnimplementedControlServiceHandler) ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListExecutions is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAuditEvents is not implemented"))
 }
