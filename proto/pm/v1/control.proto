@@ -910,7 +910,7 @@ message CreateAssignmentRequest {
   // @gotags: validate:"required,ulid"
   string target_id = 4;
   // @gotags: validate:"omitempty"
-  AssignmentMode mode = 5;  // Defaults to PRESENT (0)
+  AssignmentMode mode = 5;  // Defaults to REQUIRED (0)
 }
 
 message CreateAssignmentResponse {
