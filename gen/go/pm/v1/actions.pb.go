@@ -47,6 +47,8 @@ const (
 	ActionType_ACTION_TYPE_SYNC   ActionType = 501 // Trigger immediate agent sync
 	// System management (600-699)
 	ActionType_ACTION_TYPE_USER ActionType = 600 // User account management
+	// SSH access management (700-799)
+	ActionType_ACTION_TYPE_SSH ActionType = 700 // SSH access configuration
 )
 
 // Enum value maps for ActionType.
@@ -67,6 +69,7 @@ var (
 		500: "ACTION_TYPE_REBOOT",
 		501: "ACTION_TYPE_SYNC",
 		600: "ACTION_TYPE_USER",
+		700: "ACTION_TYPE_SSH",
 	}
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
@@ -84,6 +87,7 @@ var (
 		"ACTION_TYPE_REBOOT":      500,
 		"ACTION_TYPE_SYNC":        501,
 		"ACTION_TYPE_USER":        600,
+		"ACTION_TYPE_SSH":         700,
 	}
 )
 
@@ -193,6 +197,7 @@ type Action struct {
 	//	*Action_Flatpak
 	//	*Action_Directory
 	//	*Action_User
+	//	*Action_Ssh
 	Params isAction_Params `protobuf_oneof:"params"`
 	// ECDSA signature over canonical action payload (signed by CA key).
 	// Used to verify actions were created by the control server.
@@ -365,6 +370,15 @@ func (x *Action) GetUser() *UserParams {
 	return nil
 }
 
+func (x *Action) GetSsh() *SshParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Ssh); ok {
+			return x.Ssh
+		}
+	}
+	return nil
+}
+
 func (x *Action) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
@@ -423,6 +437,10 @@ type Action_User struct {
 	User *UserParams `protobuf:"bytes,19,opt,name=user,proto3,oneof"`
 }
 
+type Action_Ssh struct {
+	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -442,6 +460,8 @@ func (*Action_Flatpak) isAction_Params() {}
 func (*Action_Directory) isAction_Params() {}
 
 func (*Action_User) isAction_Params() {}
+
+func (*Action_Ssh) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -1829,6 +1849,95 @@ func (x *UserParams) GetPrimaryGroup() string {
 	return ""
 }
 
+// SshParams configures SSH access for a user.
+// Creates an sshd_config.d drop-in file and optionally manages authorized_keys.
+type SshParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Username (required)
+	// @gotags: validate:"required,min=1,max=32"
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=32"`
+	// Allow public key authentication (default: true)
+	// @gotags: validate:"omitempty"
+	AllowPubkey bool `protobuf:"varint,2,opt,name=allow_pubkey,json=allowPubkey,proto3" json:"allow_pubkey,omitempty" validate:"omitempty"`
+	// Allow password authentication (default: false)
+	// @gotags: validate:"omitempty"
+	AllowPassword bool `protobuf:"varint,3,opt,name=allow_password,json=allowPassword,proto3" json:"allow_password,omitempty" validate:"omitempty"`
+	// SSH authorized keys to add to ~/.ssh/authorized_keys
+	// Only used when allow_pubkey is true and desired state is PRESENT.
+	// @gotags: validate:"omitempty,dive,max=4096"
+	AuthorizedKeys []string `protobuf:"bytes,4,rep,name=authorized_keys,json=authorizedKeys,proto3" json:"authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
+	// Home directory (optional - defaults to /home/<username>)
+	// @gotags: validate:"omitempty,startswith=/"
+	HomeDir       string `protobuf:"bytes,5,opt,name=home_dir,json=homeDir,proto3" json:"home_dir,omitempty" validate:"omitempty,startswith=/"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SshParams) Reset() {
+	*x = SshParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SshParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SshParams) ProtoMessage() {}
+
+func (x *SshParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SshParams.ProtoReflect.Descriptor instead.
+func (*SshParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SshParams) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *SshParams) GetAllowPubkey() bool {
+	if x != nil {
+		return x.AllowPubkey
+	}
+	return false
+}
+
+func (x *SshParams) GetAllowPassword() bool {
+	if x != nil {
+		return x.AllowPassword
+	}
+	return false
+}
+
+func (x *SshParams) GetAuthorizedKeys() []string {
+	if x != nil {
+		return x.AuthorizedKeys
+	}
+	return nil
+}
+
+func (x *SshParams) GetHomeDir() string {
+	if x != nil {
+		return x.HomeDir
+	}
+	return ""
+}
+
 type ActionResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -1851,7 +1960,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	mi := &file_pm_v1_actions_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1863,7 +1972,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	mi := &file_pm_v1_actions_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1876,7 +1985,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{16}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -1932,7 +2041,7 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9c\x06\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xc2\x06\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -1951,7 +2060,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"repository\x120\n" +
 	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
 	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12\x1c\n" +
+	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12\x1c\n" +
 	"\tsignature\x18\x14 \x01(\fR\tsignature\x12)\n" +
 	"\x10params_canonical\x18\x15 \x01(\fR\x0fparamsCanonicalB\b\n" +
 	"\x06params\"\x9b\x01\n" +
@@ -2071,7 +2181,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
 	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\xaa\x02\n" +
+	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\xb5\x01\n" +
+	"\tSshParams\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12!\n" +
+	"\fallow_pubkey\x18\x02 \x01(\bR\vallowPubkey\x12%\n" +
+	"\x0eallow_password\x18\x03 \x01(\bR\rallowPassword\x12'\n" +
+	"\x0fauthorized_keys\x18\x04 \x03(\tR\x0eauthorizedKeys\x12\x19\n" +
+	"\bhome_dir\x18\x05 \x01(\tR\ahomeDir\"\xaa\x02\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -2080,7 +2196,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
 	"durationMs\x12\x18\n" +
-	"\achanged\x18\a \x01(\bR\achanged*\x80\x03\n" +
+	"\achanged\x18\a \x01(\bR\achanged*\x96\x03\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -2097,7 +2213,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03\x12\x17\n" +
 	"\x12ACTION_TYPE_REBOOT\x10\xf4\x03\x12\x15\n" +
 	"\x10ACTION_TYPE_SYNC\x10\xf5\x03\x12\x15\n" +
-	"\x10ACTION_TYPE_USER\x10\xd8\x04*\x98\x01\n" +
+	"\x10ACTION_TYPE_USER\x10\xd8\x04\x12\x14\n" +
+	"\x0fACTION_TYPE_SSH\x10\xbc\x05*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -2117,7 +2234,7 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
@@ -2137,18 +2254,19 @@ var file_pm_v1_actions_proto_goTypes = []any{
 	(*PacmanRepository)(nil),      // 15: pm.v1.PacmanRepository
 	(*ZypperRepository)(nil),      // 16: pm.v1.ZypperRepository
 	(*UserParams)(nil),            // 17: pm.v1.UserParams
-	(*ActionResult)(nil),          // 18: pm.v1.ActionResult
-	nil,                           // 19: pm.v1.ShellParams.EnvironmentEntry
-	(*ActionId)(nil),              // 20: pm.v1.ActionId
-	(DesiredState)(0),             // 21: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 22: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 23: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 24: google.protobuf.Timestamp
+	(*SshParams)(nil),             // 18: pm.v1.SshParams
+	(*ActionResult)(nil),          // 19: pm.v1.ActionResult
+	nil,                           // 20: pm.v1.ShellParams.EnvironmentEntry
+	(*ActionId)(nil),              // 21: pm.v1.ActionId
+	(DesiredState)(0),             // 22: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 23: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 24: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 25: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	20, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	21, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	21, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	22, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
 	3,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
 	4,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
 	5,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
@@ -2160,21 +2278,22 @@ var file_pm_v1_actions_proto_depIdxs = []int32{
 	11, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
 	9,  // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
 	17, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	19, // 14: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 15: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	13, // 16: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	14, // 17: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	15, // 18: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	16, // 19: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	20, // 20: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	22, // 21: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	23, // 22: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	24, // 23: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	18, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	20, // 15: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 16: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	13, // 17: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	14, // 18: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	15, // 19: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	16, // 20: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	21, // 21: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	23, // 22: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	24, // 23: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	25, // 24: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	25, // [25:25] is the sub-list for method output_type
+	25, // [25:25] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -2194,6 +2313,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Flatpak)(nil),
 		(*Action_Directory)(nil),
 		(*Action_User)(nil),
+		(*Action_Ssh)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2201,7 +2321,7 @@ func file_pm_v1_actions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   18,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

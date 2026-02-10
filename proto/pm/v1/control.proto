@@ -373,6 +373,7 @@ message ManagedAction {
     FlatpakParams flatpak = 17;
     DirectoryParams directory = 18;
     UserParams user = 19;
+    SshParams ssh = 22;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -415,6 +416,8 @@ message CreateActionRequest {
     DirectoryParams directory = 18;
     // @gotags: validate:"omitempty"
     UserParams user = 19;
+    // @gotags: validate:"omitempty"
+    SshParams ssh = 22;
   }
 }
 
@@ -490,6 +493,8 @@ message UpdateActionParamsRequest {
     DirectoryParams directory = 18;
     // @gotags: validate:"omitempty"
     UserParams user = 19;
+    // @gotags: validate:"omitempty"
+    SshParams ssh = 22;
   }
 }
 
