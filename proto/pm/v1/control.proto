@@ -374,6 +374,10 @@ message ManagedAction {
     DirectoryParams directory = 18;
     UserParams user = 19;
     SshParams ssh = 22;
+    SshdParams sshd = 23;
+    SudoParams sudo = 24;
+    // @gotags: validate:"omitempty"
+    LpsParams lps = 25;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -418,6 +422,12 @@ message CreateActionRequest {
     UserParams user = 19;
     // @gotags: validate:"omitempty"
     SshParams ssh = 22;
+    // @gotags: validate:"omitempty"
+    SshdParams sshd = 23;
+    // @gotags: validate:"omitempty"
+    SudoParams sudo = 24;
+    // @gotags: validate:"omitempty"
+    LpsParams lps = 25;
   }
 }
 
@@ -495,6 +505,12 @@ message UpdateActionParamsRequest {
     UserParams user = 19;
     // @gotags: validate:"omitempty"
     SshParams ssh = 22;
+    // @gotags: validate:"omitempty"
+    SshdParams sshd = 23;
+    // @gotags: validate:"omitempty"
+    SudoParams sudo = 24;
+    // @gotags: validate:"omitempty"
+    LpsParams lps = 25;
   }
 }
 
@@ -1186,6 +1202,34 @@ message ListAuditEventsResponse {
 }
 
 // ============================================================================
+// LPS (Linux Password Solution)
+// ============================================================================
+
+// LPS password entry stored per device
+message LpsPassword {
+  string device_id = 1;
+  string device_hostname = 2;
+  string action_id = 3;
+  string action_name = 4;
+  string username = 5;
+  string password = 6;
+  google.protobuf.Timestamp rotated_at = 7;
+  string rotation_reason = 8;
+}
+
+message GetDeviceLpsPasswordsRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceLpsPasswordsResponse {
+  // Current passwords (one per LPS action assigned to device)
+  repeated LpsPassword current = 1;
+  // Previous passwords (most recent first, max 3 per action)
+  repeated LpsPassword history = 2;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1295,4 +1339,7 @@ service ControlService {
 
   // Audit Log
   rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
+
+  // LPS (Linux Password Solution)
+  rpc GetDeviceLpsPasswords(GetDeviceLpsPasswordsRequest) returns (GetDeviceLpsPasswordsResponse);
 }

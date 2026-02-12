@@ -48,7 +48,12 @@ const (
 	// System management (600-699)
 	ActionType_ACTION_TYPE_USER ActionType = 600 // User account management
 	// SSH access management (700-799)
-	ActionType_ACTION_TYPE_SSH ActionType = 700 // SSH access configuration
+	ActionType_ACTION_TYPE_SSH  ActionType = 700 // SSH access configuration
+	ActionType_ACTION_TYPE_SSHD ActionType = 701 // SSH daemon configuration
+	// Privilege management (800-899)
+	ActionType_ACTION_TYPE_SUDO ActionType = 800 // Sudoers policy management
+	// Password management (900-999)
+	ActionType_ACTION_TYPE_LPS ActionType = 900 // Linux Password Solution
 )
 
 // Enum value maps for ActionType.
@@ -70,6 +75,9 @@ var (
 		501: "ACTION_TYPE_SYNC",
 		600: "ACTION_TYPE_USER",
 		700: "ACTION_TYPE_SSH",
+		701: "ACTION_TYPE_SSHD",
+		800: "ACTION_TYPE_SUDO",
+		900: "ACTION_TYPE_LPS",
 	}
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
@@ -88,6 +96,9 @@ var (
 		"ACTION_TYPE_SYNC":        501,
 		"ACTION_TYPE_USER":        600,
 		"ACTION_TYPE_SSH":         700,
+		"ACTION_TYPE_SSHD":        701,
+		"ACTION_TYPE_SUDO":        800,
+		"ACTION_TYPE_LPS":         900,
 	}
 )
 
@@ -170,6 +181,109 @@ func (SystemdUnitState) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
+// SudoAccessLevel defines the level of sudo access granted.
+type SudoAccessLevel int32
+
+const (
+	SudoAccessLevel_SUDO_ACCESS_LEVEL_UNSPECIFIED SudoAccessLevel = 0
+	SudoAccessLevel_SUDO_ACCESS_LEVEL_FULL        SudoAccessLevel = 1 // Unrestricted sudo (password required)
+	SudoAccessLevel_SUDO_ACCESS_LEVEL_LIMITED     SudoAccessLevel = 2 // System management commands only (NOPASSWD)
+	SudoAccessLevel_SUDO_ACCESS_LEVEL_CUSTOM      SudoAccessLevel = 3 // Admin-defined sudoers rules
+)
+
+// Enum value maps for SudoAccessLevel.
+var (
+	SudoAccessLevel_name = map[int32]string{
+		0: "SUDO_ACCESS_LEVEL_UNSPECIFIED",
+		1: "SUDO_ACCESS_LEVEL_FULL",
+		2: "SUDO_ACCESS_LEVEL_LIMITED",
+		3: "SUDO_ACCESS_LEVEL_CUSTOM",
+	}
+	SudoAccessLevel_value = map[string]int32{
+		"SUDO_ACCESS_LEVEL_UNSPECIFIED": 0,
+		"SUDO_ACCESS_LEVEL_FULL":        1,
+		"SUDO_ACCESS_LEVEL_LIMITED":     2,
+		"SUDO_ACCESS_LEVEL_CUSTOM":      3,
+	}
+)
+
+func (x SudoAccessLevel) Enum() *SudoAccessLevel {
+	p := new(SudoAccessLevel)
+	*p = x
+	return p
+}
+
+func (x SudoAccessLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SudoAccessLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
+}
+
+func (SudoAccessLevel) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[2]
+}
+
+func (x SudoAccessLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SudoAccessLevel.Descriptor instead.
+func (SudoAccessLevel) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+}
+
+// LpsPasswordComplexity defines the character set for generated passwords.
+type LpsPasswordComplexity int32
+
+const (
+	LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED  LpsPasswordComplexity = 0
+	LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC LpsPasswordComplexity = 1 // a-z, A-Z, 0-9
+	LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_COMPLEX      LpsPasswordComplexity = 2 // a-z, A-Z, 0-9, special characters
+)
+
+// Enum value maps for LpsPasswordComplexity.
+var (
+	LpsPasswordComplexity_name = map[int32]string{
+		0: "LPS_PASSWORD_COMPLEXITY_UNSPECIFIED",
+		1: "LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC",
+		2: "LPS_PASSWORD_COMPLEXITY_COMPLEX",
+	}
+	LpsPasswordComplexity_value = map[string]int32{
+		"LPS_PASSWORD_COMPLEXITY_UNSPECIFIED":  0,
+		"LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC": 1,
+		"LPS_PASSWORD_COMPLEXITY_COMPLEX":      2,
+	}
+)
+
+func (x LpsPasswordComplexity) Enum() *LpsPasswordComplexity {
+	p := new(LpsPasswordComplexity)
+	*p = x
+	return p
+}
+
+func (x LpsPasswordComplexity) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LpsPasswordComplexity) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+}
+
+func (LpsPasswordComplexity) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[3]
+}
+
+func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LpsPasswordComplexity.Descriptor instead.
+func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+}
+
 type Action struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -198,6 +312,9 @@ type Action struct {
 	//	*Action_Directory
 	//	*Action_User
 	//	*Action_Ssh
+	//	*Action_Sshd
+	//	*Action_Sudo
+	//	*Action_Lps
 	Params isAction_Params `protobuf_oneof:"params"`
 	// ECDSA signature over canonical action payload (signed by CA key).
 	// Used to verify actions were created by the control server.
@@ -379,6 +496,33 @@ func (x *Action) GetSsh() *SshParams {
 	return nil
 }
 
+func (x *Action) GetSshd() *SshdParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Sshd); ok {
+			return x.Sshd
+		}
+	}
+	return nil
+}
+
+func (x *Action) GetSudo() *SudoParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Sudo); ok {
+			return x.Sudo
+		}
+	}
+	return nil
+}
+
+func (x *Action) GetLps() *LpsParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Lps); ok {
+			return x.Lps
+		}
+	}
+	return nil
+}
+
 func (x *Action) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
@@ -441,6 +585,18 @@ type Action_Ssh struct {
 	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof"`
 }
 
+type Action_Sshd struct {
+	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof"`
+}
+
+type Action_Sudo struct {
+	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof"`
+}
+
+type Action_Lps struct {
+	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -462,6 +618,12 @@ func (*Action_Directory) isAction_Params() {}
 func (*Action_User) isAction_Params() {}
 
 func (*Action_Ssh) isAction_Params() {}
+
+func (*Action_Sshd) isAction_Params() {}
+
+func (*Action_Sudo) isAction_Params() {}
+
+func (*Action_Lps) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -1850,25 +2012,23 @@ func (x *UserParams) GetPrimaryGroup() string {
 }
 
 // SshParams configures SSH access for a user.
-// Creates an sshd_config.d drop-in file and optionally manages authorized_keys.
+// Creates an sshd_config.d drop-in file with a Match Group directive.
+// Each action creates a Linux group pm-ssh-{actionId} and users are added
+// to the group. SSH keys and home directory are managed by the User action type.
 type SshParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Username (required)
-	// @gotags: validate:"required,min=1,max=32"
-	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=32"`
+	// Deprecated: use users field instead. Kept for backward compatibility.
+	// @gotags: validate:"omitempty,max=32"
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"omitempty,max=32"`
 	// Allow public key authentication (default: true)
 	// @gotags: validate:"omitempty"
 	AllowPubkey bool `protobuf:"varint,2,opt,name=allow_pubkey,json=allowPubkey,proto3" json:"allow_pubkey,omitempty" validate:"omitempty"`
 	// Allow password authentication (default: false)
 	// @gotags: validate:"omitempty"
 	AllowPassword bool `protobuf:"varint,3,opt,name=allow_password,json=allowPassword,proto3" json:"allow_password,omitempty" validate:"omitempty"`
-	// SSH authorized keys to add to ~/.ssh/authorized_keys
-	// Only used when allow_pubkey is true and desired state is PRESENT.
-	// @gotags: validate:"omitempty,dive,max=4096"
-	AuthorizedKeys []string `protobuf:"bytes,4,rep,name=authorized_keys,json=authorizedKeys,proto3" json:"authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
-	// Home directory (optional - defaults to /home/<username>)
-	// @gotags: validate:"omitempty,startswith=/"
-	HomeDir       string `protobuf:"bytes,5,opt,name=home_dir,json=homeDir,proto3" json:"home_dir,omitempty" validate:"omitempty,startswith=/"`
+	// Users to add to the SSH access group (must be valid Linux usernames)
+	// @gotags: validate:"omitempty,dive,min=1,max=32"
+	Users         []string `protobuf:"bytes,6,rep,name=users,proto3" json:"users,omitempty" validate:"omitempty,dive,min=1,max=32"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1924,18 +2084,290 @@ func (x *SshParams) GetAllowPassword() bool {
 	return false
 }
 
-func (x *SshParams) GetAuthorizedKeys() []string {
+func (x *SshParams) GetUsers() []string {
 	if x != nil {
-		return x.AuthorizedKeys
+		return x.Users
 	}
 	return nil
 }
 
-func (x *SshParams) GetHomeDir() string {
+// SshdDirective represents a single sshd_config key-value directive.
+type SshdDirective struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// sshd_config directive name (e.g., "PermitRootLogin", "Port")
+	// @gotags: validate:"required,min=1,max=128"
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty" validate:"required,min=1,max=128"`
+	// Directive value (e.g., "no", "22")
+	// @gotags: validate:"required,min=1,max=1024"
+	Value         string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty" validate:"required,min=1,max=1024"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SshdDirective) Reset() {
+	*x = SshdDirective{}
+	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SshdDirective) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SshdDirective) ProtoMessage() {}
+
+func (x *SshdDirective) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[17]
 	if x != nil {
-		return x.HomeDir
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SshdDirective.ProtoReflect.Descriptor instead.
+func (*SshdDirective) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *SshdDirective) GetKey() string {
+	if x != nil {
+		return x.Key
 	}
 	return ""
+}
+
+func (x *SshdDirective) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+// SshdParams configures the SSH daemon via sshd_config.d drop-in files.
+// Each action creates a numbered config file for ordering (e.g., 0000-*.conf, 0001-*.conf).
+// Priority is auto-assigned by the server based on creation order.
+// The sshd service is automatically reloaded when configuration changes.
+type SshdParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Priority for config file ordering (auto-assigned by server, lower = loaded first)
+	// @gotags: validate:"omitempty"
+	Priority uint32 `protobuf:"varint,1,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty"`
+	// sshd_config directives to set
+	// @gotags: validate:"required,min=1,dive"
+	Directives    []*SshdDirective `protobuf:"bytes,2,rep,name=directives,proto3" json:"directives,omitempty" validate:"required,min=1,dive"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SshdParams) Reset() {
+	*x = SshdParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SshdParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SshdParams) ProtoMessage() {}
+
+func (x *SshdParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SshdParams.ProtoReflect.Descriptor instead.
+func (*SshdParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *SshdParams) GetPriority() uint32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
+func (x *SshdParams) GetDirectives() []*SshdDirective {
+	if x != nil {
+		return x.Directives
+	}
+	return nil
+}
+
+// SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
+// Each action creates a Linux group pm-sudo-{actionId} and a corresponding
+// sudoers file. Users specified in the users list are added to the group.
+// When removed, the group and sudoers file are cleaned up.
+type SudoParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Access level determines the sudo policy template
+	// @gotags: validate:"required,ne=0"
+	AccessLevel SudoAccessLevel `protobuf:"varint,1,opt,name=access_level,json=accessLevel,proto3,enum=pm.v1.SudoAccessLevel" json:"access_level,omitempty" validate:"required,ne=0"`
+	// Users to add to the sudo group (must be valid Linux usernames)
+	// @gotags: validate:"required,min=1,dive,min=1,max=32"
+	Users []string `protobuf:"bytes,2,rep,name=users,proto3" json:"users,omitempty" validate:"required,min=1,dive,min=1,max=32"`
+	// Custom sudoers rules (only used when access_level is CUSTOM)
+	// Use {group} as placeholder for the auto-generated group name.
+	// @gotags: validate:"omitempty,max=65536"
+	CustomConfig  string `protobuf:"bytes,3,opt,name=custom_config,json=customConfig,proto3" json:"custom_config,omitempty" validate:"omitempty,max=65536"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SudoParams) Reset() {
+	*x = SudoParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SudoParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SudoParams) ProtoMessage() {}
+
+func (x *SudoParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SudoParams.ProtoReflect.Descriptor instead.
+func (*SudoParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *SudoParams) GetAccessLevel() SudoAccessLevel {
+	if x != nil {
+		return x.AccessLevel
+	}
+	return SudoAccessLevel_SUDO_ACCESS_LEVEL_UNSPECIFIED
+}
+
+func (x *SudoParams) GetUsers() []string {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+func (x *SudoParams) GetCustomConfig() string {
+	if x != nil {
+		return x.CustomConfig
+	}
+	return ""
+}
+
+// LpsParams configures Linux Password Solution (LAPS-like) password management.
+// Each action targets a single user account. The agent generates a random password
+// based on configured length/complexity, sets it via chpasswd, and reports
+// the password back to the server. Rotation occurs on a schedule and optionally
+// after authentication events.
+type LpsParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target user account (must exist on device)
+	// @gotags: validate:"required,min=1,max=32"
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=32"`
+	// Password length (8-128)
+	// @gotags: validate:"required,gte=8,lte=128"
+	PasswordLength int32 `protobuf:"varint,2,opt,name=password_length,json=passwordLength,proto3" json:"password_length,omitempty" validate:"required,gte=8,lte=128"`
+	// Password complexity
+	// @gotags: validate:"required,ne=0"
+	Complexity LpsPasswordComplexity `protobuf:"varint,3,opt,name=complexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"complexity,omitempty" validate:"required,ne=0"`
+	// Days between scheduled rotations (1-365)
+	// @gotags: validate:"required,gte=1,lte=365"
+	RotationIntervalDays int32 `protobuf:"varint,4,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty" validate:"required,gte=1,lte=365"`
+	// Hours after auth event before automatic rotation (0 = disabled)
+	// @gotags: validate:"omitempty,gte=0,lte=8760"
+	GracePeriodHours int32 `protobuf:"varint,5,opt,name=grace_period_hours,json=gracePeriodHours,proto3" json:"grace_period_hours,omitempty" validate:"omitempty,gte=0,lte=8760"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *LpsParams) Reset() {
+	*x = LpsParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LpsParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LpsParams) ProtoMessage() {}
+
+func (x *LpsParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LpsParams.ProtoReflect.Descriptor instead.
+func (*LpsParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *LpsParams) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *LpsParams) GetPasswordLength() int32 {
+	if x != nil {
+		return x.PasswordLength
+	}
+	return 0
+}
+
+func (x *LpsParams) GetComplexity() LpsPasswordComplexity {
+	if x != nil {
+		return x.Complexity
+	}
+	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
+}
+
+func (x *LpsParams) GetRotationIntervalDays() int32 {
+	if x != nil {
+		return x.RotationIntervalDays
+	}
+	return 0
+}
+
+func (x *LpsParams) GetGracePeriodHours() int32 {
+	if x != nil {
+		return x.GracePeriodHours
+	}
+	return 0
 }
 
 type ActionResult struct {
@@ -1953,14 +2385,17 @@ type ActionResult struct {
 	// @gotags: validate:"omitempty,gte=0"
 	DurationMs int64 `protobuf:"varint,6,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty" validate:"omitempty,gte=0"`
 	// Whether the action made changes to the system (true) or state was already as desired (false)
-	Changed       bool `protobuf:"varint,7,opt,name=changed,proto3" json:"changed,omitempty"`
+	Changed bool `protobuf:"varint,7,opt,name=changed,proto3" json:"changed,omitempty"`
+	// Optional action-specific metadata (e.g., LPS password data)
+	// @gotags: validate:"omitempty"
+	Metadata      map[string]string `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	mi := &file_pm_v1_actions_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1972,7 +2407,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	mi := &file_pm_v1_actions_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1985,7 +2420,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -2037,11 +2472,18 @@ func (x *ActionResult) GetChanged() bool {
 	return false
 }
 
+func (x *ActionResult) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xc2\x06\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xba\a\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -2061,7 +2503,10 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
 	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12\x1c\n" +
+	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12\x1c\n" +
 	"\tsignature\x18\x14 \x01(\fR\tsignature\x12)\n" +
 	"\x10params_canonical\x18\x15 \x01(\fR\x0fparamsCanonicalB\b\n" +
 	"\x06params\"\x9b\x01\n" +
@@ -2181,13 +2626,34 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
 	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\xb5\x01\n" +
+	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"\xae\x01\n" +
 	"\tSshParams\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12!\n" +
 	"\fallow_pubkey\x18\x02 \x01(\bR\vallowPubkey\x12%\n" +
-	"\x0eallow_password\x18\x03 \x01(\bR\rallowPassword\x12'\n" +
-	"\x0fauthorized_keys\x18\x04 \x03(\tR\x0eauthorizedKeys\x12\x19\n" +
-	"\bhome_dir\x18\x05 \x01(\tR\ahomeDir\"\xaa\x02\n" +
+	"\x0eallow_password\x18\x03 \x01(\bR\rallowPassword\x12\x14\n" +
+	"\x05users\x18\x06 \x03(\tR\x05usersJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\x0fauthorized_keysR\bhome_dir\"7\n" +
+	"\rSshdDirective\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"^\n" +
+	"\n" +
+	"SshdParams\x12\x1a\n" +
+	"\bpriority\x18\x01 \x01(\rR\bpriority\x124\n" +
+	"\n" +
+	"directives\x18\x02 \x03(\v2\x14.pm.v1.SshdDirectiveR\n" +
+	"directives\"\x82\x01\n" +
+	"\n" +
+	"SudoParams\x129\n" +
+	"\faccess_level\x18\x01 \x01(\x0e2\x16.pm.v1.SudoAccessLevelR\vaccessLevel\x12\x14\n" +
+	"\x05users\x18\x02 \x03(\tR\x05users\x12#\n" +
+	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\"\xf2\x01\n" +
+	"\tLpsParams\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12'\n" +
+	"\x0fpassword_length\x18\x02 \x01(\x05R\x0epasswordLength\x12<\n" +
+	"\n" +
+	"complexity\x18\x03 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
+	"complexity\x124\n" +
+	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xa6\x03\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -2196,7 +2662,11 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
 	"durationMs\x12\x18\n" +
-	"\achanged\x18\a \x01(\bR\achanged*\x96\x03\n" +
+	"\achanged\x18\a \x01(\bR\achanged\x12=\n" +
+	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xda\x03\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -2214,12 +2684,24 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x12ACTION_TYPE_REBOOT\x10\xf4\x03\x12\x15\n" +
 	"\x10ACTION_TYPE_SYNC\x10\xf5\x03\x12\x15\n" +
 	"\x10ACTION_TYPE_USER\x10\xd8\x04\x12\x14\n" +
-	"\x0fACTION_TYPE_SSH\x10\xbc\x05*\x98\x01\n" +
+	"\x0fACTION_TYPE_SSH\x10\xbc\x05\x12\x15\n" +
+	"\x10ACTION_TYPE_SSHD\x10\xbd\x05\x12\x15\n" +
+	"\x10ACTION_TYPE_SUDO\x10\xa0\x06\x12\x14\n" +
+	"\x0fACTION_TYPE_LPS\x10\x84\a*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03*\x8d\x01\n" +
+	"\x0fSudoAccessLevel\x12!\n" +
+	"\x1dSUDO_ACCESS_LEVEL_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16SUDO_ACCESS_LEVEL_FULL\x10\x01\x12\x1d\n" +
+	"\x19SUDO_ACCESS_LEVEL_LIMITED\x10\x02\x12\x1c\n" +
+	"\x18SUDO_ACCESS_LEVEL_CUSTOM\x10\x03*\x8f\x01\n" +
+	"\x15LpsPasswordComplexity\x12'\n" +
+	"#LPS_PASSWORD_COMPLEXITY_UNSPECIFIED\x10\x00\x12(\n" +
+	"$LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC\x10\x01\x12#\n" +
+	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_actions_proto_rawDescOnce sync.Once
@@ -2233,67 +2715,81 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
-	(*Action)(nil),                // 2: pm.v1.Action
-	(*ActionSchedule)(nil),        // 3: pm.v1.ActionSchedule
-	(*PackageParams)(nil),         // 4: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 5: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 6: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 7: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 8: pm.v1.FileParams
-	(*DirectoryParams)(nil),       // 9: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),          // 10: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),         // 11: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),      // 12: pm.v1.RepositoryParams
-	(*AptRepository)(nil),         // 13: pm.v1.AptRepository
-	(*DnfRepository)(nil),         // 14: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),      // 15: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),      // 16: pm.v1.ZypperRepository
-	(*UserParams)(nil),            // 17: pm.v1.UserParams
-	(*SshParams)(nil),             // 18: pm.v1.SshParams
-	(*ActionResult)(nil),          // 19: pm.v1.ActionResult
-	nil,                           // 20: pm.v1.ShellParams.EnvironmentEntry
-	(*ActionId)(nil),              // 21: pm.v1.ActionId
-	(DesiredState)(0),             // 22: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 23: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 24: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 25: google.protobuf.Timestamp
+	(SudoAccessLevel)(0),          // 2: pm.v1.SudoAccessLevel
+	(LpsPasswordComplexity)(0),    // 3: pm.v1.LpsPasswordComplexity
+	(*Action)(nil),                // 4: pm.v1.Action
+	(*ActionSchedule)(nil),        // 5: pm.v1.ActionSchedule
+	(*PackageParams)(nil),         // 6: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 7: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 8: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 9: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 10: pm.v1.FileParams
+	(*DirectoryParams)(nil),       // 11: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),          // 12: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),         // 13: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),      // 14: pm.v1.RepositoryParams
+	(*AptRepository)(nil),         // 15: pm.v1.AptRepository
+	(*DnfRepository)(nil),         // 16: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),      // 17: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),      // 18: pm.v1.ZypperRepository
+	(*UserParams)(nil),            // 19: pm.v1.UserParams
+	(*SshParams)(nil),             // 20: pm.v1.SshParams
+	(*SshdDirective)(nil),         // 21: pm.v1.SshdDirective
+	(*SshdParams)(nil),            // 22: pm.v1.SshdParams
+	(*SudoParams)(nil),            // 23: pm.v1.SudoParams
+	(*LpsParams)(nil),             // 24: pm.v1.LpsParams
+	(*ActionResult)(nil),          // 25: pm.v1.ActionResult
+	nil,                           // 26: pm.v1.ShellParams.EnvironmentEntry
+	nil,                           // 27: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),              // 28: pm.v1.ActionId
+	(DesiredState)(0),             // 29: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 30: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 31: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	21, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	28, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	22, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	3,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	4,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	5,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	6,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	7,  // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
-	8,  // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	10, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	12, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	11, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	9,  // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	17, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	18, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	20, // 15: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 16: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	13, // 17: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	14, // 18: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	15, // 19: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	16, // 20: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	21, // 21: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	23, // 22: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	24, // 23: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	25, // 24: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	29, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	5,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	6,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	7,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	8,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	9,  // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
+	10, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	12, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	14, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	13, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	11, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	19, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	20, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	22, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	23, // 16: pm.v1.Action.sudo:type_name -> pm.v1.SudoParams
+	24, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	26, // 18: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 19: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	15, // 20: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	16, // 21: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	17, // 22: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	18, // 23: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	21, // 24: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	2,  // 25: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
+	3,  // 26: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	28, // 27: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	30, // 28: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	31, // 29: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	32, // 30: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	27, // 31: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	32, // [32:32] is the sub-list for method output_type
+	32, // [32:32] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -2314,14 +2810,17 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Directory)(nil),
 		(*Action_User)(nil),
 		(*Action_Ssh)(nil),
+		(*Action_Sshd)(nil),
+		(*Action_Sudo)(nil),
+		(*Action_Lps)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   19,
+			NumEnums:      4,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/actions.proto.
  */
 export const file_pm_v1_actions: GenFile = /*@__PURE__*/
-  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSKdBQoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRInCgdwYWNrYWdlGAogASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgLIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgMIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgNIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGA4gASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgPIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYECABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgRIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYEiABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBMgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgWIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEhEKCXNpZ25hdHVyZRgUIAEoDBIYChBwYXJhbXNfY2Fub25pY2FsGBUgASgMQggKBnBhcmFtcyJoCg5BY3Rpb25TY2hlZHVsZRIMCgRjcm9uGAEgASgJEhYKDmludGVydmFsX2hvdXJzGAIgASgFEhUKDXJ1bl9vbl9hc3NpZ24YAyABKAgSGQoRc2tpcF9pZl91bmNoYW5nZWQYBCABKAgiogEKDVBhY2thZ2VQYXJhbXMSDAoEbmFtZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgJEhcKD2FsbG93X2Rvd25ncmFkZRgDIAEoCBILCgNwaW4YBCABKAgSEAoIYXB0X25hbWUYCiABKAkSEAoIZG5mX25hbWUYCyABKAkSEwoLcGFjbWFuX25hbWUYDCABKAkSEwoLenlwcGVyX25hbWUYDSABKAkiTgoQQXBwSW5zdGFsbFBhcmFtcxILCgN1cmwYASABKAkSFwoPY2hlY2tzdW1fc2hhMjU2GAIgASgJEhQKDGluc3RhbGxfcGF0aBgDIAEoCSLQAQoLU2hlbGxQYXJhbXMSDgoGc2NyaXB0GAEgASgJEhMKC2ludGVycHJldGVyGAIgASgJEhMKC3J1bl9hc19yb290GAMgASgIEhkKEXdvcmtpbmdfZGlyZWN0b3J5GAQgASgJEjgKC2Vudmlyb25tZW50GAUgAygLMiMucG0udjEuU2hlbGxQYXJhbXMuRW52aXJvbm1lbnRFbnRyeRoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEieAoNU3lzdGVtZFBhcmFtcxIRCgl1bml0X25hbWUYASABKAkSLgoNZGVzaXJlZF9zdGF0ZRgCIAEoDjIXLnBtLnYxLlN5c3RlbWRVbml0U3RhdGUSDgoGZW5hYmxlGAMgASgIEhQKDHVuaXRfY29udGVudBgEIAEoCSJuCgpGaWxlUGFyYW1zEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoCRINCgVvd25lchgDIAEoCRINCgVncm91cBgEIAEoCRIMCgRtb2RlGAUgASgJEhUKDW1hbmFnZWRfYmxvY2sYBiABKAgiXgoPRGlyZWN0b3J5UGFyYW1zEgwKBHBhdGgYASABKAkSDQoFb3duZXIYAiABKAkSDQoFZ3JvdXAYAyABKAkSDAoEbW9kZRgEIAEoCRIRCglyZWN1cnNpdmUYBSABKAgiVQoMVXBkYXRlUGFyYW1zEhUKDXNlY3VyaXR5X29ubHkYASABKAgSEgoKYXV0b3JlbW92ZRgCIAEoCBIaChJyZWJvb3RfaWZfcmVxdWlyZWQYAyABKAgiUQoNRmxhdHBha1BhcmFtcxIOCgZhcHBfaWQYASABKAkSDgoGcmVtb3RlGAIgASgJEhMKC3N5c3RlbV93aWRlGAMgASgIEgsKA3BpbhgEIAEoCCK4AQoQUmVwb3NpdG9yeVBhcmFtcxIMCgRuYW1lGAEgASgJEiEKA2FwdBgKIAEoCzIULnBtLnYxLkFwdFJlcG9zaXRvcnkSIQoDZG5mGAsgASgLMhQucG0udjEuRG5mUmVwb3NpdG9yeRInCgZwYWNtYW4YDCABKAsyFy5wbS52MS5QYWNtYW5SZXBvc2l0b3J5EicKBnp5cHBlchgNIAEoCzIXLnBtLnYxLlp5cHBlclJlcG9zaXRvcnkinQEKDUFwdFJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhQKDGRpc3RyaWJ1dGlvbhgCIAEoCRISCgpjb21wb25lbnRzGAMgAygJEhMKC2dwZ19rZXlfdXJsGAQgASgJEg8KB2dwZ19rZXkYBSABKAkSDwoHdHJ1c3RlZBgGIAEoCBIMCgRhcmNoGAcgASgJEhAKCGRpc2FibGVkGAggASgIIpMBCg1EbmZSZXBvc2l0b3J5Eg8KB2Jhc2V1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIQCghncGdjaGVjaxgEIAEoCBIOCgZncGdrZXkYBSABKAkSFwoPbW9kdWxlX2hvdGZpeGVzGAYgASgIEhAKCGRpc2FibGVkGAcgASgIIkcKEFBhY21hblJlcG9zaXRvcnkSDgoGc2VydmVyGAEgASgJEhEKCXNpZ19sZXZlbBgCIAEoCRIQCghkaXNhYmxlZBgDIAEoCCKcAQoQWnlwcGVyUmVwb3NpdG9yeRILCgN1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBITCgthdXRvcmVmcmVzaBgEIAEoCBIQCghncGdjaGVjaxgFIAEoCBIOCgZncGdrZXkYBiABKAkSDAoEdHlwZRgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCLqAQoKVXNlclBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRILCgN1aWQYAiABKAUSCwoDZ2lkGAMgASgFEhAKCGhvbWVfZGlyGAQgASgJEg0KBXNoZWxsGAUgASgJEg4KBmdyb3VwcxgGIAMoCRIbChNzc2hfYXV0aG9yaXplZF9rZXlzGAcgAygJEg8KB2NvbW1lbnQYCCABKAkSEwoLc3lzdGVtX3VzZXIYCSABKAgSEwoLY3JlYXRlX2hvbWUYCiABKAgSEAoIZGlzYWJsZWQYCyABKAgSFQoNcHJpbWFyeV9ncm91cBgMIAEoCSJ2CglTc2hQYXJhbXMSEAoIdXNlcm5hbWUYASABKAkSFAoMYWxsb3dfcHVia2V5GAIgASgIEhYKDmFsbG93X3Bhc3N3b3JkGAMgASgIEhcKD2F1dGhvcml6ZWRfa2V5cxgEIAMoCRIQCghob21lX2RpchgFIAEoCSLnAQoMQWN0aW9uUmVzdWx0EiIKCWFjdGlvbl9pZBgBIAEoCzIPLnBtLnYxLkFjdGlvbklkEiYKBnN0YXR1cxgCIAEoDjIWLnBtLnYxLkV4ZWN1dGlvblN0YXR1cxINCgVlcnJvchgDIAEoCRIkCgZvdXRwdXQYBCABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0EjAKDGNvbXBsZXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLZHVyYXRpb25fbXMYBiABKAMSDwoHY2hhbmdlZBgHIAEoCCqWAwoKQWN0aW9uVHlwZRIbChdBQ1RJT05fVFlQRV9VTlNQRUNJRklFRBAAEhcKE0FDVElPTl9UWVBFX1BBQ0tBR0UQARIWChJBQ1RJT05fVFlQRV9VUERBVEUQAhIaChZBQ1RJT05fVFlQRV9SRVBPU0lUT1JZEAMSGQoVQUNUSU9OX1RZUEVfQVBQX0lNQUdFEGQSEwoPQUNUSU9OX1RZUEVfREVCEGUSEwoPQUNUSU9OX1RZUEVfUlBNEGYSFwoTQUNUSU9OX1RZUEVfRkxBVFBBSxBnEhYKEUFDVElPTl9UWVBFX1NIRUxMEMgBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMSFQoQQUNUSU9OX1RZUEVfVVNFUhDYBBIUCg9BQ1RJT05fVFlQRV9TU0gQvAUqmAEKEFN5c3RlbWRVbml0U3RhdGUSIgoeU1lTVEVNRF9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTWVNURU1EX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNZU1RFTURfVU5JVF9TVEFURV9SRVNUQVJURUQQA0I6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_common]);
+  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSKEBgoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRInCgdwYWNrYWdlGAogASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgLIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgMIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgNIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGA4gASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgPIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYECABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgRIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYEiABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBMgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgWIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYFyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASIQoEc3VkbxgYIAEoCzIRLnBtLnYxLlN1ZG9QYXJhbXNIABIfCgNscHMYGSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIRCglzaWduYXR1cmUYFCABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgVIAEoDEIICgZwYXJhbXMiaAoOQWN0aW9uU2NoZWR1bGUSDAoEY3JvbhgBIAEoCRIWCg5pbnRlcnZhbF9ob3VycxgCIAEoBRIVCg1ydW5fb25fYXNzaWduGAMgASgIEhkKEXNraXBfaWZfdW5jaGFuZ2VkGAQgASgIIqIBCg1QYWNrYWdlUGFyYW1zEgwKBG5hbWUYASABKAkSDwoHdmVyc2lvbhgCIAEoCRIXCg9hbGxvd19kb3duZ3JhZGUYAyABKAgSCwoDcGluGAQgASgIEhAKCGFwdF9uYW1lGAogASgJEhAKCGRuZl9uYW1lGAsgASgJEhMKC3BhY21hbl9uYW1lGAwgASgJEhMKC3p5cHBlcl9uYW1lGA0gASgJIk4KEEFwcEluc3RhbGxQYXJhbXMSCwoDdXJsGAEgASgJEhcKD2NoZWNrc3VtX3NoYTI1NhgCIAEoCRIUCgxpbnN0YWxsX3BhdGgYAyABKAki0AEKC1NoZWxsUGFyYW1zEg4KBnNjcmlwdBgBIAEoCRITCgtpbnRlcnByZXRlchgCIAEoCRITCgtydW5fYXNfcm9vdBgDIAEoCBIZChF3b3JraW5nX2RpcmVjdG9yeRgEIAEoCRI4CgtlbnZpcm9ubWVudBgFIAMoCzIjLnBtLnYxLlNoZWxsUGFyYW1zLkVudmlyb25tZW50RW50cnkaMgoQRW52aXJvbm1lbnRFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIngKDVN5c3RlbWRQYXJhbXMSEQoJdW5pdF9uYW1lGAEgASgJEi4KDWRlc2lyZWRfc3RhdGUYAiABKA4yFy5wbS52MS5TeXN0ZW1kVW5pdFN0YXRlEg4KBmVuYWJsZRgDIAEoCBIUCgx1bml0X2NvbnRlbnQYBCABKAkibgoKRmlsZVBhcmFtcxIMCgRwYXRoGAEgASgJEg8KB2NvbnRlbnQYAiABKAkSDQoFb3duZXIYAyABKAkSDQoFZ3JvdXAYBCABKAkSDAoEbW9kZRgFIAEoCRIVCg1tYW5hZ2VkX2Jsb2NrGAYgASgIIl4KD0RpcmVjdG9yeVBhcmFtcxIMCgRwYXRoGAEgASgJEg0KBW93bmVyGAIgASgJEg0KBWdyb3VwGAMgASgJEgwKBG1vZGUYBCABKAkSEQoJcmVjdXJzaXZlGAUgASgIIlUKDFVwZGF0ZVBhcmFtcxIVCg1zZWN1cml0eV9vbmx5GAEgASgIEhIKCmF1dG9yZW1vdmUYAiABKAgSGgoScmVib290X2lmX3JlcXVpcmVkGAMgASgIIlEKDUZsYXRwYWtQYXJhbXMSDgoGYXBwX2lkGAEgASgJEg4KBnJlbW90ZRgCIAEoCRITCgtzeXN0ZW1fd2lkZRgDIAEoCBILCgNwaW4YBCABKAgiuAEKEFJlcG9zaXRvcnlQYXJhbXMSDAoEbmFtZRgBIAEoCRIhCgNhcHQYCiABKAsyFC5wbS52MS5BcHRSZXBvc2l0b3J5EiEKA2RuZhgLIAEoCzIULnBtLnYxLkRuZlJlcG9zaXRvcnkSJwoGcGFjbWFuGAwgASgLMhcucG0udjEuUGFjbWFuUmVwb3NpdG9yeRInCgZ6eXBwZXIYDSABKAsyFy5wbS52MS5aeXBwZXJSZXBvc2l0b3J5Ip0BCg1BcHRSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRIUCgxkaXN0cmlidXRpb24YAiABKAkSEgoKY29tcG9uZW50cxgDIAMoCRITCgtncGdfa2V5X3VybBgEIAEoCRIPCgdncGdfa2V5GAUgASgJEg8KB3RydXN0ZWQYBiABKAgSDAoEYXJjaBgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCKTAQoNRG5mUmVwb3NpdG9yeRIPCgdiYXNldXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEAoIZ3BnY2hlY2sYBCABKAgSDgoGZ3Bna2V5GAUgASgJEhcKD21vZHVsZV9ob3RmaXhlcxgGIAEoCBIQCghkaXNhYmxlZBgHIAEoCCJHChBQYWNtYW5SZXBvc2l0b3J5Eg4KBnNlcnZlchgBIAEoCRIRCglzaWdfbGV2ZWwYAiABKAkSEAoIZGlzYWJsZWQYAyABKAginAEKEFp5cHBlclJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEwoLYXV0b3JlZnJlc2gYBCABKAgSEAoIZ3BnY2hlY2sYBSABKAgSDgoGZ3Bna2V5GAYgASgJEgwKBHR5cGUYByABKAkSEAoIZGlzYWJsZWQYCCABKAgi6gEKClVzZXJQYXJhbXMSEAoIdXNlcm5hbWUYASABKAkSCwoDdWlkGAIgASgFEgsKA2dpZBgDIAEoBRIQCghob21lX2RpchgEIAEoCRINCgVzaGVsbBgFIAEoCRIOCgZncm91cHMYBiADKAkSGwoTc3NoX2F1dGhvcml6ZWRfa2V5cxgHIAMoCRIPCgdjb21tZW50GAggASgJEhMKC3N5c3RlbV91c2VyGAkgASgIEhMKC2NyZWF0ZV9ob21lGAogASgIEhAKCGRpc2FibGVkGAsgASgIEhUKDXByaW1hcnlfZ3JvdXAYDCABKAkigQEKCVNzaFBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRIUCgxhbGxvd19wdWJrZXkYAiABKAgSFgoOYWxsb3dfcGFzc3dvcmQYAyABKAgSDQoFdXNlcnMYBiADKAlKBAgEEAVKBAgFEAZSD2F1dGhvcml6ZWRfa2V5c1IIaG9tZV9kaXIiKwoNU3NoZERpcmVjdGl2ZRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAkiSAoKU3NoZFBhcmFtcxIQCghwcmlvcml0eRgBIAEoDRIoCgpkaXJlY3RpdmVzGAIgAygLMhQucG0udjEuU3NoZERpcmVjdGl2ZSJgCgpTdWRvUGFyYW1zEiwKDGFjY2Vzc19sZXZlbBgBIAEoDjIWLnBtLnYxLlN1ZG9BY2Nlc3NMZXZlbBINCgV1c2VycxgCIAMoCRIVCg1jdXN0b21fY29uZmlnGAMgASgJIqQBCglMcHNQYXJhbXMSEAoIdXNlcm5hbWUYASABKAkSFwoPcGFzc3dvcmRfbGVuZ3RoGAIgASgFEjAKCmNvbXBsZXhpdHkYAyABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkSHgoWcm90YXRpb25faW50ZXJ2YWxfZGF5cxgEIAEoBRIaChJncmFjZV9wZXJpb2RfaG91cnMYBSABKAUizQIKDEFjdGlvblJlc3VsdBIiCglhY3Rpb25faWQYASABKAsyDy5wbS52MS5BY3Rpb25JZBImCgZzdGF0dXMYAiABKA4yFi5wbS52MS5FeGVjdXRpb25TdGF0dXMSDQoFZXJyb3IYAyABKAkSJAoGb3V0cHV0GAQgASgLMhQucG0udjEuQ29tbWFuZE91dHB1dBIwCgxjb21wbGV0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKC2R1cmF0aW9uX21zGAYgASgDEg8KB2NoYW5nZWQYByABKAgSMwoIbWV0YWRhdGEYCCADKAsyIS5wbS52MS5BY3Rpb25SZXN1bHQuTWV0YWRhdGFFbnRyeRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEq2gMKCkFjdGlvblR5cGUSGwoXQUNUSU9OX1RZUEVfVU5TUEVDSUZJRUQQABIXChNBQ1RJT05fVFlQRV9QQUNLQUdFEAESFgoSQUNUSU9OX1RZUEVfVVBEQVRFEAISGgoWQUNUSU9OX1RZUEVfUkVQT1NJVE9SWRADEhkKFUFDVElPTl9UWVBFX0FQUF9JTUFHRRBkEhMKD0FDVElPTl9UWVBFX0RFQhBlEhMKD0FDVElPTl9UWVBFX1JQTRBmEhcKE0FDVElPTl9UWVBFX0ZMQVRQQUsQZxIWChFBQ1RJT05fVFlQRV9TSEVMTBDIARIYChNBQ1RJT05fVFlQRV9TWVNURU1EEKwCEhUKEEFDVElPTl9UWVBFX0ZJTEUQkAMSGgoVQUNUSU9OX1RZUEVfRElSRUNUT1JZEJEDEhcKEkFDVElPTl9UWVBFX1JFQk9PVBD0AxIVChBBQ1RJT05fVFlQRV9TWU5DEPUDEhUKEEFDVElPTl9UWVBFX1VTRVIQ2AQSFAoPQUNUSU9OX1RZUEVfU1NIELwFEhUKEEFDVElPTl9UWVBFX1NTSEQQvQUSFQoQQUNUSU9OX1RZUEVfU1VETxCgBhIUCg9BQ1RJT05fVFlQRV9MUFMQhAcqmAEKEFN5c3RlbWRVbml0U3RhdGUSIgoeU1lTVEVNRF9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTWVNURU1EX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNZU1RFTURfVU5JVF9TVEFURV9SRVNUQVJURUQQAyqNAQoPU3Vkb0FjY2Vzc0xldmVsEiEKHVNVRE9fQUNDRVNTX0xFVkVMX1VOU1BFQ0lGSUVEEAASGgoWU1VET19BQ0NFU1NfTEVWRUxfRlVMTBABEh0KGVNVRE9fQUNDRVNTX0xFVkVMX0xJTUlURUQQAhIcChhTVURPX0FDQ0VTU19MRVZFTF9DVVNUT00QAyqPAQoVTHBzUGFzc3dvcmRDb21wbGV4aXR5EicKI0xQU19QQVNTV09SRF9DT01QTEVYSVRZX1VOU1BFQ0lGSUVEEAASKAokTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQUxQSEFOVU1FUklDEAESIwofTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQ09NUExFWBACQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.Action
@@ -127,6 +127,24 @@ export type Action = Message<"pm.v1.Action"> & {
      */
     value: SshParams;
     case: "ssh";
+  } | {
+    /**
+     * @generated from field: pm.v1.SshdParams sshd = 23;
+     */
+    value: SshdParams;
+    case: "sshd";
+  } | {
+    /**
+     * @generated from field: pm.v1.SudoParams sudo = 24;
+     */
+    value: SudoParams;
+    case: "sudo";
+  } | {
+    /**
+     * @generated from field: pm.v1.LpsParams lps = 25;
+     */
+    value: LpsParams;
+    case: "lps";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -1034,14 +1052,16 @@ export const UserParamsSchema: GenMessage<UserParams> = /*@__PURE__*/
 
 /**
  * SshParams configures SSH access for a user.
- * Creates an sshd_config.d drop-in file and optionally manages authorized_keys.
+ * Creates an sshd_config.d drop-in file with a Match Group directive.
+ * Each action creates a Linux group pm-ssh-{actionId} and users are added
+ * to the group. SSH keys and home directory are managed by the User action type.
  *
  * @generated from message pm.v1.SshParams
  */
 export type SshParams = Message<"pm.v1.SshParams"> & {
   /**
-   * Username (required)
-   * @gotags: validate:"required,min=1,max=32"
+   * Deprecated: use users field instead. Kept for backward compatibility.
+   * @gotags: validate:"omitempty,max=32"
    *
    * @generated from field: string username = 1;
    */
@@ -1064,21 +1084,12 @@ export type SshParams = Message<"pm.v1.SshParams"> & {
   allowPassword: boolean;
 
   /**
-   * SSH authorized keys to add to ~/.ssh/authorized_keys
-   * Only used when allow_pubkey is true and desired state is PRESENT.
-   * @gotags: validate:"omitempty,dive,max=4096"
+   * Users to add to the SSH access group (must be valid Linux usernames)
+   * @gotags: validate:"omitempty,dive,min=1,max=32"
    *
-   * @generated from field: repeated string authorized_keys = 4;
+   * @generated from field: repeated string users = 6;
    */
-  authorizedKeys: string[];
-
-  /**
-   * Home directory (optional - defaults to /home/<username>)
-   * @gotags: validate:"omitempty,startswith=/"
-   *
-   * @generated from field: string home_dir = 5;
-   */
-  homeDir: string;
+  users: string[];
 };
 
 /**
@@ -1087,6 +1098,169 @@ export type SshParams = Message<"pm.v1.SshParams"> & {
  */
 export const SshParamsSchema: GenMessage<SshParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 16);
+
+/**
+ * SshdDirective represents a single sshd_config key-value directive.
+ *
+ * @generated from message pm.v1.SshdDirective
+ */
+export type SshdDirective = Message<"pm.v1.SshdDirective"> & {
+  /**
+   * sshd_config directive name (e.g., "PermitRootLogin", "Port")
+   * @gotags: validate:"required,min=1,max=128"
+   *
+   * @generated from field: string key = 1;
+   */
+  key: string;
+
+  /**
+   * Directive value (e.g., "no", "22")
+   * @gotags: validate:"required,min=1,max=1024"
+   *
+   * @generated from field: string value = 2;
+   */
+  value: string;
+};
+
+/**
+ * Describes the message pm.v1.SshdDirective.
+ * Use `create(SshdDirectiveSchema)` to create a new message.
+ */
+export const SshdDirectiveSchema: GenMessage<SshdDirective> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 17);
+
+/**
+ * SshdParams configures the SSH daemon via sshd_config.d drop-in files.
+ * Each action creates a numbered config file for ordering (e.g., 0000-*.conf, 0001-*.conf).
+ * Priority is auto-assigned by the server based on creation order.
+ * The sshd service is automatically reloaded when configuration changes.
+ *
+ * @generated from message pm.v1.SshdParams
+ */
+export type SshdParams = Message<"pm.v1.SshdParams"> & {
+  /**
+   * Priority for config file ordering (auto-assigned by server, lower = loaded first)
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: uint32 priority = 1;
+   */
+  priority: number;
+
+  /**
+   * sshd_config directives to set
+   * @gotags: validate:"required,min=1,dive"
+   *
+   * @generated from field: repeated pm.v1.SshdDirective directives = 2;
+   */
+  directives: SshdDirective[];
+};
+
+/**
+ * Describes the message pm.v1.SshdParams.
+ * Use `create(SshdParamsSchema)` to create a new message.
+ */
+export const SshdParamsSchema: GenMessage<SshdParams> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 18);
+
+/**
+ * SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
+ * Each action creates a Linux group pm-sudo-{actionId} and a corresponding
+ * sudoers file. Users specified in the users list are added to the group.
+ * When removed, the group and sudoers file are cleaned up.
+ *
+ * @generated from message pm.v1.SudoParams
+ */
+export type SudoParams = Message<"pm.v1.SudoParams"> & {
+  /**
+   * Access level determines the sudo policy template
+   * @gotags: validate:"required,ne=0"
+   *
+   * @generated from field: pm.v1.SudoAccessLevel access_level = 1;
+   */
+  accessLevel: SudoAccessLevel;
+
+  /**
+   * Users to add to the sudo group (must be valid Linux usernames)
+   * @gotags: validate:"required,min=1,dive,min=1,max=32"
+   *
+   * @generated from field: repeated string users = 2;
+   */
+  users: string[];
+
+  /**
+   * Custom sudoers rules (only used when access_level is CUSTOM)
+   * Use {group} as placeholder for the auto-generated group name.
+   * @gotags: validate:"omitempty,max=65536"
+   *
+   * @generated from field: string custom_config = 3;
+   */
+  customConfig: string;
+};
+
+/**
+ * Describes the message pm.v1.SudoParams.
+ * Use `create(SudoParamsSchema)` to create a new message.
+ */
+export const SudoParamsSchema: GenMessage<SudoParams> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 19);
+
+/**
+ * LpsParams configures Linux Password Solution (LAPS-like) password management.
+ * Each action targets a single user account. The agent generates a random password
+ * based on configured length/complexity, sets it via chpasswd, and reports
+ * the password back to the server. Rotation occurs on a schedule and optionally
+ * after authentication events.
+ *
+ * @generated from message pm.v1.LpsParams
+ */
+export type LpsParams = Message<"pm.v1.LpsParams"> & {
+  /**
+   * Target user account (must exist on device)
+   * @gotags: validate:"required,min=1,max=32"
+   *
+   * @generated from field: string username = 1;
+   */
+  username: string;
+
+  /**
+   * Password length (8-128)
+   * @gotags: validate:"required,gte=8,lte=128"
+   *
+   * @generated from field: int32 password_length = 2;
+   */
+  passwordLength: number;
+
+  /**
+   * Password complexity
+   * @gotags: validate:"required,ne=0"
+   *
+   * @generated from field: pm.v1.LpsPasswordComplexity complexity = 3;
+   */
+  complexity: LpsPasswordComplexity;
+
+  /**
+   * Days between scheduled rotations (1-365)
+   * @gotags: validate:"required,gte=1,lte=365"
+   *
+   * @generated from field: int32 rotation_interval_days = 4;
+   */
+  rotationIntervalDays: number;
+
+  /**
+   * Hours after auth event before automatic rotation (0 = disabled)
+   * @gotags: validate:"omitempty,gte=0,lte=8760"
+   *
+   * @generated from field: int32 grace_period_hours = 5;
+   */
+  gracePeriodHours: number;
+};
+
+/**
+ * Describes the message pm.v1.LpsParams.
+ * Use `create(LpsParamsSchema)` to create a new message.
+ */
+export const LpsParamsSchema: GenMessage<LpsParams> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 20);
 
 /**
  * @generated from message pm.v1.ActionResult
@@ -1140,6 +1314,14 @@ export type ActionResult = Message<"pm.v1.ActionResult"> & {
    * @generated from field: bool changed = 7;
    */
   changed: boolean;
+
+  /**
+   * Optional action-specific metadata (e.g., LPS password data)
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: map<string, string> metadata = 8;
+   */
+  metadata: { [key: string]: string };
 };
 
 /**
@@ -1147,7 +1329,7 @@ export type ActionResult = Message<"pm.v1.ActionResult"> & {
  * Use `create(ActionResultSchema)` to create a new message.
  */
 export const ActionResultSchema: GenMessage<ActionResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 17);
+  messageDesc(file_pm_v1_actions, 21);
 
 /**
  * @generated from enum pm.v1.ActionType
@@ -1278,6 +1460,31 @@ export enum ActionType {
    * @generated from enum value: ACTION_TYPE_SSH = 700;
    */
   SSH = 700,
+
+  /**
+   * SSH daemon configuration
+   *
+   * @generated from enum value: ACTION_TYPE_SSHD = 701;
+   */
+  SSHD = 701,
+
+  /**
+   * Privilege management (800-899)
+   *
+   * Sudoers policy management
+   *
+   * @generated from enum value: ACTION_TYPE_SUDO = 800;
+   */
+  SUDO = 800,
+
+  /**
+   * Password management (900-999)
+   *
+   * Linux Password Solution
+   *
+   * @generated from enum value: ACTION_TYPE_LPS = 900;
+   */
+  LPS = 900,
 }
 
 /**
@@ -1316,4 +1523,75 @@ export enum SystemdUnitState {
  */
 export const SystemdUnitStateSchema: GenEnum<SystemdUnitState> = /*@__PURE__*/
   enumDesc(file_pm_v1_actions, 1);
+
+/**
+ * SudoAccessLevel defines the level of sudo access granted.
+ *
+ * @generated from enum pm.v1.SudoAccessLevel
+ */
+export enum SudoAccessLevel {
+  /**
+   * @generated from enum value: SUDO_ACCESS_LEVEL_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Unrestricted sudo (password required)
+   *
+   * @generated from enum value: SUDO_ACCESS_LEVEL_FULL = 1;
+   */
+  FULL = 1,
+
+  /**
+   * System management commands only (NOPASSWD)
+   *
+   * @generated from enum value: SUDO_ACCESS_LEVEL_LIMITED = 2;
+   */
+  LIMITED = 2,
+
+  /**
+   * Admin-defined sudoers rules
+   *
+   * @generated from enum value: SUDO_ACCESS_LEVEL_CUSTOM = 3;
+   */
+  CUSTOM = 3,
+}
+
+/**
+ * Describes the enum pm.v1.SudoAccessLevel.
+ */
+export const SudoAccessLevelSchema: GenEnum<SudoAccessLevel> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 2);
+
+/**
+ * LpsPasswordComplexity defines the character set for generated passwords.
+ *
+ * @generated from enum pm.v1.LpsPasswordComplexity
+ */
+export enum LpsPasswordComplexity {
+  /**
+   * @generated from enum value: LPS_PASSWORD_COMPLEXITY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * a-z, A-Z, 0-9
+   *
+   * @generated from enum value: LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC = 1;
+   */
+  ALPHANUMERIC = 1,
+
+  /**
+   * a-z, A-Z, 0-9, special characters
+   *
+   * @generated from enum value: LPS_PASSWORD_COMPLEXITY_COMPLEX = 2;
+   */
+  COMPLEX = 2,
+}
+
+/**
+ * Describes the enum pm.v1.LpsPasswordComplexity.
+ */
+export const LpsPasswordComplexitySchema: GenEnum<LpsPasswordComplexity> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 3);
 

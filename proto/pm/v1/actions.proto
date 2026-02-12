@@ -44,6 +44,13 @@ enum ActionType {
 
   // SSH access management (700-799)
   ACTION_TYPE_SSH = 700;        // SSH access configuration
+  ACTION_TYPE_SSHD = 701;       // SSH daemon configuration
+
+  // Privilege management (800-899)
+  ACTION_TYPE_SUDO = 800;       // Sudoers policy management
+
+  // Password management (900-999)
+  ACTION_TYPE_LPS = 900;        // Linux Password Solution
 }
 
 // ============================================================================
@@ -78,6 +85,9 @@ message Action {
     DirectoryParams directory = 18;
     UserParams user = 19;
     SshParams ssh = 22;
+    SshdParams sshd = 23;
+    SudoParams sudo = 24;
+    LpsParams lps = 25;
   }
 
   // ECDSA signature over canonical action payload (signed by CA key).
@@ -440,10 +450,12 @@ message UserParams {
 }
 
 // SshParams configures SSH access for a user.
-// Creates an sshd_config.d drop-in file and optionally manages authorized_keys.
+// Creates an sshd_config.d drop-in file with a Match Group directive.
+// Each action creates a Linux group pm-ssh-{actionId} and users are added
+// to the group. SSH keys and home directory are managed by the User action type.
 message SshParams {
-  // Username (required)
-  // @gotags: validate:"required,min=1,max=32"
+  // Deprecated: use users field instead. Kept for backward compatibility.
+  // @gotags: validate:"omitempty,max=32"
   string username = 1;
 
   // Allow public key authentication (default: true)
@@ -454,14 +466,94 @@ message SshParams {
   // @gotags: validate:"omitempty"
   bool allow_password = 3;
 
-  // SSH authorized keys to add to ~/.ssh/authorized_keys
-  // Only used when allow_pubkey is true and desired state is PRESENT.
-  // @gotags: validate:"omitempty,dive,max=4096"
-  repeated string authorized_keys = 4;
+  reserved 4, 5;
+  reserved "authorized_keys", "home_dir";
 
-  // Home directory (optional - defaults to /home/<username>)
-  // @gotags: validate:"omitempty,startswith=/"
-  string home_dir = 5;
+  // Users to add to the SSH access group (must be valid Linux usernames)
+  // @gotags: validate:"omitempty,dive,min=1,max=32"
+  repeated string users = 6;
+}
+
+// SshdDirective represents a single sshd_config key-value directive.
+message SshdDirective {
+  // sshd_config directive name (e.g., "PermitRootLogin", "Port")
+  // @gotags: validate:"required,min=1,max=128"
+  string key = 1;
+
+  // Directive value (e.g., "no", "22")
+  // @gotags: validate:"required,min=1,max=1024"
+  string value = 2;
+}
+
+// SshdParams configures the SSH daemon via sshd_config.d drop-in files.
+// Each action creates a numbered config file for ordering (e.g., 0000-*.conf, 0001-*.conf).
+// Priority is auto-assigned by the server based on creation order.
+// The sshd service is automatically reloaded when configuration changes.
+message SshdParams {
+  // Priority for config file ordering (auto-assigned by server, lower = loaded first)
+  // @gotags: validate:"omitempty"
+  uint32 priority = 1;
+
+  // sshd_config directives to set
+  // @gotags: validate:"required,min=1,dive"
+  repeated SshdDirective directives = 2;
+}
+
+// SudoAccessLevel defines the level of sudo access granted.
+enum SudoAccessLevel {
+  SUDO_ACCESS_LEVEL_UNSPECIFIED = 0;
+  SUDO_ACCESS_LEVEL_FULL = 1;       // Unrestricted sudo (password required)
+  SUDO_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (NOPASSWD)
+  SUDO_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined sudoers rules
+}
+
+// SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
+// Each action creates a Linux group pm-sudo-{actionId} and a corresponding
+// sudoers file. Users specified in the users list are added to the group.
+// When removed, the group and sudoers file are cleaned up.
+message SudoParams {
+  // Access level determines the sudo policy template
+  // @gotags: validate:"required,ne=0"
+  SudoAccessLevel access_level = 1;
+
+  // Users to add to the sudo group (must be valid Linux usernames)
+  // @gotags: validate:"required,min=1,dive,min=1,max=32"
+  repeated string users = 2;
+
+  // Custom sudoers rules (only used when access_level is CUSTOM)
+  // Use {group} as placeholder for the auto-generated group name.
+  // @gotags: validate:"omitempty,max=65536"
+  string custom_config = 3;
+}
+
+// LpsPasswordComplexity defines the character set for generated passwords.
+enum LpsPasswordComplexity {
+  LPS_PASSWORD_COMPLEXITY_UNSPECIFIED = 0;
+  LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC = 1;  // a-z, A-Z, 0-9
+  LPS_PASSWORD_COMPLEXITY_COMPLEX = 2;       // a-z, A-Z, 0-9, special characters
+}
+
+// LpsParams configures Linux Password Solution (LAPS-like) password management.
+// Each action targets a single user account. The agent generates a random password
+// based on configured length/complexity, sets it via chpasswd, and reports
+// the password back to the server. Rotation occurs on a schedule and optionally
+// after authentication events.
+message LpsParams {
+  // Target user account (must exist on device)
+  // @gotags: validate:"required,min=1,max=32"
+  string username = 1;
+  // Password length (8-128)
+  // @gotags: validate:"required,gte=8,lte=128"
+  int32 password_length = 2;
+  // Password complexity
+  // @gotags: validate:"required,ne=0"
+  LpsPasswordComplexity complexity = 3;
+  // Days between scheduled rotations (1-365)
+  // @gotags: validate:"required,gte=1,lte=365"
+  int32 rotation_interval_days = 4;
+  // Hours after auth event before automatic rotation (0 = disabled)
+  // @gotags: validate:"omitempty,gte=0,lte=8760"
+  int32 grace_period_hours = 5;
 }
 
 // ============================================================================
@@ -483,4 +575,7 @@ message ActionResult {
   int64 duration_ms = 6;
   // Whether the action made changes to the system (true) or state was already as desired (false)
   bool changed = 7;
+  // Optional action-specific metadata (e.g., LPS password data)
+  // @gotags: validate:"omitempty"
+  map<string, string> metadata = 8;
 }

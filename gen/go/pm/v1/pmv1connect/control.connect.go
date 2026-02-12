@@ -268,6 +268,9 @@ const (
 	// ControlServiceListAuditEventsProcedure is the fully-qualified name of the ControlService's
 	// ListAuditEvents RPC.
 	ControlServiceListAuditEventsProcedure = "/pm.v1.ControlService/ListAuditEvents"
+	// ControlServiceGetDeviceLpsPasswordsProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceLpsPasswords RPC.
+	ControlServiceGetDeviceLpsPasswordsProcedure = "/pm.v1.ControlService/GetDeviceLpsPasswords"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -365,6 +368,8 @@ type ControlServiceClient interface {
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
+	// LPS (Linux Password Solution)
+	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -858,6 +863,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListAuditEvents")),
 			connect.WithClientOptions(opts...),
 		),
+		getDeviceLpsPasswords: connect.NewClient[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceLpsPasswordsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLpsPasswords")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -943,6 +954,7 @@ type controlServiceClient struct {
 	getExecution                  *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
 	listExecutions                *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
 	listAuditEvents               *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
+	getDeviceLpsPasswords         *connect.Client[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1345,6 +1357,11 @@ func (c *controlServiceClient) ListAuditEvents(ctx context.Context, req *connect
 	return c.listAuditEvents.CallUnary(ctx, req)
 }
 
+// GetDeviceLpsPasswords calls pm.v1.ControlService.GetDeviceLpsPasswords.
+func (c *controlServiceClient) GetDeviceLpsPasswords(ctx context.Context, req *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
+	return c.getDeviceLpsPasswords.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1440,6 +1457,8 @@ type ControlServiceHandler interface {
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
+	// LPS (Linux Password Solution)
+	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -1929,6 +1948,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ListAuditEvents")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceGetDeviceLpsPasswordsHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceLpsPasswordsProcedure,
+		svc.GetDeviceLpsPasswords,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLpsPasswords")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2091,6 +2116,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListExecutionsHandler.ServeHTTP(w, r)
 		case ControlServiceListAuditEventsProcedure:
 			controlServiceListAuditEventsHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceLpsPasswordsProcedure:
+			controlServiceGetDeviceLpsPasswordsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -2418,4 +2445,8 @@ func (UnimplementedControlServiceHandler) ListExecutions(context.Context, *conne
 
 func (UnimplementedControlServiceHandler) ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAuditEvents is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceLpsPasswords is not implemented"))
 }

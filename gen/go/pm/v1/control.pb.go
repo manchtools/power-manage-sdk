@@ -2838,6 +2838,9 @@ type ManagedAction struct {
 	//	*ManagedAction_Directory
 	//	*ManagedAction_User
 	//	*ManagedAction_Ssh
+	//	*ManagedAction_Sshd
+	//	*ManagedAction_Sudo
+	//	*ManagedAction_Lps
 	Params         isManagedAction_Params `protobuf_oneof:"params"`
 	TimeoutSeconds int32                  `protobuf:"varint,6,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
 	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
@@ -3018,6 +3021,33 @@ func (x *ManagedAction) GetSsh() *SshParams {
 	return nil
 }
 
+func (x *ManagedAction) GetSshd() *SshdParams {
+	if x != nil {
+		if x, ok := x.Params.(*ManagedAction_Sshd); ok {
+			return x.Sshd
+		}
+	}
+	return nil
+}
+
+func (x *ManagedAction) GetSudo() *SudoParams {
+	if x != nil {
+		if x, ok := x.Params.(*ManagedAction_Sudo); ok {
+			return x.Sudo
+		}
+	}
+	return nil
+}
+
+func (x *ManagedAction) GetLps() *LpsParams {
+	if x != nil {
+		if x, ok := x.Params.(*ManagedAction_Lps); ok {
+			return x.Lps
+		}
+	}
+	return nil
+}
+
 func (x *ManagedAction) GetTimeoutSeconds() int32 {
 	if x != nil {
 		return x.TimeoutSeconds
@@ -3094,6 +3124,19 @@ type ManagedAction_Ssh struct {
 	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof"`
 }
 
+type ManagedAction_Sshd struct {
+	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof"`
+}
+
+type ManagedAction_Sudo struct {
+	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof"`
+}
+
+type ManagedAction_Lps struct {
+	// @gotags: validate:"omitempty"
+	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof" validate:"omitempty"`
+}
+
 func (*ManagedAction_Package) isManagedAction_Params() {}
 
 func (*ManagedAction_App) isManagedAction_Params() {}
@@ -3115,6 +3158,12 @@ func (*ManagedAction_Directory) isManagedAction_Params() {}
 func (*ManagedAction_User) isManagedAction_Params() {}
 
 func (*ManagedAction_Ssh) isManagedAction_Params() {}
+
+func (*ManagedAction_Sshd) isManagedAction_Params() {}
+
+func (*ManagedAction_Sudo) isManagedAction_Params() {}
+
+func (*ManagedAction_Lps) isManagedAction_Params() {}
 
 type CreateActionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3143,6 +3192,9 @@ type CreateActionRequest struct {
 	//	*CreateActionRequest_Directory
 	//	*CreateActionRequest_User
 	//	*CreateActionRequest_Ssh
+	//	*CreateActionRequest_Sshd
+	//	*CreateActionRequest_Sudo
+	//	*CreateActionRequest_Lps
 	Params        isCreateActionRequest_Params `protobuf_oneof:"params"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3326,6 +3378,33 @@ func (x *CreateActionRequest) GetSsh() *SshParams {
 	return nil
 }
 
+func (x *CreateActionRequest) GetSshd() *SshdParams {
+	if x != nil {
+		if x, ok := x.Params.(*CreateActionRequest_Sshd); ok {
+			return x.Sshd
+		}
+	}
+	return nil
+}
+
+func (x *CreateActionRequest) GetSudo() *SudoParams {
+	if x != nil {
+		if x, ok := x.Params.(*CreateActionRequest_Sudo); ok {
+			return x.Sudo
+		}
+	}
+	return nil
+}
+
+func (x *CreateActionRequest) GetLps() *LpsParams {
+	if x != nil {
+		if x, ok := x.Params.(*CreateActionRequest_Lps); ok {
+			return x.Lps
+		}
+	}
+	return nil
+}
+
 type isCreateActionRequest_Params interface {
 	isCreateActionRequest_Params()
 }
@@ -3385,6 +3464,21 @@ type CreateActionRequest_Ssh struct {
 	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof" validate:"omitempty"`
 }
 
+type CreateActionRequest_Sshd struct {
+	// @gotags: validate:"omitempty"
+	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof" validate:"omitempty"`
+}
+
+type CreateActionRequest_Sudo struct {
+	// @gotags: validate:"omitempty"
+	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof" validate:"omitempty"`
+}
+
+type CreateActionRequest_Lps struct {
+	// @gotags: validate:"omitempty"
+	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof" validate:"omitempty"`
+}
+
 func (*CreateActionRequest_Package) isCreateActionRequest_Params() {}
 
 func (*CreateActionRequest_App) isCreateActionRequest_Params() {}
@@ -3406,6 +3500,12 @@ func (*CreateActionRequest_Directory) isCreateActionRequest_Params() {}
 func (*CreateActionRequest_User) isCreateActionRequest_Params() {}
 
 func (*CreateActionRequest_Ssh) isCreateActionRequest_Params() {}
+
+func (*CreateActionRequest_Sshd) isCreateActionRequest_Params() {}
+
+func (*CreateActionRequest_Sudo) isCreateActionRequest_Params() {}
+
+func (*CreateActionRequest_Lps) isCreateActionRequest_Params() {}
 
 type CreateActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3793,6 +3893,9 @@ type UpdateActionParamsRequest struct {
 	//	*UpdateActionParamsRequest_Directory
 	//	*UpdateActionParamsRequest_User
 	//	*UpdateActionParamsRequest_Ssh
+	//	*UpdateActionParamsRequest_Sshd
+	//	*UpdateActionParamsRequest_Sudo
+	//	*UpdateActionParamsRequest_Lps
 	Params        isUpdateActionParamsRequest_Params `protobuf_oneof:"params"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3962,6 +4065,33 @@ func (x *UpdateActionParamsRequest) GetSsh() *SshParams {
 	return nil
 }
 
+func (x *UpdateActionParamsRequest) GetSshd() *SshdParams {
+	if x != nil {
+		if x, ok := x.Params.(*UpdateActionParamsRequest_Sshd); ok {
+			return x.Sshd
+		}
+	}
+	return nil
+}
+
+func (x *UpdateActionParamsRequest) GetSudo() *SudoParams {
+	if x != nil {
+		if x, ok := x.Params.(*UpdateActionParamsRequest_Sudo); ok {
+			return x.Sudo
+		}
+	}
+	return nil
+}
+
+func (x *UpdateActionParamsRequest) GetLps() *LpsParams {
+	if x != nil {
+		if x, ok := x.Params.(*UpdateActionParamsRequest_Lps); ok {
+			return x.Lps
+		}
+	}
+	return nil
+}
+
 type isUpdateActionParamsRequest_Params interface {
 	isUpdateActionParamsRequest_Params()
 }
@@ -4021,6 +4151,21 @@ type UpdateActionParamsRequest_Ssh struct {
 	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof" validate:"omitempty"`
 }
 
+type UpdateActionParamsRequest_Sshd struct {
+	// @gotags: validate:"omitempty"
+	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof" validate:"omitempty"`
+}
+
+type UpdateActionParamsRequest_Sudo struct {
+	// @gotags: validate:"omitempty"
+	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof" validate:"omitempty"`
+}
+
+type UpdateActionParamsRequest_Lps struct {
+	// @gotags: validate:"omitempty"
+	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof" validate:"omitempty"`
+}
+
 func (*UpdateActionParamsRequest_Package) isUpdateActionParamsRequest_Params() {}
 
 func (*UpdateActionParamsRequest_App) isUpdateActionParamsRequest_Params() {}
@@ -4042,6 +4187,12 @@ func (*UpdateActionParamsRequest_Directory) isUpdateActionParamsRequest_Params()
 func (*UpdateActionParamsRequest_User) isUpdateActionParamsRequest_Params() {}
 
 func (*UpdateActionParamsRequest_Ssh) isUpdateActionParamsRequest_Params() {}
+
+func (*UpdateActionParamsRequest_Sshd) isUpdateActionParamsRequest_Params() {}
+
+func (*UpdateActionParamsRequest_Sudo) isUpdateActionParamsRequest_Params() {}
+
+func (*UpdateActionParamsRequest_Lps) isUpdateActionParamsRequest_Params() {}
 
 type UpdateActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -9775,6 +9926,206 @@ func (x *ListAuditEventsResponse) GetTotalCount() int32 {
 	return 0
 }
 
+// LPS password entry stored per device
+type LpsPassword struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId       string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	DeviceHostname string                 `protobuf:"bytes,2,opt,name=device_hostname,json=deviceHostname,proto3" json:"device_hostname,omitempty"`
+	ActionId       string                 `protobuf:"bytes,3,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	ActionName     string                 `protobuf:"bytes,4,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`
+	Username       string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
+	Password       string                 `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
+	RotatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
+	RotationReason string                 `protobuf:"bytes,8,opt,name=rotation_reason,json=rotationReason,proto3" json:"rotation_reason,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *LpsPassword) Reset() {
+	*x = LpsPassword{}
+	mi := &file_pm_v1_control_proto_msgTypes[162]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LpsPassword) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LpsPassword) ProtoMessage() {}
+
+func (x *LpsPassword) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[162]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LpsPassword.ProtoReflect.Descriptor instead.
+func (*LpsPassword) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{162}
+}
+
+func (x *LpsPassword) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *LpsPassword) GetDeviceHostname() string {
+	if x != nil {
+		return x.DeviceHostname
+	}
+	return ""
+}
+
+func (x *LpsPassword) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *LpsPassword) GetActionName() string {
+	if x != nil {
+		return x.ActionName
+	}
+	return ""
+}
+
+func (x *LpsPassword) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *LpsPassword) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *LpsPassword) GetRotatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RotatedAt
+	}
+	return nil
+}
+
+func (x *LpsPassword) GetRotationReason() string {
+	if x != nil {
+		return x.RotationReason
+	}
+	return ""
+}
+
+type GetDeviceLpsPasswordsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDeviceLpsPasswordsRequest) Reset() {
+	*x = GetDeviceLpsPasswordsRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[163]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDeviceLpsPasswordsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDeviceLpsPasswordsRequest) ProtoMessage() {}
+
+func (x *GetDeviceLpsPasswordsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[163]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDeviceLpsPasswordsRequest.ProtoReflect.Descriptor instead.
+func (*GetDeviceLpsPasswordsRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{163}
+}
+
+func (x *GetDeviceLpsPasswordsRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+type GetDeviceLpsPasswordsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Current passwords (one per LPS action assigned to device)
+	Current []*LpsPassword `protobuf:"bytes,1,rep,name=current,proto3" json:"current,omitempty"`
+	// Previous passwords (most recent first, max 3 per action)
+	History       []*LpsPassword `protobuf:"bytes,2,rep,name=history,proto3" json:"history,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDeviceLpsPasswordsResponse) Reset() {
+	*x = GetDeviceLpsPasswordsResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[164]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDeviceLpsPasswordsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDeviceLpsPasswordsResponse) ProtoMessage() {}
+
+func (x *GetDeviceLpsPasswordsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[164]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDeviceLpsPasswordsResponse.ProtoReflect.Descriptor instead.
+func (*GetDeviceLpsPasswordsResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{164}
+}
+
+func (x *GetDeviceLpsPasswordsResponse) GetCurrent() []*LpsPassword {
+	if x != nil {
+		return x.Current
+	}
+	return nil
+}
+
+func (x *GetDeviceLpsPasswordsResponse) GetHistory() []*LpsPassword {
+	if x != nil {
+		return x.History
+	}
+	return nil
+}
+
 var File_pm_v1_control_proto protoreflect.FileDescriptor
 
 const file_pm_v1_control_proto_rawDesc = "" +
@@ -9966,7 +10317,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\v2\x18.pm.v1.RegistrationTokenR\x05token\"$\n" +
 	"\x12DeleteTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteTokenResponse\"\xff\x06\n" +
+	"\x13DeleteTokenResponse\"\xf7\a\n" +
 	"\rManagedAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -9987,13 +10338,16 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
 	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12'\n" +
 	"\x0ftimeout_seconds\x18\x06 \x01(\x05R\x0etimeoutSeconds\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
 	"created_by\x18\b \x01(\tR\tcreatedBy\x121\n" +
 	"\bschedule\x18\t \x01(\v2\x15.pm.v1.ActionScheduleR\bscheduleB\b\n" +
-	"\x06params\"\x9b\x06\n" +
+	"\x06params\"\x93\a\n" +
 	"\x13CreateActionRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
@@ -10014,7 +10368,10 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
 	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03sshB\b\n" +
+	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lpsB\b\n" +
 	"\x06params\"D\n" +
 	"\x14CreateActionResponse\x12,\n" +
 	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"\"\n" +
@@ -10038,7 +10395,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"R\n" +
 	"\x1eUpdateActionDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xd4\x05\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xcc\x06\n" +
 	"\x19UpdateActionParamsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\rdesired_state\x18\x02 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
@@ -10057,7 +10414,10 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
 	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03sshB\b\n" +
+	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lpsB\b\n" +
 	"\x06params\"D\n" +
 	"\x14UpdateActionResponse\x12,\n" +
 	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"%\n" +
@@ -10477,7 +10837,23 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x06events\x18\x01 \x03(\v2\x11.pm.v1.AuditEventR\x06events\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount2\xe93\n" +
+	"totalCount\"\xad\x02\n" +
+	"\vLpsPassword\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12'\n" +
+	"\x0fdevice_hostname\x18\x02 \x01(\tR\x0edeviceHostname\x12\x1b\n" +
+	"\taction_id\x18\x03 \x01(\tR\bactionId\x12\x1f\n" +
+	"\vaction_name\x18\x04 \x01(\tR\n" +
+	"actionName\x12\x1a\n" +
+	"\busername\x18\x05 \x01(\tR\busername\x12\x1a\n" +
+	"\bpassword\x18\x06 \x01(\tR\bpassword\x129\n" +
+	"\n" +
+	"rotated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\x12'\n" +
+	"\x0frotation_reason\x18\b \x01(\tR\x0erotationReason\";\n" +
+	"\x1cGetDeviceLpsPasswordsRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"{\n" +
+	"\x1dGetDeviceLpsPasswordsResponse\x12,\n" +
+	"\acurrent\x18\x01 \x03(\v2\x12.pm.v1.LpsPasswordR\acurrent\x12,\n" +
+	"\ahistory\x18\x02 \x03(\v2\x12.pm.v1.LpsPasswordR\ahistory2\xcd4\n" +
 	"\x0eControlService\x12;\n" +
 	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponse\x122\n" +
 	"\x05Login\x12\x13.pm.v1.LoginRequest\x1a\x14.pm.v1.LoginResponse\x12G\n" +
@@ -10561,7 +10937,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x15DispatchInstantAction\x12#.pm.v1.DispatchInstantActionRequest\x1a$.pm.v1.DispatchInstantActionResponse\x12G\n" +
 	"\fGetExecution\x12\x1a.pm.v1.GetExecutionRequest\x1a\x1b.pm.v1.GetExecutionResponse\x12M\n" +
 	"\x0eListExecutions\x12\x1c.pm.v1.ListExecutionsRequest\x1a\x1d.pm.v1.ListExecutionsResponse\x12P\n" +
-	"\x0fListAuditEvents\x12\x1d.pm.v1.ListAuditEventsRequest\x1a\x1e.pm.v1.ListAuditEventsResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x0fListAuditEvents\x12\x1d.pm.v1.ListAuditEventsRequest\x1a\x1e.pm.v1.ListAuditEventsResponse\x12b\n" +
+	"\x15GetDeviceLpsPasswords\x12#.pm.v1.GetDeviceLpsPasswordsRequest\x1a$.pm.v1.GetDeviceLpsPasswordsResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_control_proto_rawDescOnce sync.Once
@@ -10575,7 +10952,7 @@ func file_pm_v1_control_proto_rawDescGZIP() []byte {
 	return file_pm_v1_control_proto_rawDescData
 }
 
-var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 164)
+var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 167)
 var file_pm_v1_control_proto_goTypes = []any{
 	(*RegisterRequest)(nil),                       // 0: pm.v1.RegisterRequest
 	(*RegisterResponse)(nil),                      // 1: pm.v1.RegisterResponse
@@ -10739,333 +11116,353 @@ var file_pm_v1_control_proto_goTypes = []any{
 	(*AuditEvent)(nil),                            // 159: pm.v1.AuditEvent
 	(*ListAuditEventsRequest)(nil),                // 160: pm.v1.ListAuditEventsRequest
 	(*ListAuditEventsResponse)(nil),               // 161: pm.v1.ListAuditEventsResponse
-	nil,                                           // 162: pm.v1.Device.LabelsEntry
-	nil,                                           // 163: pm.v1.ListDevicesRequest.LabelFilterEntry
-	(*DeviceId)(nil),                              // 164: pm.v1.DeviceId
-	(*timestamppb.Timestamp)(nil),                 // 165: google.protobuf.Timestamp
-	(ActionType)(0),                               // 166: pm.v1.ActionType
-	(DesiredState)(0),                             // 167: pm.v1.DesiredState
-	(*PackageParams)(nil),                         // 168: pm.v1.PackageParams
-	(*AppInstallParams)(nil),                      // 169: pm.v1.AppInstallParams
-	(*ShellParams)(nil),                           // 170: pm.v1.ShellParams
-	(*SystemdParams)(nil),                         // 171: pm.v1.SystemdParams
-	(*FileParams)(nil),                            // 172: pm.v1.FileParams
-	(*UpdateParams)(nil),                          // 173: pm.v1.UpdateParams
-	(*RepositoryParams)(nil),                      // 174: pm.v1.RepositoryParams
-	(*FlatpakParams)(nil),                         // 175: pm.v1.FlatpakParams
-	(*DirectoryParams)(nil),                       // 176: pm.v1.DirectoryParams
-	(*UserParams)(nil),                            // 177: pm.v1.UserParams
-	(*SshParams)(nil),                             // 178: pm.v1.SshParams
-	(*ActionSchedule)(nil),                        // 179: pm.v1.ActionSchedule
-	(AssignmentMode)(0),                           // 180: pm.v1.AssignmentMode
-	(ExecutionStatus)(0),                          // 181: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),                         // 182: pm.v1.CommandOutput
-	(*Action)(nil),                                // 183: pm.v1.Action
+	(*LpsPassword)(nil),                           // 162: pm.v1.LpsPassword
+	(*GetDeviceLpsPasswordsRequest)(nil),          // 163: pm.v1.GetDeviceLpsPasswordsRequest
+	(*GetDeviceLpsPasswordsResponse)(nil),         // 164: pm.v1.GetDeviceLpsPasswordsResponse
+	nil,                                           // 165: pm.v1.Device.LabelsEntry
+	nil,                                           // 166: pm.v1.ListDevicesRequest.LabelFilterEntry
+	(*DeviceId)(nil),                              // 167: pm.v1.DeviceId
+	(*timestamppb.Timestamp)(nil),                 // 168: google.protobuf.Timestamp
+	(ActionType)(0),                               // 169: pm.v1.ActionType
+	(DesiredState)(0),                             // 170: pm.v1.DesiredState
+	(*PackageParams)(nil),                         // 171: pm.v1.PackageParams
+	(*AppInstallParams)(nil),                      // 172: pm.v1.AppInstallParams
+	(*ShellParams)(nil),                           // 173: pm.v1.ShellParams
+	(*SystemdParams)(nil),                         // 174: pm.v1.SystemdParams
+	(*FileParams)(nil),                            // 175: pm.v1.FileParams
+	(*UpdateParams)(nil),                          // 176: pm.v1.UpdateParams
+	(*RepositoryParams)(nil),                      // 177: pm.v1.RepositoryParams
+	(*FlatpakParams)(nil),                         // 178: pm.v1.FlatpakParams
+	(*DirectoryParams)(nil),                       // 179: pm.v1.DirectoryParams
+	(*UserParams)(nil),                            // 180: pm.v1.UserParams
+	(*SshParams)(nil),                             // 181: pm.v1.SshParams
+	(*SshdParams)(nil),                            // 182: pm.v1.SshdParams
+	(*SudoParams)(nil),                            // 183: pm.v1.SudoParams
+	(*LpsParams)(nil),                             // 184: pm.v1.LpsParams
+	(*ActionSchedule)(nil),                        // 185: pm.v1.ActionSchedule
+	(AssignmentMode)(0),                           // 186: pm.v1.AssignmentMode
+	(ExecutionStatus)(0),                          // 187: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),                         // 188: pm.v1.CommandOutput
+	(*Action)(nil),                                // 189: pm.v1.Action
 }
 var file_pm_v1_control_proto_depIdxs = []int32{
-	164, // 0: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
-	165, // 1: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
+	167, // 0: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
+	168, // 1: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
 	10,  // 2: pm.v1.LoginResponse.user:type_name -> pm.v1.User
-	165, // 3: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	168, // 3: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
 	10,  // 4: pm.v1.GetCurrentUserResponse.user:type_name -> pm.v1.User
-	165, // 5: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	165, // 6: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	168, // 5: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	168, // 6: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	10,  // 7: pm.v1.CreateUserResponse.user:type_name -> pm.v1.User
 	10,  // 8: pm.v1.GetUserResponse.user:type_name -> pm.v1.User
 	10,  // 9: pm.v1.ListUsersResponse.users:type_name -> pm.v1.User
 	10,  // 10: pm.v1.UpdateUserResponse.user:type_name -> pm.v1.User
-	165, // 11: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
-	165, // 12: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	165, // 13: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
-	162, // 14: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
-	163, // 15: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
+	168, // 11: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
+	168, // 12: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	168, // 13: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
+	165, // 14: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
+	166, // 15: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
 	24,  // 16: pm.v1.ListDevicesResponse.devices:type_name -> pm.v1.Device
 	24,  // 17: pm.v1.GetDeviceResponse.device:type_name -> pm.v1.Device
 	24,  // 18: pm.v1.UpdateDeviceResponse.device:type_name -> pm.v1.Device
 	24,  // 19: pm.v1.AssignDeviceResponse.device:type_name -> pm.v1.Device
 	24,  // 20: pm.v1.UnassignDeviceResponse.device:type_name -> pm.v1.Device
-	165, // 21: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
-	165, // 22: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
-	165, // 23: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	168, // 21: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
+	168, // 22: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
+	168, // 23: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
 	39,  // 24: pm.v1.CreateTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	39,  // 25: pm.v1.ListTokensResponse.tokens:type_name -> pm.v1.RegistrationToken
 	39,  // 26: pm.v1.GetTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	39,  // 27: pm.v1.UpdateTokenResponse.token:type_name -> pm.v1.RegistrationToken
-	166, // 28: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
-	167, // 29: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
-	168, // 30: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
-	169, // 31: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
-	170, // 32: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
-	171, // 33: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
-	172, // 34: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
-	173, // 35: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
-	174, // 36: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
-	175, // 37: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
-	176, // 38: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
-	177, // 39: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
-	178, // 40: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
-	165, // 41: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	179, // 42: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
-	166, // 43: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
-	167, // 44: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
-	179, // 45: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
-	168, // 46: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
-	169, // 47: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
-	170, // 48: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
-	171, // 49: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
-	172, // 50: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
-	173, // 51: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
-	174, // 52: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
-	175, // 53: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	176, // 54: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
-	177, // 55: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
-	178, // 56: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
-	51,  // 57: pm.v1.CreateActionResponse.action:type_name -> pm.v1.ManagedAction
-	51,  // 58: pm.v1.GetActionResponse.action:type_name -> pm.v1.ManagedAction
-	166, // 59: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
-	51,  // 60: pm.v1.ListActionsResponse.actions:type_name -> pm.v1.ManagedAction
-	167, // 61: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
-	179, // 62: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
-	168, // 63: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
-	169, // 64: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
-	170, // 65: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
-	171, // 66: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
-	172, // 67: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
-	173, // 68: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
-	174, // 69: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
-	175, // 70: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	176, // 71: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
-	177, // 72: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
-	178, // 73: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
-	51,  // 74: pm.v1.UpdateActionResponse.action:type_name -> pm.v1.ManagedAction
-	165, // 75: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
-	64,  // 76: pm.v1.CreateActionSetResponse.set:type_name -> pm.v1.ActionSet
-	64,  // 77: pm.v1.GetActionSetResponse.set:type_name -> pm.v1.ActionSet
-	65,  // 78: pm.v1.GetActionSetResponse.members:type_name -> pm.v1.ActionSetMember
-	64,  // 79: pm.v1.ListActionSetsResponse.sets:type_name -> pm.v1.ActionSet
-	64,  // 80: pm.v1.UpdateActionSetResponse.set:type_name -> pm.v1.ActionSet
-	64,  // 81: pm.v1.AddActionToSetResponse.set:type_name -> pm.v1.ActionSet
-	64,  // 82: pm.v1.RemoveActionFromSetResponse.set:type_name -> pm.v1.ActionSet
-	64,  // 83: pm.v1.ReorderActionInSetResponse.set:type_name -> pm.v1.ActionSet
-	165, // 84: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
-	83,  // 85: pm.v1.CreateDefinitionResponse.definition:type_name -> pm.v1.Definition
-	83,  // 86: pm.v1.GetDefinitionResponse.definition:type_name -> pm.v1.Definition
-	84,  // 87: pm.v1.GetDefinitionResponse.members:type_name -> pm.v1.DefinitionMember
-	83,  // 88: pm.v1.ListDefinitionsResponse.definitions:type_name -> pm.v1.Definition
-	83,  // 89: pm.v1.UpdateDefinitionResponse.definition:type_name -> pm.v1.Definition
-	83,  // 90: pm.v1.AddActionSetToDefinitionResponse.definition:type_name -> pm.v1.Definition
-	83,  // 91: pm.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> pm.v1.Definition
-	83,  // 92: pm.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> pm.v1.Definition
-	165, // 93: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
-	102, // 94: pm.v1.CreateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	102, // 95: pm.v1.GetDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	102, // 96: pm.v1.ListDeviceGroupsResponse.groups:type_name -> pm.v1.DeviceGroup
-	102, // 97: pm.v1.UpdateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	102, // 98: pm.v1.AddDeviceToGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	102, // 99: pm.v1.RemoveDeviceFromGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	102, // 100: pm.v1.UpdateDeviceGroupQueryResponse.group:type_name -> pm.v1.DeviceGroup
-	102, // 101: pm.v1.EvaluateDynamicGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	165, // 102: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
-	180, // 103: pm.v1.Assignment.mode:type_name -> pm.v1.AssignmentMode
-	180, // 104: pm.v1.CreateAssignmentRequest.mode:type_name -> pm.v1.AssignmentMode
-	125, // 105: pm.v1.CreateAssignmentResponse.assignment:type_name -> pm.v1.Assignment
-	125, // 106: pm.v1.ListAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
-	165, // 107: pm.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
-	132, // 108: pm.v1.SetUserSelectionResponse.selection:type_name -> pm.v1.UserSelection
-	51,  // 109: pm.v1.AvailableItem.actions:type_name -> pm.v1.ManagedAction
-	136, // 110: pm.v1.ListAvailableActionsResponse.items:type_name -> pm.v1.AvailableItem
-	51,  // 111: pm.v1.GetDeviceAssignmentsResponse.actions:type_name -> pm.v1.ManagedAction
-	64,  // 112: pm.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> pm.v1.ActionSet
-	83,  // 113: pm.v1.GetDeviceAssignmentsResponse.definitions:type_name -> pm.v1.Definition
-	166, // 114: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
-	181, // 115: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
-	182, // 116: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
-	165, // 117: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
-	165, // 118: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
-	165, // 119: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
-	182, // 120: pm.v1.ActionExecution.live_output:type_name -> pm.v1.CommandOutput
-	167, // 121: pm.v1.ActionExecution.desired_state:type_name -> pm.v1.DesiredState
-	183, // 122: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
-	140, // 123: pm.v1.DispatchActionResponse.execution:type_name -> pm.v1.ActionExecution
-	183, // 124: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
-	140, // 125: pm.v1.DispatchToMultipleResponse.executions:type_name -> pm.v1.ActionExecution
-	140, // 126: pm.v1.DispatchAssignedActionsResponse.executions:type_name -> pm.v1.ActionExecution
-	140, // 127: pm.v1.DispatchActionSetResponse.executions:type_name -> pm.v1.ActionExecution
-	140, // 128: pm.v1.DispatchDefinitionResponse.executions:type_name -> pm.v1.ActionExecution
-	183, // 129: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
-	140, // 130: pm.v1.DispatchToGroupResponse.executions:type_name -> pm.v1.ActionExecution
-	140, // 131: pm.v1.GetExecutionResponse.execution:type_name -> pm.v1.ActionExecution
-	181, // 132: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
-	140, // 133: pm.v1.ListExecutionsResponse.executions:type_name -> pm.v1.ActionExecution
-	166, // 134: pm.v1.DispatchInstantActionRequest.instant_action:type_name -> pm.v1.ActionType
-	140, // 135: pm.v1.DispatchInstantActionResponse.execution:type_name -> pm.v1.ActionExecution
-	165, // 136: pm.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
-	159, // 137: pm.v1.ListAuditEventsResponse.events:type_name -> pm.v1.AuditEvent
-	0,   // 138: pm.v1.ControlService.Register:input_type -> pm.v1.RegisterRequest
-	2,   // 139: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
-	4,   // 140: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
-	6,   // 141: pm.v1.ControlService.Logout:input_type -> pm.v1.LogoutRequest
-	8,   // 142: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
-	11,  // 143: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
-	13,  // 144: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
-	15,  // 145: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
-	17,  // 146: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
-	18,  // 147: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
-	19,  // 148: pm.v1.ControlService.UpdateUserRole:input_type -> pm.v1.UpdateUserRoleRequest
-	20,  // 149: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
-	22,  // 150: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
-	25,  // 151: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
-	27,  // 152: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
-	29,  // 153: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
-	30,  // 154: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
-	34,  // 155: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
-	36,  // 156: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
-	38,  // 157: pm.v1.ControlService.SetDeviceSyncInterval:input_type -> pm.v1.SetDeviceSyncIntervalRequest
-	32,  // 158: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
-	40,  // 159: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
-	44,  // 160: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
-	42,  // 161: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
-	46,  // 162: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
-	47,  // 163: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
-	49,  // 164: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
-	52,  // 165: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
-	54,  // 166: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
-	56,  // 167: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
-	58,  // 168: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
-	59,  // 169: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
-	60,  // 170: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
-	62,  // 171: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
-	66,  // 172: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
-	68,  // 173: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
-	70,  // 174: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
-	72,  // 175: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
-	73,  // 176: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
-	75,  // 177: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
-	77,  // 178: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
-	79,  // 179: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
-	81,  // 180: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
-	85,  // 181: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
-	87,  // 182: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
-	89,  // 183: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
-	91,  // 184: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
-	92,  // 185: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
-	94,  // 186: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
-	96,  // 187: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
-	98,  // 188: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
-	100, // 189: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
-	103, // 190: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
-	105, // 191: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
-	107, // 192: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
-	109, // 193: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
-	110, // 194: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
-	118, // 195: pm.v1.ControlService.UpdateDeviceGroupQuery:input_type -> pm.v1.UpdateDeviceGroupQueryRequest
-	112, // 196: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
-	114, // 197: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
-	116, // 198: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
-	120, // 199: pm.v1.ControlService.ValidateDynamicQuery:input_type -> pm.v1.ValidateDynamicQueryRequest
-	122, // 200: pm.v1.ControlService.EvaluateDynamicGroup:input_type -> pm.v1.EvaluateDynamicGroupRequest
-	124, // 201: pm.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> pm.v1.SetDeviceGroupSyncIntervalRequest
-	126, // 202: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
-	128, // 203: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
-	130, // 204: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
-	138, // 205: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
-	133, // 206: pm.v1.ControlService.SetUserSelection:input_type -> pm.v1.SetUserSelectionRequest
-	135, // 207: pm.v1.ControlService.ListAvailableActions:input_type -> pm.v1.ListAvailableActionsRequest
-	141, // 208: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
-	143, // 209: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
-	145, // 210: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
-	147, // 211: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
-	149, // 212: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
-	151, // 213: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
-	157, // 214: pm.v1.ControlService.DispatchInstantAction:input_type -> pm.v1.DispatchInstantActionRequest
-	153, // 215: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
-	155, // 216: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
-	160, // 217: pm.v1.ControlService.ListAuditEvents:input_type -> pm.v1.ListAuditEventsRequest
-	1,   // 218: pm.v1.ControlService.Register:output_type -> pm.v1.RegisterResponse
-	3,   // 219: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
-	5,   // 220: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
-	7,   // 221: pm.v1.ControlService.Logout:output_type -> pm.v1.LogoutResponse
-	9,   // 222: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
-	12,  // 223: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
-	14,  // 224: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
-	16,  // 225: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
-	21,  // 226: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
-	21,  // 227: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
-	21,  // 228: pm.v1.ControlService.UpdateUserRole:output_type -> pm.v1.UpdateUserResponse
-	21,  // 229: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
-	23,  // 230: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
-	26,  // 231: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
-	28,  // 232: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
-	31,  // 233: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	31,  // 234: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	35,  // 235: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
-	37,  // 236: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
-	31,  // 237: pm.v1.ControlService.SetDeviceSyncInterval:output_type -> pm.v1.UpdateDeviceResponse
-	33,  // 238: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
-	41,  // 239: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
-	45,  // 240: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
-	43,  // 241: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
-	48,  // 242: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
-	48,  // 243: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
-	50,  // 244: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
-	53,  // 245: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
-	55,  // 246: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
-	57,  // 247: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
-	61,  // 248: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
-	61,  // 249: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
-	61,  // 250: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
-	63,  // 251: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
-	67,  // 252: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
-	69,  // 253: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
-	71,  // 254: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
-	74,  // 255: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
-	74,  // 256: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
-	76,  // 257: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
-	78,  // 258: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
-	80,  // 259: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
-	82,  // 260: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
-	86,  // 261: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
-	88,  // 262: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
-	90,  // 263: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
-	93,  // 264: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
-	93,  // 265: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
-	95,  // 266: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
-	97,  // 267: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
-	99,  // 268: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
-	101, // 269: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
-	104, // 270: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
-	106, // 271: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
-	108, // 272: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
-	111, // 273: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
-	111, // 274: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
-	119, // 275: pm.v1.ControlService.UpdateDeviceGroupQuery:output_type -> pm.v1.UpdateDeviceGroupQueryResponse
-	113, // 276: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
-	115, // 277: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
-	117, // 278: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
-	121, // 279: pm.v1.ControlService.ValidateDynamicQuery:output_type -> pm.v1.ValidateDynamicQueryResponse
-	123, // 280: pm.v1.ControlService.EvaluateDynamicGroup:output_type -> pm.v1.EvaluateDynamicGroupResponse
-	111, // 281: pm.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> pm.v1.UpdateDeviceGroupResponse
-	127, // 282: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
-	129, // 283: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
-	131, // 284: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
-	139, // 285: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
-	134, // 286: pm.v1.ControlService.SetUserSelection:output_type -> pm.v1.SetUserSelectionResponse
-	137, // 287: pm.v1.ControlService.ListAvailableActions:output_type -> pm.v1.ListAvailableActionsResponse
-	142, // 288: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
-	144, // 289: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
-	146, // 290: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
-	148, // 291: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
-	150, // 292: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
-	152, // 293: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
-	158, // 294: pm.v1.ControlService.DispatchInstantAction:output_type -> pm.v1.DispatchInstantActionResponse
-	154, // 295: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
-	156, // 296: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
-	161, // 297: pm.v1.ControlService.ListAuditEvents:output_type -> pm.v1.ListAuditEventsResponse
-	218, // [218:298] is the sub-list for method output_type
-	138, // [138:218] is the sub-list for method input_type
-	138, // [138:138] is the sub-list for extension type_name
-	138, // [138:138] is the sub-list for extension extendee
-	0,   // [0:138] is the sub-list for field type_name
+	169, // 28: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
+	170, // 29: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
+	171, // 30: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
+	172, // 31: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
+	173, // 32: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
+	174, // 33: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
+	175, // 34: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
+	176, // 35: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
+	177, // 36: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
+	178, // 37: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
+	179, // 38: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
+	180, // 39: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
+	181, // 40: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
+	182, // 41: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
+	183, // 42: pm.v1.ManagedAction.sudo:type_name -> pm.v1.SudoParams
+	184, // 43: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
+	168, // 44: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	185, // 45: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
+	169, // 46: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
+	170, // 47: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
+	185, // 48: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
+	171, // 49: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
+	172, // 50: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
+	173, // 51: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
+	174, // 52: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
+	175, // 53: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
+	176, // 54: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
+	177, // 55: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
+	178, // 56: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
+	179, // 57: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
+	180, // 58: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
+	181, // 59: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
+	182, // 60: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
+	183, // 61: pm.v1.CreateActionRequest.sudo:type_name -> pm.v1.SudoParams
+	184, // 62: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
+	51,  // 63: pm.v1.CreateActionResponse.action:type_name -> pm.v1.ManagedAction
+	51,  // 64: pm.v1.GetActionResponse.action:type_name -> pm.v1.ManagedAction
+	169, // 65: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
+	51,  // 66: pm.v1.ListActionsResponse.actions:type_name -> pm.v1.ManagedAction
+	170, // 67: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
+	185, // 68: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
+	171, // 69: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
+	172, // 70: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
+	173, // 71: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
+	174, // 72: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
+	175, // 73: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
+	176, // 74: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
+	177, // 75: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
+	178, // 76: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
+	179, // 77: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
+	180, // 78: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
+	181, // 79: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
+	182, // 80: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
+	183, // 81: pm.v1.UpdateActionParamsRequest.sudo:type_name -> pm.v1.SudoParams
+	184, // 82: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
+	51,  // 83: pm.v1.UpdateActionResponse.action:type_name -> pm.v1.ManagedAction
+	168, // 84: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
+	64,  // 85: pm.v1.CreateActionSetResponse.set:type_name -> pm.v1.ActionSet
+	64,  // 86: pm.v1.GetActionSetResponse.set:type_name -> pm.v1.ActionSet
+	65,  // 87: pm.v1.GetActionSetResponse.members:type_name -> pm.v1.ActionSetMember
+	64,  // 88: pm.v1.ListActionSetsResponse.sets:type_name -> pm.v1.ActionSet
+	64,  // 89: pm.v1.UpdateActionSetResponse.set:type_name -> pm.v1.ActionSet
+	64,  // 90: pm.v1.AddActionToSetResponse.set:type_name -> pm.v1.ActionSet
+	64,  // 91: pm.v1.RemoveActionFromSetResponse.set:type_name -> pm.v1.ActionSet
+	64,  // 92: pm.v1.ReorderActionInSetResponse.set:type_name -> pm.v1.ActionSet
+	168, // 93: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
+	83,  // 94: pm.v1.CreateDefinitionResponse.definition:type_name -> pm.v1.Definition
+	83,  // 95: pm.v1.GetDefinitionResponse.definition:type_name -> pm.v1.Definition
+	84,  // 96: pm.v1.GetDefinitionResponse.members:type_name -> pm.v1.DefinitionMember
+	83,  // 97: pm.v1.ListDefinitionsResponse.definitions:type_name -> pm.v1.Definition
+	83,  // 98: pm.v1.UpdateDefinitionResponse.definition:type_name -> pm.v1.Definition
+	83,  // 99: pm.v1.AddActionSetToDefinitionResponse.definition:type_name -> pm.v1.Definition
+	83,  // 100: pm.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> pm.v1.Definition
+	83,  // 101: pm.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> pm.v1.Definition
+	168, // 102: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
+	102, // 103: pm.v1.CreateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	102, // 104: pm.v1.GetDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	102, // 105: pm.v1.ListDeviceGroupsResponse.groups:type_name -> pm.v1.DeviceGroup
+	102, // 106: pm.v1.UpdateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	102, // 107: pm.v1.AddDeviceToGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	102, // 108: pm.v1.RemoveDeviceFromGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	102, // 109: pm.v1.UpdateDeviceGroupQueryResponse.group:type_name -> pm.v1.DeviceGroup
+	102, // 110: pm.v1.EvaluateDynamicGroupResponse.group:type_name -> pm.v1.DeviceGroup
+	168, // 111: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
+	186, // 112: pm.v1.Assignment.mode:type_name -> pm.v1.AssignmentMode
+	186, // 113: pm.v1.CreateAssignmentRequest.mode:type_name -> pm.v1.AssignmentMode
+	125, // 114: pm.v1.CreateAssignmentResponse.assignment:type_name -> pm.v1.Assignment
+	125, // 115: pm.v1.ListAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
+	168, // 116: pm.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
+	132, // 117: pm.v1.SetUserSelectionResponse.selection:type_name -> pm.v1.UserSelection
+	51,  // 118: pm.v1.AvailableItem.actions:type_name -> pm.v1.ManagedAction
+	136, // 119: pm.v1.ListAvailableActionsResponse.items:type_name -> pm.v1.AvailableItem
+	51,  // 120: pm.v1.GetDeviceAssignmentsResponse.actions:type_name -> pm.v1.ManagedAction
+	64,  // 121: pm.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> pm.v1.ActionSet
+	83,  // 122: pm.v1.GetDeviceAssignmentsResponse.definitions:type_name -> pm.v1.Definition
+	169, // 123: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
+	187, // 124: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
+	188, // 125: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
+	168, // 126: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
+	168, // 127: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
+	168, // 128: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
+	188, // 129: pm.v1.ActionExecution.live_output:type_name -> pm.v1.CommandOutput
+	170, // 130: pm.v1.ActionExecution.desired_state:type_name -> pm.v1.DesiredState
+	189, // 131: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
+	140, // 132: pm.v1.DispatchActionResponse.execution:type_name -> pm.v1.ActionExecution
+	189, // 133: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
+	140, // 134: pm.v1.DispatchToMultipleResponse.executions:type_name -> pm.v1.ActionExecution
+	140, // 135: pm.v1.DispatchAssignedActionsResponse.executions:type_name -> pm.v1.ActionExecution
+	140, // 136: pm.v1.DispatchActionSetResponse.executions:type_name -> pm.v1.ActionExecution
+	140, // 137: pm.v1.DispatchDefinitionResponse.executions:type_name -> pm.v1.ActionExecution
+	189, // 138: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
+	140, // 139: pm.v1.DispatchToGroupResponse.executions:type_name -> pm.v1.ActionExecution
+	140, // 140: pm.v1.GetExecutionResponse.execution:type_name -> pm.v1.ActionExecution
+	187, // 141: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
+	140, // 142: pm.v1.ListExecutionsResponse.executions:type_name -> pm.v1.ActionExecution
+	169, // 143: pm.v1.DispatchInstantActionRequest.instant_action:type_name -> pm.v1.ActionType
+	140, // 144: pm.v1.DispatchInstantActionResponse.execution:type_name -> pm.v1.ActionExecution
+	168, // 145: pm.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	159, // 146: pm.v1.ListAuditEventsResponse.events:type_name -> pm.v1.AuditEvent
+	168, // 147: pm.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
+	162, // 148: pm.v1.GetDeviceLpsPasswordsResponse.current:type_name -> pm.v1.LpsPassword
+	162, // 149: pm.v1.GetDeviceLpsPasswordsResponse.history:type_name -> pm.v1.LpsPassword
+	0,   // 150: pm.v1.ControlService.Register:input_type -> pm.v1.RegisterRequest
+	2,   // 151: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
+	4,   // 152: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
+	6,   // 153: pm.v1.ControlService.Logout:input_type -> pm.v1.LogoutRequest
+	8,   // 154: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
+	11,  // 155: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
+	13,  // 156: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
+	15,  // 157: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
+	17,  // 158: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
+	18,  // 159: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
+	19,  // 160: pm.v1.ControlService.UpdateUserRole:input_type -> pm.v1.UpdateUserRoleRequest
+	20,  // 161: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
+	22,  // 162: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
+	25,  // 163: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
+	27,  // 164: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
+	29,  // 165: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
+	30,  // 166: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
+	34,  // 167: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
+	36,  // 168: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
+	38,  // 169: pm.v1.ControlService.SetDeviceSyncInterval:input_type -> pm.v1.SetDeviceSyncIntervalRequest
+	32,  // 170: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
+	40,  // 171: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
+	44,  // 172: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
+	42,  // 173: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
+	46,  // 174: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
+	47,  // 175: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
+	49,  // 176: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
+	52,  // 177: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
+	54,  // 178: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
+	56,  // 179: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
+	58,  // 180: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
+	59,  // 181: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
+	60,  // 182: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
+	62,  // 183: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
+	66,  // 184: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
+	68,  // 185: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
+	70,  // 186: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
+	72,  // 187: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
+	73,  // 188: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
+	75,  // 189: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
+	77,  // 190: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
+	79,  // 191: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
+	81,  // 192: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
+	85,  // 193: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
+	87,  // 194: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
+	89,  // 195: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
+	91,  // 196: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
+	92,  // 197: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
+	94,  // 198: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
+	96,  // 199: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
+	98,  // 200: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
+	100, // 201: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
+	103, // 202: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
+	105, // 203: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
+	107, // 204: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
+	109, // 205: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
+	110, // 206: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
+	118, // 207: pm.v1.ControlService.UpdateDeviceGroupQuery:input_type -> pm.v1.UpdateDeviceGroupQueryRequest
+	112, // 208: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
+	114, // 209: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
+	116, // 210: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
+	120, // 211: pm.v1.ControlService.ValidateDynamicQuery:input_type -> pm.v1.ValidateDynamicQueryRequest
+	122, // 212: pm.v1.ControlService.EvaluateDynamicGroup:input_type -> pm.v1.EvaluateDynamicGroupRequest
+	124, // 213: pm.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> pm.v1.SetDeviceGroupSyncIntervalRequest
+	126, // 214: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
+	128, // 215: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
+	130, // 216: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
+	138, // 217: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
+	133, // 218: pm.v1.ControlService.SetUserSelection:input_type -> pm.v1.SetUserSelectionRequest
+	135, // 219: pm.v1.ControlService.ListAvailableActions:input_type -> pm.v1.ListAvailableActionsRequest
+	141, // 220: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
+	143, // 221: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
+	145, // 222: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
+	147, // 223: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
+	149, // 224: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
+	151, // 225: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
+	157, // 226: pm.v1.ControlService.DispatchInstantAction:input_type -> pm.v1.DispatchInstantActionRequest
+	153, // 227: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
+	155, // 228: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
+	160, // 229: pm.v1.ControlService.ListAuditEvents:input_type -> pm.v1.ListAuditEventsRequest
+	163, // 230: pm.v1.ControlService.GetDeviceLpsPasswords:input_type -> pm.v1.GetDeviceLpsPasswordsRequest
+	1,   // 231: pm.v1.ControlService.Register:output_type -> pm.v1.RegisterResponse
+	3,   // 232: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
+	5,   // 233: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
+	7,   // 234: pm.v1.ControlService.Logout:output_type -> pm.v1.LogoutResponse
+	9,   // 235: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
+	12,  // 236: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
+	14,  // 237: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
+	16,  // 238: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
+	21,  // 239: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
+	21,  // 240: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
+	21,  // 241: pm.v1.ControlService.UpdateUserRole:output_type -> pm.v1.UpdateUserResponse
+	21,  // 242: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
+	23,  // 243: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
+	26,  // 244: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
+	28,  // 245: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
+	31,  // 246: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
+	31,  // 247: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
+	35,  // 248: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
+	37,  // 249: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
+	31,  // 250: pm.v1.ControlService.SetDeviceSyncInterval:output_type -> pm.v1.UpdateDeviceResponse
+	33,  // 251: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
+	41,  // 252: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
+	45,  // 253: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
+	43,  // 254: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
+	48,  // 255: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
+	48,  // 256: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
+	50,  // 257: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
+	53,  // 258: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
+	55,  // 259: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
+	57,  // 260: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
+	61,  // 261: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
+	61,  // 262: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
+	61,  // 263: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
+	63,  // 264: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
+	67,  // 265: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
+	69,  // 266: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
+	71,  // 267: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
+	74,  // 268: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
+	74,  // 269: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
+	76,  // 270: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
+	78,  // 271: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
+	80,  // 272: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
+	82,  // 273: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
+	86,  // 274: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
+	88,  // 275: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
+	90,  // 276: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
+	93,  // 277: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
+	93,  // 278: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
+	95,  // 279: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
+	97,  // 280: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
+	99,  // 281: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
+	101, // 282: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
+	104, // 283: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
+	106, // 284: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
+	108, // 285: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
+	111, // 286: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
+	111, // 287: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
+	119, // 288: pm.v1.ControlService.UpdateDeviceGroupQuery:output_type -> pm.v1.UpdateDeviceGroupQueryResponse
+	113, // 289: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
+	115, // 290: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
+	117, // 291: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
+	121, // 292: pm.v1.ControlService.ValidateDynamicQuery:output_type -> pm.v1.ValidateDynamicQueryResponse
+	123, // 293: pm.v1.ControlService.EvaluateDynamicGroup:output_type -> pm.v1.EvaluateDynamicGroupResponse
+	111, // 294: pm.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> pm.v1.UpdateDeviceGroupResponse
+	127, // 295: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
+	129, // 296: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
+	131, // 297: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
+	139, // 298: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
+	134, // 299: pm.v1.ControlService.SetUserSelection:output_type -> pm.v1.SetUserSelectionResponse
+	137, // 300: pm.v1.ControlService.ListAvailableActions:output_type -> pm.v1.ListAvailableActionsResponse
+	142, // 301: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
+	144, // 302: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
+	146, // 303: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
+	148, // 304: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
+	150, // 305: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
+	152, // 306: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
+	158, // 307: pm.v1.ControlService.DispatchInstantAction:output_type -> pm.v1.DispatchInstantActionResponse
+	154, // 308: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
+	156, // 309: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
+	161, // 310: pm.v1.ControlService.ListAuditEvents:output_type -> pm.v1.ListAuditEventsResponse
+	164, // 311: pm.v1.ControlService.GetDeviceLpsPasswords:output_type -> pm.v1.GetDeviceLpsPasswordsResponse
+	231, // [231:312] is the sub-list for method output_type
+	150, // [150:231] is the sub-list for method input_type
+	150, // [150:150] is the sub-list for extension type_name
+	150, // [150:150] is the sub-list for extension extendee
+	0,   // [0:150] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_control_proto_init() }
@@ -11087,6 +11484,9 @@ func file_pm_v1_control_proto_init() {
 		(*ManagedAction_Directory)(nil),
 		(*ManagedAction_User)(nil),
 		(*ManagedAction_Ssh)(nil),
+		(*ManagedAction_Sshd)(nil),
+		(*ManagedAction_Sudo)(nil),
+		(*ManagedAction_Lps)(nil),
 	}
 	file_pm_v1_control_proto_msgTypes[52].OneofWrappers = []any{
 		(*CreateActionRequest_Package)(nil),
@@ -11100,6 +11500,9 @@ func file_pm_v1_control_proto_init() {
 		(*CreateActionRequest_Directory)(nil),
 		(*CreateActionRequest_User)(nil),
 		(*CreateActionRequest_Ssh)(nil),
+		(*CreateActionRequest_Sshd)(nil),
+		(*CreateActionRequest_Sudo)(nil),
+		(*CreateActionRequest_Lps)(nil),
 	}
 	file_pm_v1_control_proto_msgTypes[60].OneofWrappers = []any{
 		(*UpdateActionParamsRequest_Package)(nil),
@@ -11113,6 +11516,9 @@ func file_pm_v1_control_proto_init() {
 		(*UpdateActionParamsRequest_Directory)(nil),
 		(*UpdateActionParamsRequest_User)(nil),
 		(*UpdateActionParamsRequest_Ssh)(nil),
+		(*UpdateActionParamsRequest_Sshd)(nil),
+		(*UpdateActionParamsRequest_Sudo)(nil),
+		(*UpdateActionParamsRequest_Lps)(nil),
 	}
 	file_pm_v1_control_proto_msgTypes[141].OneofWrappers = []any{
 		(*DispatchActionRequest_ActionId)(nil),
@@ -11134,7 +11540,7 @@ func file_pm_v1_control_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_control_proto_rawDesc), len(file_pm_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   164,
+			NumMessages:   167,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
