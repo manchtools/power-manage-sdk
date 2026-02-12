@@ -2280,15 +2280,16 @@ func (x *SudoParams) GetCustomConfig() string {
 }
 
 // LpsParams configures Linux Password Solution (LAPS-like) password management.
-// Each action targets a single user account. The agent generates a random password
-// based on configured length/complexity, sets it via chpasswd, and reports
-// the password back to the server. Rotation occurs on a schedule and optionally
+// Each action targets one or more user accounts. The agent generates a random
+// password for each user based on configured length/complexity, sets it via
+// chpasswd, kills all user sessions, and reports the passwords back to the
+// server. Rotation occurs independently per user on a schedule and optionally
 // after authentication events.
 type LpsParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Target user account (must exist on device)
-	// @gotags: validate:"required,min=1,max=32"
-	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=32"`
+	// Target user accounts (must exist on device)
+	// @gotags: validate:"required,min=1,dive,min=1,max=32"
+	Usernames []string `protobuf:"bytes,1,rep,name=usernames,proto3" json:"usernames,omitempty" validate:"required,min=1,dive,min=1,max=32"`
 	// Password length (8-128)
 	// @gotags: validate:"required,gte=8,lte=128"
 	PasswordLength int32 `protobuf:"varint,2,opt,name=password_length,json=passwordLength,proto3" json:"password_length,omitempty" validate:"required,gte=8,lte=128"`
@@ -2335,11 +2336,11 @@ func (*LpsParams) Descriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *LpsParams) GetUsername() string {
+func (x *LpsParams) GetUsernames() []string {
 	if x != nil {
-		return x.Username
+		return x.Usernames
 	}
-	return ""
+	return nil
 }
 
 func (x *LpsParams) GetPasswordLength() int32 {
@@ -2645,9 +2646,9 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"SudoParams\x129\n" +
 	"\faccess_level\x18\x01 \x01(\x0e2\x16.pm.v1.SudoAccessLevelR\vaccessLevel\x12\x14\n" +
 	"\x05users\x18\x02 \x03(\tR\x05users\x12#\n" +
-	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\"\xf2\x01\n" +
-	"\tLpsParams\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12'\n" +
+	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\"\xf4\x01\n" +
+	"\tLpsParams\x12\x1c\n" +
+	"\tusernames\x18\x01 \x03(\tR\tusernames\x12'\n" +
 	"\x0fpassword_length\x18\x02 \x01(\x05R\x0epasswordLength\x12<\n" +
 	"\n" +
 	"complexity\x18\x03 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +

@@ -534,14 +534,15 @@ enum LpsPasswordComplexity {
 }
 
 // LpsParams configures Linux Password Solution (LAPS-like) password management.
-// Each action targets a single user account. The agent generates a random password
-// based on configured length/complexity, sets it via chpasswd, and reports
-// the password back to the server. Rotation occurs on a schedule and optionally
+// Each action targets one or more user accounts. The agent generates a random
+// password for each user based on configured length/complexity, sets it via
+// chpasswd, kills all user sessions, and reports the passwords back to the
+// server. Rotation occurs independently per user on a schedule and optionally
 // after authentication events.
 message LpsParams {
-  // Target user account (must exist on device)
-  // @gotags: validate:"required,min=1,max=32"
-  string username = 1;
+  // Target user accounts (must exist on device)
+  // @gotags: validate:"required,min=1,dive,min=1,max=32"
+  repeated string usernames = 1;
   // Password length (8-128)
   // @gotags: validate:"required,gte=8,lte=128"
   int32 password_length = 2;
