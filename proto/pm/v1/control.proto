@@ -378,6 +378,7 @@ message ManagedAction {
     SudoParams sudo = 24;
     // @gotags: validate:"omitempty"
     LpsParams lps = 25;
+    GroupParams group = 26;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -428,6 +429,8 @@ message CreateActionRequest {
     SudoParams sudo = 24;
     // @gotags: validate:"omitempty"
     LpsParams lps = 25;
+    // @gotags: validate:"omitempty"
+    GroupParams group = 26;
   }
 }
 
@@ -511,6 +514,8 @@ message UpdateActionParamsRequest {
     SudoParams sudo = 24;
     // @gotags: validate:"omitempty"
     LpsParams lps = 25;
+    // @gotags: validate:"omitempty"
+    GroupParams group = 26;
   }
 }
 
@@ -1202,7 +1207,7 @@ message ListAuditEventsResponse {
 }
 
 // ============================================================================
-// LPS (Linux Password Solution)
+// LPS (Local Password Solution)
 // ============================================================================
 
 // LPS password entry stored per device
@@ -1340,6 +1345,6 @@ service ControlService {
   // Audit Log
   rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
 
-  // LPS (Linux Password Solution)
+  // LPS (Local Password Solution)
   rpc GetDeviceLpsPasswords(GetDeviceLpsPasswordsRequest) returns (GetDeviceLpsPasswordsResponse);
 }

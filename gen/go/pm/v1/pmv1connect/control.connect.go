@@ -368,7 +368,7 @@ type ControlServiceClient interface {
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
-	// LPS (Linux Password Solution)
+	// LPS (Local Password Solution)
 	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
 }
 
@@ -1457,7 +1457,7 @@ type ControlServiceHandler interface {
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
-	// LPS (Linux Password Solution)
+	// LPS (Local Password Solution)
 	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
 }
 

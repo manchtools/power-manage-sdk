@@ -41,6 +41,7 @@ enum ActionType {
 
   // System management (600-699)
   ACTION_TYPE_USER = 600;       // User account management
+  ACTION_TYPE_GROUP = 601;      // Group membership management
 
   // SSH access management (700-799)
   ACTION_TYPE_SSH = 700;        // SSH access configuration
@@ -50,7 +51,7 @@ enum ActionType {
   ACTION_TYPE_SUDO = 800;       // Sudoers policy management
 
   // Password management (900-999)
-  ACTION_TYPE_LPS = 900;        // Linux Password Solution
+  ACTION_TYPE_LPS = 900;        // Local Password Solution
 }
 
 // ============================================================================
@@ -88,6 +89,7 @@ message Action {
     SshdParams sshd = 23;
     SudoParams sudo = 24;
     LpsParams lps = 25;
+    GroupParams group = 26;
   }
 
   // ECDSA signature over canonical action payload (signed by CA key).
@@ -420,10 +422,6 @@ message UserParams {
   // @gotags: validate:"omitempty,startswith=/"
   string shell = 5;
 
-  // Additional groups to add the user to
-  // @gotags: validate:"omitempty,dive,max=32"
-  repeated string groups = 6;
-
   // SSH authorized keys to add to ~/.ssh/authorized_keys
   // @gotags: validate:"omitempty,dive,max=4096"
   repeated string ssh_authorized_keys = 7;
@@ -447,6 +445,26 @@ message UserParams {
   // Primary group name (alternative to gid - creates group if needed)
   // @gotags: validate:"omitempty,max=32"
   string primary_group = 12;
+}
+
+// GroupParams configures Linux group management.
+// Creates or removes a group and manages its members.
+message GroupParams {
+  // Group name (required)
+  // @gotags: validate:"required,min=1,max=32"
+  string name = 1;
+
+  // Members to add to the group
+  // @gotags: validate:"omitempty,dive,min=1,max=32"
+  repeated string members = 2;
+
+  // Group ID (optional - system assigns if not specified)
+  // @gotags: validate:"omitempty,gte=0,lte=65534"
+  int32 gid = 3;
+
+  // Create as system group (GID < 1000)
+  // @gotags: validate:"omitempty"
+  bool system_group = 4;
 }
 
 // SshParams configures SSH access for a user.
@@ -533,7 +551,7 @@ enum LpsPasswordComplexity {
   LPS_PASSWORD_COMPLEXITY_COMPLEX = 2;       // a-z, A-Z, 0-9, special characters
 }
 
-// LpsParams configures Linux Password Solution (LAPS-like) password management.
+// LpsParams configures Local Password Solution (LAPS-like) password management.
 // Each action targets one or more user accounts. The agent generates a random
 // password for each user based on configured length/complexity, sets it via
 // chpasswd, kills all user sessions, and reports the passwords back to the
