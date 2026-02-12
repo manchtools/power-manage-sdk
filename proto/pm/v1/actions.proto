@@ -503,7 +503,7 @@ message SshdParams {
 enum SudoAccessLevel {
   SUDO_ACCESS_LEVEL_UNSPECIFIED = 0;
   SUDO_ACCESS_LEVEL_FULL = 1;       // Unrestricted sudo (password required)
-  SUDO_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (NOPASSWD)
+  SUDO_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (password required)
   SUDO_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined sudoers rules
 }
 
