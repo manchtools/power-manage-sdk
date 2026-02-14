@@ -18,12 +18,21 @@ sdk/
 │
 ├── go/
 │   ├── client.go            Agent streaming client (mTLS, heartbeat, action dispatch)
-│   └── pkg/                 Package manager abstraction library
-│       ├── apt.go             APT (Debian/Ubuntu)
-│       ├── dnf.go             DNF (Fedora/RHEL)
-│       ├── pacman.go          Pacman (Arch Linux)
-│       ├── zypper.go          Zypper (openSUSE)
-│       └── flatpak.go         Flatpak (cross-distro)
+│   ├── pkg/                 Package manager abstraction library
+│   │   ├── apt.go             APT (Debian/Ubuntu)
+│   │   ├── dnf.go             DNF (Fedora/RHEL)
+│   │   ├── pacman.go          Pacman (Arch Linux)
+│   │   ├── zypper.go          Zypper (openSUSE)
+│   │   └── flatpak.go         Flatpak (cross-distro)
+│   └── sys/                 Linux system management libraries
+│       ├── exec/              Command execution (sudo, streaming, queries)
+│       ├── fs/                Filesystem operations (read, write, atomic, permissions)
+│       ├── user/              User & group management, password generation
+│       └── systemd/           Systemd unit management
+│
+├── test/                    Integration test infrastructure
+│   ├── Dockerfile.integration  Test container (systemd + sudo)
+│   └── run-tests.sh           Test runner script
 │
 └── Makefile                Proto generation commands
 ```
@@ -69,6 +78,73 @@ updates, _ := pm.ListUpgradable()           // query methods
 ```
 
 See the [package manager README](go/pkg/README.md) for the full API.
+
+### System Management Libraries
+
+`go/sys/` provides opinionated Linux system management utilities. All privileged operations run through `sudo`, so the calling process does not need to be root.
+
+#### `sys/exec` — Command Execution
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/sys/exec"
+
+result, err := exec.Run(ctx, "ls", "-la")          // basic command
+result, err := exec.Sudo(ctx, "systemctl", "restart", "nginx")  // with sudo
+stdout, err := exec.Query("hostname")               // quick query
+ok := exec.Check("which", "nginx")                  // boolean check
+```
+
+Key features:
+- Streaming output via `RunStreaming` with per-line callbacks
+- Automatic path resolution for sudo commands
+- Output truncation at 1 MiB to prevent memory issues
+
+#### `sys/fs` — Filesystem Operations
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/sys/fs"
+
+content, err := fs.ReadFile(ctx, "/etc/hostname")
+err := fs.WriteFileAtomic(ctx, "/etc/nginx/nginx.conf", content, "0644", "root", "root")
+exists := fs.FileExists(ctx, "/etc/motd")
+err := fs.MkdirWithPermissions(ctx, "/opt/app", "0755", "app", "app", true)
+```
+
+All operations use sudo for privilege escalation. `WriteFileAtomic` writes to a temp file and renames for crash safety.
+
+#### `sys/user` — User & Group Management
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/sys/user"
+
+info, err := user.Get("deploy")              // get user info (UID, GID, shell, groups, locked)
+err := user.Create(ctx, "deploy", "-m", "-s", "/bin/bash")
+err := user.GroupCreate(ctx, "developers")
+err := user.GroupAddUser(ctx, "deploy", "developers")
+password, err := user.GeneratePassword(24, true)  // 24 chars, complex
+err := user.SetPassword(ctx, "deploy", password)
+```
+
+#### `sys/systemd` — Systemd Unit Management
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/sys/systemd"
+
+status := systemd.Status("nginx.service")    // {Enabled, Active, Masked, Static}
+err := systemd.EnableNow(ctx, "nginx.service")
+err := systemd.WriteUnit(ctx, "myapp.service", unitContent)
+err := systemd.DaemonReload(ctx)
+```
+
+### Running SDK Tests
+
+The `sys/` packages include integration tests that run inside a systemd-enabled container:
+
+```bash
+./sdk/test/run-tests.sh
+```
+
+This builds a test image, boots systemd, and runs all tests as a non-root user with sudo access.
 
 ## TypeScript SDK
 

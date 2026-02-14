@@ -20,9 +20,46 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run unit tests
+      - name: Run pkg unit tests
         run: go test -v -race -short ./...
         working-directory: go/pkg
+
+      - name: Run sys unit tests
+        run: go test -v -race ./go/sys/user/ -run TestGeneratePassword
+
+  test-sys:
+    name: Integration Tests (sys/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sdk
+
+      - name: Build test image
+        run: docker build -f sdk/test/Dockerfile.integration -t pm-sdk-test .
+
+      - name: Start systemd container
+        run: docker run -d --privileged --name pm-sdk-test pm-sdk-test
+
+      - name: Wait for systemd
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec pm-sdk-test systemctl is-system-running --wait 2>/dev/null; then
+              break
+            fi
+            sleep 0.5
+          done
+
+      - name: Run sys integration tests
+        run: |
+          docker exec -w /workspace pm-sdk-test \
+            runuser -u power-manage -- /usr/local/go/bin/go test \
+              -v -tags=integration -count=1 -timeout=10m \
+              ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/systemd/
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f pm-sdk-test 2>/dev/null || true
 
   test-apt:
     name: Integration Tests (apt)
