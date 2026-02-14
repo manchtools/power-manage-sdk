@@ -3,12 +3,15 @@ package pkg
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 )
 
 // MockManager is a mock implementation of the Manager interface for testing.
 type MockManager struct {
+	mu sync.Mutex
+
 	// Configurable return values
 	InfoReturn          struct{ Name, Version string }
 	InfoError           error
@@ -80,20 +83,26 @@ func (m *MockManager) Info() (string, string, error) {
 }
 
 func (m *MockManager) Install(packages ...string) (*CommandResult, error) {
+	m.mu.Lock()
 	m.InstallCalls = append(m.InstallCalls, packages)
+	m.mu.Unlock()
 	return m.InstallReturn, m.InstallError
 }
 
 func (m *MockManager) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	m.mu.Lock()
 	m.InstallVersionCalls = append(m.InstallVersionCalls, struct {
 		Name string
 		Opts InstallOptions
 	}{name, opts})
+	m.mu.Unlock()
 	return m.InstallVersionReturn, m.InstallVersionError
 }
 
 func (m *MockManager) Remove(packages ...string) (*CommandResult, error) {
+	m.mu.Lock()
 	m.RemoveCalls = append(m.RemoveCalls, packages)
+	m.mu.Unlock()
 	return m.RemoveReturn, m.RemoveError
 }
 
@@ -102,12 +111,16 @@ func (m *MockManager) Update() (*CommandResult, error) {
 }
 
 func (m *MockManager) Upgrade(packages ...string) (*CommandResult, error) {
+	m.mu.Lock()
 	m.UpgradeCalls = append(m.UpgradeCalls, packages)
+	m.mu.Unlock()
 	return m.UpgradeReturn, m.UpgradeError
 }
 
 func (m *MockManager) Search(query string) ([]SearchResult, error) {
+	m.mu.Lock()
 	m.SearchCalls = append(m.SearchCalls, query)
+	m.mu.Unlock()
 	return m.SearchReturn, m.SearchError
 }
 
@@ -120,7 +133,9 @@ func (m *MockManager) ListUpgradable() ([]PackageUpdate, error) {
 }
 
 func (m *MockManager) Show(name string) (*Package, error) {
+	m.mu.Lock()
 	m.ShowCalls = append(m.ShowCalls, name)
+	m.mu.Unlock()
 	return m.ShowReturn, m.ShowError
 }
 
@@ -137,12 +152,16 @@ func (m *MockManager) GetInstalledVersion(name string) (string, error) {
 }
 
 func (m *MockManager) Pin(packages ...string) (*CommandResult, error) {
+	m.mu.Lock()
 	m.PinCalls = append(m.PinCalls, packages)
+	m.mu.Unlock()
 	return m.PinReturn, m.PinError
 }
 
 func (m *MockManager) Unpin(packages ...string) (*CommandResult, error) {
+	m.mu.Lock()
 	m.UnpinCalls = append(m.UnpinCalls, packages)
+	m.mu.Unlock()
 	return m.UnpinReturn, m.UnpinError
 }
 
@@ -156,7 +175,9 @@ func (m *MockManager) IsPinned(name string) (bool, error) {
 
 // Purge for testing RemoveBuilder.Purge() with non-Apt managers
 func (m *MockManager) Purge(packages ...string) (*CommandResult, error) {
+	m.mu.Lock()
 	m.PurgeCalls = append(m.PurgeCalls, packages)
+	m.mu.Unlock()
 	return m.RemoveReturn, m.RemoveError
 }
 
