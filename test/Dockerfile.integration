@@ -1,0 +1,87 @@
+FROM golang:1.25-bookworm
+
+RUN apt-get update && apt-get install -y \
+    sudo \
+    openssh-server \
+    systemd \
+    systemd-sysv \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create power-manage user (matches production setup)
+RUN useradd --system --no-create-home --shell /usr/sbin/nologin power-manage && \
+    mkdir -p /home/power-manage && \
+    chown power-manage:power-manage /home/power-manage
+
+# sshd host keys (needed for systemd tests that reference ssh.service)
+RUN ssh-keygen -A
+
+WORKDIR /workspace
+
+# Copy only the SDK module
+COPY sdk/ ./sdk/
+
+# Create a minimal go.work for the SDK
+RUN printf 'go 1.25\n\nuse (\n\t./sdk\n)\n' > go.work
+
+# Pre-download dependencies
+RUN cd sdk && go mod download
+
+# Install sudoers for power-manage user (same commands the SDK packages use)
+RUN printf '\
+power-manage ALL=(root) NOPASSWD: /usr/bin/systemctl *\n\
+power-manage ALL=(root) NOPASSWD: /bin/systemctl *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/systemctl\n\
+power-manage ALL=(root) NOPASSWD: /bin/systemctl\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/tee *\n\
+power-manage ALL=(root) NOPASSWD: /bin/tee *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/chown *\n\
+power-manage ALL=(root) NOPASSWD: /bin/chown *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/chmod *\n\
+power-manage ALL=(root) NOPASSWD: /bin/chmod *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/mkdir *\n\
+power-manage ALL=(root) NOPASSWD: /bin/mkdir *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/rm *\n\
+power-manage ALL=(root) NOPASSWD: /bin/rm *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/cp *\n\
+power-manage ALL=(root) NOPASSWD: /bin/cp *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/mv *\n\
+power-manage ALL=(root) NOPASSWD: /bin/mv *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/cat *\n\
+power-manage ALL=(root) NOPASSWD: /bin/cat *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/id *\n\
+power-manage ALL=(root) NOPASSWD: /bin/id *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/useradd *\n\
+power-manage ALL=(root) NOPASSWD: /sbin/useradd *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/usermod *\n\
+power-manage ALL=(root) NOPASSWD: /sbin/usermod *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/userdel *\n\
+power-manage ALL=(root) NOPASSWD: /sbin/userdel *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/groupadd *\n\
+power-manage ALL=(root) NOPASSWD: /sbin/groupadd *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/groupdel *\n\
+power-manage ALL=(root) NOPASSWD: /sbin/groupdel *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/gpasswd *\n\
+power-manage ALL=(root) NOPASSWD: /sbin/gpasswd *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/gpasswd *\n\
+power-manage ALL=(root) NOPASSWD: /bin/gpasswd *\n\
+power-manage ALL=(root) NOPASSWD: /usr/sbin/chpasswd\n\
+power-manage ALL=(root) NOPASSWD: /sbin/chpasswd\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/chage *\n\
+power-manage ALL=(root) NOPASSWD: /bin/chage *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/getent *\n\
+power-manage ALL=(root) NOPASSWD: /bin/getent *\n\
+power-manage ALL=(root) NOPASSWD: /bin/sh *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/sh *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/test *\n\
+power-manage ALL=(root) NOPASSWD: /bin/test *\n\
+' > /etc/sudoers.d/power-manage && \
+    chmod 0440 /etc/sudoers.d/power-manage && \
+    visudo -c -f /etc/sudoers.d/power-manage
+
+# Own workspace and Go caches so power-manage user can compile tests
+RUN chown -R power-manage:power-manage /workspace /home/power-manage
+
+# Use systemd as PID 1 for systemctl daemon-reload, enable, start, etc.
+STOPSIGNAL SIGRTMIN+3
+ENTRYPOINT ["/sbin/init"]
