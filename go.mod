@@ -8,6 +8,8 @@ require (
 	google.golang.org/protobuf v1.36.4
 )
 
+require github.com/go-cmd/cmd v1.4.3 // indirect
+
 require (
 	golang.org/x/net v0.34.0
 	golang.org/x/text v0.21.0 // indirect
