@@ -59,6 +59,31 @@ func DetectVolume(ctx context.Context) (*Volume, error) {
 	return &volumes[0], nil
 }
 
+// DetectVolumeByKey finds the LUKS volume that accepts the given passphrase.
+// Enumerates all volumes and tests the passphrase against each one.
+// Returns error if no volume matches or if detection fails.
+func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) {
+	volumes, err := DetectAllVolumes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(volumes) == 0 {
+		return nil, fmt.Errorf("no LUKS-encrypted volumes detected on this device")
+	}
+
+	for i := range volumes {
+		ok, err := TestPassphrase(ctx, volumes[i].DevicePath, passphrase)
+		if err != nil {
+			continue // Skip volumes we can't test (e.g., permission issues)
+		}
+		if ok {
+			return &volumes[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("no LUKS volume accepts the provided passphrase")
+}
+
 // DetectAllVolumes returns all LUKS-encrypted volumes on the system.
 func DetectAllVolumes(ctx context.Context) ([]Volume, error) {
 	result, err := exec.Run(ctx, "lsblk", "-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT")

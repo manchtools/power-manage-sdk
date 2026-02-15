@@ -96,24 +96,43 @@ func KillSlot(ctx context.Context, devicePath string, slot int, existingKey stri
 	return nil
 }
 
-// writeKeyFile writes a key to a temporary file with mode 0600.
-// Uses /dev/shm (tmpfs) if available to avoid writing to disk.
+// keyFileDir is the private directory for ephemeral key files.
+// /dev/shm is a tmpfs mount (RAM-backed) — files never touch disk.
+const keyFileDir = "/dev/shm/pm-luks"
+
+// TestPassphrase checks if a passphrase is valid for a LUKS volume without unlocking it.
+// Returns true if the passphrase is accepted, false if rejected.
+func TestPassphrase(ctx context.Context, devicePath, passphrase string) (bool, error) {
+	keyFile, err := writeKeyFile(passphrase)
+	if err != nil {
+		return false, err
+	}
+	defer cleanupKeyFile(keyFile)
+
+	result, err := exec.Sudo(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
+		"--key-file", keyFile, "--batch-mode")
+	if err != nil {
+		if result != nil && result.ExitCode != 0 {
+			return false, nil // Wrong passphrase
+		}
+		return false, fmt.Errorf("cryptsetup test-passphrase failed: %w", err)
+	}
+	return true, nil
+}
+
+// writeKeyFile writes a key to a temporary file in /dev/shm (RAM only).
+// The private directory has mode 0700 to prevent other users from listing files.
+// Returns an error if /dev/shm is not available — never falls back to disk.
 func writeKeyFile(key string) (string, error) {
-	dir := "/dev/shm"
-	if _, err := os.Stat(dir); err != nil {
-		dir = os.TempDir()
+	if err := os.MkdirAll(keyFileDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create key file directory %s: %w", keyFileDir, err)
 	}
 
-	f, err := os.CreateTemp(dir, "pm-luks-key-*")
+	f, err := os.CreateTemp(keyFileDir, "key-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create key file: %w", err)
 	}
 	defer f.Close()
-
-	if err := f.Chmod(0600); err != nil {
-		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to set key file permissions: %w", err)
-	}
 
 	if _, err := f.WriteString(key); err != nil {
 		os.Remove(f.Name())

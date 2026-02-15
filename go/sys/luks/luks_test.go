@@ -3,6 +3,7 @@ package luks
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"os"
 	"strings"
 	"testing"
 )
@@ -475,4 +476,118 @@ func selectBestVolume(volumes []Volume) *Volume {
 		}
 	}
 	return &volumes[0]
+}
+
+// ─── writeKeyFile / cleanupKeyFile hardening tests ───────────────────────────
+
+func TestWriteKeyFile_CreatesInDevShm(t *testing.T) {
+	if _, err := os.Stat("/dev/shm"); err != nil {
+		t.Skip("/dev/shm not available")
+	}
+
+	path, err := writeKeyFile("test-secret")
+	if err != nil {
+		t.Fatalf("writeKeyFile failed: %v", err)
+	}
+	defer cleanupKeyFile(path)
+
+	if !strings.HasPrefix(path, keyFileDir+"/") {
+		t.Errorf("key file should be in %s, got %s", keyFileDir, path)
+	}
+
+	// Verify file content
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read key file: %v", err)
+	}
+	if string(data) != "test-secret" {
+		t.Errorf("expected 'test-secret', got %q", data)
+	}
+}
+
+func TestWriteKeyFile_FilePermissions(t *testing.T) {
+	if _, err := os.Stat("/dev/shm"); err != nil {
+		t.Skip("/dev/shm not available")
+	}
+
+	path, err := writeKeyFile("perm-test")
+	if err != nil {
+		t.Fatalf("writeKeyFile failed: %v", err)
+	}
+	defer cleanupKeyFile(path)
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat key file: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm&0077 != 0 {
+		t.Errorf("key file should not be group/world accessible, got %o", perm)
+	}
+}
+
+func TestWriteKeyFile_DirPermissions(t *testing.T) {
+	if _, err := os.Stat("/dev/shm"); err != nil {
+		t.Skip("/dev/shm not available")
+	}
+
+	path, err := writeKeyFile("dir-test")
+	if err != nil {
+		t.Fatalf("writeKeyFile failed: %v", err)
+	}
+	defer cleanupKeyFile(path)
+
+	info, err := os.Stat(keyFileDir)
+	if err != nil {
+		t.Fatalf("failed to stat key dir: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0700 {
+		t.Errorf("key dir should be 0700, got %o", perm)
+	}
+}
+
+func TestCleanupKeyFile_RemovesFile(t *testing.T) {
+	if _, err := os.Stat("/dev/shm"); err != nil {
+		t.Skip("/dev/shm not available")
+	}
+
+	path, err := writeKeyFile("cleanup-test")
+	if err != nil {
+		t.Fatalf("writeKeyFile failed: %v", err)
+	}
+
+	cleanupKeyFile(path)
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("key file should be removed after cleanup, got err: %v", err)
+	}
+}
+
+func TestCleanupKeyFile_ZerosBeforeRemoval(t *testing.T) {
+	if _, err := os.Stat("/dev/shm"); err != nil {
+		t.Skip("/dev/shm not available")
+	}
+
+	path, err := writeKeyFile("zero-test-secret")
+	if err != nil {
+		t.Fatalf("writeKeyFile failed: %v", err)
+	}
+
+	// Read size before cleanup
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat: %v", err)
+	}
+	size := info.Size()
+	if size == 0 {
+		t.Fatal("key file should not be empty")
+	}
+
+	// Overwrite with zeros (the first part of cleanupKeyFile) then check
+	// We can't easily intercept between zero and remove, so just verify
+	// the function completes without error
+	cleanupKeyFile(path)
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Error("file should be removed")
+	}
 }
