@@ -207,6 +207,9 @@ type AgentMessage struct {
 	//	*AgentMessage_OutputChunk
 	//	*AgentMessage_QueryResult
 	//	*AgentMessage_SecurityAlert
+	//	*AgentMessage_GetLuksKey
+	//	*AgentMessage_StoreLuksKey
+	//	*AgentMessage_RevokeLuksDeviceKeyResult
 	Payload       isAgentMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -310,6 +313,33 @@ func (x *AgentMessage) GetSecurityAlert() *SecurityAlert {
 	return nil
 }
 
+func (x *AgentMessage) GetGetLuksKey() *GetLuksKeyRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_GetLuksKey); ok {
+			return x.GetLuksKey
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetStoreLuksKey() *StoreLuksKeyRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_StoreLuksKey); ok {
+			return x.StoreLuksKey
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetRevokeLuksDeviceKeyResult() *RevokeLuksDeviceKeyResult {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_RevokeLuksDeviceKeyResult); ok {
+			return x.RevokeLuksDeviceKeyResult
+		}
+	}
+	return nil
+}
+
 type isAgentMessage_Payload interface {
 	isAgentMessage_Payload()
 }
@@ -344,6 +374,22 @@ type AgentMessage_SecurityAlert struct {
 	SecurityAlert *SecurityAlert `protobuf:"bytes,40,opt,name=security_alert,json=securityAlert,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_GetLuksKey struct {
+	// LUKS key management (via stream, not separate RPCs)
+	// @gotags: validate:"omitempty"
+	GetLuksKey *GetLuksKeyRequest `protobuf:"bytes,50,opt,name=get_luks_key,json=getLuksKey,proto3,oneof" validate:"omitempty"`
+}
+
+type AgentMessage_StoreLuksKey struct {
+	// @gotags: validate:"omitempty"
+	StoreLuksKey *StoreLuksKeyRequest `protobuf:"bytes,51,opt,name=store_luks_key,json=storeLuksKey,proto3,oneof" validate:"omitempty"`
+}
+
+type AgentMessage_RevokeLuksDeviceKeyResult struct {
+	// @gotags: validate:"omitempty"
+	RevokeLuksDeviceKeyResult *RevokeLuksDeviceKeyResult `protobuf:"bytes,52,opt,name=revoke_luks_device_key_result,json=revokeLuksDeviceKeyResult,proto3,oneof" validate:"omitempty"`
+}
+
 func (*AgentMessage_Hello) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Heartbeat) isAgentMessage_Payload() {}
@@ -355,6 +401,12 @@ func (*AgentMessage_OutputChunk) isAgentMessage_Payload() {}
 func (*AgentMessage_QueryResult) isAgentMessage_Payload() {}
 
 func (*AgentMessage_SecurityAlert) isAgentMessage_Payload() {}
+
+func (*AgentMessage_GetLuksKey) isAgentMessage_Payload() {}
+
+func (*AgentMessage_StoreLuksKey) isAgentMessage_Payload() {}
+
+func (*AgentMessage_RevokeLuksDeviceKeyResult) isAgentMessage_Payload() {}
 
 // Output chunk sent during action execution (Agent -> Server)
 type OutputChunk struct {
@@ -648,6 +700,9 @@ type ServerMessage struct {
 	//	*ServerMessage_Action
 	//	*ServerMessage_Query
 	//	*ServerMessage_Error
+	//	*ServerMessage_GetLuksKey
+	//	*ServerMessage_StoreLuksKey
+	//	*ServerMessage_RevokeLuksDeviceKey
 	Payload       isServerMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -733,6 +788,33 @@ func (x *ServerMessage) GetError() *Error {
 	return nil
 }
 
+func (x *ServerMessage) GetGetLuksKey() *GetLuksKeyResponse {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_GetLuksKey); ok {
+			return x.GetLuksKey
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetStoreLuksKey() *StoreLuksKeyResponse {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_StoreLuksKey); ok {
+			return x.StoreLuksKey
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetRevokeLuksDeviceKey() *RevokeLuksDeviceKey {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_RevokeLuksDeviceKey); ok {
+			return x.RevokeLuksDeviceKey
+		}
+	}
+	return nil
+}
+
 type isServerMessage_Payload interface {
 	isServerMessage_Payload()
 }
@@ -757,6 +839,22 @@ type ServerMessage_Error struct {
 	Error *Error `protobuf:"bytes,40,opt,name=error,proto3,oneof" validate:"omitempty"`
 }
 
+type ServerMessage_GetLuksKey struct {
+	// LUKS key management responses + instant actions
+	// @gotags: validate:"omitempty"
+	GetLuksKey *GetLuksKeyResponse `protobuf:"bytes,50,opt,name=get_luks_key,json=getLuksKey,proto3,oneof" validate:"omitempty"`
+}
+
+type ServerMessage_StoreLuksKey struct {
+	// @gotags: validate:"omitempty"
+	StoreLuksKey *StoreLuksKeyResponse `protobuf:"bytes,51,opt,name=store_luks_key,json=storeLuksKey,proto3,oneof" validate:"omitempty"`
+}
+
+type ServerMessage_RevokeLuksDeviceKey struct {
+	// @gotags: validate:"omitempty"
+	RevokeLuksDeviceKey *RevokeLuksDeviceKey `protobuf:"bytes,52,opt,name=revoke_luks_device_key,json=revokeLuksDeviceKey,proto3,oneof" validate:"omitempty"`
+}
+
 func (*ServerMessage_Welcome) isServerMessage_Payload() {}
 
 func (*ServerMessage_Action) isServerMessage_Payload() {}
@@ -764,6 +862,12 @@ func (*ServerMessage_Action) isServerMessage_Payload() {}
 func (*ServerMessage_Query) isServerMessage_Payload() {}
 
 func (*ServerMessage_Error) isServerMessage_Payload() {}
+
+func (*ServerMessage_GetLuksKey) isServerMessage_Payload() {}
+
+func (*ServerMessage_StoreLuksKey) isServerMessage_Payload() {}
+
+func (*ServerMessage_RevokeLuksDeviceKey) isServerMessage_Payload() {}
 
 type Welcome struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1179,6 +1283,453 @@ func (x *OSQueryRow) GetData() map[string]string {
 	return nil
 }
 
+// Agent requests the current managed passphrase for a LUKS action.
+// device_id is omitted — the gateway knows the device from the mTLS cert.
+type GetLuksKeyRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	ActionId      string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLuksKeyRequest) Reset() {
+	*x = GetLuksKeyRequest{}
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLuksKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLuksKeyRequest) ProtoMessage() {}
+
+func (x *GetLuksKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLuksKeyRequest.ProtoReflect.Descriptor instead.
+func (*GetLuksKeyRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetLuksKeyRequest) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+type GetLuksKeyResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,min=1"
+	Passphrase    string `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLuksKeyResponse) Reset() {
+	*x = GetLuksKeyResponse{}
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLuksKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLuksKeyResponse) ProtoMessage() {}
+
+func (x *GetLuksKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLuksKeyResponse.ProtoReflect.Descriptor instead.
+func (*GetLuksKeyResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetLuksKeyResponse) GetPassphrase() string {
+	if x != nil {
+		return x.Passphrase
+	}
+	return ""
+}
+
+// Agent stores a new managed passphrase on the server.
+// The server must confirm receipt before the agent removes the old key from LUKS.
+type StoreLuksKeyRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	// Auto-detected device path (e.g., "/dev/sda2")
+	// @gotags: validate:"required,startswith=/"
+	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,startswith=/"`
+	// @gotags: validate:"required,min=1"
+	Passphrase string `protobuf:"bytes,3,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1"`
+	// Rotation reason: "initial" or "scheduled"
+	// @gotags: validate:"required,oneof=initial scheduled"
+	RotationReason string `protobuf:"bytes,4,opt,name=rotation_reason,json=rotationReason,proto3" json:"rotation_reason,omitempty" validate:"required,oneof=initial scheduled"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *StoreLuksKeyRequest) Reset() {
+	*x = StoreLuksKeyRequest{}
+	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StoreLuksKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StoreLuksKeyRequest) ProtoMessage() {}
+
+func (x *StoreLuksKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StoreLuksKeyRequest.ProtoReflect.Descriptor instead.
+func (*StoreLuksKeyRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *StoreLuksKeyRequest) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *StoreLuksKeyRequest) GetDevicePath() string {
+	if x != nil {
+		return x.DevicePath
+	}
+	return ""
+}
+
+func (x *StoreLuksKeyRequest) GetPassphrase() string {
+	if x != nil {
+		return x.Passphrase
+	}
+	return ""
+}
+
+func (x *StoreLuksKeyRequest) GetRotationReason() string {
+	if x != nil {
+		return x.RotationReason
+	}
+	return ""
+}
+
+type StoreLuksKeyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StoreLuksKeyResponse) Reset() {
+	*x = StoreLuksKeyResponse{}
+	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StoreLuksKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StoreLuksKeyResponse) ProtoMessage() {}
+
+func (x *StoreLuksKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StoreLuksKeyResponse.ProtoReflect.Descriptor instead.
+func (*StoreLuksKeyResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *StoreLuksKeyResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+// Server instructs agent to revoke the device-bound key in LUKS slot 7.
+// Dispatched as an instant action via the stream.
+type RevokeLuksDeviceKey struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	ActionId      string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeLuksDeviceKey) Reset() {
+	*x = RevokeLuksDeviceKey{}
+	mi := &file_pm_v1_agent_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeLuksDeviceKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeLuksDeviceKey) ProtoMessage() {}
+
+func (x *RevokeLuksDeviceKey) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeLuksDeviceKey.ProtoReflect.Descriptor instead.
+func (*RevokeLuksDeviceKey) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RevokeLuksDeviceKey) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+// Agent reports the result of revoking the device-bound key.
+type RevokeLuksDeviceKeyResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	Success  bool   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	// @gotags: validate:"omitempty,max=1024"
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty" validate:"omitempty,max=1024"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeLuksDeviceKeyResult) Reset() {
+	*x = RevokeLuksDeviceKeyResult{}
+	mi := &file_pm_v1_agent_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeLuksDeviceKeyResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeLuksDeviceKeyResult) ProtoMessage() {}
+
+func (x *RevokeLuksDeviceKeyResult) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeLuksDeviceKeyResult.ProtoReflect.Descriptor instead.
+func (*RevokeLuksDeviceKeyResult) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *RevokeLuksDeviceKeyResult) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *RevokeLuksDeviceKeyResult) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *RevokeLuksDeviceKeyResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type ValidateLuksTokenRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,uuid"
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,uuid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateLuksTokenRequest) Reset() {
+	*x = ValidateLuksTokenRequest{}
+	mi := &file_pm_v1_agent_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateLuksTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateLuksTokenRequest) ProtoMessage() {}
+
+func (x *ValidateLuksTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateLuksTokenRequest.ProtoReflect.Descriptor instead.
+func (*ValidateLuksTokenRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ValidateLuksTokenRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *ValidateLuksTokenRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type ValidateLuksTokenResponse struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	ActionId string                 `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// Auto-detected device path from server's stored key data
+	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty"`
+	// Minimum passphrase length (>= 16)
+	MinLength int32 `protobuf:"varint,3,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
+	// Complexity requirement for user-defined passphrases
+	Complexity    LpsPasswordComplexity `protobuf:"varint,4,opt,name=complexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"complexity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateLuksTokenResponse) Reset() {
+	*x = ValidateLuksTokenResponse{}
+	mi := &file_pm_v1_agent_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateLuksTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateLuksTokenResponse) ProtoMessage() {}
+
+func (x *ValidateLuksTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateLuksTokenResponse.ProtoReflect.Descriptor instead.
+func (*ValidateLuksTokenResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ValidateLuksTokenResponse) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *ValidateLuksTokenResponse) GetDevicePath() string {
+	if x != nil {
+		return x.DevicePath
+	}
+	return ""
+}
+
+func (x *ValidateLuksTokenResponse) GetMinLength() int32 {
+	if x != nil {
+		return x.MinLength
+	}
+	return 0
+}
+
+func (x *ValidateLuksTokenResponse) GetComplexity() LpsPasswordComplexity {
+	if x != nil {
+		return x.Complexity
+	}
+	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
+}
+
 type SyncActionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -1189,7 +1740,7 @@ type SyncActionsRequest struct {
 
 func (x *SyncActionsRequest) Reset() {
 	*x = SyncActionsRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_pm_v1_agent_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1201,7 +1752,7 @@ func (x *SyncActionsRequest) String() string {
 func (*SyncActionsRequest) ProtoMessage() {}
 
 func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_pm_v1_agent_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1214,7 +1765,7 @@ func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsRequest.ProtoReflect.Descriptor instead.
 func (*SyncActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
@@ -1239,7 +1790,7 @@ type SyncActionsResponse struct {
 
 func (x *SyncActionsResponse) Reset() {
 	*x = SyncActionsResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	mi := &file_pm_v1_agent_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1251,7 +1802,7 @@ func (x *SyncActionsResponse) String() string {
 func (*SyncActionsResponse) ProtoMessage() {}
 
 func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	mi := &file_pm_v1_agent_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1264,7 +1815,7 @@ func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsResponse.ProtoReflect.Descriptor instead.
 func (*SyncActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SyncActionsResponse) GetActions() []*Action {
@@ -1285,7 +1836,7 @@ var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xf0\x02\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xd8\x04\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
@@ -1294,7 +1845,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\raction_result\x18\x14 \x01(\v2\x13.pm.v1.ActionResultH\x00R\factionResult\x127\n" +
 	"\foutput_chunk\x18\x15 \x01(\v2\x12.pm.v1.OutputChunkH\x00R\voutputChunk\x129\n" +
 	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResult\x12=\n" +
-	"\x0esecurity_alert\x18( \x01(\v2\x14.pm.v1.SecurityAlertH\x00R\rsecurityAlertB\t\n" +
+	"\x0esecurity_alert\x18( \x01(\v2\x14.pm.v1.SecurityAlertH\x00R\rsecurityAlert\x12<\n" +
+	"\fget_luks_key\x182 \x01(\v2\x18.pm.v1.GetLuksKeyRequestH\x00R\n" +
+	"getLuksKey\x12B\n" +
+	"\x0estore_luks_key\x183 \x01(\v2\x1a.pm.v1.StoreLuksKeyRequestH\x00R\fstoreLuksKey\x12d\n" +
+	"\x1drevoke_luks_device_key_result\x184 \x01(\v2 .pm.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResultB\t\n" +
 	"\apayload\"\x91\x01\n" +
 	"\vOutputChunk\x12!\n" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12/\n" +
@@ -1319,14 +1874,18 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\adetails\x18\x03 \x03(\v2!.pm.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd5\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xac\x03\n" +
 	"\rServerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\awelcome\x18\n" +
 	" \x01(\v2\x0e.pm.v1.WelcomeH\x00R\awelcome\x12/\n" +
 	"\x06action\x18\x14 \x01(\v2\x15.pm.v1.ActionDispatchH\x00R\x06action\x12&\n" +
 	"\x05query\x18\x1e \x01(\v2\x0e.pm.v1.OSQueryH\x00R\x05query\x12$\n" +
-	"\x05error\x18( \x01(\v2\f.pm.v1.ErrorH\x00R\x05errorB\t\n" +
+	"\x05error\x18( \x01(\v2\f.pm.v1.ErrorH\x00R\x05error\x12=\n" +
+	"\fget_luks_key\x182 \x01(\v2\x19.pm.v1.GetLuksKeyResponseH\x00R\n" +
+	"getLuksKey\x12C\n" +
+	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
+	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKeyB\t\n" +
 	"\apayload\"z\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
@@ -1356,7 +1915,41 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x04data\x18\x01 \x03(\v2\x1b.pm.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"0\n" +
+	"\x11GetLuksKeyRequest\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\"4\n" +
+	"\x12GetLuksKeyResponse\x12\x1e\n" +
+	"\n" +
+	"passphrase\x18\x01 \x01(\tR\n" +
+	"passphrase\"\x9c\x01\n" +
+	"\x13StoreLuksKeyRequest\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
+	"\vdevice_path\x18\x02 \x01(\tR\n" +
+	"devicePath\x12\x1e\n" +
+	"\n" +
+	"passphrase\x18\x03 \x01(\tR\n" +
+	"passphrase\x12'\n" +
+	"\x0frotation_reason\x18\x04 \x01(\tR\x0erotationReason\"0\n" +
+	"\x14StoreLuksKeyResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"2\n" +
+	"\x13RevokeLuksDeviceKey\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\"h\n" +
+	"\x19RevokeLuksDeviceKeyResult\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x18\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"M\n" +
+	"\x18ValidateLuksTokenRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\xb6\x01\n" +
+	"\x19ValidateLuksTokenResponse\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
+	"\vdevice_path\x18\x02 \x01(\tR\n" +
+	"devicePath\x12\x1d\n" +
+	"\n" +
+	"min_length\x18\x03 \x01(\x05R\tminLength\x12<\n" +
+	"\n" +
+	"complexity\x18\x04 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
+	"complexity\"B\n" +
 	"\x12SyncActionsRequest\x12,\n" +
 	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\"r\n" +
 	"\x13SyncActionsResponse\x12'\n" +
@@ -1380,10 +1973,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eOS_QUERY_OP_GE\x10\x05\x12\x12\n" +
 	"\x0eOS_QUERY_OP_LE\x10\x06\x12\x14\n" +
 	"\x10OS_QUERY_OP_LIKE\x10\a\x12\x14\n" +
-	"\x10OS_QUERY_OP_GLOB\x10\b2\x8d\x01\n" +
+	"\x10OS_QUERY_OP_GLOB\x10\b2\xe5\x01\n" +
 	"\fAgentService\x127\n" +
 	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12D\n" +
-	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12V\n" +
+	"\x11ValidateLuksToken\x12\x1f.pm.v1.ValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_agent_proto_rawDescOnce sync.Once
@@ -1398,66 +1992,84 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_pm_v1_agent_proto_goTypes = []any{
-	(OutputStreamType)(0),       // 0: pm.v1.OutputStreamType
-	(SecurityAlertType)(0),      // 1: pm.v1.SecurityAlertType
-	(OSQueryOp)(0),              // 2: pm.v1.OSQueryOp
-	(*AgentMessage)(nil),        // 3: pm.v1.AgentMessage
-	(*OutputChunk)(nil),         // 4: pm.v1.OutputChunk
-	(*Hello)(nil),               // 5: pm.v1.Hello
-	(*Heartbeat)(nil),           // 6: pm.v1.Heartbeat
-	(*SecurityAlert)(nil),       // 7: pm.v1.SecurityAlert
-	(*ServerMessage)(nil),       // 8: pm.v1.ServerMessage
-	(*Welcome)(nil),             // 9: pm.v1.Welcome
-	(*ActionDispatch)(nil),      // 10: pm.v1.ActionDispatch
-	(*Error)(nil),               // 11: pm.v1.Error
-	(*OSQuery)(nil),             // 12: pm.v1.OSQuery
-	(*OSQueryCondition)(nil),    // 13: pm.v1.OSQueryCondition
-	(*OSQueryResult)(nil),       // 14: pm.v1.OSQueryResult
-	(*OSQueryRow)(nil),          // 15: pm.v1.OSQueryRow
-	(*SyncActionsRequest)(nil),  // 16: pm.v1.SyncActionsRequest
-	(*SyncActionsResponse)(nil), // 17: pm.v1.SyncActionsResponse
-	nil,                         // 18: pm.v1.SecurityAlert.DetailsEntry
-	nil,                         // 19: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),        // 20: pm.v1.ActionResult
-	(*DeviceId)(nil),            // 21: pm.v1.DeviceId
-	(*durationpb.Duration)(nil), // 22: google.protobuf.Duration
-	(*Action)(nil),              // 23: pm.v1.Action
+	(OutputStreamType)(0),             // 0: pm.v1.OutputStreamType
+	(SecurityAlertType)(0),            // 1: pm.v1.SecurityAlertType
+	(OSQueryOp)(0),                    // 2: pm.v1.OSQueryOp
+	(*AgentMessage)(nil),              // 3: pm.v1.AgentMessage
+	(*OutputChunk)(nil),               // 4: pm.v1.OutputChunk
+	(*Hello)(nil),                     // 5: pm.v1.Hello
+	(*Heartbeat)(nil),                 // 6: pm.v1.Heartbeat
+	(*SecurityAlert)(nil),             // 7: pm.v1.SecurityAlert
+	(*ServerMessage)(nil),             // 8: pm.v1.ServerMessage
+	(*Welcome)(nil),                   // 9: pm.v1.Welcome
+	(*ActionDispatch)(nil),            // 10: pm.v1.ActionDispatch
+	(*Error)(nil),                     // 11: pm.v1.Error
+	(*OSQuery)(nil),                   // 12: pm.v1.OSQuery
+	(*OSQueryCondition)(nil),          // 13: pm.v1.OSQueryCondition
+	(*OSQueryResult)(nil),             // 14: pm.v1.OSQueryResult
+	(*OSQueryRow)(nil),                // 15: pm.v1.OSQueryRow
+	(*GetLuksKeyRequest)(nil),         // 16: pm.v1.GetLuksKeyRequest
+	(*GetLuksKeyResponse)(nil),        // 17: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyRequest)(nil),       // 18: pm.v1.StoreLuksKeyRequest
+	(*StoreLuksKeyResponse)(nil),      // 19: pm.v1.StoreLuksKeyResponse
+	(*RevokeLuksDeviceKey)(nil),       // 20: pm.v1.RevokeLuksDeviceKey
+	(*RevokeLuksDeviceKeyResult)(nil), // 21: pm.v1.RevokeLuksDeviceKeyResult
+	(*ValidateLuksTokenRequest)(nil),  // 22: pm.v1.ValidateLuksTokenRequest
+	(*ValidateLuksTokenResponse)(nil), // 23: pm.v1.ValidateLuksTokenResponse
+	(*SyncActionsRequest)(nil),        // 24: pm.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil),       // 25: pm.v1.SyncActionsResponse
+	nil,                               // 26: pm.v1.SecurityAlert.DetailsEntry
+	nil,                               // 27: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),              // 28: pm.v1.ActionResult
+	(*DeviceId)(nil),                  // 29: pm.v1.DeviceId
+	(*durationpb.Duration)(nil),       // 30: google.protobuf.Duration
+	(*Action)(nil),                    // 31: pm.v1.Action
+	(LpsPasswordComplexity)(0),        // 32: pm.v1.LpsPasswordComplexity
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
 	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	20, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	28, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
 	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
 	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
 	7,  // 5: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
-	0,  // 6: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	21, // 7: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	22, // 8: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	1,  // 9: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	18, // 10: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
-	9,  // 11: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	10, // 12: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	12, // 13: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	11, // 14: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	22, // 15: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	23, // 16: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
-	13, // 17: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
-	2,  // 18: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	15, // 19: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	19, // 20: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	21, // 21: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	23, // 22: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
-	3,  // 23: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	16, // 24: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	8,  // 25: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	17, // 26: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	25, // [25:27] is the sub-list for method output_type
-	23, // [23:25] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	16, // 6: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
+	18, // 7: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
+	21, // 8: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
+	0,  // 9: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
+	29, // 10: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	30, // 11: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 12: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
+	26, // 13: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	9,  // 14: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	10, // 15: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	12, // 16: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	11, // 17: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	17, // 18: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
+	19, // 19: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
+	20, // 20: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
+	30, // 21: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	31, // 22: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	13, // 23: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	2,  // 24: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
+	15, // 25: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	27, // 26: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	32, // 27: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	29, // 28: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	31, // 29: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 30: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	24, // 31: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	22, // 32: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	8,  // 33: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	25, // 34: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	23, // 35: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	33, // [33:36] is the sub-list for method output_type
+	30, // [30:33] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -1474,12 +2086,18 @@ func file_pm_v1_agent_proto_init() {
 		(*AgentMessage_OutputChunk)(nil),
 		(*AgentMessage_QueryResult)(nil),
 		(*AgentMessage_SecurityAlert)(nil),
+		(*AgentMessage_GetLuksKey)(nil),
+		(*AgentMessage_StoreLuksKey)(nil),
+		(*AgentMessage_RevokeLuksDeviceKeyResult)(nil),
 	}
 	file_pm_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
 		(*ServerMessage_Action)(nil),
 		(*ServerMessage_Query)(nil),
 		(*ServerMessage_Error)(nil),
+		(*ServerMessage_GetLuksKey)(nil),
+		(*ServerMessage_StoreLuksKey)(nil),
+		(*ServerMessage_RevokeLuksDeviceKey)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1487,7 +2105,7 @@ func file_pm_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   17,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

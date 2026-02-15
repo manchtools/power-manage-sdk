@@ -379,6 +379,7 @@ message ManagedAction {
     // @gotags: validate:"omitempty"
     LpsParams lps = 25;
     GroupParams group = 26;
+    LuksParams luks = 27;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -431,6 +432,8 @@ message CreateActionRequest {
     LpsParams lps = 25;
     // @gotags: validate:"omitempty"
     GroupParams group = 26;
+    // @gotags: validate:"omitempty"
+    LuksParams luks = 27;
   }
 }
 
@@ -516,6 +519,8 @@ message UpdateActionParamsRequest {
     LpsParams lps = 25;
     // @gotags: validate:"omitempty"
     GroupParams group = 26;
+    // @gotags: validate:"omitempty"
+    LuksParams luks = 27;
   }
 }
 
@@ -1235,6 +1240,59 @@ message GetDeviceLpsPasswordsResponse {
 }
 
 // ============================================================================
+// LUKS (Disk Encryption)
+// ============================================================================
+
+// LUKS key entry stored per device
+message LuksKey {
+  string device_id = 1;
+  string device_hostname = 2;
+  string action_id = 3;
+  string action_name = 4;
+  string device_path = 5;
+  string passphrase = 6;
+  google.protobuf.Timestamp rotated_at = 7;
+  string rotation_reason = 8;
+}
+
+message GetDeviceLuksKeysRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceLuksKeysResponse {
+  // Current keys (one per LUKS action assigned to device)
+  repeated LuksKey current = 1;
+  // Previous keys (most recent first, max 3 per action)
+  repeated LuksKey history = 2;
+}
+
+message CreateLuksTokenRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+}
+
+message CreateLuksTokenResponse {
+  // One-time UUID token
+  string token = 1;
+  // URI for opening terminal: power-manage://luks/set-passphrase?token=XXX
+  string uri = 2;
+  // CLI command: power-manage-agent luks set-passphrase --token XXX
+  string cli_command = 3;
+}
+
+message RevokeLuksDeviceKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+}
+
+message RevokeLuksDeviceKeyResponse {}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1347,4 +1405,9 @@ service ControlService {
 
   // LPS (Local Password Solution)
   rpc GetDeviceLpsPasswords(GetDeviceLpsPasswordsRequest) returns (GetDeviceLpsPasswordsResponse);
+
+  // LUKS (Disk Encryption)
+  rpc GetDeviceLuksKeys(GetDeviceLuksKeysRequest) returns (GetDeviceLuksKeysResponse);
+  rpc CreateLuksToken(CreateLuksTokenRequest) returns (CreateLuksTokenResponse);
+  rpc RevokeLuksDeviceKey(RevokeLuksDeviceKeyRequest) returns (RevokeLuksDeviceKeyResponse);
 }

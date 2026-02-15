@@ -19,6 +19,10 @@ service AgentService {
   // Sync assigned actions (called by agent after successful connection)
   // Returns all actions currently assigned to the device for local storage
   rpc SyncActions(SyncActionsRequest) returns (SyncActionsResponse);
+
+  // Validate a one-time LUKS token and return action details + complexity requirements
+  // Used by the CLI subcommand (power-manage-agent luks set-passphrase --token XXX)
+  rpc ValidateLuksToken(ValidateLuksTokenRequest) returns (ValidateLuksTokenResponse);
 }
 
 // ============================================================================
@@ -42,6 +46,13 @@ message AgentMessage {
     OSQueryResult query_result = 30;
     // @gotags: validate:"omitempty"
     SecurityAlert security_alert = 40;
+    // LUKS key management (via stream, not separate RPCs)
+    // @gotags: validate:"omitempty"
+    GetLuksKeyRequest get_luks_key = 50;
+    // @gotags: validate:"omitempty"
+    StoreLuksKeyRequest store_luks_key = 51;
+    // @gotags: validate:"omitempty"
+    RevokeLuksDeviceKeyResult revoke_luks_device_key_result = 52;
   }
 }
 
@@ -133,6 +144,13 @@ message ServerMessage {
     OSQuery query = 30;
     // @gotags: validate:"omitempty"
     Error error = 40;
+    // LUKS key management responses + instant actions
+    // @gotags: validate:"omitempty"
+    GetLuksKeyResponse get_luks_key = 50;
+    // @gotags: validate:"omitempty"
+    StoreLuksKeyResponse store_luks_key = 51;
+    // @gotags: validate:"omitempty"
+    RevokeLuksDeviceKey revoke_luks_device_key = 52;
   }
 }
 
@@ -226,6 +244,78 @@ message OSQueryRow {
 // listening_ports: pid, port, protocol, address
 // mounts: device, path, type
 // memory_info: memory_total, memory_free, swap_total, swap_free
+
+// ============================================================================
+// LUKS Key Management (via stream)
+// ============================================================================
+
+// Agent requests the current managed passphrase for a LUKS action.
+// device_id is omitted — the gateway knows the device from the mTLS cert.
+message GetLuksKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string action_id = 1;
+}
+
+message GetLuksKeyResponse {
+  // @gotags: validate:"required,min=1"
+  string passphrase = 1;
+}
+
+// Agent stores a new managed passphrase on the server.
+// The server must confirm receipt before the agent removes the old key from LUKS.
+message StoreLuksKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string action_id = 1;
+  // Auto-detected device path (e.g., "/dev/sda2")
+  // @gotags: validate:"required,startswith=/"
+  string device_path = 2;
+  // @gotags: validate:"required,min=1"
+  string passphrase = 3;
+  // Rotation reason: "initial" or "scheduled"
+  // @gotags: validate:"required,oneof=initial scheduled"
+  string rotation_reason = 4;
+}
+
+message StoreLuksKeyResponse {
+  bool success = 1;
+}
+
+// Server instructs agent to revoke the device-bound key in LUKS slot 7.
+// Dispatched as an instant action via the stream.
+message RevokeLuksDeviceKey {
+  // @gotags: validate:"required,ulid"
+  string action_id = 1;
+}
+
+// Agent reports the result of revoking the device-bound key.
+message RevokeLuksDeviceKeyResult {
+  // @gotags: validate:"required,ulid"
+  string action_id = 1;
+  bool success = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string error = 3;
+}
+
+// ============================================================================
+// LUKS Token Validation (unary RPC for CLI subcommand)
+// ============================================================================
+
+message ValidateLuksTokenRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,uuid"
+  string token = 2;
+}
+
+message ValidateLuksTokenResponse {
+  string action_id = 1;
+  // Auto-detected device path from server's stored key data
+  string device_path = 2;
+  // Minimum passphrase length (>= 16)
+  int32 min_length = 3;
+  // Complexity requirement for user-defined passphrases
+  LpsPasswordComplexity complexity = 4;
+}
 
 // ============================================================================
 // Action Sync (Agent pulls assigned actions from server)

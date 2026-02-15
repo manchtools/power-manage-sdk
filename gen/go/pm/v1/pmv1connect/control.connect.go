@@ -271,6 +271,15 @@ const (
 	// ControlServiceGetDeviceLpsPasswordsProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceLpsPasswords RPC.
 	ControlServiceGetDeviceLpsPasswordsProcedure = "/pm.v1.ControlService/GetDeviceLpsPasswords"
+	// ControlServiceGetDeviceLuksKeysProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceLuksKeys RPC.
+	ControlServiceGetDeviceLuksKeysProcedure = "/pm.v1.ControlService/GetDeviceLuksKeys"
+	// ControlServiceCreateLuksTokenProcedure is the fully-qualified name of the ControlService's
+	// CreateLuksToken RPC.
+	ControlServiceCreateLuksTokenProcedure = "/pm.v1.ControlService/CreateLuksToken"
+	// ControlServiceRevokeLuksDeviceKeyProcedure is the fully-qualified name of the ControlService's
+	// RevokeLuksDeviceKey RPC.
+	ControlServiceRevokeLuksDeviceKeyProcedure = "/pm.v1.ControlService/RevokeLuksDeviceKey"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -370,6 +379,10 @@ type ControlServiceClient interface {
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
 	// LPS (Local Password Solution)
 	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
+	// LUKS (Disk Encryption)
+	GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error)
+	CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error)
+	RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -869,6 +882,24 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLpsPasswords")),
 			connect.WithClientOptions(opts...),
 		),
+		getDeviceLuksKeys: connect.NewClient[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceLuksKeysProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLuksKeys")),
+			connect.WithClientOptions(opts...),
+		),
+		createLuksToken: connect.NewClient[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse](
+			httpClient,
+			baseURL+ControlServiceCreateLuksTokenProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateLuksToken")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeLuksDeviceKey: connect.NewClient[v1.RevokeLuksDeviceKeyRequest, v1.RevokeLuksDeviceKeyResponse](
+			httpClient,
+			baseURL+ControlServiceRevokeLuksDeviceKeyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevokeLuksDeviceKey")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -955,6 +986,9 @@ type controlServiceClient struct {
 	listExecutions                *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
 	listAuditEvents               *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
 	getDeviceLpsPasswords         *connect.Client[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse]
+	getDeviceLuksKeys             *connect.Client[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse]
+	createLuksToken               *connect.Client[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse]
+	revokeLuksDeviceKey           *connect.Client[v1.RevokeLuksDeviceKeyRequest, v1.RevokeLuksDeviceKeyResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1362,6 +1396,21 @@ func (c *controlServiceClient) GetDeviceLpsPasswords(ctx context.Context, req *c
 	return c.getDeviceLpsPasswords.CallUnary(ctx, req)
 }
 
+// GetDeviceLuksKeys calls pm.v1.ControlService.GetDeviceLuksKeys.
+func (c *controlServiceClient) GetDeviceLuksKeys(ctx context.Context, req *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error) {
+	return c.getDeviceLuksKeys.CallUnary(ctx, req)
+}
+
+// CreateLuksToken calls pm.v1.ControlService.CreateLuksToken.
+func (c *controlServiceClient) CreateLuksToken(ctx context.Context, req *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error) {
+	return c.createLuksToken.CallUnary(ctx, req)
+}
+
+// RevokeLuksDeviceKey calls pm.v1.ControlService.RevokeLuksDeviceKey.
+func (c *controlServiceClient) RevokeLuksDeviceKey(ctx context.Context, req *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error) {
+	return c.revokeLuksDeviceKey.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1459,6 +1508,10 @@ type ControlServiceHandler interface {
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
 	// LPS (Local Password Solution)
 	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
+	// LUKS (Disk Encryption)
+	GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error)
+	CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error)
+	RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -1954,6 +2007,24 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLpsPasswords")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceGetDeviceLuksKeysHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceLuksKeysProcedure,
+		svc.GetDeviceLuksKeys,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLuksKeys")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateLuksTokenHandler := connect.NewUnaryHandler(
+		ControlServiceCreateLuksTokenProcedure,
+		svc.CreateLuksToken,
+		connect.WithSchema(controlServiceMethods.ByName("CreateLuksToken")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevokeLuksDeviceKeyHandler := connect.NewUnaryHandler(
+		ControlServiceRevokeLuksDeviceKeyProcedure,
+		svc.RevokeLuksDeviceKey,
+		connect.WithSchema(controlServiceMethods.ByName("RevokeLuksDeviceKey")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2118,6 +2189,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListAuditEventsHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceLpsPasswordsProcedure:
 			controlServiceGetDeviceLpsPasswordsHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceLuksKeysProcedure:
+			controlServiceGetDeviceLuksKeysHandler.ServeHTTP(w, r)
+		case ControlServiceCreateLuksTokenProcedure:
+			controlServiceCreateLuksTokenHandler.ServeHTTP(w, r)
+		case ControlServiceRevokeLuksDeviceKeyProcedure:
+			controlServiceRevokeLuksDeviceKeyHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -2449,4 +2526,16 @@ func (UnimplementedControlServiceHandler) ListAuditEvents(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceLpsPasswords is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceLuksKeys is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateLuksToken is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeLuksDeviceKey is not implemented"))
 }

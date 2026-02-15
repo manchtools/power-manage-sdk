@@ -52,6 +52,9 @@ enum ActionType {
 
   // Password management (900-999)
   ACTION_TYPE_LPS = 900;        // Local Password Solution
+
+  // Encryption management (1000-1099)
+  ACTION_TYPE_LUKS = 1000;      // LUKS disk encryption management
 }
 
 // ============================================================================
@@ -90,6 +93,7 @@ message Action {
     SudoParams sudo = 24;
     LpsParams lps = 25;
     GroupParams group = 26;
+    LuksParams luks = 27;
   }
 
   // ECDSA signature over canonical action payload (signed by CA key).
@@ -573,6 +577,38 @@ message LpsParams {
   // Hours after auth event before automatic rotation (0 = disabled)
   // @gotags: validate:"omitempty,gte=0,lte=8760"
   int32 grace_period_hours = 5;
+}
+
+// LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
+enum LuksDeviceBoundKeyType {
+  LUKS_DEVICE_BOUND_KEY_TYPE_NONE = 0;            // No device-bound key (managed passphrase only)
+  LUKS_DEVICE_BOUND_KEY_TYPE_TPM = 1;             // TPM2 auto-unlock at boot
+  LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
+}
+
+// LuksParams configures LUKS disk encryption management.
+// The agent auto-detects the primary LUKS-encrypted volume on the device.
+// A managed passphrase is generated, stored on the server, and rotated on schedule.
+// Optionally, a device-bound key (TPM or user passphrase) can be enrolled in slot 7.
+message LuksParams {
+  // Pre-shared key for initial ownership (only needed for first run)
+  // @gotags: validate:"required,min=1,max=256"
+  string preshared_key = 1;
+  // Days between scheduled passphrase rotations (1-365)
+  // @gotags: validate:"required,gte=1,lte=365"
+  int32 rotation_interval_days = 2;
+  // Minimum words in generated managed passphrase (default 5, min 3, max 10)
+  // @gotags: validate:"omitempty,gte=3,lte=10"
+  int32 min_words = 3;
+  // What to put in slot 7 — TPM, user passphrase, or nothing
+  // @gotags: validate:"omitempty"
+  LuksDeviceBoundKeyType device_bound_key_type = 4;
+  // Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
+  // @gotags: validate:"omitempty,gte=16,lte=128"
+  int32 user_passphrase_min_length = 5;
+  // Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
+  // @gotags: validate:"omitempty"
+  LpsPasswordComplexity user_passphrase_complexity = 6;
 }
 
 // ============================================================================

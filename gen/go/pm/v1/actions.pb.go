@@ -55,31 +55,34 @@ const (
 	ActionType_ACTION_TYPE_SUDO ActionType = 800 // Sudoers policy management
 	// Password management (900-999)
 	ActionType_ACTION_TYPE_LPS ActionType = 900 // Local Password Solution
+	// Encryption management (1000-1099)
+	ActionType_ACTION_TYPE_LUKS ActionType = 1000 // LUKS disk encryption management
 )
 
 // Enum value maps for ActionType.
 var (
 	ActionType_name = map[int32]string{
-		0:   "ACTION_TYPE_UNSPECIFIED",
-		1:   "ACTION_TYPE_PACKAGE",
-		2:   "ACTION_TYPE_UPDATE",
-		3:   "ACTION_TYPE_REPOSITORY",
-		100: "ACTION_TYPE_APP_IMAGE",
-		101: "ACTION_TYPE_DEB",
-		102: "ACTION_TYPE_RPM",
-		103: "ACTION_TYPE_FLATPAK",
-		200: "ACTION_TYPE_SHELL",
-		300: "ACTION_TYPE_SYSTEMD",
-		400: "ACTION_TYPE_FILE",
-		401: "ACTION_TYPE_DIRECTORY",
-		500: "ACTION_TYPE_REBOOT",
-		501: "ACTION_TYPE_SYNC",
-		600: "ACTION_TYPE_USER",
-		601: "ACTION_TYPE_GROUP",
-		700: "ACTION_TYPE_SSH",
-		701: "ACTION_TYPE_SSHD",
-		800: "ACTION_TYPE_SUDO",
-		900: "ACTION_TYPE_LPS",
+		0:    "ACTION_TYPE_UNSPECIFIED",
+		1:    "ACTION_TYPE_PACKAGE",
+		2:    "ACTION_TYPE_UPDATE",
+		3:    "ACTION_TYPE_REPOSITORY",
+		100:  "ACTION_TYPE_APP_IMAGE",
+		101:  "ACTION_TYPE_DEB",
+		102:  "ACTION_TYPE_RPM",
+		103:  "ACTION_TYPE_FLATPAK",
+		200:  "ACTION_TYPE_SHELL",
+		300:  "ACTION_TYPE_SYSTEMD",
+		400:  "ACTION_TYPE_FILE",
+		401:  "ACTION_TYPE_DIRECTORY",
+		500:  "ACTION_TYPE_REBOOT",
+		501:  "ACTION_TYPE_SYNC",
+		600:  "ACTION_TYPE_USER",
+		601:  "ACTION_TYPE_GROUP",
+		700:  "ACTION_TYPE_SSH",
+		701:  "ACTION_TYPE_SSHD",
+		800:  "ACTION_TYPE_SUDO",
+		900:  "ACTION_TYPE_LPS",
+		1000: "ACTION_TYPE_LUKS",
 	}
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
@@ -102,6 +105,7 @@ var (
 		"ACTION_TYPE_SSHD":        701,
 		"ACTION_TYPE_SUDO":        800,
 		"ACTION_TYPE_LPS":         900,
+		"ACTION_TYPE_LUKS":        1000,
 	}
 )
 
@@ -287,6 +291,56 @@ func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
+// LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
+type LuksDeviceBoundKeyType int32
+
+const (
+	LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_NONE            LuksDeviceBoundKeyType = 0 // No device-bound key (managed passphrase only)
+	LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_TPM             LuksDeviceBoundKeyType = 1 // TPM2 auto-unlock at boot
+	LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE LuksDeviceBoundKeyType = 2 // User-defined passphrase via CLI
+)
+
+// Enum value maps for LuksDeviceBoundKeyType.
+var (
+	LuksDeviceBoundKeyType_name = map[int32]string{
+		0: "LUKS_DEVICE_BOUND_KEY_TYPE_NONE",
+		1: "LUKS_DEVICE_BOUND_KEY_TYPE_TPM",
+		2: "LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE",
+	}
+	LuksDeviceBoundKeyType_value = map[string]int32{
+		"LUKS_DEVICE_BOUND_KEY_TYPE_NONE":            0,
+		"LUKS_DEVICE_BOUND_KEY_TYPE_TPM":             1,
+		"LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE": 2,
+	}
+)
+
+func (x LuksDeviceBoundKeyType) Enum() *LuksDeviceBoundKeyType {
+	p := new(LuksDeviceBoundKeyType)
+	*p = x
+	return p
+}
+
+func (x LuksDeviceBoundKeyType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LuksDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
+}
+
+func (LuksDeviceBoundKeyType) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[4]
+}
+
+func (x LuksDeviceBoundKeyType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LuksDeviceBoundKeyType.Descriptor instead.
+func (LuksDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+}
+
 type Action struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -319,6 +373,7 @@ type Action struct {
 	//	*Action_Sudo
 	//	*Action_Lps
 	//	*Action_Group
+	//	*Action_Luks
 	Params isAction_Params `protobuf_oneof:"params"`
 	// ECDSA signature over canonical action payload (signed by CA key).
 	// Used to verify actions were created by the control server.
@@ -536,6 +591,15 @@ func (x *Action) GetGroup() *GroupParams {
 	return nil
 }
 
+func (x *Action) GetLuks() *LuksParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_Luks); ok {
+			return x.Luks
+		}
+	}
+	return nil
+}
+
 func (x *Action) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
@@ -614,6 +678,10 @@ type Action_Group struct {
 	Group *GroupParams `protobuf:"bytes,26,opt,name=group,proto3,oneof"`
 }
 
+type Action_Luks struct {
+	Luks *LuksParams `protobuf:"bytes,27,opt,name=luks,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -643,6 +711,8 @@ func (*Action_Sudo) isAction_Params() {}
 func (*Action_Lps) isAction_Params() {}
 
 func (*Action_Group) isAction_Params() {}
+
+func (*Action_Luks) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -2458,6 +2528,106 @@ func (x *LpsParams) GetGracePeriodHours() int32 {
 	return 0
 }
 
+// LuksParams configures LUKS disk encryption management.
+// The agent auto-detects the primary LUKS-encrypted volume on the device.
+// A managed passphrase is generated, stored on the server, and rotated on schedule.
+// Optionally, a device-bound key (TPM or user passphrase) can be enrolled in slot 7.
+type LuksParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Pre-shared key for initial ownership (only needed for first run)
+	// @gotags: validate:"required,min=1,max=256"
+	PresharedKey string `protobuf:"bytes,1,opt,name=preshared_key,json=presharedKey,proto3" json:"preshared_key,omitempty" validate:"required,min=1,max=256"`
+	// Days between scheduled passphrase rotations (1-365)
+	// @gotags: validate:"required,gte=1,lte=365"
+	RotationIntervalDays int32 `protobuf:"varint,2,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty" validate:"required,gte=1,lte=365"`
+	// Minimum words in generated managed passphrase (default 5, min 3, max 10)
+	// @gotags: validate:"omitempty,gte=3,lte=10"
+	MinWords int32 `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty" validate:"omitempty,gte=3,lte=10"`
+	// What to put in slot 7 — TPM, user passphrase, or nothing
+	// @gotags: validate:"omitempty"
+	DeviceBoundKeyType LuksDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=pm.v1.LuksDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
+	// Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
+	// @gotags: validate:"omitempty,gte=16,lte=128"
+	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
+	// Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
+	// @gotags: validate:"omitempty"
+	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *LuksParams) Reset() {
+	*x = LuksParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LuksParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LuksParams) ProtoMessage() {}
+
+func (x *LuksParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LuksParams.ProtoReflect.Descriptor instead.
+func (*LuksParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *LuksParams) GetPresharedKey() string {
+	if x != nil {
+		return x.PresharedKey
+	}
+	return ""
+}
+
+func (x *LuksParams) GetRotationIntervalDays() int32 {
+	if x != nil {
+		return x.RotationIntervalDays
+	}
+	return 0
+}
+
+func (x *LuksParams) GetMinWords() int32 {
+	if x != nil {
+		return x.MinWords
+	}
+	return 0
+}
+
+func (x *LuksParams) GetDeviceBoundKeyType() LuksDeviceBoundKeyType {
+	if x != nil {
+		return x.DeviceBoundKeyType
+	}
+	return LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_NONE
+}
+
+func (x *LuksParams) GetUserPassphraseMinLength() int32 {
+	if x != nil {
+		return x.UserPassphraseMinLength
+	}
+	return 0
+}
+
+func (x *LuksParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
+	if x != nil {
+		return x.UserPassphraseComplexity
+	}
+	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
+}
+
 type ActionResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -2483,7 +2653,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	mi := &file_pm_v1_actions_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2495,7 +2665,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	mi := &file_pm_v1_actions_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2508,7 +2678,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{22}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -2571,7 +2741,7 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xe6\a\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x8f\b\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -2595,7 +2765,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
 	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
 	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12\x1c\n" +
+	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
+	"\x04luks\x18\x1b \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12\x1c\n" +
 	"\tsignature\x18\x14 \x01(\fR\tsignature\x12)\n" +
 	"\x10params_canonical\x18\x15 \x01(\fR\x0fparamsCanonicalB\b\n" +
 	"\x06params\"\x9b\x01\n" +
@@ -2746,7 +2917,15 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"complexity\x18\x03 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
 	"complexity\x124\n" +
 	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
-	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xa6\x03\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xef\x02\n" +
+	"\n" +
+	"LuksParams\x12#\n" +
+	"\rpreshared_key\x18\x01 \x01(\tR\fpresharedKey\x124\n" +
+	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
+	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12P\n" +
+	"\x15device_bound_key_type\x18\x04 \x01(\x0e2\x1d.pm.v1.LuksDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
+	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12Z\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xa6\x03\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -2759,7 +2938,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xf2\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x89\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -2781,7 +2960,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x0fACTION_TYPE_SSH\x10\xbc\x05\x12\x15\n" +
 	"\x10ACTION_TYPE_SSHD\x10\xbd\x05\x12\x15\n" +
 	"\x10ACTION_TYPE_SUDO\x10\xa0\x06\x12\x14\n" +
-	"\x0fACTION_TYPE_LPS\x10\x84\a*\x98\x01\n" +
+	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x15\n" +
+	"\x10ACTION_TYPE_LUKS\x10\xe8\a*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -2795,7 +2975,11 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x15LpsPasswordComplexity\x12'\n" +
 	"#LPS_PASSWORD_COMPLEXITY_UNSPECIFIED\x10\x00\x12(\n" +
 	"$LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC\x10\x01\x12#\n" +
-	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02*\x91\x01\n" +
+	"\x16LuksDeviceBoundKeyType\x12#\n" +
+	"\x1fLUKS_DEVICE_BOUND_KEY_TYPE_NONE\x10\x00\x12\"\n" +
+	"\x1eLUKS_DEVICE_BOUND_KEY_TYPE_TPM\x10\x01\x12.\n" +
+	"*LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_actions_proto_rawDescOnce sync.Once
@@ -2809,83 +2993,88 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
 	(SudoAccessLevel)(0),          // 2: pm.v1.SudoAccessLevel
 	(LpsPasswordComplexity)(0),    // 3: pm.v1.LpsPasswordComplexity
-	(*Action)(nil),                // 4: pm.v1.Action
-	(*ActionSchedule)(nil),        // 5: pm.v1.ActionSchedule
-	(*PackageParams)(nil),         // 6: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 7: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 8: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 9: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 10: pm.v1.FileParams
-	(*DirectoryParams)(nil),       // 11: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),          // 12: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),         // 13: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),      // 14: pm.v1.RepositoryParams
-	(*AptRepository)(nil),         // 15: pm.v1.AptRepository
-	(*DnfRepository)(nil),         // 16: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),      // 17: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),      // 18: pm.v1.ZypperRepository
-	(*UserParams)(nil),            // 19: pm.v1.UserParams
-	(*GroupParams)(nil),           // 20: pm.v1.GroupParams
-	(*SshParams)(nil),             // 21: pm.v1.SshParams
-	(*SshdDirective)(nil),         // 22: pm.v1.SshdDirective
-	(*SshdParams)(nil),            // 23: pm.v1.SshdParams
-	(*SudoParams)(nil),            // 24: pm.v1.SudoParams
-	(*LpsParams)(nil),             // 25: pm.v1.LpsParams
-	(*ActionResult)(nil),          // 26: pm.v1.ActionResult
-	nil,                           // 27: pm.v1.ShellParams.EnvironmentEntry
-	nil,                           // 28: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),              // 29: pm.v1.ActionId
-	(DesiredState)(0),             // 30: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 31: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 32: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 33: google.protobuf.Timestamp
+	(LuksDeviceBoundKeyType)(0),   // 4: pm.v1.LuksDeviceBoundKeyType
+	(*Action)(nil),                // 5: pm.v1.Action
+	(*ActionSchedule)(nil),        // 6: pm.v1.ActionSchedule
+	(*PackageParams)(nil),         // 7: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 8: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 9: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 10: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 11: pm.v1.FileParams
+	(*DirectoryParams)(nil),       // 12: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),          // 13: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),         // 14: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),      // 15: pm.v1.RepositoryParams
+	(*AptRepository)(nil),         // 16: pm.v1.AptRepository
+	(*DnfRepository)(nil),         // 17: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),      // 18: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),      // 19: pm.v1.ZypperRepository
+	(*UserParams)(nil),            // 20: pm.v1.UserParams
+	(*GroupParams)(nil),           // 21: pm.v1.GroupParams
+	(*SshParams)(nil),             // 22: pm.v1.SshParams
+	(*SshdDirective)(nil),         // 23: pm.v1.SshdDirective
+	(*SshdParams)(nil),            // 24: pm.v1.SshdParams
+	(*SudoParams)(nil),            // 25: pm.v1.SudoParams
+	(*LpsParams)(nil),             // 26: pm.v1.LpsParams
+	(*LuksParams)(nil),            // 27: pm.v1.LuksParams
+	(*ActionResult)(nil),          // 28: pm.v1.ActionResult
+	nil,                           // 29: pm.v1.ShellParams.EnvironmentEntry
+	nil,                           // 30: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),              // 31: pm.v1.ActionId
+	(DesiredState)(0),             // 32: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 33: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 34: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 35: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	29, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	31, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	30, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	5,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	6,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	7,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	8,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	9,  // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
-	10, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	12, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	14, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	13, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	11, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	19, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	21, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	23, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	24, // 16: pm.v1.Action.sudo:type_name -> pm.v1.SudoParams
-	25, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	20, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	27, // 19: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 20: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	15, // 21: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	16, // 22: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	17, // 23: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	18, // 24: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	22, // 25: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	2,  // 26: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
-	3,  // 27: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	29, // 28: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	31, // 29: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	32, // 30: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	33, // 31: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	28, // 32: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	33, // [33:33] is the sub-list for method output_type
-	33, // [33:33] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	32, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	6,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	7,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	8,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	9,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	10, // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
+	11, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	13, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	15, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	14, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	12, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	20, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	22, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	24, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	25, // 16: pm.v1.Action.sudo:type_name -> pm.v1.SudoParams
+	26, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	21, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
+	27, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
+	29, // 20: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 21: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	16, // 22: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	17, // 23: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	18, // 24: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	19, // 25: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	23, // 26: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	2,  // 27: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
+	3,  // 28: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	4,  // 29: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
+	3,  // 30: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	31, // 31: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	33, // 32: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	34, // 33: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	35, // 34: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	30, // 35: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	36, // [36:36] is the sub-list for method output_type
+	36, // [36:36] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -2910,14 +3099,15 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Sudo)(nil),
 		(*Action_Lps)(nil),
 		(*Action_Group)(nil),
+		(*Action_Luks)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   25,
+			NumEnums:      5,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

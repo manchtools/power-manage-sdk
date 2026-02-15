@@ -30,6 +30,10 @@ type Client struct {
 
 	mu     sync.RWMutex
 	stream *connect.BidiStreamForClient[pm.AgentMessage, pm.ServerMessage]
+
+	// pendingMu protects pendingRequests for LUKS request-response correlation.
+	pendingMu       sync.Mutex
+	pendingRequests map[string]chan *pm.ServerMessage
 }
 
 // NewClient creates a new SDK client.
@@ -248,6 +252,15 @@ type StreamingHandler interface {
 	OnActionWithStreaming(ctx context.Context, action *pm.Action, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error)
 }
 
+// LuksHandler extends StreamHandler with LUKS device-key revocation support.
+// Handlers that implement this interface will receive revoke requests from the server.
+type LuksHandler interface {
+	StreamHandler
+	// OnRevokeLuksDeviceKey is called when the server requests revocation of a LUKS device-bound key.
+	// Returns (success, errorMessage).
+	OnRevokeLuksDeviceKey(ctx context.Context, actionID string) (bool, string)
+}
+
 // Connect establishes a bidirectional stream with the server.
 func (c *Client) Connect(ctx context.Context) error {
 	c.mu.Lock()
@@ -390,6 +403,155 @@ func (c *Client) SendSecurityAlert(ctx context.Context, alert *pm.SecurityAlert)
 	return stream.Send(msg)
 }
 
+// GetLuksKey sends a GetLuksKeyRequest on the stream and waits for the correlated response.
+// The response is matched by the message ID.
+func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error) {
+	id := NewULID()
+	ch := c.registerPending(id)
+	defer c.unregisterPending(id)
+
+	c.mu.RLock()
+	stream := c.stream
+	c.mu.RUnlock()
+
+	if stream == nil {
+		return "", errors.New("not connected")
+	}
+
+	msg := &pm.AgentMessage{
+		Id: id,
+		Payload: &pm.AgentMessage_GetLuksKey{
+			GetLuksKey: &pm.GetLuksKeyRequest{
+				ActionId: actionID,
+			},
+		},
+	}
+
+	if err := stream.Send(msg); err != nil {
+		return "", fmt.Errorf("send get luks key request: %w", err)
+	}
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case resp := <-ch:
+		if errMsg := resp.GetError(); errMsg != nil {
+			return "", fmt.Errorf("server error: %s", errMsg.Message)
+		}
+		luksResp := resp.GetGetLuksKey()
+		if luksResp == nil {
+			return "", errors.New("unexpected response type")
+		}
+		return luksResp.Passphrase, nil
+	}
+}
+
+// StoreLuksKey sends a StoreLuksKeyRequest on the stream and waits for the server confirmation.
+func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphrase, reason string) error {
+	id := NewULID()
+	ch := c.registerPending(id)
+	defer c.unregisterPending(id)
+
+	c.mu.RLock()
+	stream := c.stream
+	c.mu.RUnlock()
+
+	if stream == nil {
+		return errors.New("not connected")
+	}
+
+	msg := &pm.AgentMessage{
+		Id: id,
+		Payload: &pm.AgentMessage_StoreLuksKey{
+			StoreLuksKey: &pm.StoreLuksKeyRequest{
+				ActionId:       actionID,
+				DevicePath:     devicePath,
+				Passphrase:     passphrase,
+				RotationReason: reason,
+			},
+		},
+	}
+
+	if err := stream.Send(msg); err != nil {
+		return fmt.Errorf("send store luks key request: %w", err)
+	}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case resp := <-ch:
+		if errMsg := resp.GetError(); errMsg != nil {
+			return fmt.Errorf("server error: %s", errMsg.Message)
+		}
+		storeResp := resp.GetStoreLuksKey()
+		if storeResp == nil {
+			return errors.New("unexpected response type")
+		}
+		if !storeResp.Success {
+			return errors.New("server rejected key storage")
+		}
+		return nil
+	}
+}
+
+// SendRevokeLuksDeviceKeyResult sends the result of a LUKS device key revocation back to the server.
+func (c *Client) SendRevokeLuksDeviceKeyResult(ctx context.Context, actionID string, success bool, errMsg string) error {
+	c.mu.RLock()
+	stream := c.stream
+	c.mu.RUnlock()
+
+	if stream == nil {
+		return errors.New("not connected")
+	}
+
+	msg := &pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_RevokeLuksDeviceKeyResult{
+			RevokeLuksDeviceKeyResult: &pm.RevokeLuksDeviceKeyResult{
+				ActionId: actionID,
+				Success:  success,
+				Error:    errMsg,
+			},
+		},
+	}
+
+	return stream.Send(msg)
+}
+
+// registerPending creates a channel for receiving a correlated response.
+func (c *Client) registerPending(id string) chan *pm.ServerMessage {
+	ch := make(chan *pm.ServerMessage, 1)
+	c.pendingMu.Lock()
+	if c.pendingRequests == nil {
+		c.pendingRequests = make(map[string]chan *pm.ServerMessage)
+	}
+	c.pendingRequests[id] = ch
+	c.pendingMu.Unlock()
+	return ch
+}
+
+// unregisterPending removes a pending request channel.
+func (c *Client) unregisterPending(id string) {
+	c.pendingMu.Lock()
+	delete(c.pendingRequests, id)
+	c.pendingMu.Unlock()
+}
+
+// deliverPending delivers a server message to a waiting request by ID.
+// Returns true if the message was delivered (ID matched a pending request).
+func (c *Client) deliverPending(msg *pm.ServerMessage) bool {
+	c.pendingMu.Lock()
+	ch, ok := c.pendingRequests[msg.Id]
+	c.pendingMu.Unlock()
+	if ok {
+		select {
+		case ch <- msg:
+		default:
+		}
+	}
+	return ok
+}
+
 // Receive receives the next message from the server.
 func (c *Client) Receive(ctx context.Context) (*pm.ServerMessage, error) {
 	c.mu.RLock()
@@ -408,7 +570,7 @@ func (c *Client) Receive(ctx context.Context) (*pm.ServerMessage, error) {
 	return msg, nil
 }
 
-// Close closes the stream connection.
+// Close closes the stream connection and cancels any pending LUKS requests.
 func (c *Client) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -417,11 +579,38 @@ func (c *Client) Close() error {
 		return nil
 	}
 
+	// Cancel pending LUKS requests
+	c.pendingMu.Lock()
+	for id, ch := range c.pendingRequests {
+		close(ch)
+		delete(c.pendingRequests, id)
+	}
+	c.pendingMu.Unlock()
+
 	// Close both request and response sides of the stream
 	c.stream.CloseRequest()
 	c.stream.CloseResponse()
 	c.stream = nil
 	return nil
+}
+
+// StartReceiver starts a background goroutine that receives stream messages and
+// delivers them to pending request channels (for GetLuksKey/StoreLuksKey responses).
+// Returns a cancel function to stop the receiver. This is useful for CLI tools that
+// need request-response correlation without the full Run() loop.
+// The caller must call Connect() and SendHello() before calling this.
+func (c *Client) StartReceiver(ctx context.Context) context.CancelFunc {
+	rctx, cancel := context.WithCancel(ctx)
+	go func() {
+		for {
+			msg, err := c.Receive(rctx)
+			if err != nil {
+				return
+			}
+			c.deliverPending(msg)
+		}
+	}()
+	return cancel
 }
 
 // Run connects to the server and processes messages using the provided handler.
@@ -534,6 +723,19 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 				if err := handler.OnError(ctx, p.Error); err != nil {
 					return fmt.Errorf("handle error: %w", err)
 				}
+
+			case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey:
+				// LUKS request-response: deliver to pending request by message ID.
+				c.deliverPending(result.msg)
+
+			case *pm.ServerMessage_RevokeLuksDeviceKey:
+				if luksHandler, ok := handler.(LuksHandler); ok {
+					actionID := p.RevokeLuksDeviceKey.ActionId
+					success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
+					if sendErr := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); sendErr != nil {
+						return fmt.Errorf("send revoke luks device key result: %w", sendErr)
+					}
+				}
 			}
 		}
 	}
@@ -556,6 +758,43 @@ func (c *Client) AuthToken() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.authToken
+}
+
+// ValidateLuksTokenResult contains the result of a LUKS token validation.
+type ValidateLuksTokenResult struct {
+	ActionID   string
+	DevicePath string
+	MinLength  int32
+	Complexity pm.LpsPasswordComplexity
+}
+
+// ValidateLuksToken validates a one-time LUKS token via the gateway's unary RPC.
+// The token is consumed (marked as used) atomically by the server.
+func (c *Client) ValidateLuksToken(ctx context.Context, token string) (*ValidateLuksTokenResult, error) {
+	c.mu.RLock()
+	deviceID := c.deviceID
+	c.mu.RUnlock()
+
+	if deviceID == "" {
+		return nil, errors.New("device ID not set")
+	}
+
+	req := connect.NewRequest(&pm.ValidateLuksTokenRequest{
+		DeviceId: deviceID,
+		Token:    token,
+	})
+
+	resp, err := c.client.ValidateLuksToken(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("validate luks token: %w", err)
+	}
+
+	return &ValidateLuksTokenResult{
+		ActionID:   resp.Msg.ActionId,
+		DevicePath: resp.Msg.DevicePath,
+		MinLength:  resp.Msg.MinLength,
+		Complexity: resp.Msg.Complexity,
+	}, nil
 }
 
 // SyncActionsResult contains the result of a sync actions call.
