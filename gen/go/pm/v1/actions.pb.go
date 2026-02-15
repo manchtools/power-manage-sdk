@@ -1978,7 +1978,11 @@ type UserParams struct {
 	Disabled bool `protobuf:"varint,11,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
 	// Primary group name (alternative to gid - creates group if needed)
 	// @gotags: validate:"omitempty,max=32"
-	PrimaryGroup  string `protobuf:"bytes,12,opt,name=primary_group,json=primaryGroup,proto3" json:"primary_group,omitempty" validate:"omitempty,max=32"`
+	PrimaryGroup string `protobuf:"bytes,12,opt,name=primary_group,json=primaryGroup,proto3" json:"primary_group,omitempty" validate:"omitempty,max=32"`
+	// Hide user from graphical login screens (GDM, SDDM, LightDM).
+	// Sets SystemAccount=true in AccountsService. No effect on headless systems.
+	// @gotags: validate:"omitempty"
+	Hidden        bool `protobuf:"varint,13,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2088,6 +2092,13 @@ func (x *UserParams) GetPrimaryGroup() string {
 		return x.PrimaryGroup
 	}
 	return ""
+}
+
+func (x *UserParams) GetHidden() bool {
+	if x != nil {
+		return x.Hidden
+	}
+	return false
 }
 
 // GroupParams configures Linux group management.
@@ -2869,7 +2880,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\bgpgcheck\x18\x05 \x01(\bR\bgpgcheck\x12\x16\n" +
 	"\x06gpgkey\x18\x06 \x01(\tR\x06gpgkey\x12\x12\n" +
 	"\x04type\x18\a \x01(\tR\x04type\x12\x1a\n" +
-	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xca\x02\n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xe2\x02\n" +
 	"\n" +
 	"UserParams\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x10\n" +
@@ -2885,7 +2896,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
 	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\"p\n" +
+	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\x12\x16\n" +
+	"\x06hidden\x18\r \x01(\bR\x06hidden\"p\n" +
 	"\vGroupParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12\x10\n" +

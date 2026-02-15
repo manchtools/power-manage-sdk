@@ -26,7 +26,7 @@ func HasTPM2(_ context.Context) (bool, error) {
 // for authentication. Uses PCRs 7+14 (Secure Boot + shim/MOK).
 func EnrollTPM(ctx context.Context, devicePath, existingKey string) error {
 	stdin := strings.NewReader(existingKey)
-	_, err := exec.RunWithStdin(ctx, stdin, "systemd-cryptenroll",
+	_, err := exec.SudoWithStdin(ctx, stdin, "systemd-cryptenroll",
 		"--tpm2-device=auto", "--tpm2-pcrs=7+14", devicePath)
 	if err != nil {
 		return fmt.Errorf("systemd-cryptenroll TPM2 failed: %w", err)
@@ -38,7 +38,7 @@ func EnrollTPM(ctx context.Context, devicePath, existingKey string) error {
 // passphrase for authentication.
 func WipeTPM(ctx context.Context, devicePath, existingKey string) error {
 	stdin := strings.NewReader(existingKey)
-	_, err := exec.RunWithStdin(ctx, stdin, "systemd-cryptenroll",
+	_, err := exec.SudoWithStdin(ctx, stdin, "systemd-cryptenroll",
 		"--wipe-slot=tpm2", devicePath)
 	if err != nil {
 		return fmt.Errorf("systemd-cryptenroll wipe TPM2 failed: %w", err)

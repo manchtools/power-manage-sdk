@@ -1253,6 +1253,12 @@ message LuksKey {
   string passphrase = 6;
   google.protobuf.Timestamp rotated_at = 7;
   string rotation_reason = 8;
+  // Revocation status: "" (none), "dispatched", "success", "failed"
+  string revocation_status = 9;
+  // Error message if revocation failed
+  string revocation_error = 10;
+  // Timestamp of last revocation event
+  google.protobuf.Timestamp revocation_at = 11;
 }
 
 message GetDeviceLuksKeysRequest {

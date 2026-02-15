@@ -731,10 +731,13 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 			case *pm.ServerMessage_RevokeLuksDeviceKey:
 				if luksHandler, ok := handler.(LuksHandler); ok {
 					actionID := p.RevokeLuksDeviceKey.ActionId
-					success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
-					if sendErr := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); sendErr != nil {
-						return fmt.Errorf("send revoke luks device key result: %w", sendErr)
-					}
+					// Run in goroutine: the handler calls GetLuksKey which sends
+					// a request on the stream and waits for a response. Processing
+					// that response requires this receive loop to keep running.
+					go func() {
+						success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
+						_ = c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg)
+					}()
 				}
 			}
 		}

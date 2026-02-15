@@ -12,7 +12,7 @@ import (
 
 // IsLuks checks if a device is a LUKS-encrypted volume.
 func IsLuks(ctx context.Context, devicePath string) (bool, error) {
-	result, err := exec.Run(ctx, "cryptsetup", "isLuks", devicePath)
+	result, err := exec.Sudo(ctx, "cryptsetup", "isLuks", devicePath)
 	if err != nil {
 		if result != nil && result.ExitCode == 1 {
 			return false, nil
@@ -36,7 +36,7 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 	}
 	defer cleanupKeyFile(newFile)
 
-	_, err = exec.Run(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
+	_, err = exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
 	if err != nil {
 		return fmt.Errorf("cryptsetup luksAddKey failed: %w", err)
 	}
@@ -57,7 +57,7 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 	}
 	defer cleanupKeyFile(newFile)
 
-	_, err = exec.Run(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
+	_, err = exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
 		"--key-file", existingFile, "--key-slot", strconv.Itoa(slot), "--batch-mode")
 	if err != nil {
 		return fmt.Errorf("cryptsetup luksAddKey (slot %d) failed: %w", slot, err)
@@ -73,7 +73,7 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 	}
 	defer cleanupKeyFile(keyFile)
 
-	_, err = exec.Run(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
+	_, err = exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		return fmt.Errorf("cryptsetup luksRemoveKey failed: %w", err)
 	}
@@ -88,7 +88,7 @@ func KillSlot(ctx context.Context, devicePath string, slot int, existingKey stri
 	}
 	defer cleanupKeyFile(keyFile)
 
-	_, err = exec.Run(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
+	_, err = exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		return fmt.Errorf("cryptsetup luksKillSlot %d failed: %w", slot, err)

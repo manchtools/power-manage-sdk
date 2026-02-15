@@ -1,6 +1,7 @@
 package luks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -30,8 +31,8 @@ type lsblkDevice struct {
 // DetectVolume auto-detects the primary LUKS volume on the system.
 // Priority: volume with /home mounted > volume with / mounted > first found.
 // Returns error if no LUKS volumes are found.
-func DetectVolume() (*Volume, error) {
-	volumes, err := DetectAllVolumes()
+func DetectVolume(ctx context.Context) (*Volume, error) {
+	volumes, err := DetectAllVolumes(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +60,8 @@ func DetectVolume() (*Volume, error) {
 }
 
 // DetectAllVolumes returns all LUKS-encrypted volumes on the system.
-func DetectAllVolumes() ([]Volume, error) {
-	result, err := exec.Run(nil, "lsblk", "-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT")
+func DetectAllVolumes(ctx context.Context) ([]Volume, error) {
+	result, err := exec.Run(ctx, "lsblk", "-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT")
 	if err != nil {
 		return nil, fmt.Errorf("lsblk failed: %w", err)
 	}

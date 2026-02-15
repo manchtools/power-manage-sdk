@@ -449,6 +449,11 @@ message UserParams {
   // Primary group name (alternative to gid - creates group if needed)
   // @gotags: validate:"omitempty,max=32"
   string primary_group = 12;
+
+  // Hide user from graphical login screens (GDM, SDDM, LightDM).
+  // Sets SystemAccount=true in AccountsService. No effect on headless systems.
+  // @gotags: validate:"omitempty"
+  bool hidden = 13;
 }
 
 // GroupParams configures Linux group management.
