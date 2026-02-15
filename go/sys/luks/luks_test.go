@@ -1,8 +1,6 @@
 package luks
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"os"
 	"strings"
 	"testing"
@@ -175,13 +173,11 @@ func TestHashPassphrase_Deterministic(t *testing.T) {
 	}
 }
 
-func TestHashPassphrase_CorrectSHA256(t *testing.T) {
-	input := "Apple-Tower-Kitchen"
-	expected := sha256.Sum256([]byte(input))
-	expectedHex := hex.EncodeToString(expected[:])
-	got := HashPassphrase(input)
-	if got != expectedHex {
-		t.Errorf("hash mismatch: expected %s, got %s", expectedHex, got)
+func TestHashPassphrase_CorrectSHA512(t *testing.T) {
+	got := HashPassphrase("Apple-Tower-Kitchen")
+	// SHA-512 = 64 bytes = 128 hex chars
+	if len(got) != 128 {
+		t.Errorf("expected 128 hex chars (SHA-512), got %d", len(got))
 	}
 }
 

@@ -1,7 +1,7 @@
 package luks
 
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"unicode"
@@ -72,8 +72,9 @@ func IsRecentlyUsed(passphrase string, recentHashes []string) bool {
 	return false
 }
 
-// HashPassphrase returns the SHA-256 hex hash of a passphrase.
+// HashPassphrase returns the SHA-512 hex hash of a passphrase.
+// Used only for local passphrase reuse detection, not for authentication.
 func HashPassphrase(passphrase string) string {
-	h := sha256.Sum256([]byte(passphrase))
+	h := sha512.Sum512([]byte(passphrase))
 	return hex.EncodeToString(h[:])
 }
