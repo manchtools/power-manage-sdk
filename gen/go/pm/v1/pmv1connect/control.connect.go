@@ -280,6 +280,18 @@ const (
 	// ControlServiceRevokeLuksDeviceKeyProcedure is the fully-qualified name of the ControlService's
 	// RevokeLuksDeviceKey RPC.
 	ControlServiceRevokeLuksDeviceKeyProcedure = "/pm.v1.ControlService/RevokeLuksDeviceKey"
+	// ControlServiceDispatchOSQueryProcedure is the fully-qualified name of the ControlService's
+	// DispatchOSQuery RPC.
+	ControlServiceDispatchOSQueryProcedure = "/pm.v1.ControlService/DispatchOSQuery"
+	// ControlServiceGetOSQueryResultProcedure is the fully-qualified name of the ControlService's
+	// GetOSQueryResult RPC.
+	ControlServiceGetOSQueryResultProcedure = "/pm.v1.ControlService/GetOSQueryResult"
+	// ControlServiceGetDeviceInventoryProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceInventory RPC.
+	ControlServiceGetDeviceInventoryProcedure = "/pm.v1.ControlService/GetDeviceInventory"
+	// ControlServiceRefreshDeviceInventoryProcedure is the fully-qualified name of the ControlService's
+	// RefreshDeviceInventory RPC.
+	ControlServiceRefreshDeviceInventoryProcedure = "/pm.v1.ControlService/RefreshDeviceInventory"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -383,6 +395,11 @@ type ControlServiceClient interface {
 	GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error)
 	CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error)
 	RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error)
+	// OSQuery / Device Inventory
+	DispatchOSQuery(context.Context, *connect.Request[v1.DispatchOSQueryRequest]) (*connect.Response[v1.DispatchOSQueryResponse], error)
+	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
+	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
+	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -900,6 +917,30 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("RevokeLuksDeviceKey")),
 			connect.WithClientOptions(opts...),
 		),
+		dispatchOSQuery: connect.NewClient[v1.DispatchOSQueryRequest, v1.DispatchOSQueryResponse](
+			httpClient,
+			baseURL+ControlServiceDispatchOSQueryProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DispatchOSQuery")),
+			connect.WithClientOptions(opts...),
+		),
+		getOSQueryResult: connect.NewClient[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse](
+			httpClient,
+			baseURL+ControlServiceGetOSQueryResultProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetOSQueryResult")),
+			connect.WithClientOptions(opts...),
+		),
+		getDeviceInventory: connect.NewClient[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceInventoryProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceInventory")),
+			connect.WithClientOptions(opts...),
+		),
+		refreshDeviceInventory: connect.NewClient[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse](
+			httpClient,
+			baseURL+ControlServiceRefreshDeviceInventoryProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -989,6 +1030,10 @@ type controlServiceClient struct {
 	getDeviceLuksKeys             *connect.Client[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse]
 	createLuksToken               *connect.Client[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse]
 	revokeLuksDeviceKey           *connect.Client[v1.RevokeLuksDeviceKeyRequest, v1.RevokeLuksDeviceKeyResponse]
+	dispatchOSQuery               *connect.Client[v1.DispatchOSQueryRequest, v1.DispatchOSQueryResponse]
+	getOSQueryResult              *connect.Client[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse]
+	getDeviceInventory            *connect.Client[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse]
+	refreshDeviceInventory        *connect.Client[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1411,6 +1456,26 @@ func (c *controlServiceClient) RevokeLuksDeviceKey(ctx context.Context, req *con
 	return c.revokeLuksDeviceKey.CallUnary(ctx, req)
 }
 
+// DispatchOSQuery calls pm.v1.ControlService.DispatchOSQuery.
+func (c *controlServiceClient) DispatchOSQuery(ctx context.Context, req *connect.Request[v1.DispatchOSQueryRequest]) (*connect.Response[v1.DispatchOSQueryResponse], error) {
+	return c.dispatchOSQuery.CallUnary(ctx, req)
+}
+
+// GetOSQueryResult calls pm.v1.ControlService.GetOSQueryResult.
+func (c *controlServiceClient) GetOSQueryResult(ctx context.Context, req *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error) {
+	return c.getOSQueryResult.CallUnary(ctx, req)
+}
+
+// GetDeviceInventory calls pm.v1.ControlService.GetDeviceInventory.
+func (c *controlServiceClient) GetDeviceInventory(ctx context.Context, req *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error) {
+	return c.getDeviceInventory.CallUnary(ctx, req)
+}
+
+// RefreshDeviceInventory calls pm.v1.ControlService.RefreshDeviceInventory.
+func (c *controlServiceClient) RefreshDeviceInventory(ctx context.Context, req *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error) {
+	return c.refreshDeviceInventory.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1512,6 +1577,11 @@ type ControlServiceHandler interface {
 	GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error)
 	CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error)
 	RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error)
+	// OSQuery / Device Inventory
+	DispatchOSQuery(context.Context, *connect.Request[v1.DispatchOSQueryRequest]) (*connect.Response[v1.DispatchOSQueryResponse], error)
+	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
+	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
+	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -2025,6 +2095,30 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("RevokeLuksDeviceKey")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceDispatchOSQueryHandler := connect.NewUnaryHandler(
+		ControlServiceDispatchOSQueryProcedure,
+		svc.DispatchOSQuery,
+		connect.WithSchema(controlServiceMethods.ByName("DispatchOSQuery")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetOSQueryResultHandler := connect.NewUnaryHandler(
+		ControlServiceGetOSQueryResultProcedure,
+		svc.GetOSQueryResult,
+		connect.WithSchema(controlServiceMethods.ByName("GetOSQueryResult")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetDeviceInventoryHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceInventoryProcedure,
+		svc.GetDeviceInventory,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceInventory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRefreshDeviceInventoryHandler := connect.NewUnaryHandler(
+		ControlServiceRefreshDeviceInventoryProcedure,
+		svc.RefreshDeviceInventory,
+		connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2195,6 +2289,14 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceCreateLuksTokenHandler.ServeHTTP(w, r)
 		case ControlServiceRevokeLuksDeviceKeyProcedure:
 			controlServiceRevokeLuksDeviceKeyHandler.ServeHTTP(w, r)
+		case ControlServiceDispatchOSQueryProcedure:
+			controlServiceDispatchOSQueryHandler.ServeHTTP(w, r)
+		case ControlServiceGetOSQueryResultProcedure:
+			controlServiceGetOSQueryResultHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceInventoryProcedure:
+			controlServiceGetDeviceInventoryHandler.ServeHTTP(w, r)
+		case ControlServiceRefreshDeviceInventoryProcedure:
+			controlServiceRefreshDeviceInventoryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -2538,4 +2640,20 @@ func (UnimplementedControlServiceHandler) CreateLuksToken(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeLuksDeviceKey is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DispatchOSQuery(context.Context, *connect.Request[v1.DispatchOSQueryRequest]) (*connect.Response[v1.DispatchOSQueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchOSQuery is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetOSQueryResult is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceInventory is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RefreshDeviceInventory is not implemented"))
 }

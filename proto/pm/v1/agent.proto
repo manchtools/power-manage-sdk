@@ -45,6 +45,8 @@ message AgentMessage {
     // @gotags: validate:"omitempty"
     OSQueryResult query_result = 30;
     // @gotags: validate:"omitempty"
+    DeviceInventory inventory = 31;
+    // @gotags: validate:"omitempty"
     SecurityAlert security_alert = 40;
     // LUKS key management (via stream, not separate RPCs)
     // @gotags: validate:"omitempty"
@@ -143,6 +145,8 @@ message ServerMessage {
     // @gotags: validate:"omitempty"
     OSQuery query = 30;
     // @gotags: validate:"omitempty"
+    RequestInventory request_inventory = 31;
+    // @gotags: validate:"omitempty"
     Error error = 40;
     // LUKS key management responses + instant actions
     // @gotags: validate:"omitempty"
@@ -226,6 +230,24 @@ message OSQueryRow {
   // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=65536"
   map<string, string> data = 1;
 }
+
+// ============================================================================
+// Device Inventory (Agent -> Server, cached hardware/software data)
+// ============================================================================
+
+message DeviceInventory {
+  repeated InventoryTable tables = 1;
+}
+
+message InventoryTable {
+  // @gotags: validate:"required,min=1,max=64"
+  string table_name = 1;
+  // @gotags: validate:"omitempty,dive"
+  repeated OSQueryRow rows = 2;
+}
+
+// Server -> Agent: request fresh inventory collection
+message RequestInventory {}
 
 // ============================================================================
 // Standard OS Query Tables

@@ -206,6 +206,7 @@ type AgentMessage struct {
 	//	*AgentMessage_ActionResult
 	//	*AgentMessage_OutputChunk
 	//	*AgentMessage_QueryResult
+	//	*AgentMessage_Inventory
 	//	*AgentMessage_SecurityAlert
 	//	*AgentMessage_GetLuksKey
 	//	*AgentMessage_StoreLuksKey
@@ -304,6 +305,15 @@ func (x *AgentMessage) GetQueryResult() *OSQueryResult {
 	return nil
 }
 
+func (x *AgentMessage) GetInventory() *DeviceInventory {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_Inventory); ok {
+			return x.Inventory
+		}
+	}
+	return nil
+}
+
 func (x *AgentMessage) GetSecurityAlert() *SecurityAlert {
 	if x != nil {
 		if x, ok := x.Payload.(*AgentMessage_SecurityAlert); ok {
@@ -369,6 +379,11 @@ type AgentMessage_QueryResult struct {
 	QueryResult *OSQueryResult `protobuf:"bytes,30,opt,name=query_result,json=queryResult,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_Inventory struct {
+	// @gotags: validate:"omitempty"
+	Inventory *DeviceInventory `protobuf:"bytes,31,opt,name=inventory,proto3,oneof" validate:"omitempty"`
+}
+
 type AgentMessage_SecurityAlert struct {
 	// @gotags: validate:"omitempty"
 	SecurityAlert *SecurityAlert `protobuf:"bytes,40,opt,name=security_alert,json=securityAlert,proto3,oneof" validate:"omitempty"`
@@ -399,6 +414,8 @@ func (*AgentMessage_ActionResult) isAgentMessage_Payload() {}
 func (*AgentMessage_OutputChunk) isAgentMessage_Payload() {}
 
 func (*AgentMessage_QueryResult) isAgentMessage_Payload() {}
+
+func (*AgentMessage_Inventory) isAgentMessage_Payload() {}
 
 func (*AgentMessage_SecurityAlert) isAgentMessage_Payload() {}
 
@@ -699,6 +716,7 @@ type ServerMessage struct {
 	//	*ServerMessage_Welcome
 	//	*ServerMessage_Action
 	//	*ServerMessage_Query
+	//	*ServerMessage_RequestInventory
 	//	*ServerMessage_Error
 	//	*ServerMessage_GetLuksKey
 	//	*ServerMessage_StoreLuksKey
@@ -779,6 +797,15 @@ func (x *ServerMessage) GetQuery() *OSQuery {
 	return nil
 }
 
+func (x *ServerMessage) GetRequestInventory() *RequestInventory {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_RequestInventory); ok {
+			return x.RequestInventory
+		}
+	}
+	return nil
+}
+
 func (x *ServerMessage) GetError() *Error {
 	if x != nil {
 		if x, ok := x.Payload.(*ServerMessage_Error); ok {
@@ -834,6 +861,11 @@ type ServerMessage_Query struct {
 	Query *OSQuery `protobuf:"bytes,30,opt,name=query,proto3,oneof" validate:"omitempty"`
 }
 
+type ServerMessage_RequestInventory struct {
+	// @gotags: validate:"omitempty"
+	RequestInventory *RequestInventory `protobuf:"bytes,31,opt,name=request_inventory,json=requestInventory,proto3,oneof" validate:"omitempty"`
+}
+
 type ServerMessage_Error struct {
 	// @gotags: validate:"omitempty"
 	Error *Error `protobuf:"bytes,40,opt,name=error,proto3,oneof" validate:"omitempty"`
@@ -860,6 +892,8 @@ func (*ServerMessage_Welcome) isServerMessage_Payload() {}
 func (*ServerMessage_Action) isServerMessage_Payload() {}
 
 func (*ServerMessage_Query) isServerMessage_Payload() {}
+
+func (*ServerMessage_RequestInventory) isServerMessage_Payload() {}
 
 func (*ServerMessage_Error) isServerMessage_Payload() {}
 
@@ -1283,6 +1317,141 @@ func (x *OSQueryRow) GetData() map[string]string {
 	return nil
 }
 
+type DeviceInventory struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tables        []*InventoryTable      `protobuf:"bytes,1,rep,name=tables,proto3" json:"tables,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeviceInventory) Reset() {
+	*x = DeviceInventory{}
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeviceInventory) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeviceInventory) ProtoMessage() {}
+
+func (x *DeviceInventory) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeviceInventory.ProtoReflect.Descriptor instead.
+func (*DeviceInventory) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DeviceInventory) GetTables() []*InventoryTable {
+	if x != nil {
+		return x.Tables
+	}
+	return nil
+}
+
+type InventoryTable struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,min=1,max=64"
+	TableName string `protobuf:"bytes,1,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty" validate:"required,min=1,max=64"`
+	// @gotags: validate:"omitempty,dive"
+	Rows          []*OSQueryRow `protobuf:"bytes,2,rep,name=rows,proto3" json:"rows,omitempty" validate:"omitempty,dive"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventoryTable) Reset() {
+	*x = InventoryTable{}
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryTable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryTable) ProtoMessage() {}
+
+func (x *InventoryTable) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryTable.ProtoReflect.Descriptor instead.
+func (*InventoryTable) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *InventoryTable) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *InventoryTable) GetRows() []*OSQueryRow {
+	if x != nil {
+		return x.Rows
+	}
+	return nil
+}
+
+// Server -> Agent: request fresh inventory collection
+type RequestInventory struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestInventory) Reset() {
+	*x = RequestInventory{}
+	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestInventory) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestInventory) ProtoMessage() {}
+
+func (x *RequestInventory) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestInventory.ProtoReflect.Descriptor instead.
+func (*RequestInventory) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+}
+
 // Agent requests the current managed passphrase for a LUKS action.
 // device_id is omitted — the gateway knows the device from the mTLS cert.
 type GetLuksKeyRequest struct {
@@ -1295,7 +1464,7 @@ type GetLuksKeyRequest struct {
 
 func (x *GetLuksKeyRequest) Reset() {
 	*x = GetLuksKeyRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_pm_v1_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1307,7 +1476,7 @@ func (x *GetLuksKeyRequest) String() string {
 func (*GetLuksKeyRequest) ProtoMessage() {}
 
 func (x *GetLuksKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_pm_v1_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1320,7 +1489,7 @@ func (x *GetLuksKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLuksKeyRequest.ProtoReflect.Descriptor instead.
 func (*GetLuksKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetLuksKeyRequest) GetActionId() string {
@@ -1340,7 +1509,7 @@ type GetLuksKeyResponse struct {
 
 func (x *GetLuksKeyResponse) Reset() {
 	*x = GetLuksKeyResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	mi := &file_pm_v1_agent_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1352,7 +1521,7 @@ func (x *GetLuksKeyResponse) String() string {
 func (*GetLuksKeyResponse) ProtoMessage() {}
 
 func (x *GetLuksKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	mi := &file_pm_v1_agent_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1365,7 +1534,7 @@ func (x *GetLuksKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLuksKeyResponse.ProtoReflect.Descriptor instead.
 func (*GetLuksKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetLuksKeyResponse) GetPassphrase() string {
@@ -1395,7 +1564,7 @@ type StoreLuksKeyRequest struct {
 
 func (x *StoreLuksKeyRequest) Reset() {
 	*x = StoreLuksKeyRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	mi := &file_pm_v1_agent_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1407,7 +1576,7 @@ func (x *StoreLuksKeyRequest) String() string {
 func (*StoreLuksKeyRequest) ProtoMessage() {}
 
 func (x *StoreLuksKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	mi := &file_pm_v1_agent_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1420,7 +1589,7 @@ func (x *StoreLuksKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreLuksKeyRequest.ProtoReflect.Descriptor instead.
 func (*StoreLuksKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *StoreLuksKeyRequest) GetActionId() string {
@@ -1460,7 +1629,7 @@ type StoreLuksKeyResponse struct {
 
 func (x *StoreLuksKeyResponse) Reset() {
 	*x = StoreLuksKeyResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	mi := &file_pm_v1_agent_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1472,7 +1641,7 @@ func (x *StoreLuksKeyResponse) String() string {
 func (*StoreLuksKeyResponse) ProtoMessage() {}
 
 func (x *StoreLuksKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	mi := &file_pm_v1_agent_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1485,7 +1654,7 @@ func (x *StoreLuksKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreLuksKeyResponse.ProtoReflect.Descriptor instead.
 func (*StoreLuksKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{16}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *StoreLuksKeyResponse) GetSuccess() bool {
@@ -1507,7 +1676,7 @@ type RevokeLuksDeviceKey struct {
 
 func (x *RevokeLuksDeviceKey) Reset() {
 	*x = RevokeLuksDeviceKey{}
-	mi := &file_pm_v1_agent_proto_msgTypes[17]
+	mi := &file_pm_v1_agent_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1519,7 +1688,7 @@ func (x *RevokeLuksDeviceKey) String() string {
 func (*RevokeLuksDeviceKey) ProtoMessage() {}
 
 func (x *RevokeLuksDeviceKey) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[17]
+	mi := &file_pm_v1_agent_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1532,7 +1701,7 @@ func (x *RevokeLuksDeviceKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeLuksDeviceKey.ProtoReflect.Descriptor instead.
 func (*RevokeLuksDeviceKey) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{17}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RevokeLuksDeviceKey) GetActionId() string {
@@ -1556,7 +1725,7 @@ type RevokeLuksDeviceKeyResult struct {
 
 func (x *RevokeLuksDeviceKeyResult) Reset() {
 	*x = RevokeLuksDeviceKeyResult{}
-	mi := &file_pm_v1_agent_proto_msgTypes[18]
+	mi := &file_pm_v1_agent_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1568,7 +1737,7 @@ func (x *RevokeLuksDeviceKeyResult) String() string {
 func (*RevokeLuksDeviceKeyResult) ProtoMessage() {}
 
 func (x *RevokeLuksDeviceKeyResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[18]
+	mi := &file_pm_v1_agent_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1581,7 +1750,7 @@ func (x *RevokeLuksDeviceKeyResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeLuksDeviceKeyResult.ProtoReflect.Descriptor instead.
 func (*RevokeLuksDeviceKeyResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{18}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *RevokeLuksDeviceKeyResult) GetActionId() string {
@@ -1617,7 +1786,7 @@ type ValidateLuksTokenRequest struct {
 
 func (x *ValidateLuksTokenRequest) Reset() {
 	*x = ValidateLuksTokenRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[19]
+	mi := &file_pm_v1_agent_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1629,7 +1798,7 @@ func (x *ValidateLuksTokenRequest) String() string {
 func (*ValidateLuksTokenRequest) ProtoMessage() {}
 
 func (x *ValidateLuksTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[19]
+	mi := &file_pm_v1_agent_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1642,7 +1811,7 @@ func (x *ValidateLuksTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateLuksTokenRequest.ProtoReflect.Descriptor instead.
 func (*ValidateLuksTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{19}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ValidateLuksTokenRequest) GetDeviceId() string {
@@ -1674,7 +1843,7 @@ type ValidateLuksTokenResponse struct {
 
 func (x *ValidateLuksTokenResponse) Reset() {
 	*x = ValidateLuksTokenResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[20]
+	mi := &file_pm_v1_agent_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1686,7 +1855,7 @@ func (x *ValidateLuksTokenResponse) String() string {
 func (*ValidateLuksTokenResponse) ProtoMessage() {}
 
 func (x *ValidateLuksTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[20]
+	mi := &file_pm_v1_agent_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +1868,7 @@ func (x *ValidateLuksTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateLuksTokenResponse.ProtoReflect.Descriptor instead.
 func (*ValidateLuksTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{20}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ValidateLuksTokenResponse) GetActionId() string {
@@ -1740,7 +1909,7 @@ type SyncActionsRequest struct {
 
 func (x *SyncActionsRequest) Reset() {
 	*x = SyncActionsRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[21]
+	mi := &file_pm_v1_agent_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1752,7 +1921,7 @@ func (x *SyncActionsRequest) String() string {
 func (*SyncActionsRequest) ProtoMessage() {}
 
 func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[21]
+	mi := &file_pm_v1_agent_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1765,7 +1934,7 @@ func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsRequest.ProtoReflect.Descriptor instead.
 func (*SyncActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{21}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
@@ -1790,7 +1959,7 @@ type SyncActionsResponse struct {
 
 func (x *SyncActionsResponse) Reset() {
 	*x = SyncActionsResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[22]
+	mi := &file_pm_v1_agent_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1802,7 +1971,7 @@ func (x *SyncActionsResponse) String() string {
 func (*SyncActionsResponse) ProtoMessage() {}
 
 func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[22]
+	mi := &file_pm_v1_agent_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1815,7 +1984,7 @@ func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsResponse.ProtoReflect.Descriptor instead.
 func (*SyncActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{22}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SyncActionsResponse) GetActions() []*Action {
@@ -1836,7 +2005,7 @@ var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xd8\x04\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\x90\x05\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
@@ -1844,7 +2013,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\theartbeat\x18\v \x01(\v2\x10.pm.v1.HeartbeatH\x00R\theartbeat\x12:\n" +
 	"\raction_result\x18\x14 \x01(\v2\x13.pm.v1.ActionResultH\x00R\factionResult\x127\n" +
 	"\foutput_chunk\x18\x15 \x01(\v2\x12.pm.v1.OutputChunkH\x00R\voutputChunk\x129\n" +
-	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResult\x12=\n" +
+	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResult\x126\n" +
+	"\tinventory\x18\x1f \x01(\v2\x16.pm.v1.DeviceInventoryH\x00R\tinventory\x12=\n" +
 	"\x0esecurity_alert\x18( \x01(\v2\x14.pm.v1.SecurityAlertH\x00R\rsecurityAlert\x12<\n" +
 	"\fget_luks_key\x182 \x01(\v2\x18.pm.v1.GetLuksKeyRequestH\x00R\n" +
 	"getLuksKey\x12B\n" +
@@ -1874,13 +2044,14 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\adetails\x18\x03 \x03(\v2!.pm.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xac\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf4\x03\n" +
 	"\rServerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\awelcome\x18\n" +
 	" \x01(\v2\x0e.pm.v1.WelcomeH\x00R\awelcome\x12/\n" +
 	"\x06action\x18\x14 \x01(\v2\x15.pm.v1.ActionDispatchH\x00R\x06action\x12&\n" +
-	"\x05query\x18\x1e \x01(\v2\x0e.pm.v1.OSQueryH\x00R\x05query\x12$\n" +
+	"\x05query\x18\x1e \x01(\v2\x0e.pm.v1.OSQueryH\x00R\x05query\x12F\n" +
+	"\x11request_inventory\x18\x1f \x01(\v2\x17.pm.v1.RequestInventoryH\x00R\x10requestInventory\x12$\n" +
 	"\x05error\x18( \x01(\v2\f.pm.v1.ErrorH\x00R\x05error\x12=\n" +
 	"\fget_luks_key\x182 \x01(\v2\x19.pm.v1.GetLuksKeyResponseH\x00R\n" +
 	"getLuksKey\x12C\n" +
@@ -1915,7 +2086,14 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x04data\x18\x01 \x03(\v2\x1b.pm.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"0\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
+	"\x0fDeviceInventory\x12-\n" +
+	"\x06tables\x18\x01 \x03(\v2\x15.pm.v1.InventoryTableR\x06tables\"V\n" +
+	"\x0eInventoryTable\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x01 \x01(\tR\ttableName\x12%\n" +
+	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"\x12\n" +
+	"\x10RequestInventory\"0\n" +
 	"\x11GetLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"4\n" +
 	"\x12GetLuksKeyResponse\x12\x1e\n" +
@@ -1992,7 +2170,7 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),             // 0: pm.v1.OutputStreamType
 	(SecurityAlertType)(0),            // 1: pm.v1.SecurityAlertType
@@ -2010,66 +2188,73 @@ var file_pm_v1_agent_proto_goTypes = []any{
 	(*OSQueryCondition)(nil),          // 13: pm.v1.OSQueryCondition
 	(*OSQueryResult)(nil),             // 14: pm.v1.OSQueryResult
 	(*OSQueryRow)(nil),                // 15: pm.v1.OSQueryRow
-	(*GetLuksKeyRequest)(nil),         // 16: pm.v1.GetLuksKeyRequest
-	(*GetLuksKeyResponse)(nil),        // 17: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyRequest)(nil),       // 18: pm.v1.StoreLuksKeyRequest
-	(*StoreLuksKeyResponse)(nil),      // 19: pm.v1.StoreLuksKeyResponse
-	(*RevokeLuksDeviceKey)(nil),       // 20: pm.v1.RevokeLuksDeviceKey
-	(*RevokeLuksDeviceKeyResult)(nil), // 21: pm.v1.RevokeLuksDeviceKeyResult
-	(*ValidateLuksTokenRequest)(nil),  // 22: pm.v1.ValidateLuksTokenRequest
-	(*ValidateLuksTokenResponse)(nil), // 23: pm.v1.ValidateLuksTokenResponse
-	(*SyncActionsRequest)(nil),        // 24: pm.v1.SyncActionsRequest
-	(*SyncActionsResponse)(nil),       // 25: pm.v1.SyncActionsResponse
-	nil,                               // 26: pm.v1.SecurityAlert.DetailsEntry
-	nil,                               // 27: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),              // 28: pm.v1.ActionResult
-	(*DeviceId)(nil),                  // 29: pm.v1.DeviceId
-	(*durationpb.Duration)(nil),       // 30: google.protobuf.Duration
-	(*Action)(nil),                    // 31: pm.v1.Action
-	(LpsPasswordComplexity)(0),        // 32: pm.v1.LpsPasswordComplexity
+	(*DeviceInventory)(nil),           // 16: pm.v1.DeviceInventory
+	(*InventoryTable)(nil),            // 17: pm.v1.InventoryTable
+	(*RequestInventory)(nil),          // 18: pm.v1.RequestInventory
+	(*GetLuksKeyRequest)(nil),         // 19: pm.v1.GetLuksKeyRequest
+	(*GetLuksKeyResponse)(nil),        // 20: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyRequest)(nil),       // 21: pm.v1.StoreLuksKeyRequest
+	(*StoreLuksKeyResponse)(nil),      // 22: pm.v1.StoreLuksKeyResponse
+	(*RevokeLuksDeviceKey)(nil),       // 23: pm.v1.RevokeLuksDeviceKey
+	(*RevokeLuksDeviceKeyResult)(nil), // 24: pm.v1.RevokeLuksDeviceKeyResult
+	(*ValidateLuksTokenRequest)(nil),  // 25: pm.v1.ValidateLuksTokenRequest
+	(*ValidateLuksTokenResponse)(nil), // 26: pm.v1.ValidateLuksTokenResponse
+	(*SyncActionsRequest)(nil),        // 27: pm.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil),       // 28: pm.v1.SyncActionsResponse
+	nil,                               // 29: pm.v1.SecurityAlert.DetailsEntry
+	nil,                               // 30: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),              // 31: pm.v1.ActionResult
+	(*DeviceId)(nil),                  // 32: pm.v1.DeviceId
+	(*durationpb.Duration)(nil),       // 33: google.protobuf.Duration
+	(*Action)(nil),                    // 34: pm.v1.Action
+	(LpsPasswordComplexity)(0),        // 35: pm.v1.LpsPasswordComplexity
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
 	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	28, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	31, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
 	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
 	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
-	7,  // 5: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
-	16, // 6: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
-	18, // 7: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
-	21, // 8: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
-	0,  // 9: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	29, // 10: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	30, // 11: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	1,  // 12: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	26, // 13: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
-	9,  // 14: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	10, // 15: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	12, // 16: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	11, // 17: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	17, // 18: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
-	19, // 19: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
-	20, // 20: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
-	30, // 21: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	31, // 22: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
-	13, // 23: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
-	2,  // 24: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	15, // 25: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	27, // 26: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	32, // 27: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	29, // 28: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	31, // 29: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
-	3,  // 30: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	24, // 31: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	22, // 32: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	8,  // 33: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	25, // 34: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	23, // 35: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	33, // [33:36] is the sub-list for method output_type
-	30, // [30:33] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	16, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
+	7,  // 6: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
+	19, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
+	21, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
+	24, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
+	0,  // 10: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
+	32, // 11: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	33, // 12: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 13: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
+	29, // 14: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	9,  // 15: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	10, // 16: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	12, // 17: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	18, // 18: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
+	11, // 19: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	20, // 20: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
+	22, // 21: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
+	23, // 22: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
+	33, // 23: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	34, // 24: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	13, // 25: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	2,  // 26: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
+	15, // 27: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	30, // 28: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	17, // 29: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
+	15, // 30: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
+	35, // 31: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	32, // 32: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	34, // 33: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 34: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	27, // 35: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	25, // 36: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	8,  // 37: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	28, // 38: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	26, // 39: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	37, // [37:40] is the sub-list for method output_type
+	34, // [34:37] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -2085,6 +2270,7 @@ func file_pm_v1_agent_proto_init() {
 		(*AgentMessage_ActionResult)(nil),
 		(*AgentMessage_OutputChunk)(nil),
 		(*AgentMessage_QueryResult)(nil),
+		(*AgentMessage_Inventory)(nil),
 		(*AgentMessage_SecurityAlert)(nil),
 		(*AgentMessage_GetLuksKey)(nil),
 		(*AgentMessage_StoreLuksKey)(nil),
@@ -2094,6 +2280,7 @@ func file_pm_v1_agent_proto_init() {
 		(*ServerMessage_Welcome)(nil),
 		(*ServerMessage_Action)(nil),
 		(*ServerMessage_Query)(nil),
+		(*ServerMessage_RequestInventory)(nil),
 		(*ServerMessage_Error)(nil),
 		(*ServerMessage_GetLuksKey)(nil),
 		(*ServerMessage_StoreLuksKey)(nil),
@@ -2105,7 +2292,7 @@ func file_pm_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   25,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

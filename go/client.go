@@ -261,6 +261,15 @@ type LuksHandler interface {
 	OnRevokeLuksDeviceKey(ctx context.Context, actionID string) (bool, string)
 }
 
+// InventoryHandler extends StreamHandler with device inventory collection support.
+// Handlers that implement this interface can collect and send hardware/software inventory.
+type InventoryHandler interface {
+	StreamHandler
+	// CollectInventory gathers hardware/software inventory from the device.
+	// Returns nil if inventory collection is not available (e.g., osquery not installed).
+	CollectInventory(ctx context.Context) *pm.DeviceInventory
+}
+
 // Connect establishes a bidirectional stream with the server.
 func (c *Client) Connect(ctx context.Context) error {
 	c.mu.Lock()
@@ -397,6 +406,30 @@ func (c *Client) SendSecurityAlert(ctx context.Context, alert *pm.SecurityAlert)
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_SecurityAlert{
 			SecurityAlert: alert,
+		},
+	}
+
+	return stream.Send(msg)
+}
+
+// SendInventory sends device inventory to the server.
+func (c *Client) SendInventory(ctx context.Context, inventory *pm.DeviceInventory) error {
+	if inventory == nil {
+		return nil
+	}
+
+	c.mu.RLock()
+	stream := c.stream
+	c.mu.RUnlock()
+
+	if stream == nil {
+		return errors.New("not connected")
+	}
+
+	msg := &pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_Inventory{
+			Inventory: inventory,
 		},
 	}
 
@@ -646,6 +679,30 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		}
 	}()
 
+	// Inventory: send on connect + every 24 hours
+	if invHandler, ok := handler.(InventoryHandler); ok {
+		go func() {
+			// Initial inventory on connect
+			if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
+				_ = c.SendInventory(heartbeatCtx, inv)
+			}
+
+			ticker := time.NewTicker(24 * time.Hour)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-heartbeatCtx.Done():
+					return
+				case <-ticker.C:
+					if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
+						_ = c.SendInventory(heartbeatCtx, inv)
+					}
+				}
+			}
+		}()
+	}
+
 	// Channel to receive messages from blocking Receive call
 	type receiveResult struct {
 		msg *pm.ServerMessage
@@ -727,6 +784,15 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 			case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey:
 				// LUKS request-response: deliver to pending request by message ID.
 				c.deliverPending(result.msg)
+
+			case *pm.ServerMessage_RequestInventory:
+				if invHandler, ok := handler.(InventoryHandler); ok {
+					go func() {
+						if inv := invHandler.CollectInventory(ctx); inv != nil {
+							_ = c.SendInventory(ctx, inv)
+						}
+					}()
+				}
 
 			case *pm.ServerMessage_RevokeLuksDeviceKey:
 				if luksHandler, ok := handler.(LuksHandler); ok {

@@ -7,6 +7,7 @@ option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 import "google/protobuf/timestamp.proto";
 import "pm/v1/common.proto";
 import "pm/v1/actions.proto";
+import "pm/v1/agent.proto";
 
 // ============================================================================
 // Agent Registration (called by agent during first-time setup)
@@ -1299,6 +1300,66 @@ message RevokeLuksDeviceKeyRequest {
 message RevokeLuksDeviceKeyResponse {}
 
 // ============================================================================
+// OSQuery / Device Inventory
+// ============================================================================
+
+// Dispatch an on-demand OSQuery to a connected device
+message DispatchOSQueryRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string table = 2;
+  // @gotags: validate:"omitempty,dive,max=64"
+  repeated string columns = 3;
+  // @gotags: validate:"omitempty,gte=0,lte=10000"
+  int32 limit = 4;
+}
+
+message DispatchOSQueryResponse {
+  string query_id = 1;
+}
+
+// Poll for the result of a dispatched OSQuery
+message GetOSQueryResultRequest {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+}
+
+message GetOSQueryResultResponse {
+  string query_id = 1;
+  bool completed = 2;
+  bool success = 3;
+  string error = 4;
+  repeated OSQueryRow rows = 5;
+}
+
+// Get cached device inventory (hardware/software data collected by agent)
+message GetDeviceInventoryRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // Optional: filter to specific tables (empty = all)
+  repeated string table_names = 2;
+}
+
+message InventoryTableResult {
+  string table_name = 1;
+  repeated OSQueryRow rows = 2;
+  google.protobuf.Timestamp collected_at = 3;
+}
+
+message GetDeviceInventoryResponse {
+  repeated InventoryTableResult tables = 1;
+}
+
+// Request the agent to re-collect and send inventory
+message RefreshDeviceInventoryRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message RefreshDeviceInventoryResponse {}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1416,4 +1477,10 @@ service ControlService {
   rpc GetDeviceLuksKeys(GetDeviceLuksKeysRequest) returns (GetDeviceLuksKeysResponse);
   rpc CreateLuksToken(CreateLuksTokenRequest) returns (CreateLuksTokenResponse);
   rpc RevokeLuksDeviceKey(RevokeLuksDeviceKeyRequest) returns (RevokeLuksDeviceKeyResponse);
+
+  // OSQuery / Device Inventory
+  rpc DispatchOSQuery(DispatchOSQueryRequest) returns (DispatchOSQueryResponse);
+  rpc GetOSQueryResult(GetOSQueryResultRequest) returns (GetOSQueryResultResponse);
+  rpc GetDeviceInventory(GetDeviceInventoryRequest) returns (GetDeviceInventoryResponse);
+  rpc RefreshDeviceInventory(RefreshDeviceInventoryRequest) returns (RefreshDeviceInventoryResponse);
 }
