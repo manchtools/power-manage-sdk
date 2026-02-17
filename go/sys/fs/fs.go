@@ -156,7 +156,7 @@ func ReadFile(ctx context.Context, path string) (string, error) {
 // This is needed for paths in directories not readable by the current user
 // (e.g. /etc/sudoers.d is mode 0750 on Fedora/RHEL).
 func FileExists(ctx context.Context, path string) bool {
-	_, err := exec.Sudo(ctx, "sh", "-c", "test -e "+path)
+	_, err := exec.Sudo(ctx, "test", "-e", path)
 	return err == nil
 }
 

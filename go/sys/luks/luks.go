@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
@@ -190,26 +191,47 @@ func writeKeyFile(key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create key file: %w", err)
 	}
-	defer f.Close()
+
+	// Explicitly set mode 0600 regardless of umask.
+	if err := f.Chmod(0600); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return "", fmt.Errorf("failed to set key file permissions: %w", err)
+	}
 
 	if _, err := f.WriteString(key); err != nil {
+		f.Close()
 		os.Remove(f.Name())
 		return "", fmt.Errorf("failed to write key file: %w", err)
+	}
+
+	if err := f.Close(); err != nil {
+		os.Remove(f.Name())
+		return "", fmt.Errorf("failed to close key file: %w", err)
 	}
 
 	return f.Name(), nil
 }
 
 // cleanupKeyFile overwrites a key file with zeros and removes it.
+// Uses O_WRONLY|O_NOFOLLOW to avoid TOCTOU symlink attacks — if the path
+// has been replaced with a symlink, the open will fail and we skip overwriting.
 func cleanupKeyFile(path string) {
 	if path == "" {
 		return
 	}
-	info, err := os.Stat(path)
-	if err == nil {
-		// Overwrite with zeros before removing
-		zeros := strings.Repeat("\x00", int(info.Size()))
-		_ = os.WriteFile(path, []byte(zeros), 0600)
+	// Open with O_NOFOLLOW to reject symlinks (prevents TOCTOU attack).
+	f, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		// File already removed or is a symlink — just try to remove.
+		os.Remove(path)
+		return
 	}
+	// Get size from the open fd (no TOCTOU race).
+	if info, err := f.Stat(); err == nil && info.Size() > 0 {
+		zeros := make([]byte, info.Size())
+		_, _ = f.WriteAt(zeros, 0)
+	}
+	f.Close()
 	os.Remove(path)
 }
