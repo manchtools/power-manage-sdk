@@ -5323,7 +5323,7 @@ export type CreateRoleRequest = Message<"pm.v1.CreateRoleRequest"> & {
   description: string;
 
   /**
-   * @gotags: validate:"required,min=1"
+   * @gotags: validate:"omitempty"
    *
    * @generated from field: repeated string permissions = 3;
    */

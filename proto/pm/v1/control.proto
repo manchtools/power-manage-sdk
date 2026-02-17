@@ -1381,7 +1381,7 @@ message CreateRoleRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
-  // @gotags: validate:"required,min=1"
+  // @gotags: validate:"omitempty"
   repeated string permissions = 3;
 }
 
