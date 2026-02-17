@@ -59,9 +59,6 @@ const (
 	// ControlServiceUpdateUserPasswordProcedure is the fully-qualified name of the ControlService's
 	// UpdateUserPassword RPC.
 	ControlServiceUpdateUserPasswordProcedure = "/pm.v1.ControlService/UpdateUserPassword"
-	// ControlServiceUpdateUserRoleProcedure is the fully-qualified name of the ControlService's
-	// UpdateUserRole RPC.
-	ControlServiceUpdateUserRoleProcedure = "/pm.v1.ControlService/UpdateUserRole"
 	// ControlServiceSetUserDisabledProcedure is the fully-qualified name of the ControlService's
 	// SetUserDisabled RPC.
 	ControlServiceSetUserDisabledProcedure = "/pm.v1.ControlService/SetUserDisabled"
@@ -292,6 +289,29 @@ const (
 	// ControlServiceRefreshDeviceInventoryProcedure is the fully-qualified name of the ControlService's
 	// RefreshDeviceInventory RPC.
 	ControlServiceRefreshDeviceInventoryProcedure = "/pm.v1.ControlService/RefreshDeviceInventory"
+	// ControlServiceCreateRoleProcedure is the fully-qualified name of the ControlService's CreateRole
+	// RPC.
+	ControlServiceCreateRoleProcedure = "/pm.v1.ControlService/CreateRole"
+	// ControlServiceGetRoleProcedure is the fully-qualified name of the ControlService's GetRole RPC.
+	ControlServiceGetRoleProcedure = "/pm.v1.ControlService/GetRole"
+	// ControlServiceListRolesProcedure is the fully-qualified name of the ControlService's ListRoles
+	// RPC.
+	ControlServiceListRolesProcedure = "/pm.v1.ControlService/ListRoles"
+	// ControlServiceUpdateRoleProcedure is the fully-qualified name of the ControlService's UpdateRole
+	// RPC.
+	ControlServiceUpdateRoleProcedure = "/pm.v1.ControlService/UpdateRole"
+	// ControlServiceDeleteRoleProcedure is the fully-qualified name of the ControlService's DeleteRole
+	// RPC.
+	ControlServiceDeleteRoleProcedure = "/pm.v1.ControlService/DeleteRole"
+	// ControlServiceAssignRoleToUserProcedure is the fully-qualified name of the ControlService's
+	// AssignRoleToUser RPC.
+	ControlServiceAssignRoleToUserProcedure = "/pm.v1.ControlService/AssignRoleToUser"
+	// ControlServiceRevokeRoleFromUserProcedure is the fully-qualified name of the ControlService's
+	// RevokeRoleFromUser RPC.
+	ControlServiceRevokeRoleFromUserProcedure = "/pm.v1.ControlService/RevokeRoleFromUser"
+	// ControlServiceListPermissionsProcedure is the fully-qualified name of the ControlService's
+	// ListPermissions RPC.
+	ControlServiceListPermissionsProcedure = "/pm.v1.ControlService/ListPermissions"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -309,7 +329,6 @@ type ControlServiceClient interface {
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
-	UpdateUserRole(context.Context, *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
@@ -400,6 +419,15 @@ type ControlServiceClient interface {
 	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
 	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
 	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
+	// Roles & Permissions
+	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
+	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error)
+	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
+	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error)
+	RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error)
+	ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -471,12 +499,6 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUpdateUserPasswordProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UpdateUserPassword")),
-			connect.WithClientOptions(opts...),
-		),
-		updateUserRole: connect.NewClient[v1.UpdateUserRoleRequest, v1.UpdateUserResponse](
-			httpClient,
-			baseURL+ControlServiceUpdateUserRoleProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("UpdateUserRole")),
 			connect.WithClientOptions(opts...),
 		),
 		setUserDisabled: connect.NewClient[v1.SetUserDisabledRequest, v1.UpdateUserResponse](
@@ -941,6 +963,54 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
 			connect.WithClientOptions(opts...),
 		),
+		createRole: connect.NewClient[v1.CreateRoleRequest, v1.CreateRoleResponse](
+			httpClient,
+			baseURL+ControlServiceCreateRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateRole")),
+			connect.WithClientOptions(opts...),
+		),
+		getRole: connect.NewClient[v1.GetRoleRequest, v1.GetRoleResponse](
+			httpClient,
+			baseURL+ControlServiceGetRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetRole")),
+			connect.WithClientOptions(opts...),
+		),
+		listRoles: connect.NewClient[v1.ListRolesRequest, v1.ListRolesResponse](
+			httpClient,
+			baseURL+ControlServiceListRolesProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListRoles")),
+			connect.WithClientOptions(opts...),
+		),
+		updateRole: connect.NewClient[v1.UpdateRoleRequest, v1.UpdateRoleResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateRole")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteRole: connect.NewClient[v1.DeleteRoleRequest, v1.DeleteRoleResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteRole")),
+			connect.WithClientOptions(opts...),
+		),
+		assignRoleToUser: connect.NewClient[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse](
+			httpClient,
+			baseURL+ControlServiceAssignRoleToUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUser")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeRoleFromUser: connect.NewClient[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse](
+			httpClient,
+			baseURL+ControlServiceRevokeRoleFromUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUser")),
+			connect.WithClientOptions(opts...),
+		),
+		listPermissions: connect.NewClient[v1.ListPermissionsRequest, v1.ListPermissionsResponse](
+			httpClient,
+			baseURL+ControlServiceListPermissionsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListPermissions")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -956,7 +1026,6 @@ type controlServiceClient struct {
 	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
 	updateUserEmail               *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
 	updateUserPassword            *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
-	updateUserRole                *connect.Client[v1.UpdateUserRoleRequest, v1.UpdateUserResponse]
 	setUserDisabled               *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
 	deleteUser                    *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 	listDevices                   *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
@@ -1034,6 +1103,14 @@ type controlServiceClient struct {
 	getOSQueryResult              *connect.Client[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse]
 	getDeviceInventory            *connect.Client[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse]
 	refreshDeviceInventory        *connect.Client[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse]
+	createRole                    *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	getRole                       *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
+	listRoles                     *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	updateRole                    *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
+	deleteRole                    *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	assignRoleToUser              *connect.Client[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse]
+	revokeRoleFromUser            *connect.Client[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse]
+	listPermissions               *connect.Client[v1.ListPermissionsRequest, v1.ListPermissionsResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1084,11 +1161,6 @@ func (c *controlServiceClient) UpdateUserEmail(ctx context.Context, req *connect
 // UpdateUserPassword calls pm.v1.ControlService.UpdateUserPassword.
 func (c *controlServiceClient) UpdateUserPassword(ctx context.Context, req *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return c.updateUserPassword.CallUnary(ctx, req)
-}
-
-// UpdateUserRole calls pm.v1.ControlService.UpdateUserRole.
-func (c *controlServiceClient) UpdateUserRole(ctx context.Context, req *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
-	return c.updateUserRole.CallUnary(ctx, req)
 }
 
 // SetUserDisabled calls pm.v1.ControlService.SetUserDisabled.
@@ -1476,6 +1548,46 @@ func (c *controlServiceClient) RefreshDeviceInventory(ctx context.Context, req *
 	return c.refreshDeviceInventory.CallUnary(ctx, req)
 }
 
+// CreateRole calls pm.v1.ControlService.CreateRole.
+func (c *controlServiceClient) CreateRole(ctx context.Context, req *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error) {
+	return c.createRole.CallUnary(ctx, req)
+}
+
+// GetRole calls pm.v1.ControlService.GetRole.
+func (c *controlServiceClient) GetRole(ctx context.Context, req *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error) {
+	return c.getRole.CallUnary(ctx, req)
+}
+
+// ListRoles calls pm.v1.ControlService.ListRoles.
+func (c *controlServiceClient) ListRoles(ctx context.Context, req *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error) {
+	return c.listRoles.CallUnary(ctx, req)
+}
+
+// UpdateRole calls pm.v1.ControlService.UpdateRole.
+func (c *controlServiceClient) UpdateRole(ctx context.Context, req *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error) {
+	return c.updateRole.CallUnary(ctx, req)
+}
+
+// DeleteRole calls pm.v1.ControlService.DeleteRole.
+func (c *controlServiceClient) DeleteRole(ctx context.Context, req *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error) {
+	return c.deleteRole.CallUnary(ctx, req)
+}
+
+// AssignRoleToUser calls pm.v1.ControlService.AssignRoleToUser.
+func (c *controlServiceClient) AssignRoleToUser(ctx context.Context, req *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error) {
+	return c.assignRoleToUser.CallUnary(ctx, req)
+}
+
+// RevokeRoleFromUser calls pm.v1.ControlService.RevokeRoleFromUser.
+func (c *controlServiceClient) RevokeRoleFromUser(ctx context.Context, req *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error) {
+	return c.revokeRoleFromUser.CallUnary(ctx, req)
+}
+
+// ListPermissions calls pm.v1.ControlService.ListPermissions.
+func (c *controlServiceClient) ListPermissions(ctx context.Context, req *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error) {
+	return c.listPermissions.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1491,7 +1603,6 @@ type ControlServiceHandler interface {
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
-	UpdateUserRole(context.Context, *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
@@ -1582,6 +1693,15 @@ type ControlServiceHandler interface {
 	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
 	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
 	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
+	// Roles & Permissions
+	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
+	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error)
+	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
+	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error)
+	RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error)
+	ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -1649,12 +1769,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUpdateUserPasswordProcedure,
 		svc.UpdateUserPassword,
 		connect.WithSchema(controlServiceMethods.ByName("UpdateUserPassword")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceUpdateUserRoleHandler := connect.NewUnaryHandler(
-		ControlServiceUpdateUserRoleProcedure,
-		svc.UpdateUserRole,
-		connect.WithSchema(controlServiceMethods.ByName("UpdateUserRole")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceSetUserDisabledHandler := connect.NewUnaryHandler(
@@ -2119,6 +2233,54 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceCreateRoleHandler := connect.NewUnaryHandler(
+		ControlServiceCreateRoleProcedure,
+		svc.CreateRole,
+		connect.WithSchema(controlServiceMethods.ByName("CreateRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetRoleHandler := connect.NewUnaryHandler(
+		ControlServiceGetRoleProcedure,
+		svc.GetRole,
+		connect.WithSchema(controlServiceMethods.ByName("GetRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListRolesHandler := connect.NewUnaryHandler(
+		ControlServiceListRolesProcedure,
+		svc.ListRoles,
+		connect.WithSchema(controlServiceMethods.ByName("ListRoles")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateRoleHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateRoleProcedure,
+		svc.UpdateRole,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteRoleHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteRoleProcedure,
+		svc.DeleteRole,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAssignRoleToUserHandler := connect.NewUnaryHandler(
+		ControlServiceAssignRoleToUserProcedure,
+		svc.AssignRoleToUser,
+		connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevokeRoleFromUserHandler := connect.NewUnaryHandler(
+		ControlServiceRevokeRoleFromUserProcedure,
+		svc.RevokeRoleFromUser,
+		connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListPermissionsHandler := connect.NewUnaryHandler(
+		ControlServiceListPermissionsProcedure,
+		svc.ListPermissions,
+		connect.WithSchema(controlServiceMethods.ByName("ListPermissions")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2141,8 +2303,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateUserEmailHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateUserPasswordProcedure:
 			controlServiceUpdateUserPasswordHandler.ServeHTTP(w, r)
-		case ControlServiceUpdateUserRoleProcedure:
-			controlServiceUpdateUserRoleHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserDisabledProcedure:
 			controlServiceSetUserDisabledHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteUserProcedure:
@@ -2297,6 +2457,22 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetDeviceInventoryHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshDeviceInventoryProcedure:
 			controlServiceRefreshDeviceInventoryHandler.ServeHTTP(w, r)
+		case ControlServiceCreateRoleProcedure:
+			controlServiceCreateRoleHandler.ServeHTTP(w, r)
+		case ControlServiceGetRoleProcedure:
+			controlServiceGetRoleHandler.ServeHTTP(w, r)
+		case ControlServiceListRolesProcedure:
+			controlServiceListRolesHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateRoleProcedure:
+			controlServiceUpdateRoleHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteRoleProcedure:
+			controlServiceDeleteRoleHandler.ServeHTTP(w, r)
+		case ControlServiceAssignRoleToUserProcedure:
+			controlServiceAssignRoleToUserHandler.ServeHTTP(w, r)
+		case ControlServiceRevokeRoleFromUserProcedure:
+			controlServiceRevokeRoleFromUserHandler.ServeHTTP(w, r)
+		case ControlServiceListPermissionsProcedure:
+			controlServiceListPermissionsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -2344,10 +2520,6 @@ func (UnimplementedControlServiceHandler) UpdateUserEmail(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserPassword is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) UpdateUserRole(context.Context, *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserRole is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
@@ -2656,4 +2828,36 @@ func (UnimplementedControlServiceHandler) GetDeviceInventory(context.Context, *c
 
 func (UnimplementedControlServiceHandler) RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RefreshDeviceInventory is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListRoles is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AssignRoleToUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeRoleFromUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListPermissions is not implemented"))
 }

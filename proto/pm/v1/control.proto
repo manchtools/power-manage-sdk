@@ -91,10 +91,27 @@ message GetCurrentUserResponse {
 message User {
   string id = 1;
   string email = 2;
-  string role = 3;  // "admin" or "user"
+  reserved 3;  // was: string role
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp last_login_at = 5;
   bool disabled = 6;
+  repeated Role roles = 7;
+}
+
+message Role {
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  string description = 3;
+  repeated string permissions = 4;
+  google.protobuf.Timestamp created_at = 5;
+  bool is_system = 6;
+}
+
+message PermissionInfo {
+  string key = 1;
+  string group = 2;
+  string description = 3;
 }
 
 message CreateUserRequest {
@@ -102,8 +119,8 @@ message CreateUserRequest {
   string email = 1;
   // @gotags: validate:"required,min=8"
   string password = 2;
-  // @gotags: validate:"required,oneof=admin user"
-  string role = 3;
+  // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
+  repeated string role_ids = 3;
 }
 
 message CreateUserResponse {
@@ -147,13 +164,6 @@ message UpdateUserPasswordRequest {
   string current_password = 2;  // Required for self-update
   // @gotags: validate:"required,min=8"
   string new_password = 3;
-}
-
-message UpdateUserRoleRequest {
-  // @gotags: validate:"required,ulid"
-  string id = 1;
-  // @gotags: validate:"required,oneof=admin user"
-  string role = 2;  // "admin" or "user"
 }
 
 message SetUserDisabledRequest {
@@ -1307,12 +1317,15 @@ message RevokeLuksDeviceKeyResponse {}
 message DispatchOSQueryRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,min=1,max=64"
+  // @gotags: validate:"required_without=RawSql,omitempty,min=1,max=64"
   string table = 2;
   // @gotags: validate:"omitempty,dive,max=64"
   repeated string columns = 3;
   // @gotags: validate:"omitempty,gte=0,lte=10000"
   int32 limit = 4;
+  // Raw SQL query — when set, table/columns/limit are ignored.
+  // @gotags: validate:"omitempty,max=4096"
+  string raw_sql = 5;
 }
 
 message DispatchOSQueryResponse {
@@ -1360,6 +1373,92 @@ message RefreshDeviceInventoryRequest {
 message RefreshDeviceInventoryResponse {}
 
 // ============================================================================
+// Roles & Permissions
+// ============================================================================
+
+message CreateRoleRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+  // @gotags: validate:"required,min=1"
+  repeated string permissions = 3;
+}
+
+message CreateRoleResponse {
+  Role role = 1;
+}
+
+message GetRoleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetRoleResponse {
+  Role role = 1;
+  int32 user_count = 2;
+}
+
+message ListRolesRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateRoleRequest {
+  // @gotags: validate:"required,ulid"
+  string role_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 3;
+  // @gotags: validate:"required,min=1"
+  repeated string permissions = 4;
+}
+
+message UpdateRoleResponse {
+  Role role = 1;
+}
+
+message DeleteRoleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteRoleResponse {}
+
+message AssignRoleToUserRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message AssignRoleToUserResponse {}
+
+message RevokeRoleFromUserRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message RevokeRoleFromUserResponse {}
+
+message ListPermissionsRequest {}
+
+message ListPermissionsResponse {
+  repeated PermissionInfo permissions = 1;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1379,7 +1478,6 @@ service ControlService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);
   rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
-  rpc UpdateUserRole(UpdateUserRoleRequest) returns (UpdateUserResponse);
   rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 
@@ -1483,4 +1581,14 @@ service ControlService {
   rpc GetOSQueryResult(GetOSQueryResultRequest) returns (GetOSQueryResultResponse);
   rpc GetDeviceInventory(GetDeviceInventoryRequest) returns (GetDeviceInventoryResponse);
   rpc RefreshDeviceInventory(RefreshDeviceInventoryRequest) returns (RefreshDeviceInventoryResponse);
+
+  // Roles & Permissions
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+  rpc AssignRoleToUser(AssignRoleToUserRequest) returns (AssignRoleToUserResponse);
+  rpc RevokeRoleFromUser(RevokeRoleFromUserRequest) returns (RevokeRoleFromUserResponse);
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
 }
