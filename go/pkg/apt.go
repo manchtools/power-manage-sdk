@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -407,6 +408,9 @@ func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
 	} else {
 		c = exec.CommandContext(a.ctx, cmd, args...)
 	}
+
+	// Prevent debconf from trying interactive frontends when there is no terminal.
+	c.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout
