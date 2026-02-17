@@ -45,9 +45,13 @@ func NotifyUsers(ctx context.Context, usernames []string, title, message string)
 
 // sendWall broadcasts a message to all terminal sessions.
 func sendWall(ctx context.Context, message string) {
-	_, err := exec.SudoWithStdin(ctx, strings.NewReader(message), "wall")
+	result, err := exec.SudoWithStdin(ctx, strings.NewReader(message), "wall")
 	if err != nil {
-		slog.Debug("wall notification failed", "error", err)
+		stderr := ""
+		if result != nil {
+			stderr = result.Stderr
+		}
+		slog.Warn("wall notification failed", "error", err, "stderr", stderr)
 	}
 }
 
@@ -56,11 +60,12 @@ func sendWall(ctx context.Context, message string) {
 // are notified.
 func sendDesktopNotifications(ctx context.Context, title, message string, userFilter map[string]bool) {
 	if _, err := osexec.LookPath("notify-send"); err != nil {
-		slog.Debug("notify-send not available, skipping desktop notifications")
+		slog.Warn("notify-send not available, skipping desktop notifications")
 		return
 	}
 
 	sessions := listGraphicalSessions(ctx)
+	slog.Info("discovered graphical sessions for desktop notification", "count", len(sessions))
 	for _, s := range sessions {
 		if userFilter != nil && !userFilter[s.user] {
 			continue
@@ -73,7 +78,11 @@ func sendDesktopNotifications(ctx context.Context, title, message string, userFi
 func listGraphicalSessions(ctx context.Context) []session {
 	result, err := exec.Sudo(ctx, "loginctl", "list-sessions", "--no-legend")
 	if err != nil || result.ExitCode != 0 {
-		slog.Debug("failed to list sessions", "error", err)
+		stderr := ""
+		if result != nil {
+			stderr = result.Stderr
+		}
+		slog.Warn("failed to list sessions", "error", err, "stderr", stderr)
 		return nil
 	}
 
@@ -122,7 +131,7 @@ func sendDesktopNotification(ctx context.Context, s session, title, message stri
 	// Check if the DBUS socket exists
 	socketPath := fmt.Sprintf("/run/user/%d/bus", s.uid)
 	if _, err := os.Stat(socketPath); err != nil {
-		slog.Debug("DBUS socket not found, skipping desktop notification",
+		slog.Warn("DBUS socket not found, skipping desktop notification",
 			"user", s.user, "path", socketPath)
 		return
 	}
@@ -137,7 +146,11 @@ func sendDesktopNotification(ctx context.Context, s session, title, message stri
 
 	result, err := exec.Sudo(ctx, "bash", "-c", script)
 	if err != nil || (result != nil && result.ExitCode != 0) {
-		slog.Debug("desktop notification failed",
-			"user", s.user, "session", s.id, "error", err)
+		stderr := ""
+		if result != nil {
+			stderr = result.Stderr
+		}
+		slog.Warn("desktop notification failed",
+			"user", s.user, "session", s.id, "type", s.typ, "error", err, "stderr", stderr)
 	}
 }

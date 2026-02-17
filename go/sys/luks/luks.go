@@ -36,8 +36,11 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 	}
 	defer cleanupKeyFile(newFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
 	if err != nil {
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("cryptsetup luksAddKey failed: %s", strings.TrimSpace(result.Stderr))
+		}
 		return fmt.Errorf("cryptsetup luksAddKey failed: %w", err)
 	}
 	return nil
@@ -57,9 +60,12 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 	}
 	defer cleanupKeyFile(newFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
 		"--key-file", existingFile, "--key-slot", strconv.Itoa(slot), "--batch-mode")
 	if err != nil {
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("cryptsetup luksAddKey (slot %d) failed: %s", slot, strings.TrimSpace(result.Stderr))
+		}
 		return fmt.Errorf("cryptsetup luksAddKey (slot %d) failed: %w", slot, err)
 	}
 	return nil
@@ -73,8 +79,11 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 	}
 	defer cleanupKeyFile(keyFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
 	if err != nil {
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("cryptsetup luksRemoveKey failed: %s", strings.TrimSpace(result.Stderr))
+		}
 		return fmt.Errorf("cryptsetup luksRemoveKey failed: %w", err)
 	}
 	return nil
@@ -88,9 +97,12 @@ func KillSlot(ctx context.Context, devicePath string, slot int, existingKey stri
 	}
 	defer cleanupKeyFile(keyFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("cryptsetup luksKillSlot %d failed: %s", slot, strings.TrimSpace(result.Stderr))
+		}
 		return fmt.Errorf("cryptsetup luksKillSlot %d failed: %w", slot, err)
 	}
 	return nil
