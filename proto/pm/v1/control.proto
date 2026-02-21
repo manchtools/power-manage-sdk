@@ -1528,6 +1528,124 @@ message ListPermissionsResponse {
 }
 
 // ============================================================================
+// User Groups
+// ============================================================================
+
+message UserGroup {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 member_count = 4;
+  repeated Role roles = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message UserGroupMember {
+  string user_id = 1;
+  string email = 2;
+  google.protobuf.Timestamp added_at = 3;
+}
+
+message CreateUserGroupRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateUserGroupResponse {
+  UserGroup group = 1;
+}
+
+message GetUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetUserGroupResponse {
+  UserGroup group = 1;
+  repeated UserGroupMember members = 2;
+}
+
+message ListUserGroupsRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListUserGroupsResponse {
+  repeated UserGroup groups = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 3;
+}
+
+message UpdateUserGroupResponse {
+  UserGroup group = 1;
+}
+
+message DeleteUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteUserGroupResponse {}
+
+message AddUserToGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string user_id = 2;
+}
+
+message AddUserToGroupResponse {}
+
+message RemoveUserFromGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string user_id = 2;
+}
+
+message RemoveUserFromGroupResponse {}
+
+message AssignRoleToUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message AssignRoleToUserGroupResponse {}
+
+message RevokeRoleFromUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message RevokeRoleFromUserGroupResponse {}
+
+message ListUserGroupsForUserRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+}
+
+message ListUserGroupsForUserResponse {
+  repeated UserGroup groups = 1;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1668,4 +1786,16 @@ service ControlService {
   rpc AssignRoleToUser(AssignRoleToUserRequest) returns (AssignRoleToUserResponse);
   rpc RevokeRoleFromUser(RevokeRoleFromUserRequest) returns (RevokeRoleFromUserResponse);
   rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+
+  // User Groups
+  rpc CreateUserGroup(CreateUserGroupRequest) returns (CreateUserGroupResponse);
+  rpc GetUserGroup(GetUserGroupRequest) returns (GetUserGroupResponse);
+  rpc ListUserGroups(ListUserGroupsRequest) returns (ListUserGroupsResponse);
+  rpc UpdateUserGroup(UpdateUserGroupRequest) returns (UpdateUserGroupResponse);
+  rpc DeleteUserGroup(DeleteUserGroupRequest) returns (DeleteUserGroupResponse);
+  rpc AddUserToGroup(AddUserToGroupRequest) returns (AddUserToGroupResponse);
+  rpc RemoveUserFromGroup(RemoveUserFromGroupRequest) returns (RemoveUserFromGroupResponse);
+  rpc AssignRoleToUserGroup(AssignRoleToUserGroupRequest) returns (AssignRoleToUserGroupResponse);
+  rpc RevokeRoleFromUserGroup(RevokeRoleFromUserGroupRequest) returns (RevokeRoleFromUserGroupResponse);
+  rpc ListUserGroupsForUser(ListUserGroupsForUserRequest) returns (ListUserGroupsForUserResponse);
 }

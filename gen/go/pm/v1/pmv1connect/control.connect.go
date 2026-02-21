@@ -330,6 +330,36 @@ const (
 	// ControlServiceListPermissionsProcedure is the fully-qualified name of the ControlService's
 	// ListPermissions RPC.
 	ControlServiceListPermissionsProcedure = "/pm.v1.ControlService/ListPermissions"
+	// ControlServiceCreateUserGroupProcedure is the fully-qualified name of the ControlService's
+	// CreateUserGroup RPC.
+	ControlServiceCreateUserGroupProcedure = "/pm.v1.ControlService/CreateUserGroup"
+	// ControlServiceGetUserGroupProcedure is the fully-qualified name of the ControlService's
+	// GetUserGroup RPC.
+	ControlServiceGetUserGroupProcedure = "/pm.v1.ControlService/GetUserGroup"
+	// ControlServiceListUserGroupsProcedure is the fully-qualified name of the ControlService's
+	// ListUserGroups RPC.
+	ControlServiceListUserGroupsProcedure = "/pm.v1.ControlService/ListUserGroups"
+	// ControlServiceUpdateUserGroupProcedure is the fully-qualified name of the ControlService's
+	// UpdateUserGroup RPC.
+	ControlServiceUpdateUserGroupProcedure = "/pm.v1.ControlService/UpdateUserGroup"
+	// ControlServiceDeleteUserGroupProcedure is the fully-qualified name of the ControlService's
+	// DeleteUserGroup RPC.
+	ControlServiceDeleteUserGroupProcedure = "/pm.v1.ControlService/DeleteUserGroup"
+	// ControlServiceAddUserToGroupProcedure is the fully-qualified name of the ControlService's
+	// AddUserToGroup RPC.
+	ControlServiceAddUserToGroupProcedure = "/pm.v1.ControlService/AddUserToGroup"
+	// ControlServiceRemoveUserFromGroupProcedure is the fully-qualified name of the ControlService's
+	// RemoveUserFromGroup RPC.
+	ControlServiceRemoveUserFromGroupProcedure = "/pm.v1.ControlService/RemoveUserFromGroup"
+	// ControlServiceAssignRoleToUserGroupProcedure is the fully-qualified name of the ControlService's
+	// AssignRoleToUserGroup RPC.
+	ControlServiceAssignRoleToUserGroupProcedure = "/pm.v1.ControlService/AssignRoleToUserGroup"
+	// ControlServiceRevokeRoleFromUserGroupProcedure is the fully-qualified name of the
+	// ControlService's RevokeRoleFromUserGroup RPC.
+	ControlServiceRevokeRoleFromUserGroupProcedure = "/pm.v1.ControlService/RevokeRoleFromUserGroup"
+	// ControlServiceListUserGroupsForUserProcedure is the fully-qualified name of the ControlService's
+	// ListUserGroupsForUser RPC.
+	ControlServiceListUserGroupsForUserProcedure = "/pm.v1.ControlService/ListUserGroupsForUser"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -453,6 +483,17 @@ type ControlServiceClient interface {
 	AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error)
 	RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error)
 	ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error)
+	// User Groups
+	CreateUserGroup(context.Context, *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error)
+	GetUserGroup(context.Context, *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error)
+	ListUserGroups(context.Context, *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error)
+	UpdateUserGroup(context.Context, *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
+	DeleteUserGroup(context.Context, *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error)
+	AddUserToGroup(context.Context, *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error)
+	RemoveUserFromGroup(context.Context, *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error)
+	AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error)
+	RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error)
+	ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -1072,6 +1113,66 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListPermissions")),
 			connect.WithClientOptions(opts...),
 		),
+		createUserGroup: connect.NewClient[v1.CreateUserGroupRequest, v1.CreateUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceCreateUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		getUserGroup: connect.NewClient[v1.GetUserGroupRequest, v1.GetUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceGetUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		listUserGroups: connect.NewClient[v1.ListUserGroupsRequest, v1.ListUserGroupsResponse](
+			httpClient,
+			baseURL+ControlServiceListUserGroupsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListUserGroups")),
+			connect.WithClientOptions(opts...),
+		),
+		updateUserGroup: connect.NewClient[v1.UpdateUserGroupRequest, v1.UpdateUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteUserGroup: connect.NewClient[v1.DeleteUserGroupRequest, v1.DeleteUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		addUserToGroup: connect.NewClient[v1.AddUserToGroupRequest, v1.AddUserToGroupResponse](
+			httpClient,
+			baseURL+ControlServiceAddUserToGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddUserToGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		removeUserFromGroup: connect.NewClient[v1.RemoveUserFromGroupRequest, v1.RemoveUserFromGroupResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveUserFromGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveUserFromGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		assignRoleToUserGroup: connect.NewClient[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceAssignRoleToUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeRoleFromUserGroup: connect.NewClient[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceRevokeRoleFromUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		listUserGroupsForUser: connect.NewClient[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse](
+			httpClient,
+			baseURL+ControlServiceListUserGroupsForUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListUserGroupsForUser")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1178,6 +1279,16 @@ type controlServiceClient struct {
 	assignRoleToUser              *connect.Client[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse]
 	revokeRoleFromUser            *connect.Client[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse]
 	listPermissions               *connect.Client[v1.ListPermissionsRequest, v1.ListPermissionsResponse]
+	createUserGroup               *connect.Client[v1.CreateUserGroupRequest, v1.CreateUserGroupResponse]
+	getUserGroup                  *connect.Client[v1.GetUserGroupRequest, v1.GetUserGroupResponse]
+	listUserGroups                *connect.Client[v1.ListUserGroupsRequest, v1.ListUserGroupsResponse]
+	updateUserGroup               *connect.Client[v1.UpdateUserGroupRequest, v1.UpdateUserGroupResponse]
+	deleteUserGroup               *connect.Client[v1.DeleteUserGroupRequest, v1.DeleteUserGroupResponse]
+	addUserToGroup                *connect.Client[v1.AddUserToGroupRequest, v1.AddUserToGroupResponse]
+	removeUserFromGroup           *connect.Client[v1.RemoveUserFromGroupRequest, v1.RemoveUserFromGroupResponse]
+	assignRoleToUserGroup         *connect.Client[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse]
+	revokeRoleFromUserGroup       *connect.Client[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse]
+	listUserGroupsForUser         *connect.Client[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1685,6 +1796,56 @@ func (c *controlServiceClient) ListPermissions(ctx context.Context, req *connect
 	return c.listPermissions.CallUnary(ctx, req)
 }
 
+// CreateUserGroup calls pm.v1.ControlService.CreateUserGroup.
+func (c *controlServiceClient) CreateUserGroup(ctx context.Context, req *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error) {
+	return c.createUserGroup.CallUnary(ctx, req)
+}
+
+// GetUserGroup calls pm.v1.ControlService.GetUserGroup.
+func (c *controlServiceClient) GetUserGroup(ctx context.Context, req *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error) {
+	return c.getUserGroup.CallUnary(ctx, req)
+}
+
+// ListUserGroups calls pm.v1.ControlService.ListUserGroups.
+func (c *controlServiceClient) ListUserGroups(ctx context.Context, req *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error) {
+	return c.listUserGroups.CallUnary(ctx, req)
+}
+
+// UpdateUserGroup calls pm.v1.ControlService.UpdateUserGroup.
+func (c *controlServiceClient) UpdateUserGroup(ctx context.Context, req *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
+	return c.updateUserGroup.CallUnary(ctx, req)
+}
+
+// DeleteUserGroup calls pm.v1.ControlService.DeleteUserGroup.
+func (c *controlServiceClient) DeleteUserGroup(ctx context.Context, req *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error) {
+	return c.deleteUserGroup.CallUnary(ctx, req)
+}
+
+// AddUserToGroup calls pm.v1.ControlService.AddUserToGroup.
+func (c *controlServiceClient) AddUserToGroup(ctx context.Context, req *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error) {
+	return c.addUserToGroup.CallUnary(ctx, req)
+}
+
+// RemoveUserFromGroup calls pm.v1.ControlService.RemoveUserFromGroup.
+func (c *controlServiceClient) RemoveUserFromGroup(ctx context.Context, req *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error) {
+	return c.removeUserFromGroup.CallUnary(ctx, req)
+}
+
+// AssignRoleToUserGroup calls pm.v1.ControlService.AssignRoleToUserGroup.
+func (c *controlServiceClient) AssignRoleToUserGroup(ctx context.Context, req *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error) {
+	return c.assignRoleToUserGroup.CallUnary(ctx, req)
+}
+
+// RevokeRoleFromUserGroup calls pm.v1.ControlService.RevokeRoleFromUserGroup.
+func (c *controlServiceClient) RevokeRoleFromUserGroup(ctx context.Context, req *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error) {
+	return c.revokeRoleFromUserGroup.CallUnary(ctx, req)
+}
+
+// ListUserGroupsForUser calls pm.v1.ControlService.ListUserGroupsForUser.
+func (c *controlServiceClient) ListUserGroupsForUser(ctx context.Context, req *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error) {
+	return c.listUserGroupsForUser.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1806,6 +1967,17 @@ type ControlServiceHandler interface {
 	AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error)
 	RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error)
 	ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error)
+	// User Groups
+	CreateUserGroup(context.Context, *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error)
+	GetUserGroup(context.Context, *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error)
+	ListUserGroups(context.Context, *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error)
+	UpdateUserGroup(context.Context, *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
+	DeleteUserGroup(context.Context, *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error)
+	AddUserToGroup(context.Context, *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error)
+	RemoveUserFromGroup(context.Context, *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error)
+	AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error)
+	RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error)
+	ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -2421,6 +2593,66 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ListPermissions")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceCreateUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceCreateUserGroupProcedure,
+		svc.CreateUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("CreateUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceGetUserGroupProcedure,
+		svc.GetUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("GetUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListUserGroupsHandler := connect.NewUnaryHandler(
+		ControlServiceListUserGroupsProcedure,
+		svc.ListUserGroups,
+		connect.WithSchema(controlServiceMethods.ByName("ListUserGroups")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateUserGroupProcedure,
+		svc.UpdateUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteUserGroupProcedure,
+		svc.DeleteUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAddUserToGroupHandler := connect.NewUnaryHandler(
+		ControlServiceAddUserToGroupProcedure,
+		svc.AddUserToGroup,
+		connect.WithSchema(controlServiceMethods.ByName("AddUserToGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveUserFromGroupHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveUserFromGroupProcedure,
+		svc.RemoveUserFromGroup,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveUserFromGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAssignRoleToUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceAssignRoleToUserGroupProcedure,
+		svc.AssignRoleToUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevokeRoleFromUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceRevokeRoleFromUserGroupProcedure,
+		svc.RevokeRoleFromUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListUserGroupsForUserHandler := connect.NewUnaryHandler(
+		ControlServiceListUserGroupsForUserProcedure,
+		svc.ListUserGroupsForUser,
+		connect.WithSchema(controlServiceMethods.ByName("ListUserGroupsForUser")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2625,6 +2857,26 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRevokeRoleFromUserHandler.ServeHTTP(w, r)
 		case ControlServiceListPermissionsProcedure:
 			controlServiceListPermissionsHandler.ServeHTTP(w, r)
+		case ControlServiceCreateUserGroupProcedure:
+			controlServiceCreateUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceGetUserGroupProcedure:
+			controlServiceGetUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceListUserGroupsProcedure:
+			controlServiceListUserGroupsHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateUserGroupProcedure:
+			controlServiceUpdateUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteUserGroupProcedure:
+			controlServiceDeleteUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceAddUserToGroupProcedure:
+			controlServiceAddUserToGroupHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveUserFromGroupProcedure:
+			controlServiceRemoveUserFromGroupHandler.ServeHTTP(w, r)
+		case ControlServiceAssignRoleToUserGroupProcedure:
+			controlServiceAssignRoleToUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceRevokeRoleFromUserGroupProcedure:
+			controlServiceRevokeRoleFromUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceListUserGroupsForUserProcedure:
+			controlServiceListUserGroupsForUserHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -3036,4 +3288,44 @@ func (UnimplementedControlServiceHandler) RevokeRoleFromUser(context.Context, *c
 
 func (UnimplementedControlServiceHandler) ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListPermissions is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateUserGroup(context.Context, *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetUserGroup(context.Context, *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListUserGroups(context.Context, *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListUserGroups is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateUserGroup(context.Context, *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteUserGroup(context.Context, *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AddUserToGroup(context.Context, *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddUserToGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveUserFromGroup(context.Context, *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveUserFromGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AssignRoleToUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeRoleFromUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListUserGroupsForUser is not implemented"))
 }
