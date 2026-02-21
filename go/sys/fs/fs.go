@@ -8,6 +8,7 @@ package fs
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
@@ -204,9 +205,36 @@ func MkdirWithPermissions(ctx context.Context, path, mode, owner, group string, 
 	return nil
 }
 
+// dangerousPaths are paths that must never be removed.
+var dangerousPaths = map[string]bool{
+	"/":     true,
+	"/boot": true,
+	"/dev":  true,
+	"/etc":  true,
+	"/proc": true,
+	"/run":  true,
+	"/sys":  true,
+	"/usr":  true,
+	"/var":  true,
+	"/bin":  true,
+	"/sbin": true,
+	"/lib":  true,
+	"/lib64": true,
+	"/home": true,
+	"/root": true,
+}
+
 // RemoveDir removes a directory and its contents using sudo rm -rf.
+// It validates the path to prevent accidental removal of critical system directories.
 func RemoveDir(ctx context.Context, path string) error {
-	_, err := exec.Sudo(ctx, "rm", "-rf", path)
+	clean := filepath.Clean(path)
+	if !filepath.IsAbs(clean) {
+		return fmt.Errorf("path must be absolute: %s", path)
+	}
+	if dangerousPaths[clean] {
+		return fmt.Errorf("refusing to remove protected path: %s", clean)
+	}
+	_, err := exec.Sudo(ctx, "rm", "-rf", clean)
 	return err
 }
 

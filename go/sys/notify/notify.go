@@ -140,7 +140,7 @@ func sendDesktopNotification(ctx context.Context, s session, title, message stri
 	// The agent has sudo access to bash, which gives us root,
 	// and runuser (part of util-linux) switches to the target user.
 	script := fmt.Sprintf(
-		`DBUS_SESSION_BUS_ADDRESS=%s runuser -u %s -- notify-send -u critical -a "Power Manage" -i dialog-warning %q %q`,
+		`DBUS_SESSION_BUS_ADDRESS=%s runuser -u %q -- notify-send -u critical -a "Power Manage" -i dialog-warning %q %q`,
 		dbusAddr, s.user, title, message,
 	)
 
