@@ -63,6 +63,36 @@ const (
 	// ControlServiceRegenerateBackupCodesProcedure is the fully-qualified name of the ControlService's
 	// RegenerateBackupCodes RPC.
 	ControlServiceRegenerateBackupCodesProcedure = "/pm.v1.ControlService/RegenerateBackupCodes"
+	// ControlServiceListAuthMethodsProcedure is the fully-qualified name of the ControlService's
+	// ListAuthMethods RPC.
+	ControlServiceListAuthMethodsProcedure = "/pm.v1.ControlService/ListAuthMethods"
+	// ControlServiceGetSSOLoginURLProcedure is the fully-qualified name of the ControlService's
+	// GetSSOLoginURL RPC.
+	ControlServiceGetSSOLoginURLProcedure = "/pm.v1.ControlService/GetSSOLoginURL"
+	// ControlServiceSSOCallbackProcedure is the fully-qualified name of the ControlService's
+	// SSOCallback RPC.
+	ControlServiceSSOCallbackProcedure = "/pm.v1.ControlService/SSOCallback"
+	// ControlServiceCreateIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// CreateIdentityProvider RPC.
+	ControlServiceCreateIdentityProviderProcedure = "/pm.v1.ControlService/CreateIdentityProvider"
+	// ControlServiceGetIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// GetIdentityProvider RPC.
+	ControlServiceGetIdentityProviderProcedure = "/pm.v1.ControlService/GetIdentityProvider"
+	// ControlServiceListIdentityProvidersProcedure is the fully-qualified name of the ControlService's
+	// ListIdentityProviders RPC.
+	ControlServiceListIdentityProvidersProcedure = "/pm.v1.ControlService/ListIdentityProviders"
+	// ControlServiceUpdateIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// UpdateIdentityProvider RPC.
+	ControlServiceUpdateIdentityProviderProcedure = "/pm.v1.ControlService/UpdateIdentityProvider"
+	// ControlServiceDeleteIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// DeleteIdentityProvider RPC.
+	ControlServiceDeleteIdentityProviderProcedure = "/pm.v1.ControlService/DeleteIdentityProvider"
+	// ControlServiceListIdentityLinksProcedure is the fully-qualified name of the ControlService's
+	// ListIdentityLinks RPC.
+	ControlServiceListIdentityLinksProcedure = "/pm.v1.ControlService/ListIdentityLinks"
+	// ControlServiceUnlinkIdentityProcedure is the fully-qualified name of the ControlService's
+	// UnlinkIdentity RPC.
+	ControlServiceUnlinkIdentityProcedure = "/pm.v1.ControlService/UnlinkIdentity"
 	// ControlServiceCreateUserProcedure is the fully-qualified name of the ControlService's CreateUser
 	// RPC.
 	ControlServiceCreateUserProcedure = "/pm.v1.ControlService/CreateUser"
@@ -381,6 +411,17 @@ type ControlServiceClient interface {
 	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
 	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
 	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
+	// SSO / Identity Providers
+	ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error)
+	GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error)
+	SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error)
+	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error)
+	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error)
+	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error)
+	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error)
+	ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error)
+	UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -575,6 +616,66 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceRegenerateBackupCodesProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("RegenerateBackupCodes")),
+			connect.WithClientOptions(opts...),
+		),
+		listAuthMethods: connect.NewClient[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse](
+			httpClient,
+			baseURL+ControlServiceListAuthMethodsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListAuthMethods")),
+			connect.WithClientOptions(opts...),
+		),
+		getSSOLoginURL: connect.NewClient[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse](
+			httpClient,
+			baseURL+ControlServiceGetSSOLoginURLProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetSSOLoginURL")),
+			connect.WithClientOptions(opts...),
+		),
+		sSOCallback: connect.NewClient[v1.SSOCallbackRequest, v1.SSOCallbackResponse](
+			httpClient,
+			baseURL+ControlServiceSSOCallbackProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SSOCallback")),
+			connect.WithClientOptions(opts...),
+		),
+		createIdentityProvider: connect.NewClient[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceCreateIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		getIdentityProvider: connect.NewClient[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceGetIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		listIdentityProviders: connect.NewClient[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse](
+			httpClient,
+			baseURL+ControlServiceListIdentityProvidersProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListIdentityProviders")),
+			connect.WithClientOptions(opts...),
+		),
+		updateIdentityProvider: connect.NewClient[v1.UpdateIdentityProviderRequest, v1.UpdateIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteIdentityProvider: connect.NewClient[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		listIdentityLinks: connect.NewClient[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse](
+			httpClient,
+			baseURL+ControlServiceListIdentityLinksProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListIdentityLinks")),
+			connect.WithClientOptions(opts...),
+		),
+		unlinkIdentity: connect.NewClient[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse](
+			httpClient,
+			baseURL+ControlServiceUnlinkIdentityProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UnlinkIdentity")),
 			connect.WithClientOptions(opts...),
 		),
 		createUser: connect.NewClient[v1.CreateUserRequest, v1.CreateUserResponse](
@@ -1199,6 +1300,16 @@ type controlServiceClient struct {
 	disableTOTP                   *connect.Client[v1.DisableTOTPRequest, v1.DisableTOTPResponse]
 	getTOTPStatus                 *connect.Client[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse]
 	regenerateBackupCodes         *connect.Client[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse]
+	listAuthMethods               *connect.Client[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse]
+	getSSOLoginURL                *connect.Client[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse]
+	sSOCallback                   *connect.Client[v1.SSOCallbackRequest, v1.SSOCallbackResponse]
+	createIdentityProvider        *connect.Client[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse]
+	getIdentityProvider           *connect.Client[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse]
+	listIdentityProviders         *connect.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
+	updateIdentityProvider        *connect.Client[v1.UpdateIdentityProviderRequest, v1.UpdateIdentityProviderResponse]
+	deleteIdentityProvider        *connect.Client[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse]
+	listIdentityLinks             *connect.Client[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse]
+	unlinkIdentity                *connect.Client[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse]
 	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
 	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
@@ -1355,6 +1466,56 @@ func (c *controlServiceClient) GetTOTPStatus(ctx context.Context, req *connect.R
 // RegenerateBackupCodes calls pm.v1.ControlService.RegenerateBackupCodes.
 func (c *controlServiceClient) RegenerateBackupCodes(ctx context.Context, req *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error) {
 	return c.regenerateBackupCodes.CallUnary(ctx, req)
+}
+
+// ListAuthMethods calls pm.v1.ControlService.ListAuthMethods.
+func (c *controlServiceClient) ListAuthMethods(ctx context.Context, req *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error) {
+	return c.listAuthMethods.CallUnary(ctx, req)
+}
+
+// GetSSOLoginURL calls pm.v1.ControlService.GetSSOLoginURL.
+func (c *controlServiceClient) GetSSOLoginURL(ctx context.Context, req *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error) {
+	return c.getSSOLoginURL.CallUnary(ctx, req)
+}
+
+// SSOCallback calls pm.v1.ControlService.SSOCallback.
+func (c *controlServiceClient) SSOCallback(ctx context.Context, req *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error) {
+	return c.sSOCallback.CallUnary(ctx, req)
+}
+
+// CreateIdentityProvider calls pm.v1.ControlService.CreateIdentityProvider.
+func (c *controlServiceClient) CreateIdentityProvider(ctx context.Context, req *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error) {
+	return c.createIdentityProvider.CallUnary(ctx, req)
+}
+
+// GetIdentityProvider calls pm.v1.ControlService.GetIdentityProvider.
+func (c *controlServiceClient) GetIdentityProvider(ctx context.Context, req *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error) {
+	return c.getIdentityProvider.CallUnary(ctx, req)
+}
+
+// ListIdentityProviders calls pm.v1.ControlService.ListIdentityProviders.
+func (c *controlServiceClient) ListIdentityProviders(ctx context.Context, req *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error) {
+	return c.listIdentityProviders.CallUnary(ctx, req)
+}
+
+// UpdateIdentityProvider calls pm.v1.ControlService.UpdateIdentityProvider.
+func (c *controlServiceClient) UpdateIdentityProvider(ctx context.Context, req *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error) {
+	return c.updateIdentityProvider.CallUnary(ctx, req)
+}
+
+// DeleteIdentityProvider calls pm.v1.ControlService.DeleteIdentityProvider.
+func (c *controlServiceClient) DeleteIdentityProvider(ctx context.Context, req *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error) {
+	return c.deleteIdentityProvider.CallUnary(ctx, req)
+}
+
+// ListIdentityLinks calls pm.v1.ControlService.ListIdentityLinks.
+func (c *controlServiceClient) ListIdentityLinks(ctx context.Context, req *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error) {
+	return c.listIdentityLinks.CallUnary(ctx, req)
+}
+
+// UnlinkIdentity calls pm.v1.ControlService.UnlinkIdentity.
+func (c *controlServiceClient) UnlinkIdentity(ctx context.Context, req *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error) {
+	return c.unlinkIdentity.CallUnary(ctx, req)
 }
 
 // CreateUser calls pm.v1.ControlService.CreateUser.
@@ -1878,6 +2039,17 @@ type ControlServiceHandler interface {
 	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
 	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
 	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
+	// SSO / Identity Providers
+	ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error)
+	GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error)
+	SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error)
+	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error)
+	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error)
+	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error)
+	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error)
+	ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error)
+	UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -2068,6 +2240,66 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceRegenerateBackupCodesProcedure,
 		svc.RegenerateBackupCodes,
 		connect.WithSchema(controlServiceMethods.ByName("RegenerateBackupCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListAuthMethodsHandler := connect.NewUnaryHandler(
+		ControlServiceListAuthMethodsProcedure,
+		svc.ListAuthMethods,
+		connect.WithSchema(controlServiceMethods.ByName("ListAuthMethods")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetSSOLoginURLHandler := connect.NewUnaryHandler(
+		ControlServiceGetSSOLoginURLProcedure,
+		svc.GetSSOLoginURL,
+		connect.WithSchema(controlServiceMethods.ByName("GetSSOLoginURL")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSSOCallbackHandler := connect.NewUnaryHandler(
+		ControlServiceSSOCallbackProcedure,
+		svc.SSOCallback,
+		connect.WithSchema(controlServiceMethods.ByName("SSOCallback")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceCreateIdentityProviderProcedure,
+		svc.CreateIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("CreateIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceGetIdentityProviderProcedure,
+		svc.GetIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("GetIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListIdentityProvidersHandler := connect.NewUnaryHandler(
+		ControlServiceListIdentityProvidersProcedure,
+		svc.ListIdentityProviders,
+		connect.WithSchema(controlServiceMethods.ByName("ListIdentityProviders")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateIdentityProviderProcedure,
+		svc.UpdateIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteIdentityProviderProcedure,
+		svc.DeleteIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListIdentityLinksHandler := connect.NewUnaryHandler(
+		ControlServiceListIdentityLinksProcedure,
+		svc.ListIdentityLinks,
+		connect.WithSchema(controlServiceMethods.ByName("ListIdentityLinks")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUnlinkIdentityHandler := connect.NewUnaryHandler(
+		ControlServiceUnlinkIdentityProcedure,
+		svc.UnlinkIdentity,
+		connect.WithSchema(controlServiceMethods.ByName("UnlinkIdentity")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceCreateUserHandler := connect.NewUnaryHandler(
@@ -2700,6 +2932,26 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetTOTPStatusHandler.ServeHTTP(w, r)
 		case ControlServiceRegenerateBackupCodesProcedure:
 			controlServiceRegenerateBackupCodesHandler.ServeHTTP(w, r)
+		case ControlServiceListAuthMethodsProcedure:
+			controlServiceListAuthMethodsHandler.ServeHTTP(w, r)
+		case ControlServiceGetSSOLoginURLProcedure:
+			controlServiceGetSSOLoginURLHandler.ServeHTTP(w, r)
+		case ControlServiceSSOCallbackProcedure:
+			controlServiceSSOCallbackHandler.ServeHTTP(w, r)
+		case ControlServiceCreateIdentityProviderProcedure:
+			controlServiceCreateIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceGetIdentityProviderProcedure:
+			controlServiceGetIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceListIdentityProvidersProcedure:
+			controlServiceListIdentityProvidersHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateIdentityProviderProcedure:
+			controlServiceUpdateIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteIdentityProviderProcedure:
+			controlServiceDeleteIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceListIdentityLinksProcedure:
+			controlServiceListIdentityLinksHandler.ServeHTTP(w, r)
+		case ControlServiceUnlinkIdentityProcedure:
+			controlServiceUnlinkIdentityHandler.ServeHTTP(w, r)
 		case ControlServiceCreateUserProcedure:
 			controlServiceCreateUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetUserProcedure:
@@ -2953,6 +3205,46 @@ func (UnimplementedControlServiceHandler) GetTOTPStatus(context.Context, *connec
 
 func (UnimplementedControlServiceHandler) RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RegenerateBackupCodes is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAuthMethods is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetSSOLoginURL is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SSOCallback is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListIdentityProviders is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListIdentityLinks is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UnlinkIdentity is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {

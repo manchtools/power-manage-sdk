@@ -165,6 +165,8 @@ message User {
   bool disabled = 6;
   repeated Role roles = 7;
   bool totp_enabled = 8;
+  bool has_password = 9;
+  repeated IdentityLink identity_links = 10;
 }
 
 message Role {
@@ -1656,6 +1658,198 @@ message ListUserGroupsForUserResponse {
 }
 
 // ============================================================================
+// Identity Providers (OIDC SSO)
+// ============================================================================
+
+message IdentityProvider {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string provider_type = 4;  // "oidc"
+  bool enabled = 5;
+  string client_id = 6;
+  // client_secret is not returned in responses (write-only).
+  string issuer_url = 7;
+  string authorization_url = 8;
+  string token_url = 9;
+  string userinfo_url = 10;
+  repeated string scopes = 11;
+  bool auto_create_users = 12;
+  bool auto_link_by_email = 13;
+  string default_role_id = 14;
+  bool disable_password_for_linked = 15;
+  string group_claim = 16;
+  map<string, string> group_mapping = 17;  // external group name → user_group_id
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+}
+
+message IdentityLink {
+  string id = 1;
+  string user_id = 2;
+  string provider_id = 3;
+  string provider_name = 4;
+  string provider_slug = 5;
+  string external_id = 6;
+  string external_email = 7;
+  string external_name = 8;
+  google.protobuf.Timestamp linked_at = 9;
+  google.protobuf.Timestamp last_login_at = 10;
+}
+
+message CreateIdentityProviderRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 1;
+  // @gotags: validate:"required,min=1,max=64,alphanum"
+  string slug = 2;
+  // @gotags: validate:"required,oneof=oidc"
+  string provider_type = 3;
+  // @gotags: validate:"required,min=1"
+  string client_id = 4;
+  // @gotags: validate:"required,min=1"
+  string client_secret = 5;
+  // @gotags: validate:"required,url"
+  string issuer_url = 6;
+  string authorization_url = 7;
+  string token_url = 8;
+  string userinfo_url = 9;
+  repeated string scopes = 10;
+  bool auto_create_users = 11;
+  bool auto_link_by_email = 12;
+  string default_role_id = 13;
+  bool disable_password_for_linked = 14;
+  string group_claim = 15;
+  map<string, string> group_mapping = 16;
+}
+
+message CreateIdentityProviderResponse {
+  IdentityProvider provider = 1;
+}
+
+message GetIdentityProviderRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetIdentityProviderResponse {
+  IdentityProvider provider = 1;
+}
+
+message ListIdentityProvidersRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListIdentityProvidersResponse {
+  repeated IdentityProvider providers = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateIdentityProviderRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  bool enabled = 3;
+  string client_id = 4;
+  // If empty, the existing secret is kept.
+  string client_secret = 5;
+  string issuer_url = 6;
+  string authorization_url = 7;
+  string token_url = 8;
+  string userinfo_url = 9;
+  repeated string scopes = 10;
+  bool auto_create_users = 11;
+  bool auto_link_by_email = 12;
+  string default_role_id = 13;
+  bool disable_password_for_linked = 14;
+  string group_claim = 15;
+  map<string, string> group_mapping = 16;
+}
+
+message UpdateIdentityProviderResponse {
+  IdentityProvider provider = 1;
+}
+
+message DeleteIdentityProviderRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteIdentityProviderResponse {}
+
+// ============================================================================
+// SSO Authentication Flow
+// ============================================================================
+
+message AuthMethodProvider {
+  string slug = 1;
+  string name = 2;
+  string provider_type = 3;
+}
+
+message ListAuthMethodsRequest {
+  // Optional email to check user-specific auth methods.
+  string email = 1;
+}
+
+message ListAuthMethodsResponse {
+  bool password_enabled = 1;
+  bool totp_enabled = 2;
+  repeated AuthMethodProvider providers = 3;
+}
+
+message GetSSOLoginURLRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string slug = 1;
+  // @gotags: validate:"required,url"
+  string redirect_url = 2;
+}
+
+message GetSSOLoginURLResponse {
+  string login_url = 1;
+}
+
+message SSOCallbackRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string slug = 1;
+  // @gotags: validate:"required"
+  string code = 2;
+  // @gotags: validate:"required"
+  string state = 3;
+}
+
+message SSOCallbackResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+  // When true, TOTP verification is required before tokens are issued.
+  bool totp_required = 5;
+  string totp_challenge = 6;
+}
+
+// ============================================================================
+// Identity Linking (Self-Service)
+// ============================================================================
+
+message ListIdentityLinksRequest {}
+
+message ListIdentityLinksResponse {
+  repeated IdentityLink links = 1;
+}
+
+message UnlinkIdentityRequest {
+  // @gotags: validate:"required,ulid"
+  string link_id = 1;
+}
+
+message UnlinkIdentityResponse {}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1676,6 +1870,18 @@ service ControlService {
   rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
   rpc GetTOTPStatus(GetTOTPStatusRequest) returns (GetTOTPStatusResponse);
   rpc RegenerateBackupCodes(RegenerateBackupCodesRequest) returns (RegenerateBackupCodesResponse);
+
+  // SSO / Identity Providers
+  rpc ListAuthMethods(ListAuthMethodsRequest) returns (ListAuthMethodsResponse);
+  rpc GetSSOLoginURL(GetSSOLoginURLRequest) returns (GetSSOLoginURLResponse);
+  rpc SSOCallback(SSOCallbackRequest) returns (SSOCallbackResponse);
+  rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (CreateIdentityProviderResponse);
+  rpc GetIdentityProvider(GetIdentityProviderRequest) returns (GetIdentityProviderResponse);
+  rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse);
+  rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (UpdateIdentityProviderResponse);
+  rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (DeleteIdentityProviderResponse);
+  rpc ListIdentityLinks(ListIdentityLinksRequest) returns (ListIdentityLinksResponse);
+  rpc UnlinkIdentity(UnlinkIdentityRequest) returns (UnlinkIdentityResponse);
 
   // Users
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
