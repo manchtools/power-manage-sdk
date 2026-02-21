@@ -45,6 +45,24 @@ const (
 	// ControlServiceGetCurrentUserProcedure is the fully-qualified name of the ControlService's
 	// GetCurrentUser RPC.
 	ControlServiceGetCurrentUserProcedure = "/pm.v1.ControlService/GetCurrentUser"
+	// ControlServiceVerifyLoginTOTPProcedure is the fully-qualified name of the ControlService's
+	// VerifyLoginTOTP RPC.
+	ControlServiceVerifyLoginTOTPProcedure = "/pm.v1.ControlService/VerifyLoginTOTP"
+	// ControlServiceSetupTOTPProcedure is the fully-qualified name of the ControlService's SetupTOTP
+	// RPC.
+	ControlServiceSetupTOTPProcedure = "/pm.v1.ControlService/SetupTOTP"
+	// ControlServiceVerifyTOTPProcedure is the fully-qualified name of the ControlService's VerifyTOTP
+	// RPC.
+	ControlServiceVerifyTOTPProcedure = "/pm.v1.ControlService/VerifyTOTP"
+	// ControlServiceDisableTOTPProcedure is the fully-qualified name of the ControlService's
+	// DisableTOTP RPC.
+	ControlServiceDisableTOTPProcedure = "/pm.v1.ControlService/DisableTOTP"
+	// ControlServiceGetTOTPStatusProcedure is the fully-qualified name of the ControlService's
+	// GetTOTPStatus RPC.
+	ControlServiceGetTOTPStatusProcedure = "/pm.v1.ControlService/GetTOTPStatus"
+	// ControlServiceRegenerateBackupCodesProcedure is the fully-qualified name of the ControlService's
+	// RegenerateBackupCodes RPC.
+	ControlServiceRegenerateBackupCodesProcedure = "/pm.v1.ControlService/RegenerateBackupCodes"
 	// ControlServiceCreateUserProcedure is the fully-qualified name of the ControlService's CreateUser
 	// RPC.
 	ControlServiceCreateUserProcedure = "/pm.v1.ControlService/CreateUser"
@@ -323,6 +341,13 @@ type ControlServiceClient interface {
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	VerifyLoginTOTP(context.Context, *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error)
+	// TOTP Two-Factor Authentication
+	SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error)
+	VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error)
+	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
+	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
+	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -469,6 +494,42 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceGetCurrentUserProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("GetCurrentUser")),
+			connect.WithClientOptions(opts...),
+		),
+		verifyLoginTOTP: connect.NewClient[v1.VerifyLoginTOTPRequest, v1.VerifyLoginTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceVerifyLoginTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("VerifyLoginTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		setupTOTP: connect.NewClient[v1.SetupTOTPRequest, v1.SetupTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceSetupTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetupTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		verifyTOTP: connect.NewClient[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceVerifyTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("VerifyTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		disableTOTP: connect.NewClient[v1.DisableTOTPRequest, v1.DisableTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceDisableTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DisableTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		getTOTPStatus: connect.NewClient[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse](
+			httpClient,
+			baseURL+ControlServiceGetTOTPStatusProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetTOTPStatus")),
+			connect.WithClientOptions(opts...),
+		),
+		regenerateBackupCodes: connect.NewClient[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse](
+			httpClient,
+			baseURL+ControlServiceRegenerateBackupCodesProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RegenerateBackupCodes")),
 			connect.WithClientOptions(opts...),
 		),
 		createUser: connect.NewClient[v1.CreateUserRequest, v1.CreateUserResponse](
@@ -1021,6 +1082,12 @@ type controlServiceClient struct {
 	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 	logout                        *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
 	getCurrentUser                *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	verifyLoginTOTP               *connect.Client[v1.VerifyLoginTOTPRequest, v1.VerifyLoginTOTPResponse]
+	setupTOTP                     *connect.Client[v1.SetupTOTPRequest, v1.SetupTOTPResponse]
+	verifyTOTP                    *connect.Client[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse]
+	disableTOTP                   *connect.Client[v1.DisableTOTPRequest, v1.DisableTOTPResponse]
+	getTOTPStatus                 *connect.Client[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse]
+	regenerateBackupCodes         *connect.Client[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse]
 	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
 	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
@@ -1136,6 +1203,36 @@ func (c *controlServiceClient) Logout(ctx context.Context, req *connect.Request[
 // GetCurrentUser calls pm.v1.ControlService.GetCurrentUser.
 func (c *controlServiceClient) GetCurrentUser(ctx context.Context, req *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {
 	return c.getCurrentUser.CallUnary(ctx, req)
+}
+
+// VerifyLoginTOTP calls pm.v1.ControlService.VerifyLoginTOTP.
+func (c *controlServiceClient) VerifyLoginTOTP(ctx context.Context, req *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error) {
+	return c.verifyLoginTOTP.CallUnary(ctx, req)
+}
+
+// SetupTOTP calls pm.v1.ControlService.SetupTOTP.
+func (c *controlServiceClient) SetupTOTP(ctx context.Context, req *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error) {
+	return c.setupTOTP.CallUnary(ctx, req)
+}
+
+// VerifyTOTP calls pm.v1.ControlService.VerifyTOTP.
+func (c *controlServiceClient) VerifyTOTP(ctx context.Context, req *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error) {
+	return c.verifyTOTP.CallUnary(ctx, req)
+}
+
+// DisableTOTP calls pm.v1.ControlService.DisableTOTP.
+func (c *controlServiceClient) DisableTOTP(ctx context.Context, req *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error) {
+	return c.disableTOTP.CallUnary(ctx, req)
+}
+
+// GetTOTPStatus calls pm.v1.ControlService.GetTOTPStatus.
+func (c *controlServiceClient) GetTOTPStatus(ctx context.Context, req *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error) {
+	return c.getTOTPStatus.CallUnary(ctx, req)
+}
+
+// RegenerateBackupCodes calls pm.v1.ControlService.RegenerateBackupCodes.
+func (c *controlServiceClient) RegenerateBackupCodes(ctx context.Context, req *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error) {
+	return c.regenerateBackupCodes.CallUnary(ctx, req)
 }
 
 // CreateUser calls pm.v1.ControlService.CreateUser.
@@ -1597,6 +1694,13 @@ type ControlServiceHandler interface {
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	VerifyLoginTOTP(context.Context, *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error)
+	// TOTP Two-Factor Authentication
+	SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error)
+	VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error)
+	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
+	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
+	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -1739,6 +1843,42 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceGetCurrentUserProcedure,
 		svc.GetCurrentUser,
 		connect.WithSchema(controlServiceMethods.ByName("GetCurrentUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceVerifyLoginTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceVerifyLoginTOTPProcedure,
+		svc.VerifyLoginTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("VerifyLoginTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSetupTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceSetupTOTPProcedure,
+		svc.SetupTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("SetupTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceVerifyTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceVerifyTOTPProcedure,
+		svc.VerifyTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("VerifyTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDisableTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceDisableTOTPProcedure,
+		svc.DisableTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("DisableTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetTOTPStatusHandler := connect.NewUnaryHandler(
+		ControlServiceGetTOTPStatusProcedure,
+		svc.GetTOTPStatus,
+		connect.WithSchema(controlServiceMethods.ByName("GetTOTPStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRegenerateBackupCodesHandler := connect.NewUnaryHandler(
+		ControlServiceRegenerateBackupCodesProcedure,
+		svc.RegenerateBackupCodes,
+		connect.WithSchema(controlServiceMethods.ByName("RegenerateBackupCodes")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceCreateUserHandler := connect.NewUnaryHandler(
@@ -2293,6 +2433,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceLogoutHandler.ServeHTTP(w, r)
 		case ControlServiceGetCurrentUserProcedure:
 			controlServiceGetCurrentUserHandler.ServeHTTP(w, r)
+		case ControlServiceVerifyLoginTOTPProcedure:
+			controlServiceVerifyLoginTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceSetupTOTPProcedure:
+			controlServiceSetupTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceVerifyTOTPProcedure:
+			controlServiceVerifyTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceDisableTOTPProcedure:
+			controlServiceDisableTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceGetTOTPStatusProcedure:
+			controlServiceGetTOTPStatusHandler.ServeHTTP(w, r)
+		case ControlServiceRegenerateBackupCodesProcedure:
+			controlServiceRegenerateBackupCodesHandler.ServeHTTP(w, r)
 		case ControlServiceCreateUserProcedure:
 			controlServiceCreateUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetUserProcedure:
@@ -2500,6 +2652,30 @@ func (UnimplementedControlServiceHandler) Logout(context.Context, *connect.Reque
 
 func (UnimplementedControlServiceHandler) GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetCurrentUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) VerifyLoginTOTP(context.Context, *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.VerifyLoginTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetupTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.VerifyTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DisableTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetTOTPStatus is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RegenerateBackupCodes is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {

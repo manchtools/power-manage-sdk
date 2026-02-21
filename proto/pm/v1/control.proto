@@ -58,6 +58,11 @@ message LoginResponse {
   string refresh_token = 2;
   google.protobuf.Timestamp expires_at = 3;
   User user = 4;
+  // When true, TOTP verification is required before tokens are issued.
+  // The client must call VerifyLoginTOTP with the totp_challenge.
+  bool totp_required = 5;
+  // Short-lived challenge token for TOTP verification (only set when totp_required=true).
+  string totp_challenge = 6;
 }
 
 message RefreshTokenRequest {
@@ -85,6 +90,69 @@ message GetCurrentUserResponse {
 }
 
 // ============================================================================
+// TOTP Two-Factor Authentication
+// ============================================================================
+
+message SetupTOTPRequest {}
+
+message SetupTOTPResponse {
+  // Base32-encoded TOTP secret for manual entry.
+  string secret = 1;
+  // otpauth:// URI for QR code generation.
+  string qr_uri = 2;
+  // One-time backup codes (shown once, user must save them).
+  repeated string backup_codes = 3;
+}
+
+message VerifyTOTPRequest {
+  // @gotags: validate:"required,len=6,numeric"
+  string code = 1;
+}
+
+message VerifyTOTPResponse {
+  bool success = 1;
+}
+
+message DisableTOTPRequest {
+  // @gotags: validate:"required,min=8"
+  string password = 1;
+}
+
+message DisableTOTPResponse {}
+
+message GetTOTPStatusRequest {}
+
+message GetTOTPStatusResponse {
+  bool enabled = 1;
+  int32 backup_codes_remaining = 2;
+}
+
+message RegenerateBackupCodesRequest {
+  // @gotags: validate:"required,min=8"
+  string password = 1;
+}
+
+message RegenerateBackupCodesResponse {
+  repeated string backup_codes = 1;
+}
+
+message VerifyLoginTOTPRequest {
+  // Short-lived challenge token from LoginResponse.totp_challenge.
+  // @gotags: validate:"required"
+  string challenge = 1;
+  // 6-digit TOTP code or 8-character backup code.
+  // @gotags: validate:"required,min=6,max=8"
+  string code = 2;
+}
+
+message VerifyLoginTOTPResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+}
+
+// ============================================================================
 // Users
 // ============================================================================
 
@@ -96,6 +164,7 @@ message User {
   google.protobuf.Timestamp last_login_at = 5;
   bool disabled = 6;
   repeated Role roles = 7;
+  bool totp_enabled = 8;
 }
 
 message Role {
@@ -1471,6 +1540,14 @@ service ControlService {
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+  rpc VerifyLoginTOTP(VerifyLoginTOTPRequest) returns (VerifyLoginTOTPResponse);
+
+  // TOTP Two-Factor Authentication
+  rpc SetupTOTP(SetupTOTPRequest) returns (SetupTOTPResponse);
+  rpc VerifyTOTP(VerifyTOTPRequest) returns (VerifyTOTPResponse);
+  rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
+  rpc GetTOTPStatus(GetTOTPStatusRequest) returns (GetTOTPStatusResponse);
+  rpc RegenerateBackupCodes(RegenerateBackupCodesRequest) returns (RegenerateBackupCodesResponse);
 
   // Users
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
