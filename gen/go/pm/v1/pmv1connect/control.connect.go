@@ -93,6 +93,15 @@ const (
 	// ControlServiceUnlinkIdentityProcedure is the fully-qualified name of the ControlService's
 	// UnlinkIdentity RPC.
 	ControlServiceUnlinkIdentityProcedure = "/pm.v1.ControlService/UnlinkIdentity"
+	// ControlServiceEnableSCIMProcedure is the fully-qualified name of the ControlService's EnableSCIM
+	// RPC.
+	ControlServiceEnableSCIMProcedure = "/pm.v1.ControlService/EnableSCIM"
+	// ControlServiceDisableSCIMProcedure is the fully-qualified name of the ControlService's
+	// DisableSCIM RPC.
+	ControlServiceDisableSCIMProcedure = "/pm.v1.ControlService/DisableSCIM"
+	// ControlServiceRotateSCIMTokenProcedure is the fully-qualified name of the ControlService's
+	// RotateSCIMToken RPC.
+	ControlServiceRotateSCIMTokenProcedure = "/pm.v1.ControlService/RotateSCIMToken"
 	// ControlServiceCreateUserProcedure is the fully-qualified name of the ControlService's CreateUser
 	// RPC.
 	ControlServiceCreateUserProcedure = "/pm.v1.ControlService/CreateUser"
@@ -422,6 +431,10 @@ type ControlServiceClient interface {
 	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error)
 	ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error)
 	UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error)
+	// SCIM Provisioning
+	EnableSCIM(context.Context, *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error)
+	DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error)
+	RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -676,6 +689,24 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUnlinkIdentityProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UnlinkIdentity")),
+			connect.WithClientOptions(opts...),
+		),
+		enableSCIM: connect.NewClient[v1.EnableSCIMRequest, v1.EnableSCIMResponse](
+			httpClient,
+			baseURL+ControlServiceEnableSCIMProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("EnableSCIM")),
+			connect.WithClientOptions(opts...),
+		),
+		disableSCIM: connect.NewClient[v1.DisableSCIMRequest, v1.DisableSCIMResponse](
+			httpClient,
+			baseURL+ControlServiceDisableSCIMProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DisableSCIM")),
+			connect.WithClientOptions(opts...),
+		),
+		rotateSCIMToken: connect.NewClient[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse](
+			httpClient,
+			baseURL+ControlServiceRotateSCIMTokenProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RotateSCIMToken")),
 			connect.WithClientOptions(opts...),
 		),
 		createUser: connect.NewClient[v1.CreateUserRequest, v1.CreateUserResponse](
@@ -1310,6 +1341,9 @@ type controlServiceClient struct {
 	deleteIdentityProvider        *connect.Client[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse]
 	listIdentityLinks             *connect.Client[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse]
 	unlinkIdentity                *connect.Client[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse]
+	enableSCIM                    *connect.Client[v1.EnableSCIMRequest, v1.EnableSCIMResponse]
+	disableSCIM                   *connect.Client[v1.DisableSCIMRequest, v1.DisableSCIMResponse]
+	rotateSCIMToken               *connect.Client[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse]
 	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
 	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
@@ -1516,6 +1550,21 @@ func (c *controlServiceClient) ListIdentityLinks(ctx context.Context, req *conne
 // UnlinkIdentity calls pm.v1.ControlService.UnlinkIdentity.
 func (c *controlServiceClient) UnlinkIdentity(ctx context.Context, req *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error) {
 	return c.unlinkIdentity.CallUnary(ctx, req)
+}
+
+// EnableSCIM calls pm.v1.ControlService.EnableSCIM.
+func (c *controlServiceClient) EnableSCIM(ctx context.Context, req *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error) {
+	return c.enableSCIM.CallUnary(ctx, req)
+}
+
+// DisableSCIM calls pm.v1.ControlService.DisableSCIM.
+func (c *controlServiceClient) DisableSCIM(ctx context.Context, req *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error) {
+	return c.disableSCIM.CallUnary(ctx, req)
+}
+
+// RotateSCIMToken calls pm.v1.ControlService.RotateSCIMToken.
+func (c *controlServiceClient) RotateSCIMToken(ctx context.Context, req *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error) {
+	return c.rotateSCIMToken.CallUnary(ctx, req)
 }
 
 // CreateUser calls pm.v1.ControlService.CreateUser.
@@ -2050,6 +2099,10 @@ type ControlServiceHandler interface {
 	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error)
 	ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error)
 	UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error)
+	// SCIM Provisioning
+	EnableSCIM(context.Context, *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error)
+	DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error)
+	RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -2300,6 +2353,24 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUnlinkIdentityProcedure,
 		svc.UnlinkIdentity,
 		connect.WithSchema(controlServiceMethods.ByName("UnlinkIdentity")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceEnableSCIMHandler := connect.NewUnaryHandler(
+		ControlServiceEnableSCIMProcedure,
+		svc.EnableSCIM,
+		connect.WithSchema(controlServiceMethods.ByName("EnableSCIM")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDisableSCIMHandler := connect.NewUnaryHandler(
+		ControlServiceDisableSCIMProcedure,
+		svc.DisableSCIM,
+		connect.WithSchema(controlServiceMethods.ByName("DisableSCIM")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRotateSCIMTokenHandler := connect.NewUnaryHandler(
+		ControlServiceRotateSCIMTokenProcedure,
+		svc.RotateSCIMToken,
+		connect.WithSchema(controlServiceMethods.ByName("RotateSCIMToken")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceCreateUserHandler := connect.NewUnaryHandler(
@@ -2952,6 +3023,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListIdentityLinksHandler.ServeHTTP(w, r)
 		case ControlServiceUnlinkIdentityProcedure:
 			controlServiceUnlinkIdentityHandler.ServeHTTP(w, r)
+		case ControlServiceEnableSCIMProcedure:
+			controlServiceEnableSCIMHandler.ServeHTTP(w, r)
+		case ControlServiceDisableSCIMProcedure:
+			controlServiceDisableSCIMHandler.ServeHTTP(w, r)
+		case ControlServiceRotateSCIMTokenProcedure:
+			controlServiceRotateSCIMTokenHandler.ServeHTTP(w, r)
 		case ControlServiceCreateUserProcedure:
 			controlServiceCreateUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetUserProcedure:
@@ -3245,6 +3322,18 @@ func (UnimplementedControlServiceHandler) ListIdentityLinks(context.Context, *co
 
 func (UnimplementedControlServiceHandler) UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UnlinkIdentity is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) EnableSCIM(context.Context, *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.EnableSCIM is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DisableSCIM is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RotateSCIMToken is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {

@@ -1682,6 +1682,8 @@ message IdentityProvider {
   map<string, string> group_mapping = 17;  // external group name → user_group_id
   google.protobuf.Timestamp created_at = 18;
   google.protobuf.Timestamp updated_at = 19;
+  bool scim_enabled = 20;
+  string scim_endpoint_url = 21;  // read-only, computed by server
 }
 
 message IdentityLink {
@@ -1849,6 +1851,33 @@ message UnlinkIdentityRequest {
 
 message UnlinkIdentityResponse {}
 
+// SCIM Provisioning
+message EnableSCIMRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message EnableSCIMResponse {
+  string token = 1;        // plaintext token, shown once
+  string endpoint_url = 2; // full SCIM endpoint URL
+}
+
+message DisableSCIMRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DisableSCIMResponse {}
+
+message RotateSCIMTokenRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message RotateSCIMTokenResponse {
+  string token = 1; // new plaintext token, shown once
+}
+
 // ============================================================================
 // Service Definition
 // ============================================================================
@@ -1882,6 +1911,11 @@ service ControlService {
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (DeleteIdentityProviderResponse);
   rpc ListIdentityLinks(ListIdentityLinksRequest) returns (ListIdentityLinksResponse);
   rpc UnlinkIdentity(UnlinkIdentityRequest) returns (UnlinkIdentityResponse);
+
+  // SCIM Provisioning
+  rpc EnableSCIM(EnableSCIMRequest) returns (EnableSCIMResponse);
+  rpc DisableSCIM(DisableSCIMRequest) returns (DisableSCIMResponse);
+  rpc RotateSCIMToken(RotateSCIMTokenRequest) returns (RotateSCIMTokenResponse);
 
   // Users
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
