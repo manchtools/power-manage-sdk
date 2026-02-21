@@ -247,6 +247,9 @@ const (
 	// ControlServiceGetDeviceAssignmentsProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceAssignments RPC.
 	ControlServiceGetDeviceAssignmentsProcedure = "/pm.v1.ControlService/GetDeviceAssignments"
+	// ControlServiceGetUserAssignmentsProcedure is the fully-qualified name of the ControlService's
+	// GetUserAssignments RPC.
+	ControlServiceGetUserAssignmentsProcedure = "/pm.v1.ControlService/GetUserAssignments"
 	// ControlServiceSetUserSelectionProcedure is the fully-qualified name of the ControlService's
 	// SetUserSelection RPC.
 	ControlServiceSetUserSelectionProcedure = "/pm.v1.ControlService/SetUserSelection"
@@ -448,6 +451,7 @@ type ControlServiceClient interface {
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
 	ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error)
 	GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error)
+	GetUserAssignments(context.Context, *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error)
 	// User Selections (for available assignments)
 	SetUserSelection(context.Context, *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error)
 	ListAvailableActions(context.Context, *connect.Request[v1.ListAvailableActionsRequest]) (*connect.Response[v1.ListAvailableActionsResponse], error)
@@ -945,6 +949,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("GetDeviceAssignments")),
 			connect.WithClientOptions(opts...),
 		),
+		getUserAssignments: connect.NewClient[v1.GetUserAssignmentsRequest, v1.GetUserAssignmentsResponse](
+			httpClient,
+			baseURL+ControlServiceGetUserAssignmentsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetUserAssignments")),
+			connect.WithClientOptions(opts...),
+		),
 		setUserSelection: connect.NewClient[v1.SetUserSelectionRequest, v1.SetUserSelectionResponse](
 			httpClient,
 			baseURL+ControlServiceSetUserSelectionProcedure,
@@ -1251,6 +1261,7 @@ type controlServiceClient struct {
 	deleteAssignment              *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
 	listAssignments               *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
 	getDeviceAssignments          *connect.Client[v1.GetDeviceAssignmentsRequest, v1.GetDeviceAssignmentsResponse]
+	getUserAssignments            *connect.Client[v1.GetUserAssignmentsRequest, v1.GetUserAssignmentsResponse]
 	setUserSelection              *connect.Client[v1.SetUserSelectionRequest, v1.SetUserSelectionResponse]
 	listAvailableActions          *connect.Client[v1.ListAvailableActionsRequest, v1.ListAvailableActionsResponse]
 	dispatchAction                *connect.Client[v1.DispatchActionRequest, v1.DispatchActionResponse]
@@ -1656,6 +1667,11 @@ func (c *controlServiceClient) GetDeviceAssignments(ctx context.Context, req *co
 	return c.getDeviceAssignments.CallUnary(ctx, req)
 }
 
+// GetUserAssignments calls pm.v1.ControlService.GetUserAssignments.
+func (c *controlServiceClient) GetUserAssignments(ctx context.Context, req *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error) {
+	return c.getUserAssignments.CallUnary(ctx, req)
+}
+
 // SetUserSelection calls pm.v1.ControlService.SetUserSelection.
 func (c *controlServiceClient) SetUserSelection(ctx context.Context, req *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error) {
 	return c.setUserSelection.CallUnary(ctx, req)
@@ -1932,6 +1948,7 @@ type ControlServiceHandler interface {
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
 	ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error)
 	GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error)
+	GetUserAssignments(context.Context, *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error)
 	// User Selections (for available assignments)
 	SetUserSelection(context.Context, *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error)
 	ListAvailableActions(context.Context, *connect.Request[v1.ListAvailableActionsRequest]) (*connect.Response[v1.ListAvailableActionsResponse], error)
@@ -2425,6 +2442,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("GetDeviceAssignments")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceGetUserAssignmentsHandler := connect.NewUnaryHandler(
+		ControlServiceGetUserAssignmentsProcedure,
+		svc.GetUserAssignments,
+		connect.WithSchema(controlServiceMethods.ByName("GetUserAssignments")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceSetUserSelectionHandler := connect.NewUnaryHandler(
 		ControlServiceSetUserSelectionProcedure,
 		svc.SetUserSelection,
@@ -2801,6 +2824,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListAssignmentsHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceAssignmentsProcedure:
 			controlServiceGetDeviceAssignmentsHandler.ServeHTTP(w, r)
+		case ControlServiceGetUserAssignmentsProcedure:
+			controlServiceGetUserAssignmentsHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserSelectionProcedure:
 			controlServiceSetUserSelectionHandler.ServeHTTP(w, r)
 		case ControlServiceListAvailableActionsProcedure:
@@ -3176,6 +3201,10 @@ func (UnimplementedControlServiceHandler) ListAssignments(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceAssignments is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetUserAssignments(context.Context, *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetUserAssignments is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) SetUserSelection(context.Context, *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error) {

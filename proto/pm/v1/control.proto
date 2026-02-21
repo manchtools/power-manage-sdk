@@ -1016,7 +1016,7 @@ message CreateAssignmentRequest {
   string source_type = 1;
   // @gotags: validate:"required,ulid"
   string source_id = 2;
-  // @gotags: validate:"required,oneof=device device_group"
+  // @gotags: validate:"required,oneof=device device_group user user_group"
   string target_type = 3;
   // @gotags: validate:"required,ulid"
   string target_id = 4;
@@ -1040,7 +1040,7 @@ message ListAssignmentsRequest {
   string source_type = 1;
   // @gotags: validate:"omitempty,ulid"
   string source_id = 2;
-  // @gotags: validate:"omitempty,oneof=device device_group"
+  // @gotags: validate:"omitempty,oneof=device device_group user user_group"
   string target_type = 3;
   // @gotags: validate:"omitempty,ulid"
   string target_id = 4;
@@ -1111,6 +1111,16 @@ message GetDeviceAssignmentsResponse {
   repeated ManagedAction actions = 1;
   repeated ActionSet action_sets = 2;
   repeated Definition definitions = 3;
+}
+
+// Get all assignments targeting a user (directly or via user groups)
+message GetUserAssignmentsRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+}
+
+message GetUserAssignmentsResponse {
+  repeated Assignment assignments = 1;
 }
 
 // ============================================================================
@@ -1744,6 +1754,7 @@ service ControlService {
   rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse);
   rpc ListAssignments(ListAssignmentsRequest) returns (ListAssignmentsResponse);
   rpc GetDeviceAssignments(GetDeviceAssignmentsRequest) returns (GetDeviceAssignmentsResponse);
+  rpc GetUserAssignments(GetUserAssignmentsRequest) returns (GetUserAssignmentsResponse);
 
   // User Selections (for available assignments)
   rpc SetUserSelection(SetUserSelectionRequest) returns (SetUserSelectionResponse);
