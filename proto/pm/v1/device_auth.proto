@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package pm.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+
+import "pm/v1/control.proto";
+
+// ============================================================================
+// Device Authentication Service (Agent Local Socket)
+//
+// This service runs on the agent's local unix socket (/run/pm-agent/auth.sock)
+// and is consumed by the PAM module (pam_pm.so) and NSS module (libnss_pm.so).
+// It proxies authentication requests to the PM server via the agent's mTLS
+// gateway connection.
+// ============================================================================
+
+service DeviceAuthService {
+  // Authenticate a user for device login (SSH, sudo, display manager).
+  // Called by pam_pm.so during pam_sm_authenticate().
+  rpc Authenticate(DeviceAuthRequest) returns (DeviceAuthResponse);
+
+  // Validate an existing session token (for sudo re-auth without password).
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+
+  // Look up a single user by username or UID (for NSS getpwnam/getpwuid).
+  rpc GetUser(GetDeviceUserRequest) returns (GetDeviceUserResponse);
+
+  // List all users authorized for this device (for NSS enumeration).
+  rpc ListUsers(ListDeviceUsersLocalRequest) returns (ListDeviceUsersLocalResponse);
+
+  // Get the browser login URL for OIDC-only users on graphical sessions.
+  // Called by pam_pm.so when it detects a display manager + OIDC-only user.
+  rpc GetLoginURL(GetLoginURLRequest) returns (GetLoginURLResponse);
+
+  // Complete a browser-based login after the localhost callback is received.
+  rpc CompleteLogin(CompleteLoginRequest) returns (CompleteLoginResponse);
+}
+
+// ============================================================================
+// Authentication
+// ============================================================================
+
+message DeviceAuthRequest {
+  // @gotags: validate:"required,min=1,max=254"
+  string username = 1;         // PM email or local username
+  string password = 2;         // PM password (empty = probe for auth method)
+  string totp_code = 3;        // Optional TOTP 2FA code
+}
+
+message DeviceAuthResponse {
+  bool success = 1;
+  bool password_required = 2;  // User has PM password, prompt for it
+  bool oidc_required = 3;      // User is OIDC-only, needs browser flow
+  bool totp_required = 4;      // TOTP 2FA needed, prompt for code
+  string error = 5;
+  DeviceUserInfo user = 6;     // User metadata (populated on success)
+  string session_token = 7;    // Cached for sudo re-auth
+  int64 session_ttl_seconds = 8;
+}
+
+// ============================================================================
+// Session Validation
+// ============================================================================
+
+message ValidateSessionRequest {
+  // @gotags: validate:"required"
+  string session_token = 1;
+  // @gotags: validate:"required,min=1,max=254"
+  string username = 2;
+}
+
+message ValidateSessionResponse {
+  bool valid = 1;
+  DeviceUserInfo user = 2;
+}
+
+// ============================================================================
+// User Lookup (NSS)
+// ============================================================================
+
+message GetDeviceUserRequest {
+  string username = 1;         // Lookup by username
+  uint32 uid = 2;              // Or lookup by UID
+}
+
+message GetDeviceUserResponse {
+  DeviceUserInfo user = 1;
+}
+
+message ListDeviceUsersLocalRequest {}
+
+message ListDeviceUsersLocalResponse {
+  repeated DeviceUserInfo users = 1;
+}
+
+// ============================================================================
+// Browser Login (Display Manager OIDC Flow)
+// ============================================================================
+
+message GetLoginURLRequest {
+  // @gotags: validate:"required,min=1,max=65535"
+  int32 callback_port = 1;     // localhost port PAM is listening on
+  // @gotags: validate:"required,min=1,max=254"
+  string username = 2;         // Pre-fill email on login page
+}
+
+message GetLoginURLResponse {
+  string login_url = 1;        // Full URL to open in browser
+}
+
+message CompleteLoginRequest {
+  // @gotags: validate:"required"
+  string callback_token = 1;   // Token from browser redirect
+}
+
+message CompleteLoginResponse {
+  bool success = 1;
+  string error = 2;
+  DeviceUserInfo user = 3;
+  string session_token = 4;
+  int64 session_ttl_seconds = 5;
+}
+
+// DeviceUserInfo is defined in control.proto (same package)

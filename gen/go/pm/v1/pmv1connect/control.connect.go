@@ -402,6 +402,18 @@ const (
 	// ControlServiceListUserGroupsForUserProcedure is the fully-qualified name of the ControlService's
 	// ListUserGroupsForUser RPC.
 	ControlServiceListUserGroupsForUserProcedure = "/pm.v1.ControlService/ListUserGroupsForUser"
+	// ControlServiceAuthenticateDeviceUserProcedure is the fully-qualified name of the ControlService's
+	// AuthenticateDeviceUser RPC.
+	ControlServiceAuthenticateDeviceUserProcedure = "/pm.v1.ControlService/AuthenticateDeviceUser"
+	// ControlServiceGetDeviceLoginURLProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceLoginURL RPC.
+	ControlServiceGetDeviceLoginURLProcedure = "/pm.v1.ControlService/GetDeviceLoginURL"
+	// ControlServiceDeviceLoginCallbackProcedure is the fully-qualified name of the ControlService's
+	// DeviceLoginCallback RPC.
+	ControlServiceDeviceLoginCallbackProcedure = "/pm.v1.ControlService/DeviceLoginCallback"
+	// ControlServiceListDeviceUsersProcedure is the fully-qualified name of the ControlService's
+	// ListDeviceUsers RPC.
+	ControlServiceListDeviceUsersProcedure = "/pm.v1.ControlService/ListDeviceUsers"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -552,6 +564,11 @@ type ControlServiceClient interface {
 	AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error)
 	RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error)
 	ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error)
+	// Device Authentication (PAM/NSS device login)
+	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
+	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
+	DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error)
+	ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -1315,6 +1332,30 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListUserGroupsForUser")),
 			connect.WithClientOptions(opts...),
 		),
+		authenticateDeviceUser: connect.NewClient[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse](
+			httpClient,
+			baseURL+ControlServiceAuthenticateDeviceUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AuthenticateDeviceUser")),
+			connect.WithClientOptions(opts...),
+		),
+		getDeviceLoginURL: connect.NewClient[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceLoginURLProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLoginURL")),
+			connect.WithClientOptions(opts...),
+		),
+		deviceLoginCallback: connect.NewClient[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse](
+			httpClient,
+			baseURL+ControlServiceDeviceLoginCallbackProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeviceLoginCallback")),
+			connect.WithClientOptions(opts...),
+		),
+		listDeviceUsers: connect.NewClient[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse](
+			httpClient,
+			baseURL+ControlServiceListDeviceUsersProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListDeviceUsers")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1445,6 +1486,10 @@ type controlServiceClient struct {
 	assignRoleToUserGroup         *connect.Client[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse]
 	revokeRoleFromUserGroup       *connect.Client[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse]
 	listUserGroupsForUser         *connect.Client[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse]
+	authenticateDeviceUser        *connect.Client[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse]
+	getDeviceLoginURL             *connect.Client[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse]
+	deviceLoginCallback           *connect.Client[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse]
+	listDeviceUsers               *connect.Client[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -2072,6 +2117,26 @@ func (c *controlServiceClient) ListUserGroupsForUser(ctx context.Context, req *c
 	return c.listUserGroupsForUser.CallUnary(ctx, req)
 }
 
+// AuthenticateDeviceUser calls pm.v1.ControlService.AuthenticateDeviceUser.
+func (c *controlServiceClient) AuthenticateDeviceUser(ctx context.Context, req *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
+	return c.authenticateDeviceUser.CallUnary(ctx, req)
+}
+
+// GetDeviceLoginURL calls pm.v1.ControlService.GetDeviceLoginURL.
+func (c *controlServiceClient) GetDeviceLoginURL(ctx context.Context, req *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error) {
+	return c.getDeviceLoginURL.CallUnary(ctx, req)
+}
+
+// DeviceLoginCallback calls pm.v1.ControlService.DeviceLoginCallback.
+func (c *controlServiceClient) DeviceLoginCallback(ctx context.Context, req *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error) {
+	return c.deviceLoginCallback.CallUnary(ctx, req)
+}
+
+// ListDeviceUsers calls pm.v1.ControlService.ListDeviceUsers.
+func (c *controlServiceClient) ListDeviceUsers(ctx context.Context, req *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error) {
+	return c.listDeviceUsers.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -2220,6 +2285,11 @@ type ControlServiceHandler interface {
 	AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error)
 	RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error)
 	ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error)
+	// Device Authentication (PAM/NSS device login)
+	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
+	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
+	DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error)
+	ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -2979,6 +3049,30 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ListUserGroupsForUser")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceAuthenticateDeviceUserHandler := connect.NewUnaryHandler(
+		ControlServiceAuthenticateDeviceUserProcedure,
+		svc.AuthenticateDeviceUser,
+		connect.WithSchema(controlServiceMethods.ByName("AuthenticateDeviceUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetDeviceLoginURLHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceLoginURLProcedure,
+		svc.GetDeviceLoginURL,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLoginURL")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeviceLoginCallbackHandler := connect.NewUnaryHandler(
+		ControlServiceDeviceLoginCallbackProcedure,
+		svc.DeviceLoginCallback,
+		connect.WithSchema(controlServiceMethods.ByName("DeviceLoginCallback")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListDeviceUsersHandler := connect.NewUnaryHandler(
+		ControlServiceListDeviceUsersProcedure,
+		svc.ListDeviceUsers,
+		connect.WithSchema(controlServiceMethods.ByName("ListDeviceUsers")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -3231,6 +3325,14 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRevokeRoleFromUserGroupHandler.ServeHTTP(w, r)
 		case ControlServiceListUserGroupsForUserProcedure:
 			controlServiceListUserGroupsForUserHandler.ServeHTTP(w, r)
+		case ControlServiceAuthenticateDeviceUserProcedure:
+			controlServiceAuthenticateDeviceUserHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceLoginURLProcedure:
+			controlServiceGetDeviceLoginURLHandler.ServeHTTP(w, r)
+		case ControlServiceDeviceLoginCallbackProcedure:
+			controlServiceDeviceLoginCallbackHandler.ServeHTTP(w, r)
+		case ControlServiceListDeviceUsersProcedure:
+			controlServiceListDeviceUsersHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -3738,4 +3840,20 @@ func (UnimplementedControlServiceHandler) RevokeRoleFromUserGroup(context.Contex
 
 func (UnimplementedControlServiceHandler) ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListUserGroupsForUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AuthenticateDeviceUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceLoginURL is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeviceLoginCallback is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceUsers is not implemented"))
 }
