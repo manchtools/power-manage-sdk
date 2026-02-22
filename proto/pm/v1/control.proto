@@ -58,6 +58,11 @@ message LoginResponse {
   string refresh_token = 2;
   google.protobuf.Timestamp expires_at = 3;
   User user = 4;
+  // When true, TOTP verification is required before tokens are issued.
+  // The client must call VerifyLoginTOTP with the totp_challenge.
+  bool totp_required = 5;
+  // Short-lived challenge token for TOTP verification (only set when totp_required=true).
+  string totp_challenge = 6;
 }
 
 message RefreshTokenRequest {
@@ -85,16 +90,99 @@ message GetCurrentUserResponse {
 }
 
 // ============================================================================
+// TOTP Two-Factor Authentication
+// ============================================================================
+
+message SetupTOTPRequest {}
+
+message SetupTOTPResponse {
+  // Base32-encoded TOTP secret for manual entry.
+  string secret = 1;
+  // otpauth:// URI for QR code generation.
+  string qr_uri = 2;
+  // One-time backup codes (shown once, user must save them).
+  repeated string backup_codes = 3;
+}
+
+message VerifyTOTPRequest {
+  // @gotags: validate:"required,len=6,numeric"
+  string code = 1;
+}
+
+message VerifyTOTPResponse {
+  bool success = 1;
+}
+
+message DisableTOTPRequest {
+  // @gotags: validate:"required,min=8"
+  string password = 1;
+}
+
+message DisableTOTPResponse {}
+
+message GetTOTPStatusRequest {}
+
+message GetTOTPStatusResponse {
+  bool enabled = 1;
+  int32 backup_codes_remaining = 2;
+}
+
+message RegenerateBackupCodesRequest {
+  // @gotags: validate:"required,min=8"
+  string password = 1;
+}
+
+message RegenerateBackupCodesResponse {
+  repeated string backup_codes = 1;
+}
+
+message VerifyLoginTOTPRequest {
+  // Short-lived challenge token from LoginResponse.totp_challenge.
+  // @gotags: validate:"required"
+  string challenge = 1;
+  // 6-digit TOTP code or 8-character backup code.
+  // @gotags: validate:"required,min=6,max=8"
+  string code = 2;
+}
+
+message VerifyLoginTOTPResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+}
+
+// ============================================================================
 // Users
 // ============================================================================
 
 message User {
   string id = 1;
   string email = 2;
-  string role = 3;  // "admin" or "user"
+  reserved 3;  // was: string role
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp last_login_at = 5;
   bool disabled = 6;
+  repeated Role roles = 7;
+  bool totp_enabled = 8;
+  bool has_password = 9;
+  repeated IdentityLink identity_links = 10;
+}
+
+message Role {
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  string description = 3;
+  repeated string permissions = 4;
+  google.protobuf.Timestamp created_at = 5;
+  bool is_system = 6;
+}
+
+message PermissionInfo {
+  string key = 1;
+  string group = 2;
+  string description = 3;
 }
 
 message CreateUserRequest {
@@ -102,8 +190,8 @@ message CreateUserRequest {
   string email = 1;
   // @gotags: validate:"required,min=8"
   string password = 2;
-  // @gotags: validate:"required,oneof=admin user"
-  string role = 3;
+  // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
+  repeated string role_ids = 3;
 }
 
 message CreateUserResponse {
@@ -147,13 +235,6 @@ message UpdateUserPasswordRequest {
   string current_password = 2;  // Required for self-update
   // @gotags: validate:"required,min=8"
   string new_password = 3;
-}
-
-message UpdateUserRoleRequest {
-  // @gotags: validate:"required,ulid"
-  string id = 1;
-  // @gotags: validate:"required,oneof=admin user"
-  string role = 2;  // "admin" or "user"
 }
 
 message SetUserDisabledRequest {
@@ -937,7 +1018,7 @@ message CreateAssignmentRequest {
   string source_type = 1;
   // @gotags: validate:"required,ulid"
   string source_id = 2;
-  // @gotags: validate:"required,oneof=device device_group"
+  // @gotags: validate:"required,oneof=device device_group user user_group"
   string target_type = 3;
   // @gotags: validate:"required,ulid"
   string target_id = 4;
@@ -961,7 +1042,7 @@ message ListAssignmentsRequest {
   string source_type = 1;
   // @gotags: validate:"omitempty,ulid"
   string source_id = 2;
-  // @gotags: validate:"omitempty,oneof=device device_group"
+  // @gotags: validate:"omitempty,oneof=device device_group user user_group"
   string target_type = 3;
   // @gotags: validate:"omitempty,ulid"
   string target_id = 4;
@@ -1032,6 +1113,16 @@ message GetDeviceAssignmentsResponse {
   repeated ManagedAction actions = 1;
   repeated ActionSet action_sets = 2;
   repeated Definition definitions = 3;
+}
+
+// Get all assignments targeting a user (directly or via user groups)
+message GetUserAssignmentsRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+}
+
+message GetUserAssignmentsResponse {
+  repeated Assignment assignments = 1;
 }
 
 // ============================================================================
@@ -1307,12 +1398,15 @@ message RevokeLuksDeviceKeyResponse {}
 message DispatchOSQueryRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,min=1,max=64"
+  // @gotags: validate:"required_without=RawSql,omitempty,min=1,max=64"
   string table = 2;
   // @gotags: validate:"omitempty,dive,max=64"
   repeated string columns = 3;
   // @gotags: validate:"omitempty,gte=0,lte=10000"
   int32 limit = 4;
+  // Raw SQL query — when set, table/columns/limit are ignored.
+  // @gotags: validate:"omitempty,max=4096"
+  string raw_sql = 5;
 }
 
 message DispatchOSQueryResponse {
@@ -1360,6 +1454,431 @@ message RefreshDeviceInventoryRequest {
 message RefreshDeviceInventoryResponse {}
 
 // ============================================================================
+// Roles & Permissions
+// ============================================================================
+
+message CreateRoleRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+  // @gotags: validate:"omitempty"
+  repeated string permissions = 3;
+}
+
+message CreateRoleResponse {
+  Role role = 1;
+}
+
+message GetRoleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetRoleResponse {
+  Role role = 1;
+  int32 user_count = 2;
+}
+
+message ListRolesRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateRoleRequest {
+  // @gotags: validate:"required,ulid"
+  string role_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 3;
+  // @gotags: validate:"required,min=1"
+  repeated string permissions = 4;
+}
+
+message UpdateRoleResponse {
+  Role role = 1;
+}
+
+message DeleteRoleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteRoleResponse {}
+
+message AssignRoleToUserRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message AssignRoleToUserResponse {}
+
+message RevokeRoleFromUserRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message RevokeRoleFromUserResponse {}
+
+message ListPermissionsRequest {}
+
+message ListPermissionsResponse {
+  repeated PermissionInfo permissions = 1;
+}
+
+// ============================================================================
+// User Groups
+// ============================================================================
+
+message UserGroup {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 member_count = 4;
+  repeated Role roles = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message UserGroupMember {
+  string user_id = 1;
+  string email = 2;
+  google.protobuf.Timestamp added_at = 3;
+}
+
+message CreateUserGroupRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateUserGroupResponse {
+  UserGroup group = 1;
+}
+
+message GetUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetUserGroupResponse {
+  UserGroup group = 1;
+  repeated UserGroupMember members = 2;
+}
+
+message ListUserGroupsRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListUserGroupsResponse {
+  repeated UserGroup groups = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 3;
+}
+
+message UpdateUserGroupResponse {
+  UserGroup group = 1;
+}
+
+message DeleteUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteUserGroupResponse {}
+
+message AddUserToGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string user_id = 2;
+}
+
+message AddUserToGroupResponse {}
+
+message RemoveUserFromGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string user_id = 2;
+}
+
+message RemoveUserFromGroupResponse {}
+
+message AssignRoleToUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message AssignRoleToUserGroupResponse {}
+
+message RevokeRoleFromUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string group_id = 1;
+  // @gotags: validate:"required,ulid"
+  string role_id = 2;
+}
+
+message RevokeRoleFromUserGroupResponse {}
+
+message ListUserGroupsForUserRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+}
+
+message ListUserGroupsForUserResponse {
+  repeated UserGroup groups = 1;
+}
+
+// ============================================================================
+// Identity Providers (OIDC SSO)
+// ============================================================================
+
+message IdentityProvider {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string provider_type = 4;  // "oidc"
+  bool enabled = 5;
+  string client_id = 6;
+  // client_secret is not returned in responses (write-only).
+  string issuer_url = 7;
+  string authorization_url = 8;
+  string token_url = 9;
+  string userinfo_url = 10;
+  repeated string scopes = 11;
+  bool auto_create_users = 12;
+  bool auto_link_by_email = 13;
+  string default_role_id = 14;
+  bool disable_password_for_linked = 15;
+  string group_claim = 16;
+  map<string, string> group_mapping = 17;  // external group name → user_group_id
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+  bool scim_enabled = 20;
+  string scim_endpoint_url = 21;  // read-only, computed by server
+}
+
+message IdentityLink {
+  string id = 1;
+  string user_id = 2;
+  string provider_id = 3;
+  string provider_name = 4;
+  string provider_slug = 5;
+  string external_id = 6;
+  string external_email = 7;
+  string external_name = 8;
+  google.protobuf.Timestamp linked_at = 9;
+  google.protobuf.Timestamp last_login_at = 10;
+}
+
+message CreateIdentityProviderRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 1;
+  // @gotags: validate:"required,min=1,max=64,alphanum"
+  string slug = 2;
+  // @gotags: validate:"required,oneof=oidc"
+  string provider_type = 3;
+  // @gotags: validate:"required,min=1"
+  string client_id = 4;
+  // @gotags: validate:"required,min=1"
+  string client_secret = 5;
+  // @gotags: validate:"required,url"
+  string issuer_url = 6;
+  string authorization_url = 7;
+  string token_url = 8;
+  string userinfo_url = 9;
+  repeated string scopes = 10;
+  bool auto_create_users = 11;
+  bool auto_link_by_email = 12;
+  string default_role_id = 13;
+  bool disable_password_for_linked = 14;
+  string group_claim = 15;
+  map<string, string> group_mapping = 16;
+}
+
+message CreateIdentityProviderResponse {
+  IdentityProvider provider = 1;
+}
+
+message GetIdentityProviderRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetIdentityProviderResponse {
+  IdentityProvider provider = 1;
+}
+
+message ListIdentityProvidersRequest {
+  // @gotags: validate:"omitempty,min=1,max=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListIdentityProvidersResponse {
+  repeated IdentityProvider providers = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateIdentityProviderRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=64"
+  string name = 2;
+  bool enabled = 3;
+  string client_id = 4;
+  // If empty, the existing secret is kept.
+  string client_secret = 5;
+  string issuer_url = 6;
+  string authorization_url = 7;
+  string token_url = 8;
+  string userinfo_url = 9;
+  repeated string scopes = 10;
+  bool auto_create_users = 11;
+  bool auto_link_by_email = 12;
+  string default_role_id = 13;
+  bool disable_password_for_linked = 14;
+  string group_claim = 15;
+  map<string, string> group_mapping = 16;
+}
+
+message UpdateIdentityProviderResponse {
+  IdentityProvider provider = 1;
+}
+
+message DeleteIdentityProviderRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteIdentityProviderResponse {}
+
+// ============================================================================
+// SSO Authentication Flow
+// ============================================================================
+
+message AuthMethodProvider {
+  string slug = 1;
+  string name = 2;
+  string provider_type = 3;
+}
+
+message ListAuthMethodsRequest {
+  // Optional email to check user-specific auth methods.
+  string email = 1;
+}
+
+message ListAuthMethodsResponse {
+  bool password_enabled = 1;
+  bool totp_enabled = 2;
+  repeated AuthMethodProvider providers = 3;
+}
+
+message GetSSOLoginURLRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string slug = 1;
+  // @gotags: validate:"required,url"
+  string redirect_url = 2;
+}
+
+message GetSSOLoginURLResponse {
+  string login_url = 1;
+}
+
+message SSOCallbackRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string slug = 1;
+  // @gotags: validate:"required"
+  string code = 2;
+  // @gotags: validate:"required"
+  string state = 3;
+}
+
+message SSOCallbackResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+  // When true, TOTP verification is required before tokens are issued.
+  bool totp_required = 5;
+  string totp_challenge = 6;
+}
+
+// ============================================================================
+// Identity Linking (Self-Service)
+// ============================================================================
+
+message ListIdentityLinksRequest {}
+
+message ListIdentityLinksResponse {
+  repeated IdentityLink links = 1;
+}
+
+message UnlinkIdentityRequest {
+  // @gotags: validate:"required,ulid"
+  string link_id = 1;
+}
+
+message UnlinkIdentityResponse {}
+
+// SCIM Provisioning
+message EnableSCIMRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message EnableSCIMResponse {
+  string token = 1;        // plaintext token, shown once
+  string endpoint_url = 2; // full SCIM endpoint URL
+}
+
+message DisableSCIMRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DisableSCIMResponse {}
+
+message RotateSCIMTokenRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message RotateSCIMTokenResponse {
+  string token = 1; // new plaintext token, shown once
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -1372,6 +1891,31 @@ service ControlService {
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+  rpc VerifyLoginTOTP(VerifyLoginTOTPRequest) returns (VerifyLoginTOTPResponse);
+
+  // TOTP Two-Factor Authentication
+  rpc SetupTOTP(SetupTOTPRequest) returns (SetupTOTPResponse);
+  rpc VerifyTOTP(VerifyTOTPRequest) returns (VerifyTOTPResponse);
+  rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
+  rpc GetTOTPStatus(GetTOTPStatusRequest) returns (GetTOTPStatusResponse);
+  rpc RegenerateBackupCodes(RegenerateBackupCodesRequest) returns (RegenerateBackupCodesResponse);
+
+  // SSO / Identity Providers
+  rpc ListAuthMethods(ListAuthMethodsRequest) returns (ListAuthMethodsResponse);
+  rpc GetSSOLoginURL(GetSSOLoginURLRequest) returns (GetSSOLoginURLResponse);
+  rpc SSOCallback(SSOCallbackRequest) returns (SSOCallbackResponse);
+  rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (CreateIdentityProviderResponse);
+  rpc GetIdentityProvider(GetIdentityProviderRequest) returns (GetIdentityProviderResponse);
+  rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse);
+  rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (UpdateIdentityProviderResponse);
+  rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (DeleteIdentityProviderResponse);
+  rpc ListIdentityLinks(ListIdentityLinksRequest) returns (ListIdentityLinksResponse);
+  rpc UnlinkIdentity(UnlinkIdentityRequest) returns (UnlinkIdentityResponse);
+
+  // SCIM Provisioning
+  rpc EnableSCIM(EnableSCIMRequest) returns (EnableSCIMResponse);
+  rpc DisableSCIM(DisableSCIMRequest) returns (DisableSCIMResponse);
+  rpc RotateSCIMToken(RotateSCIMTokenRequest) returns (RotateSCIMTokenResponse);
 
   // Users
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
@@ -1379,7 +1923,6 @@ service ControlService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);
   rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
-  rpc UpdateUserRole(UpdateUserRoleRequest) returns (UpdateUserResponse);
   rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 
@@ -1451,6 +1994,7 @@ service ControlService {
   rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse);
   rpc ListAssignments(ListAssignmentsRequest) returns (ListAssignmentsResponse);
   rpc GetDeviceAssignments(GetDeviceAssignmentsRequest) returns (GetDeviceAssignmentsResponse);
+  rpc GetUserAssignments(GetUserAssignmentsRequest) returns (GetUserAssignmentsResponse);
 
   // User Selections (for available assignments)
   rpc SetUserSelection(SetUserSelectionRequest) returns (SetUserSelectionResponse);
@@ -1483,4 +2027,26 @@ service ControlService {
   rpc GetOSQueryResult(GetOSQueryResultRequest) returns (GetOSQueryResultResponse);
   rpc GetDeviceInventory(GetDeviceInventoryRequest) returns (GetDeviceInventoryResponse);
   rpc RefreshDeviceInventory(RefreshDeviceInventoryRequest) returns (RefreshDeviceInventoryResponse);
+
+  // Roles & Permissions
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+  rpc AssignRoleToUser(AssignRoleToUserRequest) returns (AssignRoleToUserResponse);
+  rpc RevokeRoleFromUser(RevokeRoleFromUserRequest) returns (RevokeRoleFromUserResponse);
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+
+  // User Groups
+  rpc CreateUserGroup(CreateUserGroupRequest) returns (CreateUserGroupResponse);
+  rpc GetUserGroup(GetUserGroupRequest) returns (GetUserGroupResponse);
+  rpc ListUserGroups(ListUserGroupsRequest) returns (ListUserGroupsResponse);
+  rpc UpdateUserGroup(UpdateUserGroupRequest) returns (UpdateUserGroupResponse);
+  rpc DeleteUserGroup(DeleteUserGroupRequest) returns (DeleteUserGroupResponse);
+  rpc AddUserToGroup(AddUserToGroupRequest) returns (AddUserToGroupResponse);
+  rpc RemoveUserFromGroup(RemoveUserFromGroupRequest) returns (RemoveUserFromGroupResponse);
+  rpc AssignRoleToUserGroup(AssignRoleToUserGroupRequest) returns (AssignRoleToUserGroupResponse);
+  rpc RevokeRoleFromUserGroup(RevokeRoleFromUserGroupRequest) returns (RevokeRoleFromUserGroupResponse);
+  rpc ListUserGroupsForUser(ListUserGroupsForUserRequest) returns (ListUserGroupsForUserResponse);
 }

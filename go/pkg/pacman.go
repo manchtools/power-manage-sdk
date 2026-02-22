@@ -6,10 +6,15 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// validPacmanPkgName restricts package names to safe characters,
+// preventing config injection via IgnorePkg in pacman.conf.
+var validPacmanPkgName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._+-]*$`)
 
 // Pacman implements the Manager interface for Arch Linux-based systems.
 type Pacman struct {
@@ -336,6 +341,13 @@ func (p *Pacman) GetInstalledVersion(name string) (string, error) {
 func (p *Pacman) Pin(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
+	}
+
+	// Validate package names to prevent config injection
+	for _, pkg := range packages {
+		if !validPacmanPkgName.MatchString(pkg) {
+			return nil, fmt.Errorf("invalid package name %q: must match [a-zA-Z0-9][a-zA-Z0-9._+-]*", pkg)
+		}
 	}
 
 	// Read current pacman.conf
