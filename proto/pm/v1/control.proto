@@ -1879,6 +1879,76 @@ message RotateSCIMTokenResponse {
 }
 
 // ============================================================================
+// Device Authentication (PAM/NSS device login)
+// ============================================================================
+
+message AuthenticateDeviceUserRequest {
+  // @gotags: validate:"required"
+  string device_id = 1;        // Which device is being logged into
+  // @gotags: validate:"required,min=1,max=254"
+  string username = 2;         // PM email or username
+  string password = 3;         // PM password (empty = probe for auth method)
+  string totp_code = 4;        // Optional TOTP 2FA code
+}
+
+message AuthenticateDeviceUserResponse {
+  bool success = 1;
+  bool password_required = 2;  // User has PM password, prompt for it
+  bool oidc_required = 3;      // User is OIDC-only, needs browser flow
+  bool totp_required = 4;      // TOTP 2FA needed, prompt for code
+  string error = 5;
+  DeviceUserInfo user = 6;     // User metadata (populated on success)
+  string session_token = 7;    // Cached for sudo re-auth
+  int64 session_ttl_seconds = 8;
+}
+
+message DeviceUserInfo {
+  string username = 1;         // Local Linux username
+  uint32 uid = 2;              // Assigned UID (from PM range, e.g. 60000-64999)
+  uint32 gid = 3;              // Primary GID
+  string home_dir = 4;         // e.g., /home/username
+  string shell = 5;            // e.g., /bin/bash
+  repeated string groups = 6;  // Supplementary group names
+  string gecos = 7;            // Full name (GECOS field)
+}
+
+message GetDeviceLoginURLRequest {
+  // @gotags: validate:"required"
+  string device_id = 1;
+  // @gotags: validate:"required,min=1,max=65535"
+  int32 callback_port = 2;     // localhost port PAM is listening on
+  string username = 3;         // Pre-fill email on login page
+}
+
+message GetDeviceLoginURLResponse {
+  string login_url = 1;        // Full URL to open in browser
+}
+
+message DeviceLoginCallbackRequest {
+  // @gotags: validate:"required"
+  string callback_token = 1;   // Token from browser redirect
+  // @gotags: validate:"required"
+  string device_id = 2;
+}
+
+message DeviceLoginCallbackResponse {
+  bool success = 1;
+  string error = 2;
+  DeviceUserInfo user = 3;
+  string session_token = 4;
+  int64 session_ttl_seconds = 5;
+}
+
+message ListDeviceUsersRequest {
+  // @gotags: validate:"required"
+  string device_id = 1;
+}
+
+message ListDeviceUsersResponse {
+  repeated DeviceUserInfo users = 1;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -2049,4 +2119,10 @@ service ControlService {
   rpc AssignRoleToUserGroup(AssignRoleToUserGroupRequest) returns (AssignRoleToUserGroupResponse);
   rpc RevokeRoleFromUserGroup(RevokeRoleFromUserGroupRequest) returns (RevokeRoleFromUserGroupResponse);
   rpc ListUserGroupsForUser(ListUserGroupsForUserRequest) returns (ListUserGroupsForUserResponse);
+
+  // Device Authentication (PAM/NSS device login)
+  rpc AuthenticateDeviceUser(AuthenticateDeviceUserRequest) returns (AuthenticateDeviceUserResponse);
+  rpc GetDeviceLoginURL(GetDeviceLoginURLRequest) returns (GetDeviceLoginURLResponse);
+  rpc DeviceLoginCallback(DeviceLoginCallbackRequest) returns (DeviceLoginCallbackResponse);
+  rpc ListDeviceUsers(ListDeviceUsersRequest) returns (ListDeviceUsersResponse);
 }

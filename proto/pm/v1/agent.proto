@@ -163,6 +163,9 @@ message Welcome {
   string server_version = 1;
   // @gotags: validate:"omitempty"
   google.protobuf.Duration heartbeat_interval = 2;
+  // Base URL for browser-based device login (configurable, defaults to built-in PM web app).
+  // Used by PAM module to open the OIDC login page for display manager sessions.
+  string device_login_url = 3;
 }
 
 message ActionDispatch {

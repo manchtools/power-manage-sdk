@@ -909,8 +909,11 @@ type Welcome struct {
 	ServerVersion string `protobuf:"bytes,1,opt,name=server_version,json=serverVersion,proto3" json:"server_version,omitempty" validate:"required,min=1,max=32"`
 	// @gotags: validate:"omitempty"
 	HeartbeatInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=heartbeat_interval,json=heartbeatInterval,proto3" json:"heartbeat_interval,omitempty" validate:"omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Base URL for browser-based device login (configurable, defaults to built-in PM web app).
+	// Used by PAM module to open the OIDC login page for display manager sessions.
+	DeviceLoginUrl string `protobuf:"bytes,3,opt,name=device_login_url,json=deviceLoginUrl,proto3" json:"device_login_url,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Welcome) Reset() {
@@ -955,6 +958,13 @@ func (x *Welcome) GetHeartbeatInterval() *durationpb.Duration {
 		return x.HeartbeatInterval
 	}
 	return nil
+}
+
+func (x *Welcome) GetDeviceLoginUrl() string {
+	if x != nil {
+		return x.DeviceLoginUrl
+	}
+	return ""
 }
 
 type ActionDispatch struct {
@@ -2067,10 +2077,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"getLuksKey\x12C\n" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
 	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKeyB\t\n" +
-	"\apayload\"z\n" +
+	"\apayload\"\xa4\x01\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
-	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"7\n" +
+	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\x12(\n" +
+	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrl\"7\n" +
 	"\x0eActionDispatch\x12%\n" +
 	"\x06action\x18\x01 \x01(\v2\r.pm.v1.ActionR\x06action\"5\n" +
 	"\x05Error\x12\x12\n" +
