@@ -243,6 +243,10 @@ type CommandResult struct {
 - **zypper**: Use version from `zypper info`, e.g., `1.24.0-1.1`
 - **flatpak**: Use application ID, e.g., `org.mozilla.firefox`
 
+### Non-Interactive Mode
+
+All apt/dnf/zypper/pacman commands are executed with `DEBIAN_FRONTEND=noninteractive` set in the environment. This prevents debconf from trying interactive frontends (Dialog, Readline, Teletype) when running without a terminal, which would cause dpkg post-install scripts to fail.
+
 ### Pinning Requirements
 
 - **apt**: No additional setup required

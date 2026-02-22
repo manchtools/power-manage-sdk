@@ -44,9 +44,9 @@ Four proto files define the entire API surface:
 | File | Purpose |
 |------|---------|
 | `common.proto` | ULID identifiers, execution status, assignment modes |
-| `actions.proto` | 15 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, reboot, sync, user), parameters, scheduling |
+| `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, reboot, sync, user, group, luks), parameters, scheduling |
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries |
-| `control.proto` | `ControlService` — 50+ RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions |
+| `control.proto` | `ControlService` — 125 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, and more |
 
 ## Go SDK
 

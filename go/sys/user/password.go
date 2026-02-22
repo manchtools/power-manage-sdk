@@ -3,6 +3,7 @@ package user
 import (
 	"crypto/rand"
 	"fmt"
+	"math/big"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 // GeneratePassword creates a cryptographically secure random password.
 // If complex is true, the password includes special characters.
 // Length must be between MinPasswordLength and MaxPasswordLength.
+// Uses crypto/rand.Int for uniform distribution (no modulo bias).
 func GeneratePassword(length int, complex bool) (string, error) {
 	if length < MinPasswordLength {
 		return "", fmt.Errorf("password length must be at least %d", MinPasswordLength)
@@ -31,15 +33,15 @@ func GeneratePassword(length int, complex bool) (string, error) {
 		charset += charsetSpecial
 	}
 
+	charsetLen := big.NewInt(int64(len(charset)))
 	password := make([]byte, length)
-	randomBytes := make([]byte, length)
-
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", fmt.Errorf("failed to generate random bytes: %w", err)
-	}
 
 	for i := 0; i < length; i++ {
-		password[i] = charset[randomBytes[i]%byte(len(charset))]
+		idx, err := rand.Int(rand.Reader, charsetLen)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate random index: %w", err)
+		}
+		password[i] = charset[idx.Int64()]
 	}
 
 	return string(password), nil

@@ -184,7 +184,7 @@ message Error {
 message OSQuery {
   // @gotags: validate:"required,ulid"
   string query_id = 1;
-  // @gotags: validate:"required,min=1,max=64"
+  // @gotags: validate:"required_without=RawSql,omitempty,min=1,max=64"
   string table = 2;
   // @gotags: validate:"omitempty,dive,max=64"
   repeated string columns = 3;
@@ -192,6 +192,9 @@ message OSQuery {
   repeated OSQueryCondition where = 4;
   // @gotags: validate:"omitempty,gte=0,lte=10000"
   int32 limit = 5;
+  // Raw SQL query — when set, table/columns/where/limit are ignored.
+  // @gotags: validate:"omitempty,max=4096"
+  string raw_sql = 6;
 }
 
 message OSQueryCondition {

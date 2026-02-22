@@ -7,11 +7,17 @@ package systemd
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
+
+// validUnitName restricts systemd unit names to safe characters,
+// preventing path traversal attacks (e.g. "../../../etc/shadow").
+var validUnitName = regexp.MustCompile(`^[a-zA-Z0-9@._:-]+\.(service|socket|timer|mount|automount|swap|target|path|slice|scope)$`)
 
 // UnitStatus represents the current status of a systemd unit.
 type UnitStatus struct {
@@ -145,9 +151,20 @@ func DisableNow(ctx context.Context, unitName string) error {
 // Systemd Unit File Operations
 // =============================================================================
 
+// ValidateUnitName checks if a systemd unit name is safe (no path traversal).
+func ValidateUnitName(unitName string) error {
+	if !validUnitName.MatchString(unitName) {
+		return fmt.Errorf("invalid systemd unit name %q: must match [a-zA-Z0-9@._:-]+.<type>", unitName)
+	}
+	return nil
+}
+
 // WriteUnit writes a systemd unit file to /etc/systemd/system atomically
 // with mode 0644, owned by root:root.
 func WriteUnit(ctx context.Context, unitName, content string) error {
+	if err := ValidateUnitName(unitName); err != nil {
+		return err
+	}
 	unitPath := "/etc/systemd/system/" + unitName
 	return fs.WriteFileAtomic(ctx, unitPath, content, "0644", "root", "root")
 }
@@ -155,6 +172,9 @@ func WriteUnit(ctx context.Context, unitName, content string) error {
 // RemoveUnit removes a systemd unit file from /etc/systemd/system.
 // This is a best-effort operation.
 func RemoveUnit(ctx context.Context, unitName string) {
+	if ValidateUnitName(unitName) != nil {
+		return
+	}
 	unitPath := "/etc/systemd/system/" + unitName
 	fs.Remove(ctx, unitPath)
 }

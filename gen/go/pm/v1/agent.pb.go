@@ -1060,14 +1060,17 @@ type OSQuery struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	QueryId string `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,min=1,max=64"
-	Table string `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty" validate:"required,min=1,max=64"`
+	// @gotags: validate:"required_without=RawSql,omitempty,min=1,max=64"
+	Table string `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty" validate:"required_without=RawSql,omitempty,min=1,max=64"`
 	// @gotags: validate:"omitempty,dive,max=64"
 	Columns []string `protobuf:"bytes,3,rep,name=columns,proto3" json:"columns,omitempty" validate:"omitempty,dive,max=64"`
 	// @gotags: validate:"omitempty,dive"
 	Where []*OSQueryCondition `protobuf:"bytes,4,rep,name=where,proto3" json:"where,omitempty" validate:"omitempty,dive"`
 	// @gotags: validate:"omitempty,gte=0,lte=10000"
-	Limit         int32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty" validate:"omitempty,gte=0,lte=10000"`
+	Limit int32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty" validate:"omitempty,gte=0,lte=10000"`
+	// Raw SQL query — when set, table/columns/where/limit are ignored.
+	// @gotags: validate:"omitempty,max=4096"
+	RawSql        string `protobuf:"bytes,6,opt,name=raw_sql,json=rawSql,proto3" json:"raw_sql,omitempty" validate:"omitempty,max=4096"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1135,6 +1138,13 @@ func (x *OSQuery) GetLimit() int32 {
 		return x.Limit
 	}
 	return 0
+}
+
+func (x *OSQuery) GetRawSql() string {
+	if x != nil {
+		return x.RawSql
+	}
+	return ""
 }
 
 type OSQueryCondition struct {
@@ -2065,13 +2075,14 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x06action\x18\x01 \x01(\v2\r.pm.v1.ActionR\x06action\"5\n" +
 	"\x05Error\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\x99\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xb2\x01\n" +
 	"\aOSQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05table\x12\x18\n" +
 	"\acolumns\x18\x03 \x03(\tR\acolumns\x12-\n" +
 	"\x05where\x18\x04 \x03(\v2\x17.pm.v1.OSQueryConditionR\x05where\x12\x14\n" +
-	"\x05limit\x18\x05 \x01(\x05R\x05limit\"b\n" +
+	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x17\n" +
+	"\araw_sql\x18\x06 \x01(\tR\x06rawSql\"b\n" +
 	"\x10OSQueryCondition\x12\x16\n" +
 	"\x06column\x18\x01 \x01(\tR\x06column\x12 \n" +
 	"\x02op\x18\x02 \x01(\x0e2\x10.pm.v1.OSQueryOpR\x02op\x12\x14\n" +

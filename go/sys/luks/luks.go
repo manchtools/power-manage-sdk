@@ -3,9 +3,11 @@ package luks
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
@@ -36,9 +38,9 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 	}
 	defer cleanupKeyFile(newFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
 	if err != nil {
-		return fmt.Errorf("cryptsetup luksAddKey failed: %w", err)
+		return cryptsetupError("luksAddKey", result, err)
 	}
 	return nil
 }
@@ -57,10 +59,10 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 	}
 	defer cleanupKeyFile(newFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
 		"--key-file", existingFile, "--key-slot", strconv.Itoa(slot), "--batch-mode")
 	if err != nil {
-		return fmt.Errorf("cryptsetup luksAddKey (slot %d) failed: %w", slot, err)
+		return cryptsetupError(fmt.Sprintf("luksAddKey (slot %d)", slot), result, err)
 	}
 	return nil
 }
@@ -73,9 +75,9 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 	}
 	defer cleanupKeyFile(keyFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
 	if err != nil {
-		return fmt.Errorf("cryptsetup luksRemoveKey failed: %w", err)
+		return cryptsetupError("luksRemoveKey", result, err)
 	}
 	return nil
 }
@@ -88,12 +90,64 @@ func KillSlot(ctx context.Context, devicePath string, slot int, existingKey stri
 	}
 	defer cleanupKeyFile(keyFile)
 
-	_, err = exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
+	result, err := exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
-		return fmt.Errorf("cryptsetup luksKillSlot %d failed: %w", slot, err)
+		return cryptsetupError(fmt.Sprintf("luksKillSlot %d", slot), result, err)
 	}
 	return nil
+}
+
+// cryptsetupError builds a descriptive error from a cryptsetup result.
+// cryptsetup --batch-mode suppresses stderr, so we translate known exit codes.
+func cryptsetupError(cmd string, result *exec.Result, err error) error {
+	detail := exitCodeDetail(result)
+	if result != nil && result.Stderr != "" {
+		detail = strings.TrimSpace(result.Stderr)
+	}
+	slog.Warn("cryptsetup command failed",
+		"command", cmd,
+		"exit_code", exitCode(result),
+		"detail", detail,
+		"stderr", trimmedStderr(result),
+	)
+	return fmt.Errorf("cryptsetup %s failed: %s (exit code %d)", cmd, detail, exitCode(result))
+}
+
+func exitCode(r *exec.Result) int {
+	if r != nil {
+		return r.ExitCode
+	}
+	return -1
+}
+
+func trimmedStderr(r *exec.Result) string {
+	if r != nil {
+		return strings.TrimSpace(r.Stderr)
+	}
+	return ""
+}
+
+// exitCodeDetail translates cryptsetup exit codes to human-readable messages.
+// See cryptsetup(8) RETURN CODES.
+func exitCodeDetail(r *exec.Result) string {
+	if r == nil {
+		return "unknown error"
+	}
+	switch r.ExitCode {
+	case 1:
+		return "wrong parameters"
+	case 2:
+		return "no key available with this passphrase"
+	case 3:
+		return "out of memory"
+	case 4:
+		return "wrong device specified or device does not exist"
+	case 5:
+		return "device already exists or device is busy"
+	default:
+		return fmt.Sprintf("unexpected error (exit code %d)", r.ExitCode)
+	}
 }
 
 // keyFileDir is the private directory for ephemeral key files.
@@ -112,10 +166,15 @@ func TestPassphrase(ctx context.Context, devicePath, passphrase string) (bool, e
 	result, err := exec.Sudo(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
-		if result != nil && result.ExitCode != 0 {
+		if result != nil && result.ExitCode == 2 {
 			return false, nil // Wrong passphrase
 		}
-		return false, fmt.Errorf("cryptsetup test-passphrase failed: %w", err)
+		slog.Warn("cryptsetup test-passphrase failed",
+			"exit_code", exitCode(result),
+			"detail", exitCodeDetail(result),
+			"stderr", trimmedStderr(result),
+		)
+		return false, fmt.Errorf("cryptsetup test-passphrase failed: %s (exit code %d)", exitCodeDetail(result), exitCode(result))
 	}
 	return true, nil
 }
@@ -132,26 +191,47 @@ func writeKeyFile(key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create key file: %w", err)
 	}
-	defer f.Close()
+
+	// Explicitly set mode 0600 regardless of umask.
+	if err := f.Chmod(0600); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return "", fmt.Errorf("failed to set key file permissions: %w", err)
+	}
 
 	if _, err := f.WriteString(key); err != nil {
+		f.Close()
 		os.Remove(f.Name())
 		return "", fmt.Errorf("failed to write key file: %w", err)
+	}
+
+	if err := f.Close(); err != nil {
+		os.Remove(f.Name())
+		return "", fmt.Errorf("failed to close key file: %w", err)
 	}
 
 	return f.Name(), nil
 }
 
 // cleanupKeyFile overwrites a key file with zeros and removes it.
+// Uses O_WRONLY|O_NOFOLLOW to avoid TOCTOU symlink attacks — if the path
+// has been replaced with a symlink, the open will fail and we skip overwriting.
 func cleanupKeyFile(path string) {
 	if path == "" {
 		return
 	}
-	info, err := os.Stat(path)
-	if err == nil {
-		// Overwrite with zeros before removing
-		zeros := strings.Repeat("\x00", int(info.Size()))
-		_ = os.WriteFile(path, []byte(zeros), 0600)
+	// Open with O_NOFOLLOW to reject symlinks (prevents TOCTOU attack).
+	f, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		// File already removed or is a symlink — just try to remove.
+		os.Remove(path)
+		return
 	}
+	// Get size from the open fd (no TOCTOU race).
+	if info, err := f.Stat(); err == nil && info.Size() > 0 {
+		zeros := make([]byte, info.Size())
+		_, _ = f.WriteAt(zeros, 0)
+	}
+	f.Close()
 	os.Remove(path)
 }

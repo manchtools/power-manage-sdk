@@ -45,6 +45,63 @@ const (
 	// ControlServiceGetCurrentUserProcedure is the fully-qualified name of the ControlService's
 	// GetCurrentUser RPC.
 	ControlServiceGetCurrentUserProcedure = "/pm.v1.ControlService/GetCurrentUser"
+	// ControlServiceVerifyLoginTOTPProcedure is the fully-qualified name of the ControlService's
+	// VerifyLoginTOTP RPC.
+	ControlServiceVerifyLoginTOTPProcedure = "/pm.v1.ControlService/VerifyLoginTOTP"
+	// ControlServiceSetupTOTPProcedure is the fully-qualified name of the ControlService's SetupTOTP
+	// RPC.
+	ControlServiceSetupTOTPProcedure = "/pm.v1.ControlService/SetupTOTP"
+	// ControlServiceVerifyTOTPProcedure is the fully-qualified name of the ControlService's VerifyTOTP
+	// RPC.
+	ControlServiceVerifyTOTPProcedure = "/pm.v1.ControlService/VerifyTOTP"
+	// ControlServiceDisableTOTPProcedure is the fully-qualified name of the ControlService's
+	// DisableTOTP RPC.
+	ControlServiceDisableTOTPProcedure = "/pm.v1.ControlService/DisableTOTP"
+	// ControlServiceGetTOTPStatusProcedure is the fully-qualified name of the ControlService's
+	// GetTOTPStatus RPC.
+	ControlServiceGetTOTPStatusProcedure = "/pm.v1.ControlService/GetTOTPStatus"
+	// ControlServiceRegenerateBackupCodesProcedure is the fully-qualified name of the ControlService's
+	// RegenerateBackupCodes RPC.
+	ControlServiceRegenerateBackupCodesProcedure = "/pm.v1.ControlService/RegenerateBackupCodes"
+	// ControlServiceListAuthMethodsProcedure is the fully-qualified name of the ControlService's
+	// ListAuthMethods RPC.
+	ControlServiceListAuthMethodsProcedure = "/pm.v1.ControlService/ListAuthMethods"
+	// ControlServiceGetSSOLoginURLProcedure is the fully-qualified name of the ControlService's
+	// GetSSOLoginURL RPC.
+	ControlServiceGetSSOLoginURLProcedure = "/pm.v1.ControlService/GetSSOLoginURL"
+	// ControlServiceSSOCallbackProcedure is the fully-qualified name of the ControlService's
+	// SSOCallback RPC.
+	ControlServiceSSOCallbackProcedure = "/pm.v1.ControlService/SSOCallback"
+	// ControlServiceCreateIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// CreateIdentityProvider RPC.
+	ControlServiceCreateIdentityProviderProcedure = "/pm.v1.ControlService/CreateIdentityProvider"
+	// ControlServiceGetIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// GetIdentityProvider RPC.
+	ControlServiceGetIdentityProviderProcedure = "/pm.v1.ControlService/GetIdentityProvider"
+	// ControlServiceListIdentityProvidersProcedure is the fully-qualified name of the ControlService's
+	// ListIdentityProviders RPC.
+	ControlServiceListIdentityProvidersProcedure = "/pm.v1.ControlService/ListIdentityProviders"
+	// ControlServiceUpdateIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// UpdateIdentityProvider RPC.
+	ControlServiceUpdateIdentityProviderProcedure = "/pm.v1.ControlService/UpdateIdentityProvider"
+	// ControlServiceDeleteIdentityProviderProcedure is the fully-qualified name of the ControlService's
+	// DeleteIdentityProvider RPC.
+	ControlServiceDeleteIdentityProviderProcedure = "/pm.v1.ControlService/DeleteIdentityProvider"
+	// ControlServiceListIdentityLinksProcedure is the fully-qualified name of the ControlService's
+	// ListIdentityLinks RPC.
+	ControlServiceListIdentityLinksProcedure = "/pm.v1.ControlService/ListIdentityLinks"
+	// ControlServiceUnlinkIdentityProcedure is the fully-qualified name of the ControlService's
+	// UnlinkIdentity RPC.
+	ControlServiceUnlinkIdentityProcedure = "/pm.v1.ControlService/UnlinkIdentity"
+	// ControlServiceEnableSCIMProcedure is the fully-qualified name of the ControlService's EnableSCIM
+	// RPC.
+	ControlServiceEnableSCIMProcedure = "/pm.v1.ControlService/EnableSCIM"
+	// ControlServiceDisableSCIMProcedure is the fully-qualified name of the ControlService's
+	// DisableSCIM RPC.
+	ControlServiceDisableSCIMProcedure = "/pm.v1.ControlService/DisableSCIM"
+	// ControlServiceRotateSCIMTokenProcedure is the fully-qualified name of the ControlService's
+	// RotateSCIMToken RPC.
+	ControlServiceRotateSCIMTokenProcedure = "/pm.v1.ControlService/RotateSCIMToken"
 	// ControlServiceCreateUserProcedure is the fully-qualified name of the ControlService's CreateUser
 	// RPC.
 	ControlServiceCreateUserProcedure = "/pm.v1.ControlService/CreateUser"
@@ -59,9 +116,6 @@ const (
 	// ControlServiceUpdateUserPasswordProcedure is the fully-qualified name of the ControlService's
 	// UpdateUserPassword RPC.
 	ControlServiceUpdateUserPasswordProcedure = "/pm.v1.ControlService/UpdateUserPassword"
-	// ControlServiceUpdateUserRoleProcedure is the fully-qualified name of the ControlService's
-	// UpdateUserRole RPC.
-	ControlServiceUpdateUserRoleProcedure = "/pm.v1.ControlService/UpdateUserRole"
 	// ControlServiceSetUserDisabledProcedure is the fully-qualified name of the ControlService's
 	// SetUserDisabled RPC.
 	ControlServiceSetUserDisabledProcedure = "/pm.v1.ControlService/SetUserDisabled"
@@ -232,6 +286,9 @@ const (
 	// ControlServiceGetDeviceAssignmentsProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceAssignments RPC.
 	ControlServiceGetDeviceAssignmentsProcedure = "/pm.v1.ControlService/GetDeviceAssignments"
+	// ControlServiceGetUserAssignmentsProcedure is the fully-qualified name of the ControlService's
+	// GetUserAssignments RPC.
+	ControlServiceGetUserAssignmentsProcedure = "/pm.v1.ControlService/GetUserAssignments"
 	// ControlServiceSetUserSelectionProcedure is the fully-qualified name of the ControlService's
 	// SetUserSelection RPC.
 	ControlServiceSetUserSelectionProcedure = "/pm.v1.ControlService/SetUserSelection"
@@ -292,6 +349,59 @@ const (
 	// ControlServiceRefreshDeviceInventoryProcedure is the fully-qualified name of the ControlService's
 	// RefreshDeviceInventory RPC.
 	ControlServiceRefreshDeviceInventoryProcedure = "/pm.v1.ControlService/RefreshDeviceInventory"
+	// ControlServiceCreateRoleProcedure is the fully-qualified name of the ControlService's CreateRole
+	// RPC.
+	ControlServiceCreateRoleProcedure = "/pm.v1.ControlService/CreateRole"
+	// ControlServiceGetRoleProcedure is the fully-qualified name of the ControlService's GetRole RPC.
+	ControlServiceGetRoleProcedure = "/pm.v1.ControlService/GetRole"
+	// ControlServiceListRolesProcedure is the fully-qualified name of the ControlService's ListRoles
+	// RPC.
+	ControlServiceListRolesProcedure = "/pm.v1.ControlService/ListRoles"
+	// ControlServiceUpdateRoleProcedure is the fully-qualified name of the ControlService's UpdateRole
+	// RPC.
+	ControlServiceUpdateRoleProcedure = "/pm.v1.ControlService/UpdateRole"
+	// ControlServiceDeleteRoleProcedure is the fully-qualified name of the ControlService's DeleteRole
+	// RPC.
+	ControlServiceDeleteRoleProcedure = "/pm.v1.ControlService/DeleteRole"
+	// ControlServiceAssignRoleToUserProcedure is the fully-qualified name of the ControlService's
+	// AssignRoleToUser RPC.
+	ControlServiceAssignRoleToUserProcedure = "/pm.v1.ControlService/AssignRoleToUser"
+	// ControlServiceRevokeRoleFromUserProcedure is the fully-qualified name of the ControlService's
+	// RevokeRoleFromUser RPC.
+	ControlServiceRevokeRoleFromUserProcedure = "/pm.v1.ControlService/RevokeRoleFromUser"
+	// ControlServiceListPermissionsProcedure is the fully-qualified name of the ControlService's
+	// ListPermissions RPC.
+	ControlServiceListPermissionsProcedure = "/pm.v1.ControlService/ListPermissions"
+	// ControlServiceCreateUserGroupProcedure is the fully-qualified name of the ControlService's
+	// CreateUserGroup RPC.
+	ControlServiceCreateUserGroupProcedure = "/pm.v1.ControlService/CreateUserGroup"
+	// ControlServiceGetUserGroupProcedure is the fully-qualified name of the ControlService's
+	// GetUserGroup RPC.
+	ControlServiceGetUserGroupProcedure = "/pm.v1.ControlService/GetUserGroup"
+	// ControlServiceListUserGroupsProcedure is the fully-qualified name of the ControlService's
+	// ListUserGroups RPC.
+	ControlServiceListUserGroupsProcedure = "/pm.v1.ControlService/ListUserGroups"
+	// ControlServiceUpdateUserGroupProcedure is the fully-qualified name of the ControlService's
+	// UpdateUserGroup RPC.
+	ControlServiceUpdateUserGroupProcedure = "/pm.v1.ControlService/UpdateUserGroup"
+	// ControlServiceDeleteUserGroupProcedure is the fully-qualified name of the ControlService's
+	// DeleteUserGroup RPC.
+	ControlServiceDeleteUserGroupProcedure = "/pm.v1.ControlService/DeleteUserGroup"
+	// ControlServiceAddUserToGroupProcedure is the fully-qualified name of the ControlService's
+	// AddUserToGroup RPC.
+	ControlServiceAddUserToGroupProcedure = "/pm.v1.ControlService/AddUserToGroup"
+	// ControlServiceRemoveUserFromGroupProcedure is the fully-qualified name of the ControlService's
+	// RemoveUserFromGroup RPC.
+	ControlServiceRemoveUserFromGroupProcedure = "/pm.v1.ControlService/RemoveUserFromGroup"
+	// ControlServiceAssignRoleToUserGroupProcedure is the fully-qualified name of the ControlService's
+	// AssignRoleToUserGroup RPC.
+	ControlServiceAssignRoleToUserGroupProcedure = "/pm.v1.ControlService/AssignRoleToUserGroup"
+	// ControlServiceRevokeRoleFromUserGroupProcedure is the fully-qualified name of the
+	// ControlService's RevokeRoleFromUserGroup RPC.
+	ControlServiceRevokeRoleFromUserGroupProcedure = "/pm.v1.ControlService/RevokeRoleFromUserGroup"
+	// ControlServiceListUserGroupsForUserProcedure is the fully-qualified name of the ControlService's
+	// ListUserGroupsForUser RPC.
+	ControlServiceListUserGroupsForUserProcedure = "/pm.v1.ControlService/ListUserGroupsForUser"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -303,13 +413,34 @@ type ControlServiceClient interface {
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	VerifyLoginTOTP(context.Context, *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error)
+	// TOTP Two-Factor Authentication
+	SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error)
+	VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error)
+	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
+	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
+	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
+	// SSO / Identity Providers
+	ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error)
+	GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error)
+	SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error)
+	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error)
+	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error)
+	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error)
+	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error)
+	ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error)
+	UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error)
+	// SCIM Provisioning
+	EnableSCIM(context.Context, *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error)
+	DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error)
+	RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
-	UpdateUserRole(context.Context, *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
@@ -374,6 +505,7 @@ type ControlServiceClient interface {
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
 	ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error)
 	GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error)
+	GetUserAssignments(context.Context, *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error)
 	// User Selections (for available assignments)
 	SetUserSelection(context.Context, *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error)
 	ListAvailableActions(context.Context, *connect.Request[v1.ListAvailableActionsRequest]) (*connect.Response[v1.ListAvailableActionsResponse], error)
@@ -400,6 +532,26 @@ type ControlServiceClient interface {
 	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
 	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
 	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
+	// Roles & Permissions
+	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
+	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error)
+	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
+	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error)
+	RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error)
+	ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error)
+	// User Groups
+	CreateUserGroup(context.Context, *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error)
+	GetUserGroup(context.Context, *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error)
+	ListUserGroups(context.Context, *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error)
+	UpdateUserGroup(context.Context, *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
+	DeleteUserGroup(context.Context, *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error)
+	AddUserToGroup(context.Context, *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error)
+	RemoveUserFromGroup(context.Context, *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error)
+	AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error)
+	RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error)
+	ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -443,6 +595,120 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("GetCurrentUser")),
 			connect.WithClientOptions(opts...),
 		),
+		verifyLoginTOTP: connect.NewClient[v1.VerifyLoginTOTPRequest, v1.VerifyLoginTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceVerifyLoginTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("VerifyLoginTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		setupTOTP: connect.NewClient[v1.SetupTOTPRequest, v1.SetupTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceSetupTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetupTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		verifyTOTP: connect.NewClient[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceVerifyTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("VerifyTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		disableTOTP: connect.NewClient[v1.DisableTOTPRequest, v1.DisableTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceDisableTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DisableTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		getTOTPStatus: connect.NewClient[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse](
+			httpClient,
+			baseURL+ControlServiceGetTOTPStatusProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetTOTPStatus")),
+			connect.WithClientOptions(opts...),
+		),
+		regenerateBackupCodes: connect.NewClient[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse](
+			httpClient,
+			baseURL+ControlServiceRegenerateBackupCodesProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RegenerateBackupCodes")),
+			connect.WithClientOptions(opts...),
+		),
+		listAuthMethods: connect.NewClient[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse](
+			httpClient,
+			baseURL+ControlServiceListAuthMethodsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListAuthMethods")),
+			connect.WithClientOptions(opts...),
+		),
+		getSSOLoginURL: connect.NewClient[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse](
+			httpClient,
+			baseURL+ControlServiceGetSSOLoginURLProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetSSOLoginURL")),
+			connect.WithClientOptions(opts...),
+		),
+		sSOCallback: connect.NewClient[v1.SSOCallbackRequest, v1.SSOCallbackResponse](
+			httpClient,
+			baseURL+ControlServiceSSOCallbackProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SSOCallback")),
+			connect.WithClientOptions(opts...),
+		),
+		createIdentityProvider: connect.NewClient[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceCreateIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		getIdentityProvider: connect.NewClient[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceGetIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		listIdentityProviders: connect.NewClient[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse](
+			httpClient,
+			baseURL+ControlServiceListIdentityProvidersProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListIdentityProviders")),
+			connect.WithClientOptions(opts...),
+		),
+		updateIdentityProvider: connect.NewClient[v1.UpdateIdentityProviderRequest, v1.UpdateIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteIdentityProvider: connect.NewClient[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteIdentityProviderProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteIdentityProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		listIdentityLinks: connect.NewClient[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse](
+			httpClient,
+			baseURL+ControlServiceListIdentityLinksProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListIdentityLinks")),
+			connect.WithClientOptions(opts...),
+		),
+		unlinkIdentity: connect.NewClient[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse](
+			httpClient,
+			baseURL+ControlServiceUnlinkIdentityProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UnlinkIdentity")),
+			connect.WithClientOptions(opts...),
+		),
+		enableSCIM: connect.NewClient[v1.EnableSCIMRequest, v1.EnableSCIMResponse](
+			httpClient,
+			baseURL+ControlServiceEnableSCIMProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("EnableSCIM")),
+			connect.WithClientOptions(opts...),
+		),
+		disableSCIM: connect.NewClient[v1.DisableSCIMRequest, v1.DisableSCIMResponse](
+			httpClient,
+			baseURL+ControlServiceDisableSCIMProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DisableSCIM")),
+			connect.WithClientOptions(opts...),
+		),
+		rotateSCIMToken: connect.NewClient[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse](
+			httpClient,
+			baseURL+ControlServiceRotateSCIMTokenProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RotateSCIMToken")),
+			connect.WithClientOptions(opts...),
+		),
 		createUser: connect.NewClient[v1.CreateUserRequest, v1.CreateUserResponse](
 			httpClient,
 			baseURL+ControlServiceCreateUserProcedure,
@@ -471,12 +737,6 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUpdateUserPasswordProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UpdateUserPassword")),
-			connect.WithClientOptions(opts...),
-		),
-		updateUserRole: connect.NewClient[v1.UpdateUserRoleRequest, v1.UpdateUserResponse](
-			httpClient,
-			baseURL+ControlServiceUpdateUserRoleProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("UpdateUserRole")),
 			connect.WithClientOptions(opts...),
 		),
 		setUserDisabled: connect.NewClient[v1.SetUserDisabledRequest, v1.UpdateUserResponse](
@@ -821,6 +1081,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("GetDeviceAssignments")),
 			connect.WithClientOptions(opts...),
 		),
+		getUserAssignments: connect.NewClient[v1.GetUserAssignmentsRequest, v1.GetUserAssignmentsResponse](
+			httpClient,
+			baseURL+ControlServiceGetUserAssignmentsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetUserAssignments")),
+			connect.WithClientOptions(opts...),
+		),
 		setUserSelection: connect.NewClient[v1.SetUserSelectionRequest, v1.SetUserSelectionResponse](
 			httpClient,
 			baseURL+ControlServiceSetUserSelectionProcedure,
@@ -941,6 +1207,114 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
 			connect.WithClientOptions(opts...),
 		),
+		createRole: connect.NewClient[v1.CreateRoleRequest, v1.CreateRoleResponse](
+			httpClient,
+			baseURL+ControlServiceCreateRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateRole")),
+			connect.WithClientOptions(opts...),
+		),
+		getRole: connect.NewClient[v1.GetRoleRequest, v1.GetRoleResponse](
+			httpClient,
+			baseURL+ControlServiceGetRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetRole")),
+			connect.WithClientOptions(opts...),
+		),
+		listRoles: connect.NewClient[v1.ListRolesRequest, v1.ListRolesResponse](
+			httpClient,
+			baseURL+ControlServiceListRolesProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListRoles")),
+			connect.WithClientOptions(opts...),
+		),
+		updateRole: connect.NewClient[v1.UpdateRoleRequest, v1.UpdateRoleResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateRole")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteRole: connect.NewClient[v1.DeleteRoleRequest, v1.DeleteRoleResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteRoleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteRole")),
+			connect.WithClientOptions(opts...),
+		),
+		assignRoleToUser: connect.NewClient[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse](
+			httpClient,
+			baseURL+ControlServiceAssignRoleToUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUser")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeRoleFromUser: connect.NewClient[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse](
+			httpClient,
+			baseURL+ControlServiceRevokeRoleFromUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUser")),
+			connect.WithClientOptions(opts...),
+		),
+		listPermissions: connect.NewClient[v1.ListPermissionsRequest, v1.ListPermissionsResponse](
+			httpClient,
+			baseURL+ControlServiceListPermissionsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListPermissions")),
+			connect.WithClientOptions(opts...),
+		),
+		createUserGroup: connect.NewClient[v1.CreateUserGroupRequest, v1.CreateUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceCreateUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		getUserGroup: connect.NewClient[v1.GetUserGroupRequest, v1.GetUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceGetUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		listUserGroups: connect.NewClient[v1.ListUserGroupsRequest, v1.ListUserGroupsResponse](
+			httpClient,
+			baseURL+ControlServiceListUserGroupsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListUserGroups")),
+			connect.WithClientOptions(opts...),
+		),
+		updateUserGroup: connect.NewClient[v1.UpdateUserGroupRequest, v1.UpdateUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteUserGroup: connect.NewClient[v1.DeleteUserGroupRequest, v1.DeleteUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		addUserToGroup: connect.NewClient[v1.AddUserToGroupRequest, v1.AddUserToGroupResponse](
+			httpClient,
+			baseURL+ControlServiceAddUserToGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddUserToGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		removeUserFromGroup: connect.NewClient[v1.RemoveUserFromGroupRequest, v1.RemoveUserFromGroupResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveUserFromGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveUserFromGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		assignRoleToUserGroup: connect.NewClient[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceAssignRoleToUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeRoleFromUserGroup: connect.NewClient[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceRevokeRoleFromUserGroupProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUserGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		listUserGroupsForUser: connect.NewClient[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse](
+			httpClient,
+			baseURL+ControlServiceListUserGroupsForUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListUserGroupsForUser")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -951,12 +1325,30 @@ type controlServiceClient struct {
 	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 	logout                        *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
 	getCurrentUser                *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	verifyLoginTOTP               *connect.Client[v1.VerifyLoginTOTPRequest, v1.VerifyLoginTOTPResponse]
+	setupTOTP                     *connect.Client[v1.SetupTOTPRequest, v1.SetupTOTPResponse]
+	verifyTOTP                    *connect.Client[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse]
+	disableTOTP                   *connect.Client[v1.DisableTOTPRequest, v1.DisableTOTPResponse]
+	getTOTPStatus                 *connect.Client[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse]
+	regenerateBackupCodes         *connect.Client[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse]
+	listAuthMethods               *connect.Client[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse]
+	getSSOLoginURL                *connect.Client[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse]
+	sSOCallback                   *connect.Client[v1.SSOCallbackRequest, v1.SSOCallbackResponse]
+	createIdentityProvider        *connect.Client[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse]
+	getIdentityProvider           *connect.Client[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse]
+	listIdentityProviders         *connect.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
+	updateIdentityProvider        *connect.Client[v1.UpdateIdentityProviderRequest, v1.UpdateIdentityProviderResponse]
+	deleteIdentityProvider        *connect.Client[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse]
+	listIdentityLinks             *connect.Client[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse]
+	unlinkIdentity                *connect.Client[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse]
+	enableSCIM                    *connect.Client[v1.EnableSCIMRequest, v1.EnableSCIMResponse]
+	disableSCIM                   *connect.Client[v1.DisableSCIMRequest, v1.DisableSCIMResponse]
+	rotateSCIMToken               *connect.Client[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse]
 	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
 	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
 	updateUserEmail               *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
 	updateUserPassword            *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
-	updateUserRole                *connect.Client[v1.UpdateUserRoleRequest, v1.UpdateUserResponse]
 	setUserDisabled               *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
 	deleteUser                    *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 	listDevices                   *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
@@ -1014,6 +1406,7 @@ type controlServiceClient struct {
 	deleteAssignment              *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
 	listAssignments               *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
 	getDeviceAssignments          *connect.Client[v1.GetDeviceAssignmentsRequest, v1.GetDeviceAssignmentsResponse]
+	getUserAssignments            *connect.Client[v1.GetUserAssignmentsRequest, v1.GetUserAssignmentsResponse]
 	setUserSelection              *connect.Client[v1.SetUserSelectionRequest, v1.SetUserSelectionResponse]
 	listAvailableActions          *connect.Client[v1.ListAvailableActionsRequest, v1.ListAvailableActionsResponse]
 	dispatchAction                *connect.Client[v1.DispatchActionRequest, v1.DispatchActionResponse]
@@ -1034,6 +1427,24 @@ type controlServiceClient struct {
 	getOSQueryResult              *connect.Client[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse]
 	getDeviceInventory            *connect.Client[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse]
 	refreshDeviceInventory        *connect.Client[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse]
+	createRole                    *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	getRole                       *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
+	listRoles                     *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	updateRole                    *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
+	deleteRole                    *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	assignRoleToUser              *connect.Client[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse]
+	revokeRoleFromUser            *connect.Client[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse]
+	listPermissions               *connect.Client[v1.ListPermissionsRequest, v1.ListPermissionsResponse]
+	createUserGroup               *connect.Client[v1.CreateUserGroupRequest, v1.CreateUserGroupResponse]
+	getUserGroup                  *connect.Client[v1.GetUserGroupRequest, v1.GetUserGroupResponse]
+	listUserGroups                *connect.Client[v1.ListUserGroupsRequest, v1.ListUserGroupsResponse]
+	updateUserGroup               *connect.Client[v1.UpdateUserGroupRequest, v1.UpdateUserGroupResponse]
+	deleteUserGroup               *connect.Client[v1.DeleteUserGroupRequest, v1.DeleteUserGroupResponse]
+	addUserToGroup                *connect.Client[v1.AddUserToGroupRequest, v1.AddUserToGroupResponse]
+	removeUserFromGroup           *connect.Client[v1.RemoveUserFromGroupRequest, v1.RemoveUserFromGroupResponse]
+	assignRoleToUserGroup         *connect.Client[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse]
+	revokeRoleFromUserGroup       *connect.Client[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse]
+	listUserGroupsForUser         *connect.Client[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -1061,6 +1472,101 @@ func (c *controlServiceClient) GetCurrentUser(ctx context.Context, req *connect.
 	return c.getCurrentUser.CallUnary(ctx, req)
 }
 
+// VerifyLoginTOTP calls pm.v1.ControlService.VerifyLoginTOTP.
+func (c *controlServiceClient) VerifyLoginTOTP(ctx context.Context, req *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error) {
+	return c.verifyLoginTOTP.CallUnary(ctx, req)
+}
+
+// SetupTOTP calls pm.v1.ControlService.SetupTOTP.
+func (c *controlServiceClient) SetupTOTP(ctx context.Context, req *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error) {
+	return c.setupTOTP.CallUnary(ctx, req)
+}
+
+// VerifyTOTP calls pm.v1.ControlService.VerifyTOTP.
+func (c *controlServiceClient) VerifyTOTP(ctx context.Context, req *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error) {
+	return c.verifyTOTP.CallUnary(ctx, req)
+}
+
+// DisableTOTP calls pm.v1.ControlService.DisableTOTP.
+func (c *controlServiceClient) DisableTOTP(ctx context.Context, req *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error) {
+	return c.disableTOTP.CallUnary(ctx, req)
+}
+
+// GetTOTPStatus calls pm.v1.ControlService.GetTOTPStatus.
+func (c *controlServiceClient) GetTOTPStatus(ctx context.Context, req *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error) {
+	return c.getTOTPStatus.CallUnary(ctx, req)
+}
+
+// RegenerateBackupCodes calls pm.v1.ControlService.RegenerateBackupCodes.
+func (c *controlServiceClient) RegenerateBackupCodes(ctx context.Context, req *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error) {
+	return c.regenerateBackupCodes.CallUnary(ctx, req)
+}
+
+// ListAuthMethods calls pm.v1.ControlService.ListAuthMethods.
+func (c *controlServiceClient) ListAuthMethods(ctx context.Context, req *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error) {
+	return c.listAuthMethods.CallUnary(ctx, req)
+}
+
+// GetSSOLoginURL calls pm.v1.ControlService.GetSSOLoginURL.
+func (c *controlServiceClient) GetSSOLoginURL(ctx context.Context, req *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error) {
+	return c.getSSOLoginURL.CallUnary(ctx, req)
+}
+
+// SSOCallback calls pm.v1.ControlService.SSOCallback.
+func (c *controlServiceClient) SSOCallback(ctx context.Context, req *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error) {
+	return c.sSOCallback.CallUnary(ctx, req)
+}
+
+// CreateIdentityProvider calls pm.v1.ControlService.CreateIdentityProvider.
+func (c *controlServiceClient) CreateIdentityProvider(ctx context.Context, req *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error) {
+	return c.createIdentityProvider.CallUnary(ctx, req)
+}
+
+// GetIdentityProvider calls pm.v1.ControlService.GetIdentityProvider.
+func (c *controlServiceClient) GetIdentityProvider(ctx context.Context, req *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error) {
+	return c.getIdentityProvider.CallUnary(ctx, req)
+}
+
+// ListIdentityProviders calls pm.v1.ControlService.ListIdentityProviders.
+func (c *controlServiceClient) ListIdentityProviders(ctx context.Context, req *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error) {
+	return c.listIdentityProviders.CallUnary(ctx, req)
+}
+
+// UpdateIdentityProvider calls pm.v1.ControlService.UpdateIdentityProvider.
+func (c *controlServiceClient) UpdateIdentityProvider(ctx context.Context, req *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error) {
+	return c.updateIdentityProvider.CallUnary(ctx, req)
+}
+
+// DeleteIdentityProvider calls pm.v1.ControlService.DeleteIdentityProvider.
+func (c *controlServiceClient) DeleteIdentityProvider(ctx context.Context, req *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error) {
+	return c.deleteIdentityProvider.CallUnary(ctx, req)
+}
+
+// ListIdentityLinks calls pm.v1.ControlService.ListIdentityLinks.
+func (c *controlServiceClient) ListIdentityLinks(ctx context.Context, req *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error) {
+	return c.listIdentityLinks.CallUnary(ctx, req)
+}
+
+// UnlinkIdentity calls pm.v1.ControlService.UnlinkIdentity.
+func (c *controlServiceClient) UnlinkIdentity(ctx context.Context, req *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error) {
+	return c.unlinkIdentity.CallUnary(ctx, req)
+}
+
+// EnableSCIM calls pm.v1.ControlService.EnableSCIM.
+func (c *controlServiceClient) EnableSCIM(ctx context.Context, req *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error) {
+	return c.enableSCIM.CallUnary(ctx, req)
+}
+
+// DisableSCIM calls pm.v1.ControlService.DisableSCIM.
+func (c *controlServiceClient) DisableSCIM(ctx context.Context, req *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error) {
+	return c.disableSCIM.CallUnary(ctx, req)
+}
+
+// RotateSCIMToken calls pm.v1.ControlService.RotateSCIMToken.
+func (c *controlServiceClient) RotateSCIMToken(ctx context.Context, req *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error) {
+	return c.rotateSCIMToken.CallUnary(ctx, req)
+}
+
 // CreateUser calls pm.v1.ControlService.CreateUser.
 func (c *controlServiceClient) CreateUser(ctx context.Context, req *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
 	return c.createUser.CallUnary(ctx, req)
@@ -1084,11 +1590,6 @@ func (c *controlServiceClient) UpdateUserEmail(ctx context.Context, req *connect
 // UpdateUserPassword calls pm.v1.ControlService.UpdateUserPassword.
 func (c *controlServiceClient) UpdateUserPassword(ctx context.Context, req *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return c.updateUserPassword.CallUnary(ctx, req)
-}
-
-// UpdateUserRole calls pm.v1.ControlService.UpdateUserRole.
-func (c *controlServiceClient) UpdateUserRole(ctx context.Context, req *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
-	return c.updateUserRole.CallUnary(ctx, req)
 }
 
 // SetUserDisabled calls pm.v1.ControlService.SetUserDisabled.
@@ -1376,6 +1877,11 @@ func (c *controlServiceClient) GetDeviceAssignments(ctx context.Context, req *co
 	return c.getDeviceAssignments.CallUnary(ctx, req)
 }
 
+// GetUserAssignments calls pm.v1.ControlService.GetUserAssignments.
+func (c *controlServiceClient) GetUserAssignments(ctx context.Context, req *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error) {
+	return c.getUserAssignments.CallUnary(ctx, req)
+}
+
 // SetUserSelection calls pm.v1.ControlService.SetUserSelection.
 func (c *controlServiceClient) SetUserSelection(ctx context.Context, req *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error) {
 	return c.setUserSelection.CallUnary(ctx, req)
@@ -1476,6 +1982,96 @@ func (c *controlServiceClient) RefreshDeviceInventory(ctx context.Context, req *
 	return c.refreshDeviceInventory.CallUnary(ctx, req)
 }
 
+// CreateRole calls pm.v1.ControlService.CreateRole.
+func (c *controlServiceClient) CreateRole(ctx context.Context, req *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error) {
+	return c.createRole.CallUnary(ctx, req)
+}
+
+// GetRole calls pm.v1.ControlService.GetRole.
+func (c *controlServiceClient) GetRole(ctx context.Context, req *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error) {
+	return c.getRole.CallUnary(ctx, req)
+}
+
+// ListRoles calls pm.v1.ControlService.ListRoles.
+func (c *controlServiceClient) ListRoles(ctx context.Context, req *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error) {
+	return c.listRoles.CallUnary(ctx, req)
+}
+
+// UpdateRole calls pm.v1.ControlService.UpdateRole.
+func (c *controlServiceClient) UpdateRole(ctx context.Context, req *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error) {
+	return c.updateRole.CallUnary(ctx, req)
+}
+
+// DeleteRole calls pm.v1.ControlService.DeleteRole.
+func (c *controlServiceClient) DeleteRole(ctx context.Context, req *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error) {
+	return c.deleteRole.CallUnary(ctx, req)
+}
+
+// AssignRoleToUser calls pm.v1.ControlService.AssignRoleToUser.
+func (c *controlServiceClient) AssignRoleToUser(ctx context.Context, req *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error) {
+	return c.assignRoleToUser.CallUnary(ctx, req)
+}
+
+// RevokeRoleFromUser calls pm.v1.ControlService.RevokeRoleFromUser.
+func (c *controlServiceClient) RevokeRoleFromUser(ctx context.Context, req *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error) {
+	return c.revokeRoleFromUser.CallUnary(ctx, req)
+}
+
+// ListPermissions calls pm.v1.ControlService.ListPermissions.
+func (c *controlServiceClient) ListPermissions(ctx context.Context, req *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error) {
+	return c.listPermissions.CallUnary(ctx, req)
+}
+
+// CreateUserGroup calls pm.v1.ControlService.CreateUserGroup.
+func (c *controlServiceClient) CreateUserGroup(ctx context.Context, req *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error) {
+	return c.createUserGroup.CallUnary(ctx, req)
+}
+
+// GetUserGroup calls pm.v1.ControlService.GetUserGroup.
+func (c *controlServiceClient) GetUserGroup(ctx context.Context, req *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error) {
+	return c.getUserGroup.CallUnary(ctx, req)
+}
+
+// ListUserGroups calls pm.v1.ControlService.ListUserGroups.
+func (c *controlServiceClient) ListUserGroups(ctx context.Context, req *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error) {
+	return c.listUserGroups.CallUnary(ctx, req)
+}
+
+// UpdateUserGroup calls pm.v1.ControlService.UpdateUserGroup.
+func (c *controlServiceClient) UpdateUserGroup(ctx context.Context, req *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
+	return c.updateUserGroup.CallUnary(ctx, req)
+}
+
+// DeleteUserGroup calls pm.v1.ControlService.DeleteUserGroup.
+func (c *controlServiceClient) DeleteUserGroup(ctx context.Context, req *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error) {
+	return c.deleteUserGroup.CallUnary(ctx, req)
+}
+
+// AddUserToGroup calls pm.v1.ControlService.AddUserToGroup.
+func (c *controlServiceClient) AddUserToGroup(ctx context.Context, req *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error) {
+	return c.addUserToGroup.CallUnary(ctx, req)
+}
+
+// RemoveUserFromGroup calls pm.v1.ControlService.RemoveUserFromGroup.
+func (c *controlServiceClient) RemoveUserFromGroup(ctx context.Context, req *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error) {
+	return c.removeUserFromGroup.CallUnary(ctx, req)
+}
+
+// AssignRoleToUserGroup calls pm.v1.ControlService.AssignRoleToUserGroup.
+func (c *controlServiceClient) AssignRoleToUserGroup(ctx context.Context, req *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error) {
+	return c.assignRoleToUserGroup.CallUnary(ctx, req)
+}
+
+// RevokeRoleFromUserGroup calls pm.v1.ControlService.RevokeRoleFromUserGroup.
+func (c *controlServiceClient) RevokeRoleFromUserGroup(ctx context.Context, req *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error) {
+	return c.revokeRoleFromUserGroup.CallUnary(ctx, req)
+}
+
+// ListUserGroupsForUser calls pm.v1.ControlService.ListUserGroupsForUser.
+func (c *controlServiceClient) ListUserGroupsForUser(ctx context.Context, req *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error) {
+	return c.listUserGroupsForUser.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -1485,13 +2081,34 @@ type ControlServiceHandler interface {
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	VerifyLoginTOTP(context.Context, *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error)
+	// TOTP Two-Factor Authentication
+	SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error)
+	VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error)
+	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
+	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
+	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
+	// SSO / Identity Providers
+	ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error)
+	GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error)
+	SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error)
+	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error)
+	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error)
+	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error)
+	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error)
+	ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error)
+	UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error)
+	// SCIM Provisioning
+	EnableSCIM(context.Context, *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error)
+	DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error)
+	RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error)
 	// Users
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
-	UpdateUserRole(context.Context, *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
@@ -1556,6 +2173,7 @@ type ControlServiceHandler interface {
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
 	ListAssignments(context.Context, *connect.Request[v1.ListAssignmentsRequest]) (*connect.Response[v1.ListAssignmentsResponse], error)
 	GetDeviceAssignments(context.Context, *connect.Request[v1.GetDeviceAssignmentsRequest]) (*connect.Response[v1.GetDeviceAssignmentsResponse], error)
+	GetUserAssignments(context.Context, *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error)
 	// User Selections (for available assignments)
 	SetUserSelection(context.Context, *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error)
 	ListAvailableActions(context.Context, *connect.Request[v1.ListAvailableActionsRequest]) (*connect.Response[v1.ListAvailableActionsResponse], error)
@@ -1582,6 +2200,26 @@ type ControlServiceHandler interface {
 	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
 	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
 	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
+	// Roles & Permissions
+	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
+	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error)
+	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
+	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error)
+	RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error)
+	ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error)
+	// User Groups
+	CreateUserGroup(context.Context, *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error)
+	GetUserGroup(context.Context, *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error)
+	ListUserGroups(context.Context, *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error)
+	UpdateUserGroup(context.Context, *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
+	DeleteUserGroup(context.Context, *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error)
+	AddUserToGroup(context.Context, *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error)
+	RemoveUserFromGroup(context.Context, *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error)
+	AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error)
+	RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error)
+	ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -1621,6 +2259,120 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("GetCurrentUser")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceVerifyLoginTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceVerifyLoginTOTPProcedure,
+		svc.VerifyLoginTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("VerifyLoginTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSetupTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceSetupTOTPProcedure,
+		svc.SetupTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("SetupTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceVerifyTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceVerifyTOTPProcedure,
+		svc.VerifyTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("VerifyTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDisableTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceDisableTOTPProcedure,
+		svc.DisableTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("DisableTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetTOTPStatusHandler := connect.NewUnaryHandler(
+		ControlServiceGetTOTPStatusProcedure,
+		svc.GetTOTPStatus,
+		connect.WithSchema(controlServiceMethods.ByName("GetTOTPStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRegenerateBackupCodesHandler := connect.NewUnaryHandler(
+		ControlServiceRegenerateBackupCodesProcedure,
+		svc.RegenerateBackupCodes,
+		connect.WithSchema(controlServiceMethods.ByName("RegenerateBackupCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListAuthMethodsHandler := connect.NewUnaryHandler(
+		ControlServiceListAuthMethodsProcedure,
+		svc.ListAuthMethods,
+		connect.WithSchema(controlServiceMethods.ByName("ListAuthMethods")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetSSOLoginURLHandler := connect.NewUnaryHandler(
+		ControlServiceGetSSOLoginURLProcedure,
+		svc.GetSSOLoginURL,
+		connect.WithSchema(controlServiceMethods.ByName("GetSSOLoginURL")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSSOCallbackHandler := connect.NewUnaryHandler(
+		ControlServiceSSOCallbackProcedure,
+		svc.SSOCallback,
+		connect.WithSchema(controlServiceMethods.ByName("SSOCallback")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceCreateIdentityProviderProcedure,
+		svc.CreateIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("CreateIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceGetIdentityProviderProcedure,
+		svc.GetIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("GetIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListIdentityProvidersHandler := connect.NewUnaryHandler(
+		ControlServiceListIdentityProvidersProcedure,
+		svc.ListIdentityProviders,
+		connect.WithSchema(controlServiceMethods.ByName("ListIdentityProviders")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateIdentityProviderProcedure,
+		svc.UpdateIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteIdentityProviderHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteIdentityProviderProcedure,
+		svc.DeleteIdentityProvider,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListIdentityLinksHandler := connect.NewUnaryHandler(
+		ControlServiceListIdentityLinksProcedure,
+		svc.ListIdentityLinks,
+		connect.WithSchema(controlServiceMethods.ByName("ListIdentityLinks")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUnlinkIdentityHandler := connect.NewUnaryHandler(
+		ControlServiceUnlinkIdentityProcedure,
+		svc.UnlinkIdentity,
+		connect.WithSchema(controlServiceMethods.ByName("UnlinkIdentity")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceEnableSCIMHandler := connect.NewUnaryHandler(
+		ControlServiceEnableSCIMProcedure,
+		svc.EnableSCIM,
+		connect.WithSchema(controlServiceMethods.ByName("EnableSCIM")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDisableSCIMHandler := connect.NewUnaryHandler(
+		ControlServiceDisableSCIMProcedure,
+		svc.DisableSCIM,
+		connect.WithSchema(controlServiceMethods.ByName("DisableSCIM")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRotateSCIMTokenHandler := connect.NewUnaryHandler(
+		ControlServiceRotateSCIMTokenProcedure,
+		svc.RotateSCIMToken,
+		connect.WithSchema(controlServiceMethods.ByName("RotateSCIMToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceCreateUserHandler := connect.NewUnaryHandler(
 		ControlServiceCreateUserProcedure,
 		svc.CreateUser,
@@ -1649,12 +2401,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUpdateUserPasswordProcedure,
 		svc.UpdateUserPassword,
 		connect.WithSchema(controlServiceMethods.ByName("UpdateUserPassword")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceUpdateUserRoleHandler := connect.NewUnaryHandler(
-		ControlServiceUpdateUserRoleProcedure,
-		svc.UpdateUserRole,
-		connect.WithSchema(controlServiceMethods.ByName("UpdateUserRole")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceSetUserDisabledHandler := connect.NewUnaryHandler(
@@ -1999,6 +2745,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("GetDeviceAssignments")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceGetUserAssignmentsHandler := connect.NewUnaryHandler(
+		ControlServiceGetUserAssignmentsProcedure,
+		svc.GetUserAssignments,
+		connect.WithSchema(controlServiceMethods.ByName("GetUserAssignments")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceSetUserSelectionHandler := connect.NewUnaryHandler(
 		ControlServiceSetUserSelectionProcedure,
 		svc.SetUserSelection,
@@ -2119,6 +2871,114 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceCreateRoleHandler := connect.NewUnaryHandler(
+		ControlServiceCreateRoleProcedure,
+		svc.CreateRole,
+		connect.WithSchema(controlServiceMethods.ByName("CreateRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetRoleHandler := connect.NewUnaryHandler(
+		ControlServiceGetRoleProcedure,
+		svc.GetRole,
+		connect.WithSchema(controlServiceMethods.ByName("GetRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListRolesHandler := connect.NewUnaryHandler(
+		ControlServiceListRolesProcedure,
+		svc.ListRoles,
+		connect.WithSchema(controlServiceMethods.ByName("ListRoles")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateRoleHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateRoleProcedure,
+		svc.UpdateRole,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteRoleHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteRoleProcedure,
+		svc.DeleteRole,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteRole")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAssignRoleToUserHandler := connect.NewUnaryHandler(
+		ControlServiceAssignRoleToUserProcedure,
+		svc.AssignRoleToUser,
+		connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevokeRoleFromUserHandler := connect.NewUnaryHandler(
+		ControlServiceRevokeRoleFromUserProcedure,
+		svc.RevokeRoleFromUser,
+		connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListPermissionsHandler := connect.NewUnaryHandler(
+		ControlServiceListPermissionsProcedure,
+		svc.ListPermissions,
+		connect.WithSchema(controlServiceMethods.ByName("ListPermissions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceCreateUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceCreateUserGroupProcedure,
+		svc.CreateUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("CreateUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceGetUserGroupProcedure,
+		svc.GetUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("GetUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListUserGroupsHandler := connect.NewUnaryHandler(
+		ControlServiceListUserGroupsProcedure,
+		svc.ListUserGroups,
+		connect.WithSchema(controlServiceMethods.ByName("ListUserGroups")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateUserGroupProcedure,
+		svc.UpdateUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteUserGroupProcedure,
+		svc.DeleteUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAddUserToGroupHandler := connect.NewUnaryHandler(
+		ControlServiceAddUserToGroupProcedure,
+		svc.AddUserToGroup,
+		connect.WithSchema(controlServiceMethods.ByName("AddUserToGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveUserFromGroupHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveUserFromGroupProcedure,
+		svc.RemoveUserFromGroup,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveUserFromGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAssignRoleToUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceAssignRoleToUserGroupProcedure,
+		svc.AssignRoleToUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("AssignRoleToUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevokeRoleFromUserGroupHandler := connect.NewUnaryHandler(
+		ControlServiceRevokeRoleFromUserGroupProcedure,
+		svc.RevokeRoleFromUserGroup,
+		connect.WithSchema(controlServiceMethods.ByName("RevokeRoleFromUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListUserGroupsForUserHandler := connect.NewUnaryHandler(
+		ControlServiceListUserGroupsForUserProcedure,
+		svc.ListUserGroupsForUser,
+		connect.WithSchema(controlServiceMethods.ByName("ListUserGroupsForUser")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -2131,6 +2991,44 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceLogoutHandler.ServeHTTP(w, r)
 		case ControlServiceGetCurrentUserProcedure:
 			controlServiceGetCurrentUserHandler.ServeHTTP(w, r)
+		case ControlServiceVerifyLoginTOTPProcedure:
+			controlServiceVerifyLoginTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceSetupTOTPProcedure:
+			controlServiceSetupTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceVerifyTOTPProcedure:
+			controlServiceVerifyTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceDisableTOTPProcedure:
+			controlServiceDisableTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceGetTOTPStatusProcedure:
+			controlServiceGetTOTPStatusHandler.ServeHTTP(w, r)
+		case ControlServiceRegenerateBackupCodesProcedure:
+			controlServiceRegenerateBackupCodesHandler.ServeHTTP(w, r)
+		case ControlServiceListAuthMethodsProcedure:
+			controlServiceListAuthMethodsHandler.ServeHTTP(w, r)
+		case ControlServiceGetSSOLoginURLProcedure:
+			controlServiceGetSSOLoginURLHandler.ServeHTTP(w, r)
+		case ControlServiceSSOCallbackProcedure:
+			controlServiceSSOCallbackHandler.ServeHTTP(w, r)
+		case ControlServiceCreateIdentityProviderProcedure:
+			controlServiceCreateIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceGetIdentityProviderProcedure:
+			controlServiceGetIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceListIdentityProvidersProcedure:
+			controlServiceListIdentityProvidersHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateIdentityProviderProcedure:
+			controlServiceUpdateIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteIdentityProviderProcedure:
+			controlServiceDeleteIdentityProviderHandler.ServeHTTP(w, r)
+		case ControlServiceListIdentityLinksProcedure:
+			controlServiceListIdentityLinksHandler.ServeHTTP(w, r)
+		case ControlServiceUnlinkIdentityProcedure:
+			controlServiceUnlinkIdentityHandler.ServeHTTP(w, r)
+		case ControlServiceEnableSCIMProcedure:
+			controlServiceEnableSCIMHandler.ServeHTTP(w, r)
+		case ControlServiceDisableSCIMProcedure:
+			controlServiceDisableSCIMHandler.ServeHTTP(w, r)
+		case ControlServiceRotateSCIMTokenProcedure:
+			controlServiceRotateSCIMTokenHandler.ServeHTTP(w, r)
 		case ControlServiceCreateUserProcedure:
 			controlServiceCreateUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetUserProcedure:
@@ -2141,8 +3039,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateUserEmailHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateUserPasswordProcedure:
 			controlServiceUpdateUserPasswordHandler.ServeHTTP(w, r)
-		case ControlServiceUpdateUserRoleProcedure:
-			controlServiceUpdateUserRoleHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserDisabledProcedure:
 			controlServiceSetUserDisabledHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteUserProcedure:
@@ -2257,6 +3153,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListAssignmentsHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceAssignmentsProcedure:
 			controlServiceGetDeviceAssignmentsHandler.ServeHTTP(w, r)
+		case ControlServiceGetUserAssignmentsProcedure:
+			controlServiceGetUserAssignmentsHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserSelectionProcedure:
 			controlServiceSetUserSelectionHandler.ServeHTTP(w, r)
 		case ControlServiceListAvailableActionsProcedure:
@@ -2297,6 +3195,42 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetDeviceInventoryHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshDeviceInventoryProcedure:
 			controlServiceRefreshDeviceInventoryHandler.ServeHTTP(w, r)
+		case ControlServiceCreateRoleProcedure:
+			controlServiceCreateRoleHandler.ServeHTTP(w, r)
+		case ControlServiceGetRoleProcedure:
+			controlServiceGetRoleHandler.ServeHTTP(w, r)
+		case ControlServiceListRolesProcedure:
+			controlServiceListRolesHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateRoleProcedure:
+			controlServiceUpdateRoleHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteRoleProcedure:
+			controlServiceDeleteRoleHandler.ServeHTTP(w, r)
+		case ControlServiceAssignRoleToUserProcedure:
+			controlServiceAssignRoleToUserHandler.ServeHTTP(w, r)
+		case ControlServiceRevokeRoleFromUserProcedure:
+			controlServiceRevokeRoleFromUserHandler.ServeHTTP(w, r)
+		case ControlServiceListPermissionsProcedure:
+			controlServiceListPermissionsHandler.ServeHTTP(w, r)
+		case ControlServiceCreateUserGroupProcedure:
+			controlServiceCreateUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceGetUserGroupProcedure:
+			controlServiceGetUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceListUserGroupsProcedure:
+			controlServiceListUserGroupsHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateUserGroupProcedure:
+			controlServiceUpdateUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteUserGroupProcedure:
+			controlServiceDeleteUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceAddUserToGroupProcedure:
+			controlServiceAddUserToGroupHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveUserFromGroupProcedure:
+			controlServiceRemoveUserFromGroupHandler.ServeHTTP(w, r)
+		case ControlServiceAssignRoleToUserGroupProcedure:
+			controlServiceAssignRoleToUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceRevokeRoleFromUserGroupProcedure:
+			controlServiceRevokeRoleFromUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceListUserGroupsForUserProcedure:
+			controlServiceListUserGroupsForUserHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -2326,6 +3260,82 @@ func (UnimplementedControlServiceHandler) GetCurrentUser(context.Context, *conne
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetCurrentUser is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) VerifyLoginTOTP(context.Context, *connect.Request[v1.VerifyLoginTOTPRequest]) (*connect.Response[v1.VerifyLoginTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.VerifyLoginTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetupTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.VerifyTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DisableTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetTOTPStatus is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RegenerateBackupCodes is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAuthMethods is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetSSOLoginURL is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SSOCallback is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListIdentityProviders is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.UpdateIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[v1.DeleteIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteIdentityProvider is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListIdentityLinks(context.Context, *connect.Request[v1.ListIdentityLinksRequest]) (*connect.Response[v1.ListIdentityLinksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListIdentityLinks is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UnlinkIdentity(context.Context, *connect.Request[v1.UnlinkIdentityRequest]) (*connect.Response[v1.UnlinkIdentityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UnlinkIdentity is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) EnableSCIM(context.Context, *connect.Request[v1.EnableSCIMRequest]) (*connect.Response[v1.EnableSCIMResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.EnableSCIM is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DisableSCIM is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RotateSCIMToken is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateUser is not implemented"))
 }
@@ -2344,10 +3354,6 @@ func (UnimplementedControlServiceHandler) UpdateUserEmail(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserPassword is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) UpdateUserRole(context.Context, *connect.Request[v1.UpdateUserRoleRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserRole is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
@@ -2578,6 +3584,10 @@ func (UnimplementedControlServiceHandler) GetDeviceAssignments(context.Context, 
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceAssignments is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) GetUserAssignments(context.Context, *connect.Request[v1.GetUserAssignmentsRequest]) (*connect.Response[v1.GetUserAssignmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetUserAssignments is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) SetUserSelection(context.Context, *connect.Request[v1.SetUserSelectionRequest]) (*connect.Response[v1.SetUserSelectionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserSelection is not implemented"))
 }
@@ -2656,4 +3666,76 @@ func (UnimplementedControlServiceHandler) GetDeviceInventory(context.Context, *c
 
 func (UnimplementedControlServiceHandler) RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RefreshDeviceInventory is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListRoles is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteRole is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AssignRoleToUser(context.Context, *connect.Request[v1.AssignRoleToUserRequest]) (*connect.Response[v1.AssignRoleToUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AssignRoleToUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevokeRoleFromUser(context.Context, *connect.Request[v1.RevokeRoleFromUserRequest]) (*connect.Response[v1.RevokeRoleFromUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeRoleFromUser is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListPermissions(context.Context, *connect.Request[v1.ListPermissionsRequest]) (*connect.Response[v1.ListPermissionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListPermissions is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateUserGroup(context.Context, *connect.Request[v1.CreateUserGroupRequest]) (*connect.Response[v1.CreateUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetUserGroup(context.Context, *connect.Request[v1.GetUserGroupRequest]) (*connect.Response[v1.GetUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListUserGroups(context.Context, *connect.Request[v1.ListUserGroupsRequest]) (*connect.Response[v1.ListUserGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListUserGroups is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateUserGroup(context.Context, *connect.Request[v1.UpdateUserGroupRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteUserGroup(context.Context, *connect.Request[v1.DeleteUserGroupRequest]) (*connect.Response[v1.DeleteUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AddUserToGroup(context.Context, *connect.Request[v1.AddUserToGroupRequest]) (*connect.Response[v1.AddUserToGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddUserToGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveUserFromGroup(context.Context, *connect.Request[v1.RemoveUserFromGroupRequest]) (*connect.Response[v1.RemoveUserFromGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveUserFromGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AssignRoleToUserGroup(context.Context, *connect.Request[v1.AssignRoleToUserGroupRequest]) (*connect.Response[v1.AssignRoleToUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AssignRoleToUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevokeRoleFromUserGroup(context.Context, *connect.Request[v1.RevokeRoleFromUserGroupRequest]) (*connect.Response[v1.RevokeRoleFromUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeRoleFromUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListUserGroupsForUser(context.Context, *connect.Request[v1.ListUserGroupsForUserRequest]) (*connect.Response[v1.ListUserGroupsForUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListUserGroupsForUser is not implemented"))
 }
