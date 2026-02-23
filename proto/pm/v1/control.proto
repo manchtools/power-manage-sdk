@@ -462,6 +462,7 @@ message ManagedAction {
     LpsParams lps = 25;
     GroupParams group = 26;
     LuksParams luks = 27;
+    WifiParams wifi = 28;
   }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -516,6 +517,8 @@ message CreateActionRequest {
     GroupParams group = 26;
     // @gotags: validate:"omitempty"
     LuksParams luks = 27;
+    // @gotags: validate:"omitempty"
+    WifiParams wifi = 28;
   }
 }
 
@@ -603,6 +606,8 @@ message UpdateActionParamsRequest {
     GroupParams group = 26;
     // @gotags: validate:"omitempty"
     LuksParams luks = 27;
+    // @gotags: validate:"omitempty"
+    WifiParams wifi = 28;
   }
 }
 
