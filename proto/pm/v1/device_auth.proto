@@ -35,6 +35,12 @@ service DeviceAuthService {
 
   // Complete a browser-based login after the localhost callback is received.
   rpc CompleteLogin(CompleteLoginRequest) returns (CompleteLoginResponse);
+
+  // Enroll the agent with a PM server (called by CLI, no sudo required).
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+
+  // Check whether the agent is currently enrolled.
+  rpc GetEnrollmentStatus(GetEnrollmentStatusRequest) returns (GetEnrollmentStatusResponse);
 }
 
 // ============================================================================
@@ -120,6 +126,31 @@ message CompleteLoginResponse {
   DeviceUserInfo user = 3;
   string session_token = 4;
   int64 session_ttl_seconds = 5;
+}
+
+// ============================================================================
+// Enrollment (Socket-based, no sudo required)
+// ============================================================================
+
+message EnrollRequest {
+  // @gotags: validate:"required,url"
+  string server_url = 1;   // Control server URL
+  // @gotags: validate:"required"
+  string token = 2;        // Registration token from web UI
+  bool skip_verify = 3;    // Skip TLS verification (development only)
+}
+
+message EnrollResponse {
+  bool success = 1;
+  string device_id = 2;    // Assigned device ID on success
+  string error = 3;        // Error message on failure
+}
+
+message GetEnrollmentStatusRequest {}
+
+message GetEnrollmentStatusResponse {
+  bool enrolled = 1;
+  string device_id = 2;    // Empty if not enrolled
 }
 
 // DeviceUserInfo is defined in control.proto (same package)
