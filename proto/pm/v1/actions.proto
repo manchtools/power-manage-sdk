@@ -55,6 +55,9 @@ enum ActionType {
 
   // Encryption management (1000-1099)
   ACTION_TYPE_LUKS = 1000;      // LUKS disk encryption management
+
+  // Network management (1100-1199)
+  ACTION_TYPE_WIFI = 1100;      // WiFi connection management
 }
 
 // ============================================================================
@@ -94,6 +97,7 @@ message Action {
     LpsParams lps = 25;
     GroupParams group = 26;
     LuksParams luks = 27;
+    WifiParams wifi = 28;
   }
 
   // ECDSA signature over canonical action payload (signed by CA key).
@@ -614,6 +618,45 @@ message LuksParams {
   // Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty"
   LpsPasswordComplexity user_passphrase_complexity = 6;
+}
+
+// WiFi authentication type.
+enum WifiAuthType {
+  WIFI_AUTH_TYPE_UNSPECIFIED = 0;
+  WIFI_AUTH_TYPE_PSK = 1;       // WPA2/WPA3 Personal (password)
+  WIFI_AUTH_TYPE_EAP_TLS = 2;   // 802.1X with client certificate
+}
+
+// WifiParams configures WiFi connection management via NetworkManager.
+// Each action creates a connection profile named pm-wifi-{actionId}.
+// Supports PSK (password) and EAP-TLS (certificate) authentication.
+message WifiParams {
+  // Network name (SSID)
+  // @gotags: validate:"required,min=1,max=255"
+  string ssid = 1;
+  // Authentication type
+  // @gotags: validate:"required,ne=0"
+  WifiAuthType auth_type = 2;
+
+  // PSK authentication (WPA2/WPA3 Personal)
+  // @gotags: validate:"omitempty,max=63"
+  string psk = 3;
+
+  // EAP-TLS authentication (802.1X with client certificate)
+  // @gotags: validate:"omitempty"
+  string ca_cert = 4;         // CA certificate (PEM)
+  // @gotags: validate:"omitempty"
+  string client_cert = 5;     // Client certificate (PEM)
+  // @gotags: validate:"omitempty"
+  string client_key = 6;      // Client private key (PEM)
+  // @gotags: validate:"omitempty,max=254"
+  string identity = 7;        // EAP identity (e.g., user@corp.com)
+
+  // Connection settings
+  bool auto_connect = 8;
+  bool hidden = 9;
+  // @gotags: validate:"omitempty,gte=-1,lte=999"
+  int32 priority = 10;
 }
 
 // ============================================================================
