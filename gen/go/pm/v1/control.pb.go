@@ -12859,6 +12859,8 @@ type UserGroup struct {
 	MemberCount   int32                  `protobuf:"varint,4,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
 	Roles         []*Role                `protobuf:"bytes,5,rep,name=roles,proto3" json:"roles,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	IsDynamic     bool                   `protobuf:"varint,7,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
+	DynamicQuery  string                 `protobuf:"bytes,8,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12935,6 +12937,20 @@ func (x *UserGroup) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *UserGroup) GetIsDynamic() bool {
+	if x != nil {
+		return x.IsDynamic
+	}
+	return false
+}
+
+func (x *UserGroup) GetDynamicQuery() string {
+	if x != nil {
+		return x.DynamicQuery
+	}
+	return ""
+}
+
 type UserGroupMember struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -13000,7 +13016,10 @@ type CreateUserGroupRequest struct {
 	// @gotags: validate:"required,min=1,max=64"
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=64"`
 	// @gotags: validate:"omitempty,max=1024"
-	Description   string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=1024"`
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=1024"`
+	IsDynamic   bool   `protobuf:"varint,3,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
+	// @gotags: validate:"omitempty,max=4096"
+	DynamicQuery  string `protobuf:"bytes,4,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty" validate:"omitempty,max=4096"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13045,6 +13064,20 @@ func (x *CreateUserGroupRequest) GetName() string {
 func (x *CreateUserGroupRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateUserGroupRequest) GetIsDynamic() bool {
+	if x != nil {
+		return x.IsDynamic
+	}
+	return false
+}
+
+func (x *CreateUserGroupRequest) GetDynamicQuery() string {
+	if x != nil {
+		return x.DynamicQuery
 	}
 	return ""
 }
@@ -13941,6 +13974,322 @@ func (x *ListUserGroupsForUserResponse) GetGroups() []*UserGroup {
 	return nil
 }
 
+type UpdateUserGroupQueryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	Id        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
+	IsDynamic bool   `protobuf:"varint,2,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
+	// @gotags: validate:"omitempty,max=4096"
+	DynamicQuery  string `protobuf:"bytes,3,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty" validate:"omitempty,max=4096"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserGroupQueryRequest) Reset() {
+	*x = UpdateUserGroupQueryRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[236]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserGroupQueryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserGroupQueryRequest) ProtoMessage() {}
+
+func (x *UpdateUserGroupQueryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[236]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserGroupQueryRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserGroupQueryRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{236}
+}
+
+func (x *UpdateUserGroupQueryRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateUserGroupQueryRequest) GetIsDynamic() bool {
+	if x != nil {
+		return x.IsDynamic
+	}
+	return false
+}
+
+func (x *UpdateUserGroupQueryRequest) GetDynamicQuery() string {
+	if x != nil {
+		return x.DynamicQuery
+	}
+	return ""
+}
+
+type UpdateUserGroupQueryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *UserGroup             `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserGroupQueryResponse) Reset() {
+	*x = UpdateUserGroupQueryResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[237]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserGroupQueryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserGroupQueryResponse) ProtoMessage() {}
+
+func (x *UpdateUserGroupQueryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[237]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserGroupQueryResponse.ProtoReflect.Descriptor instead.
+func (*UpdateUserGroupQueryResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{237}
+}
+
+func (x *UpdateUserGroupQueryResponse) GetGroup() *UserGroup {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+type ValidateUserGroupQueryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,max=4096"
+	Query         string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"required,max=4096"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateUserGroupQueryRequest) Reset() {
+	*x = ValidateUserGroupQueryRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[238]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateUserGroupQueryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateUserGroupQueryRequest) ProtoMessage() {}
+
+func (x *ValidateUserGroupQueryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[238]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateUserGroupQueryRequest.ProtoReflect.Descriptor instead.
+func (*ValidateUserGroupQueryRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{238}
+}
+
+func (x *ValidateUserGroupQueryRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+type ValidateUserGroupQueryResponse struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Valid             bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	Error             string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	MatchingUserCount int32                  `protobuf:"varint,3,opt,name=matching_user_count,json=matchingUserCount,proto3" json:"matching_user_count,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ValidateUserGroupQueryResponse) Reset() {
+	*x = ValidateUserGroupQueryResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[239]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateUserGroupQueryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateUserGroupQueryResponse) ProtoMessage() {}
+
+func (x *ValidateUserGroupQueryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[239]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateUserGroupQueryResponse.ProtoReflect.Descriptor instead.
+func (*ValidateUserGroupQueryResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{239}
+}
+
+func (x *ValidateUserGroupQueryResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
+}
+
+func (x *ValidateUserGroupQueryResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ValidateUserGroupQueryResponse) GetMatchingUserCount() int32 {
+	if x != nil {
+		return x.MatchingUserCount
+	}
+	return 0
+}
+
+type EvaluateDynamicUserGroupRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	Id            string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EvaluateDynamicUserGroupRequest) Reset() {
+	*x = EvaluateDynamicUserGroupRequest{}
+	mi := &file_pm_v1_control_proto_msgTypes[240]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvaluateDynamicUserGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvaluateDynamicUserGroupRequest) ProtoMessage() {}
+
+func (x *EvaluateDynamicUserGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[240]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvaluateDynamicUserGroupRequest.ProtoReflect.Descriptor instead.
+func (*EvaluateDynamicUserGroupRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{240}
+}
+
+func (x *EvaluateDynamicUserGroupRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type EvaluateDynamicUserGroupResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *UserGroup             `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	UsersAdded    int32                  `protobuf:"varint,2,opt,name=users_added,json=usersAdded,proto3" json:"users_added,omitempty"`
+	UsersRemoved  int32                  `protobuf:"varint,3,opt,name=users_removed,json=usersRemoved,proto3" json:"users_removed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EvaluateDynamicUserGroupResponse) Reset() {
+	*x = EvaluateDynamicUserGroupResponse{}
+	mi := &file_pm_v1_control_proto_msgTypes[241]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvaluateDynamicUserGroupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvaluateDynamicUserGroupResponse) ProtoMessage() {}
+
+func (x *EvaluateDynamicUserGroupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_control_proto_msgTypes[241]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvaluateDynamicUserGroupResponse.ProtoReflect.Descriptor instead.
+func (*EvaluateDynamicUserGroupResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{241}
+}
+
+func (x *EvaluateDynamicUserGroupResponse) GetGroup() *UserGroup {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+func (x *EvaluateDynamicUserGroupResponse) GetUsersAdded() int32 {
+	if x != nil {
+		return x.UsersAdded
+	}
+	return 0
+}
+
+func (x *EvaluateDynamicUserGroupResponse) GetUsersRemoved() int32 {
+	if x != nil {
+		return x.UsersRemoved
+	}
+	return 0
+}
+
 type IdentityProvider struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -13971,7 +14320,7 @@ type IdentityProvider struct {
 
 func (x *IdentityProvider) Reset() {
 	*x = IdentityProvider{}
-	mi := &file_pm_v1_control_proto_msgTypes[236]
+	mi := &file_pm_v1_control_proto_msgTypes[242]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13983,7 +14332,7 @@ func (x *IdentityProvider) String() string {
 func (*IdentityProvider) ProtoMessage() {}
 
 func (x *IdentityProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[236]
+	mi := &file_pm_v1_control_proto_msgTypes[242]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13996,7 +14345,7 @@ func (x *IdentityProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityProvider.ProtoReflect.Descriptor instead.
 func (*IdentityProvider) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{236}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{242}
 }
 
 func (x *IdentityProvider) GetId() string {
@@ -14164,7 +14513,7 @@ type IdentityLink struct {
 
 func (x *IdentityLink) Reset() {
 	*x = IdentityLink{}
-	mi := &file_pm_v1_control_proto_msgTypes[237]
+	mi := &file_pm_v1_control_proto_msgTypes[243]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14176,7 +14525,7 @@ func (x *IdentityLink) String() string {
 func (*IdentityLink) ProtoMessage() {}
 
 func (x *IdentityLink) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[237]
+	mi := &file_pm_v1_control_proto_msgTypes[243]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14189,7 +14538,7 @@ func (x *IdentityLink) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityLink.ProtoReflect.Descriptor instead.
 func (*IdentityLink) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{237}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{243}
 }
 
 func (x *IdentityLink) GetId() string {
@@ -14292,7 +14641,7 @@ type CreateIdentityProviderRequest struct {
 
 func (x *CreateIdentityProviderRequest) Reset() {
 	*x = CreateIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[238]
+	mi := &file_pm_v1_control_proto_msgTypes[244]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14304,7 +14653,7 @@ func (x *CreateIdentityProviderRequest) String() string {
 func (*CreateIdentityProviderRequest) ProtoMessage() {}
 
 func (x *CreateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[238]
+	mi := &file_pm_v1_control_proto_msgTypes[244]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14317,7 +14666,7 @@ func (x *CreateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*CreateIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{238}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{244}
 }
 
 func (x *CreateIdentityProviderRequest) GetName() string {
@@ -14441,7 +14790,7 @@ type CreateIdentityProviderResponse struct {
 
 func (x *CreateIdentityProviderResponse) Reset() {
 	*x = CreateIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[239]
+	mi := &file_pm_v1_control_proto_msgTypes[245]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14453,7 +14802,7 @@ func (x *CreateIdentityProviderResponse) String() string {
 func (*CreateIdentityProviderResponse) ProtoMessage() {}
 
 func (x *CreateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[239]
+	mi := &file_pm_v1_control_proto_msgTypes[245]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14466,7 +14815,7 @@ func (x *CreateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*CreateIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{239}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{245}
 }
 
 func (x *CreateIdentityProviderResponse) GetProvider() *IdentityProvider {
@@ -14486,7 +14835,7 @@ type GetIdentityProviderRequest struct {
 
 func (x *GetIdentityProviderRequest) Reset() {
 	*x = GetIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[240]
+	mi := &file_pm_v1_control_proto_msgTypes[246]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14498,7 +14847,7 @@ func (x *GetIdentityProviderRequest) String() string {
 func (*GetIdentityProviderRequest) ProtoMessage() {}
 
 func (x *GetIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[240]
+	mi := &file_pm_v1_control_proto_msgTypes[246]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14511,7 +14860,7 @@ func (x *GetIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*GetIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{240}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{246}
 }
 
 func (x *GetIdentityProviderRequest) GetId() string {
@@ -14530,7 +14879,7 @@ type GetIdentityProviderResponse struct {
 
 func (x *GetIdentityProviderResponse) Reset() {
 	*x = GetIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[241]
+	mi := &file_pm_v1_control_proto_msgTypes[247]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14542,7 +14891,7 @@ func (x *GetIdentityProviderResponse) String() string {
 func (*GetIdentityProviderResponse) ProtoMessage() {}
 
 func (x *GetIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[241]
+	mi := &file_pm_v1_control_proto_msgTypes[247]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14555,7 +14904,7 @@ func (x *GetIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*GetIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{241}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{247}
 }
 
 func (x *GetIdentityProviderResponse) GetProvider() *IdentityProvider {
@@ -14577,7 +14926,7 @@ type ListIdentityProvidersRequest struct {
 
 func (x *ListIdentityProvidersRequest) Reset() {
 	*x = ListIdentityProvidersRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[242]
+	mi := &file_pm_v1_control_proto_msgTypes[248]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14589,7 +14938,7 @@ func (x *ListIdentityProvidersRequest) String() string {
 func (*ListIdentityProvidersRequest) ProtoMessage() {}
 
 func (x *ListIdentityProvidersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[242]
+	mi := &file_pm_v1_control_proto_msgTypes[248]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14602,7 +14951,7 @@ func (x *ListIdentityProvidersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityProvidersRequest.ProtoReflect.Descriptor instead.
 func (*ListIdentityProvidersRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{242}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{248}
 }
 
 func (x *ListIdentityProvidersRequest) GetPageSize() int32 {
@@ -14630,7 +14979,7 @@ type ListIdentityProvidersResponse struct {
 
 func (x *ListIdentityProvidersResponse) Reset() {
 	*x = ListIdentityProvidersResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[243]
+	mi := &file_pm_v1_control_proto_msgTypes[249]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14642,7 +14991,7 @@ func (x *ListIdentityProvidersResponse) String() string {
 func (*ListIdentityProvidersResponse) ProtoMessage() {}
 
 func (x *ListIdentityProvidersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[243]
+	mi := &file_pm_v1_control_proto_msgTypes[249]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14655,7 +15004,7 @@ func (x *ListIdentityProvidersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityProvidersResponse.ProtoReflect.Descriptor instead.
 func (*ListIdentityProvidersResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{243}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{249}
 }
 
 func (x *ListIdentityProvidersResponse) GetProviders() []*IdentityProvider {
@@ -14706,7 +15055,7 @@ type UpdateIdentityProviderRequest struct {
 
 func (x *UpdateIdentityProviderRequest) Reset() {
 	*x = UpdateIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[244]
+	mi := &file_pm_v1_control_proto_msgTypes[250]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14718,7 +15067,7 @@ func (x *UpdateIdentityProviderRequest) String() string {
 func (*UpdateIdentityProviderRequest) ProtoMessage() {}
 
 func (x *UpdateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[244]
+	mi := &file_pm_v1_control_proto_msgTypes[250]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14731,7 +15080,7 @@ func (x *UpdateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*UpdateIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{244}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{250}
 }
 
 func (x *UpdateIdentityProviderRequest) GetId() string {
@@ -14855,7 +15204,7 @@ type UpdateIdentityProviderResponse struct {
 
 func (x *UpdateIdentityProviderResponse) Reset() {
 	*x = UpdateIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[245]
+	mi := &file_pm_v1_control_proto_msgTypes[251]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14867,7 +15216,7 @@ func (x *UpdateIdentityProviderResponse) String() string {
 func (*UpdateIdentityProviderResponse) ProtoMessage() {}
 
 func (x *UpdateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[245]
+	mi := &file_pm_v1_control_proto_msgTypes[251]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14880,7 +15229,7 @@ func (x *UpdateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*UpdateIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{245}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{251}
 }
 
 func (x *UpdateIdentityProviderResponse) GetProvider() *IdentityProvider {
@@ -14900,7 +15249,7 @@ type DeleteIdentityProviderRequest struct {
 
 func (x *DeleteIdentityProviderRequest) Reset() {
 	*x = DeleteIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[246]
+	mi := &file_pm_v1_control_proto_msgTypes[252]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14912,7 +15261,7 @@ func (x *DeleteIdentityProviderRequest) String() string {
 func (*DeleteIdentityProviderRequest) ProtoMessage() {}
 
 func (x *DeleteIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[246]
+	mi := &file_pm_v1_control_proto_msgTypes[252]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14925,7 +15274,7 @@ func (x *DeleteIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*DeleteIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{246}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{252}
 }
 
 func (x *DeleteIdentityProviderRequest) GetId() string {
@@ -14943,7 +15292,7 @@ type DeleteIdentityProviderResponse struct {
 
 func (x *DeleteIdentityProviderResponse) Reset() {
 	*x = DeleteIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[247]
+	mi := &file_pm_v1_control_proto_msgTypes[253]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14955,7 +15304,7 @@ func (x *DeleteIdentityProviderResponse) String() string {
 func (*DeleteIdentityProviderResponse) ProtoMessage() {}
 
 func (x *DeleteIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[247]
+	mi := &file_pm_v1_control_proto_msgTypes[253]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14968,7 +15317,7 @@ func (x *DeleteIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*DeleteIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{247}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{253}
 }
 
 type AuthMethodProvider struct {
@@ -14982,7 +15331,7 @@ type AuthMethodProvider struct {
 
 func (x *AuthMethodProvider) Reset() {
 	*x = AuthMethodProvider{}
-	mi := &file_pm_v1_control_proto_msgTypes[248]
+	mi := &file_pm_v1_control_proto_msgTypes[254]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14994,7 +15343,7 @@ func (x *AuthMethodProvider) String() string {
 func (*AuthMethodProvider) ProtoMessage() {}
 
 func (x *AuthMethodProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[248]
+	mi := &file_pm_v1_control_proto_msgTypes[254]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15007,7 +15356,7 @@ func (x *AuthMethodProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthMethodProvider.ProtoReflect.Descriptor instead.
 func (*AuthMethodProvider) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{248}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{254}
 }
 
 func (x *AuthMethodProvider) GetSlug() string {
@@ -15041,7 +15390,7 @@ type ListAuthMethodsRequest struct {
 
 func (x *ListAuthMethodsRequest) Reset() {
 	*x = ListAuthMethodsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[249]
+	mi := &file_pm_v1_control_proto_msgTypes[255]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15053,7 +15402,7 @@ func (x *ListAuthMethodsRequest) String() string {
 func (*ListAuthMethodsRequest) ProtoMessage() {}
 
 func (x *ListAuthMethodsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[249]
+	mi := &file_pm_v1_control_proto_msgTypes[255]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15066,7 +15415,7 @@ func (x *ListAuthMethodsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuthMethodsRequest.ProtoReflect.Descriptor instead.
 func (*ListAuthMethodsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{249}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{255}
 }
 
 func (x *ListAuthMethodsRequest) GetEmail() string {
@@ -15087,7 +15436,7 @@ type ListAuthMethodsResponse struct {
 
 func (x *ListAuthMethodsResponse) Reset() {
 	*x = ListAuthMethodsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[250]
+	mi := &file_pm_v1_control_proto_msgTypes[256]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15099,7 +15448,7 @@ func (x *ListAuthMethodsResponse) String() string {
 func (*ListAuthMethodsResponse) ProtoMessage() {}
 
 func (x *ListAuthMethodsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[250]
+	mi := &file_pm_v1_control_proto_msgTypes[256]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15112,7 +15461,7 @@ func (x *ListAuthMethodsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuthMethodsResponse.ProtoReflect.Descriptor instead.
 func (*ListAuthMethodsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{250}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{256}
 }
 
 func (x *ListAuthMethodsResponse) GetPasswordEnabled() bool {
@@ -15148,7 +15497,7 @@ type GetSSOLoginURLRequest struct {
 
 func (x *GetSSOLoginURLRequest) Reset() {
 	*x = GetSSOLoginURLRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[251]
+	mi := &file_pm_v1_control_proto_msgTypes[257]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15160,7 +15509,7 @@ func (x *GetSSOLoginURLRequest) String() string {
 func (*GetSSOLoginURLRequest) ProtoMessage() {}
 
 func (x *GetSSOLoginURLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[251]
+	mi := &file_pm_v1_control_proto_msgTypes[257]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15173,7 +15522,7 @@ func (x *GetSSOLoginURLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSSOLoginURLRequest.ProtoReflect.Descriptor instead.
 func (*GetSSOLoginURLRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{251}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{257}
 }
 
 func (x *GetSSOLoginURLRequest) GetSlug() string {
@@ -15199,7 +15548,7 @@ type GetSSOLoginURLResponse struct {
 
 func (x *GetSSOLoginURLResponse) Reset() {
 	*x = GetSSOLoginURLResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[252]
+	mi := &file_pm_v1_control_proto_msgTypes[258]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15211,7 +15560,7 @@ func (x *GetSSOLoginURLResponse) String() string {
 func (*GetSSOLoginURLResponse) ProtoMessage() {}
 
 func (x *GetSSOLoginURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[252]
+	mi := &file_pm_v1_control_proto_msgTypes[258]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15224,7 +15573,7 @@ func (x *GetSSOLoginURLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSSOLoginURLResponse.ProtoReflect.Descriptor instead.
 func (*GetSSOLoginURLResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{252}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{258}
 }
 
 func (x *GetSSOLoginURLResponse) GetLoginUrl() string {
@@ -15248,7 +15597,7 @@ type SSOCallbackRequest struct {
 
 func (x *SSOCallbackRequest) Reset() {
 	*x = SSOCallbackRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[253]
+	mi := &file_pm_v1_control_proto_msgTypes[259]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15260,7 +15609,7 @@ func (x *SSOCallbackRequest) String() string {
 func (*SSOCallbackRequest) ProtoMessage() {}
 
 func (x *SSOCallbackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[253]
+	mi := &file_pm_v1_control_proto_msgTypes[259]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15273,7 +15622,7 @@ func (x *SSOCallbackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SSOCallbackRequest.ProtoReflect.Descriptor instead.
 func (*SSOCallbackRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{253}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{259}
 }
 
 func (x *SSOCallbackRequest) GetSlug() string {
@@ -15312,7 +15661,7 @@ type SSOCallbackResponse struct {
 
 func (x *SSOCallbackResponse) Reset() {
 	*x = SSOCallbackResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[254]
+	mi := &file_pm_v1_control_proto_msgTypes[260]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15324,7 +15673,7 @@ func (x *SSOCallbackResponse) String() string {
 func (*SSOCallbackResponse) ProtoMessage() {}
 
 func (x *SSOCallbackResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[254]
+	mi := &file_pm_v1_control_proto_msgTypes[260]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15337,7 +15686,7 @@ func (x *SSOCallbackResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SSOCallbackResponse.ProtoReflect.Descriptor instead.
 func (*SSOCallbackResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{254}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{260}
 }
 
 func (x *SSOCallbackResponse) GetAccessToken() string {
@@ -15390,7 +15739,7 @@ type ListIdentityLinksRequest struct {
 
 func (x *ListIdentityLinksRequest) Reset() {
 	*x = ListIdentityLinksRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[255]
+	mi := &file_pm_v1_control_proto_msgTypes[261]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15402,7 +15751,7 @@ func (x *ListIdentityLinksRequest) String() string {
 func (*ListIdentityLinksRequest) ProtoMessage() {}
 
 func (x *ListIdentityLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[255]
+	mi := &file_pm_v1_control_proto_msgTypes[261]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15415,7 +15764,7 @@ func (x *ListIdentityLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListIdentityLinksRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{255}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{261}
 }
 
 type ListIdentityLinksResponse struct {
@@ -15427,7 +15776,7 @@ type ListIdentityLinksResponse struct {
 
 func (x *ListIdentityLinksResponse) Reset() {
 	*x = ListIdentityLinksResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[256]
+	mi := &file_pm_v1_control_proto_msgTypes[262]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15439,7 +15788,7 @@ func (x *ListIdentityLinksResponse) String() string {
 func (*ListIdentityLinksResponse) ProtoMessage() {}
 
 func (x *ListIdentityLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[256]
+	mi := &file_pm_v1_control_proto_msgTypes[262]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15452,7 +15801,7 @@ func (x *ListIdentityLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListIdentityLinksResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{256}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{262}
 }
 
 func (x *ListIdentityLinksResponse) GetLinks() []*IdentityLink {
@@ -15472,7 +15821,7 @@ type UnlinkIdentityRequest struct {
 
 func (x *UnlinkIdentityRequest) Reset() {
 	*x = UnlinkIdentityRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[257]
+	mi := &file_pm_v1_control_proto_msgTypes[263]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15484,7 +15833,7 @@ func (x *UnlinkIdentityRequest) String() string {
 func (*UnlinkIdentityRequest) ProtoMessage() {}
 
 func (x *UnlinkIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[257]
+	mi := &file_pm_v1_control_proto_msgTypes[263]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15497,7 +15846,7 @@ func (x *UnlinkIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlinkIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UnlinkIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{257}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{263}
 }
 
 func (x *UnlinkIdentityRequest) GetLinkId() string {
@@ -15515,7 +15864,7 @@ type UnlinkIdentityResponse struct {
 
 func (x *UnlinkIdentityResponse) Reset() {
 	*x = UnlinkIdentityResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[258]
+	mi := &file_pm_v1_control_proto_msgTypes[264]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15527,7 +15876,7 @@ func (x *UnlinkIdentityResponse) String() string {
 func (*UnlinkIdentityResponse) ProtoMessage() {}
 
 func (x *UnlinkIdentityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[258]
+	mi := &file_pm_v1_control_proto_msgTypes[264]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15540,7 +15889,7 @@ func (x *UnlinkIdentityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlinkIdentityResponse.ProtoReflect.Descriptor instead.
 func (*UnlinkIdentityResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{258}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{264}
 }
 
 // SCIM Provisioning
@@ -15554,7 +15903,7 @@ type EnableSCIMRequest struct {
 
 func (x *EnableSCIMRequest) Reset() {
 	*x = EnableSCIMRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[259]
+	mi := &file_pm_v1_control_proto_msgTypes[265]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15566,7 +15915,7 @@ func (x *EnableSCIMRequest) String() string {
 func (*EnableSCIMRequest) ProtoMessage() {}
 
 func (x *EnableSCIMRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[259]
+	mi := &file_pm_v1_control_proto_msgTypes[265]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15579,7 +15928,7 @@ func (x *EnableSCIMRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableSCIMRequest.ProtoReflect.Descriptor instead.
 func (*EnableSCIMRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{259}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{265}
 }
 
 func (x *EnableSCIMRequest) GetId() string {
@@ -15599,7 +15948,7 @@ type EnableSCIMResponse struct {
 
 func (x *EnableSCIMResponse) Reset() {
 	*x = EnableSCIMResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[260]
+	mi := &file_pm_v1_control_proto_msgTypes[266]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15611,7 +15960,7 @@ func (x *EnableSCIMResponse) String() string {
 func (*EnableSCIMResponse) ProtoMessage() {}
 
 func (x *EnableSCIMResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[260]
+	mi := &file_pm_v1_control_proto_msgTypes[266]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15624,7 +15973,7 @@ func (x *EnableSCIMResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableSCIMResponse.ProtoReflect.Descriptor instead.
 func (*EnableSCIMResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{260}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{266}
 }
 
 func (x *EnableSCIMResponse) GetToken() string {
@@ -15651,7 +16000,7 @@ type DisableSCIMRequest struct {
 
 func (x *DisableSCIMRequest) Reset() {
 	*x = DisableSCIMRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[261]
+	mi := &file_pm_v1_control_proto_msgTypes[267]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15663,7 +16012,7 @@ func (x *DisableSCIMRequest) String() string {
 func (*DisableSCIMRequest) ProtoMessage() {}
 
 func (x *DisableSCIMRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[261]
+	mi := &file_pm_v1_control_proto_msgTypes[267]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15676,7 +16025,7 @@ func (x *DisableSCIMRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableSCIMRequest.ProtoReflect.Descriptor instead.
 func (*DisableSCIMRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{261}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{267}
 }
 
 func (x *DisableSCIMRequest) GetId() string {
@@ -15694,7 +16043,7 @@ type DisableSCIMResponse struct {
 
 func (x *DisableSCIMResponse) Reset() {
 	*x = DisableSCIMResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[262]
+	mi := &file_pm_v1_control_proto_msgTypes[268]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15706,7 +16055,7 @@ func (x *DisableSCIMResponse) String() string {
 func (*DisableSCIMResponse) ProtoMessage() {}
 
 func (x *DisableSCIMResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[262]
+	mi := &file_pm_v1_control_proto_msgTypes[268]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15719,7 +16068,7 @@ func (x *DisableSCIMResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableSCIMResponse.ProtoReflect.Descriptor instead.
 func (*DisableSCIMResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{262}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{268}
 }
 
 type RotateSCIMTokenRequest struct {
@@ -15732,7 +16081,7 @@ type RotateSCIMTokenRequest struct {
 
 func (x *RotateSCIMTokenRequest) Reset() {
 	*x = RotateSCIMTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[263]
+	mi := &file_pm_v1_control_proto_msgTypes[269]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15744,7 +16093,7 @@ func (x *RotateSCIMTokenRequest) String() string {
 func (*RotateSCIMTokenRequest) ProtoMessage() {}
 
 func (x *RotateSCIMTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[263]
+	mi := &file_pm_v1_control_proto_msgTypes[269]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15757,7 +16106,7 @@ func (x *RotateSCIMTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSCIMTokenRequest.ProtoReflect.Descriptor instead.
 func (*RotateSCIMTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{263}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{269}
 }
 
 func (x *RotateSCIMTokenRequest) GetId() string {
@@ -15776,7 +16125,7 @@ type RotateSCIMTokenResponse struct {
 
 func (x *RotateSCIMTokenResponse) Reset() {
 	*x = RotateSCIMTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[264]
+	mi := &file_pm_v1_control_proto_msgTypes[270]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15788,7 +16137,7 @@ func (x *RotateSCIMTokenResponse) String() string {
 func (*RotateSCIMTokenResponse) ProtoMessage() {}
 
 func (x *RotateSCIMTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[264]
+	mi := &file_pm_v1_control_proto_msgTypes[270]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15801,7 +16150,7 @@ func (x *RotateSCIMTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSCIMTokenResponse.ProtoReflect.Descriptor instead.
 func (*RotateSCIMTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{264}
+	return file_pm_v1_control_proto_rawDescGZIP(), []int{270}
 }
 
 func (x *RotateSCIMTokenResponse) GetToken() string {
@@ -16705,7 +17054,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1aRevokeRoleFromUserResponse\"\x18\n" +
 	"\x16ListPermissionsRequest\"R\n" +
 	"\x17ListPermissionsResponse\x127\n" +
-	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\xd2\x01\n" +
+	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\x96\x02\n" +
 	"\tUserGroup\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -16713,14 +17062,20 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\fmember_count\x18\x04 \x01(\x05R\vmemberCount\x12!\n" +
 	"\x05roles\x18\x05 \x03(\v2\v.pm.v1.RoleR\x05roles\x129\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"w\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"is_dynamic\x18\a \x01(\bR\tisDynamic\x12#\n" +
+	"\rdynamic_query\x18\b \x01(\tR\fdynamicQuery\"w\n" +
 	"\x0fUserGroupMember\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x125\n" +
-	"\badded_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"N\n" +
+	"\badded_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\x92\x01\n" +
 	"\x16CreateUserGroupRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"A\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"is_dynamic\x18\x03 \x01(\bR\tisDynamic\x12#\n" +
+	"\rdynamic_query\x18\x04 \x01(\tR\fdynamicQuery\"A\n" +
 	"\x17CreateUserGroupResponse\x12&\n" +
 	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\"%\n" +
 	"\x13GetUserGroupRequest\x12\x0e\n" +
@@ -16765,7 +17120,27 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1cListUserGroupsForUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"I\n" +
 	"\x1dListUserGroupsForUserResponse\x12(\n" +
-	"\x06groups\x18\x01 \x03(\v2\x10.pm.v1.UserGroupR\x06groups\"\x81\a\n" +
+	"\x06groups\x18\x01 \x03(\v2\x10.pm.v1.UserGroupR\x06groups\"q\n" +
+	"\x1bUpdateUserGroupQueryRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"is_dynamic\x18\x02 \x01(\bR\tisDynamic\x12#\n" +
+	"\rdynamic_query\x18\x03 \x01(\tR\fdynamicQuery\"F\n" +
+	"\x1cUpdateUserGroupQueryResponse\x12&\n" +
+	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\"5\n" +
+	"\x1dValidateUserGroupQueryRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\"|\n" +
+	"\x1eValidateUserGroupQueryResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12.\n" +
+	"\x13matching_user_count\x18\x03 \x01(\x05R\x11matchingUserCount\"1\n" +
+	"\x1fEvaluateDynamicUserGroupRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x90\x01\n" +
+	" EvaluateDynamicUserGroupResponse\x12&\n" +
+	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\x12\x1f\n" +
+	"\vusers_added\x18\x02 \x01(\x05R\n" +
+	"usersAdded\x12#\n" +
+	"\rusers_removed\x18\x03 \x01(\x05R\fusersRemoved\"\x81\a\n" +
 	"\x10IdentityProvider\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -16920,7 +17295,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x16RotateSCIMTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"/\n" +
 	"\x17RotateSCIMTokenResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token2\x8cR\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token2\xc1T\n" +
 	"\x0eControlService\x12;\n" +
 	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponse\x122\n" +
 	"\x05Login\x12\x13.pm.v1.LoginRequest\x1a\x14.pm.v1.LoginResponse\x12G\n" +
@@ -17055,7 +17430,10 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x13RemoveUserFromGroup\x12!.pm.v1.RemoveUserFromGroupRequest\x1a\".pm.v1.RemoveUserFromGroupResponse\x12b\n" +
 	"\x15AssignRoleToUserGroup\x12#.pm.v1.AssignRoleToUserGroupRequest\x1a$.pm.v1.AssignRoleToUserGroupResponse\x12h\n" +
 	"\x17RevokeRoleFromUserGroup\x12%.pm.v1.RevokeRoleFromUserGroupRequest\x1a&.pm.v1.RevokeRoleFromUserGroupResponse\x12b\n" +
-	"\x15ListUserGroupsForUser\x12#.pm.v1.ListUserGroupsForUserRequest\x1a$.pm.v1.ListUserGroupsForUserResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x15ListUserGroupsForUser\x12#.pm.v1.ListUserGroupsForUserRequest\x1a$.pm.v1.ListUserGroupsForUserResponse\x12_\n" +
+	"\x14UpdateUserGroupQuery\x12\".pm.v1.UpdateUserGroupQueryRequest\x1a#.pm.v1.UpdateUserGroupQueryResponse\x12e\n" +
+	"\x16ValidateUserGroupQuery\x12$.pm.v1.ValidateUserGroupQueryRequest\x1a%.pm.v1.ValidateUserGroupQueryResponse\x12k\n" +
+	"\x18EvaluateDynamicUserGroup\x12&.pm.v1.EvaluateDynamicUserGroupRequest\x1a'.pm.v1.EvaluateDynamicUserGroupResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_control_proto_rawDescOnce sync.Once
@@ -17069,7 +17447,7 @@ func file_pm_v1_control_proto_rawDescGZIP() []byte {
 	return file_pm_v1_control_proto_rawDescData
 }
 
-var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 270)
+var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 276)
 var file_pm_v1_control_proto_goTypes = []any{
 	(*RegisterRequest)(nil),                       // 0: pm.v1.RegisterRequest
 	(*RegisterResponse)(nil),                      // 1: pm.v1.RegisterResponse
@@ -17307,168 +17685,174 @@ var file_pm_v1_control_proto_goTypes = []any{
 	(*RevokeRoleFromUserGroupResponse)(nil),       // 233: pm.v1.RevokeRoleFromUserGroupResponse
 	(*ListUserGroupsForUserRequest)(nil),          // 234: pm.v1.ListUserGroupsForUserRequest
 	(*ListUserGroupsForUserResponse)(nil),         // 235: pm.v1.ListUserGroupsForUserResponse
-	(*IdentityProvider)(nil),                      // 236: pm.v1.IdentityProvider
-	(*IdentityLink)(nil),                          // 237: pm.v1.IdentityLink
-	(*CreateIdentityProviderRequest)(nil),         // 238: pm.v1.CreateIdentityProviderRequest
-	(*CreateIdentityProviderResponse)(nil),        // 239: pm.v1.CreateIdentityProviderResponse
-	(*GetIdentityProviderRequest)(nil),            // 240: pm.v1.GetIdentityProviderRequest
-	(*GetIdentityProviderResponse)(nil),           // 241: pm.v1.GetIdentityProviderResponse
-	(*ListIdentityProvidersRequest)(nil),          // 242: pm.v1.ListIdentityProvidersRequest
-	(*ListIdentityProvidersResponse)(nil),         // 243: pm.v1.ListIdentityProvidersResponse
-	(*UpdateIdentityProviderRequest)(nil),         // 244: pm.v1.UpdateIdentityProviderRequest
-	(*UpdateIdentityProviderResponse)(nil),        // 245: pm.v1.UpdateIdentityProviderResponse
-	(*DeleteIdentityProviderRequest)(nil),         // 246: pm.v1.DeleteIdentityProviderRequest
-	(*DeleteIdentityProviderResponse)(nil),        // 247: pm.v1.DeleteIdentityProviderResponse
-	(*AuthMethodProvider)(nil),                    // 248: pm.v1.AuthMethodProvider
-	(*ListAuthMethodsRequest)(nil),                // 249: pm.v1.ListAuthMethodsRequest
-	(*ListAuthMethodsResponse)(nil),               // 250: pm.v1.ListAuthMethodsResponse
-	(*GetSSOLoginURLRequest)(nil),                 // 251: pm.v1.GetSSOLoginURLRequest
-	(*GetSSOLoginURLResponse)(nil),                // 252: pm.v1.GetSSOLoginURLResponse
-	(*SSOCallbackRequest)(nil),                    // 253: pm.v1.SSOCallbackRequest
-	(*SSOCallbackResponse)(nil),                   // 254: pm.v1.SSOCallbackResponse
-	(*ListIdentityLinksRequest)(nil),              // 255: pm.v1.ListIdentityLinksRequest
-	(*ListIdentityLinksResponse)(nil),             // 256: pm.v1.ListIdentityLinksResponse
-	(*UnlinkIdentityRequest)(nil),                 // 257: pm.v1.UnlinkIdentityRequest
-	(*UnlinkIdentityResponse)(nil),                // 258: pm.v1.UnlinkIdentityResponse
-	(*EnableSCIMRequest)(nil),                     // 259: pm.v1.EnableSCIMRequest
-	(*EnableSCIMResponse)(nil),                    // 260: pm.v1.EnableSCIMResponse
-	(*DisableSCIMRequest)(nil),                    // 261: pm.v1.DisableSCIMRequest
-	(*DisableSCIMResponse)(nil),                   // 262: pm.v1.DisableSCIMResponse
-	(*RotateSCIMTokenRequest)(nil),                // 263: pm.v1.RotateSCIMTokenRequest
-	(*RotateSCIMTokenResponse)(nil),               // 264: pm.v1.RotateSCIMTokenResponse
-	nil,                                           // 265: pm.v1.Device.LabelsEntry
-	nil,                                           // 266: pm.v1.ListDevicesRequest.LabelFilterEntry
-	nil,                                           // 267: pm.v1.IdentityProvider.GroupMappingEntry
-	nil,                                           // 268: pm.v1.CreateIdentityProviderRequest.GroupMappingEntry
-	nil,                                           // 269: pm.v1.UpdateIdentityProviderRequest.GroupMappingEntry
-	(*DeviceId)(nil),                              // 270: pm.v1.DeviceId
-	(*timestamppb.Timestamp)(nil),                 // 271: google.protobuf.Timestamp
-	(ActionType)(0),                               // 272: pm.v1.ActionType
-	(DesiredState)(0),                             // 273: pm.v1.DesiredState
-	(*PackageParams)(nil),                         // 274: pm.v1.PackageParams
-	(*AppInstallParams)(nil),                      // 275: pm.v1.AppInstallParams
-	(*ShellParams)(nil),                           // 276: pm.v1.ShellParams
-	(*SystemdParams)(nil),                         // 277: pm.v1.SystemdParams
-	(*FileParams)(nil),                            // 278: pm.v1.FileParams
-	(*UpdateParams)(nil),                          // 279: pm.v1.UpdateParams
-	(*RepositoryParams)(nil),                      // 280: pm.v1.RepositoryParams
-	(*FlatpakParams)(nil),                         // 281: pm.v1.FlatpakParams
-	(*DirectoryParams)(nil),                       // 282: pm.v1.DirectoryParams
-	(*UserParams)(nil),                            // 283: pm.v1.UserParams
-	(*SshParams)(nil),                             // 284: pm.v1.SshParams
-	(*SshdParams)(nil),                            // 285: pm.v1.SshdParams
-	(*SudoParams)(nil),                            // 286: pm.v1.SudoParams
-	(*LpsParams)(nil),                             // 287: pm.v1.LpsParams
-	(*GroupParams)(nil),                           // 288: pm.v1.GroupParams
-	(*LuksParams)(nil),                            // 289: pm.v1.LuksParams
-	(*WifiParams)(nil),                            // 290: pm.v1.WifiParams
-	(*ActionSchedule)(nil),                        // 291: pm.v1.ActionSchedule
-	(AssignmentMode)(0),                           // 292: pm.v1.AssignmentMode
-	(ExecutionStatus)(0),                          // 293: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),                         // 294: pm.v1.CommandOutput
-	(*Action)(nil),                                // 295: pm.v1.Action
-	(*OSQueryRow)(nil),                            // 296: pm.v1.OSQueryRow
+	(*UpdateUserGroupQueryRequest)(nil),           // 236: pm.v1.UpdateUserGroupQueryRequest
+	(*UpdateUserGroupQueryResponse)(nil),          // 237: pm.v1.UpdateUserGroupQueryResponse
+	(*ValidateUserGroupQueryRequest)(nil),         // 238: pm.v1.ValidateUserGroupQueryRequest
+	(*ValidateUserGroupQueryResponse)(nil),        // 239: pm.v1.ValidateUserGroupQueryResponse
+	(*EvaluateDynamicUserGroupRequest)(nil),       // 240: pm.v1.EvaluateDynamicUserGroupRequest
+	(*EvaluateDynamicUserGroupResponse)(nil),      // 241: pm.v1.EvaluateDynamicUserGroupResponse
+	(*IdentityProvider)(nil),                      // 242: pm.v1.IdentityProvider
+	(*IdentityLink)(nil),                          // 243: pm.v1.IdentityLink
+	(*CreateIdentityProviderRequest)(nil),         // 244: pm.v1.CreateIdentityProviderRequest
+	(*CreateIdentityProviderResponse)(nil),        // 245: pm.v1.CreateIdentityProviderResponse
+	(*GetIdentityProviderRequest)(nil),            // 246: pm.v1.GetIdentityProviderRequest
+	(*GetIdentityProviderResponse)(nil),           // 247: pm.v1.GetIdentityProviderResponse
+	(*ListIdentityProvidersRequest)(nil),          // 248: pm.v1.ListIdentityProvidersRequest
+	(*ListIdentityProvidersResponse)(nil),         // 249: pm.v1.ListIdentityProvidersResponse
+	(*UpdateIdentityProviderRequest)(nil),         // 250: pm.v1.UpdateIdentityProviderRequest
+	(*UpdateIdentityProviderResponse)(nil),        // 251: pm.v1.UpdateIdentityProviderResponse
+	(*DeleteIdentityProviderRequest)(nil),         // 252: pm.v1.DeleteIdentityProviderRequest
+	(*DeleteIdentityProviderResponse)(nil),        // 253: pm.v1.DeleteIdentityProviderResponse
+	(*AuthMethodProvider)(nil),                    // 254: pm.v1.AuthMethodProvider
+	(*ListAuthMethodsRequest)(nil),                // 255: pm.v1.ListAuthMethodsRequest
+	(*ListAuthMethodsResponse)(nil),               // 256: pm.v1.ListAuthMethodsResponse
+	(*GetSSOLoginURLRequest)(nil),                 // 257: pm.v1.GetSSOLoginURLRequest
+	(*GetSSOLoginURLResponse)(nil),                // 258: pm.v1.GetSSOLoginURLResponse
+	(*SSOCallbackRequest)(nil),                    // 259: pm.v1.SSOCallbackRequest
+	(*SSOCallbackResponse)(nil),                   // 260: pm.v1.SSOCallbackResponse
+	(*ListIdentityLinksRequest)(nil),              // 261: pm.v1.ListIdentityLinksRequest
+	(*ListIdentityLinksResponse)(nil),             // 262: pm.v1.ListIdentityLinksResponse
+	(*UnlinkIdentityRequest)(nil),                 // 263: pm.v1.UnlinkIdentityRequest
+	(*UnlinkIdentityResponse)(nil),                // 264: pm.v1.UnlinkIdentityResponse
+	(*EnableSCIMRequest)(nil),                     // 265: pm.v1.EnableSCIMRequest
+	(*EnableSCIMResponse)(nil),                    // 266: pm.v1.EnableSCIMResponse
+	(*DisableSCIMRequest)(nil),                    // 267: pm.v1.DisableSCIMRequest
+	(*DisableSCIMResponse)(nil),                   // 268: pm.v1.DisableSCIMResponse
+	(*RotateSCIMTokenRequest)(nil),                // 269: pm.v1.RotateSCIMTokenRequest
+	(*RotateSCIMTokenResponse)(nil),               // 270: pm.v1.RotateSCIMTokenResponse
+	nil,                                           // 271: pm.v1.Device.LabelsEntry
+	nil,                                           // 272: pm.v1.ListDevicesRequest.LabelFilterEntry
+	nil,                                           // 273: pm.v1.IdentityProvider.GroupMappingEntry
+	nil,                                           // 274: pm.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	nil,                                           // 275: pm.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	(*DeviceId)(nil),                              // 276: pm.v1.DeviceId
+	(*timestamppb.Timestamp)(nil),                 // 277: google.protobuf.Timestamp
+	(ActionType)(0),                               // 278: pm.v1.ActionType
+	(DesiredState)(0),                             // 279: pm.v1.DesiredState
+	(*PackageParams)(nil),                         // 280: pm.v1.PackageParams
+	(*AppInstallParams)(nil),                      // 281: pm.v1.AppInstallParams
+	(*ShellParams)(nil),                           // 282: pm.v1.ShellParams
+	(*SystemdParams)(nil),                         // 283: pm.v1.SystemdParams
+	(*FileParams)(nil),                            // 284: pm.v1.FileParams
+	(*UpdateParams)(nil),                          // 285: pm.v1.UpdateParams
+	(*RepositoryParams)(nil),                      // 286: pm.v1.RepositoryParams
+	(*FlatpakParams)(nil),                         // 287: pm.v1.FlatpakParams
+	(*DirectoryParams)(nil),                       // 288: pm.v1.DirectoryParams
+	(*UserParams)(nil),                            // 289: pm.v1.UserParams
+	(*SshParams)(nil),                             // 290: pm.v1.SshParams
+	(*SshdParams)(nil),                            // 291: pm.v1.SshdParams
+	(*SudoParams)(nil),                            // 292: pm.v1.SudoParams
+	(*LpsParams)(nil),                             // 293: pm.v1.LpsParams
+	(*GroupParams)(nil),                           // 294: pm.v1.GroupParams
+	(*LuksParams)(nil),                            // 295: pm.v1.LuksParams
+	(*WifiParams)(nil),                            // 296: pm.v1.WifiParams
+	(*ActionSchedule)(nil),                        // 297: pm.v1.ActionSchedule
+	(AssignmentMode)(0),                           // 298: pm.v1.AssignmentMode
+	(ExecutionStatus)(0),                          // 299: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),                         // 300: pm.v1.CommandOutput
+	(*Action)(nil),                                // 301: pm.v1.Action
+	(*OSQueryRow)(nil),                            // 302: pm.v1.OSQueryRow
 }
 var file_pm_v1_control_proto_depIdxs = []int32{
-	270, // 0: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
-	271, // 1: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
+	276, // 0: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
+	277, // 1: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
 	24,  // 2: pm.v1.LoginResponse.user:type_name -> pm.v1.User
-	271, // 3: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	277, // 3: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
 	24,  // 4: pm.v1.GetCurrentUserResponse.user:type_name -> pm.v1.User
-	271, // 5: pm.v1.VerifyLoginTOTPResponse.expires_at:type_name -> google.protobuf.Timestamp
+	277, // 5: pm.v1.VerifyLoginTOTPResponse.expires_at:type_name -> google.protobuf.Timestamp
 	24,  // 6: pm.v1.VerifyLoginTOTPResponse.user:type_name -> pm.v1.User
-	271, // 7: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	271, // 8: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	277, // 7: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	277, // 8: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	25,  // 9: pm.v1.User.roles:type_name -> pm.v1.Role
-	237, // 10: pm.v1.User.identity_links:type_name -> pm.v1.IdentityLink
-	271, // 11: pm.v1.Role.created_at:type_name -> google.protobuf.Timestamp
+	243, // 10: pm.v1.User.identity_links:type_name -> pm.v1.IdentityLink
+	277, // 11: pm.v1.Role.created_at:type_name -> google.protobuf.Timestamp
 	24,  // 12: pm.v1.CreateUserResponse.user:type_name -> pm.v1.User
 	24,  // 13: pm.v1.GetUserResponse.user:type_name -> pm.v1.User
 	24,  // 14: pm.v1.ListUsersResponse.users:type_name -> pm.v1.User
 	24,  // 15: pm.v1.UpdateUserResponse.user:type_name -> pm.v1.User
-	271, // 16: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
-	271, // 17: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	271, // 18: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
-	265, // 19: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
-	266, // 20: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
+	277, // 16: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
+	277, // 17: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	277, // 18: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
+	271, // 19: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
+	272, // 20: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
 	39,  // 21: pm.v1.ListDevicesResponse.devices:type_name -> pm.v1.Device
 	39,  // 22: pm.v1.GetDeviceResponse.device:type_name -> pm.v1.Device
 	39,  // 23: pm.v1.UpdateDeviceResponse.device:type_name -> pm.v1.Device
 	39,  // 24: pm.v1.AssignDeviceResponse.device:type_name -> pm.v1.Device
 	39,  // 25: pm.v1.UnassignDeviceResponse.device:type_name -> pm.v1.Device
-	271, // 26: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
-	271, // 27: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
-	271, // 28: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	277, // 26: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
+	277, // 27: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
+	277, // 28: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
 	54,  // 29: pm.v1.CreateTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	54,  // 30: pm.v1.ListTokensResponse.tokens:type_name -> pm.v1.RegistrationToken
 	54,  // 31: pm.v1.GetTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	54,  // 32: pm.v1.UpdateTokenResponse.token:type_name -> pm.v1.RegistrationToken
-	272, // 33: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
-	273, // 34: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
-	274, // 35: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
-	275, // 36: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
-	276, // 37: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
-	277, // 38: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
-	278, // 39: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
-	279, // 40: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
-	280, // 41: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
-	281, // 42: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
-	282, // 43: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
-	283, // 44: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
-	284, // 45: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
-	285, // 46: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
-	286, // 47: pm.v1.ManagedAction.sudo:type_name -> pm.v1.SudoParams
-	287, // 48: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
-	288, // 49: pm.v1.ManagedAction.group:type_name -> pm.v1.GroupParams
-	289, // 50: pm.v1.ManagedAction.luks:type_name -> pm.v1.LuksParams
-	290, // 51: pm.v1.ManagedAction.wifi:type_name -> pm.v1.WifiParams
-	271, // 52: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	291, // 53: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
-	272, // 54: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
-	273, // 55: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
-	291, // 56: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
-	274, // 57: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
-	275, // 58: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
-	276, // 59: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
-	277, // 60: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
-	278, // 61: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
-	279, // 62: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
-	280, // 63: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
-	281, // 64: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	282, // 65: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
-	283, // 66: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
-	284, // 67: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
-	285, // 68: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
-	286, // 69: pm.v1.CreateActionRequest.sudo:type_name -> pm.v1.SudoParams
-	287, // 70: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
-	288, // 71: pm.v1.CreateActionRequest.group:type_name -> pm.v1.GroupParams
-	289, // 72: pm.v1.CreateActionRequest.luks:type_name -> pm.v1.LuksParams
-	290, // 73: pm.v1.CreateActionRequest.wifi:type_name -> pm.v1.WifiParams
+	278, // 33: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
+	279, // 34: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
+	280, // 35: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
+	281, // 36: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
+	282, // 37: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
+	283, // 38: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
+	284, // 39: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
+	285, // 40: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
+	286, // 41: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
+	287, // 42: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
+	288, // 43: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
+	289, // 44: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
+	290, // 45: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
+	291, // 46: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
+	292, // 47: pm.v1.ManagedAction.sudo:type_name -> pm.v1.SudoParams
+	293, // 48: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
+	294, // 49: pm.v1.ManagedAction.group:type_name -> pm.v1.GroupParams
+	295, // 50: pm.v1.ManagedAction.luks:type_name -> pm.v1.LuksParams
+	296, // 51: pm.v1.ManagedAction.wifi:type_name -> pm.v1.WifiParams
+	277, // 52: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	297, // 53: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
+	278, // 54: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
+	279, // 55: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
+	297, // 56: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
+	280, // 57: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
+	281, // 58: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
+	282, // 59: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
+	283, // 60: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
+	284, // 61: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
+	285, // 62: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
+	286, // 63: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
+	287, // 64: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
+	288, // 65: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
+	289, // 66: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
+	290, // 67: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
+	291, // 68: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
+	292, // 69: pm.v1.CreateActionRequest.sudo:type_name -> pm.v1.SudoParams
+	293, // 70: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
+	294, // 71: pm.v1.CreateActionRequest.group:type_name -> pm.v1.GroupParams
+	295, // 72: pm.v1.CreateActionRequest.luks:type_name -> pm.v1.LuksParams
+	296, // 73: pm.v1.CreateActionRequest.wifi:type_name -> pm.v1.WifiParams
 	66,  // 74: pm.v1.CreateActionResponse.action:type_name -> pm.v1.ManagedAction
 	66,  // 75: pm.v1.GetActionResponse.action:type_name -> pm.v1.ManagedAction
-	272, // 76: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
+	278, // 76: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
 	66,  // 77: pm.v1.ListActionsResponse.actions:type_name -> pm.v1.ManagedAction
-	273, // 78: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
-	291, // 79: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
-	274, // 80: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
-	275, // 81: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
-	276, // 82: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
-	277, // 83: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
-	278, // 84: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
-	279, // 85: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
-	280, // 86: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
-	281, // 87: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	282, // 88: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
-	283, // 89: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
-	284, // 90: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
-	285, // 91: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
-	286, // 92: pm.v1.UpdateActionParamsRequest.sudo:type_name -> pm.v1.SudoParams
-	287, // 93: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
-	288, // 94: pm.v1.UpdateActionParamsRequest.group:type_name -> pm.v1.GroupParams
-	289, // 95: pm.v1.UpdateActionParamsRequest.luks:type_name -> pm.v1.LuksParams
-	290, // 96: pm.v1.UpdateActionParamsRequest.wifi:type_name -> pm.v1.WifiParams
+	279, // 78: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
+	297, // 79: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
+	280, // 80: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
+	281, // 81: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
+	282, // 82: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
+	283, // 83: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
+	284, // 84: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
+	285, // 85: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
+	286, // 86: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
+	287, // 87: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
+	288, // 88: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
+	289, // 89: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
+	290, // 90: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
+	291, // 91: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
+	292, // 92: pm.v1.UpdateActionParamsRequest.sudo:type_name -> pm.v1.SudoParams
+	293, // 93: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
+	294, // 94: pm.v1.UpdateActionParamsRequest.group:type_name -> pm.v1.GroupParams
+	295, // 95: pm.v1.UpdateActionParamsRequest.luks:type_name -> pm.v1.LuksParams
+	296, // 96: pm.v1.UpdateActionParamsRequest.wifi:type_name -> pm.v1.WifiParams
 	66,  // 97: pm.v1.UpdateActionResponse.action:type_name -> pm.v1.ManagedAction
-	271, // 98: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
+	277, // 98: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
 	79,  // 99: pm.v1.CreateActionSetResponse.set:type_name -> pm.v1.ActionSet
 	79,  // 100: pm.v1.GetActionSetResponse.set:type_name -> pm.v1.ActionSet
 	80,  // 101: pm.v1.GetActionSetResponse.members:type_name -> pm.v1.ActionSetMember
@@ -17477,7 +17861,7 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	79,  // 104: pm.v1.AddActionToSetResponse.set:type_name -> pm.v1.ActionSet
 	79,  // 105: pm.v1.RemoveActionFromSetResponse.set:type_name -> pm.v1.ActionSet
 	79,  // 106: pm.v1.ReorderActionInSetResponse.set:type_name -> pm.v1.ActionSet
-	271, // 107: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
+	277, // 107: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
 	98,  // 108: pm.v1.CreateDefinitionResponse.definition:type_name -> pm.v1.Definition
 	98,  // 109: pm.v1.GetDefinitionResponse.definition:type_name -> pm.v1.Definition
 	99,  // 110: pm.v1.GetDefinitionResponse.members:type_name -> pm.v1.DefinitionMember
@@ -17486,7 +17870,7 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	98,  // 113: pm.v1.AddActionSetToDefinitionResponse.definition:type_name -> pm.v1.Definition
 	98,  // 114: pm.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> pm.v1.Definition
 	98,  // 115: pm.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> pm.v1.Definition
-	271, // 116: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
+	277, // 116: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
 	117, // 117: pm.v1.CreateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	117, // 118: pm.v1.GetDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	117, // 119: pm.v1.ListDeviceGroupsResponse.groups:type_name -> pm.v1.DeviceGroup
@@ -17495,12 +17879,12 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	117, // 122: pm.v1.RemoveDeviceFromGroupResponse.group:type_name -> pm.v1.DeviceGroup
 	117, // 123: pm.v1.UpdateDeviceGroupQueryResponse.group:type_name -> pm.v1.DeviceGroup
 	117, // 124: pm.v1.EvaluateDynamicGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	271, // 125: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
-	292, // 126: pm.v1.Assignment.mode:type_name -> pm.v1.AssignmentMode
-	292, // 127: pm.v1.CreateAssignmentRequest.mode:type_name -> pm.v1.AssignmentMode
+	277, // 125: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
+	298, // 126: pm.v1.Assignment.mode:type_name -> pm.v1.AssignmentMode
+	298, // 127: pm.v1.CreateAssignmentRequest.mode:type_name -> pm.v1.AssignmentMode
 	140, // 128: pm.v1.CreateAssignmentResponse.assignment:type_name -> pm.v1.Assignment
 	140, // 129: pm.v1.ListAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
-	271, // 130: pm.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
+	277, // 130: pm.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
 	147, // 131: pm.v1.SetUserSelectionResponse.selection:type_name -> pm.v1.UserSelection
 	66,  // 132: pm.v1.AvailableItem.actions:type_name -> pm.v1.ManagedAction
 	151, // 133: pm.v1.ListAvailableActionsResponse.items:type_name -> pm.v1.AvailableItem
@@ -17508,40 +17892,40 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	79,  // 135: pm.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> pm.v1.ActionSet
 	98,  // 136: pm.v1.GetDeviceAssignmentsResponse.definitions:type_name -> pm.v1.Definition
 	140, // 137: pm.v1.GetUserAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
-	272, // 138: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
-	293, // 139: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
-	294, // 140: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
-	271, // 141: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
-	271, // 142: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
-	271, // 143: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
-	294, // 144: pm.v1.ActionExecution.live_output:type_name -> pm.v1.CommandOutput
-	273, // 145: pm.v1.ActionExecution.desired_state:type_name -> pm.v1.DesiredState
-	295, // 146: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
+	278, // 138: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
+	299, // 139: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
+	300, // 140: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
+	277, // 141: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
+	277, // 142: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
+	277, // 143: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
+	300, // 144: pm.v1.ActionExecution.live_output:type_name -> pm.v1.CommandOutput
+	279, // 145: pm.v1.ActionExecution.desired_state:type_name -> pm.v1.DesiredState
+	301, // 146: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
 	157, // 147: pm.v1.DispatchActionResponse.execution:type_name -> pm.v1.ActionExecution
-	295, // 148: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
+	301, // 148: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
 	157, // 149: pm.v1.DispatchToMultipleResponse.executions:type_name -> pm.v1.ActionExecution
 	157, // 150: pm.v1.DispatchAssignedActionsResponse.executions:type_name -> pm.v1.ActionExecution
 	157, // 151: pm.v1.DispatchActionSetResponse.executions:type_name -> pm.v1.ActionExecution
 	157, // 152: pm.v1.DispatchDefinitionResponse.executions:type_name -> pm.v1.ActionExecution
-	295, // 153: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
+	301, // 153: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
 	157, // 154: pm.v1.DispatchToGroupResponse.executions:type_name -> pm.v1.ActionExecution
 	157, // 155: pm.v1.GetExecutionResponse.execution:type_name -> pm.v1.ActionExecution
-	293, // 156: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
+	299, // 156: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
 	157, // 157: pm.v1.ListExecutionsResponse.executions:type_name -> pm.v1.ActionExecution
-	272, // 158: pm.v1.DispatchInstantActionRequest.instant_action:type_name -> pm.v1.ActionType
+	278, // 158: pm.v1.DispatchInstantActionRequest.instant_action:type_name -> pm.v1.ActionType
 	157, // 159: pm.v1.DispatchInstantActionResponse.execution:type_name -> pm.v1.ActionExecution
-	271, // 160: pm.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	277, // 160: pm.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
 	176, // 161: pm.v1.ListAuditEventsResponse.events:type_name -> pm.v1.AuditEvent
-	271, // 162: pm.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
+	277, // 162: pm.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
 	179, // 163: pm.v1.GetDeviceLpsPasswordsResponse.current:type_name -> pm.v1.LpsPassword
 	179, // 164: pm.v1.GetDeviceLpsPasswordsResponse.history:type_name -> pm.v1.LpsPassword
-	271, // 165: pm.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
-	271, // 166: pm.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
+	277, // 165: pm.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
+	277, // 166: pm.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
 	182, // 167: pm.v1.GetDeviceLuksKeysResponse.current:type_name -> pm.v1.LuksKey
 	182, // 168: pm.v1.GetDeviceLuksKeysResponse.history:type_name -> pm.v1.LuksKey
-	296, // 169: pm.v1.GetOSQueryResultResponse.rows:type_name -> pm.v1.OSQueryRow
-	296, // 170: pm.v1.InventoryTableResult.rows:type_name -> pm.v1.OSQueryRow
-	271, // 171: pm.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
+	302, // 169: pm.v1.GetOSQueryResultResponse.rows:type_name -> pm.v1.OSQueryRow
+	302, // 170: pm.v1.InventoryTableResult.rows:type_name -> pm.v1.OSQueryRow
+	277, // 171: pm.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
 	194, // 172: pm.v1.GetDeviceInventoryResponse.tables:type_name -> pm.v1.InventoryTableResult
 	25,  // 173: pm.v1.CreateRoleResponse.role:type_name -> pm.v1.Role
 	25,  // 174: pm.v1.GetRoleResponse.role:type_name -> pm.v1.Role
@@ -17549,286 +17933,294 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	25,  // 176: pm.v1.UpdateRoleResponse.role:type_name -> pm.v1.Role
 	26,  // 177: pm.v1.ListPermissionsResponse.permissions:type_name -> pm.v1.PermissionInfo
 	25,  // 178: pm.v1.UserGroup.roles:type_name -> pm.v1.Role
-	271, // 179: pm.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
-	271, // 180: pm.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
+	277, // 179: pm.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
+	277, // 180: pm.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
 	214, // 181: pm.v1.CreateUserGroupResponse.group:type_name -> pm.v1.UserGroup
 	214, // 182: pm.v1.GetUserGroupResponse.group:type_name -> pm.v1.UserGroup
 	215, // 183: pm.v1.GetUserGroupResponse.members:type_name -> pm.v1.UserGroupMember
 	214, // 184: pm.v1.ListUserGroupsResponse.groups:type_name -> pm.v1.UserGroup
 	214, // 185: pm.v1.UpdateUserGroupResponse.group:type_name -> pm.v1.UserGroup
 	214, // 186: pm.v1.ListUserGroupsForUserResponse.groups:type_name -> pm.v1.UserGroup
-	267, // 187: pm.v1.IdentityProvider.group_mapping:type_name -> pm.v1.IdentityProvider.GroupMappingEntry
-	271, // 188: pm.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
-	271, // 189: pm.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
-	271, // 190: pm.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
-	271, // 191: pm.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
-	268, // 192: pm.v1.CreateIdentityProviderRequest.group_mapping:type_name -> pm.v1.CreateIdentityProviderRequest.GroupMappingEntry
-	236, // 193: pm.v1.CreateIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
-	236, // 194: pm.v1.GetIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
-	236, // 195: pm.v1.ListIdentityProvidersResponse.providers:type_name -> pm.v1.IdentityProvider
-	269, // 196: pm.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> pm.v1.UpdateIdentityProviderRequest.GroupMappingEntry
-	236, // 197: pm.v1.UpdateIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
-	248, // 198: pm.v1.ListAuthMethodsResponse.providers:type_name -> pm.v1.AuthMethodProvider
-	271, // 199: pm.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
-	24,  // 200: pm.v1.SSOCallbackResponse.user:type_name -> pm.v1.User
-	237, // 201: pm.v1.ListIdentityLinksResponse.links:type_name -> pm.v1.IdentityLink
-	0,   // 202: pm.v1.ControlService.Register:input_type -> pm.v1.RegisterRequest
-	2,   // 203: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
-	4,   // 204: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
-	6,   // 205: pm.v1.ControlService.Logout:input_type -> pm.v1.LogoutRequest
-	8,   // 206: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
-	22,  // 207: pm.v1.ControlService.VerifyLoginTOTP:input_type -> pm.v1.VerifyLoginTOTPRequest
-	10,  // 208: pm.v1.ControlService.SetupTOTP:input_type -> pm.v1.SetupTOTPRequest
-	12,  // 209: pm.v1.ControlService.VerifyTOTP:input_type -> pm.v1.VerifyTOTPRequest
-	14,  // 210: pm.v1.ControlService.DisableTOTP:input_type -> pm.v1.DisableTOTPRequest
-	16,  // 211: pm.v1.ControlService.AdminDisableUserTOTP:input_type -> pm.v1.AdminDisableUserTOTPRequest
-	18,  // 212: pm.v1.ControlService.GetTOTPStatus:input_type -> pm.v1.GetTOTPStatusRequest
-	20,  // 213: pm.v1.ControlService.RegenerateBackupCodes:input_type -> pm.v1.RegenerateBackupCodesRequest
-	249, // 214: pm.v1.ControlService.ListAuthMethods:input_type -> pm.v1.ListAuthMethodsRequest
-	251, // 215: pm.v1.ControlService.GetSSOLoginURL:input_type -> pm.v1.GetSSOLoginURLRequest
-	253, // 216: pm.v1.ControlService.SSOCallback:input_type -> pm.v1.SSOCallbackRequest
-	238, // 217: pm.v1.ControlService.CreateIdentityProvider:input_type -> pm.v1.CreateIdentityProviderRequest
-	240, // 218: pm.v1.ControlService.GetIdentityProvider:input_type -> pm.v1.GetIdentityProviderRequest
-	242, // 219: pm.v1.ControlService.ListIdentityProviders:input_type -> pm.v1.ListIdentityProvidersRequest
-	244, // 220: pm.v1.ControlService.UpdateIdentityProvider:input_type -> pm.v1.UpdateIdentityProviderRequest
-	246, // 221: pm.v1.ControlService.DeleteIdentityProvider:input_type -> pm.v1.DeleteIdentityProviderRequest
-	255, // 222: pm.v1.ControlService.ListIdentityLinks:input_type -> pm.v1.ListIdentityLinksRequest
-	257, // 223: pm.v1.ControlService.UnlinkIdentity:input_type -> pm.v1.UnlinkIdentityRequest
-	259, // 224: pm.v1.ControlService.EnableSCIM:input_type -> pm.v1.EnableSCIMRequest
-	261, // 225: pm.v1.ControlService.DisableSCIM:input_type -> pm.v1.DisableSCIMRequest
-	263, // 226: pm.v1.ControlService.RotateSCIMToken:input_type -> pm.v1.RotateSCIMTokenRequest
-	27,  // 227: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
-	29,  // 228: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
-	31,  // 229: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
-	33,  // 230: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
-	34,  // 231: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
-	35,  // 232: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
-	37,  // 233: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
-	40,  // 234: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
-	42,  // 235: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
-	44,  // 236: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
-	45,  // 237: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
-	49,  // 238: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
-	51,  // 239: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
-	53,  // 240: pm.v1.ControlService.SetDeviceSyncInterval:input_type -> pm.v1.SetDeviceSyncIntervalRequest
-	47,  // 241: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
-	55,  // 242: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
-	59,  // 243: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
-	57,  // 244: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
-	61,  // 245: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
-	62,  // 246: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
-	64,  // 247: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
-	67,  // 248: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
-	69,  // 249: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
-	71,  // 250: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
-	73,  // 251: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
-	74,  // 252: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
-	75,  // 253: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
-	77,  // 254: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
-	81,  // 255: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
-	83,  // 256: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
-	85,  // 257: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
-	87,  // 258: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
-	88,  // 259: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
-	90,  // 260: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
-	92,  // 261: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
-	94,  // 262: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
-	96,  // 263: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
-	100, // 264: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
-	102, // 265: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
-	104, // 266: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
-	106, // 267: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
-	107, // 268: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
-	109, // 269: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
-	111, // 270: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
-	113, // 271: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
-	115, // 272: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
-	118, // 273: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
-	120, // 274: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
-	122, // 275: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
-	124, // 276: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
-	125, // 277: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
-	133, // 278: pm.v1.ControlService.UpdateDeviceGroupQuery:input_type -> pm.v1.UpdateDeviceGroupQueryRequest
-	127, // 279: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
-	129, // 280: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
-	131, // 281: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
-	135, // 282: pm.v1.ControlService.ValidateDynamicQuery:input_type -> pm.v1.ValidateDynamicQueryRequest
-	137, // 283: pm.v1.ControlService.EvaluateDynamicGroup:input_type -> pm.v1.EvaluateDynamicGroupRequest
-	139, // 284: pm.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> pm.v1.SetDeviceGroupSyncIntervalRequest
-	141, // 285: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
-	143, // 286: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
-	145, // 287: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
-	153, // 288: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
-	155, // 289: pm.v1.ControlService.GetUserAssignments:input_type -> pm.v1.GetUserAssignmentsRequest
-	148, // 290: pm.v1.ControlService.SetUserSelection:input_type -> pm.v1.SetUserSelectionRequest
-	150, // 291: pm.v1.ControlService.ListAvailableActions:input_type -> pm.v1.ListAvailableActionsRequest
-	158, // 292: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
-	160, // 293: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
-	162, // 294: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
-	164, // 295: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
-	166, // 296: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
-	168, // 297: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
-	174, // 298: pm.v1.ControlService.DispatchInstantAction:input_type -> pm.v1.DispatchInstantActionRequest
-	170, // 299: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
-	172, // 300: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
-	177, // 301: pm.v1.ControlService.ListAuditEvents:input_type -> pm.v1.ListAuditEventsRequest
-	180, // 302: pm.v1.ControlService.GetDeviceLpsPasswords:input_type -> pm.v1.GetDeviceLpsPasswordsRequest
-	183, // 303: pm.v1.ControlService.GetDeviceLuksKeys:input_type -> pm.v1.GetDeviceLuksKeysRequest
-	185, // 304: pm.v1.ControlService.CreateLuksToken:input_type -> pm.v1.CreateLuksTokenRequest
-	187, // 305: pm.v1.ControlService.RevokeLuksDeviceKey:input_type -> pm.v1.RevokeLuksDeviceKeyRequest
-	189, // 306: pm.v1.ControlService.DispatchOSQuery:input_type -> pm.v1.DispatchOSQueryRequest
-	191, // 307: pm.v1.ControlService.GetOSQueryResult:input_type -> pm.v1.GetOSQueryResultRequest
-	193, // 308: pm.v1.ControlService.GetDeviceInventory:input_type -> pm.v1.GetDeviceInventoryRequest
-	196, // 309: pm.v1.ControlService.RefreshDeviceInventory:input_type -> pm.v1.RefreshDeviceInventoryRequest
-	198, // 310: pm.v1.ControlService.CreateRole:input_type -> pm.v1.CreateRoleRequest
-	200, // 311: pm.v1.ControlService.GetRole:input_type -> pm.v1.GetRoleRequest
-	202, // 312: pm.v1.ControlService.ListRoles:input_type -> pm.v1.ListRolesRequest
-	204, // 313: pm.v1.ControlService.UpdateRole:input_type -> pm.v1.UpdateRoleRequest
-	206, // 314: pm.v1.ControlService.DeleteRole:input_type -> pm.v1.DeleteRoleRequest
-	208, // 315: pm.v1.ControlService.AssignRoleToUser:input_type -> pm.v1.AssignRoleToUserRequest
-	210, // 316: pm.v1.ControlService.RevokeRoleFromUser:input_type -> pm.v1.RevokeRoleFromUserRequest
-	212, // 317: pm.v1.ControlService.ListPermissions:input_type -> pm.v1.ListPermissionsRequest
-	216, // 318: pm.v1.ControlService.CreateUserGroup:input_type -> pm.v1.CreateUserGroupRequest
-	218, // 319: pm.v1.ControlService.GetUserGroup:input_type -> pm.v1.GetUserGroupRequest
-	220, // 320: pm.v1.ControlService.ListUserGroups:input_type -> pm.v1.ListUserGroupsRequest
-	222, // 321: pm.v1.ControlService.UpdateUserGroup:input_type -> pm.v1.UpdateUserGroupRequest
-	224, // 322: pm.v1.ControlService.DeleteUserGroup:input_type -> pm.v1.DeleteUserGroupRequest
-	226, // 323: pm.v1.ControlService.AddUserToGroup:input_type -> pm.v1.AddUserToGroupRequest
-	228, // 324: pm.v1.ControlService.RemoveUserFromGroup:input_type -> pm.v1.RemoveUserFromGroupRequest
-	230, // 325: pm.v1.ControlService.AssignRoleToUserGroup:input_type -> pm.v1.AssignRoleToUserGroupRequest
-	232, // 326: pm.v1.ControlService.RevokeRoleFromUserGroup:input_type -> pm.v1.RevokeRoleFromUserGroupRequest
-	234, // 327: pm.v1.ControlService.ListUserGroupsForUser:input_type -> pm.v1.ListUserGroupsForUserRequest
-	1,   // 328: pm.v1.ControlService.Register:output_type -> pm.v1.RegisterResponse
-	3,   // 329: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
-	5,   // 330: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
-	7,   // 331: pm.v1.ControlService.Logout:output_type -> pm.v1.LogoutResponse
-	9,   // 332: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
-	23,  // 333: pm.v1.ControlService.VerifyLoginTOTP:output_type -> pm.v1.VerifyLoginTOTPResponse
-	11,  // 334: pm.v1.ControlService.SetupTOTP:output_type -> pm.v1.SetupTOTPResponse
-	13,  // 335: pm.v1.ControlService.VerifyTOTP:output_type -> pm.v1.VerifyTOTPResponse
-	15,  // 336: pm.v1.ControlService.DisableTOTP:output_type -> pm.v1.DisableTOTPResponse
-	17,  // 337: pm.v1.ControlService.AdminDisableUserTOTP:output_type -> pm.v1.AdminDisableUserTOTPResponse
-	19,  // 338: pm.v1.ControlService.GetTOTPStatus:output_type -> pm.v1.GetTOTPStatusResponse
-	21,  // 339: pm.v1.ControlService.RegenerateBackupCodes:output_type -> pm.v1.RegenerateBackupCodesResponse
-	250, // 340: pm.v1.ControlService.ListAuthMethods:output_type -> pm.v1.ListAuthMethodsResponse
-	252, // 341: pm.v1.ControlService.GetSSOLoginURL:output_type -> pm.v1.GetSSOLoginURLResponse
-	254, // 342: pm.v1.ControlService.SSOCallback:output_type -> pm.v1.SSOCallbackResponse
-	239, // 343: pm.v1.ControlService.CreateIdentityProvider:output_type -> pm.v1.CreateIdentityProviderResponse
-	241, // 344: pm.v1.ControlService.GetIdentityProvider:output_type -> pm.v1.GetIdentityProviderResponse
-	243, // 345: pm.v1.ControlService.ListIdentityProviders:output_type -> pm.v1.ListIdentityProvidersResponse
-	245, // 346: pm.v1.ControlService.UpdateIdentityProvider:output_type -> pm.v1.UpdateIdentityProviderResponse
-	247, // 347: pm.v1.ControlService.DeleteIdentityProvider:output_type -> pm.v1.DeleteIdentityProviderResponse
-	256, // 348: pm.v1.ControlService.ListIdentityLinks:output_type -> pm.v1.ListIdentityLinksResponse
-	258, // 349: pm.v1.ControlService.UnlinkIdentity:output_type -> pm.v1.UnlinkIdentityResponse
-	260, // 350: pm.v1.ControlService.EnableSCIM:output_type -> pm.v1.EnableSCIMResponse
-	262, // 351: pm.v1.ControlService.DisableSCIM:output_type -> pm.v1.DisableSCIMResponse
-	264, // 352: pm.v1.ControlService.RotateSCIMToken:output_type -> pm.v1.RotateSCIMTokenResponse
-	28,  // 353: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
-	30,  // 354: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
-	32,  // 355: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
-	36,  // 356: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
-	36,  // 357: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
-	36,  // 358: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
-	38,  // 359: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
-	41,  // 360: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
-	43,  // 361: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
-	46,  // 362: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	46,  // 363: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	50,  // 364: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
-	52,  // 365: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
-	46,  // 366: pm.v1.ControlService.SetDeviceSyncInterval:output_type -> pm.v1.UpdateDeviceResponse
-	48,  // 367: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
-	56,  // 368: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
-	60,  // 369: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
-	58,  // 370: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
-	63,  // 371: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
-	63,  // 372: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
-	65,  // 373: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
-	68,  // 374: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
-	70,  // 375: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
-	72,  // 376: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
-	76,  // 377: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
-	76,  // 378: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
-	76,  // 379: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
-	78,  // 380: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
-	82,  // 381: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
-	84,  // 382: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
-	86,  // 383: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
-	89,  // 384: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
-	89,  // 385: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
-	91,  // 386: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
-	93,  // 387: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
-	95,  // 388: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
-	97,  // 389: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
-	101, // 390: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
-	103, // 391: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
-	105, // 392: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
-	108, // 393: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
-	108, // 394: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
-	110, // 395: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
-	112, // 396: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
-	114, // 397: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
-	116, // 398: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
-	119, // 399: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
-	121, // 400: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
-	123, // 401: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
-	126, // 402: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
-	126, // 403: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
-	134, // 404: pm.v1.ControlService.UpdateDeviceGroupQuery:output_type -> pm.v1.UpdateDeviceGroupQueryResponse
-	128, // 405: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
-	130, // 406: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
-	132, // 407: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
-	136, // 408: pm.v1.ControlService.ValidateDynamicQuery:output_type -> pm.v1.ValidateDynamicQueryResponse
-	138, // 409: pm.v1.ControlService.EvaluateDynamicGroup:output_type -> pm.v1.EvaluateDynamicGroupResponse
-	126, // 410: pm.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> pm.v1.UpdateDeviceGroupResponse
-	142, // 411: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
-	144, // 412: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
-	146, // 413: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
-	154, // 414: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
-	156, // 415: pm.v1.ControlService.GetUserAssignments:output_type -> pm.v1.GetUserAssignmentsResponse
-	149, // 416: pm.v1.ControlService.SetUserSelection:output_type -> pm.v1.SetUserSelectionResponse
-	152, // 417: pm.v1.ControlService.ListAvailableActions:output_type -> pm.v1.ListAvailableActionsResponse
-	159, // 418: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
-	161, // 419: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
-	163, // 420: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
-	165, // 421: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
-	167, // 422: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
-	169, // 423: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
-	175, // 424: pm.v1.ControlService.DispatchInstantAction:output_type -> pm.v1.DispatchInstantActionResponse
-	171, // 425: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
-	173, // 426: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
-	178, // 427: pm.v1.ControlService.ListAuditEvents:output_type -> pm.v1.ListAuditEventsResponse
-	181, // 428: pm.v1.ControlService.GetDeviceLpsPasswords:output_type -> pm.v1.GetDeviceLpsPasswordsResponse
-	184, // 429: pm.v1.ControlService.GetDeviceLuksKeys:output_type -> pm.v1.GetDeviceLuksKeysResponse
-	186, // 430: pm.v1.ControlService.CreateLuksToken:output_type -> pm.v1.CreateLuksTokenResponse
-	188, // 431: pm.v1.ControlService.RevokeLuksDeviceKey:output_type -> pm.v1.RevokeLuksDeviceKeyResponse
-	190, // 432: pm.v1.ControlService.DispatchOSQuery:output_type -> pm.v1.DispatchOSQueryResponse
-	192, // 433: pm.v1.ControlService.GetOSQueryResult:output_type -> pm.v1.GetOSQueryResultResponse
-	195, // 434: pm.v1.ControlService.GetDeviceInventory:output_type -> pm.v1.GetDeviceInventoryResponse
-	197, // 435: pm.v1.ControlService.RefreshDeviceInventory:output_type -> pm.v1.RefreshDeviceInventoryResponse
-	199, // 436: pm.v1.ControlService.CreateRole:output_type -> pm.v1.CreateRoleResponse
-	201, // 437: pm.v1.ControlService.GetRole:output_type -> pm.v1.GetRoleResponse
-	203, // 438: pm.v1.ControlService.ListRoles:output_type -> pm.v1.ListRolesResponse
-	205, // 439: pm.v1.ControlService.UpdateRole:output_type -> pm.v1.UpdateRoleResponse
-	207, // 440: pm.v1.ControlService.DeleteRole:output_type -> pm.v1.DeleteRoleResponse
-	209, // 441: pm.v1.ControlService.AssignRoleToUser:output_type -> pm.v1.AssignRoleToUserResponse
-	211, // 442: pm.v1.ControlService.RevokeRoleFromUser:output_type -> pm.v1.RevokeRoleFromUserResponse
-	213, // 443: pm.v1.ControlService.ListPermissions:output_type -> pm.v1.ListPermissionsResponse
-	217, // 444: pm.v1.ControlService.CreateUserGroup:output_type -> pm.v1.CreateUserGroupResponse
-	219, // 445: pm.v1.ControlService.GetUserGroup:output_type -> pm.v1.GetUserGroupResponse
-	221, // 446: pm.v1.ControlService.ListUserGroups:output_type -> pm.v1.ListUserGroupsResponse
-	223, // 447: pm.v1.ControlService.UpdateUserGroup:output_type -> pm.v1.UpdateUserGroupResponse
-	225, // 448: pm.v1.ControlService.DeleteUserGroup:output_type -> pm.v1.DeleteUserGroupResponse
-	227, // 449: pm.v1.ControlService.AddUserToGroup:output_type -> pm.v1.AddUserToGroupResponse
-	229, // 450: pm.v1.ControlService.RemoveUserFromGroup:output_type -> pm.v1.RemoveUserFromGroupResponse
-	231, // 451: pm.v1.ControlService.AssignRoleToUserGroup:output_type -> pm.v1.AssignRoleToUserGroupResponse
-	233, // 452: pm.v1.ControlService.RevokeRoleFromUserGroup:output_type -> pm.v1.RevokeRoleFromUserGroupResponse
-	235, // 453: pm.v1.ControlService.ListUserGroupsForUser:output_type -> pm.v1.ListUserGroupsForUserResponse
-	328, // [328:454] is the sub-list for method output_type
-	202, // [202:328] is the sub-list for method input_type
-	202, // [202:202] is the sub-list for extension type_name
-	202, // [202:202] is the sub-list for extension extendee
-	0,   // [0:202] is the sub-list for field type_name
+	214, // 187: pm.v1.UpdateUserGroupQueryResponse.group:type_name -> pm.v1.UserGroup
+	214, // 188: pm.v1.EvaluateDynamicUserGroupResponse.group:type_name -> pm.v1.UserGroup
+	273, // 189: pm.v1.IdentityProvider.group_mapping:type_name -> pm.v1.IdentityProvider.GroupMappingEntry
+	277, // 190: pm.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
+	277, // 191: pm.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
+	277, // 192: pm.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
+	277, // 193: pm.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
+	274, // 194: pm.v1.CreateIdentityProviderRequest.group_mapping:type_name -> pm.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	242, // 195: pm.v1.CreateIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
+	242, // 196: pm.v1.GetIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
+	242, // 197: pm.v1.ListIdentityProvidersResponse.providers:type_name -> pm.v1.IdentityProvider
+	275, // 198: pm.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> pm.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	242, // 199: pm.v1.UpdateIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
+	254, // 200: pm.v1.ListAuthMethodsResponse.providers:type_name -> pm.v1.AuthMethodProvider
+	277, // 201: pm.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
+	24,  // 202: pm.v1.SSOCallbackResponse.user:type_name -> pm.v1.User
+	243, // 203: pm.v1.ListIdentityLinksResponse.links:type_name -> pm.v1.IdentityLink
+	0,   // 204: pm.v1.ControlService.Register:input_type -> pm.v1.RegisterRequest
+	2,   // 205: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
+	4,   // 206: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
+	6,   // 207: pm.v1.ControlService.Logout:input_type -> pm.v1.LogoutRequest
+	8,   // 208: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
+	22,  // 209: pm.v1.ControlService.VerifyLoginTOTP:input_type -> pm.v1.VerifyLoginTOTPRequest
+	10,  // 210: pm.v1.ControlService.SetupTOTP:input_type -> pm.v1.SetupTOTPRequest
+	12,  // 211: pm.v1.ControlService.VerifyTOTP:input_type -> pm.v1.VerifyTOTPRequest
+	14,  // 212: pm.v1.ControlService.DisableTOTP:input_type -> pm.v1.DisableTOTPRequest
+	16,  // 213: pm.v1.ControlService.AdminDisableUserTOTP:input_type -> pm.v1.AdminDisableUserTOTPRequest
+	18,  // 214: pm.v1.ControlService.GetTOTPStatus:input_type -> pm.v1.GetTOTPStatusRequest
+	20,  // 215: pm.v1.ControlService.RegenerateBackupCodes:input_type -> pm.v1.RegenerateBackupCodesRequest
+	255, // 216: pm.v1.ControlService.ListAuthMethods:input_type -> pm.v1.ListAuthMethodsRequest
+	257, // 217: pm.v1.ControlService.GetSSOLoginURL:input_type -> pm.v1.GetSSOLoginURLRequest
+	259, // 218: pm.v1.ControlService.SSOCallback:input_type -> pm.v1.SSOCallbackRequest
+	244, // 219: pm.v1.ControlService.CreateIdentityProvider:input_type -> pm.v1.CreateIdentityProviderRequest
+	246, // 220: pm.v1.ControlService.GetIdentityProvider:input_type -> pm.v1.GetIdentityProviderRequest
+	248, // 221: pm.v1.ControlService.ListIdentityProviders:input_type -> pm.v1.ListIdentityProvidersRequest
+	250, // 222: pm.v1.ControlService.UpdateIdentityProvider:input_type -> pm.v1.UpdateIdentityProviderRequest
+	252, // 223: pm.v1.ControlService.DeleteIdentityProvider:input_type -> pm.v1.DeleteIdentityProviderRequest
+	261, // 224: pm.v1.ControlService.ListIdentityLinks:input_type -> pm.v1.ListIdentityLinksRequest
+	263, // 225: pm.v1.ControlService.UnlinkIdentity:input_type -> pm.v1.UnlinkIdentityRequest
+	265, // 226: pm.v1.ControlService.EnableSCIM:input_type -> pm.v1.EnableSCIMRequest
+	267, // 227: pm.v1.ControlService.DisableSCIM:input_type -> pm.v1.DisableSCIMRequest
+	269, // 228: pm.v1.ControlService.RotateSCIMToken:input_type -> pm.v1.RotateSCIMTokenRequest
+	27,  // 229: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
+	29,  // 230: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
+	31,  // 231: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
+	33,  // 232: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
+	34,  // 233: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
+	35,  // 234: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
+	37,  // 235: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
+	40,  // 236: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
+	42,  // 237: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
+	44,  // 238: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
+	45,  // 239: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
+	49,  // 240: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
+	51,  // 241: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
+	53,  // 242: pm.v1.ControlService.SetDeviceSyncInterval:input_type -> pm.v1.SetDeviceSyncIntervalRequest
+	47,  // 243: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
+	55,  // 244: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
+	59,  // 245: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
+	57,  // 246: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
+	61,  // 247: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
+	62,  // 248: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
+	64,  // 249: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
+	67,  // 250: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
+	69,  // 251: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
+	71,  // 252: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
+	73,  // 253: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
+	74,  // 254: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
+	75,  // 255: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
+	77,  // 256: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
+	81,  // 257: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
+	83,  // 258: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
+	85,  // 259: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
+	87,  // 260: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
+	88,  // 261: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
+	90,  // 262: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
+	92,  // 263: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
+	94,  // 264: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
+	96,  // 265: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
+	100, // 266: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
+	102, // 267: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
+	104, // 268: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
+	106, // 269: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
+	107, // 270: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
+	109, // 271: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
+	111, // 272: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
+	113, // 273: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
+	115, // 274: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
+	118, // 275: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
+	120, // 276: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
+	122, // 277: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
+	124, // 278: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
+	125, // 279: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
+	133, // 280: pm.v1.ControlService.UpdateDeviceGroupQuery:input_type -> pm.v1.UpdateDeviceGroupQueryRequest
+	127, // 281: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
+	129, // 282: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
+	131, // 283: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
+	135, // 284: pm.v1.ControlService.ValidateDynamicQuery:input_type -> pm.v1.ValidateDynamicQueryRequest
+	137, // 285: pm.v1.ControlService.EvaluateDynamicGroup:input_type -> pm.v1.EvaluateDynamicGroupRequest
+	139, // 286: pm.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> pm.v1.SetDeviceGroupSyncIntervalRequest
+	141, // 287: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
+	143, // 288: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
+	145, // 289: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
+	153, // 290: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
+	155, // 291: pm.v1.ControlService.GetUserAssignments:input_type -> pm.v1.GetUserAssignmentsRequest
+	148, // 292: pm.v1.ControlService.SetUserSelection:input_type -> pm.v1.SetUserSelectionRequest
+	150, // 293: pm.v1.ControlService.ListAvailableActions:input_type -> pm.v1.ListAvailableActionsRequest
+	158, // 294: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
+	160, // 295: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
+	162, // 296: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
+	164, // 297: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
+	166, // 298: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
+	168, // 299: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
+	174, // 300: pm.v1.ControlService.DispatchInstantAction:input_type -> pm.v1.DispatchInstantActionRequest
+	170, // 301: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
+	172, // 302: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
+	177, // 303: pm.v1.ControlService.ListAuditEvents:input_type -> pm.v1.ListAuditEventsRequest
+	180, // 304: pm.v1.ControlService.GetDeviceLpsPasswords:input_type -> pm.v1.GetDeviceLpsPasswordsRequest
+	183, // 305: pm.v1.ControlService.GetDeviceLuksKeys:input_type -> pm.v1.GetDeviceLuksKeysRequest
+	185, // 306: pm.v1.ControlService.CreateLuksToken:input_type -> pm.v1.CreateLuksTokenRequest
+	187, // 307: pm.v1.ControlService.RevokeLuksDeviceKey:input_type -> pm.v1.RevokeLuksDeviceKeyRequest
+	189, // 308: pm.v1.ControlService.DispatchOSQuery:input_type -> pm.v1.DispatchOSQueryRequest
+	191, // 309: pm.v1.ControlService.GetOSQueryResult:input_type -> pm.v1.GetOSQueryResultRequest
+	193, // 310: pm.v1.ControlService.GetDeviceInventory:input_type -> pm.v1.GetDeviceInventoryRequest
+	196, // 311: pm.v1.ControlService.RefreshDeviceInventory:input_type -> pm.v1.RefreshDeviceInventoryRequest
+	198, // 312: pm.v1.ControlService.CreateRole:input_type -> pm.v1.CreateRoleRequest
+	200, // 313: pm.v1.ControlService.GetRole:input_type -> pm.v1.GetRoleRequest
+	202, // 314: pm.v1.ControlService.ListRoles:input_type -> pm.v1.ListRolesRequest
+	204, // 315: pm.v1.ControlService.UpdateRole:input_type -> pm.v1.UpdateRoleRequest
+	206, // 316: pm.v1.ControlService.DeleteRole:input_type -> pm.v1.DeleteRoleRequest
+	208, // 317: pm.v1.ControlService.AssignRoleToUser:input_type -> pm.v1.AssignRoleToUserRequest
+	210, // 318: pm.v1.ControlService.RevokeRoleFromUser:input_type -> pm.v1.RevokeRoleFromUserRequest
+	212, // 319: pm.v1.ControlService.ListPermissions:input_type -> pm.v1.ListPermissionsRequest
+	216, // 320: pm.v1.ControlService.CreateUserGroup:input_type -> pm.v1.CreateUserGroupRequest
+	218, // 321: pm.v1.ControlService.GetUserGroup:input_type -> pm.v1.GetUserGroupRequest
+	220, // 322: pm.v1.ControlService.ListUserGroups:input_type -> pm.v1.ListUserGroupsRequest
+	222, // 323: pm.v1.ControlService.UpdateUserGroup:input_type -> pm.v1.UpdateUserGroupRequest
+	224, // 324: pm.v1.ControlService.DeleteUserGroup:input_type -> pm.v1.DeleteUserGroupRequest
+	226, // 325: pm.v1.ControlService.AddUserToGroup:input_type -> pm.v1.AddUserToGroupRequest
+	228, // 326: pm.v1.ControlService.RemoveUserFromGroup:input_type -> pm.v1.RemoveUserFromGroupRequest
+	230, // 327: pm.v1.ControlService.AssignRoleToUserGroup:input_type -> pm.v1.AssignRoleToUserGroupRequest
+	232, // 328: pm.v1.ControlService.RevokeRoleFromUserGroup:input_type -> pm.v1.RevokeRoleFromUserGroupRequest
+	234, // 329: pm.v1.ControlService.ListUserGroupsForUser:input_type -> pm.v1.ListUserGroupsForUserRequest
+	236, // 330: pm.v1.ControlService.UpdateUserGroupQuery:input_type -> pm.v1.UpdateUserGroupQueryRequest
+	238, // 331: pm.v1.ControlService.ValidateUserGroupQuery:input_type -> pm.v1.ValidateUserGroupQueryRequest
+	240, // 332: pm.v1.ControlService.EvaluateDynamicUserGroup:input_type -> pm.v1.EvaluateDynamicUserGroupRequest
+	1,   // 333: pm.v1.ControlService.Register:output_type -> pm.v1.RegisterResponse
+	3,   // 334: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
+	5,   // 335: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
+	7,   // 336: pm.v1.ControlService.Logout:output_type -> pm.v1.LogoutResponse
+	9,   // 337: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
+	23,  // 338: pm.v1.ControlService.VerifyLoginTOTP:output_type -> pm.v1.VerifyLoginTOTPResponse
+	11,  // 339: pm.v1.ControlService.SetupTOTP:output_type -> pm.v1.SetupTOTPResponse
+	13,  // 340: pm.v1.ControlService.VerifyTOTP:output_type -> pm.v1.VerifyTOTPResponse
+	15,  // 341: pm.v1.ControlService.DisableTOTP:output_type -> pm.v1.DisableTOTPResponse
+	17,  // 342: pm.v1.ControlService.AdminDisableUserTOTP:output_type -> pm.v1.AdminDisableUserTOTPResponse
+	19,  // 343: pm.v1.ControlService.GetTOTPStatus:output_type -> pm.v1.GetTOTPStatusResponse
+	21,  // 344: pm.v1.ControlService.RegenerateBackupCodes:output_type -> pm.v1.RegenerateBackupCodesResponse
+	256, // 345: pm.v1.ControlService.ListAuthMethods:output_type -> pm.v1.ListAuthMethodsResponse
+	258, // 346: pm.v1.ControlService.GetSSOLoginURL:output_type -> pm.v1.GetSSOLoginURLResponse
+	260, // 347: pm.v1.ControlService.SSOCallback:output_type -> pm.v1.SSOCallbackResponse
+	245, // 348: pm.v1.ControlService.CreateIdentityProvider:output_type -> pm.v1.CreateIdentityProviderResponse
+	247, // 349: pm.v1.ControlService.GetIdentityProvider:output_type -> pm.v1.GetIdentityProviderResponse
+	249, // 350: pm.v1.ControlService.ListIdentityProviders:output_type -> pm.v1.ListIdentityProvidersResponse
+	251, // 351: pm.v1.ControlService.UpdateIdentityProvider:output_type -> pm.v1.UpdateIdentityProviderResponse
+	253, // 352: pm.v1.ControlService.DeleteIdentityProvider:output_type -> pm.v1.DeleteIdentityProviderResponse
+	262, // 353: pm.v1.ControlService.ListIdentityLinks:output_type -> pm.v1.ListIdentityLinksResponse
+	264, // 354: pm.v1.ControlService.UnlinkIdentity:output_type -> pm.v1.UnlinkIdentityResponse
+	266, // 355: pm.v1.ControlService.EnableSCIM:output_type -> pm.v1.EnableSCIMResponse
+	268, // 356: pm.v1.ControlService.DisableSCIM:output_type -> pm.v1.DisableSCIMResponse
+	270, // 357: pm.v1.ControlService.RotateSCIMToken:output_type -> pm.v1.RotateSCIMTokenResponse
+	28,  // 358: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
+	30,  // 359: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
+	32,  // 360: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
+	36,  // 361: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
+	36,  // 362: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
+	36,  // 363: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
+	38,  // 364: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
+	41,  // 365: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
+	43,  // 366: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
+	46,  // 367: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
+	46,  // 368: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
+	50,  // 369: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
+	52,  // 370: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
+	46,  // 371: pm.v1.ControlService.SetDeviceSyncInterval:output_type -> pm.v1.UpdateDeviceResponse
+	48,  // 372: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
+	56,  // 373: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
+	60,  // 374: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
+	58,  // 375: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
+	63,  // 376: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
+	63,  // 377: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
+	65,  // 378: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
+	68,  // 379: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
+	70,  // 380: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
+	72,  // 381: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
+	76,  // 382: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
+	76,  // 383: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
+	76,  // 384: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
+	78,  // 385: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
+	82,  // 386: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
+	84,  // 387: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
+	86,  // 388: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
+	89,  // 389: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
+	89,  // 390: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
+	91,  // 391: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
+	93,  // 392: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
+	95,  // 393: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
+	97,  // 394: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
+	101, // 395: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
+	103, // 396: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
+	105, // 397: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
+	108, // 398: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
+	108, // 399: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
+	110, // 400: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
+	112, // 401: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
+	114, // 402: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
+	116, // 403: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
+	119, // 404: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
+	121, // 405: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
+	123, // 406: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
+	126, // 407: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
+	126, // 408: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
+	134, // 409: pm.v1.ControlService.UpdateDeviceGroupQuery:output_type -> pm.v1.UpdateDeviceGroupQueryResponse
+	128, // 410: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
+	130, // 411: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
+	132, // 412: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
+	136, // 413: pm.v1.ControlService.ValidateDynamicQuery:output_type -> pm.v1.ValidateDynamicQueryResponse
+	138, // 414: pm.v1.ControlService.EvaluateDynamicGroup:output_type -> pm.v1.EvaluateDynamicGroupResponse
+	126, // 415: pm.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> pm.v1.UpdateDeviceGroupResponse
+	142, // 416: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
+	144, // 417: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
+	146, // 418: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
+	154, // 419: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
+	156, // 420: pm.v1.ControlService.GetUserAssignments:output_type -> pm.v1.GetUserAssignmentsResponse
+	149, // 421: pm.v1.ControlService.SetUserSelection:output_type -> pm.v1.SetUserSelectionResponse
+	152, // 422: pm.v1.ControlService.ListAvailableActions:output_type -> pm.v1.ListAvailableActionsResponse
+	159, // 423: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
+	161, // 424: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
+	163, // 425: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
+	165, // 426: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
+	167, // 427: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
+	169, // 428: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
+	175, // 429: pm.v1.ControlService.DispatchInstantAction:output_type -> pm.v1.DispatchInstantActionResponse
+	171, // 430: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
+	173, // 431: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
+	178, // 432: pm.v1.ControlService.ListAuditEvents:output_type -> pm.v1.ListAuditEventsResponse
+	181, // 433: pm.v1.ControlService.GetDeviceLpsPasswords:output_type -> pm.v1.GetDeviceLpsPasswordsResponse
+	184, // 434: pm.v1.ControlService.GetDeviceLuksKeys:output_type -> pm.v1.GetDeviceLuksKeysResponse
+	186, // 435: pm.v1.ControlService.CreateLuksToken:output_type -> pm.v1.CreateLuksTokenResponse
+	188, // 436: pm.v1.ControlService.RevokeLuksDeviceKey:output_type -> pm.v1.RevokeLuksDeviceKeyResponse
+	190, // 437: pm.v1.ControlService.DispatchOSQuery:output_type -> pm.v1.DispatchOSQueryResponse
+	192, // 438: pm.v1.ControlService.GetOSQueryResult:output_type -> pm.v1.GetOSQueryResultResponse
+	195, // 439: pm.v1.ControlService.GetDeviceInventory:output_type -> pm.v1.GetDeviceInventoryResponse
+	197, // 440: pm.v1.ControlService.RefreshDeviceInventory:output_type -> pm.v1.RefreshDeviceInventoryResponse
+	199, // 441: pm.v1.ControlService.CreateRole:output_type -> pm.v1.CreateRoleResponse
+	201, // 442: pm.v1.ControlService.GetRole:output_type -> pm.v1.GetRoleResponse
+	203, // 443: pm.v1.ControlService.ListRoles:output_type -> pm.v1.ListRolesResponse
+	205, // 444: pm.v1.ControlService.UpdateRole:output_type -> pm.v1.UpdateRoleResponse
+	207, // 445: pm.v1.ControlService.DeleteRole:output_type -> pm.v1.DeleteRoleResponse
+	209, // 446: pm.v1.ControlService.AssignRoleToUser:output_type -> pm.v1.AssignRoleToUserResponse
+	211, // 447: pm.v1.ControlService.RevokeRoleFromUser:output_type -> pm.v1.RevokeRoleFromUserResponse
+	213, // 448: pm.v1.ControlService.ListPermissions:output_type -> pm.v1.ListPermissionsResponse
+	217, // 449: pm.v1.ControlService.CreateUserGroup:output_type -> pm.v1.CreateUserGroupResponse
+	219, // 450: pm.v1.ControlService.GetUserGroup:output_type -> pm.v1.GetUserGroupResponse
+	221, // 451: pm.v1.ControlService.ListUserGroups:output_type -> pm.v1.ListUserGroupsResponse
+	223, // 452: pm.v1.ControlService.UpdateUserGroup:output_type -> pm.v1.UpdateUserGroupResponse
+	225, // 453: pm.v1.ControlService.DeleteUserGroup:output_type -> pm.v1.DeleteUserGroupResponse
+	227, // 454: pm.v1.ControlService.AddUserToGroup:output_type -> pm.v1.AddUserToGroupResponse
+	229, // 455: pm.v1.ControlService.RemoveUserFromGroup:output_type -> pm.v1.RemoveUserFromGroupResponse
+	231, // 456: pm.v1.ControlService.AssignRoleToUserGroup:output_type -> pm.v1.AssignRoleToUserGroupResponse
+	233, // 457: pm.v1.ControlService.RevokeRoleFromUserGroup:output_type -> pm.v1.RevokeRoleFromUserGroupResponse
+	235, // 458: pm.v1.ControlService.ListUserGroupsForUser:output_type -> pm.v1.ListUserGroupsForUserResponse
+	237, // 459: pm.v1.ControlService.UpdateUserGroupQuery:output_type -> pm.v1.UpdateUserGroupQueryResponse
+	239, // 460: pm.v1.ControlService.ValidateUserGroupQuery:output_type -> pm.v1.ValidateUserGroupQueryResponse
+	241, // 461: pm.v1.ControlService.EvaluateDynamicUserGroup:output_type -> pm.v1.EvaluateDynamicUserGroupResponse
+	333, // [333:462] is the sub-list for method output_type
+	204, // [204:333] is the sub-list for method input_type
+	204, // [204:204] is the sub-list for extension type_name
+	204, // [204:204] is the sub-list for extension extendee
+	0,   // [0:204] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_control_proto_init() }
@@ -17916,7 +18308,7 @@ func file_pm_v1_control_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_control_proto_rawDesc), len(file_pm_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   270,
+			NumMessages:   276,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

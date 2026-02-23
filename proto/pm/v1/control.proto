@@ -1563,6 +1563,8 @@ message UserGroup {
   int32 member_count = 4;
   repeated Role roles = 5;
   google.protobuf.Timestamp created_at = 6;
+  bool is_dynamic = 7;
+  string dynamic_query = 8;
 }
 
 message UserGroupMember {
@@ -1576,6 +1578,9 @@ message CreateUserGroupRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  bool is_dynamic = 3;
+  // @gotags: validate:"omitempty,max=4096"
+  string dynamic_query = 4;
 }
 
 message CreateUserGroupResponse {
@@ -1668,6 +1673,40 @@ message ListUserGroupsForUserRequest {
 
 message ListUserGroupsForUserResponse {
   repeated UserGroup groups = 1;
+}
+
+message UpdateUserGroupQueryRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  bool is_dynamic = 2;
+  // @gotags: validate:"omitempty,max=4096"
+  string dynamic_query = 3;
+}
+
+message UpdateUserGroupQueryResponse {
+  UserGroup group = 1;
+}
+
+message ValidateUserGroupQueryRequest {
+  // @gotags: validate:"required,max=4096"
+  string query = 1;
+}
+
+message ValidateUserGroupQueryResponse {
+  bool valid = 1;
+  string error = 2;
+  int32 matching_user_count = 3;
+}
+
+message EvaluateDynamicUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message EvaluateDynamicUserGroupResponse {
+  UserGroup group = 1;
+  int32 users_added = 2;
+  int32 users_removed = 3;
 }
 
 // ============================================================================
@@ -2133,6 +2172,9 @@ service ControlService {
   rpc AssignRoleToUserGroup(AssignRoleToUserGroupRequest) returns (AssignRoleToUserGroupResponse);
   rpc RevokeRoleFromUserGroup(RevokeRoleFromUserGroupRequest) returns (RevokeRoleFromUserGroupResponse);
   rpc ListUserGroupsForUser(ListUserGroupsForUserRequest) returns (ListUserGroupsForUserResponse);
+  rpc UpdateUserGroupQuery(UpdateUserGroupQueryRequest) returns (UpdateUserGroupQueryResponse);
+  rpc ValidateUserGroupQuery(ValidateUserGroupQueryRequest) returns (ValidateUserGroupQueryResponse);
+  rpc EvaluateDynamicUserGroup(EvaluateDynamicUserGroupRequest) returns (EvaluateDynamicUserGroupResponse);
 
   // Device Authentication (PAM/NSS device login)
   rpc AuthenticateDeviceUser(AuthenticateDeviceUserRequest) returns (AuthenticateDeviceUserResponse);
