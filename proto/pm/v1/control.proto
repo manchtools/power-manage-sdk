@@ -175,6 +175,13 @@ message User {
   bool totp_enabled = 8;
   bool has_password = 9;
   repeated IdentityLink identity_links = 10;
+  // OIDC profile scope properties
+  string display_name = 11;
+  string given_name = 12;
+  string family_name = 13;
+  string preferred_username = 14;
+  string picture = 15;
+  string locale = 16;
 }
 
 message Role {
@@ -200,6 +207,11 @@ message CreateUserRequest {
   string password = 2;
   // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
   repeated string role_ids = 3;
+  // Optional profile fields
+  string display_name = 4;
+  string given_name = 5;
+  string family_name = 6;
+  string preferred_username = 7;
 }
 
 message CreateUserResponse {
@@ -253,6 +265,20 @@ message SetUserDisabledRequest {
 
 message UpdateUserResponse {
   User user = 1;
+}
+
+message UpdateUserProfileRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  string display_name = 2;
+  string given_name = 3;
+  string family_name = 4;
+  // @gotags: validate:"omitempty,max=64"
+  string preferred_username = 5;
+  // @gotags: validate:"omitempty,max=2048"
+  string picture = 6;
+  // @gotags: validate:"omitempty,max=10"
+  string locale = 7;
 }
 
 message DeleteUserRequest {
@@ -2047,6 +2073,7 @@ service ControlService {
   rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);
   rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
   rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 
   // Devices
