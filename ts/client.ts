@@ -131,6 +131,9 @@ import {
 	AssignRoleToUserGroupRequestSchema,
 	RevokeRoleFromUserGroupRequestSchema,
 	ListUserGroupsForUserRequestSchema,
+	UpdateUserGroupQueryRequestSchema,
+	ValidateUserGroupQueryRequestSchema,
+	EvaluateDynamicUserGroupRequestSchema,
 	// Identity Providers & SSO
 	ListAuthMethodsRequestSchema,
 	GetSSOLoginURLRequestSchema,
@@ -1101,10 +1104,10 @@ export class ApiClient {
 	// User Groups
 	// ============================================================================
 
-	async createUserGroup(name: string, description: string = '') {
+	async createUserGroup(name: string, description: string = '', isDynamic: boolean = false, dynamicQuery: string = '') {
 		const client = this.getClient();
 		const response = await client.createUserGroup(
-			create(CreateUserGroupRequestSchema, { name, description })
+			create(CreateUserGroupRequestSchema, { name, description, isDynamic, dynamicQuery })
 		);
 		return response.group;
 	}
@@ -1166,6 +1169,28 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.listUserGroupsForUser(
 			create(ListUserGroupsForUserRequestSchema, { userId })
+		);
+	}
+
+	async updateUserGroupQuery(id: string, isDynamic: boolean, dynamicQuery: string) {
+		const client = this.getClient();
+		const response = await client.updateUserGroupQuery(
+			create(UpdateUserGroupQueryRequestSchema, { id, isDynamic, dynamicQuery })
+		);
+		return response.group;
+	}
+
+	async validateUserGroupQuery(query: string) {
+		const client = this.getClient();
+		return client.validateUserGroupQuery(
+			create(ValidateUserGroupQueryRequestSchema, { query })
+		);
+	}
+
+	async evaluateDynamicUserGroup(id: string) {
+		const client = this.getClient();
+		return client.evaluateDynamicUserGroup(
+			create(EvaluateDynamicUserGroupRequestSchema, { id })
 		);
 	}
 
