@@ -122,6 +122,9 @@ const (
 	// ControlServiceSetUserDisabledProcedure is the fully-qualified name of the ControlService's
 	// SetUserDisabled RPC.
 	ControlServiceSetUserDisabledProcedure = "/pm.v1.ControlService/SetUserDisabled"
+	// ControlServiceUpdateUserProfileProcedure is the fully-qualified name of the ControlService's
+	// UpdateUserProfile RPC.
+	ControlServiceUpdateUserProfileProcedure = "/pm.v1.ControlService/UpdateUserProfile"
 	// ControlServiceDeleteUserProcedure is the fully-qualified name of the ControlService's DeleteUser
 	// RPC.
 	ControlServiceDeleteUserProcedure = "/pm.v1.ControlService/DeleteUser"
@@ -455,6 +458,7 @@ type ControlServiceClient interface {
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	UpdateUserProfile(context.Context, *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
 	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
@@ -765,6 +769,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceSetUserDisabledProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("SetUserDisabled")),
+			connect.WithClientOptions(opts...),
+		),
+		updateUserProfile: connect.NewClient[v1.UpdateUserProfileRequest, v1.UpdateUserResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateUserProfileProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateUserProfile")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteUser: connect.NewClient[v1.DeleteUserRequest, v1.DeleteUserResponse](
@@ -1391,6 +1401,7 @@ type controlServiceClient struct {
 	updateUserEmail               *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
 	updateUserPassword            *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
 	setUserDisabled               *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
+	updateUserProfile             *connect.Client[v1.UpdateUserProfileRequest, v1.UpdateUserResponse]
 	deleteUser                    *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 	listDevices                   *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
 	getDevice                     *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
@@ -1644,6 +1655,11 @@ func (c *controlServiceClient) UpdateUserPassword(ctx context.Context, req *conn
 // SetUserDisabled calls pm.v1.ControlService.SetUserDisabled.
 func (c *controlServiceClient) SetUserDisabled(ctx context.Context, req *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return c.setUserDisabled.CallUnary(ctx, req)
+}
+
+// UpdateUserProfile calls pm.v1.ControlService.UpdateUserProfile.
+func (c *controlServiceClient) UpdateUserProfile(ctx context.Context, req *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return c.updateUserProfile.CallUnary(ctx, req)
 }
 
 // DeleteUser calls pm.v1.ControlService.DeleteUser.
@@ -2175,6 +2191,7 @@ type ControlServiceHandler interface {
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	UpdateUserProfile(context.Context, *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
 	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
@@ -2481,6 +2498,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceSetUserDisabledProcedure,
 		svc.SetUserDisabled,
 		connect.WithSchema(controlServiceMethods.ByName("SetUserDisabled")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateUserProfileHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateUserProfileProcedure,
+		svc.UpdateUserProfile,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateUserProfile")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceDeleteUserHandler := connect.NewUnaryHandler(
@@ -3135,6 +3158,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateUserPasswordHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserDisabledProcedure:
 			controlServiceSetUserDisabledHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateUserProfileProcedure:
+			controlServiceUpdateUserProfileHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteUserProcedure:
 			controlServiceDeleteUserHandler.ServeHTTP(w, r)
 		case ControlServiceListDevicesProcedure:
@@ -3462,6 +3487,10 @@ func (UnimplementedControlServiceHandler) UpdateUserPassword(context.Context, *c
 
 func (UnimplementedControlServiceHandler) SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserDisabled is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateUserProfile(context.Context, *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserProfile is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {

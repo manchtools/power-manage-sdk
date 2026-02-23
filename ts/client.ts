@@ -18,6 +18,7 @@ import {
 	UpdateUserEmailRequestSchema,
 	UpdateUserPasswordRequestSchema,
 	SetUserDisabledRequestSchema,
+	UpdateUserProfileRequestSchema,
 	DeleteUserRequestSchema,
 	ListDevicesRequestSchema,
 	GetDeviceRequestSchema,
@@ -360,10 +361,15 @@ export class ApiClient {
 	// Users
 	// ============================================================================
 
-	async createUser(email: string, password: string, roleIds: string[] = []) {
+	async createUser(email: string, password: string, roleIds: string[] = [], profile?: {
+		displayName?: string;
+		givenName?: string;
+		familyName?: string;
+		preferredUsername?: string;
+	}) {
 		const client = this.getClient();
 		const response = await client.createUser(
-			create(CreateUserRequestSchema, { email, password, roleIds })
+			create(CreateUserRequestSchema, { email, password, roleIds, ...profile })
 		);
 		return response.user;
 	}
@@ -401,6 +407,21 @@ export class ApiClient {
 		const client = this.getClient();
 		const response = await client.setUserDisabled(
 			create(SetUserDisabledRequestSchema, { id, disabled })
+		);
+		return response.user;
+	}
+
+	async updateUserProfile(id: string, profile: {
+		displayName?: string;
+		givenName?: string;
+		familyName?: string;
+		preferredUsername?: string;
+		picture?: string;
+		locale?: string;
+	}) {
+		const client = this.getClient();
+		const response = await client.updateUserProfile(
+			create(UpdateUserProfileRequestSchema, { id, ...profile })
 		);
 		return response.user;
 	}
