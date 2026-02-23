@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/device_auth.proto.
  */
 export const file_pm_v1_device_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChdwbS92MS9kZXZpY2VfYXV0aC5wcm90bxIFcG0udjEiSgoRRGV2aWNlQXV0aFJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEQoJdG90cF9jb2RlGAMgASgJItYBChJEZXZpY2VBdXRoUmVzcG9uc2USDwoHc3VjY2VzcxgBIAEoCBIZChFwYXNzd29yZF9yZXF1aXJlZBgCIAEoCBIVCg1vaWRjX3JlcXVpcmVkGAMgASgIEhUKDXRvdHBfcmVxdWlyZWQYBCABKAgSDQoFZXJyb3IYBSABKAkSIwoEdXNlchgGIAEoCzIVLnBtLnYxLkRldmljZVVzZXJJbmZvEhUKDXNlc3Npb25fdG9rZW4YByABKAkSGwoTc2Vzc2lvbl90dGxfc2Vjb25kcxgIIAEoAyJBChZWYWxpZGF0ZVNlc3Npb25SZXF1ZXN0EhUKDXNlc3Npb25fdG9rZW4YASABKAkSEAoIdXNlcm5hbWUYAiABKAkiTQoXVmFsaWRhdGVTZXNzaW9uUmVzcG9uc2USDQoFdmFsaWQYASABKAgSIwoEdXNlchgCIAEoCzIVLnBtLnYxLkRldmljZVVzZXJJbmZvIjUKFEdldERldmljZVVzZXJSZXF1ZXN0EhAKCHVzZXJuYW1lGAEgASgJEgsKA3VpZBgCIAEoDSI8ChVHZXREZXZpY2VVc2VyUmVzcG9uc2USIwoEdXNlchgBIAEoCzIVLnBtLnYxLkRldmljZVVzZXJJbmZvIh0KG0xpc3REZXZpY2VVc2Vyc0xvY2FsUmVxdWVzdCJEChxMaXN0RGV2aWNlVXNlcnNMb2NhbFJlc3BvbnNlEiQKBXVzZXJzGAEgAygLMhUucG0udjEuRGV2aWNlVXNlckluZm8iPQoSR2V0TG9naW5VUkxSZXF1ZXN0EhUKDWNhbGxiYWNrX3BvcnQYASABKAUSEAoIdXNlcm5hbWUYAiABKAkiKAoTR2V0TG9naW5VUkxSZXNwb25zZRIRCglsb2dpbl91cmwYASABKAkiLgoUQ29tcGxldGVMb2dpblJlcXVlc3QSFgoOY2FsbGJhY2tfdG9rZW4YASABKAkikAEKFUNvbXBsZXRlTG9naW5SZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg0KBWVycm9yGAIgASgJEiMKBHVzZXIYAyABKAsyFS5wbS52MS5EZXZpY2VVc2VySW5mbxIVCg1zZXNzaW9uX3Rva2VuGAQgASgJEhsKE3Nlc3Npb25fdHRsX3NlY29uZHMYBSABKAMy2AMKEURldmljZUF1dGhTZXJ2aWNlEkMKDEF1dGhlbnRpY2F0ZRIYLnBtLnYxLkRldmljZUF1dGhSZXF1ZXN0GhkucG0udjEuRGV2aWNlQXV0aFJlc3BvbnNlElAKD1ZhbGlkYXRlU2Vzc2lvbhIdLnBtLnYxLlZhbGlkYXRlU2Vzc2lvblJlcXVlc3QaHi5wbS52MS5WYWxpZGF0ZVNlc3Npb25SZXNwb25zZRJECgdHZXRVc2VyEhsucG0udjEuR2V0RGV2aWNlVXNlclJlcXVlc3QaHC5wbS52MS5HZXREZXZpY2VVc2VyUmVzcG9uc2USVAoJTGlzdFVzZXJzEiIucG0udjEuTGlzdERldmljZVVzZXJzTG9jYWxSZXF1ZXN0GiMucG0udjEuTGlzdERldmljZVVzZXJzTG9jYWxSZXNwb25zZRJECgtHZXRMb2dpblVSTBIZLnBtLnYxLkdldExvZ2luVVJMUmVxdWVzdBoaLnBtLnYxLkdldExvZ2luVVJMUmVzcG9uc2USSgoNQ29tcGxldGVMb2dpbhIbLnBtLnYxLkNvbXBsZXRlTG9naW5SZXF1ZXN0GhwucG0udjEuQ29tcGxldGVMb2dpblJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_pm_v1_control]);
+  fileDesc("ChdwbS92MS9kZXZpY2VfYXV0aC5wcm90bxIFcG0udjEiSgoRRGV2aWNlQXV0aFJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEQoJdG90cF9jb2RlGAMgASgJItYBChJEZXZpY2VBdXRoUmVzcG9uc2USDwoHc3VjY2VzcxgBIAEoCBIZChFwYXNzd29yZF9yZXF1aXJlZBgCIAEoCBIVCg1vaWRjX3JlcXVpcmVkGAMgASgIEhUKDXRvdHBfcmVxdWlyZWQYBCABKAgSDQoFZXJyb3IYBSABKAkSIwoEdXNlchgGIAEoCzIVLnBtLnYxLkRldmljZVVzZXJJbmZvEhUKDXNlc3Npb25fdG9rZW4YByABKAkSGwoTc2Vzc2lvbl90dGxfc2Vjb25kcxgIIAEoAyJBChZWYWxpZGF0ZVNlc3Npb25SZXF1ZXN0EhUKDXNlc3Npb25fdG9rZW4YASABKAkSEAoIdXNlcm5hbWUYAiABKAkiTQoXVmFsaWRhdGVTZXNzaW9uUmVzcG9uc2USDQoFdmFsaWQYASABKAgSIwoEdXNlchgCIAEoCzIVLnBtLnYxLkRldmljZVVzZXJJbmZvIjUKFEdldERldmljZVVzZXJSZXF1ZXN0EhAKCHVzZXJuYW1lGAEgASgJEgsKA3VpZBgCIAEoDSI8ChVHZXREZXZpY2VVc2VyUmVzcG9uc2USIwoEdXNlchgBIAEoCzIVLnBtLnYxLkRldmljZVVzZXJJbmZvIh0KG0xpc3REZXZpY2VVc2Vyc0xvY2FsUmVxdWVzdCJEChxMaXN0RGV2aWNlVXNlcnNMb2NhbFJlc3BvbnNlEiQKBXVzZXJzGAEgAygLMhUucG0udjEuRGV2aWNlVXNlckluZm8iPQoSR2V0TG9naW5VUkxSZXF1ZXN0EhUKDWNhbGxiYWNrX3BvcnQYASABKAUSEAoIdXNlcm5hbWUYAiABKAkiKAoTR2V0TG9naW5VUkxSZXNwb25zZRIRCglsb2dpbl91cmwYASABKAkiLgoUQ29tcGxldGVMb2dpblJlcXVlc3QSFgoOY2FsbGJhY2tfdG9rZW4YASABKAkikAEKFUNvbXBsZXRlTG9naW5SZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg0KBWVycm9yGAIgASgJEiMKBHVzZXIYAyABKAsyFS5wbS52MS5EZXZpY2VVc2VySW5mbxIVCg1zZXNzaW9uX3Rva2VuGAQgASgJEhsKE3Nlc3Npb25fdHRsX3NlY29uZHMYBSABKAMiRwoNRW5yb2xsUmVxdWVzdBISCgpzZXJ2ZXJfdXJsGAEgASgJEg0KBXRva2VuGAIgASgJEhMKC3NraXBfdmVyaWZ5GAMgASgIIkMKDkVucm9sbFJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgSEQoJZGV2aWNlX2lkGAIgASgJEg0KBWVycm9yGAMgASgJIhwKGkdldEVucm9sbG1lbnRTdGF0dXNSZXF1ZXN0IkIKG0dldEVucm9sbG1lbnRTdGF0dXNSZXNwb25zZRIQCghlbnJvbGxlZBgBIAEoCBIRCglkZXZpY2VfaWQYAiABKAky7QQKEURldmljZUF1dGhTZXJ2aWNlEkMKDEF1dGhlbnRpY2F0ZRIYLnBtLnYxLkRldmljZUF1dGhSZXF1ZXN0GhkucG0udjEuRGV2aWNlQXV0aFJlc3BvbnNlElAKD1ZhbGlkYXRlU2Vzc2lvbhIdLnBtLnYxLlZhbGlkYXRlU2Vzc2lvblJlcXVlc3QaHi5wbS52MS5WYWxpZGF0ZVNlc3Npb25SZXNwb25zZRJECgdHZXRVc2VyEhsucG0udjEuR2V0RGV2aWNlVXNlclJlcXVlc3QaHC5wbS52MS5HZXREZXZpY2VVc2VyUmVzcG9uc2USVAoJTGlzdFVzZXJzEiIucG0udjEuTGlzdERldmljZVVzZXJzTG9jYWxSZXF1ZXN0GiMucG0udjEuTGlzdERldmljZVVzZXJzTG9jYWxSZXNwb25zZRJECgtHZXRMb2dpblVSTBIZLnBtLnYxLkdldExvZ2luVVJMUmVxdWVzdBoaLnBtLnYxLkdldExvZ2luVVJMUmVzcG9uc2USSgoNQ29tcGxldGVMb2dpbhIbLnBtLnYxLkNvbXBsZXRlTG9naW5SZXF1ZXN0GhwucG0udjEuQ29tcGxldGVMb2dpblJlc3BvbnNlEjUKBkVucm9sbBIULnBtLnYxLkVucm9sbFJlcXVlc3QaFS5wbS52MS5FbnJvbGxSZXNwb25zZRJcChNHZXRFbnJvbGxtZW50U3RhdHVzEiEucG0udjEuR2V0RW5yb2xsbWVudFN0YXR1c1JlcXVlc3QaIi5wbS52MS5HZXRFbnJvbGxtZW50U3RhdHVzUmVzcG9uc2VCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_pm_v1_control]);
 
 /**
  * @generated from message pm.v1.DeviceAuthRequest
@@ -340,6 +340,111 @@ export const CompleteLoginResponseSchema: GenMessage<CompleteLoginResponse> = /*
   messageDesc(file_pm_v1_device_auth, 11);
 
 /**
+ * @generated from message pm.v1.EnrollRequest
+ */
+export type EnrollRequest = Message<"pm.v1.EnrollRequest"> & {
+  /**
+   * @gotags: validate:"required,url"
+   *
+   * Control server URL
+   *
+   * @generated from field: string server_url = 1;
+   */
+  serverUrl: string;
+
+  /**
+   * @gotags: validate:"required"
+   *
+   * Registration token from web UI
+   *
+   * @generated from field: string token = 2;
+   */
+  token: string;
+
+  /**
+   * Skip TLS verification (development only)
+   *
+   * @generated from field: bool skip_verify = 3;
+   */
+  skipVerify: boolean;
+};
+
+/**
+ * Describes the message pm.v1.EnrollRequest.
+ * Use `create(EnrollRequestSchema)` to create a new message.
+ */
+export const EnrollRequestSchema: GenMessage<EnrollRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_device_auth, 12);
+
+/**
+ * @generated from message pm.v1.EnrollResponse
+ */
+export type EnrollResponse = Message<"pm.v1.EnrollResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * Assigned device ID on success
+   *
+   * @generated from field: string device_id = 2;
+   */
+  deviceId: string;
+
+  /**
+   * Error message on failure
+   *
+   * @generated from field: string error = 3;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message pm.v1.EnrollResponse.
+ * Use `create(EnrollResponseSchema)` to create a new message.
+ */
+export const EnrollResponseSchema: GenMessage<EnrollResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_device_auth, 13);
+
+/**
+ * @generated from message pm.v1.GetEnrollmentStatusRequest
+ */
+export type GetEnrollmentStatusRequest = Message<"pm.v1.GetEnrollmentStatusRequest"> & {
+};
+
+/**
+ * Describes the message pm.v1.GetEnrollmentStatusRequest.
+ * Use `create(GetEnrollmentStatusRequestSchema)` to create a new message.
+ */
+export const GetEnrollmentStatusRequestSchema: GenMessage<GetEnrollmentStatusRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_device_auth, 14);
+
+/**
+ * @generated from message pm.v1.GetEnrollmentStatusResponse
+ */
+export type GetEnrollmentStatusResponse = Message<"pm.v1.GetEnrollmentStatusResponse"> & {
+  /**
+   * @generated from field: bool enrolled = 1;
+   */
+  enrolled: boolean;
+
+  /**
+   * Empty if not enrolled
+   *
+   * @generated from field: string device_id = 2;
+   */
+  deviceId: string;
+};
+
+/**
+ * Describes the message pm.v1.GetEnrollmentStatusResponse.
+ * Use `create(GetEnrollmentStatusResponseSchema)` to create a new message.
+ */
+export const GetEnrollmentStatusResponseSchema: GenMessage<GetEnrollmentStatusResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_device_auth, 15);
+
+/**
  * @generated from service pm.v1.DeviceAuthService
  */
 export const DeviceAuthService: GenService<{
@@ -404,6 +509,26 @@ export const DeviceAuthService: GenService<{
     methodKind: "unary";
     input: typeof CompleteLoginRequestSchema;
     output: typeof CompleteLoginResponseSchema;
+  },
+  /**
+   * Enroll the agent with a PM server (called by CLI, no sudo required).
+   *
+   * @generated from rpc pm.v1.DeviceAuthService.Enroll
+   */
+  enroll: {
+    methodKind: "unary";
+    input: typeof EnrollRequestSchema;
+    output: typeof EnrollResponseSchema;
+  },
+  /**
+   * Check whether the agent is currently enrolled.
+   *
+   * @generated from rpc pm.v1.DeviceAuthService.GetEnrollmentStatus
+   */
+  getEnrollmentStatus: {
+    methodKind: "unary";
+    input: typeof GetEnrollmentStatusRequestSchema;
+    output: typeof GetEnrollmentStatusResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pm_v1_device_auth, 0);

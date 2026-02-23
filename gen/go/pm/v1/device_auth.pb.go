@@ -683,6 +683,216 @@ func (x *CompleteLoginResponse) GetSessionTtlSeconds() int64 {
 	return 0
 }
 
+type EnrollRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,url"
+	ServerUrl string `protobuf:"bytes,1,opt,name=server_url,json=serverUrl,proto3" json:"server_url,omitempty" validate:"required,url"` // Control server URL
+	// @gotags: validate:"required"
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required"`                              // Registration token from web UI
+	SkipVerify    bool   `protobuf:"varint,3,opt,name=skip_verify,json=skipVerify,proto3" json:"skip_verify,omitempty"` // Skip TLS verification (development only)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnrollRequest) Reset() {
+	*x = EnrollRequest{}
+	mi := &file_pm_v1_device_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnrollRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnrollRequest) ProtoMessage() {}
+
+func (x *EnrollRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_device_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnrollRequest.ProtoReflect.Descriptor instead.
+func (*EnrollRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *EnrollRequest) GetServerUrl() string {
+	if x != nil {
+		return x.ServerUrl
+	}
+	return ""
+}
+
+func (x *EnrollRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *EnrollRequest) GetSkipVerify() bool {
+	if x != nil {
+		return x.SkipVerify
+	}
+	return false
+}
+
+type EnrollResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	DeviceId      string                 `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"` // Assigned device ID on success
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                       // Error message on failure
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnrollResponse) Reset() {
+	*x = EnrollResponse{}
+	mi := &file_pm_v1_device_auth_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnrollResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnrollResponse) ProtoMessage() {}
+
+func (x *EnrollResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_device_auth_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnrollResponse.ProtoReflect.Descriptor instead.
+func (*EnrollResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *EnrollResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *EnrollResponse) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *EnrollResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type GetEnrollmentStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEnrollmentStatusRequest) Reset() {
+	*x = GetEnrollmentStatusRequest{}
+	mi := &file_pm_v1_device_auth_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEnrollmentStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEnrollmentStatusRequest) ProtoMessage() {}
+
+func (x *GetEnrollmentStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_device_auth_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEnrollmentStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetEnrollmentStatusRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{14}
+}
+
+type GetEnrollmentStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Enrolled      bool                   `protobuf:"varint,1,opt,name=enrolled,proto3" json:"enrolled,omitempty"`
+	DeviceId      string                 `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"` // Empty if not enrolled
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEnrollmentStatusResponse) Reset() {
+	*x = GetEnrollmentStatusResponse{}
+	mi := &file_pm_v1_device_auth_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEnrollmentStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEnrollmentStatusResponse) ProtoMessage() {}
+
+func (x *GetEnrollmentStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_device_auth_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEnrollmentStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetEnrollmentStatusResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetEnrollmentStatusResponse) GetEnrolled() bool {
+	if x != nil {
+		return x.Enrolled
+	}
+	return false
+}
+
+func (x *GetEnrollmentStatusResponse) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
 var File_pm_v1_device_auth_proto protoreflect.FileDescriptor
 
 const file_pm_v1_device_auth_proto_rawDesc = "" +
@@ -727,14 +937,30 @@ const file_pm_v1_device_auth_proto_rawDesc = "" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12)\n" +
 	"\x04user\x18\x03 \x01(\v2\x15.pm.v1.DeviceUserInfoR\x04user\x12#\n" +
 	"\rsession_token\x18\x04 \x01(\tR\fsessionToken\x12.\n" +
-	"\x13session_ttl_seconds\x18\x05 \x01(\x03R\x11sessionTtlSeconds2\xd8\x03\n" +
+	"\x13session_ttl_seconds\x18\x05 \x01(\x03R\x11sessionTtlSeconds\"e\n" +
+	"\rEnrollRequest\x12\x1d\n" +
+	"\n" +
+	"server_url\x18\x01 \x01(\tR\tserverUrl\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1f\n" +
+	"\vskip_verify\x18\x03 \x01(\bR\n" +
+	"skipVerify\"]\n" +
+	"\x0eEnrollResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1b\n" +
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\x1c\n" +
+	"\x1aGetEnrollmentStatusRequest\"V\n" +
+	"\x1bGetEnrollmentStatusResponse\x12\x1a\n" +
+	"\benrolled\x18\x01 \x01(\bR\benrolled\x12\x1b\n" +
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId2\xed\x04\n" +
 	"\x11DeviceAuthService\x12C\n" +
 	"\fAuthenticate\x12\x18.pm.v1.DeviceAuthRequest\x1a\x19.pm.v1.DeviceAuthResponse\x12P\n" +
 	"\x0fValidateSession\x12\x1d.pm.v1.ValidateSessionRequest\x1a\x1e.pm.v1.ValidateSessionResponse\x12D\n" +
 	"\aGetUser\x12\x1b.pm.v1.GetDeviceUserRequest\x1a\x1c.pm.v1.GetDeviceUserResponse\x12T\n" +
 	"\tListUsers\x12\".pm.v1.ListDeviceUsersLocalRequest\x1a#.pm.v1.ListDeviceUsersLocalResponse\x12D\n" +
 	"\vGetLoginURL\x12\x19.pm.v1.GetLoginURLRequest\x1a\x1a.pm.v1.GetLoginURLResponse\x12J\n" +
-	"\rCompleteLogin\x12\x1b.pm.v1.CompleteLoginRequest\x1a\x1c.pm.v1.CompleteLoginResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\rCompleteLogin\x12\x1b.pm.v1.CompleteLoginRequest\x1a\x1c.pm.v1.CompleteLoginResponse\x125\n" +
+	"\x06Enroll\x12\x14.pm.v1.EnrollRequest\x1a\x15.pm.v1.EnrollResponse\x12\\\n" +
+	"\x13GetEnrollmentStatus\x12!.pm.v1.GetEnrollmentStatusRequest\x1a\".pm.v1.GetEnrollmentStatusResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_device_auth_proto_rawDescOnce sync.Once
@@ -748,7 +974,7 @@ func file_pm_v1_device_auth_proto_rawDescGZIP() []byte {
 	return file_pm_v1_device_auth_proto_rawDescData
 }
 
-var file_pm_v1_device_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_pm_v1_device_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_pm_v1_device_auth_proto_goTypes = []any{
 	(*DeviceAuthRequest)(nil),            // 0: pm.v1.DeviceAuthRequest
 	(*DeviceAuthResponse)(nil),           // 1: pm.v1.DeviceAuthResponse
@@ -762,28 +988,36 @@ var file_pm_v1_device_auth_proto_goTypes = []any{
 	(*GetLoginURLResponse)(nil),          // 9: pm.v1.GetLoginURLResponse
 	(*CompleteLoginRequest)(nil),         // 10: pm.v1.CompleteLoginRequest
 	(*CompleteLoginResponse)(nil),        // 11: pm.v1.CompleteLoginResponse
-	(*DeviceUserInfo)(nil),               // 12: pm.v1.DeviceUserInfo
+	(*EnrollRequest)(nil),                // 12: pm.v1.EnrollRequest
+	(*EnrollResponse)(nil),               // 13: pm.v1.EnrollResponse
+	(*GetEnrollmentStatusRequest)(nil),   // 14: pm.v1.GetEnrollmentStatusRequest
+	(*GetEnrollmentStatusResponse)(nil),  // 15: pm.v1.GetEnrollmentStatusResponse
+	(*DeviceUserInfo)(nil),               // 16: pm.v1.DeviceUserInfo
 }
 var file_pm_v1_device_auth_proto_depIdxs = []int32{
-	12, // 0: pm.v1.DeviceAuthResponse.user:type_name -> pm.v1.DeviceUserInfo
-	12, // 1: pm.v1.ValidateSessionResponse.user:type_name -> pm.v1.DeviceUserInfo
-	12, // 2: pm.v1.GetDeviceUserResponse.user:type_name -> pm.v1.DeviceUserInfo
-	12, // 3: pm.v1.ListDeviceUsersLocalResponse.users:type_name -> pm.v1.DeviceUserInfo
-	12, // 4: pm.v1.CompleteLoginResponse.user:type_name -> pm.v1.DeviceUserInfo
+	16, // 0: pm.v1.DeviceAuthResponse.user:type_name -> pm.v1.DeviceUserInfo
+	16, // 1: pm.v1.ValidateSessionResponse.user:type_name -> pm.v1.DeviceUserInfo
+	16, // 2: pm.v1.GetDeviceUserResponse.user:type_name -> pm.v1.DeviceUserInfo
+	16, // 3: pm.v1.ListDeviceUsersLocalResponse.users:type_name -> pm.v1.DeviceUserInfo
+	16, // 4: pm.v1.CompleteLoginResponse.user:type_name -> pm.v1.DeviceUserInfo
 	0,  // 5: pm.v1.DeviceAuthService.Authenticate:input_type -> pm.v1.DeviceAuthRequest
 	2,  // 6: pm.v1.DeviceAuthService.ValidateSession:input_type -> pm.v1.ValidateSessionRequest
 	4,  // 7: pm.v1.DeviceAuthService.GetUser:input_type -> pm.v1.GetDeviceUserRequest
 	6,  // 8: pm.v1.DeviceAuthService.ListUsers:input_type -> pm.v1.ListDeviceUsersLocalRequest
 	8,  // 9: pm.v1.DeviceAuthService.GetLoginURL:input_type -> pm.v1.GetLoginURLRequest
 	10, // 10: pm.v1.DeviceAuthService.CompleteLogin:input_type -> pm.v1.CompleteLoginRequest
-	1,  // 11: pm.v1.DeviceAuthService.Authenticate:output_type -> pm.v1.DeviceAuthResponse
-	3,  // 12: pm.v1.DeviceAuthService.ValidateSession:output_type -> pm.v1.ValidateSessionResponse
-	5,  // 13: pm.v1.DeviceAuthService.GetUser:output_type -> pm.v1.GetDeviceUserResponse
-	7,  // 14: pm.v1.DeviceAuthService.ListUsers:output_type -> pm.v1.ListDeviceUsersLocalResponse
-	9,  // 15: pm.v1.DeviceAuthService.GetLoginURL:output_type -> pm.v1.GetLoginURLResponse
-	11, // 16: pm.v1.DeviceAuthService.CompleteLogin:output_type -> pm.v1.CompleteLoginResponse
-	11, // [11:17] is the sub-list for method output_type
-	5,  // [5:11] is the sub-list for method input_type
+	12, // 11: pm.v1.DeviceAuthService.Enroll:input_type -> pm.v1.EnrollRequest
+	14, // 12: pm.v1.DeviceAuthService.GetEnrollmentStatus:input_type -> pm.v1.GetEnrollmentStatusRequest
+	1,  // 13: pm.v1.DeviceAuthService.Authenticate:output_type -> pm.v1.DeviceAuthResponse
+	3,  // 14: pm.v1.DeviceAuthService.ValidateSession:output_type -> pm.v1.ValidateSessionResponse
+	5,  // 15: pm.v1.DeviceAuthService.GetUser:output_type -> pm.v1.GetDeviceUserResponse
+	7,  // 16: pm.v1.DeviceAuthService.ListUsers:output_type -> pm.v1.ListDeviceUsersLocalResponse
+	9,  // 17: pm.v1.DeviceAuthService.GetLoginURL:output_type -> pm.v1.GetLoginURLResponse
+	11, // 18: pm.v1.DeviceAuthService.CompleteLogin:output_type -> pm.v1.CompleteLoginResponse
+	13, // 19: pm.v1.DeviceAuthService.Enroll:output_type -> pm.v1.EnrollResponse
+	15, // 20: pm.v1.DeviceAuthService.GetEnrollmentStatus:output_type -> pm.v1.GetEnrollmentStatusResponse
+	13, // [13:21] is the sub-list for method output_type
+	5,  // [5:13] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
 	5,  // [5:5] is the sub-list for extension extendee
 	0,  // [0:5] is the sub-list for field type_name
@@ -801,7 +1035,7 @@ func file_pm_v1_device_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_device_auth_proto_rawDesc), len(file_pm_v1_device_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
