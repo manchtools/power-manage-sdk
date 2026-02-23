@@ -116,6 +116,7 @@ import {
 	SetupTOTPRequestSchema,
 	VerifyTOTPRequestSchema,
 	DisableTOTPRequestSchema,
+	AdminDisableUserTOTPRequestSchema,
 	GetTOTPStatusRequestSchema,
 	RegenerateBackupCodesRequestSchema,
 	VerifyLoginTOTPRequestSchema,
@@ -331,6 +332,13 @@ export class ApiClient {
 	async disableTOTP(password: string) {
 		const client = this.getClient();
 		return client.disableTOTP(create(DisableTOTPRequestSchema, { password }));
+	}
+
+	async adminDisableUserTOTP(userId: string) {
+		const client = this.getClient();
+		return client.adminDisableUserTOTP(
+			create(AdminDisableUserTOTPRequestSchema, { userId })
+		);
 	}
 
 	async getTOTPStatus() {

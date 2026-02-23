@@ -120,6 +120,14 @@ message DisableTOTPRequest {
 
 message DisableTOTPResponse {}
 
+// Admin: disable TOTP for another user (no password required).
+message AdminDisableUserTOTPRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+}
+
+message AdminDisableUserTOTPResponse {}
+
 message GetTOTPStatusRequest {}
 
 message GetTOTPStatusResponse {
@@ -1972,6 +1980,7 @@ service ControlService {
   rpc SetupTOTP(SetupTOTPRequest) returns (SetupTOTPResponse);
   rpc VerifyTOTP(VerifyTOTPRequest) returns (VerifyTOTPResponse);
   rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
+  rpc AdminDisableUserTOTP(AdminDisableUserTOTPRequest) returns (AdminDisableUserTOTPResponse);
   rpc GetTOTPStatus(GetTOTPStatusRequest) returns (GetTOTPStatusResponse);
   rpc RegenerateBackupCodes(RegenerateBackupCodesRequest) returns (RegenerateBackupCodesResponse);
 
