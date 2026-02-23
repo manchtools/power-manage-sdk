@@ -57,6 +57,9 @@ const (
 	// ControlServiceDisableTOTPProcedure is the fully-qualified name of the ControlService's
 	// DisableTOTP RPC.
 	ControlServiceDisableTOTPProcedure = "/pm.v1.ControlService/DisableTOTP"
+	// ControlServiceAdminDisableUserTOTPProcedure is the fully-qualified name of the ControlService's
+	// AdminDisableUserTOTP RPC.
+	ControlServiceAdminDisableUserTOTPProcedure = "/pm.v1.ControlService/AdminDisableUserTOTP"
 	// ControlServiceGetTOTPStatusProcedure is the fully-qualified name of the ControlService's
 	// GetTOTPStatus RPC.
 	ControlServiceGetTOTPStatusProcedure = "/pm.v1.ControlService/GetTOTPStatus"
@@ -430,6 +433,7 @@ type ControlServiceClient interface {
 	SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error)
 	VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error)
 	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
+	AdminDisableUserTOTP(context.Context, *connect.Request[v1.AdminDisableUserTOTPRequest]) (*connect.Response[v1.AdminDisableUserTOTPResponse], error)
 	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
 	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
 	// SSO / Identity Providers
@@ -634,6 +638,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceDisableTOTPProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("DisableTOTP")),
+			connect.WithClientOptions(opts...),
+		),
+		adminDisableUserTOTP: connect.NewClient[v1.AdminDisableUserTOTPRequest, v1.AdminDisableUserTOTPResponse](
+			httpClient,
+			baseURL+ControlServiceAdminDisableUserTOTPProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AdminDisableUserTOTP")),
 			connect.WithClientOptions(opts...),
 		),
 		getTOTPStatus: connect.NewClient[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse](
@@ -1370,6 +1380,7 @@ type controlServiceClient struct {
 	setupTOTP                     *connect.Client[v1.SetupTOTPRequest, v1.SetupTOTPResponse]
 	verifyTOTP                    *connect.Client[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse]
 	disableTOTP                   *connect.Client[v1.DisableTOTPRequest, v1.DisableTOTPResponse]
+	adminDisableUserTOTP          *connect.Client[v1.AdminDisableUserTOTPRequest, v1.AdminDisableUserTOTPResponse]
 	getTOTPStatus                 *connect.Client[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse]
 	regenerateBackupCodes         *connect.Client[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse]
 	listAuthMethods               *connect.Client[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse]
@@ -1535,6 +1546,11 @@ func (c *controlServiceClient) VerifyTOTP(ctx context.Context, req *connect.Requ
 // DisableTOTP calls pm.v1.ControlService.DisableTOTP.
 func (c *controlServiceClient) DisableTOTP(ctx context.Context, req *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error) {
 	return c.disableTOTP.CallUnary(ctx, req)
+}
+
+// AdminDisableUserTOTP calls pm.v1.ControlService.AdminDisableUserTOTP.
+func (c *controlServiceClient) AdminDisableUserTOTP(ctx context.Context, req *connect.Request[v1.AdminDisableUserTOTPRequest]) (*connect.Response[v1.AdminDisableUserTOTPResponse], error) {
+	return c.adminDisableUserTOTP.CallUnary(ctx, req)
 }
 
 // GetTOTPStatus calls pm.v1.ControlService.GetTOTPStatus.
@@ -2151,6 +2167,7 @@ type ControlServiceHandler interface {
 	SetupTOTP(context.Context, *connect.Request[v1.SetupTOTPRequest]) (*connect.Response[v1.SetupTOTPResponse], error)
 	VerifyTOTP(context.Context, *connect.Request[v1.VerifyTOTPRequest]) (*connect.Response[v1.VerifyTOTPResponse], error)
 	DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error)
+	AdminDisableUserTOTP(context.Context, *connect.Request[v1.AdminDisableUserTOTPRequest]) (*connect.Response[v1.AdminDisableUserTOTPResponse], error)
 	GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error)
 	RegenerateBackupCodes(context.Context, *connect.Request[v1.RegenerateBackupCodesRequest]) (*connect.Response[v1.RegenerateBackupCodesResponse], error)
 	// SSO / Identity Providers
@@ -2351,6 +2368,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceDisableTOTPProcedure,
 		svc.DisableTOTP,
 		connect.WithSchema(controlServiceMethods.ByName("DisableTOTP")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAdminDisableUserTOTPHandler := connect.NewUnaryHandler(
+		ControlServiceAdminDisableUserTOTPProcedure,
+		svc.AdminDisableUserTOTP,
+		connect.WithSchema(controlServiceMethods.ByName("AdminDisableUserTOTP")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceGetTOTPStatusHandler := connect.NewUnaryHandler(
@@ -3093,6 +3116,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceVerifyTOTPHandler.ServeHTTP(w, r)
 		case ControlServiceDisableTOTPProcedure:
 			controlServiceDisableTOTPHandler.ServeHTTP(w, r)
+		case ControlServiceAdminDisableUserTOTPProcedure:
+			controlServiceAdminDisableUserTOTPHandler.ServeHTTP(w, r)
 		case ControlServiceGetTOTPStatusProcedure:
 			controlServiceGetTOTPStatusHandler.ServeHTTP(w, r)
 		case ControlServiceRegenerateBackupCodesProcedure:
@@ -3376,6 +3401,10 @@ func (UnimplementedControlServiceHandler) VerifyTOTP(context.Context, *connect.R
 
 func (UnimplementedControlServiceHandler) DisableTOTP(context.Context, *connect.Request[v1.DisableTOTPRequest]) (*connect.Response[v1.DisableTOTPResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DisableTOTP is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AdminDisableUserTOTP(context.Context, *connect.Request[v1.AdminDisableUserTOTPRequest]) (*connect.Response[v1.AdminDisableUserTOTPResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AdminDisableUserTOTP is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetTOTPStatus(context.Context, *connect.Request[v1.GetTOTPStatusRequest]) (*connect.Response[v1.GetTOTPStatusResponse], error) {
