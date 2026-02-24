@@ -1058,8 +1058,11 @@ type ShellParams struct {
 	// Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
 	// @gotags: validate:"omitempty,max=1048576"
 	DetectionScript string `protobuf:"bytes,6,opt,name=detection_script,json=detectionScript,proto3" json:"detection_script,omitempty" validate:"omitempty,max=1048576"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// When true, only the detection script runs (no remediation) and results are tracked as compliance checks
+	// @gotags: validate:"omitempty"
+	IsCompliance  bool `protobuf:"varint,7,opt,name=is_compliance,json=isCompliance,proto3" json:"is_compliance,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShellParams) Reset() {
@@ -1132,6 +1135,13 @@ func (x *ShellParams) GetDetectionScript() string {
 		return x.DetectionScript
 	}
 	return ""
+}
+
+func (x *ShellParams) GetIsCompliance() bool {
+	if x != nil {
+		return x.IsCompliance
+	}
+	return false
 }
 
 type SystemdParams struct {
@@ -3037,14 +3047,15 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
-	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xc6\x02\n" +
+	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xeb\x02\n" +
 	"\vShellParams\x12\x16\n" +
 	"\x06script\x18\x01 \x01(\tR\x06script\x12 \n" +
 	"\vinterpreter\x18\x02 \x01(\tR\vinterpreter\x12\x1e\n" +
 	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x12+\n" +
 	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12E\n" +
 	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x12)\n" +
-	"\x10detection_script\x18\x06 \x01(\tR\x0fdetectionScript\x1a>\n" +
+	"\x10detection_script\x18\x06 \x01(\tR\x0fdetectionScript\x12#\n" +
+	"\ris_compliance\x18\a \x01(\bR\fisCompliance\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +

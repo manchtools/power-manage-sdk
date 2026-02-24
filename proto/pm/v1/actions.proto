@@ -182,6 +182,9 @@ message ShellParams {
   // Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
   // @gotags: validate:"omitempty,max=1048576"
   string detection_script = 6;
+  // When true, only the detection script runs (no remediation) and results are tracked as compliance checks
+  // @gotags: validate:"omitempty"
+  bool is_compliance = 7;
 }
 
 message SystemdParams {

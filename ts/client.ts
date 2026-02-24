@@ -178,7 +178,7 @@ import {
 	type LuksKey,
 	type AvailableItem
 } from '../gen/ts/pm/v1/control_pb';
-import type { ActionType } from '../gen/ts/pm/v1/actions_pb';
+import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
@@ -934,6 +934,17 @@ export class ApiClient {
 			create(DispatchActionRequestSchema, {
 				deviceId,
 				actionSource: { case: 'actionId', value: actionId }
+			})
+		);
+		return response.execution;
+	}
+
+	async dispatchInlineAction(deviceId: string, action: Action) {
+		const client = this.getClient();
+		const response = await client.dispatchAction(
+			create(DispatchActionRequestSchema, {
+				deviceId,
+				actionSource: { case: 'inlineAction', value: action }
 			})
 		);
 		return response.execution;
