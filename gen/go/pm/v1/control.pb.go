@@ -12727,6 +12727,7 @@ type UserGroup struct {
 	MemberCount   int32                  `protobuf:"varint,4,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
 	Roles         []*Role                `protobuf:"bytes,5,rep,name=roles,proto3" json:"roles,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	IsScimManaged bool                   `protobuf:"varint,7,opt,name=is_scim_managed,json=isScimManaged,proto3" json:"is_scim_managed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12801,6 +12802,13 @@ func (x *UserGroup) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *UserGroup) GetIsScimManaged() bool {
+	if x != nil {
+		return x.IsScimManaged
+	}
+	return false
 }
 
 type UserGroupMember struct {
@@ -16567,7 +16575,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1aRevokeRoleFromUserResponse\"\x18\n" +
 	"\x16ListPermissionsRequest\"R\n" +
 	"\x17ListPermissionsResponse\x127\n" +
-	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\xd2\x01\n" +
+	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\xfa\x01\n" +
 	"\tUserGroup\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -16575,7 +16583,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\fmember_count\x18\x04 \x01(\x05R\vmemberCount\x12!\n" +
 	"\x05roles\x18\x05 \x03(\v2\v.pm.v1.RoleR\x05roles\x129\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"w\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12&\n" +
+	"\x0fis_scim_managed\x18\a \x01(\bR\risScimManaged\"w\n" +
 	"\x0fUserGroupMember\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x125\n" +
