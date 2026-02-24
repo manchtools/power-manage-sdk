@@ -46,6 +46,13 @@ message ErrorDetail {
   string code = 1;
 }
 
+// Compliance status for a device based on detection scripts
+enum ComplianceStatus {
+  COMPLIANCE_STATUS_UNKNOWN = 0;
+  COMPLIANCE_STATUS_COMPLIANT = 1;
+  COMPLIANCE_STATUS_NON_COMPLIANT = 2;
+}
+
 // Output from command execution
 message CommandOutput {
   // @gotags: validate:"omitempty"

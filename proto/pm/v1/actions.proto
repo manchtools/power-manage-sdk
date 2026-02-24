@@ -27,6 +27,7 @@ enum ActionType {
 
   // Scripts (200-299)
   ACTION_TYPE_SHELL = 200;      // Shell script
+  ACTION_TYPE_SCRIPT_RUN = 201; // One-off script execution (not scheduled)
 
   // Services (300-399)
   ACTION_TYPE_SYSTEMD = 300;    // Systemd unit
@@ -167,7 +168,8 @@ message AppInstallParams {
 }
 
 message ShellParams {
-  // @gotags: validate:"required,max=1048576"
+  // Execution/remediation script (runs when detection_script is absent or exits non-zero)
+  // @gotags: validate:"omitempty,max=1048576"
   string script = 1;
   // @gotags: validate:"omitempty,max=255"
   string interpreter = 2;
@@ -177,6 +179,9 @@ message ShellParams {
   string working_directory = 4;
   // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
   map<string, string> environment = 5;
+  // Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
+  // @gotags: validate:"omitempty,max=1048576"
+  string detection_script = 6;
 }
 
 message SystemdParams {
@@ -681,4 +686,9 @@ message ActionResult {
   // Optional action-specific metadata (e.g., LPS password data)
   // @gotags: validate:"omitempty"
   map<string, string> metadata = 8;
+  // Detection script result: true if detection script exited 0 (compliant)
+  bool compliant = 9;
+  // Detection script output (separate from execution output)
+  // @gotags: validate:"omitempty"
+  CommandOutput detection_output = 10;
 }

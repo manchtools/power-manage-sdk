@@ -36,7 +36,8 @@ const (
 	ActionType_ACTION_TYPE_RPM       ActionType = 102 // Direct .rpm
 	ActionType_ACTION_TYPE_FLATPAK   ActionType = 103 // Flatpak application
 	// Scripts (200-299)
-	ActionType_ACTION_TYPE_SHELL ActionType = 200 // Shell script
+	ActionType_ACTION_TYPE_SHELL      ActionType = 200 // Shell script
+	ActionType_ACTION_TYPE_SCRIPT_RUN ActionType = 201 // One-off script execution (not scheduled)
 	// Services (300-399)
 	ActionType_ACTION_TYPE_SYSTEMD ActionType = 300 // Systemd unit
 	// Files (400-499)
@@ -73,6 +74,7 @@ var (
 		102:  "ACTION_TYPE_RPM",
 		103:  "ACTION_TYPE_FLATPAK",
 		200:  "ACTION_TYPE_SHELL",
+		201:  "ACTION_TYPE_SCRIPT_RUN",
 		300:  "ACTION_TYPE_SYSTEMD",
 		400:  "ACTION_TYPE_FILE",
 		401:  "ACTION_TYPE_DIRECTORY",
@@ -97,6 +99,7 @@ var (
 		"ACTION_TYPE_RPM":         102,
 		"ACTION_TYPE_FLATPAK":     103,
 		"ACTION_TYPE_SHELL":       200,
+		"ACTION_TYPE_SCRIPT_RUN":  201,
 		"ACTION_TYPE_SYSTEMD":     300,
 		"ACTION_TYPE_FILE":        400,
 		"ACTION_TYPE_DIRECTORY":   401,
@@ -1041,8 +1044,9 @@ func (x *AppInstallParams) GetInstallPath() string {
 
 type ShellParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,max=1048576"
-	Script string `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty" validate:"required,max=1048576"`
+	// Execution/remediation script (runs when detection_script is absent or exits non-zero)
+	// @gotags: validate:"omitempty,max=1048576"
+	Script string `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty" validate:"omitempty,max=1048576"`
 	// @gotags: validate:"omitempty,max=255"
 	Interpreter string `protobuf:"bytes,2,opt,name=interpreter,proto3" json:"interpreter,omitempty" validate:"omitempty,max=255"`
 	// @gotags: validate:"omitempty"
@@ -1050,9 +1054,12 @@ type ShellParams struct {
 	// @gotags: validate:"omitempty,startswith=/"
 	WorkingDirectory string `protobuf:"bytes,4,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty" validate:"omitempty,startswith=/"`
 	// @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
-	Environment   map[string]string `protobuf:"bytes,5,rep,name=environment,proto3" json:"environment,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=4096"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Environment map[string]string `protobuf:"bytes,5,rep,name=environment,proto3" json:"environment,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=4096"`
+	// Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
+	// @gotags: validate:"omitempty,max=1048576"
+	DetectionScript string `protobuf:"bytes,6,opt,name=detection_script,json=detectionScript,proto3" json:"detection_script,omitempty" validate:"omitempty,max=1048576"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ShellParams) Reset() {
@@ -1118,6 +1125,13 @@ func (x *ShellParams) GetEnvironment() map[string]string {
 		return x.Environment
 	}
 	return nil
+}
+
+func (x *ShellParams) GetDetectionScript() string {
+	if x != nil {
+		return x.DetectionScript
+	}
+	return ""
 }
 
 type SystemdParams struct {
@@ -2859,9 +2873,14 @@ type ActionResult struct {
 	Changed bool `protobuf:"varint,7,opt,name=changed,proto3" json:"changed,omitempty"`
 	// Optional action-specific metadata (e.g., LPS password data)
 	// @gotags: validate:"omitempty"
-	Metadata      map[string]string `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Metadata map[string]string `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty"`
+	// Detection script result: true if detection script exited 0 (compliant)
+	Compliant bool `protobuf:"varint,9,opt,name=compliant,proto3" json:"compliant,omitempty"`
+	// Detection script output (separate from execution output)
+	// @gotags: validate:"omitempty"
+	DetectionOutput *CommandOutput `protobuf:"bytes,10,opt,name=detection_output,json=detectionOutput,proto3" json:"detection_output,omitempty" validate:"omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ActionResult) Reset() {
@@ -2950,6 +2969,20 @@ func (x *ActionResult) GetMetadata() map[string]string {
 	return nil
 }
 
+func (x *ActionResult) GetCompliant() bool {
+	if x != nil {
+		return x.Compliant
+	}
+	return false
+}
+
+func (x *ActionResult) GetDetectionOutput() *CommandOutput {
+	if x != nil {
+		return x.DetectionOutput
+	}
+	return nil
+}
+
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
@@ -3004,13 +3037,14 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
-	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\x9b\x02\n" +
+	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xc6\x02\n" +
 	"\vShellParams\x12\x16\n" +
 	"\x06script\x18\x01 \x01(\tR\x06script\x12 \n" +
 	"\vinterpreter\x18\x02 \x01(\tR\vinterpreter\x12\x1e\n" +
 	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x12+\n" +
 	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12E\n" +
-	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x1a>\n" +
+	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x12)\n" +
+	"\x10detection_script\x18\x06 \x01(\tR\x0fdetectionScript\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +
@@ -3155,7 +3189,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
 	"\bpriority\x18\n" +
-	" \x01(\x05R\bpriority\"\xa6\x03\n" +
+	" \x01(\x05R\bpriority\"\x85\x04\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -3165,10 +3199,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
 	"durationMs\x12\x18\n" +
 	"\achanged\x18\a \x01(\bR\achanged\x12=\n" +
-	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x12\x1c\n" +
+	"\tcompliant\x18\t \x01(\bR\tcompliant\x12?\n" +
+	"\x10detection_output\x18\n" +
+	" \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xa0\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xbd\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -3179,7 +3216,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x0fACTION_TYPE_DEB\x10e\x12\x13\n" +
 	"\x0fACTION_TYPE_RPM\x10f\x12\x17\n" +
 	"\x13ACTION_TYPE_FLATPAK\x10g\x12\x16\n" +
-	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x18\n" +
+	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x1b\n" +
+	"\x16ACTION_TYPE_SCRIPT_RUN\x10\xc9\x01\x12\x18\n" +
 	"\x13ACTION_TYPE_SYSTEMD\x10\xac\x02\x12\x15\n" +
 	"\x10ACTION_TYPE_FILE\x10\x90\x03\x12\x1a\n" +
 	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03\x12\x17\n" +
@@ -3309,11 +3347,12 @@ var file_pm_v1_actions_proto_depIdxs = []int32{
 	36, // 35: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
 	37, // 36: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
 	32, // 37: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	38, // [38:38] is the sub-list for method output_type
-	38, // [38:38] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	36, // 38: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }

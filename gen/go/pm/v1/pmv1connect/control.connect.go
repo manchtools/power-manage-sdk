@@ -417,6 +417,9 @@ const (
 	// ControlServiceEvaluateDynamicUserGroupProcedure is the fully-qualified name of the
 	// ControlService's EvaluateDynamicUserGroup RPC.
 	ControlServiceEvaluateDynamicUserGroupProcedure = "/pm.v1.ControlService/EvaluateDynamicUserGroup"
+	// ControlServiceGetDeviceComplianceProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceCompliance RPC.
+	ControlServiceGetDeviceComplianceProcedure = "/pm.v1.ControlService/GetDeviceCompliance"
 	// ControlServiceAuthenticateDeviceUserProcedure is the fully-qualified name of the ControlService's
 	// AuthenticateDeviceUser RPC.
 	ControlServiceAuthenticateDeviceUserProcedure = "/pm.v1.ControlService/AuthenticateDeviceUser"
@@ -584,6 +587,8 @@ type ControlServiceClient interface {
 	UpdateUserGroupQuery(context.Context, *connect.Request[v1.UpdateUserGroupQueryRequest]) (*connect.Response[v1.UpdateUserGroupQueryResponse], error)
 	ValidateUserGroupQuery(context.Context, *connect.Request[v1.ValidateUserGroupQueryRequest]) (*connect.Response[v1.ValidateUserGroupQueryResponse], error)
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
+	// Device Compliance
+	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
 	// Device Authentication (PAM/NSS device login)
 	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
 	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
@@ -1382,6 +1387,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicUserGroup")),
 			connect.WithClientOptions(opts...),
 		),
+		getDeviceCompliance: connect.NewClient[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceComplianceProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliance")),
+			connect.WithClientOptions(opts...),
+		),
 		authenticateDeviceUser: connect.NewClient[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse](
 			httpClient,
 			baseURL+ControlServiceAuthenticateDeviceUserProcedure,
@@ -1541,6 +1552,7 @@ type controlServiceClient struct {
 	updateUserGroupQuery          *connect.Client[v1.UpdateUserGroupQueryRequest, v1.UpdateUserGroupQueryResponse]
 	validateUserGroupQuery        *connect.Client[v1.ValidateUserGroupQueryRequest, v1.ValidateUserGroupQueryResponse]
 	evaluateDynamicUserGroup      *connect.Client[v1.EvaluateDynamicUserGroupRequest, v1.EvaluateDynamicUserGroupResponse]
+	getDeviceCompliance           *connect.Client[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse]
 	authenticateDeviceUser        *connect.Client[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse]
 	getDeviceLoginURL             *connect.Client[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse]
 	deviceLoginCallback           *connect.Client[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse]
@@ -2197,6 +2209,11 @@ func (c *controlServiceClient) EvaluateDynamicUserGroup(ctx context.Context, req
 	return c.evaluateDynamicUserGroup.CallUnary(ctx, req)
 }
 
+// GetDeviceCompliance calls pm.v1.ControlService.GetDeviceCompliance.
+func (c *controlServiceClient) GetDeviceCompliance(ctx context.Context, req *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {
+	return c.getDeviceCompliance.CallUnary(ctx, req)
+}
+
 // AuthenticateDeviceUser calls pm.v1.ControlService.AuthenticateDeviceUser.
 func (c *controlServiceClient) AuthenticateDeviceUser(ctx context.Context, req *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
 	return c.authenticateDeviceUser.CallUnary(ctx, req)
@@ -2370,6 +2387,8 @@ type ControlServiceHandler interface {
 	UpdateUserGroupQuery(context.Context, *connect.Request[v1.UpdateUserGroupQueryRequest]) (*connect.Response[v1.UpdateUserGroupQueryResponse], error)
 	ValidateUserGroupQuery(context.Context, *connect.Request[v1.ValidateUserGroupQueryRequest]) (*connect.Response[v1.ValidateUserGroupQueryResponse], error)
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
+	// Device Compliance
+	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
 	// Device Authentication (PAM/NSS device login)
 	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
 	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
@@ -3164,6 +3183,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicUserGroup")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceGetDeviceComplianceHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceComplianceProcedure,
+		svc.GetDeviceCompliance,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliance")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceAuthenticateDeviceUserHandler := connect.NewUnaryHandler(
 		ControlServiceAuthenticateDeviceUserProcedure,
 		svc.AuthenticateDeviceUser,
@@ -3450,6 +3475,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceValidateUserGroupQueryHandler.ServeHTTP(w, r)
 		case ControlServiceEvaluateDynamicUserGroupProcedure:
 			controlServiceEvaluateDynamicUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceComplianceProcedure:
+			controlServiceGetDeviceComplianceHandler.ServeHTTP(w, r)
 		case ControlServiceAuthenticateDeviceUserProcedure:
 			controlServiceAuthenticateDeviceUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceLoginURLProcedure:
@@ -3985,6 +4012,10 @@ func (UnimplementedControlServiceHandler) ValidateUserGroupQuery(context.Context
 
 func (UnimplementedControlServiceHandler) EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.EvaluateDynamicUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceCompliance is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
