@@ -172,7 +172,7 @@ import {
 	type LuksKey
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType } from '../gen/ts/pm/v1/actions_pb';
-import { type ExecutionStatus } from '../gen/ts/pm/v1/common_pb';
+import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
 export interface ClientOptions {
@@ -1355,6 +1355,19 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.rotateSCIMToken(create(RotateSCIMTokenRequestSchema, { id }));
 	}
+}
+
+/**
+ * Extract the error code from a ConnectError's ErrorDetail, if present.
+ */
+export function getErrorCode(error: unknown): string | undefined {
+	if (error instanceof ConnectError) {
+		const details = error.findDetails(ErrorDetailSchema);
+		if (details.length > 0) {
+			return details[0].code;
+		}
+	}
+	return undefined;
 }
 
 // Re-export types for convenience

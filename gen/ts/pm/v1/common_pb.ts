@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/common.proto.
  */
 export const file_pm_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkq5gEKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBipDCgxEZXNpcmVkU3RhdGUSGQoVREVTSVJFRF9TVEFURV9QUkVTRU5UEAASGAoUREVTSVJFRF9TVEFURV9BQlNFTlQQASprCg5Bc3NpZ25tZW50TW9kZRIcChhBU1NJR05NRU5UX01PREVfUkVRVUlSRUQQABIdChlBU1NJR05NRU5UX01PREVfQVZBSUxBQkxFEAESHAoYQVNTSUdOTUVOVF9NT0RFX0VYQ0xVREVEEAJCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw");
+  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIhsKC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkiQgoNQ29tbWFuZE91dHB1dBIRCglleGl0X2NvZGUYASABKAUSDgoGc3Rkb3V0GAIgASgJEg4KBnN0ZGVychgDIAEoCSrmAQoPRXhlY3V0aW9uU3RhdHVzEiAKHEVYRUNVVElPTl9TVEFUVVNfVU5TUEVDSUZJRUQQABIcChhFWEVDVVRJT05fU1RBVFVTX1BFTkRJTkcQARIcChhFWEVDVVRJT05fU1RBVFVTX1JVTk5JTkcQAhIcChhFWEVDVVRJT05fU1RBVFVTX1NVQ0NFU1MQAxIbChdFWEVDVVRJT05fU1RBVFVTX0ZBSUxFRBAEEhwKGEVYRUNVVElPTl9TVEFUVVNfU0tJUFBFRBAFEhwKGEVYRUNVVElPTl9TVEFUVVNfVElNRU9VVBAGKkMKDERlc2lyZWRTdGF0ZRIZChVERVNJUkVEX1NUQVRFX1BSRVNFTlQQABIYChRERVNJUkVEX1NUQVRFX0FCU0VOVBABKmsKDkFzc2lnbm1lbnRNb2RlEhwKGEFTU0lHTk1FTlRfTU9ERV9SRVFVSVJFRBAAEh0KGUFTU0lHTk1FTlRfTU9ERV9BVkFJTEFCTEUQARIcChhBU1NJR05NRU5UX01PREVfRVhDTFVERUQQAkI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z");
 
 /**
  * Unique identifier for an action instance
@@ -55,6 +55,27 @@ export const DeviceIdSchema: GenMessage<DeviceId> = /*@__PURE__*/
   messageDesc(file_pm_v1_common, 1);
 
 /**
+ * Structured error detail attached to Connect-RPC errors.
+ *
+ * @generated from message pm.v1.ErrorDetail
+ */
+export type ErrorDetail = Message<"pm.v1.ErrorDetail"> & {
+  /**
+   * Machine-readable error code (e.g., "user_not_found", "email_already_exists").
+   *
+   * @generated from field: string code = 1;
+   */
+  code: string;
+};
+
+/**
+ * Describes the message pm.v1.ErrorDetail.
+ * Use `create(ErrorDetailSchema)` to create a new message.
+ */
+export const ErrorDetailSchema: GenMessage<ErrorDetail> = /*@__PURE__*/
+  messageDesc(file_pm_v1_common, 2);
+
+/**
  * Output from command execution
  *
  * @generated from message pm.v1.CommandOutput
@@ -87,7 +108,7 @@ export type CommandOutput = Message<"pm.v1.CommandOutput"> & {
  * Use `create(CommandOutputSchema)` to create a new message.
  */
 export const CommandOutputSchema: GenMessage<CommandOutput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_common, 2);
+  messageDesc(file_pm_v1_common, 3);
 
 /**
  * Execution status for any action

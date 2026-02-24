@@ -272,6 +272,52 @@ func (x *DeviceId) GetValue() string {
 	return ""
 }
 
+// Structured error detail attached to Connect-RPC errors.
+type ErrorDetail struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Machine-readable error code (e.g., "user_not_found", "email_already_exists").
+	Code          string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ErrorDetail) Reset() {
+	*x = ErrorDetail{}
+	mi := &file_pm_v1_common_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ErrorDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ErrorDetail) ProtoMessage() {}
+
+func (x *ErrorDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_common_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ErrorDetail.ProtoReflect.Descriptor instead.
+func (*ErrorDetail) Descriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ErrorDetail) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
 // Output from command execution
 type CommandOutput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -287,7 +333,7 @@ type CommandOutput struct {
 
 func (x *CommandOutput) Reset() {
 	*x = CommandOutput{}
-	mi := &file_pm_v1_common_proto_msgTypes[2]
+	mi := &file_pm_v1_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +345,7 @@ func (x *CommandOutput) String() string {
 func (*CommandOutput) ProtoMessage() {}
 
 func (x *CommandOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_common_proto_msgTypes[2]
+	mi := &file_pm_v1_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,7 +358,7 @@ func (x *CommandOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandOutput.ProtoReflect.Descriptor instead.
 func (*CommandOutput) Descriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CommandOutput) GetExitCode() int32 {
@@ -344,7 +390,9 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\bActionId\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\" \n" +
 	"\bDeviceId\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05value\"\\\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value\"!\n" +
+	"\vErrorDetail\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"\\\n" +
 	"\rCommandOutput\x12\x1b\n" +
 	"\texit_code\x18\x01 \x01(\x05R\bexitCode\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\tR\x06stdout\x12\x16\n" +
@@ -378,14 +426,15 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),  // 0: pm.v1.ExecutionStatus
 	(DesiredState)(0),     // 1: pm.v1.DesiredState
 	(AssignmentMode)(0),   // 2: pm.v1.AssignmentMode
 	(*ActionId)(nil),      // 3: pm.v1.ActionId
 	(*DeviceId)(nil),      // 4: pm.v1.DeviceId
-	(*CommandOutput)(nil), // 5: pm.v1.CommandOutput
+	(*ErrorDetail)(nil),   // 5: pm.v1.ErrorDetail
+	(*CommandOutput)(nil), // 6: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -406,7 +455,7 @@ func file_pm_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
