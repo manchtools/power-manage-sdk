@@ -180,6 +180,56 @@ func (AssignmentMode) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+// Compliance status for a device based on detection scripts
+type ComplianceStatus int32
+
+const (
+	ComplianceStatus_COMPLIANCE_STATUS_UNKNOWN       ComplianceStatus = 0
+	ComplianceStatus_COMPLIANCE_STATUS_COMPLIANT     ComplianceStatus = 1
+	ComplianceStatus_COMPLIANCE_STATUS_NON_COMPLIANT ComplianceStatus = 2
+)
+
+// Enum value maps for ComplianceStatus.
+var (
+	ComplianceStatus_name = map[int32]string{
+		0: "COMPLIANCE_STATUS_UNKNOWN",
+		1: "COMPLIANCE_STATUS_COMPLIANT",
+		2: "COMPLIANCE_STATUS_NON_COMPLIANT",
+	}
+	ComplianceStatus_value = map[string]int32{
+		"COMPLIANCE_STATUS_UNKNOWN":       0,
+		"COMPLIANCE_STATUS_COMPLIANT":     1,
+		"COMPLIANCE_STATUS_NON_COMPLIANT": 2,
+	}
+)
+
+func (x ComplianceStatus) Enum() *ComplianceStatus {
+	p := new(ComplianceStatus)
+	*p = x
+	return p
+}
+
+func (x ComplianceStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (ComplianceStatus) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[3]
+}
+
+func (x ComplianceStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ComplianceStatus.Descriptor instead.
+func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
 // Unique identifier for an action instance
 type ActionId struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -411,7 +461,11 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x0eAssignmentMode\x12\x1c\n" +
 	"\x18ASSIGNMENT_MODE_REQUIRED\x10\x00\x12\x1d\n" +
 	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1c\n" +
-	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02*w\n" +
+	"\x10ComplianceStatus\x12\x1d\n" +
+	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
+	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
+	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_common_proto_rawDescOnce sync.Once
@@ -425,16 +479,17 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),  // 0: pm.v1.ExecutionStatus
 	(DesiredState)(0),     // 1: pm.v1.DesiredState
 	(AssignmentMode)(0),   // 2: pm.v1.AssignmentMode
-	(*ActionId)(nil),      // 3: pm.v1.ActionId
-	(*DeviceId)(nil),      // 4: pm.v1.DeviceId
-	(*ErrorDetail)(nil),   // 5: pm.v1.ErrorDetail
-	(*CommandOutput)(nil), // 6: pm.v1.CommandOutput
+	(ComplianceStatus)(0), // 3: pm.v1.ComplianceStatus
+	(*ActionId)(nil),      // 4: pm.v1.ActionId
+	(*DeviceId)(nil),      // 5: pm.v1.DeviceId
+	(*ErrorDetail)(nil),   // 6: pm.v1.ErrorDetail
+	(*CommandOutput)(nil), // 7: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -454,7 +509,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,

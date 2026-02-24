@@ -305,6 +305,11 @@ message Device {
   // Sync interval in minutes (0 = use default of 30 minutes)
   // Agent will pull assigned actions at this interval
   int32 sync_interval_minutes = 10;
+  // Compliance status based on detection scripts
+  ComplianceStatus compliance_status = 11;
+  google.protobuf.Timestamp compliance_checked_at = 12;
+  int32 compliance_total = 13;    // Total number of compliance checks
+  int32 compliance_passing = 14;  // Number of passing checks
 }
 
 message ListDevicesRequest {
@@ -1184,6 +1189,8 @@ message ActionExecution {
   CommandOutput live_output = 13;  // Streaming output received so far (useful when status is RUNNING)
   DesiredState desired_state = 14;  // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
   bool changed = 15;  // Whether the execution made changes to the system (false = state was already as desired)
+  bool compliant = 16;  // Detection script result: true if compliant
+  CommandOutput detection_output = 17;  // Detection script output
 }
 
 message DispatchActionRequest {
@@ -2028,6 +2035,28 @@ message ListDeviceUsersResponse {
 }
 
 // ============================================================================
+// Device Compliance
+// ============================================================================
+
+message GetDeviceComplianceRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceComplianceResponse {
+  ComplianceStatus status = 1;
+  repeated ComplianceCheckResult checks = 2;
+}
+
+message ComplianceCheckResult {
+  string action_id = 1;
+  string action_name = 2;
+  bool compliant = 3;
+  CommandOutput detection_output = 4;
+  google.protobuf.Timestamp checked_at = 5;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -2203,6 +2232,9 @@ service ControlService {
   rpc UpdateUserGroupQuery(UpdateUserGroupQueryRequest) returns (UpdateUserGroupQueryResponse);
   rpc ValidateUserGroupQuery(ValidateUserGroupQueryRequest) returns (ValidateUserGroupQueryResponse);
   rpc EvaluateDynamicUserGroup(EvaluateDynamicUserGroupRequest) returns (EvaluateDynamicUserGroupResponse);
+
+  // Device Compliance
+  rpc GetDeviceCompliance(GetDeviceComplianceRequest) returns (GetDeviceComplianceResponse);
 
   // Device Authentication (PAM/NSS device login)
   rpc AuthenticateDeviceUser(AuthenticateDeviceUserRequest) returns (AuthenticateDeviceUserResponse);

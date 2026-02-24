@@ -152,6 +152,9 @@ import {
 	EnableSCIMRequestSchema,
 	DisableSCIMRequestSchema,
 	RotateSCIMTokenRequestSchema,
+	// Compliance
+	GetDeviceComplianceRequestSchema,
+	type GetDeviceComplianceResponse,
 	type IdentityProvider,
 	type IdentityLink,
 	type InventoryTableResult,
@@ -1035,6 +1038,17 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.revokeLuksDeviceKey(
 			create(RevokeLuksDeviceKeyRequestSchema, { deviceId, actionId })
+		);
+	}
+
+	// ============================================================================
+	// Device Compliance
+	// ============================================================================
+
+	async getDeviceCompliance(deviceId: string): Promise<GetDeviceComplianceResponse> {
+		const client = this.getClient();
+		return client.getDeviceCompliance(
+			create(GetDeviceComplianceRequestSchema, { deviceId })
 		);
 	}
 
