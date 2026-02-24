@@ -1591,6 +1591,7 @@ message UserGroup {
   google.protobuf.Timestamp created_at = 6;
   bool is_dynamic = 7;
   string dynamic_query = 8;
+  bool is_scim_managed = 9;
 }
 
 message UserGroupMember {

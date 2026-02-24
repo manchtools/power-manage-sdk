@@ -13039,6 +13039,7 @@ type UserGroup struct {
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	IsDynamic     bool                   `protobuf:"varint,7,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
 	DynamicQuery  string                 `protobuf:"bytes,8,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty"`
+	IsScimManaged bool                   `protobuf:"varint,9,opt,name=is_scim_managed,json=isScimManaged,proto3" json:"is_scim_managed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13127,6 +13128,13 @@ func (x *UserGroup) GetDynamicQuery() string {
 		return x.DynamicQuery
 	}
 	return ""
+}
+
+func (x *UserGroup) GetIsScimManaged() bool {
+	if x != nil {
+		return x.IsScimManaged
+	}
+	return false
 }
 
 type UserGroupMember struct {
@@ -17843,7 +17851,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1aRevokeRoleFromUserResponse\"\x18\n" +
 	"\x16ListPermissionsRequest\"R\n" +
 	"\x17ListPermissionsResponse\x127\n" +
-	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\x96\x02\n" +
+	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\xbe\x02\n" +
 	"\tUserGroup\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -17854,7 +17862,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
 	"is_dynamic\x18\a \x01(\bR\tisDynamic\x12#\n" +
-	"\rdynamic_query\x18\b \x01(\tR\fdynamicQuery\"w\n" +
+	"\rdynamic_query\x18\b \x01(\tR\fdynamicQuery\x12&\n" +
+	"\x0fis_scim_managed\x18\t \x01(\bR\risScimManaged\"w\n" +
 	"\x0fUserGroupMember\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x125\n" +
