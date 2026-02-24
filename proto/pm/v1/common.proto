@@ -40,6 +40,12 @@ enum AssignmentMode {
   ASSIGNMENT_MODE_EXCLUDED = 2;  // Blocked: action won't be applied on this target
 }
 
+// Structured error detail attached to Connect-RPC errors.
+message ErrorDetail {
+  // Machine-readable error code (e.g., "user_not_found", "email_already_exists").
+  string code = 1;
+}
+
 // Output from command execution
 message CommandOutput {
   // @gotags: validate:"omitempty"
