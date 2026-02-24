@@ -81,6 +81,9 @@ import {
 	ListAssignmentsRequestSchema,
 	GetDeviceAssignmentsRequestSchema,
 	GetUserAssignmentsRequestSchema,
+	// User Selections
+	ListAvailableActionsRequestSchema,
+	SetUserSelectionRequestSchema,
 	// Dispatch & Execution
 	DispatchActionRequestSchema,
 	DispatchToMultipleRequestSchema,
@@ -169,7 +172,8 @@ import {
 	type UserGroup,
 	type UserGroupMember,
 	type LpsPassword,
-	type LuksKey
+	type LuksKey,
+	type AvailableItem
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
@@ -899,6 +903,25 @@ export class ApiClient {
 	}
 
 	// ============================================================================
+	// User Selections (available assignments)
+	// ============================================================================
+
+	async listAvailableActions(deviceId: string) {
+		const client = this.getClient();
+		const response = await client.listAvailableActions(
+			create(ListAvailableActionsRequestSchema, { deviceId })
+		);
+		return response.items;
+	}
+
+	async setUserSelection(deviceId: string, sourceType: string, sourceId: string, selected: boolean) {
+		const client = this.getClient();
+		return client.setUserSelection(
+			create(SetUserSelectionRequestSchema, { deviceId, sourceType, sourceId, selected })
+		);
+	}
+
+	// ============================================================================
 	// Action Dispatch & Execution
 	// ============================================================================
 
@@ -1375,5 +1398,6 @@ export type {
 	User, Device, RegistrationToken, ManagedAction, ActionSet, Definition,
 	DeviceGroup, Assignment, ActionExecution, AuditEvent, InventoryTableResult,
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
-	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest
+	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
+	AvailableItem
 };
