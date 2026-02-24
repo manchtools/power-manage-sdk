@@ -1550,6 +1550,7 @@ message UserGroup {
   int32 member_count = 4;
   repeated Role roles = 5;
   google.protobuf.Timestamp created_at = 6;
+  bool is_scim_managed = 7;
 }
 
 message UserGroupMember {
