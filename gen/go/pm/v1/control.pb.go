@@ -241,7 +241,10 @@ type RenewCertificateResponse struct {
 	// New signed certificate (PEM)
 	Certificate []byte `protobuf:"bytes,1,opt,name=certificate,proto3" json:"certificate,omitempty"`
 	// Certificate expiry
-	NotAfter      *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=not_after,json=notAfter,proto3" json:"not_after,omitempty"`
+	NotAfter *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=not_after,json=notAfter,proto3" json:"not_after,omitempty"`
+	// Active CA certificate (PEM). Agents should update their stored CA cert
+	// if non-empty, enabling seamless CA rotation.
+	CaCertificate []byte `protobuf:"bytes,3,opt,name=ca_certificate,json=caCertificate,proto3" json:"ca_certificate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -286,6 +289,13 @@ func (x *RenewCertificateResponse) GetCertificate() []byte {
 func (x *RenewCertificateResponse) GetNotAfter() *timestamppb.Timestamp {
 	if x != nil {
 		return x.NotAfter
+	}
+	return nil
+}
+
+func (x *RenewCertificateResponse) GetCaCertificate() []byte {
+	if x != nil {
+		return x.CaCertificate
 	}
 	return nil
 }
@@ -17285,10 +17295,11 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"gatewayUrl\"\\\n" +
 	"\x17RenewCertificateRequest\x12\x10\n" +
 	"\x03csr\x18\x01 \x01(\fR\x03csr\x12/\n" +
-	"\x13current_certificate\x18\x02 \x01(\fR\x12currentCertificate\"u\n" +
+	"\x13current_certificate\x18\x02 \x01(\fR\x12currentCertificate\"\x9c\x01\n" +
 	"\x18RenewCertificateResponse\x12 \n" +
 	"\vcertificate\x18\x01 \x01(\fR\vcertificate\x127\n" +
-	"\tnot_after\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\bnotAfter\"@\n" +
+	"\tnot_after\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\bnotAfter\x12%\n" +
+	"\x0eca_certificate\x18\x03 \x01(\fR\rcaCertificate\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xff\x01\n" +

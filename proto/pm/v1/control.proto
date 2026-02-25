@@ -60,6 +60,9 @@ message RenewCertificateResponse {
   bytes certificate = 1;
   // Certificate expiry
   google.protobuf.Timestamp not_after = 2;
+  // Active CA certificate (PEM). Agents should update their stored CA cert
+  // if non-empty, enabling seamless CA rotation.
+  bytes ca_certificate = 3;
 }
 
 // ============================================================================
