@@ -10,7 +10,7 @@ sdk/
 │   ├── common.proto         Base types, enums, identifiers
 │   ├── actions.proto        Action types, parameters, scheduling
 │   ├── agent.proto          Bidirectional streaming (Agent ↔ Gateway)
-│   └── control.proto        Control API (50+ RPCs)
+│   └── control.proto        Control API (136 RPCs)
 │
 ├── gen/go/pm/v1/           Generated Go code (protobuf + Connect RPC)
 │   ├── *.pb.go               Message types with injected validation tags
@@ -46,7 +46,7 @@ Four proto files define the entire API surface:
 | `common.proto` | ULID identifiers, execution status, assignment modes |
 | `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, reboot, sync, user, group, luks), parameters, scheduling |
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries |
-| `control.proto` | `ControlService` — 126 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, certificate renewal, and more |
+| `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, and more |
 
 ## Go SDK
 

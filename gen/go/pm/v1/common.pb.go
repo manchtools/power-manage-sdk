@@ -184,9 +184,10 @@ func (AssignmentMode) EnumDescriptor() ([]byte, []int) {
 type ComplianceStatus int32
 
 const (
-	ComplianceStatus_COMPLIANCE_STATUS_UNKNOWN       ComplianceStatus = 0
-	ComplianceStatus_COMPLIANCE_STATUS_COMPLIANT     ComplianceStatus = 1
-	ComplianceStatus_COMPLIANCE_STATUS_NON_COMPLIANT ComplianceStatus = 2
+	ComplianceStatus_COMPLIANCE_STATUS_UNKNOWN         ComplianceStatus = 0
+	ComplianceStatus_COMPLIANCE_STATUS_COMPLIANT       ComplianceStatus = 1
+	ComplianceStatus_COMPLIANCE_STATUS_NON_COMPLIANT   ComplianceStatus = 2
+	ComplianceStatus_COMPLIANCE_STATUS_IN_GRACE_PERIOD ComplianceStatus = 3
 )
 
 // Enum value maps for ComplianceStatus.
@@ -195,11 +196,13 @@ var (
 		0: "COMPLIANCE_STATUS_UNKNOWN",
 		1: "COMPLIANCE_STATUS_COMPLIANT",
 		2: "COMPLIANCE_STATUS_NON_COMPLIANT",
+		3: "COMPLIANCE_STATUS_IN_GRACE_PERIOD",
 	}
 	ComplianceStatus_value = map[string]int32{
-		"COMPLIANCE_STATUS_UNKNOWN":       0,
-		"COMPLIANCE_STATUS_COMPLIANT":     1,
-		"COMPLIANCE_STATUS_NON_COMPLIANT": 2,
+		"COMPLIANCE_STATUS_UNKNOWN":         0,
+		"COMPLIANCE_STATUS_COMPLIANT":       1,
+		"COMPLIANCE_STATUS_NON_COMPLIANT":   2,
+		"COMPLIANCE_STATUS_IN_GRACE_PERIOD": 3,
 	}
 )
 
@@ -461,11 +464,12 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x0eAssignmentMode\x12\x1c\n" +
 	"\x18ASSIGNMENT_MODE_REQUIRED\x10\x00\x12\x1d\n" +
 	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1c\n" +
-	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02*w\n" +
+	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02*\x9e\x01\n" +
 	"\x10ComplianceStatus\x12\x1d\n" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
-	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02\x12%\n" +
+	"!COMPLIANCE_STATUS_IN_GRACE_PERIOD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_common_proto_rawDescOnce sync.Once
