@@ -35,6 +35,9 @@ const (
 const (
 	// ControlServiceRegisterProcedure is the fully-qualified name of the ControlService's Register RPC.
 	ControlServiceRegisterProcedure = "/pm.v1.ControlService/Register"
+	// ControlServiceRenewCertificateProcedure is the fully-qualified name of the ControlService's
+	// RenewCertificate RPC.
+	ControlServiceRenewCertificateProcedure = "/pm.v1.ControlService/RenewCertificate"
 	// ControlServiceLoginProcedure is the fully-qualified name of the ControlService's Login RPC.
 	ControlServiceLoginProcedure = "/pm.v1.ControlService/Login"
 	// ControlServiceRefreshTokenProcedure is the fully-qualified name of the ControlService's
@@ -438,6 +441,8 @@ const (
 type ControlServiceClient interface {
 	// Agent Registration
 	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
+	// Certificate Renewal
+	RenewCertificate(context.Context, *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error)
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
@@ -611,6 +616,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceRegisterProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("Register")),
+			connect.WithClientOptions(opts...),
+		),
+		renewCertificate: connect.NewClient[v1.RenewCertificateRequest, v1.RenewCertificateResponse](
+			httpClient,
+			baseURL+ControlServiceRenewCertificateProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RenewCertificate")),
 			connect.WithClientOptions(opts...),
 		),
 		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
@@ -1423,6 +1434,7 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 // controlServiceClient implements ControlServiceClient.
 type controlServiceClient struct {
 	register                      *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
+	renewCertificate              *connect.Client[v1.RenewCertificateRequest, v1.RenewCertificateResponse]
 	login                         *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 	logout                        *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
@@ -1562,6 +1574,11 @@ type controlServiceClient struct {
 // Register calls pm.v1.ControlService.Register.
 func (c *controlServiceClient) Register(ctx context.Context, req *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
 	return c.register.CallUnary(ctx, req)
+}
+
+// RenewCertificate calls pm.v1.ControlService.RenewCertificate.
+func (c *controlServiceClient) RenewCertificate(ctx context.Context, req *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error) {
+	return c.renewCertificate.CallUnary(ctx, req)
 }
 
 // Login calls pm.v1.ControlService.Login.
@@ -2238,6 +2255,8 @@ func (c *controlServiceClient) ListDeviceUsers(ctx context.Context, req *connect
 type ControlServiceHandler interface {
 	// Agent Registration
 	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
+	// Certificate Renewal
+	RenewCertificate(context.Context, *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error)
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
@@ -2407,6 +2426,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceRegisterProcedure,
 		svc.Register,
 		connect.WithSchema(controlServiceMethods.ByName("Register")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRenewCertificateHandler := connect.NewUnaryHandler(
+		ControlServiceRenewCertificateProcedure,
+		svc.RenewCertificate,
+		connect.WithSchema(controlServiceMethods.ByName("RenewCertificate")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceLoginHandler := connect.NewUnaryHandler(
@@ -3217,6 +3242,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
 			controlServiceRegisterHandler.ServeHTTP(w, r)
+		case ControlServiceRenewCertificateProcedure:
+			controlServiceRenewCertificateHandler.ServeHTTP(w, r)
 		case ControlServiceLoginProcedure:
 			controlServiceLoginHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshTokenProcedure:
@@ -3496,6 +3523,10 @@ type UnimplementedControlServiceHandler struct{}
 
 func (UnimplementedControlServiceHandler) Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.Register is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RenewCertificate(context.Context, *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RenewCertificate is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
