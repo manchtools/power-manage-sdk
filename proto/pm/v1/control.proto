@@ -43,6 +43,26 @@ message RegisterResponse {
 }
 
 // ============================================================================
+// Certificate Renewal (called by agent to renew expiring certificates)
+// ============================================================================
+
+message RenewCertificateRequest {
+  // Certificate Signing Request (PEM-encoded PKCS#10)
+  // @gotags: validate:"required"
+  bytes csr = 1;
+  // Current certificate (PEM) for identity verification
+  // @gotags: validate:"required"
+  bytes current_certificate = 2;
+}
+
+message RenewCertificateResponse {
+  // New signed certificate (PEM)
+  bytes certificate = 1;
+  // Certificate expiry
+  google.protobuf.Timestamp not_after = 2;
+}
+
+// ============================================================================
 // Authentication
 // ============================================================================
 
@@ -2063,6 +2083,9 @@ message ComplianceCheckResult {
 service ControlService {
   // Agent Registration
   rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Certificate Renewal
+  rpc RenewCertificate(RenewCertificateRequest) returns (RenewCertificateResponse);
 
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);

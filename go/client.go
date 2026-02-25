@@ -230,6 +230,39 @@ func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agen
 	}, nil
 }
 
+// RenewCertificateResult contains the result of certificate renewal.
+type RenewCertificateResult struct {
+	Certificate []byte
+	NotAfter    time.Time
+}
+
+// RenewCertificate renews a device certificate via the control server.
+// The agent presents its current certificate for identity verification.
+func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert []byte, opts ...ClientOption) (*RenewCertificateResult, error) {
+	c := &Client{}
+	httpClient := http.DefaultClient
+	for _, opt := range opts {
+		opt.apply(c, &httpClient)
+	}
+
+	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
+
+	req := connect.NewRequest(&pm.RenewCertificateRequest{
+		Csr:                csr,
+		CurrentCertificate: currentCert,
+	})
+
+	resp, err := controlClient.RenewCertificate(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("renew certificate: %w", err)
+	}
+
+	return &RenewCertificateResult{
+		Certificate: resp.Msg.Certificate,
+		NotAfter:    resp.Msg.NotAfter.AsTime(),
+	}, nil
+}
+
 // StreamHandler handles messages received from the server.
 type StreamHandler interface {
 	// OnWelcome is called when the server sends a welcome message.
