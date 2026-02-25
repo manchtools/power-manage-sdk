@@ -2080,6 +2080,150 @@ message ComplianceCheckResult {
 }
 
 // ============================================================================
+// Compliance Policies
+// ============================================================================
+
+message CompliancePolicy {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated CompliancePolicyRule rules = 4;
+  int32 rule_count = 5;
+  google.protobuf.Timestamp created_at = 6;
+  string created_by = 7;
+}
+
+message CompliancePolicyRule {
+  string action_id = 1;
+  string action_name = 2;
+  int32 grace_period_hours = 3;
+}
+
+message CreateCompliancePolicyRequest {
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateCompliancePolicyResponse {
+  CompliancePolicy policy = 1;
+}
+
+message GetCompliancePolicyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetCompliancePolicyResponse {
+  CompliancePolicy policy = 1;
+}
+
+message ListCompliancePoliciesRequest {
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListCompliancePoliciesResponse {
+  repeated CompliancePolicy policies = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RenameCompliancePolicyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 2;
+}
+
+message UpdateCompliancePolicyDescriptionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message UpdateCompliancePolicyResponse {
+  CompliancePolicy policy = 1;
+}
+
+message DeleteCompliancePolicyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteCompliancePolicyResponse {}
+
+message AddCompliancePolicyRuleRequest {
+  // @gotags: validate:"required,ulid"
+  string policy_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=8760"
+  int32 grace_period_hours = 3;
+}
+
+message AddCompliancePolicyRuleResponse {
+  CompliancePolicy policy = 1;
+}
+
+message RemoveCompliancePolicyRuleRequest {
+  // @gotags: validate:"required,ulid"
+  string policy_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+}
+
+message RemoveCompliancePolicyRuleResponse {
+  CompliancePolicy policy = 1;
+}
+
+message UpdateCompliancePolicyRuleRequest {
+  // @gotags: validate:"required,ulid"
+  string policy_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=8760"
+  int32 grace_period_hours = 3;
+}
+
+message UpdateCompliancePolicyRuleResponse {
+  CompliancePolicy policy = 1;
+}
+
+message GetDeviceCompliancePolicyStatusRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceCompliancePolicyStatusResponse {
+  ComplianceStatus overall_status = 1;
+  repeated DevicePolicyEvaluation policies = 2;
+}
+
+message DevicePolicyEvaluation {
+  string policy_id = 1;
+  string policy_name = 2;
+  ComplianceStatus status = 3;
+  repeated DevicePolicyRuleEvaluation rules = 4;
+}
+
+message DevicePolicyRuleEvaluation {
+  string action_id = 1;
+  string action_name = 2;
+  ComplianceStatus status = 3;
+  bool compliant = 4;
+  google.protobuf.Timestamp checked_at = 5;
+  google.protobuf.Timestamp first_failed_at = 6;
+  int32 grace_period_hours = 7;
+  google.protobuf.Timestamp grace_expires_at = 8;
+  CommandOutput detection_output = 9;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -2261,6 +2405,18 @@ service ControlService {
 
   // Device Compliance
   rpc GetDeviceCompliance(GetDeviceComplianceRequest) returns (GetDeviceComplianceResponse);
+
+  // Compliance Policies
+  rpc CreateCompliancePolicy(CreateCompliancePolicyRequest) returns (CreateCompliancePolicyResponse);
+  rpc GetCompliancePolicy(GetCompliancePolicyRequest) returns (GetCompliancePolicyResponse);
+  rpc ListCompliancePolicies(ListCompliancePoliciesRequest) returns (ListCompliancePoliciesResponse);
+  rpc RenameCompliancePolicy(RenameCompliancePolicyRequest) returns (UpdateCompliancePolicyResponse);
+  rpc UpdateCompliancePolicyDescription(UpdateCompliancePolicyDescriptionRequest) returns (UpdateCompliancePolicyResponse);
+  rpc DeleteCompliancePolicy(DeleteCompliancePolicyRequest) returns (DeleteCompliancePolicyResponse);
+  rpc AddCompliancePolicyRule(AddCompliancePolicyRuleRequest) returns (AddCompliancePolicyRuleResponse);
+  rpc RemoveCompliancePolicyRule(RemoveCompliancePolicyRuleRequest) returns (RemoveCompliancePolicyRuleResponse);
+  rpc UpdateCompliancePolicyRule(UpdateCompliancePolicyRuleRequest) returns (UpdateCompliancePolicyRuleResponse);
+  rpc GetDeviceCompliancePolicyStatus(GetDeviceCompliancePolicyStatusRequest) returns (GetDeviceCompliancePolicyStatusResponse);
 
   // Device Authentication (PAM/NSS device login)
   rpc AuthenticateDeviceUser(AuthenticateDeviceUserRequest) returns (AuthenticateDeviceUserResponse);

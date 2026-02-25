@@ -423,6 +423,36 @@ const (
 	// ControlServiceGetDeviceComplianceProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceCompliance RPC.
 	ControlServiceGetDeviceComplianceProcedure = "/pm.v1.ControlService/GetDeviceCompliance"
+	// ControlServiceCreateCompliancePolicyProcedure is the fully-qualified name of the ControlService's
+	// CreateCompliancePolicy RPC.
+	ControlServiceCreateCompliancePolicyProcedure = "/pm.v1.ControlService/CreateCompliancePolicy"
+	// ControlServiceGetCompliancePolicyProcedure is the fully-qualified name of the ControlService's
+	// GetCompliancePolicy RPC.
+	ControlServiceGetCompliancePolicyProcedure = "/pm.v1.ControlService/GetCompliancePolicy"
+	// ControlServiceListCompliancePoliciesProcedure is the fully-qualified name of the ControlService's
+	// ListCompliancePolicies RPC.
+	ControlServiceListCompliancePoliciesProcedure = "/pm.v1.ControlService/ListCompliancePolicies"
+	// ControlServiceRenameCompliancePolicyProcedure is the fully-qualified name of the ControlService's
+	// RenameCompliancePolicy RPC.
+	ControlServiceRenameCompliancePolicyProcedure = "/pm.v1.ControlService/RenameCompliancePolicy"
+	// ControlServiceUpdateCompliancePolicyDescriptionProcedure is the fully-qualified name of the
+	// ControlService's UpdateCompliancePolicyDescription RPC.
+	ControlServiceUpdateCompliancePolicyDescriptionProcedure = "/pm.v1.ControlService/UpdateCompliancePolicyDescription"
+	// ControlServiceDeleteCompliancePolicyProcedure is the fully-qualified name of the ControlService's
+	// DeleteCompliancePolicy RPC.
+	ControlServiceDeleteCompliancePolicyProcedure = "/pm.v1.ControlService/DeleteCompliancePolicy"
+	// ControlServiceAddCompliancePolicyRuleProcedure is the fully-qualified name of the
+	// ControlService's AddCompliancePolicyRule RPC.
+	ControlServiceAddCompliancePolicyRuleProcedure = "/pm.v1.ControlService/AddCompliancePolicyRule"
+	// ControlServiceRemoveCompliancePolicyRuleProcedure is the fully-qualified name of the
+	// ControlService's RemoveCompliancePolicyRule RPC.
+	ControlServiceRemoveCompliancePolicyRuleProcedure = "/pm.v1.ControlService/RemoveCompliancePolicyRule"
+	// ControlServiceUpdateCompliancePolicyRuleProcedure is the fully-qualified name of the
+	// ControlService's UpdateCompliancePolicyRule RPC.
+	ControlServiceUpdateCompliancePolicyRuleProcedure = "/pm.v1.ControlService/UpdateCompliancePolicyRule"
+	// ControlServiceGetDeviceCompliancePolicyStatusProcedure is the fully-qualified name of the
+	// ControlService's GetDeviceCompliancePolicyStatus RPC.
+	ControlServiceGetDeviceCompliancePolicyStatusProcedure = "/pm.v1.ControlService/GetDeviceCompliancePolicyStatus"
 	// ControlServiceAuthenticateDeviceUserProcedure is the fully-qualified name of the ControlService's
 	// AuthenticateDeviceUser RPC.
 	ControlServiceAuthenticateDeviceUserProcedure = "/pm.v1.ControlService/AuthenticateDeviceUser"
@@ -594,6 +624,17 @@ type ControlServiceClient interface {
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
 	// Device Compliance
 	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
+	// Compliance Policies
+	CreateCompliancePolicy(context.Context, *connect.Request[v1.CreateCompliancePolicyRequest]) (*connect.Response[v1.CreateCompliancePolicyResponse], error)
+	GetCompliancePolicy(context.Context, *connect.Request[v1.GetCompliancePolicyRequest]) (*connect.Response[v1.GetCompliancePolicyResponse], error)
+	ListCompliancePolicies(context.Context, *connect.Request[v1.ListCompliancePoliciesRequest]) (*connect.Response[v1.ListCompliancePoliciesResponse], error)
+	RenameCompliancePolicy(context.Context, *connect.Request[v1.RenameCompliancePolicyRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error)
+	UpdateCompliancePolicyDescription(context.Context, *connect.Request[v1.UpdateCompliancePolicyDescriptionRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error)
+	DeleteCompliancePolicy(context.Context, *connect.Request[v1.DeleteCompliancePolicyRequest]) (*connect.Response[v1.DeleteCompliancePolicyResponse], error)
+	AddCompliancePolicyRule(context.Context, *connect.Request[v1.AddCompliancePolicyRuleRequest]) (*connect.Response[v1.AddCompliancePolicyRuleResponse], error)
+	RemoveCompliancePolicyRule(context.Context, *connect.Request[v1.RemoveCompliancePolicyRuleRequest]) (*connect.Response[v1.RemoveCompliancePolicyRuleResponse], error)
+	UpdateCompliancePolicyRule(context.Context, *connect.Request[v1.UpdateCompliancePolicyRuleRequest]) (*connect.Response[v1.UpdateCompliancePolicyRuleResponse], error)
+	GetDeviceCompliancePolicyStatus(context.Context, *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error)
 	// Device Authentication (PAM/NSS device login)
 	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
 	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
@@ -1404,6 +1445,66 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliance")),
 			connect.WithClientOptions(opts...),
 		),
+		createCompliancePolicy: connect.NewClient[v1.CreateCompliancePolicyRequest, v1.CreateCompliancePolicyResponse](
+			httpClient,
+			baseURL+ControlServiceCreateCompliancePolicyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CreateCompliancePolicy")),
+			connect.WithClientOptions(opts...),
+		),
+		getCompliancePolicy: connect.NewClient[v1.GetCompliancePolicyRequest, v1.GetCompliancePolicyResponse](
+			httpClient,
+			baseURL+ControlServiceGetCompliancePolicyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetCompliancePolicy")),
+			connect.WithClientOptions(opts...),
+		),
+		listCompliancePolicies: connect.NewClient[v1.ListCompliancePoliciesRequest, v1.ListCompliancePoliciesResponse](
+			httpClient,
+			baseURL+ControlServiceListCompliancePoliciesProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListCompliancePolicies")),
+			connect.WithClientOptions(opts...),
+		),
+		renameCompliancePolicy: connect.NewClient[v1.RenameCompliancePolicyRequest, v1.UpdateCompliancePolicyResponse](
+			httpClient,
+			baseURL+ControlServiceRenameCompliancePolicyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RenameCompliancePolicy")),
+			connect.WithClientOptions(opts...),
+		),
+		updateCompliancePolicyDescription: connect.NewClient[v1.UpdateCompliancePolicyDescriptionRequest, v1.UpdateCompliancePolicyResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateCompliancePolicyDescriptionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateCompliancePolicyDescription")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteCompliancePolicy: connect.NewClient[v1.DeleteCompliancePolicyRequest, v1.DeleteCompliancePolicyResponse](
+			httpClient,
+			baseURL+ControlServiceDeleteCompliancePolicyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("DeleteCompliancePolicy")),
+			connect.WithClientOptions(opts...),
+		),
+		addCompliancePolicyRule: connect.NewClient[v1.AddCompliancePolicyRuleRequest, v1.AddCompliancePolicyRuleResponse](
+			httpClient,
+			baseURL+ControlServiceAddCompliancePolicyRuleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddCompliancePolicyRule")),
+			connect.WithClientOptions(opts...),
+		),
+		removeCompliancePolicyRule: connect.NewClient[v1.RemoveCompliancePolicyRuleRequest, v1.RemoveCompliancePolicyRuleResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveCompliancePolicyRuleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveCompliancePolicyRule")),
+			connect.WithClientOptions(opts...),
+		),
+		updateCompliancePolicyRule: connect.NewClient[v1.UpdateCompliancePolicyRuleRequest, v1.UpdateCompliancePolicyRuleResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateCompliancePolicyRuleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateCompliancePolicyRule")),
+			connect.WithClientOptions(opts...),
+		),
+		getDeviceCompliancePolicyStatus: connect.NewClient[v1.GetDeviceCompliancePolicyStatusRequest, v1.GetDeviceCompliancePolicyStatusResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceCompliancePolicyStatusProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliancePolicyStatus")),
+			connect.WithClientOptions(opts...),
+		),
 		authenticateDeviceUser: connect.NewClient[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse](
 			httpClient,
 			baseURL+ControlServiceAuthenticateDeviceUserProcedure,
@@ -1433,142 +1534,152 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // controlServiceClient implements ControlServiceClient.
 type controlServiceClient struct {
-	register                      *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
-	renewCertificate              *connect.Client[v1.RenewCertificateRequest, v1.RenewCertificateResponse]
-	login                         *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	refreshToken                  *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
-	logout                        *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
-	getCurrentUser                *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
-	verifyLoginTOTP               *connect.Client[v1.VerifyLoginTOTPRequest, v1.VerifyLoginTOTPResponse]
-	setupTOTP                     *connect.Client[v1.SetupTOTPRequest, v1.SetupTOTPResponse]
-	verifyTOTP                    *connect.Client[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse]
-	disableTOTP                   *connect.Client[v1.DisableTOTPRequest, v1.DisableTOTPResponse]
-	adminDisableUserTOTP          *connect.Client[v1.AdminDisableUserTOTPRequest, v1.AdminDisableUserTOTPResponse]
-	getTOTPStatus                 *connect.Client[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse]
-	regenerateBackupCodes         *connect.Client[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse]
-	listAuthMethods               *connect.Client[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse]
-	getSSOLoginURL                *connect.Client[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse]
-	sSOCallback                   *connect.Client[v1.SSOCallbackRequest, v1.SSOCallbackResponse]
-	createIdentityProvider        *connect.Client[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse]
-	getIdentityProvider           *connect.Client[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse]
-	listIdentityProviders         *connect.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
-	updateIdentityProvider        *connect.Client[v1.UpdateIdentityProviderRequest, v1.UpdateIdentityProviderResponse]
-	deleteIdentityProvider        *connect.Client[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse]
-	listIdentityLinks             *connect.Client[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse]
-	unlinkIdentity                *connect.Client[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse]
-	enableSCIM                    *connect.Client[v1.EnableSCIMRequest, v1.EnableSCIMResponse]
-	disableSCIM                   *connect.Client[v1.DisableSCIMRequest, v1.DisableSCIMResponse]
-	rotateSCIMToken               *connect.Client[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse]
-	createUser                    *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
-	getUser                       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
-	listUsers                     *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
-	updateUserEmail               *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
-	updateUserPassword            *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
-	setUserDisabled               *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
-	updateUserProfile             *connect.Client[v1.UpdateUserProfileRequest, v1.UpdateUserResponse]
-	deleteUser                    *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
-	listDevices                   *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
-	getDevice                     *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
-	setDeviceLabel                *connect.Client[v1.SetDeviceLabelRequest, v1.UpdateDeviceResponse]
-	removeDeviceLabel             *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
-	assignDevice                  *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
-	unassignDevice                *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
-	setDeviceSyncInterval         *connect.Client[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse]
-	deleteDevice                  *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
-	createToken                   *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
-	getToken                      *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
-	listTokens                    *connect.Client[v1.ListTokensRequest, v1.ListTokensResponse]
-	renameToken                   *connect.Client[v1.RenameTokenRequest, v1.UpdateTokenResponse]
-	setTokenDisabled              *connect.Client[v1.SetTokenDisabledRequest, v1.UpdateTokenResponse]
-	deleteToken                   *connect.Client[v1.DeleteTokenRequest, v1.DeleteTokenResponse]
-	createAction                  *connect.Client[v1.CreateActionRequest, v1.CreateActionResponse]
-	getAction                     *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
-	listActions                   *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
-	renameAction                  *connect.Client[v1.RenameActionRequest, v1.UpdateActionResponse]
-	updateActionDescription       *connect.Client[v1.UpdateActionDescriptionRequest, v1.UpdateActionResponse]
-	updateActionParams            *connect.Client[v1.UpdateActionParamsRequest, v1.UpdateActionResponse]
-	deleteAction                  *connect.Client[v1.DeleteActionRequest, v1.DeleteActionResponse]
-	createActionSet               *connect.Client[v1.CreateActionSetRequest, v1.CreateActionSetResponse]
-	getActionSet                  *connect.Client[v1.GetActionSetRequest, v1.GetActionSetResponse]
-	listActionSets                *connect.Client[v1.ListActionSetsRequest, v1.ListActionSetsResponse]
-	renameActionSet               *connect.Client[v1.RenameActionSetRequest, v1.UpdateActionSetResponse]
-	updateActionSetDescription    *connect.Client[v1.UpdateActionSetDescriptionRequest, v1.UpdateActionSetResponse]
-	deleteActionSet               *connect.Client[v1.DeleteActionSetRequest, v1.DeleteActionSetResponse]
-	addActionToSet                *connect.Client[v1.AddActionToSetRequest, v1.AddActionToSetResponse]
-	removeActionFromSet           *connect.Client[v1.RemoveActionFromSetRequest, v1.RemoveActionFromSetResponse]
-	reorderActionInSet            *connect.Client[v1.ReorderActionInSetRequest, v1.ReorderActionInSetResponse]
-	createDefinition              *connect.Client[v1.CreateDefinitionRequest, v1.CreateDefinitionResponse]
-	getDefinition                 *connect.Client[v1.GetDefinitionRequest, v1.GetDefinitionResponse]
-	listDefinitions               *connect.Client[v1.ListDefinitionsRequest, v1.ListDefinitionsResponse]
-	renameDefinition              *connect.Client[v1.RenameDefinitionRequest, v1.UpdateDefinitionResponse]
-	updateDefinitionDescription   *connect.Client[v1.UpdateDefinitionDescriptionRequest, v1.UpdateDefinitionResponse]
-	deleteDefinition              *connect.Client[v1.DeleteDefinitionRequest, v1.DeleteDefinitionResponse]
-	addActionSetToDefinition      *connect.Client[v1.AddActionSetToDefinitionRequest, v1.AddActionSetToDefinitionResponse]
-	removeActionSetFromDefinition *connect.Client[v1.RemoveActionSetFromDefinitionRequest, v1.RemoveActionSetFromDefinitionResponse]
-	reorderActionSetInDefinition  *connect.Client[v1.ReorderActionSetInDefinitionRequest, v1.ReorderActionSetInDefinitionResponse]
-	createDeviceGroup             *connect.Client[v1.CreateDeviceGroupRequest, v1.CreateDeviceGroupResponse]
-	getDeviceGroup                *connect.Client[v1.GetDeviceGroupRequest, v1.GetDeviceGroupResponse]
-	listDeviceGroups              *connect.Client[v1.ListDeviceGroupsRequest, v1.ListDeviceGroupsResponse]
-	renameDeviceGroup             *connect.Client[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse]
-	updateDeviceGroupDescription  *connect.Client[v1.UpdateDeviceGroupDescriptionRequest, v1.UpdateDeviceGroupResponse]
-	updateDeviceGroupQuery        *connect.Client[v1.UpdateDeviceGroupQueryRequest, v1.UpdateDeviceGroupQueryResponse]
-	deleteDeviceGroup             *connect.Client[v1.DeleteDeviceGroupRequest, v1.DeleteDeviceGroupResponse]
-	addDeviceToGroup              *connect.Client[v1.AddDeviceToGroupRequest, v1.AddDeviceToGroupResponse]
-	removeDeviceFromGroup         *connect.Client[v1.RemoveDeviceFromGroupRequest, v1.RemoveDeviceFromGroupResponse]
-	validateDynamicQuery          *connect.Client[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse]
-	evaluateDynamicGroup          *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
-	setDeviceGroupSyncInterval    *connect.Client[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse]
-	createAssignment              *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
-	deleteAssignment              *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
-	listAssignments               *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
-	getDeviceAssignments          *connect.Client[v1.GetDeviceAssignmentsRequest, v1.GetDeviceAssignmentsResponse]
-	getUserAssignments            *connect.Client[v1.GetUserAssignmentsRequest, v1.GetUserAssignmentsResponse]
-	setUserSelection              *connect.Client[v1.SetUserSelectionRequest, v1.SetUserSelectionResponse]
-	listAvailableActions          *connect.Client[v1.ListAvailableActionsRequest, v1.ListAvailableActionsResponse]
-	dispatchAction                *connect.Client[v1.DispatchActionRequest, v1.DispatchActionResponse]
-	dispatchToMultiple            *connect.Client[v1.DispatchToMultipleRequest, v1.DispatchToMultipleResponse]
-	dispatchAssignedActions       *connect.Client[v1.DispatchAssignedActionsRequest, v1.DispatchAssignedActionsResponse]
-	dispatchActionSet             *connect.Client[v1.DispatchActionSetRequest, v1.DispatchActionSetResponse]
-	dispatchDefinition            *connect.Client[v1.DispatchDefinitionRequest, v1.DispatchDefinitionResponse]
-	dispatchToGroup               *connect.Client[v1.DispatchToGroupRequest, v1.DispatchToGroupResponse]
-	dispatchInstantAction         *connect.Client[v1.DispatchInstantActionRequest, v1.DispatchInstantActionResponse]
-	getExecution                  *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
-	listExecutions                *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
-	listAuditEvents               *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
-	getDeviceLpsPasswords         *connect.Client[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse]
-	getDeviceLuksKeys             *connect.Client[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse]
-	createLuksToken               *connect.Client[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse]
-	revokeLuksDeviceKey           *connect.Client[v1.RevokeLuksDeviceKeyRequest, v1.RevokeLuksDeviceKeyResponse]
-	dispatchOSQuery               *connect.Client[v1.DispatchOSQueryRequest, v1.DispatchOSQueryResponse]
-	getOSQueryResult              *connect.Client[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse]
-	getDeviceInventory            *connect.Client[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse]
-	refreshDeviceInventory        *connect.Client[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse]
-	createRole                    *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
-	getRole                       *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
-	listRoles                     *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
-	updateRole                    *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
-	deleteRole                    *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
-	assignRoleToUser              *connect.Client[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse]
-	revokeRoleFromUser            *connect.Client[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse]
-	listPermissions               *connect.Client[v1.ListPermissionsRequest, v1.ListPermissionsResponse]
-	createUserGroup               *connect.Client[v1.CreateUserGroupRequest, v1.CreateUserGroupResponse]
-	getUserGroup                  *connect.Client[v1.GetUserGroupRequest, v1.GetUserGroupResponse]
-	listUserGroups                *connect.Client[v1.ListUserGroupsRequest, v1.ListUserGroupsResponse]
-	updateUserGroup               *connect.Client[v1.UpdateUserGroupRequest, v1.UpdateUserGroupResponse]
-	deleteUserGroup               *connect.Client[v1.DeleteUserGroupRequest, v1.DeleteUserGroupResponse]
-	addUserToGroup                *connect.Client[v1.AddUserToGroupRequest, v1.AddUserToGroupResponse]
-	removeUserFromGroup           *connect.Client[v1.RemoveUserFromGroupRequest, v1.RemoveUserFromGroupResponse]
-	assignRoleToUserGroup         *connect.Client[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse]
-	revokeRoleFromUserGroup       *connect.Client[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse]
-	listUserGroupsForUser         *connect.Client[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse]
-	updateUserGroupQuery          *connect.Client[v1.UpdateUserGroupQueryRequest, v1.UpdateUserGroupQueryResponse]
-	validateUserGroupQuery        *connect.Client[v1.ValidateUserGroupQueryRequest, v1.ValidateUserGroupQueryResponse]
-	evaluateDynamicUserGroup      *connect.Client[v1.EvaluateDynamicUserGroupRequest, v1.EvaluateDynamicUserGroupResponse]
-	getDeviceCompliance           *connect.Client[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse]
-	authenticateDeviceUser        *connect.Client[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse]
-	getDeviceLoginURL             *connect.Client[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse]
-	deviceLoginCallback           *connect.Client[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse]
-	listDeviceUsers               *connect.Client[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse]
+	register                          *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
+	renewCertificate                  *connect.Client[v1.RenewCertificateRequest, v1.RenewCertificateResponse]
+	login                             *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	refreshToken                      *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
+	logout                            *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
+	getCurrentUser                    *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	verifyLoginTOTP                   *connect.Client[v1.VerifyLoginTOTPRequest, v1.VerifyLoginTOTPResponse]
+	setupTOTP                         *connect.Client[v1.SetupTOTPRequest, v1.SetupTOTPResponse]
+	verifyTOTP                        *connect.Client[v1.VerifyTOTPRequest, v1.VerifyTOTPResponse]
+	disableTOTP                       *connect.Client[v1.DisableTOTPRequest, v1.DisableTOTPResponse]
+	adminDisableUserTOTP              *connect.Client[v1.AdminDisableUserTOTPRequest, v1.AdminDisableUserTOTPResponse]
+	getTOTPStatus                     *connect.Client[v1.GetTOTPStatusRequest, v1.GetTOTPStatusResponse]
+	regenerateBackupCodes             *connect.Client[v1.RegenerateBackupCodesRequest, v1.RegenerateBackupCodesResponse]
+	listAuthMethods                   *connect.Client[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse]
+	getSSOLoginURL                    *connect.Client[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse]
+	sSOCallback                       *connect.Client[v1.SSOCallbackRequest, v1.SSOCallbackResponse]
+	createIdentityProvider            *connect.Client[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse]
+	getIdentityProvider               *connect.Client[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse]
+	listIdentityProviders             *connect.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
+	updateIdentityProvider            *connect.Client[v1.UpdateIdentityProviderRequest, v1.UpdateIdentityProviderResponse]
+	deleteIdentityProvider            *connect.Client[v1.DeleteIdentityProviderRequest, v1.DeleteIdentityProviderResponse]
+	listIdentityLinks                 *connect.Client[v1.ListIdentityLinksRequest, v1.ListIdentityLinksResponse]
+	unlinkIdentity                    *connect.Client[v1.UnlinkIdentityRequest, v1.UnlinkIdentityResponse]
+	enableSCIM                        *connect.Client[v1.EnableSCIMRequest, v1.EnableSCIMResponse]
+	disableSCIM                       *connect.Client[v1.DisableSCIMRequest, v1.DisableSCIMResponse]
+	rotateSCIMToken                   *connect.Client[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse]
+	createUser                        *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
+	getUser                           *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
+	listUsers                         *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
+	updateUserEmail                   *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
+	updateUserPassword                *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
+	setUserDisabled                   *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
+	updateUserProfile                 *connect.Client[v1.UpdateUserProfileRequest, v1.UpdateUserResponse]
+	deleteUser                        *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
+	listDevices                       *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
+	getDevice                         *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
+	setDeviceLabel                    *connect.Client[v1.SetDeviceLabelRequest, v1.UpdateDeviceResponse]
+	removeDeviceLabel                 *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
+	assignDevice                      *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
+	unassignDevice                    *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
+	setDeviceSyncInterval             *connect.Client[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse]
+	deleteDevice                      *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
+	createToken                       *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
+	getToken                          *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
+	listTokens                        *connect.Client[v1.ListTokensRequest, v1.ListTokensResponse]
+	renameToken                       *connect.Client[v1.RenameTokenRequest, v1.UpdateTokenResponse]
+	setTokenDisabled                  *connect.Client[v1.SetTokenDisabledRequest, v1.UpdateTokenResponse]
+	deleteToken                       *connect.Client[v1.DeleteTokenRequest, v1.DeleteTokenResponse]
+	createAction                      *connect.Client[v1.CreateActionRequest, v1.CreateActionResponse]
+	getAction                         *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
+	listActions                       *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
+	renameAction                      *connect.Client[v1.RenameActionRequest, v1.UpdateActionResponse]
+	updateActionDescription           *connect.Client[v1.UpdateActionDescriptionRequest, v1.UpdateActionResponse]
+	updateActionParams                *connect.Client[v1.UpdateActionParamsRequest, v1.UpdateActionResponse]
+	deleteAction                      *connect.Client[v1.DeleteActionRequest, v1.DeleteActionResponse]
+	createActionSet                   *connect.Client[v1.CreateActionSetRequest, v1.CreateActionSetResponse]
+	getActionSet                      *connect.Client[v1.GetActionSetRequest, v1.GetActionSetResponse]
+	listActionSets                    *connect.Client[v1.ListActionSetsRequest, v1.ListActionSetsResponse]
+	renameActionSet                   *connect.Client[v1.RenameActionSetRequest, v1.UpdateActionSetResponse]
+	updateActionSetDescription        *connect.Client[v1.UpdateActionSetDescriptionRequest, v1.UpdateActionSetResponse]
+	deleteActionSet                   *connect.Client[v1.DeleteActionSetRequest, v1.DeleteActionSetResponse]
+	addActionToSet                    *connect.Client[v1.AddActionToSetRequest, v1.AddActionToSetResponse]
+	removeActionFromSet               *connect.Client[v1.RemoveActionFromSetRequest, v1.RemoveActionFromSetResponse]
+	reorderActionInSet                *connect.Client[v1.ReorderActionInSetRequest, v1.ReorderActionInSetResponse]
+	createDefinition                  *connect.Client[v1.CreateDefinitionRequest, v1.CreateDefinitionResponse]
+	getDefinition                     *connect.Client[v1.GetDefinitionRequest, v1.GetDefinitionResponse]
+	listDefinitions                   *connect.Client[v1.ListDefinitionsRequest, v1.ListDefinitionsResponse]
+	renameDefinition                  *connect.Client[v1.RenameDefinitionRequest, v1.UpdateDefinitionResponse]
+	updateDefinitionDescription       *connect.Client[v1.UpdateDefinitionDescriptionRequest, v1.UpdateDefinitionResponse]
+	deleteDefinition                  *connect.Client[v1.DeleteDefinitionRequest, v1.DeleteDefinitionResponse]
+	addActionSetToDefinition          *connect.Client[v1.AddActionSetToDefinitionRequest, v1.AddActionSetToDefinitionResponse]
+	removeActionSetFromDefinition     *connect.Client[v1.RemoveActionSetFromDefinitionRequest, v1.RemoveActionSetFromDefinitionResponse]
+	reorderActionSetInDefinition      *connect.Client[v1.ReorderActionSetInDefinitionRequest, v1.ReorderActionSetInDefinitionResponse]
+	createDeviceGroup                 *connect.Client[v1.CreateDeviceGroupRequest, v1.CreateDeviceGroupResponse]
+	getDeviceGroup                    *connect.Client[v1.GetDeviceGroupRequest, v1.GetDeviceGroupResponse]
+	listDeviceGroups                  *connect.Client[v1.ListDeviceGroupsRequest, v1.ListDeviceGroupsResponse]
+	renameDeviceGroup                 *connect.Client[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse]
+	updateDeviceGroupDescription      *connect.Client[v1.UpdateDeviceGroupDescriptionRequest, v1.UpdateDeviceGroupResponse]
+	updateDeviceGroupQuery            *connect.Client[v1.UpdateDeviceGroupQueryRequest, v1.UpdateDeviceGroupQueryResponse]
+	deleteDeviceGroup                 *connect.Client[v1.DeleteDeviceGroupRequest, v1.DeleteDeviceGroupResponse]
+	addDeviceToGroup                  *connect.Client[v1.AddDeviceToGroupRequest, v1.AddDeviceToGroupResponse]
+	removeDeviceFromGroup             *connect.Client[v1.RemoveDeviceFromGroupRequest, v1.RemoveDeviceFromGroupResponse]
+	validateDynamicQuery              *connect.Client[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse]
+	evaluateDynamicGroup              *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
+	setDeviceGroupSyncInterval        *connect.Client[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse]
+	createAssignment                  *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
+	deleteAssignment                  *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
+	listAssignments                   *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
+	getDeviceAssignments              *connect.Client[v1.GetDeviceAssignmentsRequest, v1.GetDeviceAssignmentsResponse]
+	getUserAssignments                *connect.Client[v1.GetUserAssignmentsRequest, v1.GetUserAssignmentsResponse]
+	setUserSelection                  *connect.Client[v1.SetUserSelectionRequest, v1.SetUserSelectionResponse]
+	listAvailableActions              *connect.Client[v1.ListAvailableActionsRequest, v1.ListAvailableActionsResponse]
+	dispatchAction                    *connect.Client[v1.DispatchActionRequest, v1.DispatchActionResponse]
+	dispatchToMultiple                *connect.Client[v1.DispatchToMultipleRequest, v1.DispatchToMultipleResponse]
+	dispatchAssignedActions           *connect.Client[v1.DispatchAssignedActionsRequest, v1.DispatchAssignedActionsResponse]
+	dispatchActionSet                 *connect.Client[v1.DispatchActionSetRequest, v1.DispatchActionSetResponse]
+	dispatchDefinition                *connect.Client[v1.DispatchDefinitionRequest, v1.DispatchDefinitionResponse]
+	dispatchToGroup                   *connect.Client[v1.DispatchToGroupRequest, v1.DispatchToGroupResponse]
+	dispatchInstantAction             *connect.Client[v1.DispatchInstantActionRequest, v1.DispatchInstantActionResponse]
+	getExecution                      *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
+	listExecutions                    *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
+	listAuditEvents                   *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
+	getDeviceLpsPasswords             *connect.Client[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse]
+	getDeviceLuksKeys                 *connect.Client[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse]
+	createLuksToken                   *connect.Client[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse]
+	revokeLuksDeviceKey               *connect.Client[v1.RevokeLuksDeviceKeyRequest, v1.RevokeLuksDeviceKeyResponse]
+	dispatchOSQuery                   *connect.Client[v1.DispatchOSQueryRequest, v1.DispatchOSQueryResponse]
+	getOSQueryResult                  *connect.Client[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse]
+	getDeviceInventory                *connect.Client[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse]
+	refreshDeviceInventory            *connect.Client[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse]
+	createRole                        *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	getRole                           *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
+	listRoles                         *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	updateRole                        *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
+	deleteRole                        *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	assignRoleToUser                  *connect.Client[v1.AssignRoleToUserRequest, v1.AssignRoleToUserResponse]
+	revokeRoleFromUser                *connect.Client[v1.RevokeRoleFromUserRequest, v1.RevokeRoleFromUserResponse]
+	listPermissions                   *connect.Client[v1.ListPermissionsRequest, v1.ListPermissionsResponse]
+	createUserGroup                   *connect.Client[v1.CreateUserGroupRequest, v1.CreateUserGroupResponse]
+	getUserGroup                      *connect.Client[v1.GetUserGroupRequest, v1.GetUserGroupResponse]
+	listUserGroups                    *connect.Client[v1.ListUserGroupsRequest, v1.ListUserGroupsResponse]
+	updateUserGroup                   *connect.Client[v1.UpdateUserGroupRequest, v1.UpdateUserGroupResponse]
+	deleteUserGroup                   *connect.Client[v1.DeleteUserGroupRequest, v1.DeleteUserGroupResponse]
+	addUserToGroup                    *connect.Client[v1.AddUserToGroupRequest, v1.AddUserToGroupResponse]
+	removeUserFromGroup               *connect.Client[v1.RemoveUserFromGroupRequest, v1.RemoveUserFromGroupResponse]
+	assignRoleToUserGroup             *connect.Client[v1.AssignRoleToUserGroupRequest, v1.AssignRoleToUserGroupResponse]
+	revokeRoleFromUserGroup           *connect.Client[v1.RevokeRoleFromUserGroupRequest, v1.RevokeRoleFromUserGroupResponse]
+	listUserGroupsForUser             *connect.Client[v1.ListUserGroupsForUserRequest, v1.ListUserGroupsForUserResponse]
+	updateUserGroupQuery              *connect.Client[v1.UpdateUserGroupQueryRequest, v1.UpdateUserGroupQueryResponse]
+	validateUserGroupQuery            *connect.Client[v1.ValidateUserGroupQueryRequest, v1.ValidateUserGroupQueryResponse]
+	evaluateDynamicUserGroup          *connect.Client[v1.EvaluateDynamicUserGroupRequest, v1.EvaluateDynamicUserGroupResponse]
+	getDeviceCompliance               *connect.Client[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse]
+	createCompliancePolicy            *connect.Client[v1.CreateCompliancePolicyRequest, v1.CreateCompliancePolicyResponse]
+	getCompliancePolicy               *connect.Client[v1.GetCompliancePolicyRequest, v1.GetCompliancePolicyResponse]
+	listCompliancePolicies            *connect.Client[v1.ListCompliancePoliciesRequest, v1.ListCompliancePoliciesResponse]
+	renameCompliancePolicy            *connect.Client[v1.RenameCompliancePolicyRequest, v1.UpdateCompliancePolicyResponse]
+	updateCompliancePolicyDescription *connect.Client[v1.UpdateCompliancePolicyDescriptionRequest, v1.UpdateCompliancePolicyResponse]
+	deleteCompliancePolicy            *connect.Client[v1.DeleteCompliancePolicyRequest, v1.DeleteCompliancePolicyResponse]
+	addCompliancePolicyRule           *connect.Client[v1.AddCompliancePolicyRuleRequest, v1.AddCompliancePolicyRuleResponse]
+	removeCompliancePolicyRule        *connect.Client[v1.RemoveCompliancePolicyRuleRequest, v1.RemoveCompliancePolicyRuleResponse]
+	updateCompliancePolicyRule        *connect.Client[v1.UpdateCompliancePolicyRuleRequest, v1.UpdateCompliancePolicyRuleResponse]
+	getDeviceCompliancePolicyStatus   *connect.Client[v1.GetDeviceCompliancePolicyStatusRequest, v1.GetDeviceCompliancePolicyStatusResponse]
+	authenticateDeviceUser            *connect.Client[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse]
+	getDeviceLoginURL                 *connect.Client[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse]
+	deviceLoginCallback               *connect.Client[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse]
+	listDeviceUsers                   *connect.Client[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -2231,6 +2342,56 @@ func (c *controlServiceClient) GetDeviceCompliance(ctx context.Context, req *con
 	return c.getDeviceCompliance.CallUnary(ctx, req)
 }
 
+// CreateCompliancePolicy calls pm.v1.ControlService.CreateCompliancePolicy.
+func (c *controlServiceClient) CreateCompliancePolicy(ctx context.Context, req *connect.Request[v1.CreateCompliancePolicyRequest]) (*connect.Response[v1.CreateCompliancePolicyResponse], error) {
+	return c.createCompliancePolicy.CallUnary(ctx, req)
+}
+
+// GetCompliancePolicy calls pm.v1.ControlService.GetCompliancePolicy.
+func (c *controlServiceClient) GetCompliancePolicy(ctx context.Context, req *connect.Request[v1.GetCompliancePolicyRequest]) (*connect.Response[v1.GetCompliancePolicyResponse], error) {
+	return c.getCompliancePolicy.CallUnary(ctx, req)
+}
+
+// ListCompliancePolicies calls pm.v1.ControlService.ListCompliancePolicies.
+func (c *controlServiceClient) ListCompliancePolicies(ctx context.Context, req *connect.Request[v1.ListCompliancePoliciesRequest]) (*connect.Response[v1.ListCompliancePoliciesResponse], error) {
+	return c.listCompliancePolicies.CallUnary(ctx, req)
+}
+
+// RenameCompliancePolicy calls pm.v1.ControlService.RenameCompliancePolicy.
+func (c *controlServiceClient) RenameCompliancePolicy(ctx context.Context, req *connect.Request[v1.RenameCompliancePolicyRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error) {
+	return c.renameCompliancePolicy.CallUnary(ctx, req)
+}
+
+// UpdateCompliancePolicyDescription calls pm.v1.ControlService.UpdateCompliancePolicyDescription.
+func (c *controlServiceClient) UpdateCompliancePolicyDescription(ctx context.Context, req *connect.Request[v1.UpdateCompliancePolicyDescriptionRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error) {
+	return c.updateCompliancePolicyDescription.CallUnary(ctx, req)
+}
+
+// DeleteCompliancePolicy calls pm.v1.ControlService.DeleteCompliancePolicy.
+func (c *controlServiceClient) DeleteCompliancePolicy(ctx context.Context, req *connect.Request[v1.DeleteCompliancePolicyRequest]) (*connect.Response[v1.DeleteCompliancePolicyResponse], error) {
+	return c.deleteCompliancePolicy.CallUnary(ctx, req)
+}
+
+// AddCompliancePolicyRule calls pm.v1.ControlService.AddCompliancePolicyRule.
+func (c *controlServiceClient) AddCompliancePolicyRule(ctx context.Context, req *connect.Request[v1.AddCompliancePolicyRuleRequest]) (*connect.Response[v1.AddCompliancePolicyRuleResponse], error) {
+	return c.addCompliancePolicyRule.CallUnary(ctx, req)
+}
+
+// RemoveCompliancePolicyRule calls pm.v1.ControlService.RemoveCompliancePolicyRule.
+func (c *controlServiceClient) RemoveCompliancePolicyRule(ctx context.Context, req *connect.Request[v1.RemoveCompliancePolicyRuleRequest]) (*connect.Response[v1.RemoveCompliancePolicyRuleResponse], error) {
+	return c.removeCompliancePolicyRule.CallUnary(ctx, req)
+}
+
+// UpdateCompliancePolicyRule calls pm.v1.ControlService.UpdateCompliancePolicyRule.
+func (c *controlServiceClient) UpdateCompliancePolicyRule(ctx context.Context, req *connect.Request[v1.UpdateCompliancePolicyRuleRequest]) (*connect.Response[v1.UpdateCompliancePolicyRuleResponse], error) {
+	return c.updateCompliancePolicyRule.CallUnary(ctx, req)
+}
+
+// GetDeviceCompliancePolicyStatus calls pm.v1.ControlService.GetDeviceCompliancePolicyStatus.
+func (c *controlServiceClient) GetDeviceCompliancePolicyStatus(ctx context.Context, req *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error) {
+	return c.getDeviceCompliancePolicyStatus.CallUnary(ctx, req)
+}
+
 // AuthenticateDeviceUser calls pm.v1.ControlService.AuthenticateDeviceUser.
 func (c *controlServiceClient) AuthenticateDeviceUser(ctx context.Context, req *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
 	return c.authenticateDeviceUser.CallUnary(ctx, req)
@@ -2408,6 +2569,17 @@ type ControlServiceHandler interface {
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
 	// Device Compliance
 	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
+	// Compliance Policies
+	CreateCompliancePolicy(context.Context, *connect.Request[v1.CreateCompliancePolicyRequest]) (*connect.Response[v1.CreateCompliancePolicyResponse], error)
+	GetCompliancePolicy(context.Context, *connect.Request[v1.GetCompliancePolicyRequest]) (*connect.Response[v1.GetCompliancePolicyResponse], error)
+	ListCompliancePolicies(context.Context, *connect.Request[v1.ListCompliancePoliciesRequest]) (*connect.Response[v1.ListCompliancePoliciesResponse], error)
+	RenameCompliancePolicy(context.Context, *connect.Request[v1.RenameCompliancePolicyRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error)
+	UpdateCompliancePolicyDescription(context.Context, *connect.Request[v1.UpdateCompliancePolicyDescriptionRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error)
+	DeleteCompliancePolicy(context.Context, *connect.Request[v1.DeleteCompliancePolicyRequest]) (*connect.Response[v1.DeleteCompliancePolicyResponse], error)
+	AddCompliancePolicyRule(context.Context, *connect.Request[v1.AddCompliancePolicyRuleRequest]) (*connect.Response[v1.AddCompliancePolicyRuleResponse], error)
+	RemoveCompliancePolicyRule(context.Context, *connect.Request[v1.RemoveCompliancePolicyRuleRequest]) (*connect.Response[v1.RemoveCompliancePolicyRuleResponse], error)
+	UpdateCompliancePolicyRule(context.Context, *connect.Request[v1.UpdateCompliancePolicyRuleRequest]) (*connect.Response[v1.UpdateCompliancePolicyRuleResponse], error)
+	GetDeviceCompliancePolicyStatus(context.Context, *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error)
 	// Device Authentication (PAM/NSS device login)
 	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
 	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
@@ -3214,6 +3386,66 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceCreateCompliancePolicyHandler := connect.NewUnaryHandler(
+		ControlServiceCreateCompliancePolicyProcedure,
+		svc.CreateCompliancePolicy,
+		connect.WithSchema(controlServiceMethods.ByName("CreateCompliancePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetCompliancePolicyHandler := connect.NewUnaryHandler(
+		ControlServiceGetCompliancePolicyProcedure,
+		svc.GetCompliancePolicy,
+		connect.WithSchema(controlServiceMethods.ByName("GetCompliancePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListCompliancePoliciesHandler := connect.NewUnaryHandler(
+		ControlServiceListCompliancePoliciesProcedure,
+		svc.ListCompliancePolicies,
+		connect.WithSchema(controlServiceMethods.ByName("ListCompliancePolicies")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRenameCompliancePolicyHandler := connect.NewUnaryHandler(
+		ControlServiceRenameCompliancePolicyProcedure,
+		svc.RenameCompliancePolicy,
+		connect.WithSchema(controlServiceMethods.ByName("RenameCompliancePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateCompliancePolicyDescriptionHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateCompliancePolicyDescriptionProcedure,
+		svc.UpdateCompliancePolicyDescription,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateCompliancePolicyDescription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceDeleteCompliancePolicyHandler := connect.NewUnaryHandler(
+		ControlServiceDeleteCompliancePolicyProcedure,
+		svc.DeleteCompliancePolicy,
+		connect.WithSchema(controlServiceMethods.ByName("DeleteCompliancePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAddCompliancePolicyRuleHandler := connect.NewUnaryHandler(
+		ControlServiceAddCompliancePolicyRuleProcedure,
+		svc.AddCompliancePolicyRule,
+		connect.WithSchema(controlServiceMethods.ByName("AddCompliancePolicyRule")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveCompliancePolicyRuleHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveCompliancePolicyRuleProcedure,
+		svc.RemoveCompliancePolicyRule,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveCompliancePolicyRule")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateCompliancePolicyRuleHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateCompliancePolicyRuleProcedure,
+		svc.UpdateCompliancePolicyRule,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateCompliancePolicyRule")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetDeviceCompliancePolicyStatusHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceCompliancePolicyStatusProcedure,
+		svc.GetDeviceCompliancePolicyStatus,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliancePolicyStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceAuthenticateDeviceUserHandler := connect.NewUnaryHandler(
 		ControlServiceAuthenticateDeviceUserProcedure,
 		svc.AuthenticateDeviceUser,
@@ -3504,6 +3736,26 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceEvaluateDynamicUserGroupHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceComplianceProcedure:
 			controlServiceGetDeviceComplianceHandler.ServeHTTP(w, r)
+		case ControlServiceCreateCompliancePolicyProcedure:
+			controlServiceCreateCompliancePolicyHandler.ServeHTTP(w, r)
+		case ControlServiceGetCompliancePolicyProcedure:
+			controlServiceGetCompliancePolicyHandler.ServeHTTP(w, r)
+		case ControlServiceListCompliancePoliciesProcedure:
+			controlServiceListCompliancePoliciesHandler.ServeHTTP(w, r)
+		case ControlServiceRenameCompliancePolicyProcedure:
+			controlServiceRenameCompliancePolicyHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateCompliancePolicyDescriptionProcedure:
+			controlServiceUpdateCompliancePolicyDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceDeleteCompliancePolicyProcedure:
+			controlServiceDeleteCompliancePolicyHandler.ServeHTTP(w, r)
+		case ControlServiceAddCompliancePolicyRuleProcedure:
+			controlServiceAddCompliancePolicyRuleHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveCompliancePolicyRuleProcedure:
+			controlServiceRemoveCompliancePolicyRuleHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateCompliancePolicyRuleProcedure:
+			controlServiceUpdateCompliancePolicyRuleHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceCompliancePolicyStatusProcedure:
+			controlServiceGetDeviceCompliancePolicyStatusHandler.ServeHTTP(w, r)
 		case ControlServiceAuthenticateDeviceUserProcedure:
 			controlServiceAuthenticateDeviceUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceLoginURLProcedure:
@@ -4047,6 +4299,46 @@ func (UnimplementedControlServiceHandler) EvaluateDynamicUserGroup(context.Conte
 
 func (UnimplementedControlServiceHandler) GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceCompliance is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CreateCompliancePolicy(context.Context, *connect.Request[v1.CreateCompliancePolicyRequest]) (*connect.Response[v1.CreateCompliancePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateCompliancePolicy is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetCompliancePolicy(context.Context, *connect.Request[v1.GetCompliancePolicyRequest]) (*connect.Response[v1.GetCompliancePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetCompliancePolicy is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListCompliancePolicies(context.Context, *connect.Request[v1.ListCompliancePoliciesRequest]) (*connect.Response[v1.ListCompliancePoliciesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListCompliancePolicies is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RenameCompliancePolicy(context.Context, *connect.Request[v1.RenameCompliancePolicyRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RenameCompliancePolicy is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateCompliancePolicyDescription(context.Context, *connect.Request[v1.UpdateCompliancePolicyDescriptionRequest]) (*connect.Response[v1.UpdateCompliancePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateCompliancePolicyDescription is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) DeleteCompliancePolicy(context.Context, *connect.Request[v1.DeleteCompliancePolicyRequest]) (*connect.Response[v1.DeleteCompliancePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteCompliancePolicy is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AddCompliancePolicyRule(context.Context, *connect.Request[v1.AddCompliancePolicyRuleRequest]) (*connect.Response[v1.AddCompliancePolicyRuleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddCompliancePolicyRule is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveCompliancePolicyRule(context.Context, *connect.Request[v1.RemoveCompliancePolicyRuleRequest]) (*connect.Response[v1.RemoveCompliancePolicyRuleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveCompliancePolicyRule is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateCompliancePolicyRule(context.Context, *connect.Request[v1.UpdateCompliancePolicyRuleRequest]) (*connect.Response[v1.UpdateCompliancePolicyRuleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateCompliancePolicyRule is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceCompliancePolicyStatus(context.Context, *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceCompliancePolicyStatus is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
