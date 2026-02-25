@@ -155,6 +155,21 @@ import {
 	// Compliance
 	GetDeviceComplianceRequestSchema,
 	type GetDeviceComplianceResponse,
+	// Compliance Policies
+	CreateCompliancePolicyRequestSchema,
+	GetCompliancePolicyRequestSchema,
+	ListCompliancePoliciesRequestSchema,
+	RenameCompliancePolicyRequestSchema,
+	UpdateCompliancePolicyDescriptionRequestSchema,
+	DeleteCompliancePolicyRequestSchema,
+	AddCompliancePolicyRuleRequestSchema,
+	RemoveCompliancePolicyRuleRequestSchema,
+	UpdateCompliancePolicyRuleRequestSchema,
+	GetDeviceCompliancePolicyStatusRequestSchema,
+	type CompliancePolicy,
+	type CompliancePolicyRule,
+	type DevicePolicyEvaluation,
+	type GetDeviceCompliancePolicyStatusResponse,
 	type IdentityProvider,
 	type IdentityLink,
 	type InventoryTableResult,
@@ -846,7 +861,7 @@ export class ApiClient {
 	// ============================================================================
 
 	async createAssignment(
-		sourceType: 'action' | 'action_set' | 'definition',
+		sourceType: 'action' | 'action_set' | 'definition' | 'compliance_policy',
 		sourceId: string,
 		targetType: 'device' | 'device_group' | 'user' | 'user_group',
 		targetId: string,
@@ -860,7 +875,7 @@ export class ApiClient {
 	}
 
 	async batchCreateAssignments(
-		sourceType: 'action' | 'action_set' | 'definition',
+		sourceType: 'action' | 'action_set' | 'definition' | 'compliance_policy',
 		sourceId: string,
 		targets: Array<{ targetType: 'device' | 'device_group' | 'user' | 'user_group'; targetId: string }>,
 		mode: number = 0
@@ -1060,6 +1075,87 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.getDeviceCompliance(
 			create(GetDeviceComplianceRequestSchema, { deviceId })
+		);
+	}
+
+	// ============================================================================
+	// Compliance Policies
+	// ============================================================================
+
+	async createCompliancePolicy(name: string, description: string = '') {
+		const client = this.getClient();
+		const response = await client.createCompliancePolicy(
+			create(CreateCompliancePolicyRequestSchema, { name, description })
+		);
+		return response.policy;
+	}
+
+	async getCompliancePolicy(id: string) {
+		const client = this.getClient();
+		const response = await client.getCompliancePolicy(
+			create(GetCompliancePolicyRequestSchema, { id })
+		);
+		return response.policy;
+	}
+
+	async listCompliancePolicies(pageSize: number = 50, pageToken: string = '') {
+		const client = this.getClient();
+		return client.listCompliancePolicies(
+			create(ListCompliancePoliciesRequestSchema, { pageSize, pageToken })
+		);
+	}
+
+	async renameCompliancePolicy(id: string, name: string) {
+		const client = this.getClient();
+		const response = await client.renameCompliancePolicy(
+			create(RenameCompliancePolicyRequestSchema, { id, name })
+		);
+		return response.policy;
+	}
+
+	async updateCompliancePolicyDescription(id: string, description: string) {
+		const client = this.getClient();
+		const response = await client.updateCompliancePolicyDescription(
+			create(UpdateCompliancePolicyDescriptionRequestSchema, { id, description })
+		);
+		return response.policy;
+	}
+
+	async deleteCompliancePolicy(id: string) {
+		const client = this.getClient();
+		await client.deleteCompliancePolicy(
+			create(DeleteCompliancePolicyRequestSchema, { id })
+		);
+	}
+
+	async addCompliancePolicyRule(policyId: string, actionId: string, gracePeriodHours: number = 0) {
+		const client = this.getClient();
+		const response = await client.addCompliancePolicyRule(
+			create(AddCompliancePolicyRuleRequestSchema, { policyId, actionId, gracePeriodHours })
+		);
+		return response.policy;
+	}
+
+	async removeCompliancePolicyRule(policyId: string, actionId: string) {
+		const client = this.getClient();
+		const response = await client.removeCompliancePolicyRule(
+			create(RemoveCompliancePolicyRuleRequestSchema, { policyId, actionId })
+		);
+		return response.policy;
+	}
+
+	async updateCompliancePolicyRule(policyId: string, actionId: string, gracePeriodHours: number) {
+		const client = this.getClient();
+		const response = await client.updateCompliancePolicyRule(
+			create(UpdateCompliancePolicyRuleRequestSchema, { policyId, actionId, gracePeriodHours })
+		);
+		return response.policy;
+	}
+
+	async getDeviceCompliancePolicyStatus(deviceId: string): Promise<GetDeviceCompliancePolicyStatusResponse> {
+		const client = this.getClient();
+		return client.getDeviceCompliancePolicyStatus(
+			create(GetDeviceCompliancePolicyStatusRequestSchema, { deviceId })
 		);
 	}
 
@@ -1424,5 +1520,5 @@ export type {
 	DeviceGroup, Assignment, ActionExecution, AuditEvent, InventoryTableResult,
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
 	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
-	AvailableItem
+	AvailableItem, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation
 };
