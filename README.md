@@ -46,7 +46,7 @@ Four proto files define the entire API surface:
 | `common.proto` | ULID identifiers, execution status, assignment modes |
 | `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, reboot, sync, user, group, luks), parameters, scheduling |
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries |
-| `control.proto` | `ControlService` — 125 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, and more |
+| `control.proto` | `ControlService` — 126 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, certificate renewal, and more |
 
 ## Go SDK
 
@@ -64,6 +64,18 @@ client.Run(ctx, handler)
 ```
 
 Features: mTLS authentication, automatic heartbeat, action result reporting, live output streaming, security alerts.
+
+### Certificate Renewal
+
+`go/client.go` also provides a standalone `RenewCertificate` function for certificate rotation:
+
+```go
+result, _ := sdk.RenewCertificate(ctx, controlURL, csrPEM, currentCertPEM)
+// result.Certificate — new signed certificate (PEM)
+// result.NotAfter    — certificate expiry time
+```
+
+The agent presents its current (still valid) certificate and a new CSR. The Control Server verifies the certificate, checks the fingerprint against the database, and signs the new CSR.
 
 ### Package Manager Library
 
