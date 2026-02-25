@@ -73,9 +73,10 @@ Features: mTLS authentication, automatic heartbeat, action result reporting, liv
 result, _ := sdk.RenewCertificate(ctx, controlURL, csrPEM, currentCertPEM)
 // result.Certificate — new signed certificate (PEM)
 // result.NotAfter    — certificate expiry time
+// result.CACert      — active CA certificate (PEM), for CA rotation
 ```
 
-The agent presents its current (still valid) certificate and a new CSR. The Control Server verifies the certificate, checks the fingerprint against the database, and signs the new CSR.
+The agent presents its current (still valid) certificate and a new CSR. The Control Server verifies the certificate, checks the fingerprint against the database, signs the new CSR, and returns the active CA certificate. If the CA has been rotated, the agent should update its stored CA certificate.
 
 ### Package Manager Library
 

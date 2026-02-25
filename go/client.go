@@ -234,6 +234,7 @@ func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agen
 type RenewCertificateResult struct {
 	Certificate []byte
 	NotAfter    time.Time
+	CACert      []byte // Active CA certificate (non-empty when CA has been rotated)
 }
 
 // RenewCertificate renews a device certificate via the control server.
@@ -260,6 +261,7 @@ func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert [
 	return &RenewCertificateResult{
 		Certificate: resp.Msg.Certificate,
 		NotAfter:    resp.Msg.NotAfter.AsTime(),
+		CACert:      resp.Msg.CaCertificate,
 	}, nil
 }
 
