@@ -193,7 +193,7 @@ import {
 	type LuksKey,
 	type AvailableItem
 } from '../gen/ts/pm/v1/control_pb';
-import type { ActionType, Action, ShellParams } from '../gen/ts/pm/v1/actions_pb';
+import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
@@ -1011,14 +1011,10 @@ export class ApiClient {
 		return response.executions;
 	}
 
-	async dispatchInstantAction(deviceId: string, instantAction: ActionType, shellParams?: ShellParams) {
+	async dispatchInstantAction(deviceId: string, instantAction: ActionType) {
 		const client = this.getClient();
 		const response = await client.dispatchInstantAction(
-			create(DispatchInstantActionRequestSchema, {
-				deviceId,
-				instantAction,
-				...(shellParams && { shellParams })
-			})
+			create(DispatchInstantActionRequestSchema, { deviceId, instantAction })
 		);
 		return response.execution;
 	}
