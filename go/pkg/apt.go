@@ -110,6 +110,21 @@ func (a *Apt) Upgrade(packages ...string) (*CommandResult, error) {
 	return a.run("apt", args...)
 }
 
+// DistUpgrade runs apt dist-upgrade -y for packages with held-back dependencies.
+func (a *Apt) DistUpgrade() (*CommandResult, error) {
+	return a.run("apt", "dist-upgrade", "-y")
+}
+
+// FixBroken runs apt --fix-broken install -y to repair broken dependencies.
+func (a *Apt) FixBroken() (*CommandResult, error) {
+	return a.run("apt", "--fix-broken", "install", "-y")
+}
+
+// Autoremove runs apt autoremove -y to remove unused packages.
+func (a *Apt) Autoremove() (*CommandResult, error) {
+	return a.run("apt", "autoremove", "-y")
+}
+
 // Search searches for packages.
 func (a *Apt) Search(query string) ([]SearchResult, error) {
 	var cmd string
