@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package pm.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+
+import "pm/v1/agent.proto";
+
+// ============================================================================
+// Internal Service — Gateway → Control proxy for synchronous/credential ops
+// ============================================================================
+//
+// This service runs on the control server and is called by the gateway
+// for operations that require database access or credential handling.
+// It is NOT exposed externally — only accessible on the internal network.
+
+service InternalService {
+  // Proxy SyncActions: resolves assigned actions for a device.
+  rpc ProxySyncActions(InternalSyncActionsRequest) returns (SyncActionsResponse);
+
+  // Proxy ValidateLuksToken: validates and consumes a one-time LUKS token.
+  rpc ProxyValidateLuksToken(InternalValidateLuksTokenRequest) returns (ValidateLuksTokenResponse);
+
+  // Proxy GetLuksKey: retrieves and decrypts the current LUKS key for a device+action.
+  rpc ProxyGetLuksKey(InternalGetLuksKeyRequest) returns (GetLuksKeyResponse);
+
+  // Proxy StoreLuksKey: encrypts and stores a new LUKS key.
+  rpc ProxyStoreLuksKey(InternalStoreLuksKeyRequest) returns (StoreLuksKeyResponse);
+
+  // Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
+  rpc ProxyStoreLpsPasswords(InternalStoreLpsPasswordsRequest) returns (InternalStoreLpsPasswordsResponse);
+}
+
+// ============================================================================
+// Request/Response wrappers
+// ============================================================================
+
+// InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
+// extracted from mTLS on the gateway side.
+message InternalSyncActionsRequest {
+  string device_id = 1;
+}
+
+// InternalValidateLuksTokenRequest wraps ValidateLuksTokenRequest.
+message InternalValidateLuksTokenRequest {
+  string device_id = 1;
+  string token = 2;
+}
+
+// InternalGetLuksKeyRequest includes device_id (from mTLS) and action_id.
+message InternalGetLuksKeyRequest {
+  string device_id = 1;
+  string action_id = 2;
+}
+
+// InternalStoreLuksKeyRequest includes device_id (from mTLS) and key data.
+message InternalStoreLuksKeyRequest {
+  string device_id = 1;
+  string action_id = 2;
+  string device_path = 3;
+  string passphrase = 4;
+  string rotation_reason = 5;
+}
+
+// LpsPasswordRotation represents a single password rotation entry.
+message LpsPasswordRotation {
+  string username = 1;
+  string password = 2;
+  string rotated_at = 3;
+  string reason = 4;
+}
+
+// InternalStoreLpsPasswordsRequest sends LPS password rotations to control
+// for encryption and storage. Transmitted over internal RPC, never via Valkey.
+message InternalStoreLpsPasswordsRequest {
+  string device_id = 1;
+  string action_id = 2;
+  repeated LpsPasswordRotation rotations = 3;
+}
+
+message InternalStoreLpsPasswordsResponse {}
