@@ -1324,7 +1324,7 @@ message ListExecutionsResponse {
 }
 
 // ============================================================================
-// Instant Actions (agent-builtin, no stored action required)
+// Instant Actions (agent-builtin, no parameters)
 // ============================================================================
 
 message DispatchInstantActionRequest {
@@ -1332,8 +1332,6 @@ message DispatchInstantActionRequest {
   string device_id = 1;
   // @gotags: validate:"required,ne=0"
   ActionType instant_action = 2;
-  // Optional parameters for script actions.
-  ShellParams shell_params = 3;
 }
 
 message DispatchInstantActionResponse {
