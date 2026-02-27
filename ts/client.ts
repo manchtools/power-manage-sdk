@@ -152,6 +152,10 @@ import {
 	EnableSCIMRequestSchema,
 	DisableSCIMRequestSchema,
 	RotateSCIMTokenRequestSchema,
+	// Search
+	SearchRequestSchema,
+	RebuildSearchIndexRequestSchema,
+	type SearchResult,
 	// Compliance
 	GetDeviceComplianceRequestSchema,
 	type GetDeviceComplianceResponse,
@@ -1499,6 +1503,17 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.rotateSCIMToken(create(RotateSCIMTokenRequestSchema, { id }));
 	}
+
+	// Search
+	async search(query: string, scope: string = '', pageSize: number = 50, pageToken: string = '') {
+		const client = this.getClient();
+		return client.search(create(SearchRequestSchema, { query, scope, pageSize, pageToken }));
+	}
+
+	async rebuildSearchIndex() {
+		const client = this.getClient();
+		await client.rebuildSearchIndex(create(RebuildSearchIndexRequestSchema, {}));
+	}
 }
 
 /**
@@ -1520,5 +1535,6 @@ export type {
 	DeviceGroup, Assignment, ActionExecution, AuditEvent, InventoryTableResult,
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
 	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
-	AvailableItem, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation
+	AvailableItem, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
+	SearchResult
 };
