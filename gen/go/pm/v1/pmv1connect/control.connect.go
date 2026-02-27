@@ -465,6 +465,11 @@ const (
 	// ControlServiceListDeviceUsersProcedure is the fully-qualified name of the ControlService's
 	// ListDeviceUsers RPC.
 	ControlServiceListDeviceUsersProcedure = "/pm.v1.ControlService/ListDeviceUsers"
+	// ControlServiceSearchProcedure is the fully-qualified name of the ControlService's Search RPC.
+	ControlServiceSearchProcedure = "/pm.v1.ControlService/Search"
+	// ControlServiceRebuildSearchIndexProcedure is the fully-qualified name of the ControlService's
+	// RebuildSearchIndex RPC.
+	ControlServiceRebuildSearchIndexProcedure = "/pm.v1.ControlService/RebuildSearchIndex"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -640,6 +645,9 @@ type ControlServiceClient interface {
 	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
 	DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error)
 	ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error)
+	// Search
+	Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error)
+	RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -1529,6 +1537,18 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListDeviceUsers")),
 			connect.WithClientOptions(opts...),
 		),
+		search: connect.NewClient[v1.SearchRequest, v1.SearchResponse](
+			httpClient,
+			baseURL+ControlServiceSearchProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("Search")),
+			connect.WithClientOptions(opts...),
+		),
+		rebuildSearchIndex: connect.NewClient[v1.RebuildSearchIndexRequest, v1.RebuildSearchIndexResponse](
+			httpClient,
+			baseURL+ControlServiceRebuildSearchIndexProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RebuildSearchIndex")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1680,6 +1700,8 @@ type controlServiceClient struct {
 	getDeviceLoginURL                 *connect.Client[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse]
 	deviceLoginCallback               *connect.Client[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse]
 	listDeviceUsers                   *connect.Client[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse]
+	search                            *connect.Client[v1.SearchRequest, v1.SearchResponse]
+	rebuildSearchIndex                *connect.Client[v1.RebuildSearchIndexRequest, v1.RebuildSearchIndexResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -2412,6 +2434,16 @@ func (c *controlServiceClient) ListDeviceUsers(ctx context.Context, req *connect
 	return c.listDeviceUsers.CallUnary(ctx, req)
 }
 
+// Search calls pm.v1.ControlService.Search.
+func (c *controlServiceClient) Search(ctx context.Context, req *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error) {
+	return c.search.CallUnary(ctx, req)
+}
+
+// RebuildSearchIndex calls pm.v1.ControlService.RebuildSearchIndex.
+func (c *controlServiceClient) RebuildSearchIndex(ctx context.Context, req *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error) {
+	return c.rebuildSearchIndex.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -2585,6 +2617,9 @@ type ControlServiceHandler interface {
 	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
 	DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error)
 	ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error)
+	// Search
+	Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error)
+	RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -3470,6 +3505,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ListDeviceUsers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceSearchHandler := connect.NewUnaryHandler(
+		ControlServiceSearchProcedure,
+		svc.Search,
+		connect.WithSchema(controlServiceMethods.ByName("Search")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRebuildSearchIndexHandler := connect.NewUnaryHandler(
+		ControlServiceRebuildSearchIndexProcedure,
+		svc.RebuildSearchIndex,
+		connect.WithSchema(controlServiceMethods.ByName("RebuildSearchIndex")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -3764,6 +3811,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceDeviceLoginCallbackHandler.ServeHTTP(w, r)
 		case ControlServiceListDeviceUsersProcedure:
 			controlServiceListDeviceUsersHandler.ServeHTTP(w, r)
+		case ControlServiceSearchProcedure:
+			controlServiceSearchHandler.ServeHTTP(w, r)
+		case ControlServiceRebuildSearchIndexProcedure:
+			controlServiceRebuildSearchIndexHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -4355,4 +4406,12 @@ func (UnimplementedControlServiceHandler) DeviceLoginCallback(context.Context, *
 
 func (UnimplementedControlServiceHandler) ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceUsers is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.Search is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RebuildSearchIndex is not implemented"))
 }

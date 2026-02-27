@@ -2224,6 +2224,34 @@ message DevicePolicyRuleEvaluation {
 }
 
 // ============================================================================
+// Search
+// ============================================================================
+
+message SearchRequest {
+  string query = 1;
+  string scope = 2; // "actions", "action_sets", "definitions", or "" for all
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message SearchResult {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string scope = 4;
+  int32 member_count = 5;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RebuildSearchIndexRequest {}
+message RebuildSearchIndexResponse {}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -2423,4 +2451,8 @@ service ControlService {
   rpc GetDeviceLoginURL(GetDeviceLoginURLRequest) returns (GetDeviceLoginURLResponse);
   rpc DeviceLoginCallback(DeviceLoginCallbackRequest) returns (DeviceLoginCallbackResponse);
   rpc ListDeviceUsers(ListDeviceUsersRequest) returns (ListDeviceUsersResponse);
+
+  // Search
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc RebuildSearchIndex(RebuildSearchIndexRequest) returns (RebuildSearchIndexResponse);
 }
