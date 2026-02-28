@@ -205,6 +205,21 @@ message User {
   string preferred_username = 14;
   string picture = 15;
   string locale = 16;
+  // Linux identity
+  string linux_username = 17;
+  int32 linux_uid = 18;
+  // SSH access settings
+  repeated SshPublicKey ssh_public_keys = 19;
+  bool ssh_access_enabled = 20;
+  bool ssh_allow_pubkey = 21;
+  bool ssh_allow_password = 22;
+}
+
+message SshPublicKey {
+  string id = 1;
+  string public_key = 2;
+  string comment = 3;
+  google.protobuf.Timestamp added_at = 4;
 }
 
 message Role {
@@ -310,6 +325,43 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {}
+
+message AddUserSshKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,min=1,max=8192"
+  string public_key = 2;
+  // @gotags: validate:"omitempty,max=256"
+  string comment = 3;
+}
+
+message AddUserSshKeyResponse {
+  SshPublicKey key = 1;
+}
+
+message RemoveUserSshKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string key_id = 2;
+}
+
+message RemoveUserSshKeyResponse {}
+
+message UpdateUserSshSettingsRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  bool ssh_access_enabled = 2;
+  bool ssh_allow_pubkey = 3;
+  bool ssh_allow_password = 4;
+}
+
+message UpdateUserLinuxUsernameRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,min=1,max=32"
+  string linux_username = 2;
+}
 
 // ============================================================================
 // Devices
@@ -2302,6 +2354,10 @@ service ControlService {
   rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
   rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
   rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserResponse);
+  rpc UpdateUserLinuxUsername(UpdateUserLinuxUsernameRequest) returns (UpdateUserResponse);
+  rpc AddUserSshKey(AddUserSshKeyRequest) returns (AddUserSshKeyResponse);
+  rpc RemoveUserSshKey(RemoveUserSshKeyRequest) returns (RemoveUserSshKeyResponse);
+  rpc UpdateUserSshSettings(UpdateUserSshSettingsRequest) returns (UpdateUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 
   // Devices
