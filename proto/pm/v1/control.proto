@@ -1369,6 +1369,8 @@ message ListExecutionsRequest {
   // @gotags: validate:"omitempty,ulid"
   string device_id = 3;  // optional filter
   ExecutionStatus status_filter = 4;
+  ActionType type_filter = 5;  // optional action type filter
+  string search = 6;           // searches action name and device hostname
 }
 
 message ListExecutionsResponse {
