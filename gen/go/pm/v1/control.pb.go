@@ -10300,6 +10300,7 @@ type ActionExecution struct {
 	Changed         bool                   `protobuf:"varint,15,opt,name=changed,proto3" json:"changed,omitempty"`                                                       // Whether the execution made changes to the system (false = state was already as desired)
 	Compliant       bool                   `protobuf:"varint,16,opt,name=compliant,proto3" json:"compliant,omitempty"`                                                   // Detection script result: true if compliant
 	DetectionOutput *CommandOutput         `protobuf:"bytes,17,opt,name=detection_output,json=detectionOutput,proto3" json:"detection_output,omitempty"`                 // Detection script output
+	ActionName      string                 `protobuf:"bytes,18,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`                                // Resolved from actions_projection (empty for inline actions)
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -10451,6 +10452,13 @@ func (x *ActionExecution) GetDetectionOutput() *CommandOutput {
 		return x.DetectionOutput
 	}
 	return nil
+}
+
+func (x *ActionExecution) GetActionName() string {
+	if x != nil {
+		return x.ActionName
+	}
+	return ""
 }
 
 type DispatchActionRequest struct {
@@ -20268,7 +20276,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x19GetUserAssignmentsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"Q\n" +
 	"\x1aGetUserAssignmentsResponse\x123\n" +
-	"\vassignments\x18\x01 \x03(\v2\x11.pm.v1.AssignmentR\vassignments\"\xdb\x05\n" +
+	"\vassignments\x18\x01 \x03(\v2\x11.pm.v1.AssignmentR\vassignments\"\xfc\x05\n" +
 	"\x0fActionExecution\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1b\n" +
@@ -20291,7 +20299,9 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rdesired_state\x18\x0e \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12\x18\n" +
 	"\achanged\x18\x0f \x01(\bR\achanged\x12\x1c\n" +
 	"\tcompliant\x18\x10 \x01(\bR\tcompliant\x12?\n" +
-	"\x10detection_output\x18\x11 \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\"\x9a\x01\n" +
+	"\x10detection_output\x18\x11 \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x12\x1f\n" +
+	"\vaction_name\x18\x12 \x01(\tR\n" +
+	"actionName\"\x9a\x01\n" +
 	"\x15DispatchActionRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1d\n" +
 	"\taction_id\x18\x02 \x01(\tH\x00R\bactionId\x124\n" +
