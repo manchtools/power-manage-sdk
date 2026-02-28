@@ -1267,6 +1267,7 @@ message ActionExecution {
   bool changed = 15;  // Whether the execution made changes to the system (false = state was already as desired)
   bool compliant = 16;  // Detection script result: true if compliant
   CommandOutput detection_output = 17;  // Detection script output
+  string action_name = 18;  // Resolved from actions_projection (empty for inline actions)
 }
 
 message DispatchActionRequest {
