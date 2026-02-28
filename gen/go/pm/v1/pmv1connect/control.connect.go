@@ -128,6 +128,18 @@ const (
 	// ControlServiceUpdateUserProfileProcedure is the fully-qualified name of the ControlService's
 	// UpdateUserProfile RPC.
 	ControlServiceUpdateUserProfileProcedure = "/pm.v1.ControlService/UpdateUserProfile"
+	// ControlServiceUpdateUserLinuxUsernameProcedure is the fully-qualified name of the
+	// ControlService's UpdateUserLinuxUsername RPC.
+	ControlServiceUpdateUserLinuxUsernameProcedure = "/pm.v1.ControlService/UpdateUserLinuxUsername"
+	// ControlServiceAddUserSshKeyProcedure is the fully-qualified name of the ControlService's
+	// AddUserSshKey RPC.
+	ControlServiceAddUserSshKeyProcedure = "/pm.v1.ControlService/AddUserSshKey"
+	// ControlServiceRemoveUserSshKeyProcedure is the fully-qualified name of the ControlService's
+	// RemoveUserSshKey RPC.
+	ControlServiceRemoveUserSshKeyProcedure = "/pm.v1.ControlService/RemoveUserSshKey"
+	// ControlServiceUpdateUserSshSettingsProcedure is the fully-qualified name of the ControlService's
+	// UpdateUserSshSettings RPC.
+	ControlServiceUpdateUserSshSettingsProcedure = "/pm.v1.ControlService/UpdateUserSshSettings"
 	// ControlServiceDeleteUserProcedure is the fully-qualified name of the ControlService's DeleteUser
 	// RPC.
 	ControlServiceDeleteUserProcedure = "/pm.v1.ControlService/DeleteUser"
@@ -514,6 +526,10 @@ type ControlServiceClient interface {
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserProfile(context.Context, *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	UpdateUserLinuxUsername(context.Context, *connect.Request[v1.UpdateUserLinuxUsernameRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	AddUserSshKey(context.Context, *connect.Request[v1.AddUserSshKeyRequest]) (*connect.Response[v1.AddUserSshKeyResponse], error)
+	RemoveUserSshKey(context.Context, *connect.Request[v1.RemoveUserSshKeyRequest]) (*connect.Response[v1.RemoveUserSshKeyResponse], error)
+	UpdateUserSshSettings(context.Context, *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
 	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
@@ -857,6 +873,30 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUpdateUserProfileProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UpdateUserProfile")),
+			connect.WithClientOptions(opts...),
+		),
+		updateUserLinuxUsername: connect.NewClient[v1.UpdateUserLinuxUsernameRequest, v1.UpdateUserResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateUserLinuxUsernameProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateUserLinuxUsername")),
+			connect.WithClientOptions(opts...),
+		),
+		addUserSshKey: connect.NewClient[v1.AddUserSshKeyRequest, v1.AddUserSshKeyResponse](
+			httpClient,
+			baseURL+ControlServiceAddUserSshKeyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("AddUserSshKey")),
+			connect.WithClientOptions(opts...),
+		),
+		removeUserSshKey: connect.NewClient[v1.RemoveUserSshKeyRequest, v1.RemoveUserSshKeyResponse](
+			httpClient,
+			baseURL+ControlServiceRemoveUserSshKeyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RemoveUserSshKey")),
+			connect.WithClientOptions(opts...),
+		),
+		updateUserSshSettings: connect.NewClient[v1.UpdateUserSshSettingsRequest, v1.UpdateUserResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateUserSshSettingsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateUserSshSettings")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteUser: connect.NewClient[v1.DeleteUserRequest, v1.DeleteUserResponse](
@@ -1587,6 +1627,10 @@ type controlServiceClient struct {
 	updateUserPassword                *connect.Client[v1.UpdateUserPasswordRequest, v1.UpdateUserResponse]
 	setUserDisabled                   *connect.Client[v1.SetUserDisabledRequest, v1.UpdateUserResponse]
 	updateUserProfile                 *connect.Client[v1.UpdateUserProfileRequest, v1.UpdateUserResponse]
+	updateUserLinuxUsername           *connect.Client[v1.UpdateUserLinuxUsernameRequest, v1.UpdateUserResponse]
+	addUserSshKey                     *connect.Client[v1.AddUserSshKeyRequest, v1.AddUserSshKeyResponse]
+	removeUserSshKey                  *connect.Client[v1.RemoveUserSshKeyRequest, v1.RemoveUserSshKeyResponse]
+	updateUserSshSettings             *connect.Client[v1.UpdateUserSshSettingsRequest, v1.UpdateUserResponse]
 	deleteUser                        *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 	listDevices                       *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
 	getDevice                         *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
@@ -1867,6 +1911,26 @@ func (c *controlServiceClient) SetUserDisabled(ctx context.Context, req *connect
 // UpdateUserProfile calls pm.v1.ControlService.UpdateUserProfile.
 func (c *controlServiceClient) UpdateUserProfile(ctx context.Context, req *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return c.updateUserProfile.CallUnary(ctx, req)
+}
+
+// UpdateUserLinuxUsername calls pm.v1.ControlService.UpdateUserLinuxUsername.
+func (c *controlServiceClient) UpdateUserLinuxUsername(ctx context.Context, req *connect.Request[v1.UpdateUserLinuxUsernameRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return c.updateUserLinuxUsername.CallUnary(ctx, req)
+}
+
+// AddUserSshKey calls pm.v1.ControlService.AddUserSshKey.
+func (c *controlServiceClient) AddUserSshKey(ctx context.Context, req *connect.Request[v1.AddUserSshKeyRequest]) (*connect.Response[v1.AddUserSshKeyResponse], error) {
+	return c.addUserSshKey.CallUnary(ctx, req)
+}
+
+// RemoveUserSshKey calls pm.v1.ControlService.RemoveUserSshKey.
+func (c *controlServiceClient) RemoveUserSshKey(ctx context.Context, req *connect.Request[v1.RemoveUserSshKeyRequest]) (*connect.Response[v1.RemoveUserSshKeyResponse], error) {
+	return c.removeUserSshKey.CallUnary(ctx, req)
+}
+
+// UpdateUserSshSettings calls pm.v1.ControlService.UpdateUserSshSettings.
+func (c *controlServiceClient) UpdateUserSshSettings(ctx context.Context, req *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return c.updateUserSshSettings.CallUnary(ctx, req)
 }
 
 // DeleteUser calls pm.v1.ControlService.DeleteUser.
@@ -2486,6 +2550,10 @@ type ControlServiceHandler interface {
 	UpdateUserPassword(context.Context, *connect.Request[v1.UpdateUserPasswordRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	SetUserDisabled(context.Context, *connect.Request[v1.SetUserDisabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	UpdateUserProfile(context.Context, *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	UpdateUserLinuxUsername(context.Context, *connect.Request[v1.UpdateUserLinuxUsernameRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	AddUserSshKey(context.Context, *connect.Request[v1.AddUserSshKeyRequest]) (*connect.Response[v1.AddUserSshKeyResponse], error)
+	RemoveUserSshKey(context.Context, *connect.Request[v1.RemoveUserSshKeyRequest]) (*connect.Response[v1.RemoveUserSshKeyResponse], error)
+	UpdateUserSshSettings(context.Context, *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
 	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
@@ -2825,6 +2893,30 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUpdateUserProfileProcedure,
 		svc.UpdateUserProfile,
 		connect.WithSchema(controlServiceMethods.ByName("UpdateUserProfile")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateUserLinuxUsernameHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateUserLinuxUsernameProcedure,
+		svc.UpdateUserLinuxUsername,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateUserLinuxUsername")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceAddUserSshKeyHandler := connect.NewUnaryHandler(
+		ControlServiceAddUserSshKeyProcedure,
+		svc.AddUserSshKey,
+		connect.WithSchema(controlServiceMethods.ByName("AddUserSshKey")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRemoveUserSshKeyHandler := connect.NewUnaryHandler(
+		ControlServiceRemoveUserSshKeyProcedure,
+		svc.RemoveUserSshKey,
+		connect.WithSchema(controlServiceMethods.ByName("RemoveUserSshKey")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateUserSshSettingsHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateUserSshSettingsProcedure,
+		svc.UpdateUserSshSettings,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateUserSshSettings")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceDeleteUserHandler := connect.NewUnaryHandler(
@@ -3585,6 +3677,14 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceSetUserDisabledHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateUserProfileProcedure:
 			controlServiceUpdateUserProfileHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateUserLinuxUsernameProcedure:
+			controlServiceUpdateUserLinuxUsernameHandler.ServeHTTP(w, r)
+		case ControlServiceAddUserSshKeyProcedure:
+			controlServiceAddUserSshKeyHandler.ServeHTTP(w, r)
+		case ControlServiceRemoveUserSshKeyProcedure:
+			controlServiceRemoveUserSshKeyHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateUserSshSettingsProcedure:
+			controlServiceUpdateUserSshSettingsHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteUserProcedure:
 			controlServiceDeleteUserHandler.ServeHTTP(w, r)
 		case ControlServiceListDevicesProcedure:
@@ -3954,6 +4054,22 @@ func (UnimplementedControlServiceHandler) SetUserDisabled(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) UpdateUserProfile(context.Context, *connect.Request[v1.UpdateUserProfileRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserProfile is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateUserLinuxUsername(context.Context, *connect.Request[v1.UpdateUserLinuxUsernameRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserLinuxUsername is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) AddUserSshKey(context.Context, *connect.Request[v1.AddUserSshKeyRequest]) (*connect.Response[v1.AddUserSshKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AddUserSshKey is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RemoveUserSshKey(context.Context, *connect.Request[v1.RemoveUserSshKeyRequest]) (*connect.Response[v1.RemoveUserSshKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RemoveUserSshKey is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateUserSshSettings(context.Context, *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateUserSshSettings is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {

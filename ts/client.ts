@@ -20,6 +20,11 @@ import {
 	SetUserDisabledRequestSchema,
 	UpdateUserProfileRequestSchema,
 	DeleteUserRequestSchema,
+	UpdateUserLinuxUsernameRequestSchema,
+	AddUserSshKeyRequestSchema,
+	RemoveUserSshKeyRequestSchema,
+	UpdateUserSshSettingsRequestSchema,
+	type SshPublicKey,
 	ListDevicesRequestSchema,
 	GetDeviceRequestSchema,
 	SetDeviceLabelRequestSchema,
@@ -455,6 +460,41 @@ export class ApiClient {
 	async deleteUser(id: string) {
 		const client = this.getClient();
 		await client.deleteUser(create(DeleteUserRequestSchema, { id }));
+	}
+
+	async updateUserLinuxUsername(userId: string, linuxUsername: string) {
+		const client = this.getClient();
+		const response = await client.updateUserLinuxUsername(
+			create(UpdateUserLinuxUsernameRequestSchema, { userId, linuxUsername })
+		);
+		return response.user;
+	}
+
+	async addUserSshKey(userId: string, publicKey: string, comment: string = '') {
+		const client = this.getClient();
+		const response = await client.addUserSshKey(
+			create(AddUserSshKeyRequestSchema, { userId, publicKey, comment })
+		);
+		return response.key;
+	}
+
+	async removeUserSshKey(userId: string, keyId: string) {
+		const client = this.getClient();
+		await client.removeUserSshKey(
+			create(RemoveUserSshKeyRequestSchema, { userId, keyId })
+		);
+	}
+
+	async updateUserSshSettings(userId: string, settings: {
+		sshAccessEnabled: boolean;
+		sshAllowPubkey: boolean;
+		sshAllowPassword: boolean;
+	}) {
+		const client = this.getClient();
+		const response = await client.updateUserSshSettings(
+			create(UpdateUserSshSettingsRequestSchema, { userId, ...settings })
+		);
+		return response.user;
 	}
 
 	// ============================================================================
@@ -1536,5 +1576,5 @@ export type {
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
 	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
 	AvailableItem, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
-	SearchResult
+	SearchResult, SshPublicKey
 };
