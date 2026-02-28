@@ -160,6 +160,11 @@ import {
 	// Search
 	SearchRequestSchema,
 	RebuildSearchIndexRequestSchema,
+	// Server Settings
+	GetServerSettingsRequestSchema,
+	UpdateServerSettingsRequestSchema,
+	// User Provisioning
+	SetUserProvisioningEnabledRequestSchema,
 	type SearchResult,
 	// Compliance
 	GetDeviceComplianceRequestSchema,
@@ -1553,6 +1558,29 @@ export class ApiClient {
 	async rebuildSearchIndex() {
 		const client = this.getClient();
 		await client.rebuildSearchIndex(create(RebuildSearchIndexRequestSchema, {}));
+	}
+
+	// Server Settings
+	async getServerSettings() {
+		const client = this.getClient();
+		return client.getServerSettings(create(GetServerSettingsRequestSchema, {}));
+	}
+
+	async updateServerSettings(userProvisioningEnabled: boolean, sshAccessForAll: boolean) {
+		const client = this.getClient();
+		return client.updateServerSettings(create(UpdateServerSettingsRequestSchema, {
+			userProvisioningEnabled,
+			sshAccessForAll,
+		}));
+	}
+
+	// User Provisioning Per-User
+	async setUserProvisioningEnabled(userId: string, enabled: boolean) {
+		const client = this.getClient();
+		return client.setUserProvisioningEnabled(create(SetUserProvisioningEnabledRequestSchema, {
+			userId,
+			enabled,
+		}));
 	}
 }
 

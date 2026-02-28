@@ -213,6 +213,7 @@ message User {
   bool ssh_access_enabled = 20;
   bool ssh_allow_pubkey = 21;
   bool ssh_allow_password = 22;
+  bool user_provisioning_enabled = 23;
 }
 
 message SshPublicKey {
@@ -2304,6 +2305,38 @@ message RebuildSearchIndexRequest {}
 message RebuildSearchIndexResponse {}
 
 // ============================================================================
+// Server Settings
+// ============================================================================
+
+message ServerSettings {
+  bool user_provisioning_enabled = 1;
+  bool ssh_access_for_all = 2;
+}
+
+message GetServerSettingsRequest {}
+message GetServerSettingsResponse {
+  ServerSettings settings = 1;
+}
+
+message UpdateServerSettingsRequest {
+  bool user_provisioning_enabled = 1;
+  bool ssh_access_for_all = 2;
+}
+message UpdateServerSettingsResponse {
+  ServerSettings settings = 1;
+}
+
+// ============================================================================
+// User Provisioning Per-User
+// ============================================================================
+
+message SetUserProvisioningEnabledRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  bool enabled = 2;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
@@ -2511,4 +2544,11 @@ service ControlService {
   // Search
   rpc Search(SearchRequest) returns (SearchResponse);
   rpc RebuildSearchIndex(RebuildSearchIndexRequest) returns (RebuildSearchIndexResponse);
+
+  // Server Settings
+  rpc GetServerSettings(GetServerSettingsRequest) returns (GetServerSettingsResponse);
+  rpc UpdateServerSettings(UpdateServerSettingsRequest) returns (UpdateServerSettingsResponse);
+
+  // User Provisioning Per-User
+  rpc SetUserProvisioningEnabled(SetUserProvisioningEnabledRequest) returns (UpdateUserResponse);
 }

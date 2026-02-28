@@ -482,6 +482,15 @@ const (
 	// ControlServiceRebuildSearchIndexProcedure is the fully-qualified name of the ControlService's
 	// RebuildSearchIndex RPC.
 	ControlServiceRebuildSearchIndexProcedure = "/pm.v1.ControlService/RebuildSearchIndex"
+	// ControlServiceGetServerSettingsProcedure is the fully-qualified name of the ControlService's
+	// GetServerSettings RPC.
+	ControlServiceGetServerSettingsProcedure = "/pm.v1.ControlService/GetServerSettings"
+	// ControlServiceUpdateServerSettingsProcedure is the fully-qualified name of the ControlService's
+	// UpdateServerSettings RPC.
+	ControlServiceUpdateServerSettingsProcedure = "/pm.v1.ControlService/UpdateServerSettings"
+	// ControlServiceSetUserProvisioningEnabledProcedure is the fully-qualified name of the
+	// ControlService's SetUserProvisioningEnabled RPC.
+	ControlServiceSetUserProvisioningEnabledProcedure = "/pm.v1.ControlService/SetUserProvisioningEnabled"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -664,6 +673,11 @@ type ControlServiceClient interface {
 	// Search
 	Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error)
 	RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error)
+	// Server Settings
+	GetServerSettings(context.Context, *connect.Request[v1.GetServerSettingsRequest]) (*connect.Response[v1.GetServerSettingsResponse], error)
+	UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error)
+	// User Provisioning Per-User
+	SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -1589,6 +1603,24 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("RebuildSearchIndex")),
 			connect.WithClientOptions(opts...),
 		),
+		getServerSettings: connect.NewClient[v1.GetServerSettingsRequest, v1.GetServerSettingsResponse](
+			httpClient,
+			baseURL+ControlServiceGetServerSettingsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetServerSettings")),
+			connect.WithClientOptions(opts...),
+		),
+		updateServerSettings: connect.NewClient[v1.UpdateServerSettingsRequest, v1.UpdateServerSettingsResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateServerSettingsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateServerSettings")),
+			connect.WithClientOptions(opts...),
+		),
+		setUserProvisioningEnabled: connect.NewClient[v1.SetUserProvisioningEnabledRequest, v1.UpdateUserResponse](
+			httpClient,
+			baseURL+ControlServiceSetUserProvisioningEnabledProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetUserProvisioningEnabled")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1746,6 +1778,9 @@ type controlServiceClient struct {
 	listDeviceUsers                   *connect.Client[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse]
 	search                            *connect.Client[v1.SearchRequest, v1.SearchResponse]
 	rebuildSearchIndex                *connect.Client[v1.RebuildSearchIndexRequest, v1.RebuildSearchIndexResponse]
+	getServerSettings                 *connect.Client[v1.GetServerSettingsRequest, v1.GetServerSettingsResponse]
+	updateServerSettings              *connect.Client[v1.UpdateServerSettingsRequest, v1.UpdateServerSettingsResponse]
+	setUserProvisioningEnabled        *connect.Client[v1.SetUserProvisioningEnabledRequest, v1.UpdateUserResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -2508,6 +2543,21 @@ func (c *controlServiceClient) RebuildSearchIndex(ctx context.Context, req *conn
 	return c.rebuildSearchIndex.CallUnary(ctx, req)
 }
 
+// GetServerSettings calls pm.v1.ControlService.GetServerSettings.
+func (c *controlServiceClient) GetServerSettings(ctx context.Context, req *connect.Request[v1.GetServerSettingsRequest]) (*connect.Response[v1.GetServerSettingsResponse], error) {
+	return c.getServerSettings.CallUnary(ctx, req)
+}
+
+// UpdateServerSettings calls pm.v1.ControlService.UpdateServerSettings.
+func (c *controlServiceClient) UpdateServerSettings(ctx context.Context, req *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error) {
+	return c.updateServerSettings.CallUnary(ctx, req)
+}
+
+// SetUserProvisioningEnabled calls pm.v1.ControlService.SetUserProvisioningEnabled.
+func (c *controlServiceClient) SetUserProvisioningEnabled(ctx context.Context, req *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return c.setUserProvisioningEnabled.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -2688,6 +2738,11 @@ type ControlServiceHandler interface {
 	// Search
 	Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error)
 	RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error)
+	// Server Settings
+	GetServerSettings(context.Context, *connect.Request[v1.GetServerSettingsRequest]) (*connect.Response[v1.GetServerSettingsResponse], error)
+	UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error)
+	// User Provisioning Per-User
+	SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -3609,6 +3664,24 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("RebuildSearchIndex")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceGetServerSettingsHandler := connect.NewUnaryHandler(
+		ControlServiceGetServerSettingsProcedure,
+		svc.GetServerSettings,
+		connect.WithSchema(controlServiceMethods.ByName("GetServerSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateServerSettingsHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateServerSettingsProcedure,
+		svc.UpdateServerSettings,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateServerSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSetUserProvisioningEnabledHandler := connect.NewUnaryHandler(
+		ControlServiceSetUserProvisioningEnabledProcedure,
+		svc.SetUserProvisioningEnabled,
+		connect.WithSchema(controlServiceMethods.ByName("SetUserProvisioningEnabled")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -3915,6 +3988,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceSearchHandler.ServeHTTP(w, r)
 		case ControlServiceRebuildSearchIndexProcedure:
 			controlServiceRebuildSearchIndexHandler.ServeHTTP(w, r)
+		case ControlServiceGetServerSettingsProcedure:
+			controlServiceGetServerSettingsHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateServerSettingsProcedure:
+			controlServiceUpdateServerSettingsHandler.ServeHTTP(w, r)
+		case ControlServiceSetUserProvisioningEnabledProcedure:
+			controlServiceSetUserProvisioningEnabledHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -4530,4 +4609,16 @@ func (UnimplementedControlServiceHandler) Search(context.Context, *connect.Reque
 
 func (UnimplementedControlServiceHandler) RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RebuildSearchIndex is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetServerSettings(context.Context, *connect.Request[v1.GetServerSettingsRequest]) (*connect.Response[v1.GetServerSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetServerSettings is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateServerSettings is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserProvisioningEnabled is not implemented"))
 }
