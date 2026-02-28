@@ -1078,12 +1078,17 @@ export class ApiClient {
 		pageSize: number = 50,
 		pageToken: string = '',
 		deviceId: string = '',
-		statusFilter?: ExecutionStatus
+		statusFilter?: ExecutionStatus,
+		typeFilter?: ActionType,
+		search: string = ''
 	) {
 		const client = this.getClient();
 		return client.listExecutions(
 			create(ListExecutionsRequestSchema, {
-				pageSize, pageToken, deviceId, statusFilter: statusFilter ?? 0
+				pageSize, pageToken, deviceId,
+				statusFilter: statusFilter ?? 0,
+				typeFilter: typeFilter ?? 0,
+				search,
 			})
 		);
 	}
