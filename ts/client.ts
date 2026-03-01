@@ -159,6 +159,7 @@ import {
 	RotateSCIMTokenRequestSchema,
 	// Search
 	SearchRequestSchema,
+	SearchDateFilterSchema,
 	RebuildSearchIndexRequestSchema,
 	// Server Settings
 	GetServerSettingsRequestSchema,
@@ -1555,9 +1556,25 @@ export class ApiClient {
 	}
 
 	// Search
-	async search(query: string, scope: string = '', pageSize: number = 50, pageToken: string = '') {
+	async search(
+		query: string,
+		scope: string = '',
+		pageSize: number = 50,
+		pageToken: string = '',
+		dateFilters?: Array<{ field: string; start: bigint; end: bigint }>,
+		tagFilters?: Record<string, string>
+	) {
 		const client = this.getClient();
-		return client.search(create(SearchRequestSchema, { query, scope, pageSize, pageToken }));
+		const req: Record<string, unknown> = { query, scope, pageSize, pageToken };
+		if (dateFilters && dateFilters.length > 0) {
+			req.dateFilters = dateFilters.map((df) =>
+				create(SearchDateFilterSchema, { field: df.field, start: df.start, end: df.end })
+			);
+		}
+		if (tagFilters) {
+			req.tagFilters = tagFilters;
+		}
+		return client.search(create(SearchRequestSchema, req));
 	}
 
 	async rebuildSearchIndex() {
