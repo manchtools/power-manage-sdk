@@ -3002,6 +3002,7 @@ type ListDevicesRequest struct {
 	// @gotags: validate:"omitempty,oneof=online offline"
 	StatusFilter  string            `protobuf:"bytes,3,opt,name=status_filter,json=statusFilter,proto3" json:"status_filter,omitempty" validate:"omitempty,oneof=online offline"` // optional: "online", "offline"
 	LabelFilter   map[string]string `protobuf:"bytes,4,rep,name=label_filter,json=labelFilter,proto3" json:"label_filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	MyDevicesOnly bool              `protobuf:"varint,5,opt,name=my_devices_only,json=myDevicesOnly,proto3" json:"my_devices_only,omitempty"` // when true, only return devices assigned to the authenticated user
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3062,6 +3063,13 @@ func (x *ListDevicesRequest) GetLabelFilter() map[string]string {
 		return x.LabelFilter
 	}
 	return nil
+}
+
+func (x *ListDevicesRequest) GetMyDevicesOnly() bool {
+	if x != nil {
+		return x.MyDevicesOnly
+	}
+	return false
 }
 
 type ListDevicesResponse struct {
@@ -19895,13 +19903,14 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x12compliance_passing\x18\x0e \x01(\x05R\x11compliancePassing\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xac\x02\n" +
 	"\x12ListDevicesRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12#\n" +
 	"\rstatus_filter\x18\x03 \x01(\tR\fstatusFilter\x12M\n" +
-	"\flabel_filter\x18\x04 \x03(\v2*.pm.v1.ListDevicesRequest.LabelFilterEntryR\vlabelFilter\x1a>\n" +
+	"\flabel_filter\x18\x04 \x03(\v2*.pm.v1.ListDevicesRequest.LabelFilterEntryR\vlabelFilter\x12&\n" +
+	"\x0fmy_devices_only\x18\x05 \x01(\bR\rmyDevicesOnly\x1a>\n" +
 	"\x10LabelFilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x87\x01\n" +
