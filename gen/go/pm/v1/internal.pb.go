@@ -417,6 +417,89 @@ func (*InternalStoreLpsPasswordsResponse) Descriptor() ([]byte, []int) {
 	return file_pm_v1_internal_proto_rawDescGZIP(), []int{6}
 }
 
+// VerifyDeviceRequest is sent by the gateway to verify a device before
+// allowing it to connect. Contains the device_id from the mTLS certificate.
+type VerifyDeviceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyDeviceRequest) Reset() {
+	*x = VerifyDeviceRequest{}
+	mi := &file_pm_v1_internal_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyDeviceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyDeviceRequest) ProtoMessage() {}
+
+func (x *VerifyDeviceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_internal_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyDeviceRequest.ProtoReflect.Descriptor instead.
+func (*VerifyDeviceRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *VerifyDeviceRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+// VerifyDeviceResponse indicates whether the device is valid for connection.
+type VerifyDeviceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyDeviceResponse) Reset() {
+	*x = VerifyDeviceResponse{}
+	mi := &file_pm_v1_internal_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyDeviceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyDeviceResponse) ProtoMessage() {}
+
+func (x *VerifyDeviceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_internal_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyDeviceResponse.ProtoReflect.Descriptor instead.
+func (*VerifyDeviceResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{8}
+}
+
 var File_pm_v1_internal_proto protoreflect.FileDescriptor
 
 const file_pm_v1_internal_proto_rawDesc = "" +
@@ -449,8 +532,12 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x128\n" +
 	"\trotations\x18\x03 \x03(\v2\x1a.pm.v1.LpsPasswordRotationR\trotations\"#\n" +
-	"!InternalStoreLpsPasswordsResponse2\xdc\x03\n" +
-	"\x0fInternalService\x12Q\n" +
+	"!InternalStoreLpsPasswordsResponse\"2\n" +
+	"\x13VerifyDeviceRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
+	"\x14VerifyDeviceResponse2\xa5\x04\n" +
+	"\x0fInternalService\x12G\n" +
+	"\fVerifyDevice\x12\x1a.pm.v1.VerifyDeviceRequest\x1a\x1b.pm.v1.VerifyDeviceResponse\x12Q\n" +
 	"\x10ProxySyncActions\x12!.pm.v1.InternalSyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12c\n" +
 	"\x16ProxyValidateLuksToken\x12'.pm.v1.InternalValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponse\x12N\n" +
 	"\x0fProxyGetLuksKey\x12 .pm.v1.InternalGetLuksKeyRequest\x1a\x19.pm.v1.GetLuksKeyResponse\x12T\n" +
@@ -469,7 +556,7 @@ func file_pm_v1_internal_proto_rawDescGZIP() []byte {
 	return file_pm_v1_internal_proto_rawDescData
 }
 
-var file_pm_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_pm_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_pm_v1_internal_proto_goTypes = []any{
 	(*InternalSyncActionsRequest)(nil),        // 0: pm.v1.InternalSyncActionsRequest
 	(*InternalValidateLuksTokenRequest)(nil),  // 1: pm.v1.InternalValidateLuksTokenRequest
@@ -478,25 +565,29 @@ var file_pm_v1_internal_proto_goTypes = []any{
 	(*LpsPasswordRotation)(nil),               // 4: pm.v1.LpsPasswordRotation
 	(*InternalStoreLpsPasswordsRequest)(nil),  // 5: pm.v1.InternalStoreLpsPasswordsRequest
 	(*InternalStoreLpsPasswordsResponse)(nil), // 6: pm.v1.InternalStoreLpsPasswordsResponse
-	(*SyncActionsResponse)(nil),               // 7: pm.v1.SyncActionsResponse
-	(*ValidateLuksTokenResponse)(nil),         // 8: pm.v1.ValidateLuksTokenResponse
-	(*GetLuksKeyResponse)(nil),                // 9: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyResponse)(nil),              // 10: pm.v1.StoreLuksKeyResponse
+	(*VerifyDeviceRequest)(nil),               // 7: pm.v1.VerifyDeviceRequest
+	(*VerifyDeviceResponse)(nil),              // 8: pm.v1.VerifyDeviceResponse
+	(*SyncActionsResponse)(nil),               // 9: pm.v1.SyncActionsResponse
+	(*ValidateLuksTokenResponse)(nil),         // 10: pm.v1.ValidateLuksTokenResponse
+	(*GetLuksKeyResponse)(nil),                // 11: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyResponse)(nil),              // 12: pm.v1.StoreLuksKeyResponse
 }
 var file_pm_v1_internal_proto_depIdxs = []int32{
 	4,  // 0: pm.v1.InternalStoreLpsPasswordsRequest.rotations:type_name -> pm.v1.LpsPasswordRotation
-	0,  // 1: pm.v1.InternalService.ProxySyncActions:input_type -> pm.v1.InternalSyncActionsRequest
-	1,  // 2: pm.v1.InternalService.ProxyValidateLuksToken:input_type -> pm.v1.InternalValidateLuksTokenRequest
-	2,  // 3: pm.v1.InternalService.ProxyGetLuksKey:input_type -> pm.v1.InternalGetLuksKeyRequest
-	3,  // 4: pm.v1.InternalService.ProxyStoreLuksKey:input_type -> pm.v1.InternalStoreLuksKeyRequest
-	5,  // 5: pm.v1.InternalService.ProxyStoreLpsPasswords:input_type -> pm.v1.InternalStoreLpsPasswordsRequest
-	7,  // 6: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
-	8,  // 7: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	9,  // 8: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
-	10, // 9: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
-	6,  // 10: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
-	6,  // [6:11] is the sub-list for method output_type
-	1,  // [1:6] is the sub-list for method input_type
+	7,  // 1: pm.v1.InternalService.VerifyDevice:input_type -> pm.v1.VerifyDeviceRequest
+	0,  // 2: pm.v1.InternalService.ProxySyncActions:input_type -> pm.v1.InternalSyncActionsRequest
+	1,  // 3: pm.v1.InternalService.ProxyValidateLuksToken:input_type -> pm.v1.InternalValidateLuksTokenRequest
+	2,  // 4: pm.v1.InternalService.ProxyGetLuksKey:input_type -> pm.v1.InternalGetLuksKeyRequest
+	3,  // 5: pm.v1.InternalService.ProxyStoreLuksKey:input_type -> pm.v1.InternalStoreLuksKeyRequest
+	5,  // 6: pm.v1.InternalService.ProxyStoreLpsPasswords:input_type -> pm.v1.InternalStoreLpsPasswordsRequest
+	8,  // 7: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
+	9,  // 8: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
+	10, // 9: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	11, // 10: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
+	12, // 11: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
+	6,  // 12: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
+	7,  // [7:13] is the sub-list for method output_type
+	1,  // [1:7] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -514,7 +605,7 @@ func file_pm_v1_internal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_internal_proto_rawDesc), len(file_pm_v1_internal_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

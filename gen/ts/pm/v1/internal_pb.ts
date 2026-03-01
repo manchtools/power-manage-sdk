@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/internal.proto.
  */
 export const file_pm_v1_internal: GenFile = /*@__PURE__*/
-  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZTLcAwoPSW50ZXJuYWxTZXJ2aWNlElEKEFByb3h5U3luY0FjdGlvbnMSIS5wbS52MS5JbnRlcm5hbFN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USYwoWUHJveHlWYWxpZGF0ZUx1a3NUb2tlbhInLnBtLnYxLkludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZRJOCg9Qcm94eUdldEx1a3NLZXkSIC5wbS52MS5JbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0GhkucG0udjEuR2V0THVrc0tleVJlc3BvbnNlElQKEVByb3h5U3RvcmVMdWtzS2V5EiIucG0udjEuSW50ZXJuYWxTdG9yZUx1a3NLZXlSZXF1ZXN0GhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2USawoWUHJveHlTdG9yZUxwc1Bhc3N3b3JkcxInLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0GigucG0udjEuSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_pm_v1_agent]);
+  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZTKlBAoPSW50ZXJuYWxTZXJ2aWNlEkcKDFZlcmlmeURldmljZRIaLnBtLnYxLlZlcmlmeURldmljZVJlcXVlc3QaGy5wbS52MS5WZXJpZnlEZXZpY2VSZXNwb25zZRJRChBQcm94eVN5bmNBY3Rpb25zEiEucG0udjEuSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlEmMKFlByb3h5VmFsaWRhdGVMdWtzVG9rZW4SJy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlTHVrc1Rva2VuUmVxdWVzdBogLnBtLnYxLlZhbGlkYXRlTHVrc1Rva2VuUmVzcG9uc2USTgoPUHJveHlHZXRMdWtzS2V5EiAucG0udjEuSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBoZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZRJUChFQcm94eVN0b3JlTHVrc0tleRIiLnBtLnYxLkludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBobLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlEmsKFlByb3h5U3RvcmVMcHNQYXNzd29yZHMSJy5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBooLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_pm_v1_agent]);
 
 /**
  * InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
@@ -199,9 +199,55 @@ export const InternalStoreLpsPasswordsResponseSchema: GenMessage<InternalStoreLp
   messageDesc(file_pm_v1_internal, 6);
 
 /**
+ * VerifyDeviceRequest is sent by the gateway to verify a device before
+ * allowing it to connect. Contains the device_id from the mTLS certificate.
+ *
+ * @generated from message pm.v1.VerifyDeviceRequest
+ */
+export type VerifyDeviceRequest = Message<"pm.v1.VerifyDeviceRequest"> & {
+  /**
+   * @generated from field: string device_id = 1;
+   */
+  deviceId: string;
+};
+
+/**
+ * Describes the message pm.v1.VerifyDeviceRequest.
+ * Use `create(VerifyDeviceRequestSchema)` to create a new message.
+ */
+export const VerifyDeviceRequestSchema: GenMessage<VerifyDeviceRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 7);
+
+/**
+ * VerifyDeviceResponse indicates whether the device is valid for connection.
+ *
+ * @generated from message pm.v1.VerifyDeviceResponse
+ */
+export type VerifyDeviceResponse = Message<"pm.v1.VerifyDeviceResponse"> & {
+};
+
+/**
+ * Describes the message pm.v1.VerifyDeviceResponse.
+ * Use `create(VerifyDeviceResponseSchema)` to create a new message.
+ */
+export const VerifyDeviceResponseSchema: GenMessage<VerifyDeviceResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 8);
+
+/**
  * @generated from service pm.v1.InternalService
  */
 export const InternalService: GenService<{
+  /**
+   * VerifyDevice checks that a device exists and is not deleted.
+   * Called by the gateway before registering an agent connection.
+   *
+   * @generated from rpc pm.v1.InternalService.VerifyDevice
+   */
+  verifyDevice: {
+    methodKind: "unary";
+    input: typeof VerifyDeviceRequestSchema;
+    output: typeof VerifyDeviceResponseSchema;
+  },
   /**
    * Proxy SyncActions: resolves assigned actions for a device.
    *
