@@ -8993,8 +8993,8 @@ func (x *UpdateDeviceGroupQueryResponse) GetGroup() *DeviceGroup {
 // Validate a dynamic query without creating a group
 type ValidateDynamicQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,max=4096"
-	Query         string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"required,max=4096"`
+	// @gotags: validate:"max=4096"
+	Query         string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"max=4096"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14907,8 +14907,8 @@ func (x *UpdateUserGroupQueryResponse) GetGroup() *UserGroup {
 
 type ValidateUserGroupQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,max=4096"
-	Query         string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"required,max=4096"`
+	// @gotags: validate:"max=4096"
+	Query         string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"max=4096"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
