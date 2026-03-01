@@ -2286,11 +2286,19 @@ message DevicePolicyRuleEvaluation {
 // Search
 // ============================================================================
 
+message SearchDateFilter {
+  string field = 1;   // index field name: "created_at", "updated_at", "occurred_at"
+  int64 start = 2;    // unix epoch seconds, 0 = no lower bound
+  int64 end = 3;      // unix epoch seconds, 0 = no upper bound
+}
+
 message SearchRequest {
   string query = 1;
-  string scope = 2; // "actions", "action_sets", "definitions", or "" for all
+  string scope = 2; // "actions", "action_sets", "definitions", "executions", "audit_events", or "" for all
   int32 page_size = 3;
   string page_token = 4;
+  repeated SearchDateFilter date_filters = 5;
+  map<string, string> tag_filters = 6; // field → value(s), pipe-separated for OR (e.g. "completed|failed")
 }
 
 message SearchResult {
@@ -2299,6 +2307,7 @@ message SearchResult {
   string description = 3;
   string scope = 4;
   int32 member_count = 5;
+  map<string, string> fields = 6; // all hash fields from the search index
 }
 
 message SearchResponse {
