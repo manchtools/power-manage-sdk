@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// InternalServiceVerifyDeviceProcedure is the fully-qualified name of the InternalService's
+	// VerifyDevice RPC.
+	InternalServiceVerifyDeviceProcedure = "/pm.v1.InternalService/VerifyDevice"
 	// InternalServiceProxySyncActionsProcedure is the fully-qualified name of the InternalService's
 	// ProxySyncActions RPC.
 	InternalServiceProxySyncActionsProcedure = "/pm.v1.InternalService/ProxySyncActions"
@@ -52,6 +55,9 @@ const (
 
 // InternalServiceClient is a client for the pm.v1.InternalService service.
 type InternalServiceClient interface {
+	// VerifyDevice checks that a device exists and is not deleted.
+	// Called by the gateway before registering an agent connection.
+	VerifyDevice(context.Context, *connect.Request[v1.VerifyDeviceRequest]) (*connect.Response[v1.VerifyDeviceResponse], error)
 	// Proxy SyncActions: resolves assigned actions for a device.
 	ProxySyncActions(context.Context, *connect.Request[v1.InternalSyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
 	// Proxy ValidateLuksToken: validates and consumes a one-time LUKS token.
@@ -75,6 +81,12 @@ func NewInternalServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 	baseURL = strings.TrimRight(baseURL, "/")
 	internalServiceMethods := v1.File_pm_v1_internal_proto.Services().ByName("InternalService").Methods()
 	return &internalServiceClient{
+		verifyDevice: connect.NewClient[v1.VerifyDeviceRequest, v1.VerifyDeviceResponse](
+			httpClient,
+			baseURL+InternalServiceVerifyDeviceProcedure,
+			connect.WithSchema(internalServiceMethods.ByName("VerifyDevice")),
+			connect.WithClientOptions(opts...),
+		),
 		proxySyncActions: connect.NewClient[v1.InternalSyncActionsRequest, v1.SyncActionsResponse](
 			httpClient,
 			baseURL+InternalServiceProxySyncActionsProcedure,
@@ -110,11 +122,17 @@ func NewInternalServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // internalServiceClient implements InternalServiceClient.
 type internalServiceClient struct {
+	verifyDevice           *connect.Client[v1.VerifyDeviceRequest, v1.VerifyDeviceResponse]
 	proxySyncActions       *connect.Client[v1.InternalSyncActionsRequest, v1.SyncActionsResponse]
 	proxyValidateLuksToken *connect.Client[v1.InternalValidateLuksTokenRequest, v1.ValidateLuksTokenResponse]
 	proxyGetLuksKey        *connect.Client[v1.InternalGetLuksKeyRequest, v1.GetLuksKeyResponse]
 	proxyStoreLuksKey      *connect.Client[v1.InternalStoreLuksKeyRequest, v1.StoreLuksKeyResponse]
 	proxyStoreLpsPasswords *connect.Client[v1.InternalStoreLpsPasswordsRequest, v1.InternalStoreLpsPasswordsResponse]
+}
+
+// VerifyDevice calls pm.v1.InternalService.VerifyDevice.
+func (c *internalServiceClient) VerifyDevice(ctx context.Context, req *connect.Request[v1.VerifyDeviceRequest]) (*connect.Response[v1.VerifyDeviceResponse], error) {
+	return c.verifyDevice.CallUnary(ctx, req)
 }
 
 // ProxySyncActions calls pm.v1.InternalService.ProxySyncActions.
@@ -144,6 +162,9 @@ func (c *internalServiceClient) ProxyStoreLpsPasswords(ctx context.Context, req 
 
 // InternalServiceHandler is an implementation of the pm.v1.InternalService service.
 type InternalServiceHandler interface {
+	// VerifyDevice checks that a device exists and is not deleted.
+	// Called by the gateway before registering an agent connection.
+	VerifyDevice(context.Context, *connect.Request[v1.VerifyDeviceRequest]) (*connect.Response[v1.VerifyDeviceResponse], error)
 	// Proxy SyncActions: resolves assigned actions for a device.
 	ProxySyncActions(context.Context, *connect.Request[v1.InternalSyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
 	// Proxy ValidateLuksToken: validates and consumes a one-time LUKS token.
@@ -163,6 +184,12 @@ type InternalServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	internalServiceMethods := v1.File_pm_v1_internal_proto.Services().ByName("InternalService").Methods()
+	internalServiceVerifyDeviceHandler := connect.NewUnaryHandler(
+		InternalServiceVerifyDeviceProcedure,
+		svc.VerifyDevice,
+		connect.WithSchema(internalServiceMethods.ByName("VerifyDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
 	internalServiceProxySyncActionsHandler := connect.NewUnaryHandler(
 		InternalServiceProxySyncActionsProcedure,
 		svc.ProxySyncActions,
@@ -195,6 +222,8 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 	)
 	return "/pm.v1.InternalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case InternalServiceVerifyDeviceProcedure:
+			internalServiceVerifyDeviceHandler.ServeHTTP(w, r)
 		case InternalServiceProxySyncActionsProcedure:
 			internalServiceProxySyncActionsHandler.ServeHTTP(w, r)
 		case InternalServiceProxyValidateLuksTokenProcedure:
@@ -213,6 +242,10 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 
 // UnimplementedInternalServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedInternalServiceHandler struct{}
+
+func (UnimplementedInternalServiceHandler) VerifyDevice(context.Context, *connect.Request[v1.VerifyDeviceRequest]) (*connect.Response[v1.VerifyDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.VerifyDevice is not implemented"))
+}
 
 func (UnimplementedInternalServiceHandler) ProxySyncActions(context.Context, *connect.Request[v1.InternalSyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.ProxySyncActions is not implemented"))

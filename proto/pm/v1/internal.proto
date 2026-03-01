@@ -15,6 +15,10 @@ import "pm/v1/agent.proto";
 // It is NOT exposed externally — only accessible on the internal network.
 
 service InternalService {
+  // VerifyDevice checks that a device exists and is not deleted.
+  // Called by the gateway before registering an agent connection.
+  rpc VerifyDevice(VerifyDeviceRequest) returns (VerifyDeviceResponse);
+
   // Proxy SyncActions: resolves assigned actions for a device.
   rpc ProxySyncActions(InternalSyncActionsRequest) returns (SyncActionsResponse);
 
@@ -79,3 +83,12 @@ message InternalStoreLpsPasswordsRequest {
 }
 
 message InternalStoreLpsPasswordsResponse {}
+
+// VerifyDeviceRequest is sent by the gateway to verify a device before
+// allowing it to connect. Contains the device_id from the mTLS certificate.
+message VerifyDeviceRequest {
+  string device_id = 1;
+}
+
+// VerifyDeviceResponse indicates whether the device is valid for connection.
+message VerifyDeviceResponse {}
