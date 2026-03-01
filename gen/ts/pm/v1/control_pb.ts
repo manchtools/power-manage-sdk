@@ -4231,7 +4231,7 @@ export const UpdateDeviceGroupQueryResponseSchema: GenMessage<UpdateDeviceGroupQ
  */
 export type ValidateDynamicQueryRequest = Message<"pm.v1.ValidateDynamicQueryRequest"> & {
   /**
-   * @gotags: validate:"required,max=4096"
+   * @gotags: validate:"max=4096"
    *
    * @generated from field: string query = 1;
    */
@@ -7026,7 +7026,7 @@ export const UpdateUserGroupQueryResponseSchema: GenMessage<UpdateUserGroupQuery
  */
 export type ValidateUserGroupQueryRequest = Message<"pm.v1.ValidateUserGroupQueryRequest"> & {
   /**
-   * @gotags: validate:"required,max=4096"
+   * @gotags: validate:"max=4096"
    *
    * @generated from field: string query = 1;
    */

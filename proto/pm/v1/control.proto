@@ -1088,7 +1088,7 @@ message UpdateDeviceGroupQueryResponse {
 
 // Validate a dynamic query without creating a group
 message ValidateDynamicQueryRequest {
-  // @gotags: validate:"required,max=4096"
+  // @gotags: validate:"max=4096"
   string query = 1;
 }
 
@@ -1801,7 +1801,7 @@ message UpdateUserGroupQueryResponse {
 }
 
 message ValidateUserGroupQueryRequest {
-  // @gotags: validate:"required,max=4096"
+  // @gotags: validate:"max=4096"
   string query = 1;
 }
 
