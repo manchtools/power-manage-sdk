@@ -4430,7 +4430,7 @@ export const AssignmentSchema: GenMessage<Assignment> = /*@__PURE__*/
  */
 export type CreateAssignmentRequest = Message<"pm.v1.CreateAssignmentRequest"> & {
   /**
-   * @gotags: validate:"required,oneof=definition action_set action"
+   * @gotags: validate:"required,oneof=definition action_set action compliance_policy"
    *
    * @generated from field: string source_type = 1;
    */
@@ -4528,7 +4528,7 @@ export const DeleteAssignmentResponseSchema: GenMessage<DeleteAssignmentResponse
  */
 export type ListAssignmentsRequest = Message<"pm.v1.ListAssignmentsRequest"> & {
   /**
-   * @gotags: validate:"omitempty,oneof=definition action_set action"
+   * @gotags: validate:"omitempty,oneof=definition action_set action compliance_policy"
    *
    * @generated from field: string source_type = 1;
    */
@@ -4662,7 +4662,7 @@ export type SetUserSelectionRequest = Message<"pm.v1.SetUserSelectionRequest"> &
   deviceId: string;
 
   /**
-   * @gotags: validate:"required,oneof=definition action_set action"
+   * @gotags: validate:"required,oneof=definition action_set action compliance_policy"
    *
    * @generated from field: string source_type = 2;
    */
