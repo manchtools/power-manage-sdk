@@ -583,6 +583,7 @@ message ManagedAction {
   google.protobuf.Timestamp created_at = 7;
   string created_by = 8;
   ActionSchedule schedule = 9;
+  google.protobuf.Timestamp updated_at = 29;
 }
 
 message CreateActionRequest {
@@ -748,6 +749,7 @@ message ActionSet {
   int32 member_count = 4;
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message ActionSetMember {
@@ -864,6 +866,7 @@ message Definition {
   int32 member_count = 4;
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message DefinitionMember {
