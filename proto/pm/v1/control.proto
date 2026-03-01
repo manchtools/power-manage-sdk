@@ -1137,7 +1137,7 @@ message Assignment {
 }
 
 message CreateAssignmentRequest {
-  // @gotags: validate:"required,oneof=definition action_set action"
+  // @gotags: validate:"required,oneof=definition action_set action compliance_policy"
   string source_type = 1;
   // @gotags: validate:"required,ulid"
   string source_id = 2;
@@ -1161,7 +1161,7 @@ message DeleteAssignmentRequest {
 message DeleteAssignmentResponse {}
 
 message ListAssignmentsRequest {
-  // @gotags: validate:"omitempty,oneof=definition action_set action"
+  // @gotags: validate:"omitempty,oneof=definition action_set action compliance_policy"
   string source_type = 1;
   // @gotags: validate:"omitempty,ulid"
   string source_id = 2;
@@ -1197,7 +1197,7 @@ message UserSelection {
 message SetUserSelectionRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,oneof=definition action_set action"
+  // @gotags: validate:"required,oneof=definition action_set action compliance_policy"
   string source_type = 2;
   // @gotags: validate:"required,ulid"
   string source_id = 3;

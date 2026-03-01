@@ -9383,8 +9383,8 @@ func (x *Assignment) GetMode() AssignmentMode {
 
 type CreateAssignmentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,oneof=definition action_set action"
-	SourceType string `protobuf:"bytes,1,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty" validate:"required,oneof=definition action_set action"`
+	// @gotags: validate:"required,oneof=definition action_set action compliance_policy"
+	SourceType string `protobuf:"bytes,1,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty" validate:"required,oneof=definition action_set action compliance_policy"`
 	// @gotags: validate:"required,ulid"
 	SourceId string `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,oneof=device device_group user user_group"
@@ -9589,8 +9589,8 @@ func (*DeleteAssignmentResponse) Descriptor() ([]byte, []int) {
 
 type ListAssignmentsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"omitempty,oneof=definition action_set action"
-	SourceType string `protobuf:"bytes,1,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty" validate:"omitempty,oneof=definition action_set action"`
+	// @gotags: validate:"omitempty,oneof=definition action_set action compliance_policy"
+	SourceType string `protobuf:"bytes,1,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty" validate:"omitempty,oneof=definition action_set action compliance_policy"`
 	// @gotags: validate:"omitempty,ulid"
 	SourceId string `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"omitempty,ulid"`
 	// @gotags: validate:"omitempty,oneof=device device_group user user_group"
@@ -9825,8 +9825,8 @@ type SetUserSelectionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,oneof=definition action_set action"
-	SourceType string `protobuf:"bytes,2,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty" validate:"required,oneof=definition action_set action"`
+	// @gotags: validate:"required,oneof=definition action_set action compliance_policy"
+	SourceType string `protobuf:"bytes,2,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty" validate:"required,oneof=definition action_set action compliance_policy"`
 	// @gotags: validate:"required,ulid"
 	SourceId      string `protobuf:"bytes,3,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"required,ulid"`
 	Selected      bool   `protobuf:"varint,4,opt,name=selected,proto3" json:"selected,omitempty"`
