@@ -396,6 +396,7 @@ message ListDevicesRequest {
   // @gotags: validate:"omitempty,oneof=online offline"
   string status_filter = 3;  // optional: "online", "offline"
   map<string, string> label_filter = 4;
+  bool my_devices_only = 5;  // when true, only return devices assigned to the authenticated user
 }
 
 message ListDevicesResponse {

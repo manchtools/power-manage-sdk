@@ -511,11 +511,12 @@ export class ApiClient {
 		pageSize: number = 50,
 		pageToken: string = '',
 		statusFilter: string = '',
-		labelFilter: Record<string, string> = {}
+		labelFilter: Record<string, string> = {},
+		myDevicesOnly: boolean = false
 	) {
 		const client = this.getClient();
 		return client.listDevices(
-			create(ListDevicesRequestSchema, { pageSize, pageToken, statusFilter, labelFilter })
+			create(ListDevicesRequestSchema, { pageSize, pageToken, statusFilter, labelFilter, myDevicesOnly })
 		);
 	}
 
