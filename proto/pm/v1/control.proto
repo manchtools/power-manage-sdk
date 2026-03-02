@@ -377,7 +377,9 @@ message Device {
   google.protobuf.Timestamp last_seen_at = 6;
   google.protobuf.Timestamp cert_expires_at = 7;
   map<string, string> labels = 8;
-  string assigned_user_id = 9;  // User this device is assigned to (empty = unassigned)
+  string assigned_user_id = 9 [deprecated = true];  // Deprecated: use assigned_user_ids
+  repeated string assigned_user_ids = 15;   // Users assigned to this device
+  repeated string assigned_group_ids = 16;  // User groups assigned to this device
   // Sync interval in minutes (0 = use default of 30 minutes)
   // Agent will pull assigned actions at this interval
   int32 sync_interval_minutes = 10;
@@ -443,24 +445,47 @@ message DeleteDeviceRequest {
 message DeleteDeviceResponse {}
 
 // Device assignment (admin-only)
+// Assign a user or user group to a device. Exactly one of user_id or group_id must be set.
 message AssignDeviceRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string user_id = 2;
+  // @gotags: validate:"omitempty,ulid"
+  string group_id = 3;
 }
 
 message AssignDeviceResponse {
   Device device = 1;
 }
 
+// Unassign a user or user group from a device. Exactly one of user_id or group_id must be set.
 message UnassignDeviceRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
+  // @gotags: validate:"omitempty,ulid"
+  string user_id = 2;
+  // @gotags: validate:"omitempty,ulid"
+  string group_id = 3;
 }
 
 message UnassignDeviceResponse {
   Device device = 1;
+}
+
+message DeviceAssignee {
+  string id = 1;        // User or group ID
+  string type = 2;      // "user" or "user_group"
+  string name = 3;      // User email or group name
+}
+
+message ListDeviceAssigneesRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message ListDeviceAssigneesResponse {
+  repeated DeviceAssignee assignees = 1;
 }
 
 // Update device sync interval
@@ -2416,6 +2441,7 @@ service ControlService {
   rpc RemoveDeviceLabel(RemoveDeviceLabelRequest) returns (UpdateDeviceResponse);
   rpc AssignDevice(AssignDeviceRequest) returns (AssignDeviceResponse);
   rpc UnassignDevice(UnassignDeviceRequest) returns (UnassignDeviceResponse);
+  rpc ListDeviceAssignees(ListDeviceAssigneesRequest) returns (ListDeviceAssigneesResponse);
   rpc SetDeviceSyncInterval(SetDeviceSyncIntervalRequest) returns (UpdateDeviceResponse);
   rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse);
 

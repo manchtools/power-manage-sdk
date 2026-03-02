@@ -161,6 +161,9 @@ const (
 	// ControlServiceUnassignDeviceProcedure is the fully-qualified name of the ControlService's
 	// UnassignDevice RPC.
 	ControlServiceUnassignDeviceProcedure = "/pm.v1.ControlService/UnassignDevice"
+	// ControlServiceListDeviceAssigneesProcedure is the fully-qualified name of the ControlService's
+	// ListDeviceAssignees RPC.
+	ControlServiceListDeviceAssigneesProcedure = "/pm.v1.ControlService/ListDeviceAssignees"
 	// ControlServiceSetDeviceSyncIntervalProcedure is the fully-qualified name of the ControlService's
 	// SetDeviceSyncInterval RPC.
 	ControlServiceSetDeviceSyncIntervalProcedure = "/pm.v1.ControlService/SetDeviceSyncInterval"
@@ -547,6 +550,7 @@ type ControlServiceClient interface {
 	RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error)
 	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
+	ListDeviceAssignees(context.Context, *connect.Request[v1.ListDeviceAssigneesRequest]) (*connect.Response[v1.ListDeviceAssigneesResponse], error)
 	SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
@@ -953,6 +957,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUnassignDeviceProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UnassignDevice")),
+			connect.WithClientOptions(opts...),
+		),
+		listDeviceAssignees: connect.NewClient[v1.ListDeviceAssigneesRequest, v1.ListDeviceAssigneesResponse](
+			httpClient,
+			baseURL+ControlServiceListDeviceAssigneesProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListDeviceAssignees")),
 			connect.WithClientOptions(opts...),
 		),
 		setDeviceSyncInterval: connect.NewClient[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse](
@@ -1670,6 +1680,7 @@ type controlServiceClient struct {
 	removeDeviceLabel                 *connect.Client[v1.RemoveDeviceLabelRequest, v1.UpdateDeviceResponse]
 	assignDevice                      *connect.Client[v1.AssignDeviceRequest, v1.AssignDeviceResponse]
 	unassignDevice                    *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
+	listDeviceAssignees               *connect.Client[v1.ListDeviceAssigneesRequest, v1.ListDeviceAssigneesResponse]
 	setDeviceSyncInterval             *connect.Client[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse]
 	deleteDevice                      *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
 	createToken                       *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
@@ -2001,6 +2012,11 @@ func (c *controlServiceClient) AssignDevice(ctx context.Context, req *connect.Re
 // UnassignDevice calls pm.v1.ControlService.UnassignDevice.
 func (c *controlServiceClient) UnassignDevice(ctx context.Context, req *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error) {
 	return c.unassignDevice.CallUnary(ctx, req)
+}
+
+// ListDeviceAssignees calls pm.v1.ControlService.ListDeviceAssignees.
+func (c *controlServiceClient) ListDeviceAssignees(ctx context.Context, req *connect.Request[v1.ListDeviceAssigneesRequest]) (*connect.Response[v1.ListDeviceAssigneesResponse], error) {
+	return c.listDeviceAssignees.CallUnary(ctx, req)
 }
 
 // SetDeviceSyncInterval calls pm.v1.ControlService.SetDeviceSyncInterval.
@@ -2612,6 +2628,7 @@ type ControlServiceHandler interface {
 	RemoveDeviceLabel(context.Context, *connect.Request[v1.RemoveDeviceLabelRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	AssignDevice(context.Context, *connect.Request[v1.AssignDeviceRequest]) (*connect.Response[v1.AssignDeviceResponse], error)
 	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
+	ListDeviceAssignees(context.Context, *connect.Request[v1.ListDeviceAssigneesRequest]) (*connect.Response[v1.ListDeviceAssigneesResponse], error)
 	SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
@@ -3014,6 +3031,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUnassignDeviceProcedure,
 		svc.UnassignDevice,
 		connect.WithSchema(controlServiceMethods.ByName("UnassignDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListDeviceAssigneesHandler := connect.NewUnaryHandler(
+		ControlServiceListDeviceAssigneesProcedure,
+		svc.ListDeviceAssignees,
+		connect.WithSchema(controlServiceMethods.ByName("ListDeviceAssignees")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceSetDeviceSyncIntervalHandler := connect.NewUnaryHandler(
@@ -3772,6 +3795,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceAssignDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceUnassignDeviceProcedure:
 			controlServiceUnassignDeviceHandler.ServeHTTP(w, r)
+		case ControlServiceListDeviceAssigneesProcedure:
+			controlServiceListDeviceAssigneesHandler.ServeHTTP(w, r)
 		case ControlServiceSetDeviceSyncIntervalProcedure:
 			controlServiceSetDeviceSyncIntervalHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDeviceProcedure:
@@ -4177,6 +4202,10 @@ func (UnimplementedControlServiceHandler) AssignDevice(context.Context, *connect
 
 func (UnimplementedControlServiceHandler) UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UnassignDevice is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListDeviceAssignees(context.Context, *connect.Request[v1.ListDeviceAssigneesRequest]) (*connect.Response[v1.ListDeviceAssigneesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceAssignees is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
