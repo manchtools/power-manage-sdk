@@ -31,6 +31,7 @@ import {
 	RemoveDeviceLabelRequestSchema,
 	AssignDeviceRequestSchema,
 	UnassignDeviceRequestSchema,
+	ListDeviceAssigneesRequestSchema,
 	DeleteDeviceRequestSchema,
 	SetDeviceSyncIntervalRequestSchema,
 	CreateTokenRequestSchema,
@@ -206,7 +207,8 @@ import {
 	type UserGroupMember,
 	type LpsPassword,
 	type LuksKey,
-	type AvailableItem
+	type AvailableItem,
+	type DeviceAssignee
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
@@ -542,20 +544,28 @@ export class ApiClient {
 		return response.device;
 	}
 
-	async assignDevice(deviceId: string, userId: string) {
+	async assignDevice(deviceId: string, userId?: string, groupId?: string) {
 		const client = this.getClient();
 		const response = await client.assignDevice(
-			create(AssignDeviceRequestSchema, { deviceId, userId })
+			create(AssignDeviceRequestSchema, { deviceId, userId: userId ?? '', groupId: groupId ?? '' })
 		);
 		return response.device;
 	}
 
-	async unassignDevice(deviceId: string) {
+	async unassignDevice(deviceId: string, userId?: string, groupId?: string) {
 		const client = this.getClient();
 		const response = await client.unassignDevice(
-			create(UnassignDeviceRequestSchema, { deviceId })
+			create(UnassignDeviceRequestSchema, { deviceId, userId: userId ?? '', groupId: groupId ?? '' })
 		);
 		return response.device;
+	}
+
+	async listDeviceAssignees(deviceId: string): Promise<DeviceAssignee[]> {
+		const client = this.getClient();
+		const response = await client.listDeviceAssignees(
+			create(ListDeviceAssigneesRequestSchema, { deviceId })
+		);
+		return [...response.assignees];
 	}
 
 	async deleteDevice(id: string) {
@@ -1626,6 +1636,6 @@ export type {
 	DeviceGroup, Assignment, ActionExecution, AuditEvent, InventoryTableResult,
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
 	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
-	AvailableItem, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
+	AvailableItem, DeviceAssignee, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
 	SearchResult, SshPublicKey
 };
