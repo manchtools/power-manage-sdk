@@ -3491,7 +3491,11 @@ type AssignDeviceRequest struct {
 	// @gotags: validate:"omitempty,ulid"
 	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"omitempty,ulid"`
 	// @gotags: validate:"omitempty,ulid"
-	GroupId       string `protobuf:"bytes,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"omitempty,ulid"`
+	GroupId string `protobuf:"bytes,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	UserIds []string `protobuf:"bytes,4,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	GroupIds      []string `protobuf:"bytes,5,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty" validate:"omitempty,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3545,6 +3549,20 @@ func (x *AssignDeviceRequest) GetGroupId() string {
 		return x.GroupId
 	}
 	return ""
+}
+
+func (x *AssignDeviceRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+func (x *AssignDeviceRequest) GetGroupIds() []string {
+	if x != nil {
+		return x.GroupIds
+	}
+	return nil
 }
 
 type AssignDeviceResponse struct {
@@ -8918,8 +8936,10 @@ type AddDeviceToGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	GroupId string `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,ulid"
-	DeviceId      string `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,ulid"
+	DeviceId string `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	DeviceIds     []string `protobuf:"bytes,3,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty" validate:"omitempty,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8966,6 +8986,13 @@ func (x *AddDeviceToGroupRequest) GetDeviceId() string {
 		return x.DeviceId
 	}
 	return ""
+}
+
+func (x *AddDeviceToGroupRequest) GetDeviceIds() []string {
+	if x != nil {
+		return x.DeviceIds
+	}
+	return nil
 }
 
 type AddDeviceToGroupResponse struct {
@@ -13640,8 +13667,10 @@ type AssignRoleToUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,ulid"
-	RoleId        string `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,ulid"
+	RoleId string `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	RoleIds       []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13688,6 +13717,13 @@ func (x *AssignRoleToUserRequest) GetRoleId() string {
 		return x.RoleId
 	}
 	return ""
+}
+
+func (x *AssignRoleToUserRequest) GetRoleIds() []string {
+	if x != nil {
+		return x.RoleIds
+	}
+	return nil
 }
 
 type AssignRoleToUserResponse struct {
@@ -14582,8 +14618,10 @@ type AddUserToGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	GroupId string `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,ulid"
-	UserId        string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,ulid"
+	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	UserIds       []string `protobuf:"bytes,3,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty" validate:"omitempty,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14630,6 +14668,13 @@ func (x *AddUserToGroupRequest) GetUserId() string {
 		return x.UserId
 	}
 	return ""
+}
+
+func (x *AddUserToGroupRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
 }
 
 type AddUserToGroupResponse struct {
@@ -14762,8 +14807,10 @@ type AssignRoleToUserGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	GroupId string `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,ulid"
-	RoleId        string `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,ulid"
+	RoleId string `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	RoleIds       []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14810,6 +14857,13 @@ func (x *AssignRoleToUserGroupRequest) GetRoleId() string {
 		return x.RoleId
 	}
 	return ""
+}
+
+func (x *AssignRoleToUserGroupRequest) GetRoleIds() []string {
+	if x != nil {
+		return x.RoleIds
+	}
+	return nil
 }
 
 type AssignRoleToUserGroupResponse struct {
@@ -20132,11 +20186,13 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x06device\x18\x01 \x01(\v2\r.pm.v1.DeviceR\x06device\"%\n" +
 	"\x13DeleteDeviceRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x16\n" +
-	"\x14DeleteDeviceResponse\"f\n" +
+	"\x14DeleteDeviceResponse\"\x9e\x01\n" +
 	"\x13AssignDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
-	"\bgroup_id\x18\x03 \x01(\tR\agroupId\"=\n" +
+	"\bgroup_id\x18\x03 \x01(\tR\agroupId\x12\x19\n" +
+	"\buser_ids\x18\x04 \x03(\tR\auserIds\x12\x1b\n" +
+	"\tgroup_ids\x18\x05 \x03(\tR\bgroupIds\"=\n" +
 	"\x14AssignDeviceResponse\x12%\n" +
 	"\x06device\x18\x01 \x01(\v2\r.pm.v1.DeviceR\x06device\"h\n" +
 	"\x15UnassignDeviceRequest\x12\x1b\n" +
@@ -20507,10 +20563,12 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"*\n" +
 	"\x18DeleteDeviceGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1b\n" +
-	"\x19DeleteDeviceGroupResponse\"Q\n" +
+	"\x19DeleteDeviceGroupResponse\"p\n" +
 	"\x17AddDeviceToGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x1b\n" +
-	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\"D\n" +
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1d\n" +
+	"\n" +
+	"device_ids\x18\x03 \x03(\tR\tdeviceIds\"D\n" +
 	"\x18AddDeviceToGroupResponse\x12(\n" +
 	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"V\n" +
 	"\x1cRemoveDeviceFromGroupRequest\x12\x19\n" +
@@ -20862,10 +20920,11 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04role\x18\x01 \x01(\v2\v.pm.v1.RoleR\x04role\"#\n" +
 	"\x11DeleteRoleRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x14\n" +
-	"\x12DeleteRoleResponse\"K\n" +
+	"\x12DeleteRoleResponse\"f\n" +
 	"\x17AssignRoleToUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\arole_id\x18\x02 \x01(\tR\x06roleId\"\x1a\n" +
+	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12\x19\n" +
+	"\brole_ids\x18\x03 \x03(\tR\aroleIds\"\x1a\n" +
 	"\x18AssignRoleToUserResponse\"M\n" +
 	"\x19RevokeRoleFromUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
@@ -20920,18 +20979,20 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\"(\n" +
 	"\x16DeleteUserGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x19\n" +
-	"\x17DeleteUserGroupResponse\"K\n" +
+	"\x17DeleteUserGroupResponse\"f\n" +
 	"\x15AddUserToGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x18\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
+	"\buser_ids\x18\x03 \x03(\tR\auserIds\"\x18\n" +
 	"\x16AddUserToGroupResponse\"P\n" +
 	"\x1aRemoveUserFromGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x1d\n" +
-	"\x1bRemoveUserFromGroupResponse\"R\n" +
+	"\x1bRemoveUserFromGroupResponse\"m\n" +
 	"\x1cAssignRoleToUserGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
-	"\arole_id\x18\x02 \x01(\tR\x06roleId\"\x1f\n" +
+	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12\x19\n" +
+	"\brole_ids\x18\x03 \x03(\tR\aroleIds\"\x1f\n" +
 	"\x1dAssignRoleToUserGroupResponse\"T\n" +
 	"\x1eRevokeRoleFromUserGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +

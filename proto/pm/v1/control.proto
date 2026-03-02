@@ -453,6 +453,10 @@ message AssignDeviceRequest {
   string user_id = 2;
   // @gotags: validate:"omitempty,ulid"
   string group_id = 3;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string user_ids = 4;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string group_ids = 5;
 }
 
 message AssignDeviceResponse {
@@ -1082,8 +1086,10 @@ message DeleteDeviceGroupResponse {}
 message AddDeviceToGroupRequest {
   // @gotags: validate:"required,ulid"
   string group_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string device_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string device_ids = 3;
 }
 
 message AddDeviceToGroupResponse {
@@ -1672,8 +1678,10 @@ message DeleteRoleResponse {}
 message AssignRoleToUserRequest {
   // @gotags: validate:"required,ulid"
   string user_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string role_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string role_ids = 3;
 }
 
 message AssignRoleToUserResponse {}
@@ -1775,8 +1783,10 @@ message DeleteUserGroupResponse {}
 message AddUserToGroupRequest {
   // @gotags: validate:"required,ulid"
   string group_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string user_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string user_ids = 3;
 }
 
 message AddUserToGroupResponse {}
@@ -1793,8 +1803,10 @@ message RemoveUserFromGroupResponse {}
 message AssignRoleToUserGroupRequest {
   // @gotags: validate:"required,ulid"
   string group_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string role_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string role_ids = 3;
 }
 
 message AssignRoleToUserGroupResponse {}

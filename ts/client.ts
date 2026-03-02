@@ -544,10 +544,10 @@ export class ApiClient {
 		return response.device;
 	}
 
-	async assignDevice(deviceId: string, userId?: string, groupId?: string) {
+	async assignDevice(deviceId: string, userIds: string[], groupIds: string[]) {
 		const client = this.getClient();
 		const response = await client.assignDevice(
-			create(AssignDeviceRequestSchema, { deviceId, userId: userId ?? '', groupId: groupId ?? '' })
+			create(AssignDeviceRequestSchema, { deviceId, userIds, groupIds })
 		);
 		return response.device;
 	}
@@ -871,10 +871,10 @@ export class ApiClient {
 		await client.deleteDeviceGroup(create(DeleteDeviceGroupRequestSchema, { id }));
 	}
 
-	async addDeviceToGroup(groupId: string, deviceId: string) {
+	async addDeviceToGroup(groupId: string, deviceIds: string[]) {
 		const client = this.getClient();
 		const response = await client.addDeviceToGroup(
-			create(AddDeviceToGroupRequestSchema, { groupId, deviceId })
+			create(AddDeviceToGroupRequestSchema, { groupId, deviceIds })
 		);
 		return response.group;
 	}
@@ -1310,10 +1310,10 @@ export class ApiClient {
 		await client.deleteRole(create(DeleteRoleRequestSchema, { id }));
 	}
 
-	async assignRoleToUser(userId: string, roleId: string) {
+	async assignRoleToUser(userId: string, roleIds: string[]) {
 		const client = this.getClient();
 		await client.assignRoleToUser(
-			create(AssignRoleToUserRequestSchema, { userId, roleId })
+			create(AssignRoleToUserRequestSchema, { userId, roleIds })
 		);
 	}
 
@@ -1368,10 +1368,10 @@ export class ApiClient {
 		await client.deleteUserGroup(create(DeleteUserGroupRequestSchema, { id }));
 	}
 
-	async addUserToGroup(groupId: string, userId: string) {
+	async addUserToGroup(groupId: string, userIds: string[]) {
 		const client = this.getClient();
 		await client.addUserToGroup(
-			create(AddUserToGroupRequestSchema, { groupId, userId })
+			create(AddUserToGroupRequestSchema, { groupId, userIds })
 		);
 	}
 
@@ -1382,10 +1382,10 @@ export class ApiClient {
 		);
 	}
 
-	async assignRoleToUserGroup(groupId: string, roleId: string) {
+	async assignRoleToUserGroup(groupId: string, roleIds: string[]) {
 		const client = this.getClient();
 		await client.assignRoleToUserGroup(
-			create(AssignRoleToUserGroupRequestSchema, { groupId, roleId })
+			create(AssignRoleToUserGroupRequestSchema, { groupId, roleIds })
 		);
 	}
 
