@@ -1058,6 +1058,15 @@ message ListDeviceGroupsResponse {
   int32 total_count = 3;
 }
 
+message ListDeviceGroupsForDeviceRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message ListDeviceGroupsForDeviceResponse {
+  repeated DeviceGroup groups = 1;
+}
+
 message RenameDeviceGroupRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
@@ -2500,6 +2509,7 @@ service ControlService {
   rpc CreateDeviceGroup(CreateDeviceGroupRequest) returns (CreateDeviceGroupResponse);
   rpc GetDeviceGroup(GetDeviceGroupRequest) returns (GetDeviceGroupResponse);
   rpc ListDeviceGroups(ListDeviceGroupsRequest) returns (ListDeviceGroupsResponse);
+  rpc ListDeviceGroupsForDevice(ListDeviceGroupsForDeviceRequest) returns (ListDeviceGroupsForDeviceResponse);
   rpc RenameDeviceGroup(RenameDeviceGroupRequest) returns (UpdateDeviceGroupResponse);
   rpc UpdateDeviceGroupDescription(UpdateDeviceGroupDescriptionRequest) returns (UpdateDeviceGroupResponse);
   rpc UpdateDeviceGroupQuery(UpdateDeviceGroupQueryRequest) returns (UpdateDeviceGroupQueryResponse);

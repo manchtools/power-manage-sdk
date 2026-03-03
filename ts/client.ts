@@ -72,6 +72,7 @@ import {
 	CreateDeviceGroupRequestSchema,
 	GetDeviceGroupRequestSchema,
 	ListDeviceGroupsRequestSchema,
+	ListDeviceGroupsForDeviceRequestSchema,
 	RenameDeviceGroupRequestSchema,
 	UpdateDeviceGroupDescriptionRequestSchema,
 	UpdateDeviceGroupQueryRequestSchema,
@@ -847,6 +848,13 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.listDeviceGroups(
 			create(ListDeviceGroupsRequestSchema, { pageSize, pageToken })
+		);
+	}
+
+	async listDeviceGroupsForDevice(deviceId: string) {
+		const client = this.getClient();
+		return client.listDeviceGroupsForDevice(
+			create(ListDeviceGroupsForDeviceRequestSchema, { deviceId })
 		);
 	}
 
