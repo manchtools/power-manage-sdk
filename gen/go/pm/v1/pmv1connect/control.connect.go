@@ -271,6 +271,9 @@ const (
 	// ControlServiceListDeviceGroupsProcedure is the fully-qualified name of the ControlService's
 	// ListDeviceGroups RPC.
 	ControlServiceListDeviceGroupsProcedure = "/pm.v1.ControlService/ListDeviceGroups"
+	// ControlServiceListDeviceGroupsForDeviceProcedure is the fully-qualified name of the
+	// ControlService's ListDeviceGroupsForDevice RPC.
+	ControlServiceListDeviceGroupsForDeviceProcedure = "/pm.v1.ControlService/ListDeviceGroupsForDevice"
 	// ControlServiceRenameDeviceGroupProcedure is the fully-qualified name of the ControlService's
 	// RenameDeviceGroup RPC.
 	ControlServiceRenameDeviceGroupProcedure = "/pm.v1.ControlService/RenameDeviceGroup"
@@ -592,6 +595,7 @@ type ControlServiceClient interface {
 	CreateDeviceGroup(context.Context, *connect.Request[v1.CreateDeviceGroupRequest]) (*connect.Response[v1.CreateDeviceGroupResponse], error)
 	GetDeviceGroup(context.Context, *connect.Request[v1.GetDeviceGroupRequest]) (*connect.Response[v1.GetDeviceGroupResponse], error)
 	ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error)
+	ListDeviceGroupsForDevice(context.Context, *connect.Request[v1.ListDeviceGroupsForDeviceRequest]) (*connect.Response[v1.ListDeviceGroupsForDeviceResponse], error)
 	RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	UpdateDeviceGroupQuery(context.Context, *connect.Request[v1.UpdateDeviceGroupQueryRequest]) (*connect.Response[v1.UpdateDeviceGroupQueryResponse], error)
@@ -1181,6 +1185,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListDeviceGroups")),
 			connect.WithClientOptions(opts...),
 		),
+		listDeviceGroupsForDevice: connect.NewClient[v1.ListDeviceGroupsForDeviceRequest, v1.ListDeviceGroupsForDeviceResponse](
+			httpClient,
+			baseURL+ControlServiceListDeviceGroupsForDeviceProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListDeviceGroupsForDevice")),
+			connect.WithClientOptions(opts...),
+		),
 		renameDeviceGroup: connect.NewClient[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse](
 			httpClient,
 			baseURL+ControlServiceRenameDeviceGroupProcedure,
@@ -1717,6 +1727,7 @@ type controlServiceClient struct {
 	createDeviceGroup                 *connect.Client[v1.CreateDeviceGroupRequest, v1.CreateDeviceGroupResponse]
 	getDeviceGroup                    *connect.Client[v1.GetDeviceGroupRequest, v1.GetDeviceGroupResponse]
 	listDeviceGroups                  *connect.Client[v1.ListDeviceGroupsRequest, v1.ListDeviceGroupsResponse]
+	listDeviceGroupsForDevice         *connect.Client[v1.ListDeviceGroupsForDeviceRequest, v1.ListDeviceGroupsForDeviceResponse]
 	renameDeviceGroup                 *connect.Client[v1.RenameDeviceGroupRequest, v1.UpdateDeviceGroupResponse]
 	updateDeviceGroupDescription      *connect.Client[v1.UpdateDeviceGroupDescriptionRequest, v1.UpdateDeviceGroupResponse]
 	updateDeviceGroupQuery            *connect.Client[v1.UpdateDeviceGroupQueryRequest, v1.UpdateDeviceGroupQueryResponse]
@@ -2199,6 +2210,11 @@ func (c *controlServiceClient) ListDeviceGroups(ctx context.Context, req *connec
 	return c.listDeviceGroups.CallUnary(ctx, req)
 }
 
+// ListDeviceGroupsForDevice calls pm.v1.ControlService.ListDeviceGroupsForDevice.
+func (c *controlServiceClient) ListDeviceGroupsForDevice(ctx context.Context, req *connect.Request[v1.ListDeviceGroupsForDeviceRequest]) (*connect.Response[v1.ListDeviceGroupsForDeviceResponse], error) {
+	return c.listDeviceGroupsForDevice.CallUnary(ctx, req)
+}
+
 // RenameDeviceGroup calls pm.v1.ControlService.RenameDeviceGroup.
 func (c *controlServiceClient) RenameDeviceGroup(ctx context.Context, req *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
 	return c.renameDeviceGroup.CallUnary(ctx, req)
@@ -2670,6 +2686,7 @@ type ControlServiceHandler interface {
 	CreateDeviceGroup(context.Context, *connect.Request[v1.CreateDeviceGroupRequest]) (*connect.Response[v1.CreateDeviceGroupResponse], error)
 	GetDeviceGroup(context.Context, *connect.Request[v1.GetDeviceGroupRequest]) (*connect.Response[v1.GetDeviceGroupResponse], error)
 	ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error)
+	ListDeviceGroupsForDevice(context.Context, *connect.Request[v1.ListDeviceGroupsForDeviceRequest]) (*connect.Response[v1.ListDeviceGroupsForDeviceResponse], error)
 	RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	UpdateDeviceGroupDescription(context.Context, *connect.Request[v1.UpdateDeviceGroupDescriptionRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	UpdateDeviceGroupQuery(context.Context, *connect.Request[v1.UpdateDeviceGroupQueryRequest]) (*connect.Response[v1.UpdateDeviceGroupQueryResponse], error)
@@ -3253,6 +3270,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceListDeviceGroupsProcedure,
 		svc.ListDeviceGroups,
 		connect.WithSchema(controlServiceMethods.ByName("ListDeviceGroups")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListDeviceGroupsForDeviceHandler := connect.NewUnaryHandler(
+		ControlServiceListDeviceGroupsForDeviceProcedure,
+		svc.ListDeviceGroupsForDevice,
+		connect.WithSchema(controlServiceMethods.ByName("ListDeviceGroupsForDevice")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceRenameDeviceGroupHandler := connect.NewUnaryHandler(
@@ -3869,6 +3892,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetDeviceGroupHandler.ServeHTTP(w, r)
 		case ControlServiceListDeviceGroupsProcedure:
 			controlServiceListDeviceGroupsHandler.ServeHTTP(w, r)
+		case ControlServiceListDeviceGroupsForDeviceProcedure:
+			controlServiceListDeviceGroupsForDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceRenameDeviceGroupProcedure:
 			controlServiceRenameDeviceGroupHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateDeviceGroupDescriptionProcedure:
@@ -4350,6 +4375,10 @@ func (UnimplementedControlServiceHandler) GetDeviceGroup(context.Context, *conne
 
 func (UnimplementedControlServiceHandler) ListDeviceGroups(context.Context, *connect.Request[v1.ListDeviceGroupsRequest]) (*connect.Response[v1.ListDeviceGroupsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceGroups is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListDeviceGroupsForDevice(context.Context, *connect.Request[v1.ListDeviceGroupsForDeviceRequest]) (*connect.Response[v1.ListDeviceGroupsForDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceGroupsForDevice is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) RenameDeviceGroup(context.Context, *connect.Request[v1.RenameDeviceGroupRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
