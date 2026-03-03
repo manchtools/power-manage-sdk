@@ -1277,6 +1277,7 @@ message GetDeviceAssignmentsResponse {
   repeated ManagedAction actions = 1;
   repeated ActionSet action_sets = 2;
   repeated Definition definitions = 3;
+  repeated CompliancePolicy compliance_policies = 4;
 }
 
 // Get all assignments targeting a user (directly or via user groups)
