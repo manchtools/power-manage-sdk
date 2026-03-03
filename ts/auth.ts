@@ -6,6 +6,7 @@ import type { User } from '../gen/ts/pm/v1/control_pb';
 import superjson from 'superjson';
 
 const AUTH_KEY = 'power-manage-auth';
+const PERSIST_KEY = 'power-manage-persist';
 
 export interface StoredAuth {
 	accessToken: string | null;
@@ -20,31 +21,45 @@ export interface RefreshResult {
 	expiresAt: Date;
 }
 
+const emptyAuth: StoredAuth = { accessToken: null, refreshToken: null, expiresAt: null, user: null };
+
+function isPersistent(): boolean {
+	if (typeof localStorage === 'undefined') return false;
+	return localStorage.getItem(PERSIST_KEY) === 'true';
+}
+
 function loadAuth(): StoredAuth {
-	if (typeof sessionStorage === 'undefined') {
-		return { accessToken: null, refreshToken: null, expiresAt: null, user: null };
+	if (typeof window === 'undefined') return { ...emptyAuth };
+
+	// Check localStorage first (persistent / "keep me signed in"), then sessionStorage
+	const persistent = localStorage.getItem(AUTH_KEY);
+	if (persistent) {
+		try { return superjson.parse<StoredAuth>(persistent); } catch { /* ignore corrupt data */ }
 	}
-	const stored = sessionStorage.getItem(AUTH_KEY);
-	if (stored) {
-		try {
-			return superjson.parse<StoredAuth>(stored);
-		} catch {
-			return { accessToken: null, refreshToken: null, expiresAt: null, user: null };
-		}
+
+	const session = sessionStorage.getItem(AUTH_KEY);
+	if (session) {
+		try { return superjson.parse<StoredAuth>(session); } catch { /* ignore corrupt data */ }
 	}
-	return { accessToken: null, refreshToken: null, expiresAt: null, user: null };
+
+	return { ...emptyAuth };
 }
 
 function saveAuth(auth: StoredAuth) {
-	if (typeof sessionStorage !== 'undefined') {
-		sessionStorage.setItem(AUTH_KEY, superjson.stringify(auth));
+	if (typeof window === 'undefined') return;
+	const data = superjson.stringify(auth);
+	if (isPersistent()) {
+		localStorage.setItem(AUTH_KEY, data);
+	} else {
+		sessionStorage.setItem(AUTH_KEY, data);
 	}
 }
 
 function clearAuth() {
-	if (typeof sessionStorage !== 'undefined') {
-		sessionStorage.removeItem(AUTH_KEY);
-	}
+	if (typeof window === 'undefined') return;
+	localStorage.removeItem(AUTH_KEY);
+	sessionStorage.removeItem(AUTH_KEY);
+	localStorage.removeItem(PERSIST_KEY);
 }
 
 export class AuthStore {
@@ -77,6 +92,19 @@ export class AuthStore {
 
 	setLogoutFn(fn: () => Promise<void>) {
 		this.logoutFn = fn;
+	}
+
+	get persist(): boolean {
+		return isPersistent();
+	}
+
+	setPersist(value: boolean) {
+		if (typeof localStorage === 'undefined') return;
+		if (value) {
+			localStorage.setItem(PERSIST_KEY, 'true');
+		} else {
+			localStorage.removeItem(PERSIST_KEY);
+		}
 	}
 
 	get user() {
