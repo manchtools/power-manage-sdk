@@ -103,23 +103,37 @@ func (a *Apt) Update() (*CommandResult, error) {
 	return a.run("apt", "update")
 }
 
+// dpkgConfOptions are passed to apt commands that may trigger dpkg config file
+// prompts (e.g., kernel/grub postinst scripts). Without these, dpkg hangs
+// waiting for interactive input even with DEBIAN_FRONTEND=noninteractive.
+//   - --force-confdef: use the default action for new conffiles (keep old if unchanged)
+//   - --force-confold: keep the currently-installed version if modified by the user
+var dpkgConfOptions = []string{
+	"-o", "Dpkg::Options::=--force-confdef",
+	"-o", "Dpkg::Options::=--force-confold",
+}
+
 // Upgrade upgrades packages.
 func (a *Apt) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
-		return a.run("apt", "upgrade", "-y")
+		args := append([]string{"upgrade", "-y"}, dpkgConfOptions...)
+		return a.run("apt", args...)
 	}
-	args := append([]string{"install", "-y", "--only-upgrade"}, packages...)
+	args := append([]string{"install", "-y", "--only-upgrade"}, dpkgConfOptions...)
+	args = append(args, packages...)
 	return a.run("apt", args...)
 }
 
 // DistUpgrade runs apt dist-upgrade -y for packages with held-back dependencies.
 func (a *Apt) DistUpgrade() (*CommandResult, error) {
-	return a.run("apt", "dist-upgrade", "-y")
+	args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
+	return a.run("apt", args...)
 }
 
 // FixBroken runs apt --fix-broken install -y to repair broken dependencies.
 func (a *Apt) FixBroken() (*CommandResult, error) {
-	return a.run("apt", "--fix-broken", "install", "-y")
+	args := append([]string{"--fix-broken", "install", "-y"}, dpkgConfOptions...)
+	return a.run("apt", args...)
 }
 
 // Autoremove runs apt autoremove -y to remove unused packages.
