@@ -29,17 +29,15 @@ message RegisterRequest {
 message RegisterResponse {
   // @gotags: validate:"required"
   DeviceId device_id = 1;
-  // @gotags: validate:"omitempty,max=4096"
-  string auth_token = 2;  // Deprecated: use mTLS certificates instead
   // mTLS credentials issued by control server
   // @gotags: validate:"required"
-  bytes ca_cert = 3;       // CA certificate (PEM)
+  bytes ca_cert = 2;       // CA certificate (PEM)
   // Signed device certificate (PEM) - private key stays on agent
   // @gotags: validate:"required"
-  bytes certificate = 4;
+  bytes certificate = 3;
   // Gateway URL for streaming connection (agent stores this for future connections)
   // @gotags: validate:"required,url"
-  string gateway_url = 5;
+  string gateway_url = 4;
 }
 
 // ============================================================================
@@ -190,31 +188,30 @@ message VerifyLoginTOTPResponse {
 message User {
   string id = 1;
   string email = 2;
-  reserved 3;  // was: string role
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp last_login_at = 5;
-  bool disabled = 6;
-  repeated Role roles = 7;
-  bool totp_enabled = 8;
-  bool has_password = 9;
-  repeated IdentityLink identity_links = 10;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp last_login_at = 4;
+  bool disabled = 5;
+  repeated Role roles = 6;
+  bool totp_enabled = 7;
+  bool has_password = 8;
+  repeated IdentityLink identity_links = 9;
   // OIDC profile scope properties
-  string display_name = 11;
-  string given_name = 12;
-  string family_name = 13;
-  string preferred_username = 14;
-  string picture = 15;
-  string locale = 16;
+  string display_name = 10;
+  string given_name = 11;
+  string family_name = 12;
+  string preferred_username = 13;
+  string picture = 14;
+  string locale = 15;
   // Linux identity
-  string linux_username = 17;
-  int32 linux_uid = 18;
+  string linux_username = 16;
+  int32 linux_uid = 17;
   // SSH access settings
-  repeated SshPublicKey ssh_public_keys = 19;
-  bool ssh_access_enabled = 20;
-  bool ssh_allow_pubkey = 21;
-  bool ssh_allow_password = 22;
-  bool user_provisioning_enabled = 23;
-  repeated InheritedRole inherited_roles = 24;
+  repeated SshPublicKey ssh_public_keys = 18;
+  bool ssh_access_enabled = 19;
+  bool ssh_allow_pubkey = 20;
+  bool ssh_allow_password = 21;
+  bool user_provisioning_enabled = 22;
+  repeated InheritedRole inherited_roles = 23;
 }
 
 message InheritedRole {
@@ -385,17 +382,16 @@ message Device {
   google.protobuf.Timestamp last_seen_at = 6;
   google.protobuf.Timestamp cert_expires_at = 7;
   map<string, string> labels = 8;
-  string assigned_user_id = 9 [deprecated = true];  // Deprecated: use assigned_user_ids
-  repeated string assigned_user_ids = 15;   // Users assigned to this device
-  repeated string assigned_group_ids = 16;  // User groups assigned to this device
+  repeated string assigned_user_ids = 9;    // Users assigned to this device
+  repeated string assigned_group_ids = 10;  // User groups assigned to this device
   // Sync interval in minutes (0 = use default of 30 minutes)
   // Agent will pull assigned actions at this interval
-  int32 sync_interval_minutes = 10;
+  int32 sync_interval_minutes = 11;
   // Compliance status based on detection scripts
-  ComplianceStatus compliance_status = 11;
-  google.protobuf.Timestamp compliance_checked_at = 12;
-  int32 compliance_total = 13;    // Total number of compliance checks
-  int32 compliance_passing = 14;  // Number of passing checks
+  ComplianceStatus compliance_status = 12;
+  google.protobuf.Timestamp compliance_checked_at = 13;
+  int32 compliance_total = 14;    // Total number of compliance checks
+  int32 compliance_passing = 15;  // Number of passing checks
 }
 
 message ListDevicesRequest {
@@ -597,31 +593,31 @@ message ManagedAction {
   string description = 3;
   ActionType type = 4;
   DesiredState desired_state = 5;
-  oneof params {
-    PackageParams package = 10;
-    AppInstallParams app = 11;
-    ShellParams shell = 12;
-    SystemdParams systemd = 13;
-    FileParams file = 14;
-    UpdateParams update = 15;
-    RepositoryParams repository = 16;
-    FlatpakParams flatpak = 17;
-    DirectoryParams directory = 18;
-    UserParams user = 19;
-    SshParams ssh = 22;
-    SshdParams sshd = 23;
-    SudoParams sudo = 24;
-    // @gotags: validate:"omitempty"
-    LpsParams lps = 25;
-    GroupParams group = 26;
-    LuksParams luks = 27;
-    WifiParams wifi = 28;
-  }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
   string created_by = 8;
   ActionSchedule schedule = 9;
-  google.protobuf.Timestamp updated_at = 29;
+  google.protobuf.Timestamp updated_at = 10;
+  oneof params {
+    PackageParams package = 11;
+    AppInstallParams app = 12;
+    ShellParams shell = 13;
+    SystemdParams systemd = 14;
+    FileParams file = 15;
+    UpdateParams update = 16;
+    RepositoryParams repository = 17;
+    FlatpakParams flatpak = 18;
+    DirectoryParams directory = 19;
+    UserParams user = 20;
+    SshParams ssh = 21;
+    SshdParams sshd = 22;
+    SudoParams sudo = 23;
+    // @gotags: validate:"omitempty"
+    LpsParams lps = 24;
+    GroupParams group = 25;
+    LuksParams luks = 26;
+    WifiParams wifi = 27;
+  }
 }
 
 message CreateActionRequest {
@@ -640,39 +636,39 @@ message CreateActionRequest {
 
   oneof params {
     // @gotags: validate:"omitempty"
-    PackageParams package = 10;
+    PackageParams package = 7;
     // @gotags: validate:"omitempty"
-    AppInstallParams app = 11;
+    AppInstallParams app = 8;
     // @gotags: validate:"omitempty"
-    ShellParams shell = 12;
+    ShellParams shell = 9;
     // @gotags: validate:"omitempty"
-    SystemdParams systemd = 13;
+    SystemdParams systemd = 10;
     // @gotags: validate:"omitempty"
-    FileParams file = 14;
+    FileParams file = 11;
     // @gotags: validate:"omitempty"
-    UpdateParams update = 15;
+    UpdateParams update = 12;
     // @gotags: validate:"omitempty"
-    RepositoryParams repository = 16;
+    RepositoryParams repository = 13;
     // @gotags: validate:"omitempty"
-    FlatpakParams flatpak = 17;
+    FlatpakParams flatpak = 14;
     // @gotags: validate:"omitempty"
-    DirectoryParams directory = 18;
+    DirectoryParams directory = 15;
     // @gotags: validate:"omitempty"
-    UserParams user = 19;
+    UserParams user = 16;
     // @gotags: validate:"omitempty"
-    SshParams ssh = 22;
+    SshParams ssh = 17;
     // @gotags: validate:"omitempty"
-    SshdParams sshd = 23;
+    SshdParams sshd = 18;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 24;
+    SudoParams sudo = 19;
     // @gotags: validate:"omitempty"
-    LpsParams lps = 25;
+    LpsParams lps = 20;
     // @gotags: validate:"omitempty"
-    GroupParams group = 26;
+    GroupParams group = 21;
     // @gotags: validate:"omitempty"
-    LuksParams luks = 27;
+    LuksParams luks = 22;
     // @gotags: validate:"omitempty"
-    WifiParams wifi = 28;
+    WifiParams wifi = 23;
   }
 }
 
@@ -730,39 +726,39 @@ message UpdateActionParamsRequest {
 
   oneof params {
     // @gotags: validate:"omitempty"
-    PackageParams package = 10;
+    PackageParams package = 5;
     // @gotags: validate:"omitempty"
-    AppInstallParams app = 11;
+    AppInstallParams app = 6;
     // @gotags: validate:"omitempty"
-    ShellParams shell = 12;
+    ShellParams shell = 7;
     // @gotags: validate:"omitempty"
-    SystemdParams systemd = 13;
+    SystemdParams systemd = 8;
     // @gotags: validate:"omitempty"
-    FileParams file = 14;
+    FileParams file = 9;
     // @gotags: validate:"omitempty"
-    UpdateParams update = 15;
+    UpdateParams update = 10;
     // @gotags: validate:"omitempty"
-    RepositoryParams repository = 16;
+    RepositoryParams repository = 11;
     // @gotags: validate:"omitempty"
-    FlatpakParams flatpak = 17;
+    FlatpakParams flatpak = 12;
     // @gotags: validate:"omitempty"
-    DirectoryParams directory = 18;
+    DirectoryParams directory = 13;
     // @gotags: validate:"omitempty"
-    UserParams user = 19;
+    UserParams user = 14;
     // @gotags: validate:"omitempty"
-    SshParams ssh = 22;
+    SshParams ssh = 15;
     // @gotags: validate:"omitempty"
-    SshdParams sshd = 23;
+    SshdParams sshd = 16;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 24;
+    SudoParams sudo = 17;
     // @gotags: validate:"omitempty"
-    LpsParams lps = 25;
+    LpsParams lps = 18;
     // @gotags: validate:"omitempty"
-    GroupParams group = 26;
+    GroupParams group = 19;
     // @gotags: validate:"omitempty"
-    LuksParams luks = 27;
+    LuksParams luks = 20;
     // @gotags: validate:"omitempty"
-    WifiParams wifi = 28;
+    WifiParams wifi = 21;
   }
 }
 
