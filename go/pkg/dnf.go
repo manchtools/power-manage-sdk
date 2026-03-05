@@ -399,7 +399,14 @@ func (d *Dnf) IsPinned(name string) (bool, error) {
 	if err != nil {
 		return false, nil // versionlock plugin might not be installed
 	}
-	return strings.Contains(string(out), name), nil
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" && parseNEVRAName(line) == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (d *Dnf) getPinnedSet() (map[string]bool, error) {
