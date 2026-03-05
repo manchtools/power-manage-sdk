@@ -209,7 +209,11 @@ import {
 	type LpsPassword,
 	type LuksKey,
 	type AvailableItem,
-	type DeviceAssignee
+	type DeviceAssignee,
+	type DeviceGroupMember,
+	type InheritedRole,
+	type ActionSetMember,
+	type DefinitionMember
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
@@ -653,10 +657,10 @@ export class ApiClient {
 		return response.action;
 	}
 
-	async listActions(pageSize: number = 50, pageToken: string = '', typeFilter?: ActionType) {
+	async listActions(pageSize: number = 50, pageToken: string = '', typeFilter?: ActionType, unassignedOnly: boolean = false) {
 		const client = this.getClient();
 		return client.listActions(
-			create(ListActionsRequestSchema, { pageSize, pageToken, typeFilter: typeFilter ?? 0 })
+			create(ListActionsRequestSchema, { pageSize, pageToken, typeFilter: typeFilter ?? 0, unassignedOnly })
 		);
 	}
 
@@ -706,10 +710,10 @@ export class ApiClient {
 		return client.getActionSet(create(GetActionSetRequestSchema, { id }));
 	}
 
-	async listActionSets(pageSize: number = 50, pageToken: string = '') {
+	async listActionSets(pageSize: number = 50, pageToken: string = '', unassignedOnly: boolean = false) {
 		const client = this.getClient();
 		return client.listActionSets(
-			create(ListActionSetsRequestSchema, { pageSize, pageToken })
+			create(ListActionSetsRequestSchema, { pageSize, pageToken, unassignedOnly })
 		);
 	}
 
@@ -1645,5 +1649,5 @@ export type {
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
 	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
 	AvailableItem, DeviceAssignee, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
-	SearchResult, SshPublicKey
+	SearchResult, SshPublicKey, DeviceGroupMember, InheritedRole, ActionSetMember, DefinitionMember
 };
