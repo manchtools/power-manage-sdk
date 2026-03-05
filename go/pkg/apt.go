@@ -10,14 +10,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 // Apt implements the Manager interface for Debian-based systems.
 type Apt struct {
-	ctx     context.Context
-	useSudo bool
-	aptCmd  string // cached apt command (apt or apt-get)
+	ctx        context.Context
+	useSudo    bool
+	aptCmd     string // cached apt command (apt or apt-get)
+	aptCmdOnce sync.Once
 }
 
 // NewApt creates a new Apt package manager.
@@ -388,17 +390,15 @@ func (a *Apt) getPinnedSet() (map[string]bool, error) {
 }
 
 // getAptCmd returns the preferred apt command (apt if available, apt-get as fallback).
-// The result is cached for subsequent calls.
+// The result is cached for subsequent calls (thread-safe via sync.Once).
 func (a *Apt) getAptCmd() string {
-	if a.aptCmd != "" {
-		return a.aptCmd
-	}
-	// Prefer apt if available
-	if _, err := exec.LookPath("apt"); err == nil {
-		a.aptCmd = "apt"
-	} else {
-		a.aptCmd = "apt-get"
-	}
+	a.aptCmdOnce.Do(func() {
+		if _, err := exec.LookPath("apt"); err == nil {
+			a.aptCmd = "apt"
+		} else {
+			a.aptCmd = "apt-get"
+		}
+	})
 	return a.aptCmd
 }
 
