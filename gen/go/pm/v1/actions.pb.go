@@ -411,6 +411,11 @@ type Action struct {
 	// Scheduling configuration for autonomous agent execution
 	// @gotags: validate:"omitempty"
 	Schedule *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty"`
+	// ECDSA signature over canonical action payload (signed by CA key).
+	// Used to verify actions were created by the control server.
+	Signature []byte `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
+	// Canonical JSON params used for signature verification.
+	ParamsCanonical []byte `protobuf:"bytes,7,opt,name=params_canonical,json=paramsCanonical,proto3" json:"params_canonical,omitempty"`
 	// Type-specific parameters
 	//
 	// Types that are valid to be assigned to Params:
@@ -432,14 +437,9 @@ type Action struct {
 	//	*Action_Group
 	//	*Action_Luks
 	//	*Action_Wifi
-	Params isAction_Params `protobuf_oneof:"params"`
-	// ECDSA signature over canonical action payload (signed by CA key).
-	// Used to verify actions were created by the control server.
-	Signature []byte `protobuf:"bytes,20,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Canonical JSON params used for signature verification.
-	ParamsCanonical []byte `protobuf:"bytes,21,opt,name=params_canonical,json=paramsCanonical,proto3" json:"params_canonical,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	Params        isAction_Params `protobuf_oneof:"params"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Action) Reset() {
@@ -503,6 +503,20 @@ func (x *Action) GetTimeoutSeconds() int32 {
 func (x *Action) GetSchedule() *ActionSchedule {
 	if x != nil {
 		return x.Schedule
+	}
+	return nil
+}
+
+func (x *Action) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *Action) GetParamsCanonical() []byte {
+	if x != nil {
+		return x.ParamsCanonical
 	}
 	return nil
 }
@@ -667,90 +681,76 @@ func (x *Action) GetWifi() *WifiParams {
 	return nil
 }
 
-func (x *Action) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *Action) GetParamsCanonical() []byte {
-	if x != nil {
-		return x.ParamsCanonical
-	}
-	return nil
-}
-
 type isAction_Params interface {
 	isAction_Params()
 }
 
 type Action_Package struct {
-	Package *PackageParams `protobuf:"bytes,10,opt,name=package,proto3,oneof"`
+	Package *PackageParams `protobuf:"bytes,8,opt,name=package,proto3,oneof"`
 }
 
 type Action_App struct {
-	App *AppInstallParams `protobuf:"bytes,11,opt,name=app,proto3,oneof"`
+	App *AppInstallParams `protobuf:"bytes,9,opt,name=app,proto3,oneof"`
 }
 
 type Action_Shell struct {
-	Shell *ShellParams `protobuf:"bytes,12,opt,name=shell,proto3,oneof"`
+	Shell *ShellParams `protobuf:"bytes,10,opt,name=shell,proto3,oneof"`
 }
 
 type Action_Systemd struct {
-	Systemd *SystemdParams `protobuf:"bytes,13,opt,name=systemd,proto3,oneof"`
+	Systemd *SystemdParams `protobuf:"bytes,11,opt,name=systemd,proto3,oneof"`
 }
 
 type Action_File struct {
-	File *FileParams `protobuf:"bytes,14,opt,name=file,proto3,oneof"`
+	File *FileParams `protobuf:"bytes,12,opt,name=file,proto3,oneof"`
 }
 
 type Action_Update struct {
-	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof"`
+	Update *UpdateParams `protobuf:"bytes,13,opt,name=update,proto3,oneof"`
 }
 
 type Action_Repository struct {
-	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof"`
+	Repository *RepositoryParams `protobuf:"bytes,14,opt,name=repository,proto3,oneof"`
 }
 
 type Action_Flatpak struct {
-	Flatpak *FlatpakParams `protobuf:"bytes,17,opt,name=flatpak,proto3,oneof"`
+	Flatpak *FlatpakParams `protobuf:"bytes,15,opt,name=flatpak,proto3,oneof"`
 }
 
 type Action_Directory struct {
-	Directory *DirectoryParams `protobuf:"bytes,18,opt,name=directory,proto3,oneof"`
+	Directory *DirectoryParams `protobuf:"bytes,16,opt,name=directory,proto3,oneof"`
 }
 
 type Action_User struct {
-	User *UserParams `protobuf:"bytes,19,opt,name=user,proto3,oneof"`
+	User *UserParams `protobuf:"bytes,17,opt,name=user,proto3,oneof"`
 }
 
 type Action_Ssh struct {
-	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof"`
+	Ssh *SshParams `protobuf:"bytes,18,opt,name=ssh,proto3,oneof"`
 }
 
 type Action_Sshd struct {
-	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof"`
+	Sshd *SshdParams `protobuf:"bytes,19,opt,name=sshd,proto3,oneof"`
 }
 
 type Action_Sudo struct {
-	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof"`
+	Sudo *SudoParams `protobuf:"bytes,20,opt,name=sudo,proto3,oneof"`
 }
 
 type Action_Lps struct {
-	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof"`
+	Lps *LpsParams `protobuf:"bytes,21,opt,name=lps,proto3,oneof"`
 }
 
 type Action_Group struct {
-	Group *GroupParams `protobuf:"bytes,26,opt,name=group,proto3,oneof"`
+	Group *GroupParams `protobuf:"bytes,22,opt,name=group,proto3,oneof"`
 }
 
 type Action_Luks struct {
-	Luks *LuksParams `protobuf:"bytes,27,opt,name=luks,proto3,oneof"`
+	Luks *LuksParams `protobuf:"bytes,23,opt,name=luks,proto3,oneof"`
 }
 
 type Action_Wifi struct {
-	Wifi *WifiParams `protobuf:"bytes,28,opt,name=wifi,proto3,oneof"`
+	Wifi *WifiParams `protobuf:"bytes,24,opt,name=wifi,proto3,oneof"`
 }
 
 func (*Action_Package) isAction_Params() {}
@@ -882,13 +882,13 @@ type PackageParams struct {
 	// Manager-specific package names (override generic name)
 	// If a manager-specific name is empty, that manager will be skipped.
 	// @gotags: validate:"omitempty,max=255"
-	AptName string `protobuf:"bytes,10,opt,name=apt_name,json=aptName,proto3" json:"apt_name,omitempty" validate:"omitempty,max=255"` // Debian/Ubuntu (apt/apt-get)
+	AptName string `protobuf:"bytes,5,opt,name=apt_name,json=aptName,proto3" json:"apt_name,omitempty" validate:"omitempty,max=255"` // Debian/Ubuntu (apt/apt-get)
 	// @gotags: validate:"omitempty,max=255"
-	DnfName string `protobuf:"bytes,11,opt,name=dnf_name,json=dnfName,proto3" json:"dnf_name,omitempty" validate:"omitempty,max=255"` // Fedora/RHEL (dnf/yum)
+	DnfName string `protobuf:"bytes,6,opt,name=dnf_name,json=dnfName,proto3" json:"dnf_name,omitempty" validate:"omitempty,max=255"` // Fedora/RHEL (dnf/yum)
 	// @gotags: validate:"omitempty,max=255"
-	PacmanName string `protobuf:"bytes,12,opt,name=pacman_name,json=pacmanName,proto3" json:"pacman_name,omitempty" validate:"omitempty,max=255"` // Arch Linux (pacman)
+	PacmanName string `protobuf:"bytes,7,opt,name=pacman_name,json=pacmanName,proto3" json:"pacman_name,omitempty" validate:"omitempty,max=255"` // Arch Linux (pacman)
 	// @gotags: validate:"omitempty,max=255"
-	ZypperName    string `protobuf:"bytes,13,opt,name=zypper_name,json=zypperName,proto3" json:"zypper_name,omitempty" validate:"omitempty,max=255"` // openSUSE (zypper)
+	ZypperName    string `protobuf:"bytes,8,opt,name=zypper_name,json=zypperName,proto3" json:"zypper_name,omitempty" validate:"omitempty,max=255"` // openSUSE (zypper)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1549,16 +1549,16 @@ type RepositoryParams struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=64,alphanum"`
 	// APT repository configuration (Debian/Ubuntu)
 	// @gotags: validate:"omitempty"
-	Apt *AptRepository `protobuf:"bytes,10,opt,name=apt,proto3" json:"apt,omitempty" validate:"omitempty"`
+	Apt *AptRepository `protobuf:"bytes,2,opt,name=apt,proto3" json:"apt,omitempty" validate:"omitempty"`
 	// DNF/YUM repository configuration (Fedora/RHEL)
 	// @gotags: validate:"omitempty"
-	Dnf *DnfRepository `protobuf:"bytes,11,opt,name=dnf,proto3" json:"dnf,omitempty" validate:"omitempty"`
+	Dnf *DnfRepository `protobuf:"bytes,3,opt,name=dnf,proto3" json:"dnf,omitempty" validate:"omitempty"`
 	// Pacman repository configuration (Arch Linux)
 	// @gotags: validate:"omitempty"
-	Pacman *PacmanRepository `protobuf:"bytes,12,opt,name=pacman,proto3" json:"pacman,omitempty" validate:"omitempty"`
+	Pacman *PacmanRepository `protobuf:"bytes,4,opt,name=pacman,proto3" json:"pacman,omitempty" validate:"omitempty"`
 	// Zypper repository configuration (openSUSE)
 	// @gotags: validate:"omitempty"
-	Zypper        *ZypperRepository `protobuf:"bytes,13,opt,name=zypper,proto3" json:"zypper,omitempty" validate:"omitempty"`
+	Zypper        *ZypperRepository `protobuf:"bytes,5,opt,name=zypper,proto3" json:"zypper,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2057,26 +2057,26 @@ type UserParams struct {
 	Shell string `protobuf:"bytes,5,opt,name=shell,proto3" json:"shell,omitempty" validate:"omitempty,startswith=/"`
 	// SSH authorized keys to add to ~/.ssh/authorized_keys
 	// @gotags: validate:"omitempty,dive,max=4096"
-	SshAuthorizedKeys []string `protobuf:"bytes,7,rep,name=ssh_authorized_keys,json=sshAuthorizedKeys,proto3" json:"ssh_authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
+	SshAuthorizedKeys []string `protobuf:"bytes,6,rep,name=ssh_authorized_keys,json=sshAuthorizedKeys,proto3" json:"ssh_authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
 	// GECOS field / user comment (full name, etc.)
 	// @gotags: validate:"omitempty,max=255"
-	Comment string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty" validate:"omitempty,max=255"`
+	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty" validate:"omitempty,max=255"`
 	// Create as system user (UID < 1000, no home directory by default)
 	// @gotags: validate:"omitempty"
-	SystemUser bool `protobuf:"varint,9,opt,name=system_user,json=systemUser,proto3" json:"system_user,omitempty" validate:"omitempty"`
+	SystemUser bool `protobuf:"varint,8,opt,name=system_user,json=systemUser,proto3" json:"system_user,omitempty" validate:"omitempty"`
 	// Create home directory (default: true for normal users, false for system users)
 	// @gotags: validate:"omitempty"
-	CreateHome bool `protobuf:"varint,10,opt,name=create_home,json=createHome,proto3" json:"create_home,omitempty" validate:"omitempty"`
+	CreateHome bool `protobuf:"varint,9,opt,name=create_home,json=createHome,proto3" json:"create_home,omitempty" validate:"omitempty"`
 	// Disable the user account (lock password, set shell to /usr/sbin/nologin)
 	// @gotags: validate:"omitempty"
-	Disabled bool `protobuf:"varint,11,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
+	Disabled bool `protobuf:"varint,10,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
 	// Primary group name (alternative to gid - creates group if needed)
 	// @gotags: validate:"omitempty,max=32"
-	PrimaryGroup string `protobuf:"bytes,12,opt,name=primary_group,json=primaryGroup,proto3" json:"primary_group,omitempty" validate:"omitempty,max=32"`
+	PrimaryGroup string `protobuf:"bytes,11,opt,name=primary_group,json=primaryGroup,proto3" json:"primary_group,omitempty" validate:"omitempty,max=32"`
 	// Hide user from graphical login screens (GDM, SDDM, LightDM).
 	// Sets SystemAccount=true in AccountsService. No effect on headless systems.
 	// @gotags: validate:"omitempty"
-	Hidden        bool `protobuf:"varint,13,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
+	Hidden        bool `protobuf:"varint,12,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2279,18 +2279,15 @@ func (x *GroupParams) GetSystemGroup() bool {
 // to the group. SSH keys and home directory are managed by the User action type.
 type SshParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Deprecated: use users field instead. Kept for backward compatibility.
-	// @gotags: validate:"omitempty,max=32"
-	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"omitempty,max=32"`
 	// Allow public key authentication (default: true)
 	// @gotags: validate:"omitempty"
-	AllowPubkey bool `protobuf:"varint,2,opt,name=allow_pubkey,json=allowPubkey,proto3" json:"allow_pubkey,omitempty" validate:"omitempty"`
+	AllowPubkey bool `protobuf:"varint,1,opt,name=allow_pubkey,json=allowPubkey,proto3" json:"allow_pubkey,omitempty" validate:"omitempty"`
 	// Allow password authentication (default: false)
 	// @gotags: validate:"omitempty"
-	AllowPassword bool `protobuf:"varint,3,opt,name=allow_password,json=allowPassword,proto3" json:"allow_password,omitempty" validate:"omitempty"`
+	AllowPassword bool `protobuf:"varint,2,opt,name=allow_password,json=allowPassword,proto3" json:"allow_password,omitempty" validate:"omitempty"`
 	// Users to add to the SSH access group (must be valid Linux usernames)
 	// @gotags: validate:"omitempty,dive,min=1,max=32"
-	Users         []string `protobuf:"bytes,6,rep,name=users,proto3" json:"users,omitempty" validate:"omitempty,dive,min=1,max=32"`
+	Users         []string `protobuf:"bytes,3,rep,name=users,proto3" json:"users,omitempty" validate:"omitempty,dive,min=1,max=32"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2323,13 +2320,6 @@ func (x *SshParams) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SshParams.ProtoReflect.Descriptor instead.
 func (*SshParams) Descriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *SshParams) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
 }
 
 func (x *SshParams) GetAllowPubkey() bool {
@@ -3003,29 +2993,29 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
 	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
-	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
-	"\apackage\x18\n" +
-	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
-	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12\x1c\n" +
+	"\tsignature\x18\x06 \x01(\fR\tsignature\x12)\n" +
+	"\x10params_canonical\x18\a \x01(\fR\x0fparamsCanonical\x120\n" +
+	"\apackage\x18\b \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\t \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\n" +
+	" \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\asystemd\x18\v \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\x04file\x18\f \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\r \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
 	"\n" +
-	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repository\x18\x0e \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
 	"repository\x120\n" +
-	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
-	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
-	"\x04luks\x18\x1b \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
-	"\x04wifi\x18\x1c \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12\x1c\n" +
-	"\tsignature\x18\x14 \x01(\fR\tsignature\x12)\n" +
-	"\x10params_canonical\x18\x15 \x01(\fR\x0fparamsCanonicalB\b\n" +
+	"\aflatpak\x18\x0f \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\x10 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
+	"\x04user\x18\x11 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x12 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x13 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x14 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x15 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
+	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
+	"\x04luks\x18\x17 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
+	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -3037,12 +3027,11 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12'\n" +
 	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12\x10\n" +
 	"\x03pin\x18\x04 \x01(\bR\x03pin\x12\x19\n" +
-	"\bapt_name\x18\n" +
-	" \x01(\tR\aaptName\x12\x19\n" +
-	"\bdnf_name\x18\v \x01(\tR\adnfName\x12\x1f\n" +
-	"\vpacman_name\x18\f \x01(\tR\n" +
+	"\bapt_name\x18\x05 \x01(\tR\aaptName\x12\x19\n" +
+	"\bdnf_name\x18\x06 \x01(\tR\adnfName\x12\x1f\n" +
+	"\vpacman_name\x18\a \x01(\tR\n" +
 	"pacmanName\x12\x1f\n" +
-	"\vzypper_name\x18\r \x01(\tR\n" +
+	"\vzypper_name\x18\b \x01(\tR\n" +
 	"zypperName\"p\n" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
@@ -3092,11 +3081,10 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xd8\x01\n" +
 	"\x10RepositoryParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
-	"\x03apt\x18\n" +
-	" \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
-	"\x03dnf\x18\v \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
-	"\x06pacman\x18\f \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
-	"\x06zypper\x18\r \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
+	"\x03apt\x18\x02 \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
+	"\x03dnf\x18\x03 \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
+	"\x06pacman\x18\x04 \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
+	"\x06zypper\x18\x05 \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
 	"\rAptRepository\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
 	"\fdistribution\x18\x02 \x01(\tR\fdistribution\x12\x1e\n" +
@@ -3136,26 +3124,25 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12\x19\n" +
 	"\bhome_dir\x18\x04 \x01(\tR\ahomeDir\x12\x14\n" +
 	"\x05shell\x18\x05 \x01(\tR\x05shell\x12.\n" +
-	"\x13ssh_authorized_keys\x18\a \x03(\tR\x11sshAuthorizedKeys\x12\x18\n" +
-	"\acomment\x18\b \x01(\tR\acomment\x12\x1f\n" +
-	"\vsystem_user\x18\t \x01(\bR\n" +
+	"\x13ssh_authorized_keys\x18\x06 \x03(\tR\x11sshAuthorizedKeys\x12\x18\n" +
+	"\acomment\x18\a \x01(\tR\acomment\x12\x1f\n" +
+	"\vsystem_user\x18\b \x01(\bR\n" +
 	"systemUser\x12\x1f\n" +
-	"\vcreate_home\x18\n" +
-	" \x01(\bR\n" +
+	"\vcreate_home\x18\t \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
-	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\x12\x16\n" +
-	"\x06hidden\x18\r \x01(\bR\x06hidden\"p\n" +
+	"\bdisabled\x18\n" +
+	" \x01(\bR\bdisabled\x12#\n" +
+	"\rprimary_group\x18\v \x01(\tR\fprimaryGroup\x12\x16\n" +
+	"\x06hidden\x18\f \x01(\bR\x06hidden\"p\n" +
 	"\vGroupParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12\x10\n" +
 	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12!\n" +
-	"\fsystem_group\x18\x04 \x01(\bR\vsystemGroup\"\xae\x01\n" +
-	"\tSshParams\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12!\n" +
-	"\fallow_pubkey\x18\x02 \x01(\bR\vallowPubkey\x12%\n" +
-	"\x0eallow_password\x18\x03 \x01(\bR\rallowPassword\x12\x14\n" +
-	"\x05users\x18\x06 \x03(\tR\x05usersJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\x0fauthorized_keysR\bhome_dir\"7\n" +
+	"\fsystem_group\x18\x04 \x01(\bR\vsystemGroup\"k\n" +
+	"\tSshParams\x12!\n" +
+	"\fallow_pubkey\x18\x01 \x01(\bR\vallowPubkey\x12%\n" +
+	"\x0eallow_password\x18\x02 \x01(\bR\rallowPassword\x12\x14\n" +
+	"\x05users\x18\x03 \x03(\tR\x05users\"7\n" +
 	"\rSshdDirective\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"^\n" +

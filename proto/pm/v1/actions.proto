@@ -80,32 +80,32 @@ message Action {
   // @gotags: validate:"omitempty"
   ActionSchedule schedule = 5;
 
-  // Type-specific parameters
-  oneof params {
-    PackageParams package = 10;
-    AppInstallParams app = 11;
-    ShellParams shell = 12;
-    SystemdParams systemd = 13;
-    FileParams file = 14;
-    UpdateParams update = 15;
-    RepositoryParams repository = 16;
-    FlatpakParams flatpak = 17;
-    DirectoryParams directory = 18;
-    UserParams user = 19;
-    SshParams ssh = 22;
-    SshdParams sshd = 23;
-    SudoParams sudo = 24;
-    LpsParams lps = 25;
-    GroupParams group = 26;
-    LuksParams luks = 27;
-    WifiParams wifi = 28;
-  }
-
   // ECDSA signature over canonical action payload (signed by CA key).
   // Used to verify actions were created by the control server.
-  bytes signature = 20;
+  bytes signature = 6;
   // Canonical JSON params used for signature verification.
-  bytes params_canonical = 21;
+  bytes params_canonical = 7;
+
+  // Type-specific parameters
+  oneof params {
+    PackageParams package = 8;
+    AppInstallParams app = 9;
+    ShellParams shell = 10;
+    SystemdParams systemd = 11;
+    FileParams file = 12;
+    UpdateParams update = 13;
+    RepositoryParams repository = 14;
+    FlatpakParams flatpak = 15;
+    DirectoryParams directory = 16;
+    UserParams user = 17;
+    SshParams ssh = 18;
+    SshdParams sshd = 19;
+    SudoParams sudo = 20;
+    LpsParams lps = 21;
+    GroupParams group = 22;
+    LuksParams luks = 23;
+    WifiParams wifi = 24;
+  }
 }
 
 // ActionSchedule defines when an action should be executed by the agent.
@@ -149,13 +149,13 @@ message PackageParams {
   // Manager-specific package names (override generic name)
   // If a manager-specific name is empty, that manager will be skipped.
   // @gotags: validate:"omitempty,max=255"
-  string apt_name = 10;    // Debian/Ubuntu (apt/apt-get)
+  string apt_name = 5;    // Debian/Ubuntu (apt/apt-get)
   // @gotags: validate:"omitempty,max=255"
-  string dnf_name = 11;    // Fedora/RHEL (dnf/yum)
+  string dnf_name = 6;    // Fedora/RHEL (dnf/yum)
   // @gotags: validate:"omitempty,max=255"
-  string pacman_name = 12; // Arch Linux (pacman)
+  string pacman_name = 7; // Arch Linux (pacman)
   // @gotags: validate:"omitempty,max=255"
-  string zypper_name = 13; // openSUSE (zypper)
+  string zypper_name = 8; // openSUSE (zypper)
 }
 
 message AppInstallParams {
@@ -284,19 +284,19 @@ message RepositoryParams {
 
   // APT repository configuration (Debian/Ubuntu)
   // @gotags: validate:"omitempty"
-  AptRepository apt = 10;
+  AptRepository apt = 2;
 
   // DNF/YUM repository configuration (Fedora/RHEL)
   // @gotags: validate:"omitempty"
-  DnfRepository dnf = 11;
+  DnfRepository dnf = 3;
 
   // Pacman repository configuration (Arch Linux)
   // @gotags: validate:"omitempty"
-  PacmanRepository pacman = 12;
+  PacmanRepository pacman = 4;
 
   // Zypper repository configuration (openSUSE)
   // @gotags: validate:"omitempty"
-  ZypperRepository zypper = 13;
+  ZypperRepository zypper = 5;
 }
 
 // AptRepository configures a Debian/Ubuntu APT repository.
@@ -440,32 +440,32 @@ message UserParams {
 
   // SSH authorized keys to add to ~/.ssh/authorized_keys
   // @gotags: validate:"omitempty,dive,max=4096"
-  repeated string ssh_authorized_keys = 7;
+  repeated string ssh_authorized_keys = 6;
 
   // GECOS field / user comment (full name, etc.)
   // @gotags: validate:"omitempty,max=255"
-  string comment = 8;
+  string comment = 7;
 
   // Create as system user (UID < 1000, no home directory by default)
   // @gotags: validate:"omitempty"
-  bool system_user = 9;
+  bool system_user = 8;
 
   // Create home directory (default: true for normal users, false for system users)
   // @gotags: validate:"omitempty"
-  bool create_home = 10;
+  bool create_home = 9;
 
   // Disable the user account (lock password, set shell to /usr/sbin/nologin)
   // @gotags: validate:"omitempty"
-  bool disabled = 11;
+  bool disabled = 10;
 
   // Primary group name (alternative to gid - creates group if needed)
   // @gotags: validate:"omitempty,max=32"
-  string primary_group = 12;
+  string primary_group = 11;
 
   // Hide user from graphical login screens (GDM, SDDM, LightDM).
   // Sets SystemAccount=true in AccountsService. No effect on headless systems.
   // @gotags: validate:"omitempty"
-  bool hidden = 13;
+  bool hidden = 12;
 }
 
 // GroupParams configures Linux group management.
@@ -493,24 +493,17 @@ message GroupParams {
 // Each action creates a Linux group pm-ssh-{actionId} and users are added
 // to the group. SSH keys and home directory are managed by the User action type.
 message SshParams {
-  // Deprecated: use users field instead. Kept for backward compatibility.
-  // @gotags: validate:"omitempty,max=32"
-  string username = 1;
-
   // Allow public key authentication (default: true)
   // @gotags: validate:"omitempty"
-  bool allow_pubkey = 2;
+  bool allow_pubkey = 1;
 
   // Allow password authentication (default: false)
   // @gotags: validate:"omitempty"
-  bool allow_password = 3;
-
-  reserved 4, 5;
-  reserved "authorized_keys", "home_dir";
+  bool allow_password = 2;
 
   // Users to add to the SSH access group (must be valid Linux usernames)
   // @gotags: validate:"omitempty,dive,min=1,max=32"
-  repeated string users = 6;
+  repeated string users = 3;
 }
 
 // SshdDirective represents a single sshd_config key-value directive.

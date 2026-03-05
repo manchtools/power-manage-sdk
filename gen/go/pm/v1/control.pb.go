@@ -100,17 +100,15 @@ type RegisterResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
 	DeviceId *DeviceId `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required"`
-	// @gotags: validate:"omitempty,max=4096"
-	AuthToken string `protobuf:"bytes,2,opt,name=auth_token,json=authToken,proto3" json:"auth_token,omitempty" validate:"omitempty,max=4096"` // Deprecated: use mTLS certificates instead
 	// mTLS credentials issued by control server
 	// @gotags: validate:"required"
-	CaCert []byte `protobuf:"bytes,3,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"required"` // CA certificate (PEM)
+	CaCert []byte `protobuf:"bytes,2,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"required"` // CA certificate (PEM)
 	// Signed device certificate (PEM) - private key stays on agent
 	// @gotags: validate:"required"
-	Certificate []byte `protobuf:"bytes,4,opt,name=certificate,proto3" json:"certificate,omitempty" validate:"required"`
+	Certificate []byte `protobuf:"bytes,3,opt,name=certificate,proto3" json:"certificate,omitempty" validate:"required"`
 	// Gateway URL for streaming connection (agent stores this for future connections)
 	// @gotags: validate:"required,url"
-	GatewayUrl    string `protobuf:"bytes,5,opt,name=gateway_url,json=gatewayUrl,proto3" json:"gateway_url,omitempty" validate:"required,url"`
+	GatewayUrl    string `protobuf:"bytes,4,opt,name=gateway_url,json=gatewayUrl,proto3" json:"gateway_url,omitempty" validate:"required,url"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -150,13 +148,6 @@ func (x *RegisterResponse) GetDeviceId() *DeviceId {
 		return x.DeviceId
 	}
 	return nil
-}
-
-func (x *RegisterResponse) GetAuthToken() string {
-	if x != nil {
-		return x.AuthToken
-	}
-	return ""
 }
 
 func (x *RegisterResponse) GetCaCert() []byte {
@@ -1363,30 +1354,30 @@ type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastLoginAt   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
-	Disabled      bool                   `protobuf:"varint,6,opt,name=disabled,proto3" json:"disabled,omitempty"`
-	Roles         []*Role                `protobuf:"bytes,7,rep,name=roles,proto3" json:"roles,omitempty"`
-	TotpEnabled   bool                   `protobuf:"varint,8,opt,name=totp_enabled,json=totpEnabled,proto3" json:"totp_enabled,omitempty"`
-	HasPassword   bool                   `protobuf:"varint,9,opt,name=has_password,json=hasPassword,proto3" json:"has_password,omitempty"`
-	IdentityLinks []*IdentityLink        `protobuf:"bytes,10,rep,name=identity_links,json=identityLinks,proto3" json:"identity_links,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastLoginAt   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
+	Disabled      bool                   `protobuf:"varint,5,opt,name=disabled,proto3" json:"disabled,omitempty"`
+	Roles         []*Role                `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	TotpEnabled   bool                   `protobuf:"varint,7,opt,name=totp_enabled,json=totpEnabled,proto3" json:"totp_enabled,omitempty"`
+	HasPassword   bool                   `protobuf:"varint,8,opt,name=has_password,json=hasPassword,proto3" json:"has_password,omitempty"`
+	IdentityLinks []*IdentityLink        `protobuf:"bytes,9,rep,name=identity_links,json=identityLinks,proto3" json:"identity_links,omitempty"`
 	// OIDC profile scope properties
-	DisplayName       string `protobuf:"bytes,11,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	GivenName         string `protobuf:"bytes,12,opt,name=given_name,json=givenName,proto3" json:"given_name,omitempty"`
-	FamilyName        string `protobuf:"bytes,13,opt,name=family_name,json=familyName,proto3" json:"family_name,omitempty"`
-	PreferredUsername string `protobuf:"bytes,14,opt,name=preferred_username,json=preferredUsername,proto3" json:"preferred_username,omitempty"`
-	Picture           string `protobuf:"bytes,15,opt,name=picture,proto3" json:"picture,omitempty"`
-	Locale            string `protobuf:"bytes,16,opt,name=locale,proto3" json:"locale,omitempty"`
+	DisplayName       string `protobuf:"bytes,10,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	GivenName         string `protobuf:"bytes,11,opt,name=given_name,json=givenName,proto3" json:"given_name,omitempty"`
+	FamilyName        string `protobuf:"bytes,12,opt,name=family_name,json=familyName,proto3" json:"family_name,omitempty"`
+	PreferredUsername string `protobuf:"bytes,13,opt,name=preferred_username,json=preferredUsername,proto3" json:"preferred_username,omitempty"`
+	Picture           string `protobuf:"bytes,14,opt,name=picture,proto3" json:"picture,omitempty"`
+	Locale            string `protobuf:"bytes,15,opt,name=locale,proto3" json:"locale,omitempty"`
 	// Linux identity
-	LinuxUsername string `protobuf:"bytes,17,opt,name=linux_username,json=linuxUsername,proto3" json:"linux_username,omitempty"`
-	LinuxUid      int32  `protobuf:"varint,18,opt,name=linux_uid,json=linuxUid,proto3" json:"linux_uid,omitempty"`
+	LinuxUsername string `protobuf:"bytes,16,opt,name=linux_username,json=linuxUsername,proto3" json:"linux_username,omitempty"`
+	LinuxUid      int32  `protobuf:"varint,17,opt,name=linux_uid,json=linuxUid,proto3" json:"linux_uid,omitempty"`
 	// SSH access settings
-	SshPublicKeys           []*SshPublicKey  `protobuf:"bytes,19,rep,name=ssh_public_keys,json=sshPublicKeys,proto3" json:"ssh_public_keys,omitempty"`
-	SshAccessEnabled        bool             `protobuf:"varint,20,opt,name=ssh_access_enabled,json=sshAccessEnabled,proto3" json:"ssh_access_enabled,omitempty"`
-	SshAllowPubkey          bool             `protobuf:"varint,21,opt,name=ssh_allow_pubkey,json=sshAllowPubkey,proto3" json:"ssh_allow_pubkey,omitempty"`
-	SshAllowPassword        bool             `protobuf:"varint,22,opt,name=ssh_allow_password,json=sshAllowPassword,proto3" json:"ssh_allow_password,omitempty"`
-	UserProvisioningEnabled bool             `protobuf:"varint,23,opt,name=user_provisioning_enabled,json=userProvisioningEnabled,proto3" json:"user_provisioning_enabled,omitempty"`
-	InheritedRoles          []*InheritedRole `protobuf:"bytes,24,rep,name=inherited_roles,json=inheritedRoles,proto3" json:"inherited_roles,omitempty"`
+	SshPublicKeys           []*SshPublicKey  `protobuf:"bytes,18,rep,name=ssh_public_keys,json=sshPublicKeys,proto3" json:"ssh_public_keys,omitempty"`
+	SshAccessEnabled        bool             `protobuf:"varint,19,opt,name=ssh_access_enabled,json=sshAccessEnabled,proto3" json:"ssh_access_enabled,omitempty"`
+	SshAllowPubkey          bool             `protobuf:"varint,20,opt,name=ssh_allow_pubkey,json=sshAllowPubkey,proto3" json:"ssh_allow_pubkey,omitempty"`
+	SshAllowPassword        bool             `protobuf:"varint,21,opt,name=ssh_allow_password,json=sshAllowPassword,proto3" json:"ssh_allow_password,omitempty"`
+	UserProvisioningEnabled bool             `protobuf:"varint,22,opt,name=user_provisioning_enabled,json=userProvisioningEnabled,proto3" json:"user_provisioning_enabled,omitempty"`
+	InheritedRoles          []*InheritedRole `protobuf:"bytes,23,rep,name=inherited_roles,json=inheritedRoles,proto3" json:"inherited_roles,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2919,27 +2910,25 @@ func (x *UpdateUserLinuxUsernameRequest) GetLinuxUsername() string {
 }
 
 type Device struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Hostname      string                 `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
-	AgentVersion  string                 `protobuf:"bytes,3,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty"`
-	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"` // "online", "offline"
-	RegisteredAt  *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
-	LastSeenAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
-	CertExpiresAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=cert_expires_at,json=certExpiresAt,proto3" json:"cert_expires_at,omitempty"`
-	Labels        map[string]string      `protobuf:"bytes,8,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Deprecated: Marked as deprecated in pm/v1/control.proto.
-	AssignedUserId   string   `protobuf:"bytes,9,opt,name=assigned_user_id,json=assignedUserId,proto3" json:"assigned_user_id,omitempty"`        // Deprecated: use assigned_user_ids
-	AssignedUserIds  []string `protobuf:"bytes,15,rep,name=assigned_user_ids,json=assignedUserIds,proto3" json:"assigned_user_ids,omitempty"`    // Users assigned to this device
-	AssignedGroupIds []string `protobuf:"bytes,16,rep,name=assigned_group_ids,json=assignedGroupIds,proto3" json:"assigned_group_ids,omitempty"` // User groups assigned to this device
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Hostname         string                 `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	AgentVersion     string                 `protobuf:"bytes,3,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty"`
+	Status           string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"` // "online", "offline"
+	RegisteredAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
+	LastSeenAt       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
+	CertExpiresAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=cert_expires_at,json=certExpiresAt,proto3" json:"cert_expires_at,omitempty"`
+	Labels           map[string]string      `protobuf:"bytes,8,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AssignedUserIds  []string               `protobuf:"bytes,9,rep,name=assigned_user_ids,json=assignedUserIds,proto3" json:"assigned_user_ids,omitempty"`     // Users assigned to this device
+	AssignedGroupIds []string               `protobuf:"bytes,10,rep,name=assigned_group_ids,json=assignedGroupIds,proto3" json:"assigned_group_ids,omitempty"` // User groups assigned to this device
 	// Sync interval in minutes (0 = use default of 30 minutes)
 	// Agent will pull assigned actions at this interval
-	SyncIntervalMinutes int32 `protobuf:"varint,10,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
+	SyncIntervalMinutes int32 `protobuf:"varint,11,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
 	// Compliance status based on detection scripts
-	ComplianceStatus    ComplianceStatus       `protobuf:"varint,11,opt,name=compliance_status,json=complianceStatus,proto3,enum=pm.v1.ComplianceStatus" json:"compliance_status,omitempty"`
-	ComplianceCheckedAt *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=compliance_checked_at,json=complianceCheckedAt,proto3" json:"compliance_checked_at,omitempty"`
-	ComplianceTotal     int32                  `protobuf:"varint,13,opt,name=compliance_total,json=complianceTotal,proto3" json:"compliance_total,omitempty"`       // Total number of compliance checks
-	CompliancePassing   int32                  `protobuf:"varint,14,opt,name=compliance_passing,json=compliancePassing,proto3" json:"compliance_passing,omitempty"` // Number of passing checks
+	ComplianceStatus    ComplianceStatus       `protobuf:"varint,12,opt,name=compliance_status,json=complianceStatus,proto3,enum=pm.v1.ComplianceStatus" json:"compliance_status,omitempty"`
+	ComplianceCheckedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=compliance_checked_at,json=complianceCheckedAt,proto3" json:"compliance_checked_at,omitempty"`
+	ComplianceTotal     int32                  `protobuf:"varint,14,opt,name=compliance_total,json=complianceTotal,proto3" json:"compliance_total,omitempty"`       // Total number of compliance checks
+	CompliancePassing   int32                  `protobuf:"varint,15,opt,name=compliance_passing,json=compliancePassing,proto3" json:"compliance_passing,omitempty"` // Number of passing checks
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -3028,14 +3017,6 @@ func (x *Device) GetLabels() map[string]string {
 		return x.Labels
 	}
 	return nil
-}
-
-// Deprecated: Marked as deprecated in pm/v1/control.proto.
-func (x *Device) GetAssignedUserId() string {
-	if x != nil {
-		return x.AssignedUserId
-	}
-	return ""
 }
 
 func (x *Device) GetAssignedUserIds() []string {
@@ -4680,12 +4661,17 @@ func (*DeleteTokenResponse) Descriptor() ([]byte, []int) {
 }
 
 type ManagedAction struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name         string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description  string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Type         ActionType             `protobuf:"varint,4,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty"`
-	DesiredState DesiredState           `protobuf:"varint,5,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty"`
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description    string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Type           ActionType             `protobuf:"varint,4,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty"`
+	DesiredState   DesiredState           `protobuf:"varint,5,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty"`
+	TimeoutSeconds int32                  `protobuf:"varint,6,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedBy      string                 `protobuf:"bytes,8,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	Schedule       *ActionSchedule        `protobuf:"bytes,9,opt,name=schedule,proto3" json:"schedule,omitempty"`
+	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// Types that are valid to be assigned to Params:
 	//
 	//	*ManagedAction_Package
@@ -4705,14 +4691,9 @@ type ManagedAction struct {
 	//	*ManagedAction_Group
 	//	*ManagedAction_Luks
 	//	*ManagedAction_Wifi
-	Params         isManagedAction_Params `protobuf_oneof:"params"`
-	TimeoutSeconds int32                  `protobuf:"varint,6,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
-	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	CreatedBy      string                 `protobuf:"bytes,8,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	Schedule       *ActionSchedule        `protobuf:"bytes,9,opt,name=schedule,proto3" json:"schedule,omitempty"`
-	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,29,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	Params        isManagedAction_Params `protobuf_oneof:"params"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ManagedAction) Reset() {
@@ -4778,6 +4759,41 @@ func (x *ManagedAction) GetDesiredState() DesiredState {
 		return x.DesiredState
 	}
 	return DesiredState_DESIRED_STATE_PRESENT
+}
+
+func (x *ManagedAction) GetTimeoutSeconds() int32 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
+}
+
+func (x *ManagedAction) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *ManagedAction) GetCreatedBy() string {
+	if x != nil {
+		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *ManagedAction) GetSchedule() *ActionSchedule {
+	if x != nil {
+		return x.Schedule
+	}
+	return nil
+}
+
+func (x *ManagedAction) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
 }
 
 func (x *ManagedAction) GetParams() isManagedAction_Params {
@@ -4940,112 +4956,77 @@ func (x *ManagedAction) GetWifi() *WifiParams {
 	return nil
 }
 
-func (x *ManagedAction) GetTimeoutSeconds() int32 {
-	if x != nil {
-		return x.TimeoutSeconds
-	}
-	return 0
-}
-
-func (x *ManagedAction) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-func (x *ManagedAction) GetCreatedBy() string {
-	if x != nil {
-		return x.CreatedBy
-	}
-	return ""
-}
-
-func (x *ManagedAction) GetSchedule() *ActionSchedule {
-	if x != nil {
-		return x.Schedule
-	}
-	return nil
-}
-
-func (x *ManagedAction) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
-}
-
 type isManagedAction_Params interface {
 	isManagedAction_Params()
 }
 
 type ManagedAction_Package struct {
-	Package *PackageParams `protobuf:"bytes,10,opt,name=package,proto3,oneof"`
+	Package *PackageParams `protobuf:"bytes,11,opt,name=package,proto3,oneof"`
 }
 
 type ManagedAction_App struct {
-	App *AppInstallParams `protobuf:"bytes,11,opt,name=app,proto3,oneof"`
+	App *AppInstallParams `protobuf:"bytes,12,opt,name=app,proto3,oneof"`
 }
 
 type ManagedAction_Shell struct {
-	Shell *ShellParams `protobuf:"bytes,12,opt,name=shell,proto3,oneof"`
+	Shell *ShellParams `protobuf:"bytes,13,opt,name=shell,proto3,oneof"`
 }
 
 type ManagedAction_Systemd struct {
-	Systemd *SystemdParams `protobuf:"bytes,13,opt,name=systemd,proto3,oneof"`
+	Systemd *SystemdParams `protobuf:"bytes,14,opt,name=systemd,proto3,oneof"`
 }
 
 type ManagedAction_File struct {
-	File *FileParams `protobuf:"bytes,14,opt,name=file,proto3,oneof"`
+	File *FileParams `protobuf:"bytes,15,opt,name=file,proto3,oneof"`
 }
 
 type ManagedAction_Update struct {
-	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof"`
+	Update *UpdateParams `protobuf:"bytes,16,opt,name=update,proto3,oneof"`
 }
 
 type ManagedAction_Repository struct {
-	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof"`
+	Repository *RepositoryParams `protobuf:"bytes,17,opt,name=repository,proto3,oneof"`
 }
 
 type ManagedAction_Flatpak struct {
-	Flatpak *FlatpakParams `protobuf:"bytes,17,opt,name=flatpak,proto3,oneof"`
+	Flatpak *FlatpakParams `protobuf:"bytes,18,opt,name=flatpak,proto3,oneof"`
 }
 
 type ManagedAction_Directory struct {
-	Directory *DirectoryParams `protobuf:"bytes,18,opt,name=directory,proto3,oneof"`
+	Directory *DirectoryParams `protobuf:"bytes,19,opt,name=directory,proto3,oneof"`
 }
 
 type ManagedAction_User struct {
-	User *UserParams `protobuf:"bytes,19,opt,name=user,proto3,oneof"`
+	User *UserParams `protobuf:"bytes,20,opt,name=user,proto3,oneof"`
 }
 
 type ManagedAction_Ssh struct {
-	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof"`
+	Ssh *SshParams `protobuf:"bytes,21,opt,name=ssh,proto3,oneof"`
 }
 
 type ManagedAction_Sshd struct {
-	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof"`
+	Sshd *SshdParams `protobuf:"bytes,22,opt,name=sshd,proto3,oneof"`
 }
 
 type ManagedAction_Sudo struct {
-	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof"`
+	Sudo *SudoParams `protobuf:"bytes,23,opt,name=sudo,proto3,oneof"`
 }
 
 type ManagedAction_Lps struct {
 	// @gotags: validate:"omitempty"
-	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof" validate:"omitempty"`
+	Lps *LpsParams `protobuf:"bytes,24,opt,name=lps,proto3,oneof" validate:"omitempty"`
 }
 
 type ManagedAction_Group struct {
-	Group *GroupParams `protobuf:"bytes,26,opt,name=group,proto3,oneof"`
+	Group *GroupParams `protobuf:"bytes,25,opt,name=group,proto3,oneof"`
 }
 
 type ManagedAction_Luks struct {
-	Luks *LuksParams `protobuf:"bytes,27,opt,name=luks,proto3,oneof"`
+	Luks *LuksParams `protobuf:"bytes,26,opt,name=luks,proto3,oneof"`
 }
 
 type ManagedAction_Wifi struct {
-	Wifi *WifiParams `protobuf:"bytes,28,opt,name=wifi,proto3,oneof"`
+	Wifi *WifiParams `protobuf:"bytes,27,opt,name=wifi,proto3,oneof"`
 }
 
 func (*ManagedAction_Package) isManagedAction_Params() {}
@@ -5358,87 +5339,87 @@ type isCreateActionRequest_Params interface {
 
 type CreateActionRequest_Package struct {
 	// @gotags: validate:"omitempty"
-	Package *PackageParams `protobuf:"bytes,10,opt,name=package,proto3,oneof" validate:"omitempty"`
+	Package *PackageParams `protobuf:"bytes,7,opt,name=package,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_App struct {
 	// @gotags: validate:"omitempty"
-	App *AppInstallParams `protobuf:"bytes,11,opt,name=app,proto3,oneof" validate:"omitempty"`
+	App *AppInstallParams `protobuf:"bytes,8,opt,name=app,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Shell struct {
 	// @gotags: validate:"omitempty"
-	Shell *ShellParams `protobuf:"bytes,12,opt,name=shell,proto3,oneof" validate:"omitempty"`
+	Shell *ShellParams `protobuf:"bytes,9,opt,name=shell,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Systemd struct {
 	// @gotags: validate:"omitempty"
-	Systemd *SystemdParams `protobuf:"bytes,13,opt,name=systemd,proto3,oneof" validate:"omitempty"`
+	Systemd *SystemdParams `protobuf:"bytes,10,opt,name=systemd,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_File struct {
 	// @gotags: validate:"omitempty"
-	File *FileParams `protobuf:"bytes,14,opt,name=file,proto3,oneof" validate:"omitempty"`
+	File *FileParams `protobuf:"bytes,11,opt,name=file,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Update struct {
 	// @gotags: validate:"omitempty"
-	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof" validate:"omitempty"`
+	Update *UpdateParams `protobuf:"bytes,12,opt,name=update,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Repository struct {
 	// @gotags: validate:"omitempty"
-	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof" validate:"omitempty"`
+	Repository *RepositoryParams `protobuf:"bytes,13,opt,name=repository,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Flatpak struct {
 	// @gotags: validate:"omitempty"
-	Flatpak *FlatpakParams `protobuf:"bytes,17,opt,name=flatpak,proto3,oneof" validate:"omitempty"`
+	Flatpak *FlatpakParams `protobuf:"bytes,14,opt,name=flatpak,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Directory struct {
 	// @gotags: validate:"omitempty"
-	Directory *DirectoryParams `protobuf:"bytes,18,opt,name=directory,proto3,oneof" validate:"omitempty"`
+	Directory *DirectoryParams `protobuf:"bytes,15,opt,name=directory,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_User struct {
 	// @gotags: validate:"omitempty"
-	User *UserParams `protobuf:"bytes,19,opt,name=user,proto3,oneof" validate:"omitempty"`
+	User *UserParams `protobuf:"bytes,16,opt,name=user,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Ssh struct {
 	// @gotags: validate:"omitempty"
-	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof" validate:"omitempty"`
+	Ssh *SshParams `protobuf:"bytes,17,opt,name=ssh,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Sshd struct {
 	// @gotags: validate:"omitempty"
-	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof" validate:"omitempty"`
+	Sshd *SshdParams `protobuf:"bytes,18,opt,name=sshd,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Sudo struct {
 	// @gotags: validate:"omitempty"
-	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof" validate:"omitempty"`
+	Sudo *SudoParams `protobuf:"bytes,19,opt,name=sudo,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Lps struct {
 	// @gotags: validate:"omitempty"
-	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof" validate:"omitempty"`
+	Lps *LpsParams `protobuf:"bytes,20,opt,name=lps,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Group struct {
 	// @gotags: validate:"omitempty"
-	Group *GroupParams `protobuf:"bytes,26,opt,name=group,proto3,oneof" validate:"omitempty"`
+	Group *GroupParams `protobuf:"bytes,21,opt,name=group,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Luks struct {
 	// @gotags: validate:"omitempty"
-	Luks *LuksParams `protobuf:"bytes,27,opt,name=luks,proto3,oneof" validate:"omitempty"`
+	Luks *LuksParams `protobuf:"bytes,22,opt,name=luks,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Wifi struct {
 	// @gotags: validate:"omitempty"
-	Wifi *WifiParams `protobuf:"bytes,28,opt,name=wifi,proto3,oneof" validate:"omitempty"`
+	Wifi *WifiParams `protobuf:"bytes,23,opt,name=wifi,proto3,oneof" validate:"omitempty"`
 }
 
 func (*CreateActionRequest_Package) isCreateActionRequest_Params() {}
@@ -6104,87 +6085,87 @@ type isUpdateActionParamsRequest_Params interface {
 
 type UpdateActionParamsRequest_Package struct {
 	// @gotags: validate:"omitempty"
-	Package *PackageParams `protobuf:"bytes,10,opt,name=package,proto3,oneof" validate:"omitempty"`
+	Package *PackageParams `protobuf:"bytes,5,opt,name=package,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_App struct {
 	// @gotags: validate:"omitempty"
-	App *AppInstallParams `protobuf:"bytes,11,opt,name=app,proto3,oneof" validate:"omitempty"`
+	App *AppInstallParams `protobuf:"bytes,6,opt,name=app,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Shell struct {
 	// @gotags: validate:"omitempty"
-	Shell *ShellParams `protobuf:"bytes,12,opt,name=shell,proto3,oneof" validate:"omitempty"`
+	Shell *ShellParams `protobuf:"bytes,7,opt,name=shell,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Systemd struct {
 	// @gotags: validate:"omitempty"
-	Systemd *SystemdParams `protobuf:"bytes,13,opt,name=systemd,proto3,oneof" validate:"omitempty"`
+	Systemd *SystemdParams `protobuf:"bytes,8,opt,name=systemd,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_File struct {
 	// @gotags: validate:"omitempty"
-	File *FileParams `protobuf:"bytes,14,opt,name=file,proto3,oneof" validate:"omitempty"`
+	File *FileParams `protobuf:"bytes,9,opt,name=file,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Update struct {
 	// @gotags: validate:"omitempty"
-	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof" validate:"omitempty"`
+	Update *UpdateParams `protobuf:"bytes,10,opt,name=update,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Repository struct {
 	// @gotags: validate:"omitempty"
-	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof" validate:"omitempty"`
+	Repository *RepositoryParams `protobuf:"bytes,11,opt,name=repository,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Flatpak struct {
 	// @gotags: validate:"omitempty"
-	Flatpak *FlatpakParams `protobuf:"bytes,17,opt,name=flatpak,proto3,oneof" validate:"omitempty"`
+	Flatpak *FlatpakParams `protobuf:"bytes,12,opt,name=flatpak,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Directory struct {
 	// @gotags: validate:"omitempty"
-	Directory *DirectoryParams `protobuf:"bytes,18,opt,name=directory,proto3,oneof" validate:"omitempty"`
+	Directory *DirectoryParams `protobuf:"bytes,13,opt,name=directory,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_User struct {
 	// @gotags: validate:"omitempty"
-	User *UserParams `protobuf:"bytes,19,opt,name=user,proto3,oneof" validate:"omitempty"`
+	User *UserParams `protobuf:"bytes,14,opt,name=user,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Ssh struct {
 	// @gotags: validate:"omitempty"
-	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof" validate:"omitempty"`
+	Ssh *SshParams `protobuf:"bytes,15,opt,name=ssh,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Sshd struct {
 	// @gotags: validate:"omitempty"
-	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof" validate:"omitempty"`
+	Sshd *SshdParams `protobuf:"bytes,16,opt,name=sshd,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Sudo struct {
 	// @gotags: validate:"omitempty"
-	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof" validate:"omitempty"`
+	Sudo *SudoParams `protobuf:"bytes,17,opt,name=sudo,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Lps struct {
 	// @gotags: validate:"omitempty"
-	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof" validate:"omitempty"`
+	Lps *LpsParams `protobuf:"bytes,18,opt,name=lps,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Group struct {
 	// @gotags: validate:"omitempty"
-	Group *GroupParams `protobuf:"bytes,26,opt,name=group,proto3,oneof" validate:"omitempty"`
+	Group *GroupParams `protobuf:"bytes,19,opt,name=group,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Luks struct {
 	// @gotags: validate:"omitempty"
-	Luks *LuksParams `protobuf:"bytes,27,opt,name=luks,proto3,oneof" validate:"omitempty"`
+	Luks *LuksParams `protobuf:"bytes,20,opt,name=luks,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Wifi struct {
 	// @gotags: validate:"omitempty"
-	Wifi *WifiParams `protobuf:"bytes,28,opt,name=wifi,proto3,oneof" validate:"omitempty"`
+	Wifi *WifiParams `protobuf:"bytes,21,opt,name=wifi,proto3,oneof" validate:"omitempty"`
 }
 
 func (*UpdateActionParamsRequest_Package) isUpdateActionParamsRequest_Params() {}
@@ -20269,14 +20250,12 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
 	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\x12\x10\n" +
-	"\x03csr\x18\x04 \x01(\fR\x03csr\"\xbb\x01\n" +
+	"\x03csr\x18\x04 \x01(\fR\x03csr\"\x9c\x01\n" +
 	"\x10RegisterResponse\x12,\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12\x1d\n" +
-	"\n" +
-	"auth_token\x18\x02 \x01(\tR\tauthToken\x12\x17\n" +
-	"\aca_cert\x18\x03 \x01(\fR\x06caCert\x12 \n" +
-	"\vcertificate\x18\x04 \x01(\fR\vcertificate\x12\x1f\n" +
-	"\vgateway_url\x18\x05 \x01(\tR\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12\x17\n" +
+	"\aca_cert\x18\x02 \x01(\fR\x06caCert\x12 \n" +
+	"\vcertificate\x18\x03 \x01(\fR\vcertificate\x12\x1f\n" +
+	"\vgateway_url\x18\x04 \x01(\tR\n" +
 	"gatewayUrl\"\\\n" +
 	"\x17RenewCertificateRequest\x12\x10\n" +
 	"\x03csr\x18\x01 \x01(\fR\x03csr\x12/\n" +
@@ -20340,35 +20319,35 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x129\n" +
 	"\n" +
 	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1f\n" +
-	"\x04user\x18\x04 \x01(\v2\v.pm.v1.UserR\x04user\"\xb4\a\n" +
+	"\x04user\x18\x04 \x01(\v2\v.pm.v1.UserR\x04user\"\xae\a\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x129\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12>\n" +
-	"\rlast_login_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\x12\x1a\n" +
-	"\bdisabled\x18\x06 \x01(\bR\bdisabled\x12!\n" +
-	"\x05roles\x18\a \x03(\v2\v.pm.v1.RoleR\x05roles\x12!\n" +
-	"\ftotp_enabled\x18\b \x01(\bR\vtotpEnabled\x12!\n" +
-	"\fhas_password\x18\t \x01(\bR\vhasPassword\x12:\n" +
-	"\x0eidentity_links\x18\n" +
-	" \x03(\v2\x13.pm.v1.IdentityLinkR\ridentityLinks\x12!\n" +
-	"\fdisplay_name\x18\v \x01(\tR\vdisplayName\x12\x1d\n" +
+	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12>\n" +
+	"\rlast_login_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\x12\x1a\n" +
+	"\bdisabled\x18\x05 \x01(\bR\bdisabled\x12!\n" +
+	"\x05roles\x18\x06 \x03(\v2\v.pm.v1.RoleR\x05roles\x12!\n" +
+	"\ftotp_enabled\x18\a \x01(\bR\vtotpEnabled\x12!\n" +
+	"\fhas_password\x18\b \x01(\bR\vhasPassword\x12:\n" +
+	"\x0eidentity_links\x18\t \x03(\v2\x13.pm.v1.IdentityLinkR\ridentityLinks\x12!\n" +
+	"\fdisplay_name\x18\n" +
+	" \x01(\tR\vdisplayName\x12\x1d\n" +
 	"\n" +
-	"given_name\x18\f \x01(\tR\tgivenName\x12\x1f\n" +
-	"\vfamily_name\x18\r \x01(\tR\n" +
+	"given_name\x18\v \x01(\tR\tgivenName\x12\x1f\n" +
+	"\vfamily_name\x18\f \x01(\tR\n" +
 	"familyName\x12-\n" +
-	"\x12preferred_username\x18\x0e \x01(\tR\x11preferredUsername\x12\x18\n" +
-	"\apicture\x18\x0f \x01(\tR\apicture\x12\x16\n" +
-	"\x06locale\x18\x10 \x01(\tR\x06locale\x12%\n" +
-	"\x0elinux_username\x18\x11 \x01(\tR\rlinuxUsername\x12\x1b\n" +
-	"\tlinux_uid\x18\x12 \x01(\x05R\blinuxUid\x12;\n" +
-	"\x0fssh_public_keys\x18\x13 \x03(\v2\x13.pm.v1.SshPublicKeyR\rsshPublicKeys\x12,\n" +
-	"\x12ssh_access_enabled\x18\x14 \x01(\bR\x10sshAccessEnabled\x12(\n" +
-	"\x10ssh_allow_pubkey\x18\x15 \x01(\bR\x0esshAllowPubkey\x12,\n" +
-	"\x12ssh_allow_password\x18\x16 \x01(\bR\x10sshAllowPassword\x12:\n" +
-	"\x19user_provisioning_enabled\x18\x17 \x01(\bR\x17userProvisioningEnabled\x12=\n" +
-	"\x0finherited_roles\x18\x18 \x03(\v2\x14.pm.v1.InheritedRoleR\x0einheritedRolesJ\x04\b\x03\x10\x04\"\x7f\n" +
+	"\x12preferred_username\x18\r \x01(\tR\x11preferredUsername\x12\x18\n" +
+	"\apicture\x18\x0e \x01(\tR\apicture\x12\x16\n" +
+	"\x06locale\x18\x0f \x01(\tR\x06locale\x12%\n" +
+	"\x0elinux_username\x18\x10 \x01(\tR\rlinuxUsername\x12\x1b\n" +
+	"\tlinux_uid\x18\x11 \x01(\x05R\blinuxUid\x12;\n" +
+	"\x0fssh_public_keys\x18\x12 \x03(\v2\x13.pm.v1.SshPublicKeyR\rsshPublicKeys\x12,\n" +
+	"\x12ssh_access_enabled\x18\x13 \x01(\bR\x10sshAccessEnabled\x12(\n" +
+	"\x10ssh_allow_pubkey\x18\x14 \x01(\bR\x0esshAllowPubkey\x12,\n" +
+	"\x12ssh_allow_password\x18\x15 \x01(\bR\x10sshAllowPassword\x12:\n" +
+	"\x19user_provisioning_enabled\x18\x16 \x01(\bR\x17userProvisioningEnabled\x12=\n" +
+	"\x0finherited_roles\x18\x17 \x03(\v2\x14.pm.v1.InheritedRoleR\x0einheritedRoles\"\x7f\n" +
 	"\rInheritedRole\x12\x17\n" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
 	"\trole_name\x18\x02 \x01(\tR\broleName\x12\x19\n" +
@@ -20461,7 +20440,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x12ssh_allow_password\x18\x04 \x01(\bR\x10sshAllowPassword\"`\n" +
 	"\x1eUpdateUserLinuxUsernameRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12%\n" +
-	"\x0elinux_username\x18\x02 \x01(\tR\rlinuxUsername\"\xce\x06\n" +
+	"\x0elinux_username\x18\x02 \x01(\tR\rlinuxUsername\"\xa0\x06\n" +
 	"\x06Device\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
@@ -20471,16 +20450,15 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\flast_seen_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"lastSeenAt\x12B\n" +
 	"\x0fcert_expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rcertExpiresAt\x121\n" +
-	"\x06labels\x18\b \x03(\v2\x19.pm.v1.Device.LabelsEntryR\x06labels\x12,\n" +
-	"\x10assigned_user_id\x18\t \x01(\tB\x02\x18\x01R\x0eassignedUserId\x12*\n" +
-	"\x11assigned_user_ids\x18\x0f \x03(\tR\x0fassignedUserIds\x12,\n" +
-	"\x12assigned_group_ids\x18\x10 \x03(\tR\x10assignedGroupIds\x122\n" +
-	"\x15sync_interval_minutes\x18\n" +
-	" \x01(\x05R\x13syncIntervalMinutes\x12D\n" +
-	"\x11compliance_status\x18\v \x01(\x0e2\x17.pm.v1.ComplianceStatusR\x10complianceStatus\x12N\n" +
-	"\x15compliance_checked_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x13complianceCheckedAt\x12)\n" +
-	"\x10compliance_total\x18\r \x01(\x05R\x0fcomplianceTotal\x12-\n" +
-	"\x12compliance_passing\x18\x0e \x01(\x05R\x11compliancePassing\x1a9\n" +
+	"\x06labels\x18\b \x03(\v2\x19.pm.v1.Device.LabelsEntryR\x06labels\x12*\n" +
+	"\x11assigned_user_ids\x18\t \x03(\tR\x0fassignedUserIds\x12,\n" +
+	"\x12assigned_group_ids\x18\n" +
+	" \x03(\tR\x10assignedGroupIds\x122\n" +
+	"\x15sync_interval_minutes\x18\v \x01(\x05R\x13syncIntervalMinutes\x12D\n" +
+	"\x11compliance_status\x18\f \x01(\x0e2\x17.pm.v1.ComplianceStatusR\x10complianceStatus\x12N\n" +
+	"\x15compliance_checked_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x13complianceCheckedAt\x12)\n" +
+	"\x10compliance_total\x18\x0e \x01(\x05R\x0fcomplianceTotal\x12-\n" +
+	"\x12compliance_passing\x18\x0f \x01(\x05R\x11compliancePassing\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xac\x02\n" +
@@ -20594,27 +20572,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12%\n" +
 	"\x04type\x18\x04 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
-	"\rdesired_state\x18\x05 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x120\n" +
-	"\apackage\x18\n" +
-	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
-	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
-	"\n" +
-	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repository\x120\n" +
-	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
-	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
-	"\x04luks\x18\x1b \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
-	"\x04wifi\x18\x1c \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12'\n" +
+	"\rdesired_state\x18\x05 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x06 \x01(\x05R\x0etimeoutSeconds\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
@@ -20622,7 +20580,27 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"created_by\x18\b \x01(\tR\tcreatedBy\x121\n" +
 	"\bschedule\x18\t \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x129\n" +
 	"\n" +
-	"updated_at\x18\x1d \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAtB\b\n" +
+	"updated_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x120\n" +
+	"\apackage\x18\v \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\f \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\r \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\asystemd\x18\x0e \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\x04file\x18\x0f \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\x10 \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\n" +
+	"repository\x18\x11 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repository\x120\n" +
+	"\aflatpak\x18\x12 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\x13 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
+	"\x04user\x18\x14 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x15 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x16 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x17 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x18 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
+	"\x05group\x18\x19 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
+	"\x04luks\x18\x1a \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
+	"\x04wifi\x18\x1b \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
 	"\x06params\"\x91\b\n" +
 	"\x13CreateActionRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
@@ -20631,26 +20609,26 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rdesired_state\x18\x04 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x05 \x01(\x05R\x0etimeoutSeconds\x121\n" +
 	"\bschedule\x18\x06 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
-	"\apackage\x18\n" +
-	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
-	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\apackage\x18\a \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\b \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\t \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\asystemd\x18\n" +
+	" \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\x04file\x18\v \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
 	"\n" +
-	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repository\x18\r \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
 	"repository\x120\n" +
-	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
-	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
-	"\x04luks\x18\x1b \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
-	"\x04wifi\x18\x1c \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
+	"\aflatpak\x18\x0e \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\x0f \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
+	"\x04user\x18\x10 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x11 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x12 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x13 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x14 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
+	"\x05group\x18\x15 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
+	"\x04luks\x18\x16 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
+	"\x04wifi\x18\x17 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
 	"\x06params\"D\n" +
 	"\x14CreateActionResponse\x12,\n" +
 	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"\"\n" +
@@ -20681,26 +20659,26 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rdesired_state\x18\x02 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x03 \x01(\x05R\x0etimeoutSeconds\x121\n" +
 	"\bschedule\x18\x04 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
-	"\apackage\x18\n" +
-	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
-	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\apackage\x18\x05 \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\x06 \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\a \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\asystemd\x18\b \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\x04file\x18\t \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\n" +
+	" \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
 	"\n" +
-	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repository\x18\v \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
 	"repository\x120\n" +
-	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
-	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
-	"\x04luks\x18\x1b \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
-	"\x04wifi\x18\x1c \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
+	"\aflatpak\x18\f \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\r \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
+	"\x04user\x18\x0e \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x0f \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x10 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x11 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x12 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
+	"\x05group\x18\x13 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
+	"\x04luks\x18\x14 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
+	"\x04wifi\x18\x15 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
 	"\x06params\"D\n" +
 	"\x14UpdateActionResponse\x12,\n" +
 	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"%\n" +
@@ -22245,24 +22223,24 @@ var file_pm_v1_control_proto_goTypes = []any{
 	(ComplianceStatus)(0),         // 344: pm.v1.ComplianceStatus
 	(ActionType)(0),               // 345: pm.v1.ActionType
 	(DesiredState)(0),             // 346: pm.v1.DesiredState
-	(*PackageParams)(nil),         // 347: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 348: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 349: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 350: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 351: pm.v1.FileParams
-	(*UpdateParams)(nil),          // 352: pm.v1.UpdateParams
-	(*RepositoryParams)(nil),      // 353: pm.v1.RepositoryParams
-	(*FlatpakParams)(nil),         // 354: pm.v1.FlatpakParams
-	(*DirectoryParams)(nil),       // 355: pm.v1.DirectoryParams
-	(*UserParams)(nil),            // 356: pm.v1.UserParams
-	(*SshParams)(nil),             // 357: pm.v1.SshParams
-	(*SshdParams)(nil),            // 358: pm.v1.SshdParams
-	(*SudoParams)(nil),            // 359: pm.v1.SudoParams
-	(*LpsParams)(nil),             // 360: pm.v1.LpsParams
-	(*GroupParams)(nil),           // 361: pm.v1.GroupParams
-	(*LuksParams)(nil),            // 362: pm.v1.LuksParams
-	(*WifiParams)(nil),            // 363: pm.v1.WifiParams
-	(*ActionSchedule)(nil),        // 364: pm.v1.ActionSchedule
+	(*ActionSchedule)(nil),        // 347: pm.v1.ActionSchedule
+	(*PackageParams)(nil),         // 348: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 349: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 350: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 351: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 352: pm.v1.FileParams
+	(*UpdateParams)(nil),          // 353: pm.v1.UpdateParams
+	(*RepositoryParams)(nil),      // 354: pm.v1.RepositoryParams
+	(*FlatpakParams)(nil),         // 355: pm.v1.FlatpakParams
+	(*DirectoryParams)(nil),       // 356: pm.v1.DirectoryParams
+	(*UserParams)(nil),            // 357: pm.v1.UserParams
+	(*SshParams)(nil),             // 358: pm.v1.SshParams
+	(*SshdParams)(nil),            // 359: pm.v1.SshdParams
+	(*SudoParams)(nil),            // 360: pm.v1.SudoParams
+	(*LpsParams)(nil),             // 361: pm.v1.LpsParams
+	(*GroupParams)(nil),           // 362: pm.v1.GroupParams
+	(*LuksParams)(nil),            // 363: pm.v1.LuksParams
+	(*WifiParams)(nil),            // 364: pm.v1.WifiParams
 	(AssignmentMode)(0),           // 365: pm.v1.AssignmentMode
 	(ExecutionStatus)(0),          // 366: pm.v1.ExecutionStatus
 	(*CommandOutput)(nil),         // 367: pm.v1.CommandOutput
@@ -22313,69 +22291,69 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	68,  // 40: pm.v1.UpdateTokenResponse.token:type_name -> pm.v1.RegistrationToken
 	345, // 41: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
 	346, // 42: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
-	347, // 43: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
-	348, // 44: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
-	349, // 45: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
-	350, // 46: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
-	351, // 47: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
-	352, // 48: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
-	353, // 49: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
-	354, // 50: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
-	355, // 51: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
-	356, // 52: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
-	357, // 53: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
-	358, // 54: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
-	359, // 55: pm.v1.ManagedAction.sudo:type_name -> pm.v1.SudoParams
-	360, // 56: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
-	361, // 57: pm.v1.ManagedAction.group:type_name -> pm.v1.GroupParams
-	362, // 58: pm.v1.ManagedAction.luks:type_name -> pm.v1.LuksParams
-	363, // 59: pm.v1.ManagedAction.wifi:type_name -> pm.v1.WifiParams
-	343, // 60: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	364, // 61: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
-	343, // 62: pm.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
+	343, // 43: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	347, // 44: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
+	343, // 45: pm.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
+	348, // 46: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
+	349, // 47: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
+	350, // 48: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
+	351, // 49: pm.v1.ManagedAction.systemd:type_name -> pm.v1.SystemdParams
+	352, // 50: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
+	353, // 51: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
+	354, // 52: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
+	355, // 53: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
+	356, // 54: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
+	357, // 55: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
+	358, // 56: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
+	359, // 57: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
+	360, // 58: pm.v1.ManagedAction.sudo:type_name -> pm.v1.SudoParams
+	361, // 59: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
+	362, // 60: pm.v1.ManagedAction.group:type_name -> pm.v1.GroupParams
+	363, // 61: pm.v1.ManagedAction.luks:type_name -> pm.v1.LuksParams
+	364, // 62: pm.v1.ManagedAction.wifi:type_name -> pm.v1.WifiParams
 	345, // 63: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
 	346, // 64: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
-	364, // 65: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
-	347, // 66: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
-	348, // 67: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
-	349, // 68: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
-	350, // 69: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
-	351, // 70: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
-	352, // 71: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
-	353, // 72: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
-	354, // 73: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	355, // 74: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
-	356, // 75: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
-	357, // 76: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
-	358, // 77: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
-	359, // 78: pm.v1.CreateActionRequest.sudo:type_name -> pm.v1.SudoParams
-	360, // 79: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
-	361, // 80: pm.v1.CreateActionRequest.group:type_name -> pm.v1.GroupParams
-	362, // 81: pm.v1.CreateActionRequest.luks:type_name -> pm.v1.LuksParams
-	363, // 82: pm.v1.CreateActionRequest.wifi:type_name -> pm.v1.WifiParams
+	347, // 65: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
+	348, // 66: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
+	349, // 67: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
+	350, // 68: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
+	351, // 69: pm.v1.CreateActionRequest.systemd:type_name -> pm.v1.SystemdParams
+	352, // 70: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
+	353, // 71: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
+	354, // 72: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
+	355, // 73: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
+	356, // 74: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
+	357, // 75: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
+	358, // 76: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
+	359, // 77: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
+	360, // 78: pm.v1.CreateActionRequest.sudo:type_name -> pm.v1.SudoParams
+	361, // 79: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
+	362, // 80: pm.v1.CreateActionRequest.group:type_name -> pm.v1.GroupParams
+	363, // 81: pm.v1.CreateActionRequest.luks:type_name -> pm.v1.LuksParams
+	364, // 82: pm.v1.CreateActionRequest.wifi:type_name -> pm.v1.WifiParams
 	80,  // 83: pm.v1.CreateActionResponse.action:type_name -> pm.v1.ManagedAction
 	80,  // 84: pm.v1.GetActionResponse.action:type_name -> pm.v1.ManagedAction
 	345, // 85: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
 	80,  // 86: pm.v1.ListActionsResponse.actions:type_name -> pm.v1.ManagedAction
 	346, // 87: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
-	364, // 88: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
-	347, // 89: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
-	348, // 90: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
-	349, // 91: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
-	350, // 92: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
-	351, // 93: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
-	352, // 94: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
-	353, // 95: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
-	354, // 96: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	355, // 97: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
-	356, // 98: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
-	357, // 99: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
-	358, // 100: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
-	359, // 101: pm.v1.UpdateActionParamsRequest.sudo:type_name -> pm.v1.SudoParams
-	360, // 102: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
-	361, // 103: pm.v1.UpdateActionParamsRequest.group:type_name -> pm.v1.GroupParams
-	362, // 104: pm.v1.UpdateActionParamsRequest.luks:type_name -> pm.v1.LuksParams
-	363, // 105: pm.v1.UpdateActionParamsRequest.wifi:type_name -> pm.v1.WifiParams
+	347, // 88: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
+	348, // 89: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
+	349, // 90: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
+	350, // 91: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
+	351, // 92: pm.v1.UpdateActionParamsRequest.systemd:type_name -> pm.v1.SystemdParams
+	352, // 93: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
+	353, // 94: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
+	354, // 95: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
+	355, // 96: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
+	356, // 97: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
+	357, // 98: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
+	358, // 99: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
+	359, // 100: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
+	360, // 101: pm.v1.UpdateActionParamsRequest.sudo:type_name -> pm.v1.SudoParams
+	361, // 102: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
+	362, // 103: pm.v1.UpdateActionParamsRequest.group:type_name -> pm.v1.GroupParams
+	363, // 104: pm.v1.UpdateActionParamsRequest.luks:type_name -> pm.v1.LuksParams
+	364, // 105: pm.v1.UpdateActionParamsRequest.wifi:type_name -> pm.v1.WifiParams
 	80,  // 106: pm.v1.UpdateActionResponse.action:type_name -> pm.v1.ManagedAction
 	343, // 107: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
 	343, // 108: pm.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
