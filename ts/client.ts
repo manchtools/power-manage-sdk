@@ -114,6 +114,9 @@ import {
 	GetOSQueryResultRequestSchema,
 	GetDeviceInventoryRequestSchema,
 	RefreshDeviceInventoryRequestSchema,
+	// Device Logs
+	QueryDeviceLogsRequestSchema,
+	GetDeviceLogResultRequestSchema,
 	// Roles & Permissions
 	CreateRoleRequestSchema,
 	GetRoleRequestSchema,
@@ -1269,6 +1272,33 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.getOSQueryResult(
 			create(GetOSQueryResultRequestSchema, { queryId })
+		);
+	}
+
+	async queryDeviceLogs(deviceId: string, options?: {
+		lines?: number, unit?: string, since?: string, until?: string,
+		priority?: string, grep?: string, kernel?: boolean
+	}) {
+		const client = this.getClient();
+		const response = await client.queryDeviceLogs(
+			create(QueryDeviceLogsRequestSchema, {
+				deviceId,
+				lines: options?.lines ?? 0,
+				unit: options?.unit ?? '',
+				since: options?.since ?? '',
+				until: options?.until ?? '',
+				priority: options?.priority ?? '',
+				grep: options?.grep ?? '',
+				kernel: options?.kernel ?? false
+			})
+		);
+		return response.queryId;
+	}
+
+	async getDeviceLogResult(queryId: string) {
+		const client = this.getClient();
+		return client.getDeviceLogResult(
+			create(GetDeviceLogResultRequestSchema, { queryId })
 		);
 	}
 
