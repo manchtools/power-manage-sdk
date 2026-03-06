@@ -1645,6 +1645,45 @@ message RefreshDeviceInventoryRequest {
 message RefreshDeviceInventoryResponse {}
 
 // ============================================================================
+// Device Logs (Remote journalctl)
+// ============================================================================
+
+message QueryDeviceLogsRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"omitempty,gte=0,lte=10000"
+  int32 lines = 2;
+  // @gotags: validate:"omitempty,max=256"
+  string unit = 3;
+  // @gotags: validate:"omitempty,max=64"
+  string since = 4;
+  // @gotags: validate:"omitempty,max=64"
+  string until = 5;
+  // @gotags: validate:"omitempty,max=32"
+  string priority = 6;
+  // @gotags: validate:"omitempty,max=256"
+  string grep = 7;
+  bool kernel = 8;
+}
+
+message QueryDeviceLogsResponse {
+  string query_id = 1;
+}
+
+message GetDeviceLogResultRequest {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+}
+
+message GetDeviceLogResultResponse {
+  string query_id = 1;
+  bool completed = 2;
+  bool success = 3;
+  string error = 4;
+  string logs = 5;
+}
+
+// ============================================================================
 // Roles & Permissions
 // ============================================================================
 
@@ -2580,6 +2619,10 @@ service ControlService {
   rpc GetOSQueryResult(GetOSQueryResultRequest) returns (GetOSQueryResultResponse);
   rpc GetDeviceInventory(GetDeviceInventoryRequest) returns (GetDeviceInventoryResponse);
   rpc RefreshDeviceInventory(RefreshDeviceInventoryRequest) returns (RefreshDeviceInventoryResponse);
+
+  // Device Logs
+  rpc QueryDeviceLogs(QueryDeviceLogsRequest) returns (QueryDeviceLogsResponse);
+  rpc GetDeviceLogResult(GetDeviceLogResultRequest) returns (GetDeviceLogResultResponse);
 
   // Roles & Permissions
   rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);

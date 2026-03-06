@@ -376,6 +376,12 @@ const (
 	// ControlServiceRefreshDeviceInventoryProcedure is the fully-qualified name of the ControlService's
 	// RefreshDeviceInventory RPC.
 	ControlServiceRefreshDeviceInventoryProcedure = "/pm.v1.ControlService/RefreshDeviceInventory"
+	// ControlServiceQueryDeviceLogsProcedure is the fully-qualified name of the ControlService's
+	// QueryDeviceLogs RPC.
+	ControlServiceQueryDeviceLogsProcedure = "/pm.v1.ControlService/QueryDeviceLogs"
+	// ControlServiceGetDeviceLogResultProcedure is the fully-qualified name of the ControlService's
+	// GetDeviceLogResult RPC.
+	ControlServiceGetDeviceLogResultProcedure = "/pm.v1.ControlService/GetDeviceLogResult"
 	// ControlServiceCreateRoleProcedure is the fully-qualified name of the ControlService's CreateRole
 	// RPC.
 	ControlServiceCreateRoleProcedure = "/pm.v1.ControlService/CreateRole"
@@ -637,6 +643,9 @@ type ControlServiceClient interface {
 	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
 	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
 	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
+	// Device Logs
+	QueryDeviceLogs(context.Context, *connect.Request[v1.QueryDeviceLogsRequest]) (*connect.Response[v1.QueryDeviceLogsResponse], error)
+	GetDeviceLogResult(context.Context, *connect.Request[v1.GetDeviceLogResultRequest]) (*connect.Response[v1.GetDeviceLogResultResponse], error)
 	// Roles & Permissions
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
 	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error)
@@ -1395,6 +1404,18 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
 			connect.WithClientOptions(opts...),
 		),
+		queryDeviceLogs: connect.NewClient[v1.QueryDeviceLogsRequest, v1.QueryDeviceLogsResponse](
+			httpClient,
+			baseURL+ControlServiceQueryDeviceLogsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("QueryDeviceLogs")),
+			connect.WithClientOptions(opts...),
+		),
+		getDeviceLogResult: connect.NewClient[v1.GetDeviceLogResultRequest, v1.GetDeviceLogResultResponse](
+			httpClient,
+			baseURL+ControlServiceGetDeviceLogResultProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLogResult")),
+			connect.WithClientOptions(opts...),
+		),
 		createRole: connect.NewClient[v1.CreateRoleRequest, v1.CreateRoleResponse](
 			httpClient,
 			baseURL+ControlServiceCreateRoleProcedure,
@@ -1762,6 +1783,8 @@ type controlServiceClient struct {
 	getOSQueryResult                  *connect.Client[v1.GetOSQueryResultRequest, v1.GetOSQueryResultResponse]
 	getDeviceInventory                *connect.Client[v1.GetDeviceInventoryRequest, v1.GetDeviceInventoryResponse]
 	refreshDeviceInventory            *connect.Client[v1.RefreshDeviceInventoryRequest, v1.RefreshDeviceInventoryResponse]
+	queryDeviceLogs                   *connect.Client[v1.QueryDeviceLogsRequest, v1.QueryDeviceLogsResponse]
+	getDeviceLogResult                *connect.Client[v1.GetDeviceLogResultRequest, v1.GetDeviceLogResultResponse]
 	createRole                        *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
 	getRole                           *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
 	listRoles                         *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
@@ -2385,6 +2408,16 @@ func (c *controlServiceClient) RefreshDeviceInventory(ctx context.Context, req *
 	return c.refreshDeviceInventory.CallUnary(ctx, req)
 }
 
+// QueryDeviceLogs calls pm.v1.ControlService.QueryDeviceLogs.
+func (c *controlServiceClient) QueryDeviceLogs(ctx context.Context, req *connect.Request[v1.QueryDeviceLogsRequest]) (*connect.Response[v1.QueryDeviceLogsResponse], error) {
+	return c.queryDeviceLogs.CallUnary(ctx, req)
+}
+
+// GetDeviceLogResult calls pm.v1.ControlService.GetDeviceLogResult.
+func (c *controlServiceClient) GetDeviceLogResult(ctx context.Context, req *connect.Request[v1.GetDeviceLogResultRequest]) (*connect.Response[v1.GetDeviceLogResultResponse], error) {
+	return c.getDeviceLogResult.CallUnary(ctx, req)
+}
+
 // CreateRole calls pm.v1.ControlService.CreateRole.
 func (c *controlServiceClient) CreateRole(ctx context.Context, req *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error) {
 	return c.createRole.CallUnary(ctx, req)
@@ -2728,6 +2761,9 @@ type ControlServiceHandler interface {
 	GetOSQueryResult(context.Context, *connect.Request[v1.GetOSQueryResultRequest]) (*connect.Response[v1.GetOSQueryResultResponse], error)
 	GetDeviceInventory(context.Context, *connect.Request[v1.GetDeviceInventoryRequest]) (*connect.Response[v1.GetDeviceInventoryResponse], error)
 	RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error)
+	// Device Logs
+	QueryDeviceLogs(context.Context, *connect.Request[v1.QueryDeviceLogsRequest]) (*connect.Response[v1.QueryDeviceLogsResponse], error)
+	GetDeviceLogResult(context.Context, *connect.Request[v1.GetDeviceLogResultRequest]) (*connect.Response[v1.GetDeviceLogResultResponse], error)
 	// Roles & Permissions
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
 	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.GetRoleResponse], error)
@@ -3482,6 +3518,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("RefreshDeviceInventory")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceQueryDeviceLogsHandler := connect.NewUnaryHandler(
+		ControlServiceQueryDeviceLogsProcedure,
+		svc.QueryDeviceLogs,
+		connect.WithSchema(controlServiceMethods.ByName("QueryDeviceLogs")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetDeviceLogResultHandler := connect.NewUnaryHandler(
+		ControlServiceGetDeviceLogResultProcedure,
+		svc.GetDeviceLogResult,
+		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLogResult")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceCreateRoleHandler := connect.NewUnaryHandler(
 		ControlServiceCreateRoleProcedure,
 		svc.CreateRole,
@@ -3962,6 +4010,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetDeviceInventoryHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshDeviceInventoryProcedure:
 			controlServiceRefreshDeviceInventoryHandler.ServeHTTP(w, r)
+		case ControlServiceQueryDeviceLogsProcedure:
+			controlServiceQueryDeviceLogsHandler.ServeHTTP(w, r)
+		case ControlServiceGetDeviceLogResultProcedure:
+			controlServiceGetDeviceLogResultHandler.ServeHTTP(w, r)
 		case ControlServiceCreateRoleProcedure:
 			controlServiceCreateRoleHandler.ServeHTTP(w, r)
 		case ControlServiceGetRoleProcedure:
@@ -4515,6 +4567,14 @@ func (UnimplementedControlServiceHandler) GetDeviceInventory(context.Context, *c
 
 func (UnimplementedControlServiceHandler) RefreshDeviceInventory(context.Context, *connect.Request[v1.RefreshDeviceInventoryRequest]) (*connect.Response[v1.RefreshDeviceInventoryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RefreshDeviceInventory is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) QueryDeviceLogs(context.Context, *connect.Request[v1.QueryDeviceLogsRequest]) (*connect.Response[v1.QueryDeviceLogsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.QueryDeviceLogs is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetDeviceLogResult(context.Context, *connect.Request[v1.GetDeviceLogResultRequest]) (*connect.Response[v1.GetDeviceLogResultResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceLogResult is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error) {

@@ -300,6 +300,14 @@ type LuksHandler interface {
 	OnRevokeLuksDeviceKey(ctx context.Context, actionID string) (bool, string)
 }
 
+// LogQueryHandler extends StreamHandler with remote log query support.
+// Handlers that implement this interface can execute journalctl queries on the device.
+type LogQueryHandler interface {
+	StreamHandler
+	// OnLogQuery is called when the server sends a log query request.
+	OnLogQuery(ctx context.Context, query *pm.LogQuery) (*pm.LogQueryResult, error)
+}
+
 // InventoryHandler extends StreamHandler with device inventory collection support.
 // Handlers that implement this interface can collect and send hardware/software inventory.
 type InventoryHandler interface {
@@ -397,6 +405,16 @@ func (c *Client) SendQueryResult(ctx context.Context, result *pm.OSQueryResult) 
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_QueryResult{
 			QueryResult: result,
+		},
+	})
+}
+
+// SendLogQueryResult sends a log query result to the server.
+func (c *Client) SendLogQueryResult(ctx context.Context, result *pm.LogQueryResult) error {
+	return c.send(&pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_LogQueryResult{
+			LogQueryResult: result,
 		},
 	})
 }
@@ -751,6 +769,19 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 							_ = c.SendInventory(ctx, inv)
 						}
 					}()
+				}
+
+			case *pm.ServerMessage_LogQuery:
+				if lqHandler, ok := handler.(LogQueryHandler); ok {
+					result, err := lqHandler.OnLogQuery(ctx, p.LogQuery)
+					if err != nil {
+						return fmt.Errorf("handle log query: %w", err)
+					}
+					if result != nil {
+						if err := c.SendLogQueryResult(ctx, result); err != nil {
+							return fmt.Errorf("send log query result: %w", err)
+						}
+					}
 				}
 
 			case *pm.ServerMessage_RevokeLuksDeviceKey:
