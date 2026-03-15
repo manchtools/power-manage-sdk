@@ -60,6 +60,20 @@ func TestIsAllowedEnvVar_Blocked(t *testing.T) {
 		// BASH_FUNC_* prefix catch-all
 		"BASH_FUNC_exploit",
 		"BASH_FUNC_any_function",
+		// DYLD_* prefix catch-all (macOS)
+		"DYLD_INSERT_LIBRARIES",
+		"DYLD_LIBRARY_PATH",
+		"dyld_insert_libraries",
+		// New blocklist entries
+		"GCONV_PATH",
+		"HOSTALIASES",
+		"RESOLV_HOST_CONF",
+		"GETCONF_DIR",
+		"NODE_OPTIONS",
+		"PYTHONPATH",
+		"PERL5OPT",
+		"PERL5LIB",
+		"RUBYLIB",
 	}
 
 	for _, name := range blocked {
@@ -99,6 +113,9 @@ func TestBlockedEnvVars_Completeness(t *testing.T) {
 		"PATH",
 		"IFS",
 		"BASH_ENV",
+		"GCONV_PATH",
+		"NODE_OPTIONS",
+		"HOSTALIASES",
 	}
 
 	for _, name := range critical {
