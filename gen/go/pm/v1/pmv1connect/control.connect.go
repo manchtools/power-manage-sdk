@@ -477,18 +477,6 @@ const (
 	// ControlServiceGetDeviceCompliancePolicyStatusProcedure is the fully-qualified name of the
 	// ControlService's GetDeviceCompliancePolicyStatus RPC.
 	ControlServiceGetDeviceCompliancePolicyStatusProcedure = "/pm.v1.ControlService/GetDeviceCompliancePolicyStatus"
-	// ControlServiceAuthenticateDeviceUserProcedure is the fully-qualified name of the ControlService's
-	// AuthenticateDeviceUser RPC.
-	ControlServiceAuthenticateDeviceUserProcedure = "/pm.v1.ControlService/AuthenticateDeviceUser"
-	// ControlServiceGetDeviceLoginURLProcedure is the fully-qualified name of the ControlService's
-	// GetDeviceLoginURL RPC.
-	ControlServiceGetDeviceLoginURLProcedure = "/pm.v1.ControlService/GetDeviceLoginURL"
-	// ControlServiceDeviceLoginCallbackProcedure is the fully-qualified name of the ControlService's
-	// DeviceLoginCallback RPC.
-	ControlServiceDeviceLoginCallbackProcedure = "/pm.v1.ControlService/DeviceLoginCallback"
-	// ControlServiceListDeviceUsersProcedure is the fully-qualified name of the ControlService's
-	// ListDeviceUsers RPC.
-	ControlServiceListDeviceUsersProcedure = "/pm.v1.ControlService/ListDeviceUsers"
 	// ControlServiceSearchProcedure is the fully-qualified name of the ControlService's Search RPC.
 	ControlServiceSearchProcedure = "/pm.v1.ControlService/Search"
 	// ControlServiceRebuildSearchIndexProcedure is the fully-qualified name of the ControlService's
@@ -682,11 +670,6 @@ type ControlServiceClient interface {
 	RemoveCompliancePolicyRule(context.Context, *connect.Request[v1.RemoveCompliancePolicyRuleRequest]) (*connect.Response[v1.RemoveCompliancePolicyRuleResponse], error)
 	UpdateCompliancePolicyRule(context.Context, *connect.Request[v1.UpdateCompliancePolicyRuleRequest]) (*connect.Response[v1.UpdateCompliancePolicyRuleResponse], error)
 	GetDeviceCompliancePolicyStatus(context.Context, *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error)
-	// Device Authentication (PAM/NSS device login)
-	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
-	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
-	DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error)
-	ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error)
 	// Search
 	Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error)
 	RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error)
@@ -1608,30 +1591,6 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliancePolicyStatus")),
 			connect.WithClientOptions(opts...),
 		),
-		authenticateDeviceUser: connect.NewClient[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse](
-			httpClient,
-			baseURL+ControlServiceAuthenticateDeviceUserProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("AuthenticateDeviceUser")),
-			connect.WithClientOptions(opts...),
-		),
-		getDeviceLoginURL: connect.NewClient[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse](
-			httpClient,
-			baseURL+ControlServiceGetDeviceLoginURLProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLoginURL")),
-			connect.WithClientOptions(opts...),
-		),
-		deviceLoginCallback: connect.NewClient[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse](
-			httpClient,
-			baseURL+ControlServiceDeviceLoginCallbackProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("DeviceLoginCallback")),
-			connect.WithClientOptions(opts...),
-		),
-		listDeviceUsers: connect.NewClient[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse](
-			httpClient,
-			baseURL+ControlServiceListDeviceUsersProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("ListDeviceUsers")),
-			connect.WithClientOptions(opts...),
-		),
 		search: connect.NewClient[v1.SearchRequest, v1.SearchResponse](
 			httpClient,
 			baseURL+ControlServiceSearchProcedure,
@@ -1817,10 +1776,6 @@ type controlServiceClient struct {
 	removeCompliancePolicyRule        *connect.Client[v1.RemoveCompliancePolicyRuleRequest, v1.RemoveCompliancePolicyRuleResponse]
 	updateCompliancePolicyRule        *connect.Client[v1.UpdateCompliancePolicyRuleRequest, v1.UpdateCompliancePolicyRuleResponse]
 	getDeviceCompliancePolicyStatus   *connect.Client[v1.GetDeviceCompliancePolicyStatusRequest, v1.GetDeviceCompliancePolicyStatusResponse]
-	authenticateDeviceUser            *connect.Client[v1.AuthenticateDeviceUserRequest, v1.AuthenticateDeviceUserResponse]
-	getDeviceLoginURL                 *connect.Client[v1.GetDeviceLoginURLRequest, v1.GetDeviceLoginURLResponse]
-	deviceLoginCallback               *connect.Client[v1.DeviceLoginCallbackRequest, v1.DeviceLoginCallbackResponse]
-	listDeviceUsers                   *connect.Client[v1.ListDeviceUsersRequest, v1.ListDeviceUsersResponse]
 	search                            *connect.Client[v1.SearchRequest, v1.SearchResponse]
 	rebuildSearchIndex                *connect.Client[v1.RebuildSearchIndexRequest, v1.RebuildSearchIndexResponse]
 	getServerSettings                 *connect.Client[v1.GetServerSettingsRequest, v1.GetServerSettingsResponse]
@@ -2578,26 +2533,6 @@ func (c *controlServiceClient) GetDeviceCompliancePolicyStatus(ctx context.Conte
 	return c.getDeviceCompliancePolicyStatus.CallUnary(ctx, req)
 }
 
-// AuthenticateDeviceUser calls pm.v1.ControlService.AuthenticateDeviceUser.
-func (c *controlServiceClient) AuthenticateDeviceUser(ctx context.Context, req *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
-	return c.authenticateDeviceUser.CallUnary(ctx, req)
-}
-
-// GetDeviceLoginURL calls pm.v1.ControlService.GetDeviceLoginURL.
-func (c *controlServiceClient) GetDeviceLoginURL(ctx context.Context, req *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error) {
-	return c.getDeviceLoginURL.CallUnary(ctx, req)
-}
-
-// DeviceLoginCallback calls pm.v1.ControlService.DeviceLoginCallback.
-func (c *controlServiceClient) DeviceLoginCallback(ctx context.Context, req *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error) {
-	return c.deviceLoginCallback.CallUnary(ctx, req)
-}
-
-// ListDeviceUsers calls pm.v1.ControlService.ListDeviceUsers.
-func (c *controlServiceClient) ListDeviceUsers(ctx context.Context, req *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error) {
-	return c.listDeviceUsers.CallUnary(ctx, req)
-}
-
 // Search calls pm.v1.ControlService.Search.
 func (c *controlServiceClient) Search(ctx context.Context, req *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error) {
 	return c.search.CallUnary(ctx, req)
@@ -2800,11 +2735,6 @@ type ControlServiceHandler interface {
 	RemoveCompliancePolicyRule(context.Context, *connect.Request[v1.RemoveCompliancePolicyRuleRequest]) (*connect.Response[v1.RemoveCompliancePolicyRuleResponse], error)
 	UpdateCompliancePolicyRule(context.Context, *connect.Request[v1.UpdateCompliancePolicyRuleRequest]) (*connect.Response[v1.UpdateCompliancePolicyRuleResponse], error)
 	GetDeviceCompliancePolicyStatus(context.Context, *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error)
-	// Device Authentication (PAM/NSS device login)
-	AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error)
-	GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error)
-	DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error)
-	ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error)
 	// Search
 	Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error)
 	RebuildSearchIndex(context.Context, *connect.Request[v1.RebuildSearchIndexRequest]) (*connect.Response[v1.RebuildSearchIndexResponse], error)
@@ -3722,30 +3652,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("GetDeviceCompliancePolicyStatus")),
 		connect.WithHandlerOptions(opts...),
 	)
-	controlServiceAuthenticateDeviceUserHandler := connect.NewUnaryHandler(
-		ControlServiceAuthenticateDeviceUserProcedure,
-		svc.AuthenticateDeviceUser,
-		connect.WithSchema(controlServiceMethods.ByName("AuthenticateDeviceUser")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceGetDeviceLoginURLHandler := connect.NewUnaryHandler(
-		ControlServiceGetDeviceLoginURLProcedure,
-		svc.GetDeviceLoginURL,
-		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLoginURL")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceDeviceLoginCallbackHandler := connect.NewUnaryHandler(
-		ControlServiceDeviceLoginCallbackProcedure,
-		svc.DeviceLoginCallback,
-		connect.WithSchema(controlServiceMethods.ByName("DeviceLoginCallback")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceListDeviceUsersHandler := connect.NewUnaryHandler(
-		ControlServiceListDeviceUsersProcedure,
-		svc.ListDeviceUsers,
-		connect.WithSchema(controlServiceMethods.ByName("ListDeviceUsers")),
-		connect.WithHandlerOptions(opts...),
-	)
 	controlServiceSearchHandler := connect.NewUnaryHandler(
 		ControlServiceSearchProcedure,
 		svc.Search,
@@ -4078,14 +3984,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateCompliancePolicyRuleHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceCompliancePolicyStatusProcedure:
 			controlServiceGetDeviceCompliancePolicyStatusHandler.ServeHTTP(w, r)
-		case ControlServiceAuthenticateDeviceUserProcedure:
-			controlServiceAuthenticateDeviceUserHandler.ServeHTTP(w, r)
-		case ControlServiceGetDeviceLoginURLProcedure:
-			controlServiceGetDeviceLoginURLHandler.ServeHTTP(w, r)
-		case ControlServiceDeviceLoginCallbackProcedure:
-			controlServiceDeviceLoginCallbackHandler.ServeHTTP(w, r)
-		case ControlServiceListDeviceUsersProcedure:
-			controlServiceListDeviceUsersHandler.ServeHTTP(w, r)
 		case ControlServiceSearchProcedure:
 			controlServiceSearchHandler.ServeHTTP(w, r)
 		case ControlServiceRebuildSearchIndexProcedure:
@@ -4703,22 +4601,6 @@ func (UnimplementedControlServiceHandler) UpdateCompliancePolicyRule(context.Con
 
 func (UnimplementedControlServiceHandler) GetDeviceCompliancePolicyStatus(context.Context, *connect.Request[v1.GetDeviceCompliancePolicyStatusRequest]) (*connect.Response[v1.GetDeviceCompliancePolicyStatusResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceCompliancePolicyStatus is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) AuthenticateDeviceUser(context.Context, *connect.Request[v1.AuthenticateDeviceUserRequest]) (*connect.Response[v1.AuthenticateDeviceUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.AuthenticateDeviceUser is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) GetDeviceLoginURL(context.Context, *connect.Request[v1.GetDeviceLoginURLRequest]) (*connect.Response[v1.GetDeviceLoginURLResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceLoginURL is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) DeviceLoginCallback(context.Context, *connect.Request[v1.DeviceLoginCallbackRequest]) (*connect.Response[v1.DeviceLoginCallbackResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeviceLoginCallback is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) ListDeviceUsers(context.Context, *connect.Request[v1.ListDeviceUsersRequest]) (*connect.Response[v1.ListDeviceUsersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListDeviceUsers is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) Search(context.Context, *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error) {
