@@ -28,9 +28,8 @@ func ResolveAndValidatePath(path string) (string, error) {
 			missingTail = filepath.Join(filepath.Base(dir), missingTail)
 			dir = filepath.Dir(dir)
 		} else {
-			// Permission denied or other error — continue up the tree.
-			missingTail = filepath.Join(filepath.Base(dir), missingTail)
-			dir = filepath.Dir(dir)
+			// Permission denied or other error — reject the path.
+			return "", fmt.Errorf("cannot stat %s: %w", dir, err)
 		}
 	}
 
@@ -41,7 +40,7 @@ func ResolveAndValidatePath(path string) (string, error) {
 	// Resolve symlinks only in the existing portion of the path.
 	resolved, err := filepath.EvalSymlinks(existingParent)
 	if err != nil {
-		return clean, nil
+		return "", fmt.Errorf("resolve symlinks in %s: %w", existingParent, err)
 	}
 
 	// Rebuild the full path with resolved parent + missing components + filename.
