@@ -33,24 +33,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// DeviceAuthServiceAuthenticateProcedure is the fully-qualified name of the DeviceAuthService's
-	// Authenticate RPC.
-	DeviceAuthServiceAuthenticateProcedure = "/pm.v1.DeviceAuthService/Authenticate"
-	// DeviceAuthServiceValidateSessionProcedure is the fully-qualified name of the DeviceAuthService's
-	// ValidateSession RPC.
-	DeviceAuthServiceValidateSessionProcedure = "/pm.v1.DeviceAuthService/ValidateSession"
-	// DeviceAuthServiceGetUserProcedure is the fully-qualified name of the DeviceAuthService's GetUser
-	// RPC.
-	DeviceAuthServiceGetUserProcedure = "/pm.v1.DeviceAuthService/GetUser"
-	// DeviceAuthServiceListUsersProcedure is the fully-qualified name of the DeviceAuthService's
-	// ListUsers RPC.
-	DeviceAuthServiceListUsersProcedure = "/pm.v1.DeviceAuthService/ListUsers"
-	// DeviceAuthServiceGetLoginURLProcedure is the fully-qualified name of the DeviceAuthService's
-	// GetLoginURL RPC.
-	DeviceAuthServiceGetLoginURLProcedure = "/pm.v1.DeviceAuthService/GetLoginURL"
-	// DeviceAuthServiceCompleteLoginProcedure is the fully-qualified name of the DeviceAuthService's
-	// CompleteLogin RPC.
-	DeviceAuthServiceCompleteLoginProcedure = "/pm.v1.DeviceAuthService/CompleteLogin"
 	// DeviceAuthServiceEnrollProcedure is the fully-qualified name of the DeviceAuthService's Enroll
 	// RPC.
 	DeviceAuthServiceEnrollProcedure = "/pm.v1.DeviceAuthService/Enroll"
@@ -61,20 +43,6 @@ const (
 
 // DeviceAuthServiceClient is a client for the pm.v1.DeviceAuthService service.
 type DeviceAuthServiceClient interface {
-	// Authenticate a user for device login (SSH, sudo, display manager).
-	// Called by pam_pm.so during pam_sm_authenticate().
-	Authenticate(context.Context, *connect.Request[v1.DeviceAuthRequest]) (*connect.Response[v1.DeviceAuthResponse], error)
-	// Validate an existing session token (for sudo re-auth without password).
-	ValidateSession(context.Context, *connect.Request[v1.ValidateSessionRequest]) (*connect.Response[v1.ValidateSessionResponse], error)
-	// Look up a single user by username or UID (for NSS getpwnam/getpwuid).
-	GetUser(context.Context, *connect.Request[v1.GetDeviceUserRequest]) (*connect.Response[v1.GetDeviceUserResponse], error)
-	// List all users authorized for this device (for NSS enumeration).
-	ListUsers(context.Context, *connect.Request[v1.ListDeviceUsersLocalRequest]) (*connect.Response[v1.ListDeviceUsersLocalResponse], error)
-	// Get the browser login URL for OIDC-only users on graphical sessions.
-	// Called by pam_pm.so when it detects a display manager + OIDC-only user.
-	GetLoginURL(context.Context, *connect.Request[v1.GetLoginURLRequest]) (*connect.Response[v1.GetLoginURLResponse], error)
-	// Complete a browser-based login after the localhost callback is received.
-	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
 	// Enroll the agent with a PM server (called by CLI, no sudo required).
 	Enroll(context.Context, *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error)
 	// Check whether the agent is currently enrolled.
@@ -92,42 +60,6 @@ func NewDeviceAuthServiceClient(httpClient connect.HTTPClient, baseURL string, o
 	baseURL = strings.TrimRight(baseURL, "/")
 	deviceAuthServiceMethods := v1.File_pm_v1_device_auth_proto.Services().ByName("DeviceAuthService").Methods()
 	return &deviceAuthServiceClient{
-		authenticate: connect.NewClient[v1.DeviceAuthRequest, v1.DeviceAuthResponse](
-			httpClient,
-			baseURL+DeviceAuthServiceAuthenticateProcedure,
-			connect.WithSchema(deviceAuthServiceMethods.ByName("Authenticate")),
-			connect.WithClientOptions(opts...),
-		),
-		validateSession: connect.NewClient[v1.ValidateSessionRequest, v1.ValidateSessionResponse](
-			httpClient,
-			baseURL+DeviceAuthServiceValidateSessionProcedure,
-			connect.WithSchema(deviceAuthServiceMethods.ByName("ValidateSession")),
-			connect.WithClientOptions(opts...),
-		),
-		getUser: connect.NewClient[v1.GetDeviceUserRequest, v1.GetDeviceUserResponse](
-			httpClient,
-			baseURL+DeviceAuthServiceGetUserProcedure,
-			connect.WithSchema(deviceAuthServiceMethods.ByName("GetUser")),
-			connect.WithClientOptions(opts...),
-		),
-		listUsers: connect.NewClient[v1.ListDeviceUsersLocalRequest, v1.ListDeviceUsersLocalResponse](
-			httpClient,
-			baseURL+DeviceAuthServiceListUsersProcedure,
-			connect.WithSchema(deviceAuthServiceMethods.ByName("ListUsers")),
-			connect.WithClientOptions(opts...),
-		),
-		getLoginURL: connect.NewClient[v1.GetLoginURLRequest, v1.GetLoginURLResponse](
-			httpClient,
-			baseURL+DeviceAuthServiceGetLoginURLProcedure,
-			connect.WithSchema(deviceAuthServiceMethods.ByName("GetLoginURL")),
-			connect.WithClientOptions(opts...),
-		),
-		completeLogin: connect.NewClient[v1.CompleteLoginRequest, v1.CompleteLoginResponse](
-			httpClient,
-			baseURL+DeviceAuthServiceCompleteLoginProcedure,
-			connect.WithSchema(deviceAuthServiceMethods.ByName("CompleteLogin")),
-			connect.WithClientOptions(opts...),
-		),
 		enroll: connect.NewClient[v1.EnrollRequest, v1.EnrollResponse](
 			httpClient,
 			baseURL+DeviceAuthServiceEnrollProcedure,
@@ -145,44 +77,8 @@ func NewDeviceAuthServiceClient(httpClient connect.HTTPClient, baseURL string, o
 
 // deviceAuthServiceClient implements DeviceAuthServiceClient.
 type deviceAuthServiceClient struct {
-	authenticate        *connect.Client[v1.DeviceAuthRequest, v1.DeviceAuthResponse]
-	validateSession     *connect.Client[v1.ValidateSessionRequest, v1.ValidateSessionResponse]
-	getUser             *connect.Client[v1.GetDeviceUserRequest, v1.GetDeviceUserResponse]
-	listUsers           *connect.Client[v1.ListDeviceUsersLocalRequest, v1.ListDeviceUsersLocalResponse]
-	getLoginURL         *connect.Client[v1.GetLoginURLRequest, v1.GetLoginURLResponse]
-	completeLogin       *connect.Client[v1.CompleteLoginRequest, v1.CompleteLoginResponse]
 	enroll              *connect.Client[v1.EnrollRequest, v1.EnrollResponse]
 	getEnrollmentStatus *connect.Client[v1.GetEnrollmentStatusRequest, v1.GetEnrollmentStatusResponse]
-}
-
-// Authenticate calls pm.v1.DeviceAuthService.Authenticate.
-func (c *deviceAuthServiceClient) Authenticate(ctx context.Context, req *connect.Request[v1.DeviceAuthRequest]) (*connect.Response[v1.DeviceAuthResponse], error) {
-	return c.authenticate.CallUnary(ctx, req)
-}
-
-// ValidateSession calls pm.v1.DeviceAuthService.ValidateSession.
-func (c *deviceAuthServiceClient) ValidateSession(ctx context.Context, req *connect.Request[v1.ValidateSessionRequest]) (*connect.Response[v1.ValidateSessionResponse], error) {
-	return c.validateSession.CallUnary(ctx, req)
-}
-
-// GetUser calls pm.v1.DeviceAuthService.GetUser.
-func (c *deviceAuthServiceClient) GetUser(ctx context.Context, req *connect.Request[v1.GetDeviceUserRequest]) (*connect.Response[v1.GetDeviceUserResponse], error) {
-	return c.getUser.CallUnary(ctx, req)
-}
-
-// ListUsers calls pm.v1.DeviceAuthService.ListUsers.
-func (c *deviceAuthServiceClient) ListUsers(ctx context.Context, req *connect.Request[v1.ListDeviceUsersLocalRequest]) (*connect.Response[v1.ListDeviceUsersLocalResponse], error) {
-	return c.listUsers.CallUnary(ctx, req)
-}
-
-// GetLoginURL calls pm.v1.DeviceAuthService.GetLoginURL.
-func (c *deviceAuthServiceClient) GetLoginURL(ctx context.Context, req *connect.Request[v1.GetLoginURLRequest]) (*connect.Response[v1.GetLoginURLResponse], error) {
-	return c.getLoginURL.CallUnary(ctx, req)
-}
-
-// CompleteLogin calls pm.v1.DeviceAuthService.CompleteLogin.
-func (c *deviceAuthServiceClient) CompleteLogin(ctx context.Context, req *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error) {
-	return c.completeLogin.CallUnary(ctx, req)
 }
 
 // Enroll calls pm.v1.DeviceAuthService.Enroll.
@@ -197,20 +93,6 @@ func (c *deviceAuthServiceClient) GetEnrollmentStatus(ctx context.Context, req *
 
 // DeviceAuthServiceHandler is an implementation of the pm.v1.DeviceAuthService service.
 type DeviceAuthServiceHandler interface {
-	// Authenticate a user for device login (SSH, sudo, display manager).
-	// Called by pam_pm.so during pam_sm_authenticate().
-	Authenticate(context.Context, *connect.Request[v1.DeviceAuthRequest]) (*connect.Response[v1.DeviceAuthResponse], error)
-	// Validate an existing session token (for sudo re-auth without password).
-	ValidateSession(context.Context, *connect.Request[v1.ValidateSessionRequest]) (*connect.Response[v1.ValidateSessionResponse], error)
-	// Look up a single user by username or UID (for NSS getpwnam/getpwuid).
-	GetUser(context.Context, *connect.Request[v1.GetDeviceUserRequest]) (*connect.Response[v1.GetDeviceUserResponse], error)
-	// List all users authorized for this device (for NSS enumeration).
-	ListUsers(context.Context, *connect.Request[v1.ListDeviceUsersLocalRequest]) (*connect.Response[v1.ListDeviceUsersLocalResponse], error)
-	// Get the browser login URL for OIDC-only users on graphical sessions.
-	// Called by pam_pm.so when it detects a display manager + OIDC-only user.
-	GetLoginURL(context.Context, *connect.Request[v1.GetLoginURLRequest]) (*connect.Response[v1.GetLoginURLResponse], error)
-	// Complete a browser-based login after the localhost callback is received.
-	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
 	// Enroll the agent with a PM server (called by CLI, no sudo required).
 	Enroll(context.Context, *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error)
 	// Check whether the agent is currently enrolled.
@@ -224,42 +106,6 @@ type DeviceAuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewDeviceAuthServiceHandler(svc DeviceAuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	deviceAuthServiceMethods := v1.File_pm_v1_device_auth_proto.Services().ByName("DeviceAuthService").Methods()
-	deviceAuthServiceAuthenticateHandler := connect.NewUnaryHandler(
-		DeviceAuthServiceAuthenticateProcedure,
-		svc.Authenticate,
-		connect.WithSchema(deviceAuthServiceMethods.ByName("Authenticate")),
-		connect.WithHandlerOptions(opts...),
-	)
-	deviceAuthServiceValidateSessionHandler := connect.NewUnaryHandler(
-		DeviceAuthServiceValidateSessionProcedure,
-		svc.ValidateSession,
-		connect.WithSchema(deviceAuthServiceMethods.ByName("ValidateSession")),
-		connect.WithHandlerOptions(opts...),
-	)
-	deviceAuthServiceGetUserHandler := connect.NewUnaryHandler(
-		DeviceAuthServiceGetUserProcedure,
-		svc.GetUser,
-		connect.WithSchema(deviceAuthServiceMethods.ByName("GetUser")),
-		connect.WithHandlerOptions(opts...),
-	)
-	deviceAuthServiceListUsersHandler := connect.NewUnaryHandler(
-		DeviceAuthServiceListUsersProcedure,
-		svc.ListUsers,
-		connect.WithSchema(deviceAuthServiceMethods.ByName("ListUsers")),
-		connect.WithHandlerOptions(opts...),
-	)
-	deviceAuthServiceGetLoginURLHandler := connect.NewUnaryHandler(
-		DeviceAuthServiceGetLoginURLProcedure,
-		svc.GetLoginURL,
-		connect.WithSchema(deviceAuthServiceMethods.ByName("GetLoginURL")),
-		connect.WithHandlerOptions(opts...),
-	)
-	deviceAuthServiceCompleteLoginHandler := connect.NewUnaryHandler(
-		DeviceAuthServiceCompleteLoginProcedure,
-		svc.CompleteLogin,
-		connect.WithSchema(deviceAuthServiceMethods.ByName("CompleteLogin")),
-		connect.WithHandlerOptions(opts...),
-	)
 	deviceAuthServiceEnrollHandler := connect.NewUnaryHandler(
 		DeviceAuthServiceEnrollProcedure,
 		svc.Enroll,
@@ -274,18 +120,6 @@ func NewDeviceAuthServiceHandler(svc DeviceAuthServiceHandler, opts ...connect.H
 	)
 	return "/pm.v1.DeviceAuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case DeviceAuthServiceAuthenticateProcedure:
-			deviceAuthServiceAuthenticateHandler.ServeHTTP(w, r)
-		case DeviceAuthServiceValidateSessionProcedure:
-			deviceAuthServiceValidateSessionHandler.ServeHTTP(w, r)
-		case DeviceAuthServiceGetUserProcedure:
-			deviceAuthServiceGetUserHandler.ServeHTTP(w, r)
-		case DeviceAuthServiceListUsersProcedure:
-			deviceAuthServiceListUsersHandler.ServeHTTP(w, r)
-		case DeviceAuthServiceGetLoginURLProcedure:
-			deviceAuthServiceGetLoginURLHandler.ServeHTTP(w, r)
-		case DeviceAuthServiceCompleteLoginProcedure:
-			deviceAuthServiceCompleteLoginHandler.ServeHTTP(w, r)
 		case DeviceAuthServiceEnrollProcedure:
 			deviceAuthServiceEnrollHandler.ServeHTTP(w, r)
 		case DeviceAuthServiceGetEnrollmentStatusProcedure:
@@ -298,30 +132,6 @@ func NewDeviceAuthServiceHandler(svc DeviceAuthServiceHandler, opts ...connect.H
 
 // UnimplementedDeviceAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedDeviceAuthServiceHandler struct{}
-
-func (UnimplementedDeviceAuthServiceHandler) Authenticate(context.Context, *connect.Request[v1.DeviceAuthRequest]) (*connect.Response[v1.DeviceAuthResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.Authenticate is not implemented"))
-}
-
-func (UnimplementedDeviceAuthServiceHandler) ValidateSession(context.Context, *connect.Request[v1.ValidateSessionRequest]) (*connect.Response[v1.ValidateSessionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.ValidateSession is not implemented"))
-}
-
-func (UnimplementedDeviceAuthServiceHandler) GetUser(context.Context, *connect.Request[v1.GetDeviceUserRequest]) (*connect.Response[v1.GetDeviceUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.GetUser is not implemented"))
-}
-
-func (UnimplementedDeviceAuthServiceHandler) ListUsers(context.Context, *connect.Request[v1.ListDeviceUsersLocalRequest]) (*connect.Response[v1.ListDeviceUsersLocalResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.ListUsers is not implemented"))
-}
-
-func (UnimplementedDeviceAuthServiceHandler) GetLoginURL(context.Context, *connect.Request[v1.GetLoginURLRequest]) (*connect.Response[v1.GetLoginURLResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.GetLoginURL is not implemented"))
-}
-
-func (UnimplementedDeviceAuthServiceHandler) CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.CompleteLogin is not implemented"))
-}
 
 func (UnimplementedDeviceAuthServiceHandler) Enroll(context.Context, *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.DeviceAuthService.Enroll is not implemented"))
