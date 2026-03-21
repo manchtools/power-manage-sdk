@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -27,6 +28,7 @@ type Client struct {
 	client    pmv1connect.AgentServiceClient
 	deviceID  string
 	authToken string
+	logger    *slog.Logger
 
 	mu     sync.RWMutex
 	stream *connect.BidiStreamForClient[pm.AgentMessage, pm.ServerMessage]
@@ -42,7 +44,9 @@ type Client struct {
 
 // NewClient creates a new SDK client.
 func NewClient(serverURL string, opts ...ClientOption) *Client {
-	c := &Client{}
+	c := &Client{
+		logger: slog.Default(),
+	}
 
 	httpClient := http.DefaultClient
 	for _, opt := range opts {
@@ -78,6 +82,13 @@ func WithAuth(deviceID, authToken string) ClientOption {
 	return &funcOption{func(c *Client, _ **http.Client) {
 		c.deviceID = deviceID
 		c.authToken = authToken
+	}}
+}
+
+// WithLogger sets a custom structured logger for the client.
+func WithLogger(l *slog.Logger) ClientOption {
+	return &funcOption{func(c *Client, _ **http.Client) {
+		c.logger = l
 	}}
 }
 
@@ -661,7 +672,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		go func() {
 			// Initial inventory on connect
 			if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
-				_ = c.SendInventory(heartbeatCtx, inv)
+				if err := c.SendInventory(heartbeatCtx, inv); err != nil {
+						c.logger.Warn("failed to send inventory", "error", err)
+					}
 			}
 
 			ticker := time.NewTicker(24 * time.Hour)
@@ -673,7 +686,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 					return
 				case <-ticker.C:
 					if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
-						_ = c.SendInventory(heartbeatCtx, inv)
+						if err := c.SendInventory(heartbeatCtx, inv); err != nil {
+						c.logger.Warn("failed to send inventory", "error", err)
+					}
 					}
 				}
 			}
@@ -766,7 +781,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 				if invHandler, ok := handler.(InventoryHandler); ok {
 					go func() {
 						if inv := invHandler.CollectInventory(ctx); inv != nil {
-							_ = c.SendInventory(ctx, inv)
+							if err := c.SendInventory(ctx, inv); err != nil {
+								c.logger.Warn("failed to send inventory", "error", err)
+							}
 						}
 					}()
 				}
@@ -792,7 +809,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 					// that response requires this receive loop to keep running.
 					go func() {
 						success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
-						_ = c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg)
+						if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
+							c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
+						}
 					}()
 				}
 			}

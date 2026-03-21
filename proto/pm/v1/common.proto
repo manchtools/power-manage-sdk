@@ -44,6 +44,8 @@ enum AssignmentMode {
 message ErrorDetail {
   // Machine-readable error code (e.g., "user_not_found", "email_already_exists").
   string code = 1;
+  // Server-generated request ID for correlating errors with server logs.
+  string request_id = 2;
 }
 
 // Compliance status for a device based on detection scripts

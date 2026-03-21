@@ -8,6 +8,7 @@ package systemd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
@@ -36,7 +37,10 @@ func Status(unitName string) UnitStatus {
 	status := UnitStatus{}
 
 	// Check enabled state
-	out, _, _ := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	if err != nil {
+		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
+	}
 	enabledStatus := strings.TrimSpace(out)
 
 	switch enabledStatus {
@@ -50,7 +54,10 @@ func Status(unitName string) UnitStatus {
 	}
 
 	// Check active state
-	out, _, _ = exec.QueryOutput("systemctl", "is-active", unitName)
+	out, _, err = exec.QueryOutput("systemctl", "is-active", unitName)
+	if err != nil {
+		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
+	}
 	status.Active = strings.TrimSpace(out) == "active"
 
 	return status
@@ -59,7 +66,10 @@ func Status(unitName string) UnitStatus {
 // IsEnabled checks if a systemd unit is enabled or in a state where
 // enabling is not needed (static, indirect, generated units).
 func IsEnabled(unitName string) bool {
-	out, _, _ := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	if err != nil {
+		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
+	}
 	status := strings.TrimSpace(out)
 	switch status {
 	case "enabled", "enabled-runtime":
@@ -73,13 +83,19 @@ func IsEnabled(unitName string) bool {
 
 // IsMasked checks if a systemd unit is masked.
 func IsMasked(unitName string) bool {
-	out, _, _ := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	if err != nil {
+		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
+	}
 	return strings.TrimSpace(out) == "masked"
 }
 
 // IsActive checks if a systemd unit is currently active (running).
 func IsActive(unitName string) bool {
-	out, _, _ := exec.QueryOutput("systemctl", "is-active", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-active", unitName)
+	if err != nil {
+		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
+	}
 	return strings.TrimSpace(out) == "active"
 }
 

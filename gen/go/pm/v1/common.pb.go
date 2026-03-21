@@ -329,7 +329,9 @@ func (x *DeviceId) GetValue() string {
 type ErrorDetail struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Machine-readable error code (e.g., "user_not_found", "email_already_exists").
-	Code          string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// Server-generated request ID for correlating errors with server logs.
+	RequestId     string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -367,6 +369,13 @@ func (*ErrorDetail) Descriptor() ([]byte, []int) {
 func (x *ErrorDetail) GetCode() string {
 	if x != nil {
 		return x.Code
+	}
+	return ""
+}
+
+func (x *ErrorDetail) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
 	}
 	return ""
 }
@@ -443,9 +452,11 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\bActionId\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\" \n" +
 	"\bDeviceId\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05value\"!\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value\"@\n" +
 	"\vErrorDetail\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"\\\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"\\\n" +
 	"\rCommandOutput\x12\x1b\n" +
 	"\texit_code\x18\x01 \x01(\x05R\bexitCode\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\tR\x06stdout\x12\x16\n" +
