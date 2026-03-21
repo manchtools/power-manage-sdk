@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -289,7 +290,11 @@ func (f *Flatpak) Show(name string) (*Package, error) {
 		}
 	}
 
-	pkg.Pinned, _ = f.IsPinned(name)
+	if pinned, err := f.IsPinned(name); err != nil {
+		slog.Debug("failed to check pin status", "package", name, "error", err)
+	} else {
+		pkg.Pinned = pinned
+	}
 
 	return pkg, nil
 }
@@ -323,7 +328,11 @@ func (f *Flatpak) showFromRemote(name string) (*Package, error) {
 // Note: Flatpak typically only has one version per branch in remotes.
 func (f *Flatpak) ListVersions(name string) (*VersionInfo, error) {
 	info := &VersionInfo{Name: name}
-	info.Installed, _ = f.GetInstalledVersion(name)
+	if installed, err := f.GetInstalledVersion(name); err != nil {
+		slog.Debug("failed to get installed version", "package", name, "error", err)
+	} else {
+		info.Installed = installed
+	}
 
 	// Get available version from remote
 	out, err := exec.CommandContext(f.ctx, "flatpak", "remote-info", "flathub", name).Output()

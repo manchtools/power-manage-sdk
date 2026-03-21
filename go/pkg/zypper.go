@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -282,7 +283,11 @@ func (z *Zypper) Show(name string) (*Package, error) {
 		pkg.Status = "installed"
 	}
 
-	pkg.Pinned, _ = z.IsPinned(name)
+	if pinned, err := z.IsPinned(name); err != nil {
+		slog.Debug("failed to check pin status", "package", name, "error", err)
+	} else {
+		pkg.Pinned = pinned
+	}
 
 	return pkg, nil
 }
@@ -296,7 +301,11 @@ func (z *Zypper) ListVersions(name string) (*VersionInfo, error) {
 	}
 
 	info := &VersionInfo{Name: name}
-	info.Installed, _ = z.GetInstalledVersion(name)
+	if installed, err := z.GetInstalledVersion(name); err != nil {
+		slog.Debug("failed to get installed version", "package", name, "error", err)
+	} else {
+		info.Installed = installed
+	}
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(bytes.NewReader(out))

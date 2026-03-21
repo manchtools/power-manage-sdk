@@ -1672,6 +1672,20 @@ export function getErrorCode(error: unknown): string | undefined {
 	return undefined;
 }
 
+/**
+ * Extract the request ID from a ConnectError's ErrorDetail, if present.
+ * Users can report this ID to correlate with server-side logs.
+ */
+export function getRequestId(error: unknown): string | undefined {
+	if (error instanceof ConnectError) {
+		const details = error.findDetails(ErrorDetailSchema);
+		if (details.length > 0 && details[0].requestId) {
+			return details[0].requestId;
+		}
+	}
+	return undefined;
+}
+
 // Re-export types for convenience
 export type {
 	User, Device, RegistrationToken, ManagedAction, ActionSet, Definition,

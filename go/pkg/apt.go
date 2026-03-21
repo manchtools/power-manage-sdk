@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
@@ -279,7 +280,11 @@ func (a *Apt) Show(name string) (*Package, error) {
 		pkg.Status = "available"
 	}
 
-	pkg.Pinned, _ = a.IsPinned(name)
+	if pinned, err := a.IsPinned(name); err != nil {
+		slog.Debug("failed to check pin status", "package", name, "error", err)
+	} else {
+		pkg.Pinned = pinned
+	}
 
 	return pkg, nil
 }
@@ -292,7 +297,11 @@ func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
 	}
 
 	info := &VersionInfo{Name: name}
-	info.Installed, _ = a.GetInstalledVersion(name)
+	if installed, err := a.GetInstalledVersion(name); err != nil {
+		slog.Debug("failed to get installed version", "package", name, "error", err)
+	} else {
+		info.Installed = installed
+	}
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(bytes.NewReader(out))
