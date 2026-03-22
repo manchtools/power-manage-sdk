@@ -5,19 +5,22 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 // Apt implements the Manager interface for Debian-based systems.
 type Apt struct {
-	ctx     context.Context
-	useSudo bool
-	aptCmd  string // cached apt command (apt or apt-get)
+	ctx        context.Context
+	useSudo    bool
+	aptCmd     string // cached apt command (apt or apt-get)
+	aptCmdOnce sync.Once
 }
 
 // NewApt creates a new Apt package manager.
@@ -101,13 +104,42 @@ func (a *Apt) Update() (*CommandResult, error) {
 	return a.run("apt", "update")
 }
 
+// dpkgConfOptions are passed to apt commands that may trigger dpkg config file
+// prompts (e.g., kernel/grub postinst scripts). Without these, dpkg hangs
+// waiting for interactive input even with DEBIAN_FRONTEND=noninteractive.
+//   - --force-confdef: use the default action for new conffiles (keep old if unchanged)
+//   - --force-confold: keep the currently-installed version if modified by the user
+var dpkgConfOptions = []string{
+	"-o", "Dpkg::Options::=--force-confdef",
+	"-o", "Dpkg::Options::=--force-confold",
+}
+
 // Upgrade upgrades packages.
 func (a *Apt) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
-		return a.run("apt", "upgrade", "-y")
+		args := append([]string{"upgrade", "-y"}, dpkgConfOptions...)
+		return a.run("apt", args...)
 	}
-	args := append([]string{"install", "-y", "--only-upgrade"}, packages...)
+	args := append([]string{"install", "-y", "--only-upgrade"}, dpkgConfOptions...)
+	args = append(args, packages...)
 	return a.run("apt", args...)
+}
+
+// DistUpgrade runs apt dist-upgrade -y for packages with held-back dependencies.
+func (a *Apt) DistUpgrade() (*CommandResult, error) {
+	args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
+	return a.run("apt", args...)
+}
+
+// FixBroken runs apt --fix-broken install -y to repair broken dependencies.
+func (a *Apt) FixBroken() (*CommandResult, error) {
+	args := append([]string{"--fix-broken", "install", "-y"}, dpkgConfOptions...)
+	return a.run("apt", args...)
+}
+
+// Autoremove runs apt autoremove -y to remove unused packages.
+func (a *Apt) Autoremove() (*CommandResult, error) {
+	return a.run("apt", "autoremove", "-y")
 }
 
 // Search searches for packages.
@@ -248,7 +280,11 @@ func (a *Apt) Show(name string) (*Package, error) {
 		pkg.Status = "available"
 	}
 
-	pkg.Pinned, _ = a.IsPinned(name)
+	if pinned, err := a.IsPinned(name); err != nil {
+		slog.Debug("failed to check pin status", "package", name, "error", err)
+	} else {
+		pkg.Pinned = pinned
+	}
 
 	return pkg, nil
 }
@@ -261,7 +297,11 @@ func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
 	}
 
 	info := &VersionInfo{Name: name}
-	info.Installed, _ = a.GetInstalledVersion(name)
+	if installed, err := a.GetInstalledVersion(name); err != nil {
+		slog.Debug("failed to get installed version", "package", name, "error", err)
+	} else {
+		info.Installed = installed
+	}
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(bytes.NewReader(out))
@@ -373,17 +413,15 @@ func (a *Apt) getPinnedSet() (map[string]bool, error) {
 }
 
 // getAptCmd returns the preferred apt command (apt if available, apt-get as fallback).
-// The result is cached for subsequent calls.
+// The result is cached for subsequent calls (thread-safe via sync.Once).
 func (a *Apt) getAptCmd() string {
-	if a.aptCmd != "" {
-		return a.aptCmd
-	}
-	// Prefer apt if available
-	if _, err := exec.LookPath("apt"); err == nil {
-		a.aptCmd = "apt"
-	} else {
-		a.aptCmd = "apt-get"
-	}
+	a.aptCmdOnce.Do(func() {
+		if _, err := exec.LookPath("apt"); err == nil {
+			a.aptCmd = "apt"
+		} else {
+			a.aptCmd = "apt-get"
+		}
+	})
 	return a.aptCmd
 }
 

@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/common.proto.
  */
 export const file_pm_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkq5gEKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBipDCgxEZXNpcmVkU3RhdGUSGQoVREVTSVJFRF9TVEFURV9QUkVTRU5UEAASGAoUREVTSVJFRF9TVEFURV9BQlNFTlQQASprCg5Bc3NpZ25tZW50TW9kZRIcChhBU1NJR05NRU5UX01PREVfUkVRVUlSRUQQABIdChlBU1NJR05NRU5UX01PREVfQVZBSUxBQkxFEAESHAoYQVNTSUdOTUVOVF9NT0RFX0VYQ0xVREVEEAJCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw");
+  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJCCg1Db21tYW5kT3V0cHV0EhEKCWV4aXRfY29kZRgBIAEoBRIOCgZzdGRvdXQYAiABKAkSDgoGc3RkZXJyGAMgASgJKuYBCg9FeGVjdXRpb25TdGF0dXMSIAocRVhFQ1VUSU9OX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGEVYRUNVVElPTl9TVEFUVVNfUEVORElORxABEhwKGEVYRUNVVElPTl9TVEFUVVNfUlVOTklORxACEhwKGEVYRUNVVElPTl9TVEFUVVNfU1VDQ0VTUxADEhsKF0VYRUNVVElPTl9TVEFUVVNfRkFJTEVEEAQSHAoYRVhFQ1VUSU9OX1NUQVRVU19TS0lQUEVEEAUSHAoYRVhFQ1VUSU9OX1NUQVRVU19USU1FT1VUEAYqQwoMRGVzaXJlZFN0YXRlEhkKFURFU0lSRURfU1RBVEVfUFJFU0VOVBAAEhgKFERFU0lSRURfU1RBVEVfQUJTRU5UEAEqawoOQXNzaWdubWVudE1vZGUSHAoYQVNTSUdOTUVOVF9NT0RFX1JFUVVJUkVEEAASHQoZQVNTSUdOTUVOVF9NT0RFX0FWQUlMQUJMRRABEhwKGEFTU0lHTk1FTlRfTU9ERV9FWENMVURFRBACKp4BChBDb21wbGlhbmNlU3RhdHVzEh0KGUNPTVBMSUFOQ0VfU1RBVFVTX1VOS05PV04QABIfChtDT01QTElBTkNFX1NUQVRVU19DT01QTElBTlQQARIjCh9DT01QTElBTkNFX1NUQVRVU19OT05fQ09NUExJQU5UEAISJQohQ09NUExJQU5DRV9TVEFUVVNfSU5fR1JBQ0VfUEVSSU9EEANCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw");
 
 /**
  * Unique identifier for an action instance
@@ -55,6 +55,34 @@ export const DeviceIdSchema: GenMessage<DeviceId> = /*@__PURE__*/
   messageDesc(file_pm_v1_common, 1);
 
 /**
+ * Structured error detail attached to Connect-RPC errors.
+ *
+ * @generated from message pm.v1.ErrorDetail
+ */
+export type ErrorDetail = Message<"pm.v1.ErrorDetail"> & {
+  /**
+   * Machine-readable error code (e.g., "user_not_found", "email_already_exists").
+   *
+   * @generated from field: string code = 1;
+   */
+  code: string;
+
+  /**
+   * Server-generated request ID for correlating errors with server logs.
+   *
+   * @generated from field: string request_id = 2;
+   */
+  requestId: string;
+};
+
+/**
+ * Describes the message pm.v1.ErrorDetail.
+ * Use `create(ErrorDetailSchema)` to create a new message.
+ */
+export const ErrorDetailSchema: GenMessage<ErrorDetail> = /*@__PURE__*/
+  messageDesc(file_pm_v1_common, 2);
+
+/**
  * Output from command execution
  *
  * @generated from message pm.v1.CommandOutput
@@ -87,7 +115,7 @@ export type CommandOutput = Message<"pm.v1.CommandOutput"> & {
  * Use `create(CommandOutputSchema)` to create a new message.
  */
 export const CommandOutputSchema: GenMessage<CommandOutput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_common, 2);
+  messageDesc(file_pm_v1_common, 3);
 
 /**
  * Execution status for any action
@@ -197,4 +225,37 @@ export enum AssignmentMode {
  */
 export const AssignmentModeSchema: GenEnum<AssignmentMode> = /*@__PURE__*/
   enumDesc(file_pm_v1_common, 2);
+
+/**
+ * Compliance status for a device based on detection scripts
+ *
+ * @generated from enum pm.v1.ComplianceStatus
+ */
+export enum ComplianceStatus {
+  /**
+   * @generated from enum value: COMPLIANCE_STATUS_UNKNOWN = 0;
+   */
+  UNKNOWN = 0,
+
+  /**
+   * @generated from enum value: COMPLIANCE_STATUS_COMPLIANT = 1;
+   */
+  COMPLIANT = 1,
+
+  /**
+   * @generated from enum value: COMPLIANCE_STATUS_NON_COMPLIANT = 2;
+   */
+  NON_COMPLIANT = 2,
+
+  /**
+   * @generated from enum value: COMPLIANCE_STATUS_IN_GRACE_PERIOD = 3;
+   */
+  IN_GRACE_PERIOD = 3,
+}
+
+/**
+ * Describes the enum pm.v1.ComplianceStatus.
+ */
+export const ComplianceStatusSchema: GenEnum<ComplianceStatus> = /*@__PURE__*/
+  enumDesc(file_pm_v1_common, 3);
 

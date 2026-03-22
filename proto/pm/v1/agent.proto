@@ -55,6 +55,9 @@ message AgentMessage {
     StoreLuksKeyRequest store_luks_key = 51;
     // @gotags: validate:"omitempty"
     RevokeLuksDeviceKeyResult revoke_luks_device_key_result = 52;
+    // Log query result (journalctl output)
+    // @gotags: validate:"omitempty"
+    LogQueryResult log_query_result = 60;
   }
 }
 
@@ -155,6 +158,9 @@ message ServerMessage {
     StoreLuksKeyResponse store_luks_key = 51;
     // @gotags: validate:"omitempty"
     RevokeLuksDeviceKey revoke_luks_device_key = 52;
+    // Log query dispatch (journalctl)
+    // @gotags: validate:"omitempty"
+    LogQuery log_query = 60;
   }
 }
 
@@ -163,6 +169,9 @@ message Welcome {
   string server_version = 1;
   // @gotags: validate:"omitempty"
   google.protobuf.Duration heartbeat_interval = 2;
+  // Base URL for browser-based device login (configurable, defaults to built-in PM web app).
+  // Used by PAM module to open the OIDC login page for display manager sessions.
+  string device_login_url = 3;
 }
 
 message ActionDispatch {
@@ -359,4 +368,38 @@ message SyncActionsResponse {
   // Agent should use this for the next sync interval
   // 0 means use default (30 minutes)
   int32 sync_interval_minutes = 2;
+}
+
+// ============================================================================
+// Log Query (Remote journalctl)
+// ============================================================================
+
+// Server -> Agent: request journalctl output
+message LogQuery {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  // @gotags: validate:"omitempty,gte=0,lte=10000"
+  int32 lines = 2;
+  // @gotags: validate:"omitempty,max=256"
+  string unit = 3;
+  // @gotags: validate:"omitempty,max=64"
+  string since = 4;
+  // @gotags: validate:"omitempty,max=64"
+  string until = 5;
+  // @gotags: validate:"omitempty,max=32"
+  string priority = 6;
+  // @gotags: validate:"omitempty,max=256"
+  string grep = 7;
+  bool kernel = 8;
+}
+
+// Agent -> Server: journalctl output result
+message LogQueryResult {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  bool success = 2;
+  // @gotags: validate:"omitempty,max=1024"
+  string error = 3;
+  // Raw journalctl output (plain text)
+  string logs = 4;
 }

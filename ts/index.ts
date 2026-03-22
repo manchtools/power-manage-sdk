@@ -14,6 +14,8 @@ export type {
 export { AuthStore, type StoredAuth, type RefreshResult } from './auth';
 export { ConfigStore, type ServerConfig } from './config';
 export { OfflineStore, type DraftType } from './offline';
+export { getActionTypeEnum, actionTypeToString, ACTION_TYPE_OPTIONS } from './action-types';
+export * from './errors';
 
 // Re-export generated types
 export * from '../gen/ts/pm/v1/control_pb';

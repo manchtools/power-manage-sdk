@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package pm.v1;
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+
+// ============================================================================
+// Device Enrollment Service (Agent Local Socket)
+//
+// This service runs on the agent's local unix socket (/run/pm-agent/enroll.sock)
+// and provides enrollment functionality for registering the agent with a
+// PM control server. No sudo required — the registration token is the
+// authorization.
+// ============================================================================
+
+service DeviceAuthService {
+  // Enroll the agent with a PM server (called by CLI, no sudo required).
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+
+  // Check whether the agent is currently enrolled.
+  rpc GetEnrollmentStatus(GetEnrollmentStatusRequest) returns (GetEnrollmentStatusResponse);
+}
+
+// ============================================================================
+// Enrollment (Socket-based, no sudo required)
+// ============================================================================
+
+message EnrollRequest {
+  // @gotags: validate:"required,url"
+  string server_url = 1;   // Control server URL
+  // @gotags: validate:"required"
+  string token = 2;        // Registration token from web UI
+  bool skip_verify = 3;    // Skip TLS verification (development only)
+}
+
+message EnrollResponse {
+  bool success = 1;
+  string device_id = 2;    // Assigned device ID on success
+  string error = 3;        // Error message on failure
+}
+
+message GetEnrollmentStatusRequest {}
+
+message GetEnrollmentStatusResponse {
+  bool enrolled = 1;
+  string device_id = 2;    // Empty if not enrolled
+}

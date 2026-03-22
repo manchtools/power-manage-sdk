@@ -137,14 +137,13 @@ func sendDesktopNotification(ctx context.Context, s session, title, message stri
 	}
 
 	// Use runuser to execute notify-send as the target user.
-	// The agent has sudo access to bash, which gives us root,
-	// and runuser (part of util-linux) switches to the target user.
-	script := fmt.Sprintf(
-		`DBUS_SESSION_BUS_ADDRESS=%s runuser -u %q -- notify-send -u critical -a "Power Manage" -i dialog-warning %q %q`,
-		dbusAddr, s.user, title, message,
+	// Each argument is passed separately to avoid shell injection.
+	result, err := exec.Sudo(ctx, "env",
+		"DBUS_SESSION_BUS_ADDRESS="+dbusAddr,
+		"runuser", "-u", s.user, "--",
+		"notify-send", "-u", "critical", "-a", "Power Manage", "-i", "dialog-warning",
+		title, message,
 	)
-
-	result, err := exec.Sudo(ctx, "bash", "-c", script)
 	if err != nil || (result != nil && result.ExitCode != 0) {
 		stderr := ""
 		if result != nil {
