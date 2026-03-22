@@ -51,8 +51,9 @@ func SudoWithStdin(ctx context.Context, stdin io.Reader, name string, args ...st
 // The callback is called for each line of output as it's produced.
 func RunStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
 	c := cmd.NewCmdOptions(cmd.Options{
-		Buffered:  false,
-		Streaming: true,
+		Buffered:       false,
+		Streaming:      true,
+		LineBufferSize: MaxOutputBytes,
 	}, name, args...)
 
 	if dir != "" {
