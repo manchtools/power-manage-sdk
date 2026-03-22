@@ -27,6 +27,7 @@ enum ActionType {
 
   // Scripts (200-299)
   ACTION_TYPE_SHELL = 200;      // Shell script
+  ACTION_TYPE_SCRIPT_RUN = 201; // One-off script execution (not scheduled)
 
   // Services (300-399)
   ACTION_TYPE_SYSTEMD = 300;    // Systemd unit
@@ -55,6 +56,9 @@ enum ActionType {
 
   // Encryption management (1000-1099)
   ACTION_TYPE_LUKS = 1000;      // LUKS disk encryption management
+
+  // Network management (1100-1199)
+  ACTION_TYPE_WIFI = 1100;      // WiFi connection management
 }
 
 // ============================================================================
@@ -76,31 +80,32 @@ message Action {
   // @gotags: validate:"omitempty"
   ActionSchedule schedule = 5;
 
-  // Type-specific parameters
-  oneof params {
-    PackageParams package = 10;
-    AppInstallParams app = 11;
-    ShellParams shell = 12;
-    SystemdParams systemd = 13;
-    FileParams file = 14;
-    UpdateParams update = 15;
-    RepositoryParams repository = 16;
-    FlatpakParams flatpak = 17;
-    DirectoryParams directory = 18;
-    UserParams user = 19;
-    SshParams ssh = 22;
-    SshdParams sshd = 23;
-    SudoParams sudo = 24;
-    LpsParams lps = 25;
-    GroupParams group = 26;
-    LuksParams luks = 27;
-  }
-
   // ECDSA signature over canonical action payload (signed by CA key).
   // Used to verify actions were created by the control server.
-  bytes signature = 20;
+  bytes signature = 6;
   // Canonical JSON params used for signature verification.
-  bytes params_canonical = 21;
+  bytes params_canonical = 7;
+
+  // Type-specific parameters
+  oneof params {
+    PackageParams package = 8;
+    AppInstallParams app = 9;
+    ShellParams shell = 10;
+    SystemdParams systemd = 11;
+    FileParams file = 12;
+    UpdateParams update = 13;
+    RepositoryParams repository = 14;
+    FlatpakParams flatpak = 15;
+    DirectoryParams directory = 16;
+    UserParams user = 17;
+    SshParams ssh = 18;
+    SshdParams sshd = 19;
+    SudoParams sudo = 20;
+    LpsParams lps = 21;
+    GroupParams group = 22;
+    LuksParams luks = 23;
+    WifiParams wifi = 24;
+  }
 }
 
 // ActionSchedule defines when an action should be executed by the agent.
@@ -144,13 +149,13 @@ message PackageParams {
   // Manager-specific package names (override generic name)
   // If a manager-specific name is empty, that manager will be skipped.
   // @gotags: validate:"omitempty,max=255"
-  string apt_name = 10;    // Debian/Ubuntu (apt/apt-get)
+  string apt_name = 5;    // Debian/Ubuntu (apt/apt-get)
   // @gotags: validate:"omitempty,max=255"
-  string dnf_name = 11;    // Fedora/RHEL (dnf/yum)
+  string dnf_name = 6;    // Fedora/RHEL (dnf/yum)
   // @gotags: validate:"omitempty,max=255"
-  string pacman_name = 12; // Arch Linux (pacman)
+  string pacman_name = 7; // Arch Linux (pacman)
   // @gotags: validate:"omitempty,max=255"
-  string zypper_name = 13; // openSUSE (zypper)
+  string zypper_name = 8; // openSUSE (zypper)
 }
 
 message AppInstallParams {
@@ -163,7 +168,8 @@ message AppInstallParams {
 }
 
 message ShellParams {
-  // @gotags: validate:"required,max=1048576"
+  // Execution/remediation script (runs when detection_script is absent or exits non-zero)
+  // @gotags: validate:"omitempty,max=1048576"
   string script = 1;
   // @gotags: validate:"omitempty,max=255"
   string interpreter = 2;
@@ -173,6 +179,12 @@ message ShellParams {
   string working_directory = 4;
   // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
   map<string, string> environment = 5;
+  // Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
+  // @gotags: validate:"omitempty,max=1048576"
+  string detection_script = 6;
+  // When true, only the detection script runs (no remediation) and results are tracked as compliance checks
+  // @gotags: validate:"omitempty"
+  bool is_compliance = 7;
 }
 
 message SystemdParams {
@@ -272,19 +284,19 @@ message RepositoryParams {
 
   // APT repository configuration (Debian/Ubuntu)
   // @gotags: validate:"omitempty"
-  AptRepository apt = 10;
+  AptRepository apt = 2;
 
   // DNF/YUM repository configuration (Fedora/RHEL)
   // @gotags: validate:"omitempty"
-  DnfRepository dnf = 11;
+  DnfRepository dnf = 3;
 
   // Pacman repository configuration (Arch Linux)
   // @gotags: validate:"omitempty"
-  PacmanRepository pacman = 12;
+  PacmanRepository pacman = 4;
 
   // Zypper repository configuration (openSUSE)
   // @gotags: validate:"omitempty"
-  ZypperRepository zypper = 13;
+  ZypperRepository zypper = 5;
 }
 
 // AptRepository configures a Debian/Ubuntu APT repository.
@@ -428,32 +440,32 @@ message UserParams {
 
   // SSH authorized keys to add to ~/.ssh/authorized_keys
   // @gotags: validate:"omitempty,dive,max=4096"
-  repeated string ssh_authorized_keys = 7;
+  repeated string ssh_authorized_keys = 6;
 
   // GECOS field / user comment (full name, etc.)
   // @gotags: validate:"omitempty,max=255"
-  string comment = 8;
+  string comment = 7;
 
   // Create as system user (UID < 1000, no home directory by default)
   // @gotags: validate:"omitempty"
-  bool system_user = 9;
+  bool system_user = 8;
 
   // Create home directory (default: true for normal users, false for system users)
   // @gotags: validate:"omitempty"
-  bool create_home = 10;
+  bool create_home = 9;
 
   // Disable the user account (lock password, set shell to /usr/sbin/nologin)
   // @gotags: validate:"omitempty"
-  bool disabled = 11;
+  bool disabled = 10;
 
   // Primary group name (alternative to gid - creates group if needed)
   // @gotags: validate:"omitempty,max=32"
-  string primary_group = 12;
+  string primary_group = 11;
 
   // Hide user from graphical login screens (GDM, SDDM, LightDM).
   // Sets SystemAccount=true in AccountsService. No effect on headless systems.
   // @gotags: validate:"omitempty"
-  bool hidden = 13;
+  bool hidden = 12;
 }
 
 // GroupParams configures Linux group management.
@@ -481,24 +493,17 @@ message GroupParams {
 // Each action creates a Linux group pm-ssh-{actionId} and users are added
 // to the group. SSH keys and home directory are managed by the User action type.
 message SshParams {
-  // Deprecated: use users field instead. Kept for backward compatibility.
-  // @gotags: validate:"omitempty,max=32"
-  string username = 1;
-
   // Allow public key authentication (default: true)
   // @gotags: validate:"omitempty"
-  bool allow_pubkey = 2;
+  bool allow_pubkey = 1;
 
   // Allow password authentication (default: false)
   // @gotags: validate:"omitempty"
-  bool allow_password = 3;
-
-  reserved 4, 5;
-  reserved "authorized_keys", "home_dir";
+  bool allow_password = 2;
 
   // Users to add to the SSH access group (must be valid Linux usernames)
   // @gotags: validate:"omitempty,dive,min=1,max=32"
-  repeated string users = 6;
+  repeated string users = 3;
 }
 
 // SshdDirective represents a single sshd_config key-value directive.
@@ -616,6 +621,45 @@ message LuksParams {
   LpsPasswordComplexity user_passphrase_complexity = 6;
 }
 
+// WiFi authentication type.
+enum WifiAuthType {
+  WIFI_AUTH_TYPE_UNSPECIFIED = 0;
+  WIFI_AUTH_TYPE_PSK = 1;       // WPA2/WPA3 Personal (password)
+  WIFI_AUTH_TYPE_EAP_TLS = 2;   // 802.1X with client certificate
+}
+
+// WifiParams configures WiFi connection management via NetworkManager.
+// Each action creates a connection profile named pm-wifi-{actionId}.
+// Supports PSK (password) and EAP-TLS (certificate) authentication.
+message WifiParams {
+  // Network name (SSID)
+  // @gotags: validate:"required,min=1,max=255"
+  string ssid = 1;
+  // Authentication type
+  // @gotags: validate:"required,ne=0"
+  WifiAuthType auth_type = 2;
+
+  // PSK authentication (WPA2/WPA3 Personal)
+  // @gotags: validate:"omitempty,max=63"
+  string psk = 3;
+
+  // EAP-TLS authentication (802.1X with client certificate)
+  // @gotags: validate:"omitempty"
+  string ca_cert = 4;         // CA certificate (PEM)
+  // @gotags: validate:"omitempty"
+  string client_cert = 5;     // Client certificate (PEM)
+  // @gotags: validate:"omitempty"
+  string client_key = 6;      // Client private key (PEM)
+  // @gotags: validate:"omitempty,max=254"
+  string identity = 7;        // EAP identity (e.g., user@corp.com)
+
+  // Connection settings
+  bool auto_connect = 8;
+  bool hidden = 9;
+  // @gotags: validate:"omitempty,gte=-1,lte=999"
+  int32 priority = 10;
+}
+
 // ============================================================================
 // Action Result - Sent from agent to server
 // ============================================================================
@@ -638,4 +682,9 @@ message ActionResult {
   // Optional action-specific metadata (e.g., LPS password data)
   // @gotags: validate:"omitempty"
   map<string, string> metadata = 8;
+  // Detection script result: true if detection script exited 0 (compliant)
+  bool compliant = 9;
+  // Detection script output (separate from execution output)
+  // @gotags: validate:"omitempty"
+  CommandOutput detection_output = 10;
 }

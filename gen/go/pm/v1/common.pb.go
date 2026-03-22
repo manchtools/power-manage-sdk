@@ -180,6 +180,59 @@ func (AssignmentMode) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+// Compliance status for a device based on detection scripts
+type ComplianceStatus int32
+
+const (
+	ComplianceStatus_COMPLIANCE_STATUS_UNKNOWN         ComplianceStatus = 0
+	ComplianceStatus_COMPLIANCE_STATUS_COMPLIANT       ComplianceStatus = 1
+	ComplianceStatus_COMPLIANCE_STATUS_NON_COMPLIANT   ComplianceStatus = 2
+	ComplianceStatus_COMPLIANCE_STATUS_IN_GRACE_PERIOD ComplianceStatus = 3
+)
+
+// Enum value maps for ComplianceStatus.
+var (
+	ComplianceStatus_name = map[int32]string{
+		0: "COMPLIANCE_STATUS_UNKNOWN",
+		1: "COMPLIANCE_STATUS_COMPLIANT",
+		2: "COMPLIANCE_STATUS_NON_COMPLIANT",
+		3: "COMPLIANCE_STATUS_IN_GRACE_PERIOD",
+	}
+	ComplianceStatus_value = map[string]int32{
+		"COMPLIANCE_STATUS_UNKNOWN":         0,
+		"COMPLIANCE_STATUS_COMPLIANT":       1,
+		"COMPLIANCE_STATUS_NON_COMPLIANT":   2,
+		"COMPLIANCE_STATUS_IN_GRACE_PERIOD": 3,
+	}
+)
+
+func (x ComplianceStatus) Enum() *ComplianceStatus {
+	p := new(ComplianceStatus)
+	*p = x
+	return p
+}
+
+func (x ComplianceStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (ComplianceStatus) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[3]
+}
+
+func (x ComplianceStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ComplianceStatus.Descriptor instead.
+func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
 // Unique identifier for an action instance
 type ActionId struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -272,6 +325,61 @@ func (x *DeviceId) GetValue() string {
 	return ""
 }
 
+// Structured error detail attached to Connect-RPC errors.
+type ErrorDetail struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Machine-readable error code (e.g., "user_not_found", "email_already_exists").
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// Server-generated request ID for correlating errors with server logs.
+	RequestId     string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ErrorDetail) Reset() {
+	*x = ErrorDetail{}
+	mi := &file_pm_v1_common_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ErrorDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ErrorDetail) ProtoMessage() {}
+
+func (x *ErrorDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_common_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ErrorDetail.ProtoReflect.Descriptor instead.
+func (*ErrorDetail) Descriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ErrorDetail) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *ErrorDetail) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 // Output from command execution
 type CommandOutput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -287,7 +395,7 @@ type CommandOutput struct {
 
 func (x *CommandOutput) Reset() {
 	*x = CommandOutput{}
-	mi := &file_pm_v1_common_proto_msgTypes[2]
+	mi := &file_pm_v1_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +407,7 @@ func (x *CommandOutput) String() string {
 func (*CommandOutput) ProtoMessage() {}
 
 func (x *CommandOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_common_proto_msgTypes[2]
+	mi := &file_pm_v1_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,7 +420,7 @@ func (x *CommandOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandOutput.ProtoReflect.Descriptor instead.
 func (*CommandOutput) Descriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CommandOutput) GetExitCode() int32 {
@@ -344,7 +452,11 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\bActionId\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\" \n" +
 	"\bDeviceId\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05value\"\\\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value\"@\n" +
+	"\vErrorDetail\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"\\\n" +
 	"\rCommandOutput\x12\x1b\n" +
 	"\texit_code\x18\x01 \x01(\x05R\bexitCode\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\tR\x06stdout\x12\x16\n" +
@@ -363,7 +475,12 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x0eAssignmentMode\x12\x1c\n" +
 	"\x18ASSIGNMENT_MODE_REQUIRED\x10\x00\x12\x1d\n" +
 	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1c\n" +
-	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02*\x9e\x01\n" +
+	"\x10ComplianceStatus\x12\x1d\n" +
+	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
+	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
+	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02\x12%\n" +
+	"!COMPLIANCE_STATUS_IN_GRACE_PERIOD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_common_proto_rawDescOnce sync.Once
@@ -377,15 +494,17 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),  // 0: pm.v1.ExecutionStatus
 	(DesiredState)(0),     // 1: pm.v1.DesiredState
 	(AssignmentMode)(0),   // 2: pm.v1.AssignmentMode
-	(*ActionId)(nil),      // 3: pm.v1.ActionId
-	(*DeviceId)(nil),      // 4: pm.v1.DeviceId
-	(*CommandOutput)(nil), // 5: pm.v1.CommandOutput
+	(ComplianceStatus)(0), // 3: pm.v1.ComplianceStatus
+	(*ActionId)(nil),      // 4: pm.v1.ActionId
+	(*DeviceId)(nil),      // 5: pm.v1.DeviceId
+	(*ErrorDetail)(nil),   // 6: pm.v1.ErrorDetail
+	(*CommandOutput)(nil), // 7: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -405,8 +524,8 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   3,
+			NumEnums:      4,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

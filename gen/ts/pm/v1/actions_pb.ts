@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/actions.proto.
  */
 export const file_pm_v1_actions: GenFile = /*@__PURE__*/
-  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSLMBgoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRInCgdwYWNrYWdlGAogASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgLIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgMIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgNIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGA4gASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgPIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYECABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgRIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYEiABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBMgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgWIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYFyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASIQoEc3VkbxgYIAEoCzIRLnBtLnYxLlN1ZG9QYXJhbXNIABIfCgNscHMYGSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgaIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASIQoEbHVrcxgbIAEoCzIRLnBtLnYxLkx1a3NQYXJhbXNIABIRCglzaWduYXR1cmUYFCABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgVIAEoDEIICgZwYXJhbXMiaAoOQWN0aW9uU2NoZWR1bGUSDAoEY3JvbhgBIAEoCRIWCg5pbnRlcnZhbF9ob3VycxgCIAEoBRIVCg1ydW5fb25fYXNzaWduGAMgASgIEhkKEXNraXBfaWZfdW5jaGFuZ2VkGAQgASgIIqIBCg1QYWNrYWdlUGFyYW1zEgwKBG5hbWUYASABKAkSDwoHdmVyc2lvbhgCIAEoCRIXCg9hbGxvd19kb3duZ3JhZGUYAyABKAgSCwoDcGluGAQgASgIEhAKCGFwdF9uYW1lGAogASgJEhAKCGRuZl9uYW1lGAsgASgJEhMKC3BhY21hbl9uYW1lGAwgASgJEhMKC3p5cHBlcl9uYW1lGA0gASgJIk4KEEFwcEluc3RhbGxQYXJhbXMSCwoDdXJsGAEgASgJEhcKD2NoZWNrc3VtX3NoYTI1NhgCIAEoCRIUCgxpbnN0YWxsX3BhdGgYAyABKAki0AEKC1NoZWxsUGFyYW1zEg4KBnNjcmlwdBgBIAEoCRITCgtpbnRlcnByZXRlchgCIAEoCRITCgtydW5fYXNfcm9vdBgDIAEoCBIZChF3b3JraW5nX2RpcmVjdG9yeRgEIAEoCRI4CgtlbnZpcm9ubWVudBgFIAMoCzIjLnBtLnYxLlNoZWxsUGFyYW1zLkVudmlyb25tZW50RW50cnkaMgoQRW52aXJvbm1lbnRFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIngKDVN5c3RlbWRQYXJhbXMSEQoJdW5pdF9uYW1lGAEgASgJEi4KDWRlc2lyZWRfc3RhdGUYAiABKA4yFy5wbS52MS5TeXN0ZW1kVW5pdFN0YXRlEg4KBmVuYWJsZRgDIAEoCBIUCgx1bml0X2NvbnRlbnQYBCABKAkibgoKRmlsZVBhcmFtcxIMCgRwYXRoGAEgASgJEg8KB2NvbnRlbnQYAiABKAkSDQoFb3duZXIYAyABKAkSDQoFZ3JvdXAYBCABKAkSDAoEbW9kZRgFIAEoCRIVCg1tYW5hZ2VkX2Jsb2NrGAYgASgIIl4KD0RpcmVjdG9yeVBhcmFtcxIMCgRwYXRoGAEgASgJEg0KBW93bmVyGAIgASgJEg0KBWdyb3VwGAMgASgJEgwKBG1vZGUYBCABKAkSEQoJcmVjdXJzaXZlGAUgASgIIlUKDFVwZGF0ZVBhcmFtcxIVCg1zZWN1cml0eV9vbmx5GAEgASgIEhIKCmF1dG9yZW1vdmUYAiABKAgSGgoScmVib290X2lmX3JlcXVpcmVkGAMgASgIIlEKDUZsYXRwYWtQYXJhbXMSDgoGYXBwX2lkGAEgASgJEg4KBnJlbW90ZRgCIAEoCRITCgtzeXN0ZW1fd2lkZRgDIAEoCBILCgNwaW4YBCABKAgiuAEKEFJlcG9zaXRvcnlQYXJhbXMSDAoEbmFtZRgBIAEoCRIhCgNhcHQYCiABKAsyFC5wbS52MS5BcHRSZXBvc2l0b3J5EiEKA2RuZhgLIAEoCzIULnBtLnYxLkRuZlJlcG9zaXRvcnkSJwoGcGFjbWFuGAwgASgLMhcucG0udjEuUGFjbWFuUmVwb3NpdG9yeRInCgZ6eXBwZXIYDSABKAsyFy5wbS52MS5aeXBwZXJSZXBvc2l0b3J5Ip0BCg1BcHRSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRIUCgxkaXN0cmlidXRpb24YAiABKAkSEgoKY29tcG9uZW50cxgDIAMoCRITCgtncGdfa2V5X3VybBgEIAEoCRIPCgdncGdfa2V5GAUgASgJEg8KB3RydXN0ZWQYBiABKAgSDAoEYXJjaBgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCKTAQoNRG5mUmVwb3NpdG9yeRIPCgdiYXNldXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEAoIZ3BnY2hlY2sYBCABKAgSDgoGZ3Bna2V5GAUgASgJEhcKD21vZHVsZV9ob3RmaXhlcxgGIAEoCBIQCghkaXNhYmxlZBgHIAEoCCJHChBQYWNtYW5SZXBvc2l0b3J5Eg4KBnNlcnZlchgBIAEoCRIRCglzaWdfbGV2ZWwYAiABKAkSEAoIZGlzYWJsZWQYAyABKAginAEKEFp5cHBlclJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEwoLYXV0b3JlZnJlc2gYBCABKAgSEAoIZ3BnY2hlY2sYBSABKAgSDgoGZ3Bna2V5GAYgASgJEgwKBHR5cGUYByABKAkSEAoIZGlzYWJsZWQYCCABKAgi6gEKClVzZXJQYXJhbXMSEAoIdXNlcm5hbWUYASABKAkSCwoDdWlkGAIgASgFEgsKA2dpZBgDIAEoBRIQCghob21lX2RpchgEIAEoCRINCgVzaGVsbBgFIAEoCRIbChNzc2hfYXV0aG9yaXplZF9rZXlzGAcgAygJEg8KB2NvbW1lbnQYCCABKAkSEwoLc3lzdGVtX3VzZXIYCSABKAgSEwoLY3JlYXRlX2hvbWUYCiABKAgSEAoIZGlzYWJsZWQYCyABKAgSFQoNcHJpbWFyeV9ncm91cBgMIAEoCRIOCgZoaWRkZW4YDSABKAgiTwoLR3JvdXBQYXJhbXMSDAoEbmFtZRgBIAEoCRIPCgdtZW1iZXJzGAIgAygJEgsKA2dpZBgDIAEoBRIUCgxzeXN0ZW1fZ3JvdXAYBCABKAgigQEKCVNzaFBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRIUCgxhbGxvd19wdWJrZXkYAiABKAgSFgoOYWxsb3dfcGFzc3dvcmQYAyABKAgSDQoFdXNlcnMYBiADKAlKBAgEEAVKBAgFEAZSD2F1dGhvcml6ZWRfa2V5c1IIaG9tZV9kaXIiKwoNU3NoZERpcmVjdGl2ZRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAkiSAoKU3NoZFBhcmFtcxIQCghwcmlvcml0eRgBIAEoDRIoCgpkaXJlY3RpdmVzGAIgAygLMhQucG0udjEuU3NoZERpcmVjdGl2ZSJgCgpTdWRvUGFyYW1zEiwKDGFjY2Vzc19sZXZlbBgBIAEoDjIWLnBtLnYxLlN1ZG9BY2Nlc3NMZXZlbBINCgV1c2VycxgCIAMoCRIVCg1jdXN0b21fY29uZmlnGAMgASgJIqUBCglMcHNQYXJhbXMSEQoJdXNlcm5hbWVzGAEgAygJEhcKD3Bhc3N3b3JkX2xlbmd0aBgCIAEoBRIwCgpjb21wbGV4aXR5GAMgASgOMhwucG0udjEuTHBzUGFzc3dvcmRDb21wbGV4aXR5Eh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYBCABKAUSGgoSZ3JhY2VfcGVyaW9kX2hvdXJzGAUgASgFIvoBCgpMdWtzUGFyYW1zEhUKDXByZXNoYXJlZF9rZXkYASABKAkSHgoWcm90YXRpb25faW50ZXJ2YWxfZGF5cxgCIAEoBRIRCgltaW5fd29yZHMYAyABKAUSPAoVZGV2aWNlX2JvdW5kX2tleV90eXBlGAQgASgOMh0ucG0udjEuTHVrc0RldmljZUJvdW5kS2V5VHlwZRIiChp1c2VyX3Bhc3NwaHJhc2VfbWluX2xlbmd0aBgFIAEoBRJAChp1c2VyX3Bhc3NwaHJhc2VfY29tcGxleGl0eRgGIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eSLNAgoMQWN0aW9uUmVzdWx0EiIKCWFjdGlvbl9pZBgBIAEoCzIPLnBtLnYxLkFjdGlvbklkEiYKBnN0YXR1cxgCIAEoDjIWLnBtLnYxLkV4ZWN1dGlvblN0YXR1cxINCgVlcnJvchgDIAEoCRIkCgZvdXRwdXQYBCABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0EjAKDGNvbXBsZXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLZHVyYXRpb25fbXMYBiABKAMSDwoHY2hhbmdlZBgHIAEoCBIzCghtZXRhZGF0YRgIIAMoCzIhLnBtLnYxLkFjdGlvblJlc3VsdC5NZXRhZGF0YUVudHJ5Gi8KDU1ldGFkYXRhRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASqJBAoKQWN0aW9uVHlwZRIbChdBQ1RJT05fVFlQRV9VTlNQRUNJRklFRBAAEhcKE0FDVElPTl9UWVBFX1BBQ0tBR0UQARIWChJBQ1RJT05fVFlQRV9VUERBVEUQAhIaChZBQ1RJT05fVFlQRV9SRVBPU0lUT1JZEAMSGQoVQUNUSU9OX1RZUEVfQVBQX0lNQUdFEGQSEwoPQUNUSU9OX1RZUEVfREVCEGUSEwoPQUNUSU9OX1RZUEVfUlBNEGYSFwoTQUNUSU9OX1RZUEVfRkxBVFBBSxBnEhYKEUFDVElPTl9UWVBFX1NIRUxMEMgBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMSFQoQQUNUSU9OX1RZUEVfVVNFUhDYBBIWChFBQ1RJT05fVFlQRV9HUk9VUBDZBBIUCg9BQ1RJT05fVFlQRV9TU0gQvAUSFQoQQUNUSU9OX1RZUEVfU1NIRBC9BRIVChBBQ1RJT05fVFlQRV9TVURPEKAGEhQKD0FDVElPTl9UWVBFX0xQUxCEBxIVChBBQ1RJT05fVFlQRV9MVUtTEOgHKpgBChBTeXN0ZW1kVW5pdFN0YXRlEiIKHlNZU1RFTURfVU5JVF9TVEFURV9VTlNQRUNJRklFRBAAEh4KGlNZU1RFTURfVU5JVF9TVEFURV9TVEFSVEVEEAESHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUT1BQRUQQAhIgChxTWVNURU1EX1VOSVRfU1RBVEVfUkVTVEFSVEVEEAMqjQEKD1N1ZG9BY2Nlc3NMZXZlbBIhCh1TVURPX0FDQ0VTU19MRVZFTF9VTlNQRUNJRklFRBAAEhoKFlNVRE9fQUNDRVNTX0xFVkVMX0ZVTEwQARIdChlTVURPX0FDQ0VTU19MRVZFTF9MSU1JVEVEEAISHAoYU1VET19BQ0NFU1NfTEVWRUxfQ1VTVE9NEAMqjwEKFUxwc1Bhc3N3b3JkQ29tcGxleGl0eRInCiNMUFNfUEFTU1dPUkRfQ09NUExFWElUWV9VTlNQRUNJRklFRBAAEigKJExQU19QQVNTV09SRF9DT01QTEVYSVRZX0FMUEhBTlVNRVJJQxABEiMKH0xQU19QQVNTV09SRF9DT01QTEVYSVRZX0NPTVBMRVgQAiqRAQoWTHVrc0RldmljZUJvdW5kS2V5VHlwZRIjCh9MVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9OT05FEAASIgoeTFVLU19ERVZJQ0VfQk9VTkRfS0VZX1RZUEVfVFBNEAESLgoqTFVLU19ERVZJQ0VfQk9VTkRfS0VZX1RZUEVfVVNFUl9QQVNTUEhSQVNFEAJCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
+  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSLvBgoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgHIAEoDBInCgdwYWNrYWdlGAggASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgJIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgKIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgLIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGAwgASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgNIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYDiABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgPIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYECABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBEgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgSIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYEyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASIQoEc3VkbxgUIAEoCzIRLnBtLnYxLlN1ZG9QYXJhbXNIABIfCgNscHMYFSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgWIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASIQoEbHVrcxgXIAEoCzIRLnBtLnYxLkx1a3NQYXJhbXNIABIhCgR3aWZpGBggASgLMhEucG0udjEuV2lmaVBhcmFtc0gAQggKBnBhcmFtcyJoCg5BY3Rpb25TY2hlZHVsZRIMCgRjcm9uGAEgASgJEhYKDmludGVydmFsX2hvdXJzGAIgASgFEhUKDXJ1bl9vbl9hc3NpZ24YAyABKAgSGQoRc2tpcF9pZl91bmNoYW5nZWQYBCABKAgiogEKDVBhY2thZ2VQYXJhbXMSDAoEbmFtZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgJEhcKD2FsbG93X2Rvd25ncmFkZRgDIAEoCBILCgNwaW4YBCABKAgSEAoIYXB0X25hbWUYBSABKAkSEAoIZG5mX25hbWUYBiABKAkSEwoLcGFjbWFuX25hbWUYByABKAkSEwoLenlwcGVyX25hbWUYCCABKAkiTgoQQXBwSW5zdGFsbFBhcmFtcxILCgN1cmwYASABKAkSFwoPY2hlY2tzdW1fc2hhMjU2GAIgASgJEhQKDGluc3RhbGxfcGF0aBgDIAEoCSKBAgoLU2hlbGxQYXJhbXMSDgoGc2NyaXB0GAEgASgJEhMKC2ludGVycHJldGVyGAIgASgJEhMKC3J1bl9hc19yb290GAMgASgIEhkKEXdvcmtpbmdfZGlyZWN0b3J5GAQgASgJEjgKC2Vudmlyb25tZW50GAUgAygLMiMucG0udjEuU2hlbGxQYXJhbXMuRW52aXJvbm1lbnRFbnRyeRIYChBkZXRlY3Rpb25fc2NyaXB0GAYgASgJEhUKDWlzX2NvbXBsaWFuY2UYByABKAgaMgoQRW52aXJvbm1lbnRFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIngKDVN5c3RlbWRQYXJhbXMSEQoJdW5pdF9uYW1lGAEgASgJEi4KDWRlc2lyZWRfc3RhdGUYAiABKA4yFy5wbS52MS5TeXN0ZW1kVW5pdFN0YXRlEg4KBmVuYWJsZRgDIAEoCBIUCgx1bml0X2NvbnRlbnQYBCABKAkibgoKRmlsZVBhcmFtcxIMCgRwYXRoGAEgASgJEg8KB2NvbnRlbnQYAiABKAkSDQoFb3duZXIYAyABKAkSDQoFZ3JvdXAYBCABKAkSDAoEbW9kZRgFIAEoCRIVCg1tYW5hZ2VkX2Jsb2NrGAYgASgIIl4KD0RpcmVjdG9yeVBhcmFtcxIMCgRwYXRoGAEgASgJEg0KBW93bmVyGAIgASgJEg0KBWdyb3VwGAMgASgJEgwKBG1vZGUYBCABKAkSEQoJcmVjdXJzaXZlGAUgASgIIlUKDFVwZGF0ZVBhcmFtcxIVCg1zZWN1cml0eV9vbmx5GAEgASgIEhIKCmF1dG9yZW1vdmUYAiABKAgSGgoScmVib290X2lmX3JlcXVpcmVkGAMgASgIIlEKDUZsYXRwYWtQYXJhbXMSDgoGYXBwX2lkGAEgASgJEg4KBnJlbW90ZRgCIAEoCRITCgtzeXN0ZW1fd2lkZRgDIAEoCBILCgNwaW4YBCABKAgiuAEKEFJlcG9zaXRvcnlQYXJhbXMSDAoEbmFtZRgBIAEoCRIhCgNhcHQYAiABKAsyFC5wbS52MS5BcHRSZXBvc2l0b3J5EiEKA2RuZhgDIAEoCzIULnBtLnYxLkRuZlJlcG9zaXRvcnkSJwoGcGFjbWFuGAQgASgLMhcucG0udjEuUGFjbWFuUmVwb3NpdG9yeRInCgZ6eXBwZXIYBSABKAsyFy5wbS52MS5aeXBwZXJSZXBvc2l0b3J5Ip0BCg1BcHRSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRIUCgxkaXN0cmlidXRpb24YAiABKAkSEgoKY29tcG9uZW50cxgDIAMoCRITCgtncGdfa2V5X3VybBgEIAEoCRIPCgdncGdfa2V5GAUgASgJEg8KB3RydXN0ZWQYBiABKAgSDAoEYXJjaBgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCKTAQoNRG5mUmVwb3NpdG9yeRIPCgdiYXNldXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEAoIZ3BnY2hlY2sYBCABKAgSDgoGZ3Bna2V5GAUgASgJEhcKD21vZHVsZV9ob3RmaXhlcxgGIAEoCBIQCghkaXNhYmxlZBgHIAEoCCJHChBQYWNtYW5SZXBvc2l0b3J5Eg4KBnNlcnZlchgBIAEoCRIRCglzaWdfbGV2ZWwYAiABKAkSEAoIZGlzYWJsZWQYAyABKAginAEKEFp5cHBlclJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEg8KB2VuYWJsZWQYAyABKAgSEwoLYXV0b3JlZnJlc2gYBCABKAgSEAoIZ3BnY2hlY2sYBSABKAgSDgoGZ3Bna2V5GAYgASgJEgwKBHR5cGUYByABKAkSEAoIZGlzYWJsZWQYCCABKAgi6gEKClVzZXJQYXJhbXMSEAoIdXNlcm5hbWUYASABKAkSCwoDdWlkGAIgASgFEgsKA2dpZBgDIAEoBRIQCghob21lX2RpchgEIAEoCRINCgVzaGVsbBgFIAEoCRIbChNzc2hfYXV0aG9yaXplZF9rZXlzGAYgAygJEg8KB2NvbW1lbnQYByABKAkSEwoLc3lzdGVtX3VzZXIYCCABKAgSEwoLY3JlYXRlX2hvbWUYCSABKAgSEAoIZGlzYWJsZWQYCiABKAgSFQoNcHJpbWFyeV9ncm91cBgLIAEoCRIOCgZoaWRkZW4YDCABKAgiTwoLR3JvdXBQYXJhbXMSDAoEbmFtZRgBIAEoCRIPCgdtZW1iZXJzGAIgAygJEgsKA2dpZBgDIAEoBRIUCgxzeXN0ZW1fZ3JvdXAYBCABKAgiSAoJU3NoUGFyYW1zEhQKDGFsbG93X3B1YmtleRgBIAEoCBIWCg5hbGxvd19wYXNzd29yZBgCIAEoCBINCgV1c2VycxgDIAMoCSIrCg1Tc2hkRGlyZWN0aXZlEgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCSJICgpTc2hkUGFyYW1zEhAKCHByaW9yaXR5GAEgASgNEigKCmRpcmVjdGl2ZXMYAiADKAsyFC5wbS52MS5Tc2hkRGlyZWN0aXZlImAKClN1ZG9QYXJhbXMSLAoMYWNjZXNzX2xldmVsGAEgASgOMhYucG0udjEuU3Vkb0FjY2Vzc0xldmVsEg0KBXVzZXJzGAIgAygJEhUKDWN1c3RvbV9jb25maWcYAyABKAkipQEKCUxwc1BhcmFtcxIRCgl1c2VybmFtZXMYASADKAkSFwoPcGFzc3dvcmRfbGVuZ3RoGAIgASgFEjAKCmNvbXBsZXhpdHkYAyABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkSHgoWcm90YXRpb25faW50ZXJ2YWxfZGF5cxgEIAEoBRIaChJncmFjZV9wZXJpb2RfaG91cnMYBSABKAUi+gEKCkx1a3NQYXJhbXMSFQoNcHJlc2hhcmVkX2tleRgBIAEoCRIeChZyb3RhdGlvbl9pbnRlcnZhbF9kYXlzGAIgASgFEhEKCW1pbl93b3JkcxgDIAEoBRI8ChVkZXZpY2VfYm91bmRfa2V5X3R5cGUYBCABKA4yHS5wbS52MS5MdWtzRGV2aWNlQm91bmRLZXlUeXBlEiIKGnVzZXJfcGFzc3BocmFzZV9taW5fbGVuZ3RoGAUgASgFEkAKGnVzZXJfcGFzc3BocmFzZV9jb21wbGV4aXR5GAYgASgOMhwucG0udjEuTHBzUGFzc3dvcmRDb21wbGV4aXR5ItMBCgpXaWZpUGFyYW1zEgwKBHNzaWQYASABKAkSJgoJYXV0aF90eXBlGAIgASgOMhMucG0udjEuV2lmaUF1dGhUeXBlEgsKA3BzaxgDIAEoCRIPCgdjYV9jZXJ0GAQgASgJEhMKC2NsaWVudF9jZXJ0GAUgASgJEhIKCmNsaWVudF9rZXkYBiABKAkSEAoIaWRlbnRpdHkYByABKAkSFAoMYXV0b19jb25uZWN0GAggASgIEg4KBmhpZGRlbhgJIAEoCBIQCghwcmlvcml0eRgKIAEoBSKQAwoMQWN0aW9uUmVzdWx0EiIKCWFjdGlvbl9pZBgBIAEoCzIPLnBtLnYxLkFjdGlvbklkEiYKBnN0YXR1cxgCIAEoDjIWLnBtLnYxLkV4ZWN1dGlvblN0YXR1cxINCgVlcnJvchgDIAEoCRIkCgZvdXRwdXQYBCABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0EjAKDGNvbXBsZXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLZHVyYXRpb25fbXMYBiABKAMSDwoHY2hhbmdlZBgHIAEoCBIzCghtZXRhZGF0YRgIIAMoCzIhLnBtLnYxLkFjdGlvblJlc3VsdC5NZXRhZGF0YUVudHJ5EhEKCWNvbXBsaWFudBgJIAEoCBIuChBkZXRlY3Rpb25fb3V0cHV0GAogASgLMhQucG0udjEuQ29tbWFuZE91dHB1dBovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEqvQQKCkFjdGlvblR5cGUSGwoXQUNUSU9OX1RZUEVfVU5TUEVDSUZJRUQQABIXChNBQ1RJT05fVFlQRV9QQUNLQUdFEAESFgoSQUNUSU9OX1RZUEVfVVBEQVRFEAISGgoWQUNUSU9OX1RZUEVfUkVQT1NJVE9SWRADEhkKFUFDVElPTl9UWVBFX0FQUF9JTUFHRRBkEhMKD0FDVElPTl9UWVBFX0RFQhBlEhMKD0FDVElPTl9UWVBFX1JQTRBmEhcKE0FDVElPTl9UWVBFX0ZMQVRQQUsQZxIWChFBQ1RJT05fVFlQRV9TSEVMTBDIARIbChZBQ1RJT05fVFlQRV9TQ1JJUFRfUlVOEMkBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMSFQoQQUNUSU9OX1RZUEVfVVNFUhDYBBIWChFBQ1RJT05fVFlQRV9HUk9VUBDZBBIUCg9BQ1RJT05fVFlQRV9TU0gQvAUSFQoQQUNUSU9OX1RZUEVfU1NIRBC9BRIVChBBQ1RJT05fVFlQRV9TVURPEKAGEhQKD0FDVElPTl9UWVBFX0xQUxCEBxIVChBBQ1RJT05fVFlQRV9MVUtTEOgHEhUKEEFDVElPTl9UWVBFX1dJRkkQzAgqmAEKEFN5c3RlbWRVbml0U3RhdGUSIgoeU1lTVEVNRF9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTWVNURU1EX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNZU1RFTURfVU5JVF9TVEFURV9SRVNUQVJURUQQAyqNAQoPU3Vkb0FjY2Vzc0xldmVsEiEKHVNVRE9fQUNDRVNTX0xFVkVMX1VOU1BFQ0lGSUVEEAASGgoWU1VET19BQ0NFU1NfTEVWRUxfRlVMTBABEh0KGVNVRE9fQUNDRVNTX0xFVkVMX0xJTUlURUQQAhIcChhTVURPX0FDQ0VTU19MRVZFTF9DVVNUT00QAyqPAQoVTHBzUGFzc3dvcmRDb21wbGV4aXR5EicKI0xQU19QQVNTV09SRF9DT01QTEVYSVRZX1VOU1BFQ0lGSUVEEAASKAokTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQUxQSEFOVU1FUklDEAESIwofTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQ09NUExFWBACKpEBChZMdWtzRGV2aWNlQm91bmRLZXlUeXBlEiMKH0xVS1NfREVWSUNFX0JPVU5EX0tFWV9UWVBFX05PTkUQABIiCh5MVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9UUE0QARIuCipMVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9VU0VSX1BBU1NQSFJBU0UQAipiCgxXaWZpQXV0aFR5cGUSHgoaV0lGSV9BVVRIX1RZUEVfVU5TUEVDSUZJRUQQABIWChJXSUZJX0FVVEhfVFlQRV9QU0sQARIaChZXSUZJX0FVVEhfVFlQRV9FQVBfVExTEAJCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.Action
@@ -57,122 +57,128 @@ export type Action = Message<"pm.v1.Action"> & {
   schedule?: ActionSchedule;
 
   /**
-   * Type-specific parameters
-   *
-   * @generated from oneof pm.v1.Action.params
-   */
-  params: {
-    /**
-     * @generated from field: pm.v1.PackageParams package = 10;
-     */
-    value: PackageParams;
-    case: "package";
-  } | {
-    /**
-     * @generated from field: pm.v1.AppInstallParams app = 11;
-     */
-    value: AppInstallParams;
-    case: "app";
-  } | {
-    /**
-     * @generated from field: pm.v1.ShellParams shell = 12;
-     */
-    value: ShellParams;
-    case: "shell";
-  } | {
-    /**
-     * @generated from field: pm.v1.SystemdParams systemd = 13;
-     */
-    value: SystemdParams;
-    case: "systemd";
-  } | {
-    /**
-     * @generated from field: pm.v1.FileParams file = 14;
-     */
-    value: FileParams;
-    case: "file";
-  } | {
-    /**
-     * @generated from field: pm.v1.UpdateParams update = 15;
-     */
-    value: UpdateParams;
-    case: "update";
-  } | {
-    /**
-     * @generated from field: pm.v1.RepositoryParams repository = 16;
-     */
-    value: RepositoryParams;
-    case: "repository";
-  } | {
-    /**
-     * @generated from field: pm.v1.FlatpakParams flatpak = 17;
-     */
-    value: FlatpakParams;
-    case: "flatpak";
-  } | {
-    /**
-     * @generated from field: pm.v1.DirectoryParams directory = 18;
-     */
-    value: DirectoryParams;
-    case: "directory";
-  } | {
-    /**
-     * @generated from field: pm.v1.UserParams user = 19;
-     */
-    value: UserParams;
-    case: "user";
-  } | {
-    /**
-     * @generated from field: pm.v1.SshParams ssh = 22;
-     */
-    value: SshParams;
-    case: "ssh";
-  } | {
-    /**
-     * @generated from field: pm.v1.SshdParams sshd = 23;
-     */
-    value: SshdParams;
-    case: "sshd";
-  } | {
-    /**
-     * @generated from field: pm.v1.SudoParams sudo = 24;
-     */
-    value: SudoParams;
-    case: "sudo";
-  } | {
-    /**
-     * @generated from field: pm.v1.LpsParams lps = 25;
-     */
-    value: LpsParams;
-    case: "lps";
-  } | {
-    /**
-     * @generated from field: pm.v1.GroupParams group = 26;
-     */
-    value: GroupParams;
-    case: "group";
-  } | {
-    /**
-     * @generated from field: pm.v1.LuksParams luks = 27;
-     */
-    value: LuksParams;
-    case: "luks";
-  } | { case: undefined; value?: undefined };
-
-  /**
    * ECDSA signature over canonical action payload (signed by CA key).
    * Used to verify actions were created by the control server.
    *
-   * @generated from field: bytes signature = 20;
+   * @generated from field: bytes signature = 6;
    */
   signature: Uint8Array;
 
   /**
    * Canonical JSON params used for signature verification.
    *
-   * @generated from field: bytes params_canonical = 21;
+   * @generated from field: bytes params_canonical = 7;
    */
   paramsCanonical: Uint8Array;
+
+  /**
+   * Type-specific parameters
+   *
+   * @generated from oneof pm.v1.Action.params
+   */
+  params: {
+    /**
+     * @generated from field: pm.v1.PackageParams package = 8;
+     */
+    value: PackageParams;
+    case: "package";
+  } | {
+    /**
+     * @generated from field: pm.v1.AppInstallParams app = 9;
+     */
+    value: AppInstallParams;
+    case: "app";
+  } | {
+    /**
+     * @generated from field: pm.v1.ShellParams shell = 10;
+     */
+    value: ShellParams;
+    case: "shell";
+  } | {
+    /**
+     * @generated from field: pm.v1.SystemdParams systemd = 11;
+     */
+    value: SystemdParams;
+    case: "systemd";
+  } | {
+    /**
+     * @generated from field: pm.v1.FileParams file = 12;
+     */
+    value: FileParams;
+    case: "file";
+  } | {
+    /**
+     * @generated from field: pm.v1.UpdateParams update = 13;
+     */
+    value: UpdateParams;
+    case: "update";
+  } | {
+    /**
+     * @generated from field: pm.v1.RepositoryParams repository = 14;
+     */
+    value: RepositoryParams;
+    case: "repository";
+  } | {
+    /**
+     * @generated from field: pm.v1.FlatpakParams flatpak = 15;
+     */
+    value: FlatpakParams;
+    case: "flatpak";
+  } | {
+    /**
+     * @generated from field: pm.v1.DirectoryParams directory = 16;
+     */
+    value: DirectoryParams;
+    case: "directory";
+  } | {
+    /**
+     * @generated from field: pm.v1.UserParams user = 17;
+     */
+    value: UserParams;
+    case: "user";
+  } | {
+    /**
+     * @generated from field: pm.v1.SshParams ssh = 18;
+     */
+    value: SshParams;
+    case: "ssh";
+  } | {
+    /**
+     * @generated from field: pm.v1.SshdParams sshd = 19;
+     */
+    value: SshdParams;
+    case: "sshd";
+  } | {
+    /**
+     * @generated from field: pm.v1.SudoParams sudo = 20;
+     */
+    value: SudoParams;
+    case: "sudo";
+  } | {
+    /**
+     * @generated from field: pm.v1.LpsParams lps = 21;
+     */
+    value: LpsParams;
+    case: "lps";
+  } | {
+    /**
+     * @generated from field: pm.v1.GroupParams group = 22;
+     */
+    value: GroupParams;
+    case: "group";
+  } | {
+    /**
+     * @generated from field: pm.v1.LuksParams luks = 23;
+     */
+    value: LuksParams;
+    case: "luks";
+  } | {
+    /**
+     * @generated from field: pm.v1.WifiParams wifi = 24;
+     */
+    value: WifiParams;
+    case: "wifi";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -272,7 +278,7 @@ export type PackageParams = Message<"pm.v1.PackageParams"> & {
    *
    * Debian/Ubuntu (apt/apt-get)
    *
-   * @generated from field: string apt_name = 10;
+   * @generated from field: string apt_name = 5;
    */
   aptName: string;
 
@@ -281,7 +287,7 @@ export type PackageParams = Message<"pm.v1.PackageParams"> & {
    *
    * Fedora/RHEL (dnf/yum)
    *
-   * @generated from field: string dnf_name = 11;
+   * @generated from field: string dnf_name = 6;
    */
   dnfName: string;
 
@@ -290,7 +296,7 @@ export type PackageParams = Message<"pm.v1.PackageParams"> & {
    *
    * Arch Linux (pacman)
    *
-   * @generated from field: string pacman_name = 12;
+   * @generated from field: string pacman_name = 7;
    */
   pacmanName: string;
 
@@ -299,7 +305,7 @@ export type PackageParams = Message<"pm.v1.PackageParams"> & {
    *
    * openSUSE (zypper)
    *
-   * @generated from field: string zypper_name = 13;
+   * @generated from field: string zypper_name = 8;
    */
   zypperName: string;
 };
@@ -349,7 +355,8 @@ export const AppInstallParamsSchema: GenMessage<AppInstallParams> = /*@__PURE__*
  */
 export type ShellParams = Message<"pm.v1.ShellParams"> & {
   /**
-   * @gotags: validate:"required,max=1048576"
+   * Execution/remediation script (runs when detection_script is absent or exits non-zero)
+   * @gotags: validate:"omitempty,max=1048576"
    *
    * @generated from field: string script = 1;
    */
@@ -382,6 +389,22 @@ export type ShellParams = Message<"pm.v1.ShellParams"> & {
    * @generated from field: map<string, string> environment = 5;
    */
   environment: { [key: string]: string };
+
+  /**
+   * Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
+   * @gotags: validate:"omitempty,max=1048576"
+   *
+   * @generated from field: string detection_script = 6;
+   */
+  detectionScript: string;
+
+  /**
+   * When true, only the detection script runs (no remediation) and results are tracked as compliance checks
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: bool is_compliance = 7;
+   */
+  isCompliance: boolean;
 };
 
 /**
@@ -651,7 +674,7 @@ export type RepositoryParams = Message<"pm.v1.RepositoryParams"> & {
    * APT repository configuration (Debian/Ubuntu)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: pm.v1.AptRepository apt = 10;
+   * @generated from field: pm.v1.AptRepository apt = 2;
    */
   apt?: AptRepository;
 
@@ -659,7 +682,7 @@ export type RepositoryParams = Message<"pm.v1.RepositoryParams"> & {
    * DNF/YUM repository configuration (Fedora/RHEL)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: pm.v1.DnfRepository dnf = 11;
+   * @generated from field: pm.v1.DnfRepository dnf = 3;
    */
   dnf?: DnfRepository;
 
@@ -667,7 +690,7 @@ export type RepositoryParams = Message<"pm.v1.RepositoryParams"> & {
    * Pacman repository configuration (Arch Linux)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: pm.v1.PacmanRepository pacman = 12;
+   * @generated from field: pm.v1.PacmanRepository pacman = 4;
    */
   pacman?: PacmanRepository;
 
@@ -675,7 +698,7 @@ export type RepositoryParams = Message<"pm.v1.RepositoryParams"> & {
    * Zypper repository configuration (openSUSE)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: pm.v1.ZypperRepository zypper = 13;
+   * @generated from field: pm.v1.ZypperRepository zypper = 5;
    */
   zypper?: ZypperRepository;
 };
@@ -1002,7 +1025,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * SSH authorized keys to add to ~/.ssh/authorized_keys
    * @gotags: validate:"omitempty,dive,max=4096"
    *
-   * @generated from field: repeated string ssh_authorized_keys = 7;
+   * @generated from field: repeated string ssh_authorized_keys = 6;
    */
   sshAuthorizedKeys: string[];
 
@@ -1010,7 +1033,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * GECOS field / user comment (full name, etc.)
    * @gotags: validate:"omitempty,max=255"
    *
-   * @generated from field: string comment = 8;
+   * @generated from field: string comment = 7;
    */
   comment: string;
 
@@ -1018,7 +1041,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * Create as system user (UID < 1000, no home directory by default)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: bool system_user = 9;
+   * @generated from field: bool system_user = 8;
    */
   systemUser: boolean;
 
@@ -1026,7 +1049,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * Create home directory (default: true for normal users, false for system users)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: bool create_home = 10;
+   * @generated from field: bool create_home = 9;
    */
   createHome: boolean;
 
@@ -1034,7 +1057,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * Disable the user account (lock password, set shell to /usr/sbin/nologin)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: bool disabled = 11;
+   * @generated from field: bool disabled = 10;
    */
   disabled: boolean;
 
@@ -1042,7 +1065,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * Primary group name (alternative to gid - creates group if needed)
    * @gotags: validate:"omitempty,max=32"
    *
-   * @generated from field: string primary_group = 12;
+   * @generated from field: string primary_group = 11;
    */
   primaryGroup: string;
 
@@ -1051,7 +1074,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
    * Sets SystemAccount=true in AccountsService. No effect on headless systems.
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: bool hidden = 13;
+   * @generated from field: bool hidden = 12;
    */
   hidden: boolean;
 };
@@ -1120,18 +1143,10 @@ export const GroupParamsSchema: GenMessage<GroupParams> = /*@__PURE__*/
  */
 export type SshParams = Message<"pm.v1.SshParams"> & {
   /**
-   * Deprecated: use users field instead. Kept for backward compatibility.
-   * @gotags: validate:"omitempty,max=32"
-   *
-   * @generated from field: string username = 1;
-   */
-  username: string;
-
-  /**
    * Allow public key authentication (default: true)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: bool allow_pubkey = 2;
+   * @generated from field: bool allow_pubkey = 1;
    */
   allowPubkey: boolean;
 
@@ -1139,7 +1154,7 @@ export type SshParams = Message<"pm.v1.SshParams"> & {
    * Allow password authentication (default: false)
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: bool allow_password = 3;
+   * @generated from field: bool allow_password = 2;
    */
   allowPassword: boolean;
 
@@ -1147,7 +1162,7 @@ export type SshParams = Message<"pm.v1.SshParams"> & {
    * Users to add to the SSH access group (must be valid Linux usernames)
    * @gotags: validate:"omitempty,dive,min=1,max=32"
    *
-   * @generated from field: repeated string users = 6;
+   * @generated from field: repeated string users = 3;
    */
   users: string[];
 };
@@ -1389,6 +1404,102 @@ export const LuksParamsSchema: GenMessage<LuksParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 22);
 
 /**
+ * WifiParams configures WiFi connection management via NetworkManager.
+ * Each action creates a connection profile named pm-wifi-{actionId}.
+ * Supports PSK (password) and EAP-TLS (certificate) authentication.
+ *
+ * @generated from message pm.v1.WifiParams
+ */
+export type WifiParams = Message<"pm.v1.WifiParams"> & {
+  /**
+   * Network name (SSID)
+   * @gotags: validate:"required,min=1,max=255"
+   *
+   * @generated from field: string ssid = 1;
+   */
+  ssid: string;
+
+  /**
+   * Authentication type
+   * @gotags: validate:"required,ne=0"
+   *
+   * @generated from field: pm.v1.WifiAuthType auth_type = 2;
+   */
+  authType: WifiAuthType;
+
+  /**
+   * PSK authentication (WPA2/WPA3 Personal)
+   * @gotags: validate:"omitempty,max=63"
+   *
+   * @generated from field: string psk = 3;
+   */
+  psk: string;
+
+  /**
+   * EAP-TLS authentication (802.1X with client certificate)
+   * @gotags: validate:"omitempty"
+   *
+   * CA certificate (PEM)
+   *
+   * @generated from field: string ca_cert = 4;
+   */
+  caCert: string;
+
+  /**
+   * @gotags: validate:"omitempty"
+   *
+   * Client certificate (PEM)
+   *
+   * @generated from field: string client_cert = 5;
+   */
+  clientCert: string;
+
+  /**
+   * @gotags: validate:"omitempty"
+   *
+   * Client private key (PEM)
+   *
+   * @generated from field: string client_key = 6;
+   */
+  clientKey: string;
+
+  /**
+   * @gotags: validate:"omitempty,max=254"
+   *
+   * EAP identity (e.g., user@corp.com)
+   *
+   * @generated from field: string identity = 7;
+   */
+  identity: string;
+
+  /**
+   * Connection settings
+   *
+   * @generated from field: bool auto_connect = 8;
+   */
+  autoConnect: boolean;
+
+  /**
+   * @generated from field: bool hidden = 9;
+   */
+  hidden: boolean;
+
+  /**
+   * @gotags: validate:"omitempty,gte=-1,lte=999"
+   *
+   * @generated from field: int32 priority = 10;
+   */
+  priority: number;
+};
+
+/**
+ * Describes the message pm.v1.WifiParams.
+ * Use `create(WifiParamsSchema)` to create a new message.
+ */
+export const WifiParamsSchema: GenMessage<WifiParams> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 23);
+
+/**
  * @generated from message pm.v1.ActionResult
  */
 export type ActionResult = Message<"pm.v1.ActionResult"> & {
@@ -1448,6 +1559,21 @@ export type ActionResult = Message<"pm.v1.ActionResult"> & {
    * @generated from field: map<string, string> metadata = 8;
    */
   metadata: { [key: string]: string };
+
+  /**
+   * Detection script result: true if detection script exited 0 (compliant)
+   *
+   * @generated from field: bool compliant = 9;
+   */
+  compliant: boolean;
+
+  /**
+   * Detection script output (separate from execution output)
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: pm.v1.CommandOutput detection_output = 10;
+   */
+  detectionOutput?: CommandOutput;
 };
 
 /**
@@ -1455,7 +1581,7 @@ export type ActionResult = Message<"pm.v1.ActionResult"> & {
  * Use `create(ActionResultSchema)` to create a new message.
  */
 export const ActionResultSchema: GenMessage<ActionResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 23);
+  messageDesc(file_pm_v1_actions, 24);
 
 /**
  * @generated from enum pm.v1.ActionType
@@ -1527,6 +1653,13 @@ export enum ActionType {
    * @generated from enum value: ACTION_TYPE_SHELL = 200;
    */
   SHELL = 200,
+
+  /**
+   * One-off script execution (not scheduled)
+   *
+   * @generated from enum value: ACTION_TYPE_SCRIPT_RUN = 201;
+   */
+  SCRIPT_RUN = 201,
 
   /**
    * Services (300-399)
@@ -1627,6 +1760,15 @@ export enum ActionType {
    * @generated from enum value: ACTION_TYPE_LUKS = 1000;
    */
   LUKS = 1000,
+
+  /**
+   * Network management (1100-1199)
+   *
+   * WiFi connection management
+   *
+   * @generated from enum value: ACTION_TYPE_WIFI = 1100;
+   */
+  WIFI = 1100,
 }
 
 /**
@@ -1770,4 +1912,36 @@ export enum LuksDeviceBoundKeyType {
  */
 export const LuksDeviceBoundKeyTypeSchema: GenEnum<LuksDeviceBoundKeyType> = /*@__PURE__*/
   enumDesc(file_pm_v1_actions, 4);
+
+/**
+ * WiFi authentication type.
+ *
+ * @generated from enum pm.v1.WifiAuthType
+ */
+export enum WifiAuthType {
+  /**
+   * @generated from enum value: WIFI_AUTH_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * WPA2/WPA3 Personal (password)
+   *
+   * @generated from enum value: WIFI_AUTH_TYPE_PSK = 1;
+   */
+  PSK = 1,
+
+  /**
+   * 802.1X with client certificate
+   *
+   * @generated from enum value: WIFI_AUTH_TYPE_EAP_TLS = 2;
+   */
+  EAP_TLS = 2,
+}
+
+/**
+ * Describes the enum pm.v1.WifiAuthType.
+ */
+export const WifiAuthTypeSchema: GenEnum<WifiAuthType> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 5);
 

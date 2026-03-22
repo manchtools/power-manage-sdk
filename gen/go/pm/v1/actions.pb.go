@@ -36,7 +36,8 @@ const (
 	ActionType_ACTION_TYPE_RPM       ActionType = 102 // Direct .rpm
 	ActionType_ACTION_TYPE_FLATPAK   ActionType = 103 // Flatpak application
 	// Scripts (200-299)
-	ActionType_ACTION_TYPE_SHELL ActionType = 200 // Shell script
+	ActionType_ACTION_TYPE_SHELL      ActionType = 200 // Shell script
+	ActionType_ACTION_TYPE_SCRIPT_RUN ActionType = 201 // One-off script execution (not scheduled)
 	// Services (300-399)
 	ActionType_ACTION_TYPE_SYSTEMD ActionType = 300 // Systemd unit
 	// Files (400-499)
@@ -57,6 +58,8 @@ const (
 	ActionType_ACTION_TYPE_LPS ActionType = 900 // Local Password Solution
 	// Encryption management (1000-1099)
 	ActionType_ACTION_TYPE_LUKS ActionType = 1000 // LUKS disk encryption management
+	// Network management (1100-1199)
+	ActionType_ACTION_TYPE_WIFI ActionType = 1100 // WiFi connection management
 )
 
 // Enum value maps for ActionType.
@@ -71,6 +74,7 @@ var (
 		102:  "ACTION_TYPE_RPM",
 		103:  "ACTION_TYPE_FLATPAK",
 		200:  "ACTION_TYPE_SHELL",
+		201:  "ACTION_TYPE_SCRIPT_RUN",
 		300:  "ACTION_TYPE_SYSTEMD",
 		400:  "ACTION_TYPE_FILE",
 		401:  "ACTION_TYPE_DIRECTORY",
@@ -83,6 +87,7 @@ var (
 		800:  "ACTION_TYPE_SUDO",
 		900:  "ACTION_TYPE_LPS",
 		1000: "ACTION_TYPE_LUKS",
+		1100: "ACTION_TYPE_WIFI",
 	}
 	ActionType_value = map[string]int32{
 		"ACTION_TYPE_UNSPECIFIED": 0,
@@ -94,6 +99,7 @@ var (
 		"ACTION_TYPE_RPM":         102,
 		"ACTION_TYPE_FLATPAK":     103,
 		"ACTION_TYPE_SHELL":       200,
+		"ACTION_TYPE_SCRIPT_RUN":  201,
 		"ACTION_TYPE_SYSTEMD":     300,
 		"ACTION_TYPE_FILE":        400,
 		"ACTION_TYPE_DIRECTORY":   401,
@@ -106,6 +112,7 @@ var (
 		"ACTION_TYPE_SUDO":        800,
 		"ACTION_TYPE_LPS":         900,
 		"ACTION_TYPE_LUKS":        1000,
+		"ACTION_TYPE_WIFI":        1100,
 	}
 )
 
@@ -341,6 +348,56 @@ func (LuksDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
+// WiFi authentication type.
+type WifiAuthType int32
+
+const (
+	WifiAuthType_WIFI_AUTH_TYPE_UNSPECIFIED WifiAuthType = 0
+	WifiAuthType_WIFI_AUTH_TYPE_PSK         WifiAuthType = 1 // WPA2/WPA3 Personal (password)
+	WifiAuthType_WIFI_AUTH_TYPE_EAP_TLS     WifiAuthType = 2 // 802.1X with client certificate
+)
+
+// Enum value maps for WifiAuthType.
+var (
+	WifiAuthType_name = map[int32]string{
+		0: "WIFI_AUTH_TYPE_UNSPECIFIED",
+		1: "WIFI_AUTH_TYPE_PSK",
+		2: "WIFI_AUTH_TYPE_EAP_TLS",
+	}
+	WifiAuthType_value = map[string]int32{
+		"WIFI_AUTH_TYPE_UNSPECIFIED": 0,
+		"WIFI_AUTH_TYPE_PSK":         1,
+		"WIFI_AUTH_TYPE_EAP_TLS":     2,
+	}
+)
+
+func (x WifiAuthType) Enum() *WifiAuthType {
+	p := new(WifiAuthType)
+	*p = x
+	return p
+}
+
+func (x WifiAuthType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WifiAuthType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
+}
+
+func (WifiAuthType) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[5]
+}
+
+func (x WifiAuthType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WifiAuthType.Descriptor instead.
+func (WifiAuthType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+}
+
 type Action struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -354,6 +411,11 @@ type Action struct {
 	// Scheduling configuration for autonomous agent execution
 	// @gotags: validate:"omitempty"
 	Schedule *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty"`
+	// ECDSA signature over canonical action payload (signed by CA key).
+	// Used to verify actions were created by the control server.
+	Signature []byte `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
+	// Canonical JSON params used for signature verification.
+	ParamsCanonical []byte `protobuf:"bytes,7,opt,name=params_canonical,json=paramsCanonical,proto3" json:"params_canonical,omitempty"`
 	// Type-specific parameters
 	//
 	// Types that are valid to be assigned to Params:
@@ -374,14 +436,10 @@ type Action struct {
 	//	*Action_Lps
 	//	*Action_Group
 	//	*Action_Luks
-	Params isAction_Params `protobuf_oneof:"params"`
-	// ECDSA signature over canonical action payload (signed by CA key).
-	// Used to verify actions were created by the control server.
-	Signature []byte `protobuf:"bytes,20,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Canonical JSON params used for signature verification.
-	ParamsCanonical []byte `protobuf:"bytes,21,opt,name=params_canonical,json=paramsCanonical,proto3" json:"params_canonical,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	//	*Action_Wifi
+	Params        isAction_Params `protobuf_oneof:"params"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Action) Reset() {
@@ -445,6 +503,20 @@ func (x *Action) GetTimeoutSeconds() int32 {
 func (x *Action) GetSchedule() *ActionSchedule {
 	if x != nil {
 		return x.Schedule
+	}
+	return nil
+}
+
+func (x *Action) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *Action) GetParamsCanonical() []byte {
+	if x != nil {
+		return x.ParamsCanonical
 	}
 	return nil
 }
@@ -600,16 +672,11 @@ func (x *Action) GetLuks() *LuksParams {
 	return nil
 }
 
-func (x *Action) GetSignature() []byte {
+func (x *Action) GetWifi() *WifiParams {
 	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *Action) GetParamsCanonical() []byte {
-	if x != nil {
-		return x.ParamsCanonical
+		if x, ok := x.Params.(*Action_Wifi); ok {
+			return x.Wifi
+		}
 	}
 	return nil
 }
@@ -619,67 +686,71 @@ type isAction_Params interface {
 }
 
 type Action_Package struct {
-	Package *PackageParams `protobuf:"bytes,10,opt,name=package,proto3,oneof"`
+	Package *PackageParams `protobuf:"bytes,8,opt,name=package,proto3,oneof"`
 }
 
 type Action_App struct {
-	App *AppInstallParams `protobuf:"bytes,11,opt,name=app,proto3,oneof"`
+	App *AppInstallParams `protobuf:"bytes,9,opt,name=app,proto3,oneof"`
 }
 
 type Action_Shell struct {
-	Shell *ShellParams `protobuf:"bytes,12,opt,name=shell,proto3,oneof"`
+	Shell *ShellParams `protobuf:"bytes,10,opt,name=shell,proto3,oneof"`
 }
 
 type Action_Systemd struct {
-	Systemd *SystemdParams `protobuf:"bytes,13,opt,name=systemd,proto3,oneof"`
+	Systemd *SystemdParams `protobuf:"bytes,11,opt,name=systemd,proto3,oneof"`
 }
 
 type Action_File struct {
-	File *FileParams `protobuf:"bytes,14,opt,name=file,proto3,oneof"`
+	File *FileParams `protobuf:"bytes,12,opt,name=file,proto3,oneof"`
 }
 
 type Action_Update struct {
-	Update *UpdateParams `protobuf:"bytes,15,opt,name=update,proto3,oneof"`
+	Update *UpdateParams `protobuf:"bytes,13,opt,name=update,proto3,oneof"`
 }
 
 type Action_Repository struct {
-	Repository *RepositoryParams `protobuf:"bytes,16,opt,name=repository,proto3,oneof"`
+	Repository *RepositoryParams `protobuf:"bytes,14,opt,name=repository,proto3,oneof"`
 }
 
 type Action_Flatpak struct {
-	Flatpak *FlatpakParams `protobuf:"bytes,17,opt,name=flatpak,proto3,oneof"`
+	Flatpak *FlatpakParams `protobuf:"bytes,15,opt,name=flatpak,proto3,oneof"`
 }
 
 type Action_Directory struct {
-	Directory *DirectoryParams `protobuf:"bytes,18,opt,name=directory,proto3,oneof"`
+	Directory *DirectoryParams `protobuf:"bytes,16,opt,name=directory,proto3,oneof"`
 }
 
 type Action_User struct {
-	User *UserParams `protobuf:"bytes,19,opt,name=user,proto3,oneof"`
+	User *UserParams `protobuf:"bytes,17,opt,name=user,proto3,oneof"`
 }
 
 type Action_Ssh struct {
-	Ssh *SshParams `protobuf:"bytes,22,opt,name=ssh,proto3,oneof"`
+	Ssh *SshParams `protobuf:"bytes,18,opt,name=ssh,proto3,oneof"`
 }
 
 type Action_Sshd struct {
-	Sshd *SshdParams `protobuf:"bytes,23,opt,name=sshd,proto3,oneof"`
+	Sshd *SshdParams `protobuf:"bytes,19,opt,name=sshd,proto3,oneof"`
 }
 
 type Action_Sudo struct {
-	Sudo *SudoParams `protobuf:"bytes,24,opt,name=sudo,proto3,oneof"`
+	Sudo *SudoParams `protobuf:"bytes,20,opt,name=sudo,proto3,oneof"`
 }
 
 type Action_Lps struct {
-	Lps *LpsParams `protobuf:"bytes,25,opt,name=lps,proto3,oneof"`
+	Lps *LpsParams `protobuf:"bytes,21,opt,name=lps,proto3,oneof"`
 }
 
 type Action_Group struct {
-	Group *GroupParams `protobuf:"bytes,26,opt,name=group,proto3,oneof"`
+	Group *GroupParams `protobuf:"bytes,22,opt,name=group,proto3,oneof"`
 }
 
 type Action_Luks struct {
-	Luks *LuksParams `protobuf:"bytes,27,opt,name=luks,proto3,oneof"`
+	Luks *LuksParams `protobuf:"bytes,23,opt,name=luks,proto3,oneof"`
+}
+
+type Action_Wifi struct {
+	Wifi *WifiParams `protobuf:"bytes,24,opt,name=wifi,proto3,oneof"`
 }
 
 func (*Action_Package) isAction_Params() {}
@@ -713,6 +784,8 @@ func (*Action_Lps) isAction_Params() {}
 func (*Action_Group) isAction_Params() {}
 
 func (*Action_Luks) isAction_Params() {}
+
+func (*Action_Wifi) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -809,13 +882,13 @@ type PackageParams struct {
 	// Manager-specific package names (override generic name)
 	// If a manager-specific name is empty, that manager will be skipped.
 	// @gotags: validate:"omitempty,max=255"
-	AptName string `protobuf:"bytes,10,opt,name=apt_name,json=aptName,proto3" json:"apt_name,omitempty" validate:"omitempty,max=255"` // Debian/Ubuntu (apt/apt-get)
+	AptName string `protobuf:"bytes,5,opt,name=apt_name,json=aptName,proto3" json:"apt_name,omitempty" validate:"omitempty,max=255"` // Debian/Ubuntu (apt/apt-get)
 	// @gotags: validate:"omitempty,max=255"
-	DnfName string `protobuf:"bytes,11,opt,name=dnf_name,json=dnfName,proto3" json:"dnf_name,omitempty" validate:"omitempty,max=255"` // Fedora/RHEL (dnf/yum)
+	DnfName string `protobuf:"bytes,6,opt,name=dnf_name,json=dnfName,proto3" json:"dnf_name,omitempty" validate:"omitempty,max=255"` // Fedora/RHEL (dnf/yum)
 	// @gotags: validate:"omitempty,max=255"
-	PacmanName string `protobuf:"bytes,12,opt,name=pacman_name,json=pacmanName,proto3" json:"pacman_name,omitempty" validate:"omitempty,max=255"` // Arch Linux (pacman)
+	PacmanName string `protobuf:"bytes,7,opt,name=pacman_name,json=pacmanName,proto3" json:"pacman_name,omitempty" validate:"omitempty,max=255"` // Arch Linux (pacman)
 	// @gotags: validate:"omitempty,max=255"
-	ZypperName    string `protobuf:"bytes,13,opt,name=zypper_name,json=zypperName,proto3" json:"zypper_name,omitempty" validate:"omitempty,max=255"` // openSUSE (zypper)
+	ZypperName    string `protobuf:"bytes,8,opt,name=zypper_name,json=zypperName,proto3" json:"zypper_name,omitempty" validate:"omitempty,max=255"` // openSUSE (zypper)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -971,8 +1044,9 @@ func (x *AppInstallParams) GetInstallPath() string {
 
 type ShellParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,max=1048576"
-	Script string `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty" validate:"required,max=1048576"`
+	// Execution/remediation script (runs when detection_script is absent or exits non-zero)
+	// @gotags: validate:"omitempty,max=1048576"
+	Script string `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty" validate:"omitempty,max=1048576"`
 	// @gotags: validate:"omitempty,max=255"
 	Interpreter string `protobuf:"bytes,2,opt,name=interpreter,proto3" json:"interpreter,omitempty" validate:"omitempty,max=255"`
 	// @gotags: validate:"omitempty"
@@ -980,7 +1054,13 @@ type ShellParams struct {
 	// @gotags: validate:"omitempty,startswith=/"
 	WorkingDirectory string `protobuf:"bytes,4,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty" validate:"omitempty,startswith=/"`
 	// @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
-	Environment   map[string]string `protobuf:"bytes,5,rep,name=environment,proto3" json:"environment,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=4096"`
+	Environment map[string]string `protobuf:"bytes,5,rep,name=environment,proto3" json:"environment,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=4096"`
+	// Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
+	// @gotags: validate:"omitempty,max=1048576"
+	DetectionScript string `protobuf:"bytes,6,opt,name=detection_script,json=detectionScript,proto3" json:"detection_script,omitempty" validate:"omitempty,max=1048576"`
+	// When true, only the detection script runs (no remediation) and results are tracked as compliance checks
+	// @gotags: validate:"omitempty"
+	IsCompliance  bool `protobuf:"varint,7,opt,name=is_compliance,json=isCompliance,proto3" json:"is_compliance,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1048,6 +1128,20 @@ func (x *ShellParams) GetEnvironment() map[string]string {
 		return x.Environment
 	}
 	return nil
+}
+
+func (x *ShellParams) GetDetectionScript() string {
+	if x != nil {
+		return x.DetectionScript
+	}
+	return ""
+}
+
+func (x *ShellParams) GetIsCompliance() bool {
+	if x != nil {
+		return x.IsCompliance
+	}
+	return false
 }
 
 type SystemdParams struct {
@@ -1455,16 +1549,16 @@ type RepositoryParams struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=64,alphanum"`
 	// APT repository configuration (Debian/Ubuntu)
 	// @gotags: validate:"omitempty"
-	Apt *AptRepository `protobuf:"bytes,10,opt,name=apt,proto3" json:"apt,omitempty" validate:"omitempty"`
+	Apt *AptRepository `protobuf:"bytes,2,opt,name=apt,proto3" json:"apt,omitempty" validate:"omitempty"`
 	// DNF/YUM repository configuration (Fedora/RHEL)
 	// @gotags: validate:"omitempty"
-	Dnf *DnfRepository `protobuf:"bytes,11,opt,name=dnf,proto3" json:"dnf,omitempty" validate:"omitempty"`
+	Dnf *DnfRepository `protobuf:"bytes,3,opt,name=dnf,proto3" json:"dnf,omitempty" validate:"omitempty"`
 	// Pacman repository configuration (Arch Linux)
 	// @gotags: validate:"omitempty"
-	Pacman *PacmanRepository `protobuf:"bytes,12,opt,name=pacman,proto3" json:"pacman,omitempty" validate:"omitempty"`
+	Pacman *PacmanRepository `protobuf:"bytes,4,opt,name=pacman,proto3" json:"pacman,omitempty" validate:"omitempty"`
 	// Zypper repository configuration (openSUSE)
 	// @gotags: validate:"omitempty"
-	Zypper        *ZypperRepository `protobuf:"bytes,13,opt,name=zypper,proto3" json:"zypper,omitempty" validate:"omitempty"`
+	Zypper        *ZypperRepository `protobuf:"bytes,5,opt,name=zypper,proto3" json:"zypper,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1963,26 +2057,26 @@ type UserParams struct {
 	Shell string `protobuf:"bytes,5,opt,name=shell,proto3" json:"shell,omitempty" validate:"omitempty,startswith=/"`
 	// SSH authorized keys to add to ~/.ssh/authorized_keys
 	// @gotags: validate:"omitempty,dive,max=4096"
-	SshAuthorizedKeys []string `protobuf:"bytes,7,rep,name=ssh_authorized_keys,json=sshAuthorizedKeys,proto3" json:"ssh_authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
+	SshAuthorizedKeys []string `protobuf:"bytes,6,rep,name=ssh_authorized_keys,json=sshAuthorizedKeys,proto3" json:"ssh_authorized_keys,omitempty" validate:"omitempty,dive,max=4096"`
 	// GECOS field / user comment (full name, etc.)
 	// @gotags: validate:"omitempty,max=255"
-	Comment string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty" validate:"omitempty,max=255"`
+	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty" validate:"omitempty,max=255"`
 	// Create as system user (UID < 1000, no home directory by default)
 	// @gotags: validate:"omitempty"
-	SystemUser bool `protobuf:"varint,9,opt,name=system_user,json=systemUser,proto3" json:"system_user,omitempty" validate:"omitempty"`
+	SystemUser bool `protobuf:"varint,8,opt,name=system_user,json=systemUser,proto3" json:"system_user,omitempty" validate:"omitempty"`
 	// Create home directory (default: true for normal users, false for system users)
 	// @gotags: validate:"omitempty"
-	CreateHome bool `protobuf:"varint,10,opt,name=create_home,json=createHome,proto3" json:"create_home,omitempty" validate:"omitempty"`
+	CreateHome bool `protobuf:"varint,9,opt,name=create_home,json=createHome,proto3" json:"create_home,omitempty" validate:"omitempty"`
 	// Disable the user account (lock password, set shell to /usr/sbin/nologin)
 	// @gotags: validate:"omitempty"
-	Disabled bool `protobuf:"varint,11,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
+	Disabled bool `protobuf:"varint,10,opt,name=disabled,proto3" json:"disabled,omitempty" validate:"omitempty"`
 	// Primary group name (alternative to gid - creates group if needed)
 	// @gotags: validate:"omitempty,max=32"
-	PrimaryGroup string `protobuf:"bytes,12,opt,name=primary_group,json=primaryGroup,proto3" json:"primary_group,omitempty" validate:"omitempty,max=32"`
+	PrimaryGroup string `protobuf:"bytes,11,opt,name=primary_group,json=primaryGroup,proto3" json:"primary_group,omitempty" validate:"omitempty,max=32"`
 	// Hide user from graphical login screens (GDM, SDDM, LightDM).
 	// Sets SystemAccount=true in AccountsService. No effect on headless systems.
 	// @gotags: validate:"omitempty"
-	Hidden        bool `protobuf:"varint,13,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
+	Hidden        bool `protobuf:"varint,12,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2185,18 +2279,15 @@ func (x *GroupParams) GetSystemGroup() bool {
 // to the group. SSH keys and home directory are managed by the User action type.
 type SshParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Deprecated: use users field instead. Kept for backward compatibility.
-	// @gotags: validate:"omitempty,max=32"
-	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"omitempty,max=32"`
 	// Allow public key authentication (default: true)
 	// @gotags: validate:"omitempty"
-	AllowPubkey bool `protobuf:"varint,2,opt,name=allow_pubkey,json=allowPubkey,proto3" json:"allow_pubkey,omitempty" validate:"omitempty"`
+	AllowPubkey bool `protobuf:"varint,1,opt,name=allow_pubkey,json=allowPubkey,proto3" json:"allow_pubkey,omitempty" validate:"omitempty"`
 	// Allow password authentication (default: false)
 	// @gotags: validate:"omitempty"
-	AllowPassword bool `protobuf:"varint,3,opt,name=allow_password,json=allowPassword,proto3" json:"allow_password,omitempty" validate:"omitempty"`
+	AllowPassword bool `protobuf:"varint,2,opt,name=allow_password,json=allowPassword,proto3" json:"allow_password,omitempty" validate:"omitempty"`
 	// Users to add to the SSH access group (must be valid Linux usernames)
 	// @gotags: validate:"omitempty,dive,min=1,max=32"
-	Users         []string `protobuf:"bytes,6,rep,name=users,proto3" json:"users,omitempty" validate:"omitempty,dive,min=1,max=32"`
+	Users         []string `protobuf:"bytes,3,rep,name=users,proto3" json:"users,omitempty" validate:"omitempty,dive,min=1,max=32"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2229,13 +2320,6 @@ func (x *SshParams) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SshParams.ProtoReflect.Descriptor instead.
 func (*SshParams) Descriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *SshParams) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
 }
 
 func (x *SshParams) GetAllowPubkey() bool {
@@ -2639,6 +2723,138 @@ func (x *LuksParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
 	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
 }
 
+// WifiParams configures WiFi connection management via NetworkManager.
+// Each action creates a connection profile named pm-wifi-{actionId}.
+// Supports PSK (password) and EAP-TLS (certificate) authentication.
+type WifiParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Network name (SSID)
+	// @gotags: validate:"required,min=1,max=255"
+	Ssid string `protobuf:"bytes,1,opt,name=ssid,proto3" json:"ssid,omitempty" validate:"required,min=1,max=255"`
+	// Authentication type
+	// @gotags: validate:"required,ne=0"
+	AuthType WifiAuthType `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=pm.v1.WifiAuthType" json:"auth_type,omitempty" validate:"required,ne=0"`
+	// PSK authentication (WPA2/WPA3 Personal)
+	// @gotags: validate:"omitempty,max=63"
+	Psk string `protobuf:"bytes,3,opt,name=psk,proto3" json:"psk,omitempty" validate:"omitempty,max=63"`
+	// EAP-TLS authentication (802.1X with client certificate)
+	// @gotags: validate:"omitempty"
+	CaCert string `protobuf:"bytes,4,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"omitempty"` // CA certificate (PEM)
+	// @gotags: validate:"omitempty"
+	ClientCert string `protobuf:"bytes,5,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty" validate:"omitempty"` // Client certificate (PEM)
+	// @gotags: validate:"omitempty"
+	ClientKey string `protobuf:"bytes,6,opt,name=client_key,json=clientKey,proto3" json:"client_key,omitempty" validate:"omitempty"` // Client private key (PEM)
+	// @gotags: validate:"omitempty,max=254"
+	Identity string `protobuf:"bytes,7,opt,name=identity,proto3" json:"identity,omitempty" validate:"omitempty,max=254"` // EAP identity (e.g., user@corp.com)
+	// Connection settings
+	AutoConnect bool `protobuf:"varint,8,opt,name=auto_connect,json=autoConnect,proto3" json:"auto_connect,omitempty"`
+	Hidden      bool `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
+	// @gotags: validate:"omitempty,gte=-1,lte=999"
+	Priority      int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WifiParams) Reset() {
+	*x = WifiParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WifiParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WifiParams) ProtoMessage() {}
+
+func (x *WifiParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WifiParams.ProtoReflect.Descriptor instead.
+func (*WifiParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *WifiParams) GetSsid() string {
+	if x != nil {
+		return x.Ssid
+	}
+	return ""
+}
+
+func (x *WifiParams) GetAuthType() WifiAuthType {
+	if x != nil {
+		return x.AuthType
+	}
+	return WifiAuthType_WIFI_AUTH_TYPE_UNSPECIFIED
+}
+
+func (x *WifiParams) GetPsk() string {
+	if x != nil {
+		return x.Psk
+	}
+	return ""
+}
+
+func (x *WifiParams) GetCaCert() string {
+	if x != nil {
+		return x.CaCert
+	}
+	return ""
+}
+
+func (x *WifiParams) GetClientCert() string {
+	if x != nil {
+		return x.ClientCert
+	}
+	return ""
+}
+
+func (x *WifiParams) GetClientKey() string {
+	if x != nil {
+		return x.ClientKey
+	}
+	return ""
+}
+
+func (x *WifiParams) GetIdentity() string {
+	if x != nil {
+		return x.Identity
+	}
+	return ""
+}
+
+func (x *WifiParams) GetAutoConnect() bool {
+	if x != nil {
+		return x.AutoConnect
+	}
+	return false
+}
+
+func (x *WifiParams) GetHidden() bool {
+	if x != nil {
+		return x.Hidden
+	}
+	return false
+}
+
+func (x *WifiParams) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
 type ActionResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -2657,14 +2873,19 @@ type ActionResult struct {
 	Changed bool `protobuf:"varint,7,opt,name=changed,proto3" json:"changed,omitempty"`
 	// Optional action-specific metadata (e.g., LPS password data)
 	// @gotags: validate:"omitempty"
-	Metadata      map[string]string `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Metadata map[string]string `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty"`
+	// Detection script result: true if detection script exited 0 (compliant)
+	Compliant bool `protobuf:"varint,9,opt,name=compliant,proto3" json:"compliant,omitempty"`
+	// Detection script output (separate from execution output)
+	// @gotags: validate:"omitempty"
+	DetectionOutput *CommandOutput `protobuf:"bytes,10,opt,name=detection_output,json=detectionOutput,proto3" json:"detection_output,omitempty" validate:"omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	mi := &file_pm_v1_actions_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2676,7 +2897,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	mi := &file_pm_v1_actions_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2689,7 +2910,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{23}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -2748,38 +2969,53 @@ func (x *ActionResult) GetMetadata() map[string]string {
 	return nil
 }
 
+func (x *ActionResult) GetCompliant() bool {
+	if x != nil {
+		return x.Compliant
+	}
+	return false
+}
+
+func (x *ActionResult) GetDetectionOutput() *CommandOutput {
+	if x != nil {
+		return x.DetectionOutput
+	}
+	return nil
+}
+
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x8f\b\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xb8\b\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
 	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
-	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
-	"\apackage\x18\n" +
-	" \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\v \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\f \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\asystemd\x18\r \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
-	"\x04file\x18\x0e \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x0f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12\x1c\n" +
+	"\tsignature\x18\x06 \x01(\fR\tsignature\x12)\n" +
+	"\x10params_canonical\x18\a \x01(\fR\x0fparamsCanonical\x120\n" +
+	"\apackage\x18\b \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\t \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\n" +
+	" \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\asystemd\x18\v \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\x04file\x18\f \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\r \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
 	"\n" +
-	"repository\x18\x10 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repository\x18\x0e \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
 	"repository\x120\n" +
-	"\aflatpak\x18\x11 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x12 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x13 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x16 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x17 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x18 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
-	"\x03lps\x18\x19 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x1a \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
-	"\x04luks\x18\x1b \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12\x1c\n" +
-	"\tsignature\x18\x14 \x01(\fR\tsignature\x12)\n" +
-	"\x10params_canonical\x18\x15 \x01(\fR\x0fparamsCanonicalB\b\n" +
+	"\aflatpak\x18\x0f \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\x10 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
+	"\x04user\x18\x11 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x12 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x13 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
+	"\x04sudo\x18\x14 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x03lps\x18\x15 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
+	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
+	"\x04luks\x18\x17 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
+	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -2791,23 +3027,24 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12'\n" +
 	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12\x10\n" +
 	"\x03pin\x18\x04 \x01(\bR\x03pin\x12\x19\n" +
-	"\bapt_name\x18\n" +
-	" \x01(\tR\aaptName\x12\x19\n" +
-	"\bdnf_name\x18\v \x01(\tR\adnfName\x12\x1f\n" +
-	"\vpacman_name\x18\f \x01(\tR\n" +
+	"\bapt_name\x18\x05 \x01(\tR\aaptName\x12\x19\n" +
+	"\bdnf_name\x18\x06 \x01(\tR\adnfName\x12\x1f\n" +
+	"\vpacman_name\x18\a \x01(\tR\n" +
 	"pacmanName\x12\x1f\n" +
-	"\vzypper_name\x18\r \x01(\tR\n" +
+	"\vzypper_name\x18\b \x01(\tR\n" +
 	"zypperName\"p\n" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
-	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\x9b\x02\n" +
+	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xeb\x02\n" +
 	"\vShellParams\x12\x16\n" +
 	"\x06script\x18\x01 \x01(\tR\x06script\x12 \n" +
 	"\vinterpreter\x18\x02 \x01(\tR\vinterpreter\x12\x1e\n" +
 	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x12+\n" +
 	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12E\n" +
-	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x1a>\n" +
+	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x12)\n" +
+	"\x10detection_script\x18\x06 \x01(\tR\x0fdetectionScript\x12#\n" +
+	"\ris_compliance\x18\a \x01(\bR\fisCompliance\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +
@@ -2844,11 +3081,10 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xd8\x01\n" +
 	"\x10RepositoryParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
-	"\x03apt\x18\n" +
-	" \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
-	"\x03dnf\x18\v \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
-	"\x06pacman\x18\f \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
-	"\x06zypper\x18\r \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
+	"\x03apt\x18\x02 \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
+	"\x03dnf\x18\x03 \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
+	"\x06pacman\x18\x04 \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
+	"\x06zypper\x18\x05 \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
 	"\rAptRepository\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
 	"\fdistribution\x18\x02 \x01(\tR\fdistribution\x12\x1e\n" +
@@ -2888,26 +3124,25 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12\x19\n" +
 	"\bhome_dir\x18\x04 \x01(\tR\ahomeDir\x12\x14\n" +
 	"\x05shell\x18\x05 \x01(\tR\x05shell\x12.\n" +
-	"\x13ssh_authorized_keys\x18\a \x03(\tR\x11sshAuthorizedKeys\x12\x18\n" +
-	"\acomment\x18\b \x01(\tR\acomment\x12\x1f\n" +
-	"\vsystem_user\x18\t \x01(\bR\n" +
+	"\x13ssh_authorized_keys\x18\x06 \x03(\tR\x11sshAuthorizedKeys\x12\x18\n" +
+	"\acomment\x18\a \x01(\tR\acomment\x12\x1f\n" +
+	"\vsystem_user\x18\b \x01(\bR\n" +
 	"systemUser\x12\x1f\n" +
-	"\vcreate_home\x18\n" +
-	" \x01(\bR\n" +
+	"\vcreate_home\x18\t \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
-	"\bdisabled\x18\v \x01(\bR\bdisabled\x12#\n" +
-	"\rprimary_group\x18\f \x01(\tR\fprimaryGroup\x12\x16\n" +
-	"\x06hidden\x18\r \x01(\bR\x06hidden\"p\n" +
+	"\bdisabled\x18\n" +
+	" \x01(\bR\bdisabled\x12#\n" +
+	"\rprimary_group\x18\v \x01(\tR\fprimaryGroup\x12\x16\n" +
+	"\x06hidden\x18\f \x01(\bR\x06hidden\"p\n" +
 	"\vGroupParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12\x10\n" +
 	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12!\n" +
-	"\fsystem_group\x18\x04 \x01(\bR\vsystemGroup\"\xae\x01\n" +
-	"\tSshParams\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12!\n" +
-	"\fallow_pubkey\x18\x02 \x01(\bR\vallowPubkey\x12%\n" +
-	"\x0eallow_password\x18\x03 \x01(\bR\rallowPassword\x12\x14\n" +
-	"\x05users\x18\x06 \x03(\tR\x05usersJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\x0fauthorized_keysR\bhome_dir\"7\n" +
+	"\fsystem_group\x18\x04 \x01(\bR\vsystemGroup\"k\n" +
+	"\tSshParams\x12!\n" +
+	"\fallow_pubkey\x18\x01 \x01(\bR\vallowPubkey\x12%\n" +
+	"\x0eallow_password\x18\x02 \x01(\bR\rallowPassword\x12\x14\n" +
+	"\x05users\x18\x03 \x03(\tR\x05users\"7\n" +
 	"\rSshdDirective\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"^\n" +
@@ -2937,7 +3172,22 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12P\n" +
 	"\x15device_bound_key_type\x18\x04 \x01(\x0e2\x1d.pm.v1.LuksDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
 	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12Z\n" +
-	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xa6\x03\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xb0\x02\n" +
+	"\n" +
+	"WifiParams\x12\x12\n" +
+	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x120\n" +
+	"\tauth_type\x18\x02 \x01(\x0e2\x13.pm.v1.WifiAuthTypeR\bauthType\x12\x10\n" +
+	"\x03psk\x18\x03 \x01(\tR\x03psk\x12\x17\n" +
+	"\aca_cert\x18\x04 \x01(\tR\x06caCert\x12\x1f\n" +
+	"\vclient_cert\x18\x05 \x01(\tR\n" +
+	"clientCert\x12\x1d\n" +
+	"\n" +
+	"client_key\x18\x06 \x01(\tR\tclientKey\x12\x1a\n" +
+	"\bidentity\x18\a \x01(\tR\bidentity\x12!\n" +
+	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
+	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
+	"\bpriority\x18\n" +
+	" \x01(\x05R\bpriority\"\x85\x04\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -2947,10 +3197,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
 	"durationMs\x12\x18\n" +
 	"\achanged\x18\a \x01(\bR\achanged\x12=\n" +
-	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x12\x1c\n" +
+	"\tcompliant\x18\t \x01(\bR\tcompliant\x12?\n" +
+	"\x10detection_output\x18\n" +
+	" \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x89\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xbd\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -2961,7 +3214,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x0fACTION_TYPE_DEB\x10e\x12\x13\n" +
 	"\x0fACTION_TYPE_RPM\x10f\x12\x17\n" +
 	"\x13ACTION_TYPE_FLATPAK\x10g\x12\x16\n" +
-	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x18\n" +
+	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x1b\n" +
+	"\x16ACTION_TYPE_SCRIPT_RUN\x10\xc9\x01\x12\x18\n" +
 	"\x13ACTION_TYPE_SYSTEMD\x10\xac\x02\x12\x15\n" +
 	"\x10ACTION_TYPE_FILE\x10\x90\x03\x12\x1a\n" +
 	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03\x12\x17\n" +
@@ -2973,7 +3227,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x10ACTION_TYPE_SSHD\x10\xbd\x05\x12\x15\n" +
 	"\x10ACTION_TYPE_SUDO\x10\xa0\x06\x12\x14\n" +
 	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x15\n" +
-	"\x10ACTION_TYPE_LUKS\x10\xe8\a*\x98\x01\n" +
+	"\x10ACTION_TYPE_LUKS\x10\xe8\a\x12\x15\n" +
+	"\x10ACTION_TYPE_WIFI\x10\xcc\b*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -2991,7 +3246,11 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x16LuksDeviceBoundKeyType\x12#\n" +
 	"\x1fLUKS_DEVICE_BOUND_KEY_TYPE_NONE\x10\x00\x12\"\n" +
 	"\x1eLUKS_DEVICE_BOUND_KEY_TYPE_TPM\x10\x01\x12.\n" +
-	"*LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"*LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE\x10\x02*b\n" +
+	"\fWifiAuthType\x12\x1e\n" +
+	"\x1aWIFI_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12WIFI_AUTH_TYPE_PSK\x10\x01\x12\x1a\n" +
+	"\x16WIFI_AUTH_TYPE_EAP_TLS\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_actions_proto_rawDescOnce sync.Once
@@ -3005,88 +3264,93 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
 	(SudoAccessLevel)(0),          // 2: pm.v1.SudoAccessLevel
 	(LpsPasswordComplexity)(0),    // 3: pm.v1.LpsPasswordComplexity
 	(LuksDeviceBoundKeyType)(0),   // 4: pm.v1.LuksDeviceBoundKeyType
-	(*Action)(nil),                // 5: pm.v1.Action
-	(*ActionSchedule)(nil),        // 6: pm.v1.ActionSchedule
-	(*PackageParams)(nil),         // 7: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 8: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 9: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 10: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 11: pm.v1.FileParams
-	(*DirectoryParams)(nil),       // 12: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),          // 13: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),         // 14: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),      // 15: pm.v1.RepositoryParams
-	(*AptRepository)(nil),         // 16: pm.v1.AptRepository
-	(*DnfRepository)(nil),         // 17: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),      // 18: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),      // 19: pm.v1.ZypperRepository
-	(*UserParams)(nil),            // 20: pm.v1.UserParams
-	(*GroupParams)(nil),           // 21: pm.v1.GroupParams
-	(*SshParams)(nil),             // 22: pm.v1.SshParams
-	(*SshdDirective)(nil),         // 23: pm.v1.SshdDirective
-	(*SshdParams)(nil),            // 24: pm.v1.SshdParams
-	(*SudoParams)(nil),            // 25: pm.v1.SudoParams
-	(*LpsParams)(nil),             // 26: pm.v1.LpsParams
-	(*LuksParams)(nil),            // 27: pm.v1.LuksParams
-	(*ActionResult)(nil),          // 28: pm.v1.ActionResult
-	nil,                           // 29: pm.v1.ShellParams.EnvironmentEntry
-	nil,                           // 30: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),              // 31: pm.v1.ActionId
-	(DesiredState)(0),             // 32: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 33: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 34: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 35: google.protobuf.Timestamp
+	(WifiAuthType)(0),             // 5: pm.v1.WifiAuthType
+	(*Action)(nil),                // 6: pm.v1.Action
+	(*ActionSchedule)(nil),        // 7: pm.v1.ActionSchedule
+	(*PackageParams)(nil),         // 8: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 9: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 10: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 11: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 12: pm.v1.FileParams
+	(*DirectoryParams)(nil),       // 13: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),          // 14: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),         // 15: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),      // 16: pm.v1.RepositoryParams
+	(*AptRepository)(nil),         // 17: pm.v1.AptRepository
+	(*DnfRepository)(nil),         // 18: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),      // 19: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),      // 20: pm.v1.ZypperRepository
+	(*UserParams)(nil),            // 21: pm.v1.UserParams
+	(*GroupParams)(nil),           // 22: pm.v1.GroupParams
+	(*SshParams)(nil),             // 23: pm.v1.SshParams
+	(*SshdDirective)(nil),         // 24: pm.v1.SshdDirective
+	(*SshdParams)(nil),            // 25: pm.v1.SshdParams
+	(*SudoParams)(nil),            // 26: pm.v1.SudoParams
+	(*LpsParams)(nil),             // 27: pm.v1.LpsParams
+	(*LuksParams)(nil),            // 28: pm.v1.LuksParams
+	(*WifiParams)(nil),            // 29: pm.v1.WifiParams
+	(*ActionResult)(nil),          // 30: pm.v1.ActionResult
+	nil,                           // 31: pm.v1.ShellParams.EnvironmentEntry
+	nil,                           // 32: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),              // 33: pm.v1.ActionId
+	(DesiredState)(0),             // 34: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 35: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 36: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 37: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	31, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	33, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	32, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	6,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	7,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	8,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	9,  // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	10, // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
-	11, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	13, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	15, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	14, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	12, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	20, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	22, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	24, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	25, // 16: pm.v1.Action.sudo:type_name -> pm.v1.SudoParams
-	26, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	21, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	27, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
-	29, // 20: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 21: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	16, // 22: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	17, // 23: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	18, // 24: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	19, // 25: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	23, // 26: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	2,  // 27: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
-	3,  // 28: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	4,  // 29: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
-	3,  // 30: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	31, // 31: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	33, // 32: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	34, // 33: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	35, // 34: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	30, // 35: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	36, // [36:36] is the sub-list for method output_type
-	36, // [36:36] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	34, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	7,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	8,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	9,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	10, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	11, // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
+	12, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	14, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	16, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	15, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	13, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	21, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	23, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	25, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	26, // 16: pm.v1.Action.sudo:type_name -> pm.v1.SudoParams
+	27, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	22, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
+	28, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
+	29, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
+	31, // 21: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 22: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	17, // 23: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	18, // 24: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	19, // 25: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	20, // 26: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	24, // 27: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	2,  // 28: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
+	3,  // 29: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	4,  // 30: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
+	3,  // 31: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	5,  // 32: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
+	33, // 33: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	35, // 34: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	36, // 35: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	37, // 36: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	32, // 37: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	36, // 38: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -3112,14 +3376,15 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Lps)(nil),
 		(*Action_Group)(nil),
 		(*Action_Luks)(nil),
+		(*Action_Wifi)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   26,
+			NumEnums:      6,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -27,9 +28,14 @@ type Client struct {
 	client    pmv1connect.AgentServiceClient
 	deviceID  string
 	authToken string
+	logger    *slog.Logger
 
 	mu     sync.RWMutex
 	stream *connect.BidiStreamForClient[pm.AgentMessage, pm.ServerMessage]
+
+	// sendMu serializes all stream.Send() calls — concurrent writes on a
+	// bidi stream are not safe and can corrupt messages on the wire.
+	sendMu sync.Mutex
 
 	// pendingMu protects pendingRequests for LUKS request-response correlation.
 	pendingMu       sync.Mutex
@@ -38,7 +44,9 @@ type Client struct {
 
 // NewClient creates a new SDK client.
 func NewClient(serverURL string, opts ...ClientOption) *Client {
-	c := &Client{}
+	c := &Client{
+		logger: slog.Default(),
+	}
 
 	httpClient := http.DefaultClient
 	for _, opt := range opts {
@@ -74,6 +82,13 @@ func WithAuth(deviceID, authToken string) ClientOption {
 	return &funcOption{func(c *Client, _ **http.Client) {
 		c.deviceID = deviceID
 		c.authToken = authToken
+	}}
+}
+
+// WithLogger sets a custom structured logger for the client.
+func WithLogger(l *slog.Logger) ClientOption {
+	return &funcOption{func(c *Client, _ **http.Client) {
+		c.logger = l
 	}}
 }
 
@@ -230,6 +245,41 @@ func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agen
 	}, nil
 }
 
+// RenewCertificateResult contains the result of certificate renewal.
+type RenewCertificateResult struct {
+	Certificate []byte
+	NotAfter    time.Time
+	CACert      []byte // Active CA certificate (non-empty when CA has been rotated)
+}
+
+// RenewCertificate renews a device certificate via the control server.
+// The agent presents its current certificate for identity verification.
+func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert []byte, opts ...ClientOption) (*RenewCertificateResult, error) {
+	c := &Client{}
+	httpClient := http.DefaultClient
+	for _, opt := range opts {
+		opt.apply(c, &httpClient)
+	}
+
+	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
+
+	req := connect.NewRequest(&pm.RenewCertificateRequest{
+		Csr:                csr,
+		CurrentCertificate: currentCert,
+	})
+
+	resp, err := controlClient.RenewCertificate(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("renew certificate: %w", err)
+	}
+
+	return &RenewCertificateResult{
+		Certificate: resp.Msg.Certificate,
+		NotAfter:    resp.Msg.NotAfter.AsTime(),
+		CACert:      resp.Msg.CaCertificate,
+	}, nil
+}
+
 // StreamHandler handles messages received from the server.
 type StreamHandler interface {
 	// OnWelcome is called when the server sends a welcome message.
@@ -261,6 +311,14 @@ type LuksHandler interface {
 	OnRevokeLuksDeviceKey(ctx context.Context, actionID string) (bool, string)
 }
 
+// LogQueryHandler extends StreamHandler with remote log query support.
+// Handlers that implement this interface can execute journalctl queries on the device.
+type LogQueryHandler interface {
+	StreamHandler
+	// OnLogQuery is called when the server sends a log query request.
+	OnLogQuery(ctx context.Context, query *pm.LogQuery) (*pm.LogQueryResult, error)
+}
+
 // InventoryHandler extends StreamHandler with device inventory collection support.
 // Handlers that implement this interface can collect and send hardware/software inventory.
 type InventoryHandler interface {
@@ -285,19 +343,31 @@ func (c *Client) Connect(ctx context.Context) error {
 	return nil
 }
 
-// SendHello sends a hello message to the server.
-func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) error {
+// send serializes all writes to the bidirectional stream.
+// Multiple goroutines (heartbeat, inventory, result sender) may call Send
+// methods concurrently; without serialization this can corrupt messages.
+func (c *Client) send(msg *pm.AgentMessage) error {
 	c.mu.RLock()
 	stream := c.stream
-	deviceID := c.deviceID
-	authToken := c.authToken
 	c.mu.RUnlock()
 
 	if stream == nil {
 		return errors.New("not connected")
 	}
 
-	msg := &pm.AgentMessage{
+	c.sendMu.Lock()
+	defer c.sendMu.Unlock()
+	return stream.Send(msg)
+}
+
+// SendHello sends a hello message to the server.
+func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) error {
+	c.mu.RLock()
+	deviceID := c.deviceID
+	authToken := c.authToken
+	c.mu.RUnlock()
+
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Hello{
 			Hello: &pm.Hello{
@@ -307,109 +377,67 @@ func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) e
 				AuthToken:    authToken,
 			},
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // SendHeartbeat sends a heartbeat message to the server.
 func (c *Client) SendHeartbeat(ctx context.Context, hb *pm.Heartbeat) error {
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Heartbeat{
 			Heartbeat: hb,
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // SendActionResult sends an action result to the server.
 func (c *Client) SendActionResult(ctx context.Context, result *pm.ActionResult) error {
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_ActionResult{
 			ActionResult: result,
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // SendOutputChunk sends an output chunk during action execution.
 func (c *Client) SendOutputChunk(ctx context.Context, chunk *pm.OutputChunk) error {
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_OutputChunk{
 			OutputChunk: chunk,
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // SendQueryResult sends an OS query result to the server.
 func (c *Client) SendQueryResult(ctx context.Context, result *pm.OSQueryResult) error {
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_QueryResult{
 			QueryResult: result,
 		},
-	}
+	})
+}
 
-	return stream.Send(msg)
+// SendLogQueryResult sends a log query result to the server.
+func (c *Client) SendLogQueryResult(ctx context.Context, result *pm.LogQueryResult) error {
+	return c.send(&pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_LogQueryResult{
+			LogQueryResult: result,
+		},
+	})
 }
 
 // SendSecurityAlert sends a security alert to the server for audit logging.
 func (c *Client) SendSecurityAlert(ctx context.Context, alert *pm.SecurityAlert) error {
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_SecurityAlert{
 			SecurityAlert: alert,
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // SendInventory sends device inventory to the server.
@@ -418,22 +446,12 @@ func (c *Client) SendInventory(ctx context.Context, inventory *pm.DeviceInventor
 		return nil
 	}
 
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Inventory{
 			Inventory: inventory,
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // GetLuksKey sends a GetLuksKeyRequest on the stream and waits for the correlated response.
@@ -443,24 +461,14 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
 
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return "", errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	if err := c.send(&pm.AgentMessage{
 		Id: id,
 		Payload: &pm.AgentMessage_GetLuksKey{
 			GetLuksKey: &pm.GetLuksKeyRequest{
 				ActionId: actionID,
 			},
 		},
-	}
-
-	if err := stream.Send(msg); err != nil {
+	}); err != nil {
 		return "", fmt.Errorf("send get luks key request: %w", err)
 	}
 
@@ -485,15 +493,7 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
 
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	if err := c.send(&pm.AgentMessage{
 		Id: id,
 		Payload: &pm.AgentMessage_StoreLuksKey{
 			StoreLuksKey: &pm.StoreLuksKeyRequest{
@@ -503,9 +503,7 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 				RotationReason: reason,
 			},
 		},
-	}
-
-	if err := stream.Send(msg); err != nil {
+	}); err != nil {
 		return fmt.Errorf("send store luks key request: %w", err)
 	}
 
@@ -529,15 +527,7 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 
 // SendRevokeLuksDeviceKeyResult sends the result of a LUKS device key revocation back to the server.
 func (c *Client) SendRevokeLuksDeviceKeyResult(ctx context.Context, actionID string, success bool, errMsg string) error {
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
-
-	if stream == nil {
-		return errors.New("not connected")
-	}
-
-	msg := &pm.AgentMessage{
+	return c.send(&pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_RevokeLuksDeviceKeyResult{
 			RevokeLuksDeviceKeyResult: &pm.RevokeLuksDeviceKeyResult{
@@ -546,9 +536,7 @@ func (c *Client) SendRevokeLuksDeviceKeyResult(ctx context.Context, actionID str
 				Error:    errMsg,
 			},
 		},
-	}
-
-	return stream.Send(msg)
+	})
 }
 
 // registerPending creates a channel for receiving a correlated response.
@@ -684,7 +672,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		go func() {
 			// Initial inventory on connect
 			if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
-				_ = c.SendInventory(heartbeatCtx, inv)
+				if err := c.SendInventory(heartbeatCtx, inv); err != nil {
+						c.logger.Warn("failed to send inventory", "error", err)
+					}
 			}
 
 			ticker := time.NewTicker(24 * time.Hour)
@@ -696,7 +686,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 					return
 				case <-ticker.C:
 					if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
-						_ = c.SendInventory(heartbeatCtx, inv)
+						if err := c.SendInventory(heartbeatCtx, inv); err != nil {
+						c.logger.Warn("failed to send inventory", "error", err)
+					}
 					}
 				}
 			}
@@ -789,9 +781,24 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 				if invHandler, ok := handler.(InventoryHandler); ok {
 					go func() {
 						if inv := invHandler.CollectInventory(ctx); inv != nil {
-							_ = c.SendInventory(ctx, inv)
+							if err := c.SendInventory(ctx, inv); err != nil {
+								c.logger.Warn("failed to send inventory", "error", err)
+							}
 						}
 					}()
+				}
+
+			case *pm.ServerMessage_LogQuery:
+				if lqHandler, ok := handler.(LogQueryHandler); ok {
+					result, err := lqHandler.OnLogQuery(ctx, p.LogQuery)
+					if err != nil {
+						return fmt.Errorf("handle log query: %w", err)
+					}
+					if result != nil {
+						if err := c.SendLogQueryResult(ctx, result); err != nil {
+							return fmt.Errorf("send log query result: %w", err)
+						}
+					}
 				}
 
 			case *pm.ServerMessage_RevokeLuksDeviceKey:
@@ -802,7 +809,9 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 					// that response requires this receive loop to keep running.
 					go func() {
 						success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
-						_ = c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg)
+						if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
+							c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
+						}
 					}()
 				}
 			}

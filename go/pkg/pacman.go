@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -275,7 +276,11 @@ func (p *Pacman) Show(name string) (*Package, error) {
 		}
 	}
 
-	pkg.Pinned, _ = p.IsPinned(name)
+	if pinned, err := p.IsPinned(name); err != nil {
+		slog.Debug("failed to check pin status", "package", name, "error", err)
+	} else {
+		pkg.Pinned = pinned
+	}
 
 	return pkg, nil
 }
@@ -284,7 +289,11 @@ func (p *Pacman) Show(name string) (*Package, error) {
 // Note: Pacman typically only keeps the latest version in repos.
 func (p *Pacman) ListVersions(name string) (*VersionInfo, error) {
 	info := &VersionInfo{Name: name}
-	info.Installed, _ = p.GetInstalledVersion(name)
+	if installed, err := p.GetInstalledVersion(name); err != nil {
+		slog.Debug("failed to get installed version", "package", name, "error", err)
+	} else {
+		info.Installed = installed
+	}
 
 	// Get version from sync database
 	out, err := exec.CommandContext(p.ctx, "pacman", "-Si", name).Output()

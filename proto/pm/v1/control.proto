@@ -29,17 +29,38 @@ message RegisterRequest {
 message RegisterResponse {
   // @gotags: validate:"required"
   DeviceId device_id = 1;
-  // @gotags: validate:"omitempty,max=4096"
-  string auth_token = 2;  // Deprecated: use mTLS certificates instead
   // mTLS credentials issued by control server
   // @gotags: validate:"required"
-  bytes ca_cert = 3;       // CA certificate (PEM)
+  bytes ca_cert = 2;       // CA certificate (PEM)
   // Signed device certificate (PEM) - private key stays on agent
   // @gotags: validate:"required"
-  bytes certificate = 4;
+  bytes certificate = 3;
   // Gateway URL for streaming connection (agent stores this for future connections)
   // @gotags: validate:"required,url"
-  string gateway_url = 5;
+  string gateway_url = 4;
+}
+
+// ============================================================================
+// Certificate Renewal (called by agent to renew expiring certificates)
+// ============================================================================
+
+message RenewCertificateRequest {
+  // Certificate Signing Request (PEM-encoded PKCS#10)
+  // @gotags: validate:"required"
+  bytes csr = 1;
+  // Current certificate (PEM) for identity verification
+  // @gotags: validate:"required"
+  bytes current_certificate = 2;
+}
+
+message RenewCertificateResponse {
+  // New signed certificate (PEM)
+  bytes certificate = 1;
+  // Certificate expiry
+  google.protobuf.Timestamp not_after = 2;
+  // Active CA certificate (PEM). Agents should update their stored CA cert
+  // if non-empty, enabling seamless CA rotation.
+  bytes ca_certificate = 3;
 }
 
 // ============================================================================
@@ -120,6 +141,14 @@ message DisableTOTPRequest {
 
 message DisableTOTPResponse {}
 
+// Admin: disable TOTP for another user (no password required).
+message AdminDisableUserTOTPRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+}
+
+message AdminDisableUserTOTPResponse {}
+
 message GetTOTPStatusRequest {}
 
 message GetTOTPStatusResponse {
@@ -159,14 +188,44 @@ message VerifyLoginTOTPResponse {
 message User {
   string id = 1;
   string email = 2;
-  reserved 3;  // was: string role
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp last_login_at = 5;
-  bool disabled = 6;
-  repeated Role roles = 7;
-  bool totp_enabled = 8;
-  bool has_password = 9;
-  repeated IdentityLink identity_links = 10;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp last_login_at = 4;
+  bool disabled = 5;
+  repeated Role roles = 6;
+  bool totp_enabled = 7;
+  bool has_password = 8;
+  repeated IdentityLink identity_links = 9;
+  // OIDC profile scope properties
+  string display_name = 10;
+  string given_name = 11;
+  string family_name = 12;
+  string preferred_username = 13;
+  string picture = 14;
+  string locale = 15;
+  // Linux identity
+  string linux_username = 16;
+  int32 linux_uid = 17;
+  // SSH access settings
+  repeated SshPublicKey ssh_public_keys = 18;
+  bool ssh_access_enabled = 19;
+  bool ssh_allow_pubkey = 20;
+  bool ssh_allow_password = 21;
+  bool user_provisioning_enabled = 22;
+  repeated InheritedRole inherited_roles = 23;
+}
+
+message InheritedRole {
+  string role_id = 1;
+  string role_name = 2;
+  string group_id = 3;
+  string group_name = 4;
+}
+
+message SshPublicKey {
+  string id = 1;
+  string public_key = 2;
+  string comment = 3;
+  google.protobuf.Timestamp added_at = 4;
 }
 
 message Role {
@@ -192,6 +251,11 @@ message CreateUserRequest {
   string password = 2;
   // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
   repeated string role_ids = 3;
+  // Optional profile fields
+  string display_name = 4;
+  string given_name = 5;
+  string family_name = 6;
+  string preferred_username = 7;
 }
 
 message CreateUserResponse {
@@ -247,12 +311,63 @@ message UpdateUserResponse {
   User user = 1;
 }
 
+message UpdateUserProfileRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  string display_name = 2;
+  string given_name = 3;
+  string family_name = 4;
+  // @gotags: validate:"omitempty,max=64"
+  string preferred_username = 5;
+  // @gotags: validate:"omitempty,max=2048"
+  string picture = 6;
+  // @gotags: validate:"omitempty,max=10"
+  string locale = 7;
+}
+
 message DeleteUserRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
 }
 
 message DeleteUserResponse {}
+
+message AddUserSshKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,min=1,max=8192"
+  string public_key = 2;
+  // @gotags: validate:"omitempty,max=256"
+  string comment = 3;
+}
+
+message AddUserSshKeyResponse {
+  SshPublicKey key = 1;
+}
+
+message RemoveUserSshKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string key_id = 2;
+}
+
+message RemoveUserSshKeyResponse {}
+
+message UpdateUserSshSettingsRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  bool ssh_access_enabled = 2;
+  bool ssh_allow_pubkey = 3;
+  bool ssh_allow_password = 4;
+}
+
+message UpdateUserLinuxUsernameRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,min=1,max=32"
+  string linux_username = 2;
+}
 
 // ============================================================================
 // Devices
@@ -267,10 +382,16 @@ message Device {
   google.protobuf.Timestamp last_seen_at = 6;
   google.protobuf.Timestamp cert_expires_at = 7;
   map<string, string> labels = 8;
-  string assigned_user_id = 9;  // User this device is assigned to (empty = unassigned)
+  repeated string assigned_user_ids = 9;    // Users assigned to this device
+  repeated string assigned_group_ids = 10;  // User groups assigned to this device
   // Sync interval in minutes (0 = use default of 30 minutes)
   // Agent will pull assigned actions at this interval
-  int32 sync_interval_minutes = 10;
+  int32 sync_interval_minutes = 11;
+  // Compliance status based on detection scripts
+  ComplianceStatus compliance_status = 12;
+  google.protobuf.Timestamp compliance_checked_at = 13;
+  int32 compliance_total = 14;    // Total number of compliance checks
+  int32 compliance_passing = 15;  // Number of passing checks
 }
 
 message ListDevicesRequest {
@@ -281,6 +402,7 @@ message ListDevicesRequest {
   // @gotags: validate:"omitempty,oneof=online offline"
   string status_filter = 3;  // optional: "online", "offline"
   map<string, string> label_filter = 4;
+  bool my_devices_only = 5;  // when true, only return devices assigned to the authenticated user
 }
 
 message ListDevicesResponse {
@@ -327,24 +449,51 @@ message DeleteDeviceRequest {
 message DeleteDeviceResponse {}
 
 // Device assignment (admin-only)
+// Assign a user or user group to a device. Exactly one of user_id or group_id must be set.
 message AssignDeviceRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string user_id = 2;
+  // @gotags: validate:"omitempty,ulid"
+  string group_id = 3;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string user_ids = 4;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string group_ids = 5;
 }
 
 message AssignDeviceResponse {
   Device device = 1;
 }
 
+// Unassign a user or user group from a device. Exactly one of user_id or group_id must be set.
 message UnassignDeviceRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
+  // @gotags: validate:"omitempty,ulid"
+  string user_id = 2;
+  // @gotags: validate:"omitempty,ulid"
+  string group_id = 3;
 }
 
 message UnassignDeviceResponse {
   Device device = 1;
+}
+
+message DeviceAssignee {
+  string id = 1;        // User or group ID
+  string type = 2;      // "user" or "user_group"
+  string name = 3;      // User email or group name
+}
+
+message ListDeviceAssigneesRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message ListDeviceAssigneesResponse {
+  repeated DeviceAssignee assignees = 1;
 }
 
 // Update device sync interval
@@ -444,29 +593,31 @@ message ManagedAction {
   string description = 3;
   ActionType type = 4;
   DesiredState desired_state = 5;
-  oneof params {
-    PackageParams package = 10;
-    AppInstallParams app = 11;
-    ShellParams shell = 12;
-    SystemdParams systemd = 13;
-    FileParams file = 14;
-    UpdateParams update = 15;
-    RepositoryParams repository = 16;
-    FlatpakParams flatpak = 17;
-    DirectoryParams directory = 18;
-    UserParams user = 19;
-    SshParams ssh = 22;
-    SshdParams sshd = 23;
-    SudoParams sudo = 24;
-    // @gotags: validate:"omitempty"
-    LpsParams lps = 25;
-    GroupParams group = 26;
-    LuksParams luks = 27;
-  }
   int32 timeout_seconds = 6;
   google.protobuf.Timestamp created_at = 7;
   string created_by = 8;
   ActionSchedule schedule = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  oneof params {
+    PackageParams package = 11;
+    AppInstallParams app = 12;
+    ShellParams shell = 13;
+    SystemdParams systemd = 14;
+    FileParams file = 15;
+    UpdateParams update = 16;
+    RepositoryParams repository = 17;
+    FlatpakParams flatpak = 18;
+    DirectoryParams directory = 19;
+    UserParams user = 20;
+    SshParams ssh = 21;
+    SshdParams sshd = 22;
+    SudoParams sudo = 23;
+    // @gotags: validate:"omitempty"
+    LpsParams lps = 24;
+    GroupParams group = 25;
+    LuksParams luks = 26;
+    WifiParams wifi = 27;
+  }
 }
 
 message CreateActionRequest {
@@ -485,37 +636,39 @@ message CreateActionRequest {
 
   oneof params {
     // @gotags: validate:"omitempty"
-    PackageParams package = 10;
+    PackageParams package = 7;
     // @gotags: validate:"omitempty"
-    AppInstallParams app = 11;
+    AppInstallParams app = 8;
     // @gotags: validate:"omitempty"
-    ShellParams shell = 12;
+    ShellParams shell = 9;
     // @gotags: validate:"omitempty"
-    SystemdParams systemd = 13;
+    SystemdParams systemd = 10;
     // @gotags: validate:"omitempty"
-    FileParams file = 14;
+    FileParams file = 11;
     // @gotags: validate:"omitempty"
-    UpdateParams update = 15;
+    UpdateParams update = 12;
     // @gotags: validate:"omitempty"
-    RepositoryParams repository = 16;
+    RepositoryParams repository = 13;
     // @gotags: validate:"omitempty"
-    FlatpakParams flatpak = 17;
+    FlatpakParams flatpak = 14;
     // @gotags: validate:"omitempty"
-    DirectoryParams directory = 18;
+    DirectoryParams directory = 15;
     // @gotags: validate:"omitempty"
-    UserParams user = 19;
+    UserParams user = 16;
     // @gotags: validate:"omitempty"
-    SshParams ssh = 22;
+    SshParams ssh = 17;
     // @gotags: validate:"omitempty"
-    SshdParams sshd = 23;
+    SshdParams sshd = 18;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 24;
+    SudoParams sudo = 19;
     // @gotags: validate:"omitempty"
-    LpsParams lps = 25;
+    LpsParams lps = 20;
     // @gotags: validate:"omitempty"
-    GroupParams group = 26;
+    GroupParams group = 21;
     // @gotags: validate:"omitempty"
-    LuksParams luks = 27;
+    LuksParams luks = 22;
+    // @gotags: validate:"omitempty"
+    WifiParams wifi = 23;
   }
 }
 
@@ -538,6 +691,7 @@ message ListActionsRequest {
   // @gotags: validate:"omitempty"
   string page_token = 2;
   ActionType type_filter = 3;
+  bool unassigned_only = 4;
 }
 
 message ListActionsResponse {
@@ -572,37 +726,39 @@ message UpdateActionParamsRequest {
 
   oneof params {
     // @gotags: validate:"omitempty"
-    PackageParams package = 10;
+    PackageParams package = 5;
     // @gotags: validate:"omitempty"
-    AppInstallParams app = 11;
+    AppInstallParams app = 6;
     // @gotags: validate:"omitempty"
-    ShellParams shell = 12;
+    ShellParams shell = 7;
     // @gotags: validate:"omitempty"
-    SystemdParams systemd = 13;
+    SystemdParams systemd = 8;
     // @gotags: validate:"omitempty"
-    FileParams file = 14;
+    FileParams file = 9;
     // @gotags: validate:"omitempty"
-    UpdateParams update = 15;
+    UpdateParams update = 10;
     // @gotags: validate:"omitempty"
-    RepositoryParams repository = 16;
+    RepositoryParams repository = 11;
     // @gotags: validate:"omitempty"
-    FlatpakParams flatpak = 17;
+    FlatpakParams flatpak = 12;
     // @gotags: validate:"omitempty"
-    DirectoryParams directory = 18;
+    DirectoryParams directory = 13;
     // @gotags: validate:"omitempty"
-    UserParams user = 19;
+    UserParams user = 14;
     // @gotags: validate:"omitempty"
-    SshParams ssh = 22;
+    SshParams ssh = 15;
     // @gotags: validate:"omitempty"
-    SshdParams sshd = 23;
+    SshdParams sshd = 16;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 24;
+    SudoParams sudo = 17;
     // @gotags: validate:"omitempty"
-    LpsParams lps = 25;
+    LpsParams lps = 18;
     // @gotags: validate:"omitempty"
-    GroupParams group = 26;
+    GroupParams group = 19;
     // @gotags: validate:"omitempty"
-    LuksParams luks = 27;
+    LuksParams luks = 20;
+    // @gotags: validate:"omitempty"
+    WifiParams wifi = 21;
   }
 }
 
@@ -628,6 +784,7 @@ message ActionSet {
   int32 member_count = 4;
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message ActionSetMember {
@@ -635,6 +792,8 @@ message ActionSetMember {
   string action_id = 1;
   // @gotags: validate:"omitempty,gte=0"
   int32 sort_order = 2;
+  string action_name = 3;
+  ActionType action_type = 4;
 }
 
 message CreateActionSetRequest {
@@ -663,6 +822,7 @@ message ListActionSetsRequest {
   int32 page_size = 1;
   // @gotags: validate:"omitempty"
   string page_token = 2;
+  bool unassigned_only = 3;
 }
 
 message ListActionSetsResponse {
@@ -744,6 +904,7 @@ message Definition {
   int32 member_count = 4;
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message DefinitionMember {
@@ -751,6 +912,7 @@ message DefinitionMember {
   string action_set_id = 1;
   // @gotags: validate:"omitempty,gte=0"
   int32 sort_order = 2;
+  string action_set_name = 3;
 }
 
 message CreateDefinitionRequest {
@@ -890,6 +1052,14 @@ message GetDeviceGroupRequest {
 message GetDeviceGroupResponse {
   DeviceGroup group = 1;
   repeated string device_ids = 2;
+  repeated DeviceGroupMember devices = 3;
+}
+
+message DeviceGroupMember {
+  string device_id = 1;
+  string hostname = 2;
+  string agent_version = 3;
+  google.protobuf.Timestamp last_seen_at = 4;
 }
 
 message ListDeviceGroupsRequest {
@@ -903,6 +1073,15 @@ message ListDeviceGroupsResponse {
   repeated DeviceGroup groups = 1;
   string next_page_token = 2;
   int32 total_count = 3;
+}
+
+message ListDeviceGroupsForDeviceRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message ListDeviceGroupsForDeviceResponse {
+  repeated DeviceGroup groups = 1;
 }
 
 message RenameDeviceGroupRequest {
@@ -933,8 +1112,10 @@ message DeleteDeviceGroupResponse {}
 message AddDeviceToGroupRequest {
   // @gotags: validate:"required,ulid"
   string group_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string device_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string device_ids = 3;
 }
 
 message AddDeviceToGroupResponse {
@@ -968,7 +1149,7 @@ message UpdateDeviceGroupQueryResponse {
 
 // Validate a dynamic query without creating a group
 message ValidateDynamicQueryRequest {
-  // @gotags: validate:"required,max=4096"
+  // @gotags: validate:"max=4096"
   string query = 1;
 }
 
@@ -1011,10 +1192,12 @@ message Assignment {
   google.protobuf.Timestamp created_at = 6;
   string created_by = 7;
   AssignmentMode mode = 8;
+  string source_name = 9;
+  string target_name = 10;
 }
 
 message CreateAssignmentRequest {
-  // @gotags: validate:"required,oneof=definition action_set action"
+  // @gotags: validate:"required,oneof=definition action_set action compliance_policy"
   string source_type = 1;
   // @gotags: validate:"required,ulid"
   string source_id = 2;
@@ -1038,7 +1221,7 @@ message DeleteAssignmentRequest {
 message DeleteAssignmentResponse {}
 
 message ListAssignmentsRequest {
-  // @gotags: validate:"omitempty,oneof=definition action_set action"
+  // @gotags: validate:"omitempty,oneof=definition action_set action compliance_policy"
   string source_type = 1;
   // @gotags: validate:"omitempty,ulid"
   string source_id = 2;
@@ -1074,7 +1257,7 @@ message UserSelection {
 message SetUserSelectionRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,oneof=definition action_set action"
+  // @gotags: validate:"required,oneof=definition action_set action compliance_policy"
   string source_type = 2;
   // @gotags: validate:"required,ulid"
   string source_id = 3;
@@ -1113,6 +1296,9 @@ message GetDeviceAssignmentsResponse {
   repeated ManagedAction actions = 1;
   repeated ActionSet action_sets = 2;
   repeated Definition definitions = 3;
+  repeated CompliancePolicy compliance_policies = 4;
+  repeated GetActionSetResponse action_set_details = 5;
+  repeated GetDefinitionResponse definition_details = 6;
 }
 
 // Get all assignments targeting a user (directly or via user groups)
@@ -1145,6 +1331,9 @@ message ActionExecution {
   CommandOutput live_output = 13;  // Streaming output received so far (useful when status is RUNNING)
   DesiredState desired_state = 14;  // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
   bool changed = 15;  // Whether the execution made changes to the system (false = state was already as desired)
+  bool compliant = 16;  // Detection script result: true if compliant
+  CommandOutput detection_output = 17;  // Detection script output
+  string action_name = 18;  // Resolved from actions_projection (empty for inline actions)
 }
 
 message DispatchActionRequest {
@@ -1246,6 +1435,8 @@ message ListExecutionsRequest {
   // @gotags: validate:"omitempty,ulid"
   string device_id = 3;  // optional filter
   ExecutionStatus status_filter = 4;
+  ActionType type_filter = 5;  // optional action type filter
+  string search = 6;           // searches action name and device hostname
 }
 
 message ListExecutionsResponse {
@@ -1454,6 +1645,45 @@ message RefreshDeviceInventoryRequest {
 message RefreshDeviceInventoryResponse {}
 
 // ============================================================================
+// Device Logs (Remote journalctl)
+// ============================================================================
+
+message QueryDeviceLogsRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // @gotags: validate:"omitempty,gte=0,lte=10000"
+  int32 lines = 2;
+  // @gotags: validate:"omitempty,max=256"
+  string unit = 3;
+  // @gotags: validate:"omitempty,max=64"
+  string since = 4;
+  // @gotags: validate:"omitempty,max=64"
+  string until = 5;
+  // @gotags: validate:"omitempty,max=32"
+  string priority = 6;
+  // @gotags: validate:"omitempty,max=256"
+  string grep = 7;
+  bool kernel = 8;
+}
+
+message QueryDeviceLogsResponse {
+  string query_id = 1;
+}
+
+message GetDeviceLogResultRequest {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+}
+
+message GetDeviceLogResultResponse {
+  string query_id = 1;
+  bool completed = 2;
+  bool success = 3;
+  string error = 4;
+  string logs = 5;
+}
+
+// ============================================================================
 // Roles & Permissions
 // ============================================================================
 
@@ -1518,8 +1748,10 @@ message DeleteRoleResponse {}
 message AssignRoleToUserRequest {
   // @gotags: validate:"required,ulid"
   string user_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string role_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string role_ids = 3;
 }
 
 message AssignRoleToUserResponse {}
@@ -1550,7 +1782,9 @@ message UserGroup {
   int32 member_count = 4;
   repeated Role roles = 5;
   google.protobuf.Timestamp created_at = 6;
-  bool is_scim_managed = 7;
+  bool is_dynamic = 7;
+  string dynamic_query = 8;
+  bool is_scim_managed = 9;
 }
 
 message UserGroupMember {
@@ -1564,6 +1798,9 @@ message CreateUserGroupRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  bool is_dynamic = 3;
+  // @gotags: validate:"omitempty,max=4096"
+  string dynamic_query = 4;
 }
 
 message CreateUserGroupResponse {
@@ -1616,8 +1853,10 @@ message DeleteUserGroupResponse {}
 message AddUserToGroupRequest {
   // @gotags: validate:"required,ulid"
   string group_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string user_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string user_ids = 3;
 }
 
 message AddUserToGroupResponse {}
@@ -1634,8 +1873,10 @@ message RemoveUserFromGroupResponse {}
 message AssignRoleToUserGroupRequest {
   // @gotags: validate:"required,ulid"
   string group_id = 1;
-  // @gotags: validate:"required,ulid"
+  // @gotags: validate:"omitempty,ulid"
   string role_id = 2;
+  // @gotags: validate:"omitempty,dive,ulid"
+  repeated string role_ids = 3;
 }
 
 message AssignRoleToUserGroupResponse {}
@@ -1656,6 +1897,40 @@ message ListUserGroupsForUserRequest {
 
 message ListUserGroupsForUserResponse {
   repeated UserGroup groups = 1;
+}
+
+message UpdateUserGroupQueryRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  bool is_dynamic = 2;
+  // @gotags: validate:"omitempty,max=4096"
+  string dynamic_query = 3;
+}
+
+message UpdateUserGroupQueryResponse {
+  UserGroup group = 1;
+}
+
+message ValidateUserGroupQueryRequest {
+  // @gotags: validate:"max=4096"
+  string query = 1;
+}
+
+message ValidateUserGroupQueryResponse {
+  bool valid = 1;
+  string error = 2;
+  int32 matching_user_count = 3;
+}
+
+message EvaluateDynamicUserGroupRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message EvaluateDynamicUserGroupResponse {
+  UserGroup group = 1;
+  int32 users_added = 2;
+  int32 users_removed = 3;
 }
 
 // ============================================================================
@@ -1880,12 +2155,250 @@ message RotateSCIMTokenResponse {
 }
 
 // ============================================================================
+// Device Compliance
+// ============================================================================
+
+message GetDeviceComplianceRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceComplianceResponse {
+  ComplianceStatus status = 1;
+  repeated ComplianceCheckResult checks = 2;
+}
+
+message ComplianceCheckResult {
+  string action_id = 1;
+  string action_name = 2;
+  bool compliant = 3;
+  CommandOutput detection_output = 4;
+  google.protobuf.Timestamp checked_at = 5;
+}
+
+// ============================================================================
+// Compliance Policies
+// ============================================================================
+
+message CompliancePolicy {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated CompliancePolicyRule rules = 4;
+  int32 rule_count = 5;
+  google.protobuf.Timestamp created_at = 6;
+  string created_by = 7;
+}
+
+message CompliancePolicyRule {
+  string action_id = 1;
+  string action_name = 2;
+  int32 grace_period_hours = 3;
+}
+
+message CreateCompliancePolicyRequest {
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message CreateCompliancePolicyResponse {
+  CompliancePolicy policy = 1;
+}
+
+message GetCompliancePolicyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message GetCompliancePolicyResponse {
+  CompliancePolicy policy = 1;
+}
+
+message ListCompliancePoliciesRequest {
+  // @gotags: validate:"omitempty,gte=0,lte=100"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+}
+
+message ListCompliancePoliciesResponse {
+  repeated CompliancePolicy policies = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RenameCompliancePolicyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"required,min=1,max=255"
+  string name = 2;
+}
+
+message UpdateCompliancePolicyDescriptionRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,max=1024"
+  string description = 2;
+}
+
+message UpdateCompliancePolicyResponse {
+  CompliancePolicy policy = 1;
+}
+
+message DeleteCompliancePolicyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message DeleteCompliancePolicyResponse {}
+
+message AddCompliancePolicyRuleRequest {
+  // @gotags: validate:"required,ulid"
+  string policy_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=8760"
+  int32 grace_period_hours = 3;
+}
+
+message AddCompliancePolicyRuleResponse {
+  CompliancePolicy policy = 1;
+}
+
+message RemoveCompliancePolicyRuleRequest {
+  // @gotags: validate:"required,ulid"
+  string policy_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+}
+
+message RemoveCompliancePolicyRuleResponse {
+  CompliancePolicy policy = 1;
+}
+
+message UpdateCompliancePolicyRuleRequest {
+  // @gotags: validate:"required,ulid"
+  string policy_id = 1;
+  // @gotags: validate:"required,ulid"
+  string action_id = 2;
+  // @gotags: validate:"omitempty,gte=0,lte=8760"
+  int32 grace_period_hours = 3;
+}
+
+message UpdateCompliancePolicyRuleResponse {
+  CompliancePolicy policy = 1;
+}
+
+message GetDeviceCompliancePolicyStatusRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+}
+
+message GetDeviceCompliancePolicyStatusResponse {
+  ComplianceStatus overall_status = 1;
+  repeated DevicePolicyEvaluation policies = 2;
+}
+
+message DevicePolicyEvaluation {
+  string policy_id = 1;
+  string policy_name = 2;
+  ComplianceStatus status = 3;
+  repeated DevicePolicyRuleEvaluation rules = 4;
+}
+
+message DevicePolicyRuleEvaluation {
+  string action_id = 1;
+  string action_name = 2;
+  ComplianceStatus status = 3;
+  bool compliant = 4;
+  google.protobuf.Timestamp checked_at = 5;
+  google.protobuf.Timestamp first_failed_at = 6;
+  int32 grace_period_hours = 7;
+  google.protobuf.Timestamp grace_expires_at = 8;
+  CommandOutput detection_output = 9;
+}
+
+// ============================================================================
+// Search
+// ============================================================================
+
+message SearchDateFilter {
+  string field = 1;   // index field name: "created_at", "updated_at", "occurred_at"
+  int64 start = 2;    // unix epoch seconds, 0 = no lower bound
+  int64 end = 3;      // unix epoch seconds, 0 = no upper bound
+}
+
+message SearchRequest {
+  string query = 1;
+  string scope = 2; // "actions", "action_sets", "definitions", "executions", "audit_events", or "" for all
+  int32 page_size = 3;
+  string page_token = 4;
+  repeated SearchDateFilter date_filters = 5;
+  map<string, string> tag_filters = 6; // field → value(s), pipe-separated for OR (e.g. "completed|failed")
+}
+
+message SearchResult {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string scope = 4;
+  int32 member_count = 5;
+  map<string, string> fields = 6; // all hash fields from the search index
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RebuildSearchIndexRequest {}
+message RebuildSearchIndexResponse {}
+
+// ============================================================================
+// Server Settings
+// ============================================================================
+
+message ServerSettings {
+  bool user_provisioning_enabled = 1;
+  bool ssh_access_for_all = 2;
+}
+
+message GetServerSettingsRequest {}
+message GetServerSettingsResponse {
+  ServerSettings settings = 1;
+}
+
+message UpdateServerSettingsRequest {
+  bool user_provisioning_enabled = 1;
+  bool ssh_access_for_all = 2;
+}
+message UpdateServerSettingsResponse {
+  ServerSettings settings = 1;
+}
+
+// ============================================================================
+// User Provisioning Per-User
+// ============================================================================
+
+message SetUserProvisioningEnabledRequest {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  bool enabled = 2;
+}
+
+// ============================================================================
 // Service Definition
 // ============================================================================
 
 service ControlService {
   // Agent Registration
   rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Certificate Renewal
+  rpc RenewCertificate(RenewCertificateRequest) returns (RenewCertificateResponse);
 
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);
@@ -1898,6 +2411,7 @@ service ControlService {
   rpc SetupTOTP(SetupTOTPRequest) returns (SetupTOTPResponse);
   rpc VerifyTOTP(VerifyTOTPRequest) returns (VerifyTOTPResponse);
   rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
+  rpc AdminDisableUserTOTP(AdminDisableUserTOTPRequest) returns (AdminDisableUserTOTPResponse);
   rpc GetTOTPStatus(GetTOTPStatusRequest) returns (GetTOTPStatusResponse);
   rpc RegenerateBackupCodes(RegenerateBackupCodesRequest) returns (RegenerateBackupCodesResponse);
 
@@ -1925,6 +2439,11 @@ service ControlService {
   rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);
   rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
   rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserResponse);
+  rpc UpdateUserLinuxUsername(UpdateUserLinuxUsernameRequest) returns (UpdateUserResponse);
+  rpc AddUserSshKey(AddUserSshKeyRequest) returns (AddUserSshKeyResponse);
+  rpc RemoveUserSshKey(RemoveUserSshKeyRequest) returns (RemoveUserSshKeyResponse);
+  rpc UpdateUserSshSettings(UpdateUserSshSettingsRequest) returns (UpdateUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 
   // Devices
@@ -1934,6 +2453,7 @@ service ControlService {
   rpc RemoveDeviceLabel(RemoveDeviceLabelRequest) returns (UpdateDeviceResponse);
   rpc AssignDevice(AssignDeviceRequest) returns (AssignDeviceResponse);
   rpc UnassignDevice(UnassignDeviceRequest) returns (UnassignDeviceResponse);
+  rpc ListDeviceAssignees(ListDeviceAssigneesRequest) returns (ListDeviceAssigneesResponse);
   rpc SetDeviceSyncInterval(SetDeviceSyncIntervalRequest) returns (UpdateDeviceResponse);
   rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse);
 
@@ -1980,6 +2500,7 @@ service ControlService {
   rpc CreateDeviceGroup(CreateDeviceGroupRequest) returns (CreateDeviceGroupResponse);
   rpc GetDeviceGroup(GetDeviceGroupRequest) returns (GetDeviceGroupResponse);
   rpc ListDeviceGroups(ListDeviceGroupsRequest) returns (ListDeviceGroupsResponse);
+  rpc ListDeviceGroupsForDevice(ListDeviceGroupsForDeviceRequest) returns (ListDeviceGroupsForDeviceResponse);
   rpc RenameDeviceGroup(RenameDeviceGroupRequest) returns (UpdateDeviceGroupResponse);
   rpc UpdateDeviceGroupDescription(UpdateDeviceGroupDescriptionRequest) returns (UpdateDeviceGroupResponse);
   rpc UpdateDeviceGroupQuery(UpdateDeviceGroupQueryRequest) returns (UpdateDeviceGroupQueryResponse);
@@ -2029,6 +2550,10 @@ service ControlService {
   rpc GetDeviceInventory(GetDeviceInventoryRequest) returns (GetDeviceInventoryResponse);
   rpc RefreshDeviceInventory(RefreshDeviceInventoryRequest) returns (RefreshDeviceInventoryResponse);
 
+  // Device Logs
+  rpc QueryDeviceLogs(QueryDeviceLogsRequest) returns (QueryDeviceLogsResponse);
+  rpc GetDeviceLogResult(GetDeviceLogResultRequest) returns (GetDeviceLogResultResponse);
+
   // Roles & Permissions
   rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
   rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
@@ -2050,4 +2575,33 @@ service ControlService {
   rpc AssignRoleToUserGroup(AssignRoleToUserGroupRequest) returns (AssignRoleToUserGroupResponse);
   rpc RevokeRoleFromUserGroup(RevokeRoleFromUserGroupRequest) returns (RevokeRoleFromUserGroupResponse);
   rpc ListUserGroupsForUser(ListUserGroupsForUserRequest) returns (ListUserGroupsForUserResponse);
+  rpc UpdateUserGroupQuery(UpdateUserGroupQueryRequest) returns (UpdateUserGroupQueryResponse);
+  rpc ValidateUserGroupQuery(ValidateUserGroupQueryRequest) returns (ValidateUserGroupQueryResponse);
+  rpc EvaluateDynamicUserGroup(EvaluateDynamicUserGroupRequest) returns (EvaluateDynamicUserGroupResponse);
+
+  // Device Compliance
+  rpc GetDeviceCompliance(GetDeviceComplianceRequest) returns (GetDeviceComplianceResponse);
+
+  // Compliance Policies
+  rpc CreateCompliancePolicy(CreateCompliancePolicyRequest) returns (CreateCompliancePolicyResponse);
+  rpc GetCompliancePolicy(GetCompliancePolicyRequest) returns (GetCompliancePolicyResponse);
+  rpc ListCompliancePolicies(ListCompliancePoliciesRequest) returns (ListCompliancePoliciesResponse);
+  rpc RenameCompliancePolicy(RenameCompliancePolicyRequest) returns (UpdateCompliancePolicyResponse);
+  rpc UpdateCompliancePolicyDescription(UpdateCompliancePolicyDescriptionRequest) returns (UpdateCompliancePolicyResponse);
+  rpc DeleteCompliancePolicy(DeleteCompliancePolicyRequest) returns (DeleteCompliancePolicyResponse);
+  rpc AddCompliancePolicyRule(AddCompliancePolicyRuleRequest) returns (AddCompliancePolicyRuleResponse);
+  rpc RemoveCompliancePolicyRule(RemoveCompliancePolicyRuleRequest) returns (RemoveCompliancePolicyRuleResponse);
+  rpc UpdateCompliancePolicyRule(UpdateCompliancePolicyRuleRequest) returns (UpdateCompliancePolicyRuleResponse);
+  rpc GetDeviceCompliancePolicyStatus(GetDeviceCompliancePolicyStatusRequest) returns (GetDeviceCompliancePolicyStatusResponse);
+
+  // Search
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc RebuildSearchIndex(RebuildSearchIndexRequest) returns (RebuildSearchIndexResponse);
+
+  // Server Settings
+  rpc GetServerSettings(GetServerSettingsRequest) returns (GetServerSettingsResponse);
+  rpc UpdateServerSettings(UpdateServerSettingsRequest) returns (UpdateServerSettingsResponse);
+
+  // User Provisioning Per-User
+  rpc SetUserProvisioningEnabled(SetUserProvisioningEnabledRequest) returns (UpdateUserResponse);
 }

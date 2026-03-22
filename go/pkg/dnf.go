@@ -5,11 +5,28 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// nevraVersionRe matches the first dash followed by a digit in an NEVRA string,
+// marking the boundary between the package name and version.
+var nevraVersionRe = regexp.MustCompile(`-\d`)
+
+// parseNEVRAName extracts the package name from an NEVRA string
+// (Name-[Epoch:]Version-Release[.Arch]). It finds the first dash
+// followed by a digit, which marks the start of the version portion.
+func parseNEVRAName(nevra string) string {
+	loc := nevraVersionRe.FindStringIndex(nevra)
+	if loc == nil {
+		return nevra
+	}
+	return nevra[:loc[0]]
+}
 
 // Dnf implements the Manager interface for Fedora/RHEL-based systems.
 type Dnf struct {
@@ -90,8 +107,15 @@ func (d *Dnf) Remove(packages ...string) (*CommandResult, error) {
 }
 
 // Update updates the package database (dnf check-update).
+// dnf check-update returns exit code 100 when updates are available,
+// which is a success case, not an error.
 func (d *Dnf) Update() (*CommandResult, error) {
-	return d.run("check-update")
+	result, err := d.run("check-update")
+	if err != nil && result != nil && result.ExitCode == 100 {
+		result.Success = true
+		return result, nil
+	}
+	return result, err
 }
 
 // Upgrade upgrades packages.
@@ -241,7 +265,11 @@ func (d *Dnf) Show(name string) (*Package, error) {
 		pkg.Status = "installed"
 	}
 
-	pkg.Pinned, _ = d.IsPinned(name)
+	if pinned, err := d.IsPinned(name); err != nil {
+		slog.Debug("failed to check pin status", "package", name, "error", err)
+	} else {
+		pkg.Pinned = pinned
+	}
 
 	return pkg, nil
 }
@@ -254,7 +282,11 @@ func (d *Dnf) ListVersions(name string) (*VersionInfo, error) {
 	}
 
 	info := &VersionInfo{Name: name}
-	info.Installed, _ = d.GetInstalledVersion(name)
+	if installed, err := d.GetInstalledVersion(name); err != nil {
+		slog.Debug("failed to get installed version", "package", name, "error", err)
+	} else {
+		info.Installed = installed
+	}
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(bytes.NewReader(out))
@@ -358,21 +390,7 @@ func (d *Dnf) ListPinned() ([]Package, error) {
 		if line == "" {
 			continue
 		}
-		// Format varies, try to extract package name
-		// Could be: package-version-release.arch or just package name
-		parts := strings.Split(line, "-")
-		name := parts[0]
-		if len(parts) > 2 {
-			// Likely has version-release, name might have dashes
-			// Try to find where version starts (usually a digit)
-			for i := 1; i < len(parts); i++ {
-				if len(parts[i]) > 0 && parts[i][0] >= '0' && parts[i][0] <= '9' {
-					name = strings.Join(parts[:i], "-")
-					break
-				}
-			}
-		}
-
+		name := parseNEVRAName(line)
 		version, _ := d.GetInstalledVersion(name)
 		packages = append(packages, Package{
 			Name:    name,
@@ -390,7 +408,14 @@ func (d *Dnf) IsPinned(name string) (bool, error) {
 	if err != nil {
 		return false, nil // versionlock plugin might not be installed
 	}
-	return strings.Contains(string(out), name), nil
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" && parseNEVRAName(line) == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (d *Dnf) getPinnedSet() (map[string]bool, error) {
@@ -406,17 +431,7 @@ func (d *Dnf) getPinnedSet() (map[string]bool, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.Split(line, "-")
-		name := parts[0]
-		if len(parts) > 2 {
-			for i := 1; i < len(parts); i++ {
-				if len(parts[i]) > 0 && parts[i][0] >= '0' && parts[i][0] <= '9' {
-					name = strings.Join(parts[:i], "-")
-					break
-				}
-			}
-		}
-		pinned[name] = true
+		pinned[parseNEVRAName(line)] = true
 	}
 	return pinned, nil
 }

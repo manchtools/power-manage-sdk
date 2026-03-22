@@ -18,13 +18,20 @@ import {
 	UpdateUserEmailRequestSchema,
 	UpdateUserPasswordRequestSchema,
 	SetUserDisabledRequestSchema,
+	UpdateUserProfileRequestSchema,
 	DeleteUserRequestSchema,
+	UpdateUserLinuxUsernameRequestSchema,
+	AddUserSshKeyRequestSchema,
+	RemoveUserSshKeyRequestSchema,
+	UpdateUserSshSettingsRequestSchema,
+	type SshPublicKey,
 	ListDevicesRequestSchema,
 	GetDeviceRequestSchema,
 	SetDeviceLabelRequestSchema,
 	RemoveDeviceLabelRequestSchema,
 	AssignDeviceRequestSchema,
 	UnassignDeviceRequestSchema,
+	ListDeviceAssigneesRequestSchema,
 	DeleteDeviceRequestSchema,
 	SetDeviceSyncIntervalRequestSchema,
 	CreateTokenRequestSchema,
@@ -65,6 +72,7 @@ import {
 	CreateDeviceGroupRequestSchema,
 	GetDeviceGroupRequestSchema,
 	ListDeviceGroupsRequestSchema,
+	ListDeviceGroupsForDeviceRequestSchema,
 	RenameDeviceGroupRequestSchema,
 	UpdateDeviceGroupDescriptionRequestSchema,
 	UpdateDeviceGroupQueryRequestSchema,
@@ -80,6 +88,9 @@ import {
 	ListAssignmentsRequestSchema,
 	GetDeviceAssignmentsRequestSchema,
 	GetUserAssignmentsRequestSchema,
+	// User Selections
+	ListAvailableActionsRequestSchema,
+	SetUserSelectionRequestSchema,
 	// Dispatch & Execution
 	DispatchActionRequestSchema,
 	DispatchToMultipleRequestSchema,
@@ -103,6 +114,9 @@ import {
 	GetOSQueryResultRequestSchema,
 	GetDeviceInventoryRequestSchema,
 	RefreshDeviceInventoryRequestSchema,
+	// Device Logs
+	QueryDeviceLogsRequestSchema,
+	GetDeviceLogResultRequestSchema,
 	// Roles & Permissions
 	CreateRoleRequestSchema,
 	GetRoleRequestSchema,
@@ -116,6 +130,7 @@ import {
 	SetupTOTPRequestSchema,
 	VerifyTOTPRequestSchema,
 	DisableTOTPRequestSchema,
+	AdminDisableUserTOTPRequestSchema,
 	GetTOTPStatusRequestSchema,
 	RegenerateBackupCodesRequestSchema,
 	VerifyLoginTOTPRequestSchema,
@@ -130,6 +145,9 @@ import {
 	AssignRoleToUserGroupRequestSchema,
 	RevokeRoleFromUserGroupRequestSchema,
 	ListUserGroupsForUserRequestSchema,
+	UpdateUserGroupQueryRequestSchema,
+	ValidateUserGroupQueryRequestSchema,
+	EvaluateDynamicUserGroupRequestSchema,
 	// Identity Providers & SSO
 	ListAuthMethodsRequestSchema,
 	GetSSOLoginURLRequestSchema,
@@ -144,6 +162,34 @@ import {
 	EnableSCIMRequestSchema,
 	DisableSCIMRequestSchema,
 	RotateSCIMTokenRequestSchema,
+	// Search
+	SearchRequestSchema,
+	SearchDateFilterSchema,
+	RebuildSearchIndexRequestSchema,
+	// Server Settings
+	GetServerSettingsRequestSchema,
+	UpdateServerSettingsRequestSchema,
+	// User Provisioning
+	SetUserProvisioningEnabledRequestSchema,
+	type SearchResult,
+	// Compliance
+	GetDeviceComplianceRequestSchema,
+	type GetDeviceComplianceResponse,
+	// Compliance Policies
+	CreateCompliancePolicyRequestSchema,
+	GetCompliancePolicyRequestSchema,
+	ListCompliancePoliciesRequestSchema,
+	RenameCompliancePolicyRequestSchema,
+	UpdateCompliancePolicyDescriptionRequestSchema,
+	DeleteCompliancePolicyRequestSchema,
+	AddCompliancePolicyRuleRequestSchema,
+	RemoveCompliancePolicyRuleRequestSchema,
+	UpdateCompliancePolicyRuleRequestSchema,
+	GetDeviceCompliancePolicyStatusRequestSchema,
+	type CompliancePolicy,
+	type CompliancePolicyRule,
+	type DevicePolicyEvaluation,
+	type GetDeviceCompliancePolicyStatusResponse,
 	type IdentityProvider,
 	type IdentityLink,
 	type InventoryTableResult,
@@ -164,10 +210,16 @@ import {
 	type UserGroup,
 	type UserGroupMember,
 	type LpsPassword,
-	type LuksKey
+	type LuksKey,
+	type AvailableItem,
+	type DeviceAssignee,
+	type DeviceGroupMember,
+	type InheritedRole,
+	type ActionSetMember,
+	type DefinitionMember
 } from '../gen/ts/pm/v1/control_pb';
-import type { ActionType } from '../gen/ts/pm/v1/actions_pb';
-import { type ExecutionStatus } from '../gen/ts/pm/v1/common_pb';
+import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
+import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
 export interface ClientOptions {
@@ -333,6 +385,13 @@ export class ApiClient {
 		return client.disableTOTP(create(DisableTOTPRequestSchema, { password }));
 	}
 
+	async adminDisableUserTOTP(userId: string) {
+		const client = this.getClient();
+		return client.adminDisableUserTOTP(
+			create(AdminDisableUserTOTPRequestSchema, { userId })
+		);
+	}
+
 	async getTOTPStatus() {
 		const client = this.getClient();
 		return client.getTOTPStatus(create(GetTOTPStatusRequestSchema, {}));
@@ -349,10 +408,15 @@ export class ApiClient {
 	// Users
 	// ============================================================================
 
-	async createUser(email: string, password: string, roleIds: string[] = []) {
+	async createUser(email: string, password: string, roleIds: string[] = [], profile?: {
+		displayName?: string;
+		givenName?: string;
+		familyName?: string;
+		preferredUsername?: string;
+	}) {
 		const client = this.getClient();
 		const response = await client.createUser(
-			create(CreateUserRequestSchema, { email, password, roleIds })
+			create(CreateUserRequestSchema, { email, password, roleIds, ...profile })
 		);
 		return response.user;
 	}
@@ -394,9 +458,59 @@ export class ApiClient {
 		return response.user;
 	}
 
+	async updateUserProfile(id: string, profile: {
+		displayName?: string;
+		givenName?: string;
+		familyName?: string;
+		preferredUsername?: string;
+		picture?: string;
+		locale?: string;
+	}) {
+		const client = this.getClient();
+		const response = await client.updateUserProfile(
+			create(UpdateUserProfileRequestSchema, { id, ...profile })
+		);
+		return response.user;
+	}
+
 	async deleteUser(id: string) {
 		const client = this.getClient();
 		await client.deleteUser(create(DeleteUserRequestSchema, { id }));
+	}
+
+	async updateUserLinuxUsername(userId: string, linuxUsername: string) {
+		const client = this.getClient();
+		const response = await client.updateUserLinuxUsername(
+			create(UpdateUserLinuxUsernameRequestSchema, { userId, linuxUsername })
+		);
+		return response.user;
+	}
+
+	async addUserSshKey(userId: string, publicKey: string, comment: string = '') {
+		const client = this.getClient();
+		const response = await client.addUserSshKey(
+			create(AddUserSshKeyRequestSchema, { userId, publicKey, comment })
+		);
+		return response.key;
+	}
+
+	async removeUserSshKey(userId: string, keyId: string) {
+		const client = this.getClient();
+		await client.removeUserSshKey(
+			create(RemoveUserSshKeyRequestSchema, { userId, keyId })
+		);
+	}
+
+	async updateUserSshSettings(userId: string, settings: {
+		sshAccessEnabled: boolean;
+		sshAllowPubkey: boolean;
+		sshAllowPassword: boolean;
+	}) {
+		const client = this.getClient();
+		const response = await client.updateUserSshSettings(
+			create(UpdateUserSshSettingsRequestSchema, { userId, ...settings })
+		);
+		return response.user;
 	}
 
 	// ============================================================================
@@ -407,11 +521,12 @@ export class ApiClient {
 		pageSize: number = 50,
 		pageToken: string = '',
 		statusFilter: string = '',
-		labelFilter: Record<string, string> = {}
+		labelFilter: Record<string, string> = {},
+		myDevicesOnly: boolean = false
 	) {
 		const client = this.getClient();
 		return client.listDevices(
-			create(ListDevicesRequestSchema, { pageSize, pageToken, statusFilter, labelFilter })
+			create(ListDevicesRequestSchema, { pageSize, pageToken, statusFilter, labelFilter, myDevicesOnly })
 		);
 	}
 
@@ -437,20 +552,28 @@ export class ApiClient {
 		return response.device;
 	}
 
-	async assignDevice(deviceId: string, userId: string) {
+	async assignDevice(deviceId: string, userIds: string[], groupIds: string[]) {
 		const client = this.getClient();
 		const response = await client.assignDevice(
-			create(AssignDeviceRequestSchema, { deviceId, userId })
+			create(AssignDeviceRequestSchema, { deviceId, userIds, groupIds })
 		);
 		return response.device;
 	}
 
-	async unassignDevice(deviceId: string) {
+	async unassignDevice(deviceId: string, userId?: string, groupId?: string) {
 		const client = this.getClient();
 		const response = await client.unassignDevice(
-			create(UnassignDeviceRequestSchema, { deviceId })
+			create(UnassignDeviceRequestSchema, { deviceId, userId: userId ?? '', groupId: groupId ?? '' })
 		);
 		return response.device;
+	}
+
+	async listDeviceAssignees(deviceId: string): Promise<DeviceAssignee[]> {
+		const client = this.getClient();
+		const response = await client.listDeviceAssignees(
+			create(ListDeviceAssigneesRequestSchema, { deviceId })
+		);
+		return [...response.assignees];
 	}
 
 	async deleteDevice(id: string) {
@@ -537,10 +660,10 @@ export class ApiClient {
 		return response.action;
 	}
 
-	async listActions(pageSize: number = 50, pageToken: string = '', typeFilter?: ActionType) {
+	async listActions(pageSize: number = 50, pageToken: string = '', typeFilter?: ActionType, unassignedOnly: boolean = false) {
 		const client = this.getClient();
 		return client.listActions(
-			create(ListActionsRequestSchema, { pageSize, pageToken, typeFilter: typeFilter ?? 0 })
+			create(ListActionsRequestSchema, { pageSize, pageToken, typeFilter: typeFilter ?? 0, unassignedOnly })
 		);
 	}
 
@@ -590,10 +713,10 @@ export class ApiClient {
 		return client.getActionSet(create(GetActionSetRequestSchema, { id }));
 	}
 
-	async listActionSets(pageSize: number = 50, pageToken: string = '') {
+	async listActionSets(pageSize: number = 50, pageToken: string = '', unassignedOnly: boolean = false) {
 		const client = this.getClient();
 		return client.listActionSets(
-			create(ListActionSetsRequestSchema, { pageSize, pageToken })
+			create(ListActionSetsRequestSchema, { pageSize, pageToken, unassignedOnly })
 		);
 	}
 
@@ -735,6 +858,13 @@ export class ApiClient {
 		);
 	}
 
+	async listDeviceGroupsForDevice(deviceId: string) {
+		const client = this.getClient();
+		return client.listDeviceGroupsForDevice(
+			create(ListDeviceGroupsForDeviceRequestSchema, { deviceId })
+		);
+	}
+
 	async renameDeviceGroup(id: string, name: string) {
 		const client = this.getClient();
 		const response = await client.renameDeviceGroup(
@@ -756,10 +886,10 @@ export class ApiClient {
 		await client.deleteDeviceGroup(create(DeleteDeviceGroupRequestSchema, { id }));
 	}
 
-	async addDeviceToGroup(groupId: string, deviceId: string) {
+	async addDeviceToGroup(groupId: string, deviceIds: string[]) {
 		const client = this.getClient();
 		const response = await client.addDeviceToGroup(
-			create(AddDeviceToGroupRequestSchema, { groupId, deviceId })
+			create(AddDeviceToGroupRequestSchema, { groupId, deviceIds })
 		);
 		return response.group;
 	}
@@ -807,7 +937,7 @@ export class ApiClient {
 	// ============================================================================
 
 	async createAssignment(
-		sourceType: 'action' | 'action_set' | 'definition',
+		sourceType: 'action' | 'action_set' | 'definition' | 'compliance_policy',
 		sourceId: string,
 		targetType: 'device' | 'device_group' | 'user' | 'user_group',
 		targetId: string,
@@ -821,7 +951,7 @@ export class ApiClient {
 	}
 
 	async batchCreateAssignments(
-		sourceType: 'action' | 'action_set' | 'definition',
+		sourceType: 'action' | 'action_set' | 'definition' | 'compliance_policy',
 		sourceId: string,
 		targets: Array<{ targetType: 'device' | 'device_group' | 'user' | 'user_group'; targetId: string }>,
 		mode: number = 0
@@ -867,6 +997,25 @@ export class ApiClient {
 	}
 
 	// ============================================================================
+	// User Selections (available assignments)
+	// ============================================================================
+
+	async listAvailableActions(deviceId: string) {
+		const client = this.getClient();
+		const response = await client.listAvailableActions(
+			create(ListAvailableActionsRequestSchema, { deviceId })
+		);
+		return response.items;
+	}
+
+	async setUserSelection(deviceId: string, sourceType: string, sourceId: string, selected: boolean) {
+		const client = this.getClient();
+		return client.setUserSelection(
+			create(SetUserSelectionRequestSchema, { deviceId, sourceType, sourceId, selected })
+		);
+	}
+
+	// ============================================================================
 	// Action Dispatch & Execution
 	// ============================================================================
 
@@ -876,6 +1025,17 @@ export class ApiClient {
 			create(DispatchActionRequestSchema, {
 				deviceId,
 				actionSource: { case: 'actionId', value: actionId }
+			})
+		);
+		return response.execution;
+	}
+
+	async dispatchInlineAction(deviceId: string, action: Action) {
+		const client = this.getClient();
+		const response = await client.dispatchAction(
+			create(DispatchActionRequestSchema, {
+				deviceId,
+				actionSource: { case: 'inlineAction', value: action }
 			})
 		);
 		return response.execution;
@@ -945,12 +1105,17 @@ export class ApiClient {
 		pageSize: number = 50,
 		pageToken: string = '',
 		deviceId: string = '',
-		statusFilter?: ExecutionStatus
+		statusFilter?: ExecutionStatus,
+		typeFilter?: ActionType,
+		search: string = ''
 	) {
 		const client = this.getClient();
 		return client.listExecutions(
 			create(ListExecutionsRequestSchema, {
-				pageSize, pageToken, deviceId, statusFilter: statusFilter ?? 0
+				pageSize, pageToken, deviceId,
+				statusFilter: statusFilter ?? 0,
+				typeFilter: typeFilter ?? 0,
+				search,
 			})
 		);
 	}
@@ -980,6 +1145,98 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.revokeLuksDeviceKey(
 			create(RevokeLuksDeviceKeyRequestSchema, { deviceId, actionId })
+		);
+	}
+
+	// ============================================================================
+	// Device Compliance
+	// ============================================================================
+
+	async getDeviceCompliance(deviceId: string): Promise<GetDeviceComplianceResponse> {
+		const client = this.getClient();
+		return client.getDeviceCompliance(
+			create(GetDeviceComplianceRequestSchema, { deviceId })
+		);
+	}
+
+	// ============================================================================
+	// Compliance Policies
+	// ============================================================================
+
+	async createCompliancePolicy(name: string, description: string = '') {
+		const client = this.getClient();
+		const response = await client.createCompliancePolicy(
+			create(CreateCompliancePolicyRequestSchema, { name, description })
+		);
+		return response.policy;
+	}
+
+	async getCompliancePolicy(id: string) {
+		const client = this.getClient();
+		const response = await client.getCompliancePolicy(
+			create(GetCompliancePolicyRequestSchema, { id })
+		);
+		return response.policy;
+	}
+
+	async listCompliancePolicies(pageSize: number = 50, pageToken: string = '') {
+		const client = this.getClient();
+		return client.listCompliancePolicies(
+			create(ListCompliancePoliciesRequestSchema, { pageSize, pageToken })
+		);
+	}
+
+	async renameCompliancePolicy(id: string, name: string) {
+		const client = this.getClient();
+		const response = await client.renameCompliancePolicy(
+			create(RenameCompliancePolicyRequestSchema, { id, name })
+		);
+		return response.policy;
+	}
+
+	async updateCompliancePolicyDescription(id: string, description: string) {
+		const client = this.getClient();
+		const response = await client.updateCompliancePolicyDescription(
+			create(UpdateCompliancePolicyDescriptionRequestSchema, { id, description })
+		);
+		return response.policy;
+	}
+
+	async deleteCompliancePolicy(id: string) {
+		const client = this.getClient();
+		await client.deleteCompliancePolicy(
+			create(DeleteCompliancePolicyRequestSchema, { id })
+		);
+	}
+
+	async addCompliancePolicyRule(policyId: string, actionId: string, gracePeriodHours: number = 0) {
+		const client = this.getClient();
+		const response = await client.addCompliancePolicyRule(
+			create(AddCompliancePolicyRuleRequestSchema, { policyId, actionId, gracePeriodHours })
+		);
+		return response.policy;
+	}
+
+	async removeCompliancePolicyRule(policyId: string, actionId: string) {
+		const client = this.getClient();
+		const response = await client.removeCompliancePolicyRule(
+			create(RemoveCompliancePolicyRuleRequestSchema, { policyId, actionId })
+		);
+		return response.policy;
+	}
+
+	async updateCompliancePolicyRule(policyId: string, actionId: string, gracePeriodHours: number) {
+		const client = this.getClient();
+		const response = await client.updateCompliancePolicyRule(
+			create(UpdateCompliancePolicyRuleRequestSchema, { policyId, actionId, gracePeriodHours })
+		);
+		return response.policy;
+	}
+
+	async getDeviceCompliancePolicyStatus(deviceId: string): Promise<GetDeviceCompliancePolicyStatusResponse> {
+		const client = this.getClient();
+		return client.getDeviceCompliancePolicyStatus(
+			create(GetDeviceCompliancePolicyStatusRequestSchema, { deviceId })
 		);
 	}
 
@@ -1015,6 +1272,33 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.getOSQueryResult(
 			create(GetOSQueryResultRequestSchema, { queryId })
+		);
+	}
+
+	async queryDeviceLogs(deviceId: string, options?: {
+		lines?: number, unit?: string, since?: string, until?: string,
+		priority?: string, grep?: string, kernel?: boolean
+	}) {
+		const client = this.getClient();
+		const response = await client.queryDeviceLogs(
+			create(QueryDeviceLogsRequestSchema, {
+				deviceId,
+				lines: options?.lines ?? 0,
+				unit: options?.unit ?? '',
+				since: options?.since ?? '',
+				until: options?.until ?? '',
+				priority: options?.priority ?? '',
+				grep: options?.grep ?? '',
+				kernel: options?.kernel ?? false
+			})
+		);
+		return response.queryId;
+	}
+
+	async getDeviceLogResult(queryId: string) {
+		const client = this.getClient();
+		return client.getDeviceLogResult(
+			create(GetDeviceLogResultRequestSchema, { queryId })
 		);
 	}
 
@@ -1068,10 +1352,10 @@ export class ApiClient {
 		await client.deleteRole(create(DeleteRoleRequestSchema, { id }));
 	}
 
-	async assignRoleToUser(userId: string, roleId: string) {
+	async assignRoleToUser(userId: string, roleIds: string[]) {
 		const client = this.getClient();
 		await client.assignRoleToUser(
-			create(AssignRoleToUserRequestSchema, { userId, roleId })
+			create(AssignRoleToUserRequestSchema, { userId, roleIds })
 		);
 	}
 
@@ -1093,10 +1377,10 @@ export class ApiClient {
 	// User Groups
 	// ============================================================================
 
-	async createUserGroup(name: string, description: string = '') {
+	async createUserGroup(name: string, description: string = '', isDynamic: boolean = false, dynamicQuery: string = '') {
 		const client = this.getClient();
 		const response = await client.createUserGroup(
-			create(CreateUserGroupRequestSchema, { name, description })
+			create(CreateUserGroupRequestSchema, { name, description, isDynamic, dynamicQuery })
 		);
 		return response.group;
 	}
@@ -1126,10 +1410,10 @@ export class ApiClient {
 		await client.deleteUserGroup(create(DeleteUserGroupRequestSchema, { id }));
 	}
 
-	async addUserToGroup(groupId: string, userId: string) {
+	async addUserToGroup(groupId: string, userIds: string[]) {
 		const client = this.getClient();
 		await client.addUserToGroup(
-			create(AddUserToGroupRequestSchema, { groupId, userId })
+			create(AddUserToGroupRequestSchema, { groupId, userIds })
 		);
 	}
 
@@ -1140,10 +1424,10 @@ export class ApiClient {
 		);
 	}
 
-	async assignRoleToUserGroup(groupId: string, roleId: string) {
+	async assignRoleToUserGroup(groupId: string, roleIds: string[]) {
 		const client = this.getClient();
 		await client.assignRoleToUserGroup(
-			create(AssignRoleToUserGroupRequestSchema, { groupId, roleId })
+			create(AssignRoleToUserGroupRequestSchema, { groupId, roleIds })
 		);
 	}
 
@@ -1158,6 +1442,28 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.listUserGroupsForUser(
 			create(ListUserGroupsForUserRequestSchema, { userId })
+		);
+	}
+
+	async updateUserGroupQuery(id: string, isDynamic: boolean, dynamicQuery: string) {
+		const client = this.getClient();
+		const response = await client.updateUserGroupQuery(
+			create(UpdateUserGroupQueryRequestSchema, { id, isDynamic, dynamicQuery })
+		);
+		return response.group;
+	}
+
+	async validateUserGroupQuery(query: string) {
+		const client = this.getClient();
+		return client.validateUserGroupQuery(
+			create(ValidateUserGroupQueryRequestSchema, { query })
+		);
+	}
+
+	async evaluateDynamicUserGroup(id: string) {
+		const client = this.getClient();
+		return client.evaluateDynamicUserGroup(
+			create(EvaluateDynamicUserGroupRequestSchema, { id })
 		);
 	}
 
@@ -1301,6 +1607,83 @@ export class ApiClient {
 		const client = this.getClient();
 		return client.rotateSCIMToken(create(RotateSCIMTokenRequestSchema, { id }));
 	}
+
+	// Search
+	async search(
+		query: string,
+		scope: string = '',
+		pageSize: number = 50,
+		pageToken: string = '',
+		dateFilters?: Array<{ field: string; start: bigint; end: bigint }>,
+		tagFilters?: Record<string, string>
+	) {
+		const client = this.getClient();
+		const req: Record<string, unknown> = { query, scope, pageSize, pageToken };
+		if (dateFilters && dateFilters.length > 0) {
+			req.dateFilters = dateFilters.map((df) =>
+				create(SearchDateFilterSchema, { field: df.field, start: df.start, end: df.end })
+			);
+		}
+		if (tagFilters) {
+			req.tagFilters = tagFilters;
+		}
+		return client.search(create(SearchRequestSchema, req));
+	}
+
+	async rebuildSearchIndex() {
+		const client = this.getClient();
+		await client.rebuildSearchIndex(create(RebuildSearchIndexRequestSchema, {}));
+	}
+
+	// Server Settings
+	async getServerSettings() {
+		const client = this.getClient();
+		return client.getServerSettings(create(GetServerSettingsRequestSchema, {}));
+	}
+
+	async updateServerSettings(userProvisioningEnabled: boolean, sshAccessForAll: boolean) {
+		const client = this.getClient();
+		return client.updateServerSettings(create(UpdateServerSettingsRequestSchema, {
+			userProvisioningEnabled,
+			sshAccessForAll,
+		}));
+	}
+
+	// User Provisioning Per-User
+	async setUserProvisioningEnabled(userId: string, enabled: boolean) {
+		const client = this.getClient();
+		return client.setUserProvisioningEnabled(create(SetUserProvisioningEnabledRequestSchema, {
+			userId,
+			enabled,
+		}));
+	}
+}
+
+/**
+ * Extract the error code from a ConnectError's ErrorDetail, if present.
+ */
+export function getErrorCode(error: unknown): string | undefined {
+	if (error instanceof ConnectError) {
+		const details = error.findDetails(ErrorDetailSchema);
+		if (details.length > 0) {
+			return details[0].code;
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Extract the request ID from a ConnectError's ErrorDetail, if present.
+ * Users can report this ID to correlate with server-side logs.
+ */
+export function getRequestId(error: unknown): string | undefined {
+	if (error instanceof ConnectError) {
+		const details = error.findDetails(ErrorDetailSchema);
+		if (details.length > 0 && details[0].requestId) {
+			return details[0].requestId;
+		}
+	}
+	return undefined;
 }
 
 // Re-export types for convenience
@@ -1308,5 +1691,7 @@ export type {
 	User, Device, RegistrationToken, ManagedAction, ActionSet, Definition,
 	DeviceGroup, Assignment, ActionExecution, AuditEvent, InventoryTableResult,
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
-	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest
+	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
+	AvailableItem, DeviceAssignee, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
+	SearchResult, SshPublicKey, DeviceGroupMember, InheritedRole, ActionSetMember, DefinitionMember
 };

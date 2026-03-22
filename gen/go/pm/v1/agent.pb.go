@@ -211,6 +211,7 @@ type AgentMessage struct {
 	//	*AgentMessage_GetLuksKey
 	//	*AgentMessage_StoreLuksKey
 	//	*AgentMessage_RevokeLuksDeviceKeyResult
+	//	*AgentMessage_LogQueryResult
 	Payload       isAgentMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -350,6 +351,15 @@ func (x *AgentMessage) GetRevokeLuksDeviceKeyResult() *RevokeLuksDeviceKeyResult
 	return nil
 }
 
+func (x *AgentMessage) GetLogQueryResult() *LogQueryResult {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_LogQueryResult); ok {
+			return x.LogQueryResult
+		}
+	}
+	return nil
+}
+
 type isAgentMessage_Payload interface {
 	isAgentMessage_Payload()
 }
@@ -405,6 +415,12 @@ type AgentMessage_RevokeLuksDeviceKeyResult struct {
 	RevokeLuksDeviceKeyResult *RevokeLuksDeviceKeyResult `protobuf:"bytes,52,opt,name=revoke_luks_device_key_result,json=revokeLuksDeviceKeyResult,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_LogQueryResult struct {
+	// Log query result (journalctl output)
+	// @gotags: validate:"omitempty"
+	LogQueryResult *LogQueryResult `protobuf:"bytes,60,opt,name=log_query_result,json=logQueryResult,proto3,oneof" validate:"omitempty"`
+}
+
 func (*AgentMessage_Hello) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Heartbeat) isAgentMessage_Payload() {}
@@ -424,6 +440,8 @@ func (*AgentMessage_GetLuksKey) isAgentMessage_Payload() {}
 func (*AgentMessage_StoreLuksKey) isAgentMessage_Payload() {}
 
 func (*AgentMessage_RevokeLuksDeviceKeyResult) isAgentMessage_Payload() {}
+
+func (*AgentMessage_LogQueryResult) isAgentMessage_Payload() {}
 
 // Output chunk sent during action execution (Agent -> Server)
 type OutputChunk struct {
@@ -721,6 +739,7 @@ type ServerMessage struct {
 	//	*ServerMessage_GetLuksKey
 	//	*ServerMessage_StoreLuksKey
 	//	*ServerMessage_RevokeLuksDeviceKey
+	//	*ServerMessage_LogQuery
 	Payload       isServerMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -842,6 +861,15 @@ func (x *ServerMessage) GetRevokeLuksDeviceKey() *RevokeLuksDeviceKey {
 	return nil
 }
 
+func (x *ServerMessage) GetLogQuery() *LogQuery {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_LogQuery); ok {
+			return x.LogQuery
+		}
+	}
+	return nil
+}
+
 type isServerMessage_Payload interface {
 	isServerMessage_Payload()
 }
@@ -887,6 +915,12 @@ type ServerMessage_RevokeLuksDeviceKey struct {
 	RevokeLuksDeviceKey *RevokeLuksDeviceKey `protobuf:"bytes,52,opt,name=revoke_luks_device_key,json=revokeLuksDeviceKey,proto3,oneof" validate:"omitempty"`
 }
 
+type ServerMessage_LogQuery struct {
+	// Log query dispatch (journalctl)
+	// @gotags: validate:"omitempty"
+	LogQuery *LogQuery `protobuf:"bytes,60,opt,name=log_query,json=logQuery,proto3,oneof" validate:"omitempty"`
+}
+
 func (*ServerMessage_Welcome) isServerMessage_Payload() {}
 
 func (*ServerMessage_Action) isServerMessage_Payload() {}
@@ -903,14 +937,19 @@ func (*ServerMessage_StoreLuksKey) isServerMessage_Payload() {}
 
 func (*ServerMessage_RevokeLuksDeviceKey) isServerMessage_Payload() {}
 
+func (*ServerMessage_LogQuery) isServerMessage_Payload() {}
+
 type Welcome struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,min=1,max=32"
 	ServerVersion string `protobuf:"bytes,1,opt,name=server_version,json=serverVersion,proto3" json:"server_version,omitempty" validate:"required,min=1,max=32"`
 	// @gotags: validate:"omitempty"
 	HeartbeatInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=heartbeat_interval,json=heartbeatInterval,proto3" json:"heartbeat_interval,omitempty" validate:"omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Base URL for browser-based device login (configurable, defaults to built-in PM web app).
+	// Used by PAM module to open the OIDC login page for display manager sessions.
+	DeviceLoginUrl string `protobuf:"bytes,3,opt,name=device_login_url,json=deviceLoginUrl,proto3" json:"device_login_url,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Welcome) Reset() {
@@ -955,6 +994,13 @@ func (x *Welcome) GetHeartbeatInterval() *durationpb.Duration {
 		return x.HeartbeatInterval
 	}
 	return nil
+}
+
+func (x *Welcome) GetDeviceLoginUrl() string {
+	if x != nil {
+		return x.DeviceLoginUrl
+	}
+	return ""
 }
 
 type ActionDispatch struct {
@@ -2011,11 +2057,191 @@ func (x *SyncActionsResponse) GetSyncIntervalMinutes() int32 {
 	return 0
 }
 
+// Server -> Agent: request journalctl output
+type LogQuery struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	QueryId string `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,gte=0,lte=10000"
+	Lines int32 `protobuf:"varint,2,opt,name=lines,proto3" json:"lines,omitempty" validate:"omitempty,gte=0,lte=10000"`
+	// @gotags: validate:"omitempty,max=256"
+	Unit string `protobuf:"bytes,3,opt,name=unit,proto3" json:"unit,omitempty" validate:"omitempty,max=256"`
+	// @gotags: validate:"omitempty,max=64"
+	Since string `protobuf:"bytes,4,opt,name=since,proto3" json:"since,omitempty" validate:"omitempty,max=64"`
+	// @gotags: validate:"omitempty,max=64"
+	Until string `protobuf:"bytes,5,opt,name=until,proto3" json:"until,omitempty" validate:"omitempty,max=64"`
+	// @gotags: validate:"omitempty,max=32"
+	Priority string `protobuf:"bytes,6,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,max=32"`
+	// @gotags: validate:"omitempty,max=256"
+	Grep          string `protobuf:"bytes,7,opt,name=grep,proto3" json:"grep,omitempty" validate:"omitempty,max=256"`
+	Kernel        bool   `protobuf:"varint,8,opt,name=kernel,proto3" json:"kernel,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogQuery) Reset() {
+	*x = LogQuery{}
+	mi := &file_pm_v1_agent_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogQuery) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogQuery) ProtoMessage() {}
+
+func (x *LogQuery) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogQuery.ProtoReflect.Descriptor instead.
+func (*LogQuery) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *LogQuery) GetQueryId() string {
+	if x != nil {
+		return x.QueryId
+	}
+	return ""
+}
+
+func (x *LogQuery) GetLines() int32 {
+	if x != nil {
+		return x.Lines
+	}
+	return 0
+}
+
+func (x *LogQuery) GetUnit() string {
+	if x != nil {
+		return x.Unit
+	}
+	return ""
+}
+
+func (x *LogQuery) GetSince() string {
+	if x != nil {
+		return x.Since
+	}
+	return ""
+}
+
+func (x *LogQuery) GetUntil() string {
+	if x != nil {
+		return x.Until
+	}
+	return ""
+}
+
+func (x *LogQuery) GetPriority() string {
+	if x != nil {
+		return x.Priority
+	}
+	return ""
+}
+
+func (x *LogQuery) GetGrep() string {
+	if x != nil {
+		return x.Grep
+	}
+	return ""
+}
+
+func (x *LogQuery) GetKernel() bool {
+	if x != nil {
+		return x.Kernel
+	}
+	return false
+}
+
+// Agent -> Server: journalctl output result
+type LogQueryResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	QueryId string `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty" validate:"required,ulid"`
+	Success bool   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	// @gotags: validate:"omitempty,max=1024"
+	Error string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty" validate:"omitempty,max=1024"`
+	// Raw journalctl output (plain text)
+	Logs          string `protobuf:"bytes,4,opt,name=logs,proto3" json:"logs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogQueryResult) Reset() {
+	*x = LogQueryResult{}
+	mi := &file_pm_v1_agent_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogQueryResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogQueryResult) ProtoMessage() {}
+
+func (x *LogQueryResult) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogQueryResult.ProtoReflect.Descriptor instead.
+func (*LogQueryResult) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *LogQueryResult) GetQueryId() string {
+	if x != nil {
+		return x.QueryId
+	}
+	return ""
+}
+
+func (x *LogQueryResult) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *LogQueryResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *LogQueryResult) GetLogs() string {
+	if x != nil {
+		return x.Logs
+	}
+	return ""
+}
+
 var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\x90\x05\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xd3\x05\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
@@ -2029,7 +2255,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\fget_luks_key\x182 \x01(\v2\x18.pm.v1.GetLuksKeyRequestH\x00R\n" +
 	"getLuksKey\x12B\n" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1a.pm.v1.StoreLuksKeyRequestH\x00R\fstoreLuksKey\x12d\n" +
-	"\x1drevoke_luks_device_key_result\x184 \x01(\v2 .pm.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResultB\t\n" +
+	"\x1drevoke_luks_device_key_result\x184 \x01(\v2 .pm.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResult\x12A\n" +
+	"\x10log_query_result\x18< \x01(\v2\x15.pm.v1.LogQueryResultH\x00R\x0elogQueryResultB\t\n" +
 	"\apayload\"\x91\x01\n" +
 	"\vOutputChunk\x12!\n" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12/\n" +
@@ -2054,7 +2281,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\adetails\x18\x03 \x03(\v2!.pm.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf4\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa4\x04\n" +
 	"\rServerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\awelcome\x18\n" +
@@ -2066,11 +2293,13 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\fget_luks_key\x182 \x01(\v2\x19.pm.v1.GetLuksKeyResponseH\x00R\n" +
 	"getLuksKey\x12C\n" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
-	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKeyB\t\n" +
-	"\apayload\"z\n" +
+	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12.\n" +
+	"\tlog_query\x18< \x01(\v2\x0f.pm.v1.LogQueryH\x00R\blogQueryB\t\n" +
+	"\apayload\"\xa4\x01\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
-	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"7\n" +
+	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\x12(\n" +
+	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrl\"7\n" +
 	"\x0eActionDispatch\x12%\n" +
 	"\x06action\x18\x01 \x01(\v2\r.pm.v1.ActionR\x06action\"5\n" +
 	"\x05Error\x12\x12\n" +
@@ -2143,7 +2372,21 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\"r\n" +
 	"\x13SyncActionsResponse\x12'\n" +
 	"\aactions\x18\x01 \x03(\v2\r.pm.v1.ActionR\aactions\x122\n" +
-	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes*t\n" +
+	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\"\xc3\x01\n" +
+	"\bLogQuery\x12\x19\n" +
+	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
+	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
+	"\x04unit\x18\x03 \x01(\tR\x04unit\x12\x14\n" +
+	"\x05since\x18\x04 \x01(\tR\x05since\x12\x14\n" +
+	"\x05until\x18\x05 \x01(\tR\x05until\x12\x1a\n" +
+	"\bpriority\x18\x06 \x01(\tR\bpriority\x12\x12\n" +
+	"\x04grep\x18\a \x01(\tR\x04grep\x12\x16\n" +
+	"\x06kernel\x18\b \x01(\bR\x06kernel\"o\n" +
+	"\x0eLogQueryResult\x12\x19\n" +
+	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12\x12\n" +
+	"\x04logs\x18\x04 \x01(\tR\x04logs*t\n" +
 	"\x10OutputStreamType\x12\"\n" +
 	"\x1eOUTPUT_STREAM_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19OUTPUT_STREAM_TYPE_STDOUT\x10\x01\x12\x1d\n" +
@@ -2181,7 +2424,7 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),             // 0: pm.v1.OutputStreamType
 	(SecurityAlertType)(0),            // 1: pm.v1.SecurityAlertType
@@ -2212,18 +2455,20 @@ var file_pm_v1_agent_proto_goTypes = []any{
 	(*ValidateLuksTokenResponse)(nil), // 26: pm.v1.ValidateLuksTokenResponse
 	(*SyncActionsRequest)(nil),        // 27: pm.v1.SyncActionsRequest
 	(*SyncActionsResponse)(nil),       // 28: pm.v1.SyncActionsResponse
-	nil,                               // 29: pm.v1.SecurityAlert.DetailsEntry
-	nil,                               // 30: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),              // 31: pm.v1.ActionResult
-	(*DeviceId)(nil),                  // 32: pm.v1.DeviceId
-	(*durationpb.Duration)(nil),       // 33: google.protobuf.Duration
-	(*Action)(nil),                    // 34: pm.v1.Action
-	(LpsPasswordComplexity)(0),        // 35: pm.v1.LpsPasswordComplexity
+	(*LogQuery)(nil),                  // 29: pm.v1.LogQuery
+	(*LogQueryResult)(nil),            // 30: pm.v1.LogQueryResult
+	nil,                               // 31: pm.v1.SecurityAlert.DetailsEntry
+	nil,                               // 32: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),              // 33: pm.v1.ActionResult
+	(*DeviceId)(nil),                  // 34: pm.v1.DeviceId
+	(*durationpb.Duration)(nil),       // 35: google.protobuf.Duration
+	(*Action)(nil),                    // 36: pm.v1.Action
+	(LpsPasswordComplexity)(0),        // 37: pm.v1.LpsPasswordComplexity
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
 	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	31, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	33, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
 	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
 	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
 	16, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
@@ -2231,41 +2476,43 @@ var file_pm_v1_agent_proto_depIdxs = []int32{
 	19, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
 	21, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
 	24, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
-	0,  // 10: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	32, // 11: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	33, // 12: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	1,  // 13: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	29, // 14: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
-	9,  // 15: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	10, // 16: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	12, // 17: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	18, // 18: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
-	11, // 19: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	20, // 20: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
-	22, // 21: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
-	23, // 22: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
-	33, // 23: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	34, // 24: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
-	13, // 25: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
-	2,  // 26: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	15, // 27: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	30, // 28: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	17, // 29: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
-	15, // 30: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
-	35, // 31: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	32, // 32: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	34, // 33: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
-	3,  // 34: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	27, // 35: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	25, // 36: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	8,  // 37: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	28, // 38: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	26, // 39: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	37, // [37:40] is the sub-list for method output_type
-	34, // [34:37] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	30, // 10: pm.v1.AgentMessage.log_query_result:type_name -> pm.v1.LogQueryResult
+	0,  // 11: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
+	34, // 12: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	35, // 13: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 14: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
+	31, // 15: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	9,  // 16: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	10, // 17: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	12, // 18: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	18, // 19: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
+	11, // 20: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	20, // 21: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
+	22, // 22: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
+	23, // 23: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
+	29, // 24: pm.v1.ServerMessage.log_query:type_name -> pm.v1.LogQuery
+	35, // 25: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	36, // 26: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	13, // 27: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	2,  // 28: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
+	15, // 29: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	32, // 30: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	17, // 31: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
+	15, // 32: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
+	37, // 33: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	34, // 34: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	36, // 35: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 36: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	27, // 37: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	25, // 38: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	8,  // 39: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	28, // 40: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	26, // 41: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	39, // [39:42] is the sub-list for method output_type
+	36, // [36:39] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -2286,6 +2533,7 @@ func file_pm_v1_agent_proto_init() {
 		(*AgentMessage_GetLuksKey)(nil),
 		(*AgentMessage_StoreLuksKey)(nil),
 		(*AgentMessage_RevokeLuksDeviceKeyResult)(nil),
+		(*AgentMessage_LogQueryResult)(nil),
 	}
 	file_pm_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
@@ -2296,6 +2544,7 @@ func file_pm_v1_agent_proto_init() {
 		(*ServerMessage_GetLuksKey)(nil),
 		(*ServerMessage_StoreLuksKey)(nil),
 		(*ServerMessage_RevokeLuksDeviceKey)(nil),
+		(*ServerMessage_LogQuery)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2303,7 +2552,7 @@ func file_pm_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   28,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
