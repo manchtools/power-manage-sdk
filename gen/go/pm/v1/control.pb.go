@@ -1231,9 +1231,9 @@ type VerifyLoginTOTPRequest struct {
 	// Short-lived challenge token from LoginResponse.totp_challenge.
 	// @gotags: validate:"required"
 	Challenge string `protobuf:"bytes,1,opt,name=challenge,proto3" json:"challenge,omitempty" validate:"required"`
-	// 6-digit TOTP code or 8-character backup code.
-	// @gotags: validate:"required,min=6,max=8"
-	Code          string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty" validate:"required,min=6,max=8"`
+	// 6-digit TOTP code or 16-character backup code.
+	// @gotags: validate:"required,min=6,max=16"
+	Code          string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty" validate:"required,min=6,max=16"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

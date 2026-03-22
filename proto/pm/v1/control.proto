@@ -169,8 +169,8 @@ message VerifyLoginTOTPRequest {
   // Short-lived challenge token from LoginResponse.totp_challenge.
   // @gotags: validate:"required"
   string challenge = 1;
-  // 6-digit TOTP code or 8-character backup code.
-  // @gotags: validate:"required,min=6,max=8"
+  // 6-digit TOTP code or 16-character backup code.
+  // @gotags: validate:"required,min=6,max=16"
   string code = 2;
 }
 

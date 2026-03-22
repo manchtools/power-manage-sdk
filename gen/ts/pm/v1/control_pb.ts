@@ -582,8 +582,8 @@ export type VerifyLoginTOTPRequest = Message<"pm.v1.VerifyLoginTOTPRequest"> & {
   challenge: string;
 
   /**
-   * 6-digit TOTP code or 8-character backup code.
-   * @gotags: validate:"required,min=6,max=8"
+   * 6-digit TOTP code or 16-character backup code.
+   * @gotags: validate:"required,min=6,max=16"
    *
    * @generated from field: string code = 2;
    */
