@@ -53,7 +53,7 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 	c := cmd.NewCmdOptions(cmd.Options{
 		Buffered:       false,
 		Streaming:      true,
-		LineBufferSize: MaxOutputBytes,
+		LineBufferSize: 4 * MaxOutputBytes,
 	}, name, args...)
 
 	if dir != "" {
