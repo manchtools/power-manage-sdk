@@ -7,10 +7,12 @@ Shared protocol definitions, generated code, and client libraries for Power Mana
 ```
 sdk/
 ├── proto/pm/v1/           Protocol Buffer source definitions
-│   ├── common.proto         Base types, enums, identifiers
+│   ├── common.proto         Base types, enums, error codes
 │   ├── actions.proto        Action types, parameters, scheduling
 │   ├── agent.proto          Bidirectional streaming (Agent ↔ Gateway)
-│   └── control.proto        Control API (136 RPCs)
+│   ├── control.proto        Control API (136 RPCs)
+│   ├── device_auth.proto    Agent enrollment via local unix socket
+│   └── internal.proto       Gateway-to-control proxy for credential operations
 │
 ├── gen/go/pm/v1/           Generated Go code (protobuf + Connect RPC)
 │   ├── *.pb.go               Message types with injected validation tags
@@ -18,17 +20,33 @@ sdk/
 │
 ├── go/
 │   ├── client.go            Agent streaming client (mTLS, heartbeat, action dispatch)
+│   ├── crypto/              CSR generation and certificate utilities
+│   ├── logging/             Structured logging setup (slog)
 │   ├── pkg/                 Package manager abstraction library
 │   │   ├── apt.go             APT (Debian/Ubuntu)
 │   │   ├── dnf.go             DNF (Fedora/RHEL)
 │   │   ├── pacman.go          Pacman (Arch Linux)
 │   │   ├── zypper.go          Zypper (openSUSE)
 │   │   └── flatpak.go         Flatpak (cross-distro)
-│   └── sys/                 Linux system management libraries
-│       ├── exec/              Command execution (sudo, streaming, queries)
-│       ├── fs/                Filesystem operations (read, write, atomic, permissions)
-│       ├── user/              User & group management, password generation
-│       └── systemd/           Systemd unit management
+│   ├── sys/                 Linux system management libraries
+│   │   ├── exec/              Command execution (sudo, streaming, queries)
+│   │   ├── fs/                Filesystem operations (read, write, atomic, permissions)
+│   │   ├── luks/              LUKS disk encryption utilities
+│   │   ├── notify/            Desktop notification utilities
+│   │   ├── osquery/           osquery integration (lazy-init, system queries)
+│   │   ├── systemd/           Systemd unit management
+│   │   └── user/              User & group management, password generation
+│   ├── validate/            Input validation (paths, env vars, usernames)
+│   └── verify/              Action payload signature verification
+│
+├── ts/                      TypeScript SDK (framework-agnostic browser utilities)
+│   ├── client.ts              Connect-RPC client with all API methods
+│   ├── auth.ts                JWT token management, persistent auth storage
+│   ├── errors.ts              Error code extraction from Connect-RPC errors
+│   ├── action-types.ts        Action type constants and display helpers
+│   ├── config.ts              Configuration utilities
+│   ├── offline.ts             Offline support utilities
+│   └── index.ts               Package exports
 │
 ├── test/                    Integration test infrastructure
 │   ├── Dockerfile.integration  Test container (systemd + sudo)
@@ -39,14 +57,16 @@ sdk/
 
 ## Proto Definitions
 
-Four proto files define the entire API surface:
+Six proto files define the entire API surface:
 
 | File | Purpose |
 |------|---------|
-| `common.proto` | ULID identifiers, execution status, assignment modes |
-| `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, reboot, sync, user, group, luks), parameters, scheduling |
-| `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries |
-| `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, and more |
+| `common.proto` | ULID identifiers, execution status, assignment modes, error detail codes |
+| `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, user, group, ssh, sshd, sudo, lps, luks), parameters, scheduling |
+| `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries |
+| `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, and more |
+| `device_auth.proto` | `DeviceAuthService` — agent enrollment via local unix socket |
+| `internal.proto` | `InternalService` — gateway-to-control proxy for credential-bearing operations (LUKS keys, LPS passwords) |
 
 ## Go SDK
 
@@ -138,6 +158,24 @@ password, err := user.GeneratePassword(24, true)  // 24 chars, complex
 err := user.SetPassword(ctx, "deploy", password)
 ```
 
+#### `sys/osquery` — OS Query Integration
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/sys/osquery"
+
+oq := osquery.New()                                // lazy-init, detects installs without restart
+rows, err := oq.Query(ctx, "os_version", nil, 0)   // query a table
+```
+
+#### `sys/luks` — LUKS Disk Encryption
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/sys/luks"
+
+device, err := luks.DetectPrimaryVolume()           // auto-detect LUKS volume
+err := luks.AddKey(ctx, device, existingKey, newKey, slot)
+```
+
 #### `sys/systemd` — Systemd Unit Management
 
 ```go
@@ -147,6 +185,30 @@ status := systemd.Status("nginx.service")    // {Enabled, Active, Masked, Static
 err := systemd.EnableNow(ctx, "nginx.service")
 err := systemd.WriteUnit(ctx, "myapp.service", unitContent)
 err := systemd.DaemonReload(ctx)
+```
+
+### Action Signature Verification
+
+`go/verify/` provides action payload signature verification for agents:
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/verify"
+
+signer := verify.NewActionSigner(caKey)        // server-side signing
+verifier := verify.NewActionVerifier(caCert)   // agent-side verification
+err := verifier.Verify(action)                 // verify action signature
+```
+
+### Input Validation
+
+`go/validate/` provides security-focused input validation:
+
+```go
+import "github.com/manchtools/power-manage/sdk/go/validate"
+
+err := validate.Path("/etc/nginx/nginx.conf")    // path traversal prevention
+err := validate.Username("deploy")                // username safety
+err := validate.EnvVars(envMap)                   // environment variable blocklist
 ```
 
 ### Running SDK Tests
@@ -161,9 +223,18 @@ This builds a test image, boots systemd, and runs all tests as a non-root user w
 
 ## TypeScript SDK
 
-Generated TypeScript types for the web frontend. The release includes a pre-built tarball of the generated files.
+The `ts/` directory contains framework-agnostic browser utilities used by the web frontend:
 
-Generation uses [Buf](https://buf.build/) with `protoc-gen-es`:
+| File | Purpose |
+|------|---------|
+| `client.ts` | Connect-RPC client wrapping all 136 ControlService RPCs |
+| `auth.ts` | JWT token management with persistent auth storage ("keep me signed in") |
+| `errors.ts` | Error code extraction from `ConnectError` details (`getErrorCode()`) |
+| `action-types.ts` | Action type constants, display names, and icon mappings |
+| `config.ts` | Configuration utilities |
+| `offline.ts` | Offline support utilities |
+
+Generated TypeScript types (protobuf messages) are produced separately via Buf:
 
 ```bash
 cd ../web && npx buf generate   # outputs to web/src/lib/gen/pm/v1/
