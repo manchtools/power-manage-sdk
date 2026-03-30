@@ -1641,11 +1641,12 @@ export class ApiClient {
 		return client.getServerSettings(create(GetServerSettingsRequestSchema, {}));
 	}
 
-	async updateServerSettings(userProvisioningEnabled: boolean, sshAccessForAll: boolean) {
+	async updateServerSettings(userProvisioningEnabled: boolean, sshAccessForAll: boolean, autoUpdateAgents: boolean) {
 		const client = this.getClient();
 		return client.updateServerSettings(create(UpdateServerSettingsRequestSchema, {
 			userProvisioningEnabled,
 			sshAccessForAll,
+			autoUpdateAgents,
 		}));
 	}
 

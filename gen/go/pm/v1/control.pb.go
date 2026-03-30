@@ -19649,6 +19649,7 @@ type ServerSettings struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	UserProvisioningEnabled bool                   `protobuf:"varint,1,opt,name=user_provisioning_enabled,json=userProvisioningEnabled,proto3" json:"user_provisioning_enabled,omitempty"`
 	SshAccessForAll         bool                   `protobuf:"varint,2,opt,name=ssh_access_for_all,json=sshAccessForAll,proto3" json:"ssh_access_for_all,omitempty"`
+	AutoUpdateAgents        bool                   `protobuf:"varint,3,opt,name=auto_update_agents,json=autoUpdateAgents,proto3" json:"auto_update_agents,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -19693,6 +19694,13 @@ func (x *ServerSettings) GetUserProvisioningEnabled() bool {
 func (x *ServerSettings) GetSshAccessForAll() bool {
 	if x != nil {
 		return x.SshAccessForAll
+	}
+	return false
+}
+
+func (x *ServerSettings) GetAutoUpdateAgents() bool {
+	if x != nil {
+		return x.AutoUpdateAgents
 	}
 	return false
 }
@@ -19781,6 +19789,7 @@ type UpdateServerSettingsRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	UserProvisioningEnabled bool                   `protobuf:"varint,1,opt,name=user_provisioning_enabled,json=userProvisioningEnabled,proto3" json:"user_provisioning_enabled,omitempty"`
 	SshAccessForAll         bool                   `protobuf:"varint,2,opt,name=ssh_access_for_all,json=sshAccessForAll,proto3" json:"ssh_access_for_all,omitempty"`
+	AutoUpdateAgents        bool                   `protobuf:"varint,3,opt,name=auto_update_agents,json=autoUpdateAgents,proto3" json:"auto_update_agents,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -19825,6 +19834,13 @@ func (x *UpdateServerSettingsRequest) GetUserProvisioningEnabled() bool {
 func (x *UpdateServerSettingsRequest) GetSshAccessForAll() bool {
 	if x != nil {
 		return x.SshAccessForAll
+	}
+	return false
+}
+
+func (x *UpdateServerSettingsRequest) GetAutoUpdateAgents() bool {
+	if x != nil {
+		return x.AutoUpdateAgents
 	}
 	return false
 }
@@ -21343,16 +21359,18 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"\x1b\n" +
 	"\x19RebuildSearchIndexRequest\"\x1c\n" +
-	"\x1aRebuildSearchIndexResponse\"y\n" +
+	"\x1aRebuildSearchIndexResponse\"\xa7\x01\n" +
 	"\x0eServerSettings\x12:\n" +
 	"\x19user_provisioning_enabled\x18\x01 \x01(\bR\x17userProvisioningEnabled\x12+\n" +
-	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAll\"\x1a\n" +
+	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAll\x12,\n" +
+	"\x12auto_update_agents\x18\x03 \x01(\bR\x10autoUpdateAgents\"\x1a\n" +
 	"\x18GetServerSettingsRequest\"N\n" +
 	"\x19GetServerSettingsResponse\x121\n" +
-	"\bsettings\x18\x01 \x01(\v2\x15.pm.v1.ServerSettingsR\bsettings\"\x86\x01\n" +
+	"\bsettings\x18\x01 \x01(\v2\x15.pm.v1.ServerSettingsR\bsettings\"\xb4\x01\n" +
 	"\x1bUpdateServerSettingsRequest\x12:\n" +
 	"\x19user_provisioning_enabled\x18\x01 \x01(\bR\x17userProvisioningEnabled\x12+\n" +
-	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAll\"Q\n" +
+	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAll\x12,\n" +
+	"\x12auto_update_agents\x18\x03 \x01(\bR\x10autoUpdateAgents\"Q\n" +
 	"\x1cUpdateServerSettingsResponse\x121\n" +
 	"\bsettings\x18\x01 \x01(\v2\x15.pm.v1.ServerSettingsR\bsettings\"V\n" +
 	"!SetUserProvisioningEnabledRequest\x12\x17\n" +
