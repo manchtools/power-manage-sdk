@@ -93,6 +93,8 @@ message Hello {
   string hostname = 3;
   // @gotags: validate:"omitempty,max=4096"
   string auth_token = 4;
+  // @gotags: validate:"omitempty,max=16"
+  string arch = 5;
 }
 
 message Heartbeat {
@@ -172,6 +174,15 @@ message Welcome {
   // Base URL for browser-based device login (configurable, defaults to built-in PM web app).
   // Used by PAM module to open the OIDC login page for display manager sessions.
   string device_login_url = 3;
+  // Auto-update: latest available agent release version (from GitHub)
+  // @gotags: validate:"omitempty,max=32"
+  string latest_agent_version = 4;
+  // Auto-update: download URL for the agent binary (empty = no update needed)
+  // @gotags: validate:"omitempty,max=512"
+  string update_url = 5;
+  // Auto-update: SHA-256 hex checksum of the agent binary
+  // @gotags: validate:"omitempty,len=64"
+  string update_checksum = 6;
 }
 
 message ActionDispatch {

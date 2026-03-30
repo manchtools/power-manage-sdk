@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -375,6 +376,7 @@ func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) e
 				AgentVersion: agentVersion,
 				Hostname:     hostname,
 				AuthToken:    authToken,
+				Arch:         runtime.GOARCH,
 			},
 		},
 	})

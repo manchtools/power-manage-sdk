@@ -2364,6 +2364,7 @@ message RebuildSearchIndexResponse {}
 message ServerSettings {
   bool user_provisioning_enabled = 1;
   bool ssh_access_for_all = 2;
+  bool auto_update_agents = 3;
 }
 
 message GetServerSettingsRequest {}
@@ -2374,6 +2375,7 @@ message GetServerSettingsResponse {
 message UpdateServerSettingsRequest {
   bool user_provisioning_enabled = 1;
   bool ssh_access_for_all = 2;
+  bool auto_update_agents = 3;
 }
 message UpdateServerSettingsResponse {
   ServerSettings settings = 1;
