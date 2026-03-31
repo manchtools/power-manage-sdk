@@ -171,6 +171,8 @@ import {
 	UpdateServerSettingsRequestSchema,
 	// User Provisioning
 	SetUserProvisioningEnabledRequestSchema,
+	// Agent Update
+	TriggerAgentUpdateRequestSchema,
 	type SearchResult,
 	// Compliance
 	GetDeviceComplianceRequestSchema,
@@ -1657,6 +1659,14 @@ export class ApiClient {
 			userId,
 			enabled,
 		}));
+	}
+
+	async triggerAgentUpdate(deviceIds: string[]) {
+		const client = this.getClient();
+		const response = await client.triggerAgentUpdate(
+			create(TriggerAgentUpdateRequestSchema, { deviceIds })
+		);
+		return response.triggeredCount;
 	}
 }
 
