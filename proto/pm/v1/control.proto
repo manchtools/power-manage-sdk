@@ -2391,6 +2391,17 @@ message SetUserProvisioningEnabledRequest {
   bool enabled = 2;
 }
 
+// --- Agent Update Trigger ---
+
+message TriggerAgentUpdateRequest {
+  // @gotags: validate:"required,min=1,dive,ulid"
+  repeated string device_ids = 1;
+}
+
+message TriggerAgentUpdateResponse {
+  int32 triggered_count = 1;
+}
+
 // ============================================================================
 // Service Definition
 // ============================================================================
@@ -2606,4 +2617,7 @@ service ControlService {
 
   // User Provisioning Per-User
   rpc SetUserProvisioningEnabled(SetUserProvisioningEnabledRequest) returns (UpdateUserResponse);
+
+  // Agent Update
+  rpc TriggerAgentUpdate(TriggerAgentUpdateRequest) returns (TriggerAgentUpdateResponse);
 }
