@@ -63,10 +63,10 @@ Six proto files define the entire API surface:
 |------|---------|
 | `common.proto` | ULID identifiers, execution status, assignment modes, error detail codes |
 | `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, user, group, ssh, sshd, sudo, lps, luks), parameters, scheduling |
-| `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries |
-| `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, and more |
+| `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries. Hello includes `arch` for platform detection. Welcome includes auto-update fields (`latest_agent_version`, `update_url`, `update_checksum`). |
+| `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, server settings (including `auto_update_agents`), and more |
 | `device_auth.proto` | `DeviceAuthService` — agent enrollment via local unix socket |
-| `internal.proto` | `InternalService` — gateway-to-control proxy for credential-bearing operations (LUKS keys, LPS passwords) |
+| `internal.proto` | `InternalService` — gateway-to-control proxy for credential-bearing operations (LUKS keys, LPS passwords) and agent auto-update info |
 
 ## Go SDK
 

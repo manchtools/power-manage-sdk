@@ -1,0 +1,31 @@
+language: en
+reviews:
+  auto_review:
+    enabled: true
+  profile: chill
+  path_instructions:
+    - path: "proto/pm/v1/*.proto"
+      instructions: >
+        Protobuf definitions shared across all components. Check for backward
+        compatibility (no removed/renumbered fields), proper field numbering,
+        and validate tags. Changes here require regeneration (make generate).
+    - path: "ts/client.ts"
+      instructions: >
+        TypeScript SDK client used by the web frontend. Methods must match
+        the proto RPC definitions. Return types should unwrap response messages
+        to return the inner field directly.
+    - path: "gen/**"
+      instructions: >
+        Auto-generated code. Do not review for style or suggest changes.
+        Only flag if generated output looks corrupted or inconsistent with
+        the proto definitions.
+  tools:
+    golangci-lint:
+      enabled: true
+knowledge_base:
+  learnings:
+    scope: auto
+  linked_repositories:
+    - repository: manchtools/power-manage-server
+    - repository: manchtools/power-manage-agent
+    - repository: manchtools/power-manage-web

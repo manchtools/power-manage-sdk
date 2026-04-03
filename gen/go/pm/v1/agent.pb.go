@@ -525,7 +525,9 @@ type Hello struct {
 	// @gotags: validate:"required,min=1,max=253"
 	Hostname string `protobuf:"bytes,3,opt,name=hostname,proto3" json:"hostname,omitempty" validate:"required,min=1,max=253"`
 	// @gotags: validate:"omitempty,max=4096"
-	AuthToken     string `protobuf:"bytes,4,opt,name=auth_token,json=authToken,proto3" json:"auth_token,omitempty" validate:"omitempty,max=4096"`
+	AuthToken string `protobuf:"bytes,4,opt,name=auth_token,json=authToken,proto3" json:"auth_token,omitempty" validate:"omitempty,max=4096"`
+	// @gotags: validate:"omitempty,max=16"
+	Arch          string `protobuf:"bytes,5,opt,name=arch,proto3" json:"arch,omitempty" validate:"omitempty,max=16"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -584,6 +586,13 @@ func (x *Hello) GetHostname() string {
 func (x *Hello) GetAuthToken() string {
 	if x != nil {
 		return x.AuthToken
+	}
+	return ""
+}
+
+func (x *Hello) GetArch() string {
+	if x != nil {
+		return x.Arch
 	}
 	return ""
 }
@@ -948,6 +957,15 @@ type Welcome struct {
 	// Base URL for browser-based device login (configurable, defaults to built-in PM web app).
 	// Used by PAM module to open the OIDC login page for display manager sessions.
 	DeviceLoginUrl string `protobuf:"bytes,3,opt,name=device_login_url,json=deviceLoginUrl,proto3" json:"device_login_url,omitempty"`
+	// Auto-update: latest available agent release version (from GitHub)
+	// @gotags: validate:"omitempty,max=32"
+	LatestAgentVersion string `protobuf:"bytes,4,opt,name=latest_agent_version,json=latestAgentVersion,proto3" json:"latest_agent_version,omitempty" validate:"omitempty,max=32"`
+	// Auto-update: download URL for the agent binary (empty = no update needed)
+	// @gotags: validate:"omitempty,max=512"
+	UpdateUrl string `protobuf:"bytes,5,opt,name=update_url,json=updateUrl,proto3" json:"update_url,omitempty" validate:"omitempty,max=512"`
+	// Auto-update: SHA-256 hex checksum of the agent binary
+	// @gotags: validate:"omitempty,len=64"
+	UpdateChecksum string `protobuf:"bytes,6,opt,name=update_checksum,json=updateChecksum,proto3" json:"update_checksum,omitempty" validate:"omitempty,len=64"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -999,6 +1017,27 @@ func (x *Welcome) GetHeartbeatInterval() *durationpb.Duration {
 func (x *Welcome) GetDeviceLoginUrl() string {
 	if x != nil {
 		return x.DeviceLoginUrl
+	}
+	return ""
+}
+
+func (x *Welcome) GetLatestAgentVersion() string {
+	if x != nil {
+		return x.LatestAgentVersion
+	}
+	return ""
+}
+
+func (x *Welcome) GetUpdateUrl() string {
+	if x != nil {
+		return x.UpdateUrl
+	}
+	return ""
+}
+
+func (x *Welcome) GetUpdateChecksum() string {
+	if x != nil {
+		return x.UpdateChecksum
 	}
 	return ""
 }
@@ -2262,13 +2301,14 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12/\n" +
 	"\x06stream\x18\x02 \x01(\x0e2\x17.pm.v1.OutputStreamTypeR\x06stream\x12\x12\n" +
 	"\x04data\x18\x03 \x01(\fR\x04data\x12\x1a\n" +
-	"\bsequence\x18\x04 \x01(\x03R\bsequence\"\x95\x01\n" +
+	"\bsequence\x18\x04 \x01(\x03R\bsequence\"\xa9\x01\n" +
 	"\x05Hello\x12,\n" +
 	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12#\n" +
 	"\ragent_version\x18\x02 \x01(\tR\fagentVersion\x12\x1a\n" +
 	"\bhostname\x18\x03 \x01(\tR\bhostname\x12\x1d\n" +
 	"\n" +
-	"auth_token\x18\x04 \x01(\tR\tauthToken\"\xa9\x01\n" +
+	"auth_token\x18\x04 \x01(\tR\tauthToken\x12\x12\n" +
+	"\x04arch\x18\x05 \x01(\tR\x04arch\"\xa9\x01\n" +
 	"\tHeartbeat\x121\n" +
 	"\x06uptime\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x06uptime\x12\x1f\n" +
 	"\vcpu_percent\x18\x02 \x01(\x02R\n" +
@@ -2295,11 +2335,15 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
 	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12.\n" +
 	"\tlog_query\x18< \x01(\v2\x0f.pm.v1.LogQueryH\x00R\blogQueryB\t\n" +
-	"\apayload\"\xa4\x01\n" +
+	"\apayload\"\x9e\x02\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
 	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\x12(\n" +
-	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrl\"7\n" +
+	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrl\x120\n" +
+	"\x14latest_agent_version\x18\x04 \x01(\tR\x12latestAgentVersion\x12\x1d\n" +
+	"\n" +
+	"update_url\x18\x05 \x01(\tR\tupdateUrl\x12'\n" +
+	"\x0fupdate_checksum\x18\x06 \x01(\tR\x0eupdateChecksum\"7\n" +
 	"\x0eActionDispatch\x12%\n" +
 	"\x06action\x18\x01 \x01(\v2\r.pm.v1.ActionR\x06action\"5\n" +
 	"\x05Error\x12\x12\n" +
