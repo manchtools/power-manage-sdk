@@ -103,6 +103,10 @@ message GetAutoUpdateInfoRequest {
   // Agent architecture: "amd64" or "arm64"
   // @gotags: validate:"required,oneof=amd64 arm64"
   string agent_arch = 1;
+  // When true, skip the auto_update_agents settings check.
+  // Used by manual TriggerAgentUpdate to allow updates even when
+  // the global auto-update toggle is disabled.
+  bool force = 2;
 }
 
 // GetAutoUpdateInfoResponse contains the latest agent release info.

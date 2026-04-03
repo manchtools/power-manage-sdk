@@ -506,7 +506,11 @@ type GetAutoUpdateInfoRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Agent architecture: "amd64" or "arm64"
 	// @gotags: validate:"required,oneof=amd64 arm64"
-	AgentArch     string `protobuf:"bytes,1,opt,name=agent_arch,json=agentArch,proto3" json:"agent_arch,omitempty" validate:"required,oneof=amd64 arm64"`
+	AgentArch string `protobuf:"bytes,1,opt,name=agent_arch,json=agentArch,proto3" json:"agent_arch,omitempty" validate:"required,oneof=amd64 arm64"`
+	// When true, skip the auto_update_agents settings check.
+	// Used by manual TriggerAgentUpdate to allow updates even when
+	// the global auto-update toggle is disabled.
+	Force         bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -546,6 +550,13 @@ func (x *GetAutoUpdateInfoRequest) GetAgentArch() string {
 		return x.AgentArch
 	}
 	return ""
+}
+
+func (x *GetAutoUpdateInfoRequest) GetForce() bool {
+	if x != nil {
+		return x.Force
+	}
+	return false
 }
 
 // GetAutoUpdateInfoResponse contains the latest agent release info.
@@ -648,10 +659,11 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"!InternalStoreLpsPasswordsResponse\"2\n" +
 	"\x13VerifyDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
-	"\x14VerifyDeviceResponse\"9\n" +
+	"\x14VerifyDeviceResponse\"O\n" +
 	"\x18GetAutoUpdateInfoRequest\x12\x1d\n" +
 	"\n" +
-	"agent_arch\x18\x01 \x01(\tR\tagentArch\"\x95\x01\n" +
+	"agent_arch\x18\x01 \x01(\tR\tagentArch\x12\x14\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\"\x95\x01\n" +
 	"\x19GetAutoUpdateInfoResponse\x120\n" +
 	"\x14latest_agent_version\x18\x01 \x01(\tR\x12latestAgentVersion\x12\x1d\n" +
 	"\n" +
