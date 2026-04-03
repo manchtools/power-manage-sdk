@@ -1855,9 +1855,9 @@ func (x *DnfRepository) GetDisabled() bool {
 // PacmanRepository configures an Arch Linux pacman repository.
 type PacmanRepository struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Server URL (can include $repo and $arch variables)
-	// @gotags: validate:"required_without=Disabled,omitempty,url"
-	Server string `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty" validate:"required_without=Disabled,omitempty,url"`
+	// Server URL (supports pacman variables like $repo and $arch)
+	// @gotags: validate:"required_without=Disabled,omitempty"
+	Server string `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty" validate:"required_without=Disabled,omitempty"`
 	// SigLevel (e.g., "Optional TrustAll", "Required DatabaseOptional")
 	// @gotags: validate:"omitempty,max=128"
 	SigLevel string `protobuf:"bytes,2,opt,name=sig_level,json=sigLevel,proto3" json:"sig_level,omitempty" validate:"omitempty,max=128"`
