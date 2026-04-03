@@ -795,8 +795,8 @@ export const AptRepositorySchema: GenMessage<AptRepository> = /*@__PURE__*/
  */
 export type DnfRepository = Message<"pm.v1.DnfRepository"> & {
   /**
-   * Base URL for the repository
-   * @gotags: validate:"required_without=Disabled,omitempty,url"
+   * Base URL for the repository (supports DNF variables like $releasever and $basearch)
+   * @gotags: validate:"required_without=Disabled,omitempty"
    *
    * @generated from field: string baseurl = 1;
    */
