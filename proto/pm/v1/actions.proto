@@ -336,8 +336,8 @@ message AptRepository {
 
 // DnfRepository configures a Fedora/RHEL DNF/YUM repository.
 message DnfRepository {
-  // Base URL for the repository
-  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  // Base URL for the repository (supports DNF variables like $releasever and $basearch)
+  // @gotags: validate:"required_without=Disabled,omitempty"
   string baseurl = 1;
 
   // Repository description

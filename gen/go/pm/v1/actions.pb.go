@@ -1748,9 +1748,9 @@ func (x *AptRepository) GetDisabled() bool {
 // DnfRepository configures a Fedora/RHEL DNF/YUM repository.
 type DnfRepository struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Base URL for the repository
-	// @gotags: validate:"required_without=Disabled,omitempty,url"
-	Baseurl string `protobuf:"bytes,1,opt,name=baseurl,proto3" json:"baseurl,omitempty" validate:"required_without=Disabled,omitempty,url"`
+	// Base URL for the repository (supports DNF variables like $releasever and $basearch)
+	// @gotags: validate:"required_without=Disabled,omitempty"
+	Baseurl string `protobuf:"bytes,1,opt,name=baseurl,proto3" json:"baseurl,omitempty" validate:"required_without=Disabled,omitempty"`
 	// Repository description
 	// @gotags: validate:"omitempty,max=255"
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=255"`
