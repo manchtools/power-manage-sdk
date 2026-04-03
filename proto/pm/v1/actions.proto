@@ -367,8 +367,8 @@ message DnfRepository {
 
 // PacmanRepository configures an Arch Linux pacman repository.
 message PacmanRepository {
-  // Server URL (can include $repo and $arch variables)
-  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  // Server URL (supports pacman variables like $repo and $arch)
+  // @gotags: validate:"required_without=Disabled,omitempty"
   string server = 1;
 
   // SigLevel (e.g., "Optional TrustAll", "Required DatabaseOptional")
