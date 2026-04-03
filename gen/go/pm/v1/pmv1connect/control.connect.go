@@ -491,6 +491,9 @@ const (
 	// ControlServiceSetUserProvisioningEnabledProcedure is the fully-qualified name of the
 	// ControlService's SetUserProvisioningEnabled RPC.
 	ControlServiceSetUserProvisioningEnabledProcedure = "/pm.v1.ControlService/SetUserProvisioningEnabled"
+	// ControlServiceTriggerAgentUpdateProcedure is the fully-qualified name of the ControlService's
+	// TriggerAgentUpdate RPC.
+	ControlServiceTriggerAgentUpdateProcedure = "/pm.v1.ControlService/TriggerAgentUpdate"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -678,6 +681,8 @@ type ControlServiceClient interface {
 	UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error)
 	// User Provisioning Per-User
 	SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	// Agent Update
+	TriggerAgentUpdate(context.Context, *connect.Request[v1.TriggerAgentUpdateRequest]) (*connect.Response[v1.TriggerAgentUpdateResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -1621,6 +1626,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("SetUserProvisioningEnabled")),
 			connect.WithClientOptions(opts...),
 		),
+		triggerAgentUpdate: connect.NewClient[v1.TriggerAgentUpdateRequest, v1.TriggerAgentUpdateResponse](
+			httpClient,
+			baseURL+ControlServiceTriggerAgentUpdateProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("TriggerAgentUpdate")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1781,6 +1792,7 @@ type controlServiceClient struct {
 	getServerSettings                 *connect.Client[v1.GetServerSettingsRequest, v1.GetServerSettingsResponse]
 	updateServerSettings              *connect.Client[v1.UpdateServerSettingsRequest, v1.UpdateServerSettingsResponse]
 	setUserProvisioningEnabled        *connect.Client[v1.SetUserProvisioningEnabledRequest, v1.UpdateUserResponse]
+	triggerAgentUpdate                *connect.Client[v1.TriggerAgentUpdateRequest, v1.TriggerAgentUpdateResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -2558,6 +2570,11 @@ func (c *controlServiceClient) SetUserProvisioningEnabled(ctx context.Context, r
 	return c.setUserProvisioningEnabled.CallUnary(ctx, req)
 }
 
+// TriggerAgentUpdate calls pm.v1.ControlService.TriggerAgentUpdate.
+func (c *controlServiceClient) TriggerAgentUpdate(ctx context.Context, req *connect.Request[v1.TriggerAgentUpdateRequest]) (*connect.Response[v1.TriggerAgentUpdateResponse], error) {
+	return c.triggerAgentUpdate.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -2743,6 +2760,8 @@ type ControlServiceHandler interface {
 	UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error)
 	// User Provisioning Per-User
 	SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	// Agent Update
+	TriggerAgentUpdate(context.Context, *connect.Request[v1.TriggerAgentUpdateRequest]) (*connect.Response[v1.TriggerAgentUpdateResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -3682,6 +3701,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("SetUserProvisioningEnabled")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceTriggerAgentUpdateHandler := connect.NewUnaryHandler(
+		ControlServiceTriggerAgentUpdateProcedure,
+		svc.TriggerAgentUpdate,
+		connect.WithSchema(controlServiceMethods.ByName("TriggerAgentUpdate")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -3994,6 +4019,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateServerSettingsHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserProvisioningEnabledProcedure:
 			controlServiceSetUserProvisioningEnabledHandler.ServeHTTP(w, r)
+		case ControlServiceTriggerAgentUpdateProcedure:
+			controlServiceTriggerAgentUpdateHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -4621,4 +4648,8 @@ func (UnimplementedControlServiceHandler) UpdateServerSettings(context.Context, 
 
 func (UnimplementedControlServiceHandler) SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserProvisioningEnabled is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) TriggerAgentUpdate(context.Context, *connect.Request[v1.TriggerAgentUpdateRequest]) (*connect.Response[v1.TriggerAgentUpdateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.TriggerAgentUpdate is not implemented"))
 }

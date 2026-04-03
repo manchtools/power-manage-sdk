@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/internal.proto.
  */
 export const file_pm_v1_internal: GenFile = /*@__PURE__*/
-  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZTKlBAoPSW50ZXJuYWxTZXJ2aWNlEkcKDFZlcmlmeURldmljZRIaLnBtLnYxLlZlcmlmeURldmljZVJlcXVlc3QaGy5wbS52MS5WZXJpZnlEZXZpY2VSZXNwb25zZRJRChBQcm94eVN5bmNBY3Rpb25zEiEucG0udjEuSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlEmMKFlByb3h5VmFsaWRhdGVMdWtzVG9rZW4SJy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlTHVrc1Rva2VuUmVxdWVzdBogLnBtLnYxLlZhbGlkYXRlTHVrc1Rva2VuUmVzcG9uc2USTgoPUHJveHlHZXRMdWtzS2V5EiAucG0udjEuSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBoZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZRJUChFQcm94eVN0b3JlTHVrc0tleRIiLnBtLnYxLkludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBobLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlEmsKFlByb3h5U3RvcmVMcHNQYXNzd29yZHMSJy5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBooLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_pm_v1_agent]);
+  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZSIuChhHZXRBdXRvVXBkYXRlSW5mb1JlcXVlc3QSEgoKYWdlbnRfYXJjaBgBIAEoCSJmChlHZXRBdXRvVXBkYXRlSW5mb1Jlc3BvbnNlEhwKFGxhdGVzdF9hZ2VudF92ZXJzaW9uGAEgASgJEhIKCnVwZGF0ZV91cmwYAiABKAkSFwoPdXBkYXRlX2NoZWNrc3VtGAMgASgJMv0ECg9JbnRlcm5hbFNlcnZpY2USRwoMVmVyaWZ5RGV2aWNlEhoucG0udjEuVmVyaWZ5RGV2aWNlUmVxdWVzdBobLnBtLnYxLlZlcmlmeURldmljZVJlc3BvbnNlElEKEFByb3h5U3luY0FjdGlvbnMSIS5wbS52MS5JbnRlcm5hbFN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USYwoWUHJveHlWYWxpZGF0ZUx1a3NUb2tlbhInLnBtLnYxLkludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZRJOCg9Qcm94eUdldEx1a3NLZXkSIC5wbS52MS5JbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0GhkucG0udjEuR2V0THVrc0tleVJlc3BvbnNlElQKEVByb3h5U3RvcmVMdWtzS2V5EiIucG0udjEuSW50ZXJuYWxTdG9yZUx1a3NLZXlSZXF1ZXN0GhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2USawoWUHJveHlTdG9yZUxwc1Bhc3N3b3JkcxInLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0GigucG0udjEuSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlElYKEUdldEF1dG9VcGRhdGVJbmZvEh8ucG0udjEuR2V0QXV0b1VwZGF0ZUluZm9SZXF1ZXN0GiAucG0udjEuR2V0QXV0b1VwZGF0ZUluZm9SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_pm_v1_agent]);
 
 /**
  * InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
@@ -234,6 +234,65 @@ export const VerifyDeviceResponseSchema: GenMessage<VerifyDeviceResponse> = /*@_
   messageDesc(file_pm_v1_internal, 8);
 
 /**
+ * GetAutoUpdateInfoRequest is sent by agents or the gateway to check
+ * if a newer agent version is available.
+ *
+ * @generated from message pm.v1.GetAutoUpdateInfoRequest
+ */
+export type GetAutoUpdateInfoRequest = Message<"pm.v1.GetAutoUpdateInfoRequest"> & {
+  /**
+   * Agent architecture: "amd64" or "arm64"
+   * @gotags: validate:"required,oneof=amd64 arm64"
+   *
+   * @generated from field: string agent_arch = 1;
+   */
+  agentArch: string;
+};
+
+/**
+ * Describes the message pm.v1.GetAutoUpdateInfoRequest.
+ * Use `create(GetAutoUpdateInfoRequestSchema)` to create a new message.
+ */
+export const GetAutoUpdateInfoRequestSchema: GenMessage<GetAutoUpdateInfoRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 9);
+
+/**
+ * GetAutoUpdateInfoResponse contains the latest agent release info.
+ * If update_url is empty, no update is available.
+ *
+ * @generated from message pm.v1.GetAutoUpdateInfoResponse
+ */
+export type GetAutoUpdateInfoResponse = Message<"pm.v1.GetAutoUpdateInfoResponse"> & {
+  /**
+   * Latest available agent version (e.g., "2026.04.1")
+   *
+   * @generated from field: string latest_agent_version = 1;
+   */
+  latestAgentVersion: string;
+
+  /**
+   * Direct download URL for the agent binary
+   *
+   * @generated from field: string update_url = 2;
+   */
+  updateUrl: string;
+
+  /**
+   * SHA-256 hex checksum of the agent binary
+   *
+   * @generated from field: string update_checksum = 3;
+   */
+  updateChecksum: string;
+};
+
+/**
+ * Describes the message pm.v1.GetAutoUpdateInfoResponse.
+ * Use `create(GetAutoUpdateInfoResponseSchema)` to create a new message.
+ */
+export const GetAutoUpdateInfoResponseSchema: GenMessage<GetAutoUpdateInfoResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 10);
+
+/**
  * @generated from service pm.v1.InternalService
  */
 export const InternalService: GenService<{
@@ -297,6 +356,17 @@ export const InternalService: GenService<{
     methodKind: "unary";
     input: typeof InternalStoreLpsPasswordsRequestSchema;
     output: typeof InternalStoreLpsPasswordsResponseSchema;
+  },
+  /**
+   * GetAutoUpdateInfo returns the latest agent release info for auto-update.
+   * Called by agents during startup (Path B) and by the gateway for Welcome messages.
+   *
+   * @generated from rpc pm.v1.InternalService.GetAutoUpdateInfo
+   */
+  getAutoUpdateInfo: {
+    methodKind: "unary";
+    input: typeof GetAutoUpdateInfoRequestSchema;
+    output: typeof GetAutoUpdateInfoResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pm_v1_internal, 0);

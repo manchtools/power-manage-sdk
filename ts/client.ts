@@ -171,6 +171,8 @@ import {
 	UpdateServerSettingsRequestSchema,
 	// User Provisioning
 	SetUserProvisioningEnabledRequestSchema,
+	// Agent Update
+	TriggerAgentUpdateRequestSchema,
 	type SearchResult,
 	// Compliance
 	GetDeviceComplianceRequestSchema,
@@ -1641,11 +1643,12 @@ export class ApiClient {
 		return client.getServerSettings(create(GetServerSettingsRequestSchema, {}));
 	}
 
-	async updateServerSettings(userProvisioningEnabled: boolean, sshAccessForAll: boolean) {
+	async updateServerSettings(userProvisioningEnabled: boolean, sshAccessForAll: boolean, autoUpdateAgents: boolean) {
 		const client = this.getClient();
 		return client.updateServerSettings(create(UpdateServerSettingsRequestSchema, {
 			userProvisioningEnabled,
 			sshAccessForAll,
+			autoUpdateAgents,
 		}));
 	}
 
@@ -1656,6 +1659,14 @@ export class ApiClient {
 			userId,
 			enabled,
 		}));
+	}
+
+	async triggerAgentUpdate(deviceIds: string[]) {
+		const client = this.getClient();
+		const response = await client.triggerAgentUpdate(
+			create(TriggerAgentUpdateRequestSchema, { deviceIds })
+		);
+		return response.triggeredCount;
 	}
 }
 
