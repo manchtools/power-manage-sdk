@@ -795,8 +795,8 @@ export const AptRepositorySchema: GenMessage<AptRepository> = /*@__PURE__*/
  */
 export type DnfRepository = Message<"pm.v1.DnfRepository"> & {
   /**
-   * Base URL for the repository
-   * @gotags: validate:"required_without=Disabled,omitempty,url"
+   * Base URL for the repository (supports DNF variables like $releasever and $basearch)
+   * @gotags: validate:"required_without=Disabled,omitempty"
    *
    * @generated from field: string baseurl = 1;
    */
@@ -865,8 +865,8 @@ export const DnfRepositorySchema: GenMessage<DnfRepository> = /*@__PURE__*/
  */
 export type PacmanRepository = Message<"pm.v1.PacmanRepository"> & {
   /**
-   * Server URL (can include $repo and $arch variables)
-   * @gotags: validate:"required_without=Disabled,omitempty,url"
+   * Server URL (supports pacman variables like $repo and $arch)
+   * @gotags: validate:"required_without=Disabled,omitempty"
    *
    * @generated from field: string server = 1;
    */

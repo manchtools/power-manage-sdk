@@ -336,8 +336,8 @@ message AptRepository {
 
 // DnfRepository configures a Fedora/RHEL DNF/YUM repository.
 message DnfRepository {
-  // Base URL for the repository
-  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  // Base URL for the repository (supports DNF variables like $releasever and $basearch)
+  // @gotags: validate:"required_without=Disabled,omitempty"
   string baseurl = 1;
 
   // Repository description
@@ -367,8 +367,8 @@ message DnfRepository {
 
 // PacmanRepository configures an Arch Linux pacman repository.
 message PacmanRepository {
-  // Server URL (can include $repo and $arch variables)
-  // @gotags: validate:"required_without=Disabled,omitempty,url"
+  // Server URL (supports pacman variables like $repo and $arch)
+  // @gotags: validate:"required_without=Disabled,omitempty"
   string server = 1;
 
   // SigLevel (e.g., "Optional TrustAll", "Required DatabaseOptional")
