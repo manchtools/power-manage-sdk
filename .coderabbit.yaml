@@ -19,9 +19,9 @@ reviews:
         Auto-generated code. Do not review for style or suggest changes.
         Only flag if generated output looks corrupted or inconsistent with
         the proto definitions.
-tools:
-  golangci-lint:
-    enabled: true
+  tools:
+    golangci-lint:
+      enabled: true
 knowledge_base:
   learnings:
     scope: auto
