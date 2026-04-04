@@ -957,15 +957,6 @@ type Welcome struct {
 	// Base URL for browser-based device login (configurable, defaults to built-in PM web app).
 	// Used by PAM module to open the OIDC login page for display manager sessions.
 	DeviceLoginUrl string `protobuf:"bytes,3,opt,name=device_login_url,json=deviceLoginUrl,proto3" json:"device_login_url,omitempty"`
-	// Auto-update: latest available agent release version (from GitHub)
-	// @gotags: validate:"omitempty,max=32"
-	LatestAgentVersion string `protobuf:"bytes,4,opt,name=latest_agent_version,json=latestAgentVersion,proto3" json:"latest_agent_version,omitempty" validate:"omitempty,max=32"`
-	// Auto-update: download URL for the agent binary (empty = no update needed)
-	// @gotags: validate:"omitempty,max=512"
-	UpdateUrl string `protobuf:"bytes,5,opt,name=update_url,json=updateUrl,proto3" json:"update_url,omitempty" validate:"omitempty,max=512"`
-	// Auto-update: SHA-256 hex checksum of the agent binary
-	// @gotags: validate:"omitempty,len=64"
-	UpdateChecksum string `protobuf:"bytes,6,opt,name=update_checksum,json=updateChecksum,proto3" json:"update_checksum,omitempty" validate:"omitempty,len=64"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1017,27 +1008,6 @@ func (x *Welcome) GetHeartbeatInterval() *durationpb.Duration {
 func (x *Welcome) GetDeviceLoginUrl() string {
 	if x != nil {
 		return x.DeviceLoginUrl
-	}
-	return ""
-}
-
-func (x *Welcome) GetLatestAgentVersion() string {
-	if x != nil {
-		return x.LatestAgentVersion
-	}
-	return ""
-}
-
-func (x *Welcome) GetUpdateUrl() string {
-	if x != nil {
-		return x.UpdateUrl
-	}
-	return ""
-}
-
-func (x *Welcome) GetUpdateChecksum() string {
-	if x != nil {
-		return x.UpdateChecksum
 	}
 	return ""
 }
@@ -2335,15 +2305,12 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
 	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12.\n" +
 	"\tlog_query\x18< \x01(\v2\x0f.pm.v1.LogQueryH\x00R\blogQueryB\t\n" +
-	"\apayload\"\x9e\x02\n" +
+	"\apayload\"\xe9\x01\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
 	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\x12(\n" +
-	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrl\x120\n" +
-	"\x14latest_agent_version\x18\x04 \x01(\tR\x12latestAgentVersion\x12\x1d\n" +
-	"\n" +
-	"update_url\x18\x05 \x01(\tR\tupdateUrl\x12'\n" +
-	"\x0fupdate_checksum\x18\x06 \x01(\tR\x0eupdateChecksum\"7\n" +
+	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrlJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x14latest_agent_versionR\n" +
+	"update_urlR\x0fupdate_checksum\"7\n" +
 	"\x0eActionDispatch\x12%\n" +
 	"\x06action\x18\x01 \x01(\v2\r.pm.v1.ActionR\x06action\"5\n" +
 	"\x05Error\x12\x12\n" +

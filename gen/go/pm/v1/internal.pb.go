@@ -500,119 +500,6 @@ func (*VerifyDeviceResponse) Descriptor() ([]byte, []int) {
 	return file_pm_v1_internal_proto_rawDescGZIP(), []int{8}
 }
 
-// GetAutoUpdateInfoRequest is sent by agents or the gateway to check
-// if a newer agent version is available.
-type GetAutoUpdateInfoRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Agent architecture: "amd64" or "arm64"
-	// @gotags: validate:"required,oneof=amd64 arm64"
-	AgentArch     string `protobuf:"bytes,1,opt,name=agent_arch,json=agentArch,proto3" json:"agent_arch,omitempty" validate:"required,oneof=amd64 arm64"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetAutoUpdateInfoRequest) Reset() {
-	*x = GetAutoUpdateInfoRequest{}
-	mi := &file_pm_v1_internal_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetAutoUpdateInfoRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetAutoUpdateInfoRequest) ProtoMessage() {}
-
-func (x *GetAutoUpdateInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetAutoUpdateInfoRequest.ProtoReflect.Descriptor instead.
-func (*GetAutoUpdateInfoRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *GetAutoUpdateInfoRequest) GetAgentArch() string {
-	if x != nil {
-		return x.AgentArch
-	}
-	return ""
-}
-
-// GetAutoUpdateInfoResponse contains the latest agent release info.
-// If update_url is empty, no update is available.
-type GetAutoUpdateInfoResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Latest available agent version (e.g., "2026.04.1")
-	LatestAgentVersion string `protobuf:"bytes,1,opt,name=latest_agent_version,json=latestAgentVersion,proto3" json:"latest_agent_version,omitempty"`
-	// Direct download URL for the agent binary
-	UpdateUrl string `protobuf:"bytes,2,opt,name=update_url,json=updateUrl,proto3" json:"update_url,omitempty"`
-	// SHA-256 hex checksum of the agent binary
-	UpdateChecksum string `protobuf:"bytes,3,opt,name=update_checksum,json=updateChecksum,proto3" json:"update_checksum,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *GetAutoUpdateInfoResponse) Reset() {
-	*x = GetAutoUpdateInfoResponse{}
-	mi := &file_pm_v1_internal_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetAutoUpdateInfoResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetAutoUpdateInfoResponse) ProtoMessage() {}
-
-func (x *GetAutoUpdateInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetAutoUpdateInfoResponse.ProtoReflect.Descriptor instead.
-func (*GetAutoUpdateInfoResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *GetAutoUpdateInfoResponse) GetLatestAgentVersion() string {
-	if x != nil {
-		return x.LatestAgentVersion
-	}
-	return ""
-}
-
-func (x *GetAutoUpdateInfoResponse) GetUpdateUrl() string {
-	if x != nil {
-		return x.UpdateUrl
-	}
-	return ""
-}
-
-func (x *GetAutoUpdateInfoResponse) GetUpdateChecksum() string {
-	if x != nil {
-		return x.UpdateChecksum
-	}
-	return ""
-}
-
 var File_pm_v1_internal_proto protoreflect.FileDescriptor
 
 const file_pm_v1_internal_proto_rawDesc = "" +
@@ -648,23 +535,14 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"!InternalStoreLpsPasswordsResponse\"2\n" +
 	"\x13VerifyDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
-	"\x14VerifyDeviceResponse\"9\n" +
-	"\x18GetAutoUpdateInfoRequest\x12\x1d\n" +
-	"\n" +
-	"agent_arch\x18\x01 \x01(\tR\tagentArch\"\x95\x01\n" +
-	"\x19GetAutoUpdateInfoResponse\x120\n" +
-	"\x14latest_agent_version\x18\x01 \x01(\tR\x12latestAgentVersion\x12\x1d\n" +
-	"\n" +
-	"update_url\x18\x02 \x01(\tR\tupdateUrl\x12'\n" +
-	"\x0fupdate_checksum\x18\x03 \x01(\tR\x0eupdateChecksum2\xfd\x04\n" +
+	"\x14VerifyDeviceResponse2\xa5\x04\n" +
 	"\x0fInternalService\x12G\n" +
 	"\fVerifyDevice\x12\x1a.pm.v1.VerifyDeviceRequest\x1a\x1b.pm.v1.VerifyDeviceResponse\x12Q\n" +
 	"\x10ProxySyncActions\x12!.pm.v1.InternalSyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12c\n" +
 	"\x16ProxyValidateLuksToken\x12'.pm.v1.InternalValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponse\x12N\n" +
 	"\x0fProxyGetLuksKey\x12 .pm.v1.InternalGetLuksKeyRequest\x1a\x19.pm.v1.GetLuksKeyResponse\x12T\n" +
 	"\x11ProxyStoreLuksKey\x12\".pm.v1.InternalStoreLuksKeyRequest\x1a\x1b.pm.v1.StoreLuksKeyResponse\x12k\n" +
-	"\x16ProxyStoreLpsPasswords\x12'.pm.v1.InternalStoreLpsPasswordsRequest\x1a(.pm.v1.InternalStoreLpsPasswordsResponse\x12V\n" +
-	"\x11GetAutoUpdateInfo\x12\x1f.pm.v1.GetAutoUpdateInfoRequest\x1a .pm.v1.GetAutoUpdateInfoResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x16ProxyStoreLpsPasswords\x12'.pm.v1.InternalStoreLpsPasswordsRequest\x1a(.pm.v1.InternalStoreLpsPasswordsResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_internal_proto_rawDescOnce sync.Once
@@ -678,7 +556,7 @@ func file_pm_v1_internal_proto_rawDescGZIP() []byte {
 	return file_pm_v1_internal_proto_rawDescData
 }
 
-var file_pm_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_pm_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_pm_v1_internal_proto_goTypes = []any{
 	(*InternalSyncActionsRequest)(nil),        // 0: pm.v1.InternalSyncActionsRequest
 	(*InternalValidateLuksTokenRequest)(nil),  // 1: pm.v1.InternalValidateLuksTokenRequest
@@ -689,12 +567,10 @@ var file_pm_v1_internal_proto_goTypes = []any{
 	(*InternalStoreLpsPasswordsResponse)(nil), // 6: pm.v1.InternalStoreLpsPasswordsResponse
 	(*VerifyDeviceRequest)(nil),               // 7: pm.v1.VerifyDeviceRequest
 	(*VerifyDeviceResponse)(nil),              // 8: pm.v1.VerifyDeviceResponse
-	(*GetAutoUpdateInfoRequest)(nil),          // 9: pm.v1.GetAutoUpdateInfoRequest
-	(*GetAutoUpdateInfoResponse)(nil),         // 10: pm.v1.GetAutoUpdateInfoResponse
-	(*SyncActionsResponse)(nil),               // 11: pm.v1.SyncActionsResponse
-	(*ValidateLuksTokenResponse)(nil),         // 12: pm.v1.ValidateLuksTokenResponse
-	(*GetLuksKeyResponse)(nil),                // 13: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyResponse)(nil),              // 14: pm.v1.StoreLuksKeyResponse
+	(*SyncActionsResponse)(nil),               // 9: pm.v1.SyncActionsResponse
+	(*ValidateLuksTokenResponse)(nil),         // 10: pm.v1.ValidateLuksTokenResponse
+	(*GetLuksKeyResponse)(nil),                // 11: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyResponse)(nil),              // 12: pm.v1.StoreLuksKeyResponse
 }
 var file_pm_v1_internal_proto_depIdxs = []int32{
 	4,  // 0: pm.v1.InternalStoreLpsPasswordsRequest.rotations:type_name -> pm.v1.LpsPasswordRotation
@@ -704,16 +580,14 @@ var file_pm_v1_internal_proto_depIdxs = []int32{
 	2,  // 4: pm.v1.InternalService.ProxyGetLuksKey:input_type -> pm.v1.InternalGetLuksKeyRequest
 	3,  // 5: pm.v1.InternalService.ProxyStoreLuksKey:input_type -> pm.v1.InternalStoreLuksKeyRequest
 	5,  // 6: pm.v1.InternalService.ProxyStoreLpsPasswords:input_type -> pm.v1.InternalStoreLpsPasswordsRequest
-	9,  // 7: pm.v1.InternalService.GetAutoUpdateInfo:input_type -> pm.v1.GetAutoUpdateInfoRequest
-	8,  // 8: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
-	11, // 9: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
-	12, // 10: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	13, // 11: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
-	14, // 12: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
-	6,  // 13: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
-	10, // 14: pm.v1.InternalService.GetAutoUpdateInfo:output_type -> pm.v1.GetAutoUpdateInfoResponse
-	8,  // [8:15] is the sub-list for method output_type
-	1,  // [1:8] is the sub-list for method input_type
+	8,  // 7: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
+	9,  // 8: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
+	10, // 9: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	11, // 10: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
+	12, // 11: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
+	6,  // 12: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
+	7,  // [7:13] is the sub-list for method output_type
+	1,  // [1:7] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -731,7 +605,7 @@ func file_pm_v1_internal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_internal_proto_rawDesc), len(file_pm_v1_internal_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

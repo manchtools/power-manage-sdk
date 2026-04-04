@@ -60,6 +60,8 @@ const (
 	ActionType_ACTION_TYPE_LUKS ActionType = 1000 // LUKS disk encryption management
 	// Network management (1100-1199)
 	ActionType_ACTION_TYPE_WIFI ActionType = 1100 // WiFi connection management
+	// Agent management (1200-1299)
+	ActionType_ACTION_TYPE_AGENT_UPDATE ActionType = 1200 // Agent self-update
 )
 
 // Enum value maps for ActionType.
@@ -88,31 +90,33 @@ var (
 		900:  "ACTION_TYPE_LPS",
 		1000: "ACTION_TYPE_LUKS",
 		1100: "ACTION_TYPE_WIFI",
+		1200: "ACTION_TYPE_AGENT_UPDATE",
 	}
 	ActionType_value = map[string]int32{
-		"ACTION_TYPE_UNSPECIFIED": 0,
-		"ACTION_TYPE_PACKAGE":     1,
-		"ACTION_TYPE_UPDATE":      2,
-		"ACTION_TYPE_REPOSITORY":  3,
-		"ACTION_TYPE_APP_IMAGE":   100,
-		"ACTION_TYPE_DEB":         101,
-		"ACTION_TYPE_RPM":         102,
-		"ACTION_TYPE_FLATPAK":     103,
-		"ACTION_TYPE_SHELL":       200,
-		"ACTION_TYPE_SCRIPT_RUN":  201,
-		"ACTION_TYPE_SYSTEMD":     300,
-		"ACTION_TYPE_FILE":        400,
-		"ACTION_TYPE_DIRECTORY":   401,
-		"ACTION_TYPE_REBOOT":      500,
-		"ACTION_TYPE_SYNC":        501,
-		"ACTION_TYPE_USER":        600,
-		"ACTION_TYPE_GROUP":       601,
-		"ACTION_TYPE_SSH":         700,
-		"ACTION_TYPE_SSHD":        701,
-		"ACTION_TYPE_SUDO":        800,
-		"ACTION_TYPE_LPS":         900,
-		"ACTION_TYPE_LUKS":        1000,
-		"ACTION_TYPE_WIFI":        1100,
+		"ACTION_TYPE_UNSPECIFIED":  0,
+		"ACTION_TYPE_PACKAGE":      1,
+		"ACTION_TYPE_UPDATE":       2,
+		"ACTION_TYPE_REPOSITORY":   3,
+		"ACTION_TYPE_APP_IMAGE":    100,
+		"ACTION_TYPE_DEB":          101,
+		"ACTION_TYPE_RPM":          102,
+		"ACTION_TYPE_FLATPAK":      103,
+		"ACTION_TYPE_SHELL":        200,
+		"ACTION_TYPE_SCRIPT_RUN":   201,
+		"ACTION_TYPE_SYSTEMD":      300,
+		"ACTION_TYPE_FILE":         400,
+		"ACTION_TYPE_DIRECTORY":    401,
+		"ACTION_TYPE_REBOOT":       500,
+		"ACTION_TYPE_SYNC":         501,
+		"ACTION_TYPE_USER":         600,
+		"ACTION_TYPE_GROUP":        601,
+		"ACTION_TYPE_SSH":          700,
+		"ACTION_TYPE_SSHD":         701,
+		"ACTION_TYPE_SUDO":         800,
+		"ACTION_TYPE_LPS":          900,
+		"ACTION_TYPE_LUKS":         1000,
+		"ACTION_TYPE_WIFI":         1100,
+		"ACTION_TYPE_AGENT_UPDATE": 1200,
 	}
 )
 
@@ -437,6 +441,7 @@ type Action struct {
 	//	*Action_Group
 	//	*Action_Luks
 	//	*Action_Wifi
+	//	*Action_AgentUpdate
 	Params        isAction_Params `protobuf_oneof:"params"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -681,6 +686,15 @@ func (x *Action) GetWifi() *WifiParams {
 	return nil
 }
 
+func (x *Action) GetAgentUpdate() *AgentUpdateParams {
+	if x != nil {
+		if x, ok := x.Params.(*Action_AgentUpdate); ok {
+			return x.AgentUpdate
+		}
+	}
+	return nil
+}
+
 type isAction_Params interface {
 	isAction_Params()
 }
@@ -753,6 +767,10 @@ type Action_Wifi struct {
 	Wifi *WifiParams `protobuf:"bytes,24,opt,name=wifi,proto3,oneof"`
 }
 
+type Action_AgentUpdate struct {
+	AgentUpdate *AgentUpdateParams `protobuf:"bytes,25,opt,name=agent_update,json=agentUpdate,proto3,oneof"`
+}
+
 func (*Action_Package) isAction_Params() {}
 
 func (*Action_App) isAction_Params() {}
@@ -786,6 +804,8 @@ func (*Action_Group) isAction_Params() {}
 func (*Action_Luks) isAction_Params() {}
 
 func (*Action_Wifi) isAction_Params() {}
+
+func (*Action_AgentUpdate) isAction_Params() {}
 
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
@@ -2983,11 +3003,125 @@ func (x *ActionResult) GetDetectionOutput() *CommandOutput {
 	return nil
 }
 
+// Per-architecture binary source with checksum.
+type AgentUpdateArch struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Direct download URL for the agent binary (HTTPS only)
+	// @gotags: validate:"required,url,startswith=https://"
+	BinaryUrl string `protobuf:"bytes,1,opt,name=binary_url,json=binaryUrl,proto3" json:"binary_url,omitempty" validate:"required,url,startswith=https://"`
+	// URL to the SHA256 checksum file for the binary (HTTPS only)
+	// @gotags: validate:"required,url,startswith=https://"
+	ChecksumUrl   string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"required,url,startswith=https://"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentUpdateArch) Reset() {
+	*x = AgentUpdateArch{}
+	mi := &file_pm_v1_actions_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentUpdateArch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentUpdateArch) ProtoMessage() {}
+
+func (x *AgentUpdateArch) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentUpdateArch.ProtoReflect.Descriptor instead.
+func (*AgentUpdateArch) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *AgentUpdateArch) GetBinaryUrl() string {
+	if x != nil {
+		return x.BinaryUrl
+	}
+	return ""
+}
+
+func (x *AgentUpdateArch) GetChecksumUrl() string {
+	if x != nil {
+		return x.ChecksumUrl
+	}
+	return ""
+}
+
+// AgentUpdateParams configures agent self-update via direct binary download.
+// At least one architecture must be specified. The agent selects the entry
+// matching its own architecture (runtime.GOARCH) and skips if no match.
+type AgentUpdateParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// AMD64 (x86_64) binary source
+	Amd64 *AgentUpdateArch `protobuf:"bytes,1,opt,name=amd64,proto3" json:"amd64,omitempty"`
+	// ARM64 (aarch64) binary source
+	Arm64         *AgentUpdateArch `protobuf:"bytes,2,opt,name=arm64,proto3" json:"arm64,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentUpdateParams) Reset() {
+	*x = AgentUpdateParams{}
+	mi := &file_pm_v1_actions_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentUpdateParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentUpdateParams) ProtoMessage() {}
+
+func (x *AgentUpdateParams) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentUpdateParams.ProtoReflect.Descriptor instead.
+func (*AgentUpdateParams) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *AgentUpdateParams) GetAmd64() *AgentUpdateArch {
+	if x != nil {
+		return x.Amd64
+	}
+	return nil
+}
+
+func (x *AgentUpdateParams) GetArm64() *AgentUpdateArch {
+	if x != nil {
+		return x.Arm64
+	}
+	return nil
+}
+
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xb8\b\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xf7\b\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -3015,7 +3149,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03lps\x18\x15 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
 	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
 	"\x04luks\x18\x17 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
-	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifiB\b\n" +
+	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
+	"\fagent_update\x18\x19 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -3203,7 +3338,14 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xbd\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"S\n" +
+	"\x0fAgentUpdateArch\x12\x1d\n" +
+	"\n" +
+	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
+	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\"o\n" +
+	"\x11AgentUpdateParams\x12,\n" +
+	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
+	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xdc\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -3228,7 +3370,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x10ACTION_TYPE_SUDO\x10\xa0\x06\x12\x14\n" +
 	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x15\n" +
 	"\x10ACTION_TYPE_LUKS\x10\xe8\a\x12\x15\n" +
-	"\x10ACTION_TYPE_WIFI\x10\xcc\b*\x98\x01\n" +
+	"\x10ACTION_TYPE_WIFI\x10\xcc\b\x12\x1d\n" +
+	"\x18ACTION_TYPE_AGENT_UPDATE\x10\xb0\t*\x98\x01\n" +
 	"\x10SystemdUnitState\x12\"\n" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -3265,7 +3408,7 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
@@ -3298,18 +3441,20 @@ var file_pm_v1_actions_proto_goTypes = []any{
 	(*LuksParams)(nil),            // 28: pm.v1.LuksParams
 	(*WifiParams)(nil),            // 29: pm.v1.WifiParams
 	(*ActionResult)(nil),          // 30: pm.v1.ActionResult
-	nil,                           // 31: pm.v1.ShellParams.EnvironmentEntry
-	nil,                           // 32: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),              // 33: pm.v1.ActionId
-	(DesiredState)(0),             // 34: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 35: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 36: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 37: google.protobuf.Timestamp
+	(*AgentUpdateArch)(nil),       // 31: pm.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),     // 32: pm.v1.AgentUpdateParams
+	nil,                           // 33: pm.v1.ShellParams.EnvironmentEntry
+	nil,                           // 34: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),              // 35: pm.v1.ActionId
+	(DesiredState)(0),             // 36: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 37: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 38: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 39: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	33, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	35, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	34, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	36, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
 	7,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
 	8,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
 	9,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
@@ -3328,29 +3473,32 @@ var file_pm_v1_actions_proto_depIdxs = []int32{
 	22, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
 	28, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
 	29, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
-	31, // 21: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 22: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	17, // 23: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	18, // 24: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	19, // 25: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	20, // 26: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	24, // 27: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	2,  // 28: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
-	3,  // 29: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	4,  // 30: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
-	3,  // 31: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	5,  // 32: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
-	33, // 33: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	35, // 34: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	36, // 35: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	37, // 36: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	32, // 37: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	36, // 38: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
-	39, // [39:39] is the sub-list for method output_type
-	39, // [39:39] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	32, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
+	33, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	1,  // 23: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
+	17, // 24: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	18, // 25: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	19, // 26: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	20, // 27: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	24, // 28: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	2,  // 29: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
+	3,  // 30: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	4,  // 31: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
+	3,  // 32: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	5,  // 33: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
+	35, // 34: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	37, // 35: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	38, // 36: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	39, // 37: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	34, // 38: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	38, // 39: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	31, // 40: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
+	31, // 41: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
+	42, // [42:42] is the sub-list for method output_type
+	42, // [42:42] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -3377,6 +3525,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Group)(nil),
 		(*Action_Luks)(nil),
 		(*Action_Wifi)(nil),
+		(*Action_AgentUpdate)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -3384,7 +3533,7 @@ func file_pm_v1_actions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   27,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
