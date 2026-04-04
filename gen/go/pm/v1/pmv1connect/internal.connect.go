@@ -51,9 +51,6 @@ const (
 	// InternalServiceProxyStoreLpsPasswordsProcedure is the fully-qualified name of the
 	// InternalService's ProxyStoreLpsPasswords RPC.
 	InternalServiceProxyStoreLpsPasswordsProcedure = "/pm.v1.InternalService/ProxyStoreLpsPasswords"
-	// InternalServiceGetAutoUpdateInfoProcedure is the fully-qualified name of the InternalService's
-	// GetAutoUpdateInfo RPC.
-	InternalServiceGetAutoUpdateInfoProcedure = "/pm.v1.InternalService/GetAutoUpdateInfo"
 )
 
 // InternalServiceClient is a client for the pm.v1.InternalService service.
@@ -71,9 +68,6 @@ type InternalServiceClient interface {
 	ProxyStoreLuksKey(context.Context, *connect.Request[v1.InternalStoreLuksKeyRequest]) (*connect.Response[v1.StoreLuksKeyResponse], error)
 	// Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
 	ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error)
-	// GetAutoUpdateInfo returns the latest agent release info for auto-update.
-	// Called by agents during startup (Path B) and by the gateway for Welcome messages.
-	GetAutoUpdateInfo(context.Context, *connect.Request[v1.GetAutoUpdateInfoRequest]) (*connect.Response[v1.GetAutoUpdateInfoResponse], error)
 }
 
 // NewInternalServiceClient constructs a client for the pm.v1.InternalService service. By default,
@@ -123,12 +117,6 @@ func NewInternalServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(internalServiceMethods.ByName("ProxyStoreLpsPasswords")),
 			connect.WithClientOptions(opts...),
 		),
-		getAutoUpdateInfo: connect.NewClient[v1.GetAutoUpdateInfoRequest, v1.GetAutoUpdateInfoResponse](
-			httpClient,
-			baseURL+InternalServiceGetAutoUpdateInfoProcedure,
-			connect.WithSchema(internalServiceMethods.ByName("GetAutoUpdateInfo")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -140,7 +128,6 @@ type internalServiceClient struct {
 	proxyGetLuksKey        *connect.Client[v1.InternalGetLuksKeyRequest, v1.GetLuksKeyResponse]
 	proxyStoreLuksKey      *connect.Client[v1.InternalStoreLuksKeyRequest, v1.StoreLuksKeyResponse]
 	proxyStoreLpsPasswords *connect.Client[v1.InternalStoreLpsPasswordsRequest, v1.InternalStoreLpsPasswordsResponse]
-	getAutoUpdateInfo      *connect.Client[v1.GetAutoUpdateInfoRequest, v1.GetAutoUpdateInfoResponse]
 }
 
 // VerifyDevice calls pm.v1.InternalService.VerifyDevice.
@@ -173,11 +160,6 @@ func (c *internalServiceClient) ProxyStoreLpsPasswords(ctx context.Context, req 
 	return c.proxyStoreLpsPasswords.CallUnary(ctx, req)
 }
 
-// GetAutoUpdateInfo calls pm.v1.InternalService.GetAutoUpdateInfo.
-func (c *internalServiceClient) GetAutoUpdateInfo(ctx context.Context, req *connect.Request[v1.GetAutoUpdateInfoRequest]) (*connect.Response[v1.GetAutoUpdateInfoResponse], error) {
-	return c.getAutoUpdateInfo.CallUnary(ctx, req)
-}
-
 // InternalServiceHandler is an implementation of the pm.v1.InternalService service.
 type InternalServiceHandler interface {
 	// VerifyDevice checks that a device exists and is not deleted.
@@ -193,9 +175,6 @@ type InternalServiceHandler interface {
 	ProxyStoreLuksKey(context.Context, *connect.Request[v1.InternalStoreLuksKeyRequest]) (*connect.Response[v1.StoreLuksKeyResponse], error)
 	// Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
 	ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error)
-	// GetAutoUpdateInfo returns the latest agent release info for auto-update.
-	// Called by agents during startup (Path B) and by the gateway for Welcome messages.
-	GetAutoUpdateInfo(context.Context, *connect.Request[v1.GetAutoUpdateInfoRequest]) (*connect.Response[v1.GetAutoUpdateInfoResponse], error)
 }
 
 // NewInternalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -241,12 +220,6 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 		connect.WithSchema(internalServiceMethods.ByName("ProxyStoreLpsPasswords")),
 		connect.WithHandlerOptions(opts...),
 	)
-	internalServiceGetAutoUpdateInfoHandler := connect.NewUnaryHandler(
-		InternalServiceGetAutoUpdateInfoProcedure,
-		svc.GetAutoUpdateInfo,
-		connect.WithSchema(internalServiceMethods.ByName("GetAutoUpdateInfo")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/pm.v1.InternalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case InternalServiceVerifyDeviceProcedure:
@@ -261,8 +234,6 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 			internalServiceProxyStoreLuksKeyHandler.ServeHTTP(w, r)
 		case InternalServiceProxyStoreLpsPasswordsProcedure:
 			internalServiceProxyStoreLpsPasswordsHandler.ServeHTTP(w, r)
-		case InternalServiceGetAutoUpdateInfoProcedure:
-			internalServiceGetAutoUpdateInfoHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -294,8 +265,4 @@ func (UnimplementedInternalServiceHandler) ProxyStoreLuksKey(context.Context, *c
 
 func (UnimplementedInternalServiceHandler) ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.ProxyStoreLpsPasswords is not implemented"))
-}
-
-func (UnimplementedInternalServiceHandler) GetAutoUpdateInfo(context.Context, *connect.Request[v1.GetAutoUpdateInfoRequest]) (*connect.Response[v1.GetAutoUpdateInfoResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.GetAutoUpdateInfo is not implemented"))
 }

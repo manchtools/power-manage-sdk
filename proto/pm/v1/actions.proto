@@ -59,6 +59,9 @@ enum ActionType {
 
   // Network management (1100-1199)
   ACTION_TYPE_WIFI = 1100;      // WiFi connection management
+
+  // Agent management (1200-1299)
+  ACTION_TYPE_AGENT_UPDATE = 1200; // Agent self-update
 }
 
 // ============================================================================
@@ -105,6 +108,7 @@ message Action {
     GroupParams group = 22;
     LuksParams luks = 23;
     WifiParams wifi = 24;
+    AgentUpdateParams agent_update = 25;
   }
 }
 
@@ -687,4 +691,30 @@ message ActionResult {
   // Detection script output (separate from execution output)
   // @gotags: validate:"omitempty"
   CommandOutput detection_output = 10;
+}
+
+// ============================================================================
+// Agent Update Parameters
+// ============================================================================
+
+// Per-architecture binary source with checksum.
+message AgentUpdateArch {
+  // Direct download URL for the agent binary (HTTPS only)
+  // @gotags: validate:"required,url,startswith=https://"
+  string binary_url = 1;
+
+  // URL to the SHA256 checksum file for the binary (HTTPS only)
+  // @gotags: validate:"required,url,startswith=https://"
+  string checksum_url = 2;
+}
+
+// AgentUpdateParams configures agent self-update via direct binary download.
+// At least one architecture must be specified. The agent selects the entry
+// matching its own architecture (runtime.GOARCH) and skips if no match.
+message AgentUpdateParams {
+  // AMD64 (x86_64) binary source
+  AgentUpdateArch amd64 = 1;
+
+  // ARM64 (aarch64) binary source
+  AgentUpdateArch arm64 = 2;
 }
