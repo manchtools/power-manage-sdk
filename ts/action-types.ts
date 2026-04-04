@@ -48,6 +48,8 @@ export function getActionTypeEnum(type: string): ActionType {
 			return ActionType.SCRIPT_RUN;
 		case 'WIFI':
 			return ActionType.WIFI;
+		case 'AGENT_UPDATE':
+			return ActionType.AGENT_UPDATE;
 		case 'COMPLIANCE_CHECK':
 			return ActionType.SHELL;
 		default:
@@ -100,6 +102,8 @@ export function actionTypeToString(type: ActionType): string {
 			return 'SCRIPT_RUN';
 		case ActionType.WIFI:
 			return 'WIFI';
+		case ActionType.AGENT_UPDATE:
+			return 'AGENT_UPDATE';
 		default:
 			return 'UNSPECIFIED';
 	}
@@ -126,5 +130,6 @@ export const ACTION_TYPE_OPTIONS = [
 	{ value: 'SUDO', type: ActionType.SUDO },
 	{ value: 'LPS', type: ActionType.LPS },
 	{ value: 'LUKS', type: ActionType.LUKS },
-	{ value: 'GROUP', type: ActionType.GROUP }
+	{ value: 'GROUP', type: ActionType.GROUP },
+	{ value: 'AGENT_UPDATE', type: ActionType.AGENT_UPDATE }
 ] as const;
