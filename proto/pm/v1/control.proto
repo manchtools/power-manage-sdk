@@ -617,6 +617,7 @@ message ManagedAction {
     GroupParams group = 25;
     LuksParams luks = 26;
     WifiParams wifi = 27;
+    AgentUpdateParams agent_update = 28;
   }
 }
 
@@ -669,6 +670,8 @@ message CreateActionRequest {
     LuksParams luks = 22;
     // @gotags: validate:"omitempty"
     WifiParams wifi = 23;
+    // @gotags: validate:"omitempty"
+    AgentUpdateParams agent_update = 24;
   }
 }
 
@@ -759,6 +762,8 @@ message UpdateActionParamsRequest {
     LuksParams luks = 20;
     // @gotags: validate:"omitempty"
     WifiParams wifi = 21;
+    // @gotags: validate:"omitempty"
+    AgentUpdateParams agent_update = 22;
   }
 }
 
@@ -2364,7 +2369,10 @@ message RebuildSearchIndexResponse {}
 message ServerSettings {
   bool user_provisioning_enabled = 1;
   bool ssh_access_for_all = 2;
-  bool auto_update_agents = 3;
+
+  // Field 3 removed (auto_update_agents, replaced by ACTION_TYPE_AGENT_UPDATE)
+  reserved 3;
+  reserved "auto_update_agents";
 }
 
 message GetServerSettingsRequest {}
@@ -2375,7 +2383,10 @@ message GetServerSettingsResponse {
 message UpdateServerSettingsRequest {
   bool user_provisioning_enabled = 1;
   bool ssh_access_for_all = 2;
-  bool auto_update_agents = 3;
+
+  // Field 3 removed (auto_update_agents)
+  reserved 3;
+  reserved "auto_update_agents";
 }
 message UpdateServerSettingsResponse {
   ServerSettings settings = 1;
@@ -2389,17 +2400,6 @@ message SetUserProvisioningEnabledRequest {
   // @gotags: validate:"required,ulid"
   string user_id = 1;
   bool enabled = 2;
-}
-
-// --- Agent Update Trigger ---
-
-message TriggerAgentUpdateRequest {
-  // @gotags: validate:"required,min=1,dive,ulid"
-  repeated string device_ids = 1;
-}
-
-message TriggerAgentUpdateResponse {
-  int32 triggered_count = 1;
 }
 
 // ============================================================================
@@ -2617,7 +2617,4 @@ service ControlService {
 
   // User Provisioning Per-User
   rpc SetUserProvisioningEnabled(SetUserProvisioningEnabledRequest) returns (UpdateUserResponse);
-
-  // Agent Update
-  rpc TriggerAgentUpdate(TriggerAgentUpdateRequest) returns (TriggerAgentUpdateResponse);
 }
