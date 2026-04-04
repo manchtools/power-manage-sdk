@@ -33,10 +33,6 @@ service InternalService {
 
   // Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
   rpc ProxyStoreLpsPasswords(InternalStoreLpsPasswordsRequest) returns (InternalStoreLpsPasswordsResponse);
-
-  // GetAutoUpdateInfo returns the latest agent release info for auto-update.
-  // Called by agents during startup (Path B) and by the gateway for Welcome messages.
-  rpc GetAutoUpdateInfo(GetAutoUpdateInfoRequest) returns (GetAutoUpdateInfoResponse);
 }
 
 // ============================================================================
@@ -96,22 +92,3 @@ message VerifyDeviceRequest {
 
 // VerifyDeviceResponse indicates whether the device is valid for connection.
 message VerifyDeviceResponse {}
-
-// GetAutoUpdateInfoRequest is sent by agents or the gateway to check
-// if a newer agent version is available.
-message GetAutoUpdateInfoRequest {
-  // Agent architecture: "amd64" or "arm64"
-  // @gotags: validate:"required,oneof=amd64 arm64"
-  string agent_arch = 1;
-}
-
-// GetAutoUpdateInfoResponse contains the latest agent release info.
-// If update_url is empty, no update is available.
-message GetAutoUpdateInfoResponse {
-  // Latest available agent version (e.g., "2026.04.1")
-  string latest_agent_version = 1;
-  // Direct download URL for the agent binary
-  string update_url = 2;
-  // SHA-256 hex checksum of the agent binary
-  string update_checksum = 3;
-}
