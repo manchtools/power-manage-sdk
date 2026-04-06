@@ -115,7 +115,10 @@ func TestNextTime(t *testing.T) {
 }
 
 func TestNextTime_PreservesTimezone(t *testing.T) {
-	berlin, _ := time.LoadLocation("Europe/Berlin")
+	berlin, err := time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		t.Fatal(err)
+	}
 	ref := time.Date(2026, 4, 4, 10, 30, 0, 0, berlin)
 	got, err := NextTime("0 3 * * *", ref)
 	if err != nil {

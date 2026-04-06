@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -15,12 +16,15 @@ import (
 func (a *Apt) HasUpdates(ctx context.Context, securityOnly bool) bool {
 	cmd := a.getAptCmd()
 	args := []string{"-s", "upgrade"}
-	if securityOnly {
-		args = append(args, "-o", "Dir::Etc::SourceList=/etc/apt/sources.list",
-			"-o", "Dir::Etc::SourceParts=/dev/null")
-	}
+	// NOTE: securityOnly filtering for apt is not yet implemented correctly.
+	// Approaches like overriding Dir::Etc::SourceList do not reliably filter
+	// to security-only updates. A proper implementation would need to parse
+	// the origin/label of each upgradable package.
+	_ = securityOnly
 
-	out, err := exec.CommandContext(ctx, cmd, args...).Output()
+	c := exec.CommandContext(ctx, cmd, args...)
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
+	out, err := c.Output()
 	if err != nil {
 		return false
 	}
@@ -42,7 +46,7 @@ func (d *Dnf) HasUpdates(ctx context.Context, securityOnly bool) bool {
 	}
 
 	c := exec.CommandContext(ctx, "dnf", args...)
-	c.Env = append([]string{"LANG=C", "LC_ALL=C"})
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	err := c.Run()
 	if err != nil {
 		if c.ProcessState != nil && c.ProcessState.ExitCode() == 100 {
@@ -69,7 +73,9 @@ func (z *Zypper) HasUpdates(ctx context.Context, securityOnly bool) bool {
 	}
 
 	c := exec.CommandContext(ctx, "zypper", args...)
-	c.Env = append([]string{"LANG=C", "LC_ALL=C"})
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
+	var stdout bytes.Buffer
+	c.Stdout = &stdout
 	err := c.Run()
 	if err != nil {
 		// zypper returns 100 when updates are available
@@ -78,7 +84,14 @@ func (z *Zypper) HasUpdates(ctx context.Context, securityOnly bool) bool {
 		}
 		return false
 	}
-	// Exit 0 with table content also means updates — check output
+	// Exit 0: parse stdout for update table rows (contain "v |" or "i |").
+	scanner := bufio.NewScanner(&stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "v |") || strings.Contains(line, "i |") {
+			return true
+		}
+	}
 	return false
 }
 

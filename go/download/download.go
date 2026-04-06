@@ -81,6 +81,12 @@ func DownloadAndVerify(ctx context.Context, client *http.Client, url, dest, expe
 		return fmt.Errorf("checksum mismatch: got %s, want %s", checksum, expectedSHA256)
 	}
 
+	// Flush to stable storage before closing to ensure data integrity.
+	if err := f.Sync(); err != nil {
+		os.Remove(dest)
+		return fmt.Errorf("sync file: %w", err)
+	}
+
 	return nil
 }
 
@@ -107,7 +113,7 @@ func ExtractChecksum(reader io.Reader, filename string) (string, error) {
 			continue
 		}
 
-		hash := parts[0]
+		hash := strings.ToLower(parts[0])
 		name := parts[1]
 
 		// Strip common prefixes.
@@ -115,6 +121,15 @@ func ExtractChecksum(reader io.Reader, filename string) (string, error) {
 		name = strings.TrimPrefix(name, "*")
 
 		if name == filename {
+			// Validate that the hash looks like a valid SHA256 hex string.
+			if len(hash) != 64 {
+				return "", fmt.Errorf("invalid checksum length %d for %q (expected 64 hex chars)", len(hash), filename)
+			}
+			for _, c := range hash {
+				if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+					return "", fmt.Errorf("invalid hex character %q in checksum for %q", string(c), filename)
+				}
+			}
 			return hash, nil
 		}
 	}

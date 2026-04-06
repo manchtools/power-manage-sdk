@@ -7,8 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
-	"time"
 )
 
 // Repair attempts to fix common package manager issues.
@@ -33,7 +31,7 @@ func (a *Apt) Repair(ctx context.Context) error {
 	}
 
 	// apt --fix-broken install -y
-	if result, err := a.run("apt", "--fix-broken", "install", "-y"); err != nil {
+	if result, err := a.FixBroken(); err != nil {
 		slog.Warn("apt --fix-broken install failed", "error", err, "stderr", result.Stderr)
 	}
 
@@ -107,37 +105,26 @@ func (f *Flatpak) Repair(ctx context.Context) error {
 	return nil
 }
 
-// removeStaleLock removes a lock file if it exists and no process holds it.
-// A lock is considered stale if the file exists but no process has a lock on it.
+// removeStaleLock removes a lock file if no package manager process is running.
+// Rather than trying to detect lock types (apt/dpkg use fcntl, pacman uses
+// O_CREAT|O_EXCL), we simply check whether the owning process is still alive.
 func removeStaleLock(path string) {
-	info, err := os.Stat(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		return // file doesn't exist
 	}
 
-	// Check if the lock is older than 10 minutes (likely stale)
-	if time.Since(info.ModTime()) < 10*time.Minute {
-		return
+	// Check if any package manager process is running.
+	// If so, the lock is probably legitimate — don't touch it.
+	for _, proc := range []string{"apt", "apt-get", "dpkg", "pacman", "zypper", "dnf"} {
+		if err := exec.Command("pgrep", "-x", proc).Run(); err == nil {
+			return // process is running, lock may be active
+		}
 	}
 
-	// Try to acquire an exclusive lock to determine if it's stale
-	f, err := os.Open(path)
-	if err != nil {
-		return
+	// No package manager process running — lock is stale. Remove it.
+	if err := exec.Command("sudo", "-n", "rm", "-f", path).Run(); err != nil {
+		slog.Warn("failed to remove stale lock", "path", path, "error", err)
 	}
-	defer f.Close()
-
-	// Try non-blocking exclusive lock
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err != nil {
-		return // lock is held by another process
-	}
-	// We got the lock, so it's stale — release and remove
-	syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
-	f.Close()
-
-	// Use sudo to remove since these are typically root-owned
-	exec.Command("sudo", "-n", "rm", "-f", path).Run()
 }
 
 // dpkgRun is a helper for running dpkg commands through the apt run() method.
