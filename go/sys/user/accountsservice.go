@@ -26,11 +26,8 @@ func SetHiddenOnLoginScreen(ctx context.Context, username string, hidden bool) e
 
 	if !hidden {
 		// Remove the config file to unhide the user.
-		// If the file doesn't exist, that's fine.
-		if fs.FileExists(ctx, configPath) {
-			return fs.RemoveStrict(ctx, configPath)
-		}
-		return nil
+		// RemoveStrict uses rm -f, which already succeeds if the file doesn't exist.
+		return fs.RemoveStrict(ctx, configPath)
 	}
 
 	// Check if AccountsService directory exists.

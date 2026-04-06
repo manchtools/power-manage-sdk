@@ -48,6 +48,28 @@ func TestDownload(t *testing.T) {
 	}
 }
 
+func TestDownload_ContentLengthExceedsMax(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "99999")
+		w.Write([]byte("small"))
+	}))
+	defer srv.Close()
+
+	f, err := os.CreateTemp(t.TempDir(), "dl-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	_, err = Download(context.Background(), srv.Client(), srv.URL, f, 512)
+	if err == nil {
+		t.Fatal("expected error for Content-Length exceeding max size")
+	}
+	if !strings.Contains(err.Error(), "content length") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestDownload_SizeLimitExceeded(t *testing.T) {
 	content := strings.Repeat("x", 1024)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +160,11 @@ func TestDownloadAndVerify_Mismatch(t *testing.T) {
 }
 
 func TestExtractChecksum(t *testing.T) {
+	hash1 := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	hash2 := "1111111111111111111111111111111111111111111111111111111111111111"
+	hash3 := "2222222222222222222222222222222222222222222222222222222222222222"
+	hash4 := "3333333333333333333333333333333333333333333333333333333333333333"
+
 	tests := []struct {
 		name     string
 		input    string
@@ -147,31 +174,31 @@ func TestExtractChecksum(t *testing.T) {
 	}{
 		{
 			name:     "double space format",
-			input:    "abc123  myfile.tar.gz\ndef456  other.tar.gz\n",
+			input:    hash1 + "  myfile.tar.gz\n" + hash2 + "  other.tar.gz\n",
 			filename: "myfile.tar.gz",
-			want:     "abc123",
+			want:     hash1,
 		},
 		{
 			name:     "single space format",
-			input:    "abc123 myfile.tar.gz\n",
+			input:    hash1 + " myfile.tar.gz\n",
 			filename: "myfile.tar.gz",
-			want:     "abc123",
+			want:     hash1,
 		},
 		{
 			name:     "dot-slash prefix",
-			input:    "abc123  ./myfile.tar.gz\n",
+			input:    hash1 + "  ./myfile.tar.gz\n",
 			filename: "myfile.tar.gz",
-			want:     "abc123",
+			want:     hash1,
 		},
 		{
 			name:     "star prefix (binary mode)",
-			input:    "abc123  *myfile.tar.gz\n",
+			input:    hash1 + "  *myfile.tar.gz\n",
 			filename: "myfile.tar.gz",
-			want:     "abc123",
+			want:     hash1,
 		},
 		{
 			name:     "file not found",
-			input:    "abc123  other.tar.gz\n",
+			input:    hash1 + "  other.tar.gz\n",
 			filename: "myfile.tar.gz",
 			wantErr:  true,
 		},
@@ -183,15 +210,27 @@ func TestExtractChecksum(t *testing.T) {
 		},
 		{
 			name:     "comments and blank lines",
-			input:    "# comment\n\nabc123  myfile.tar.gz\n",
+			input:    "# comment\n\n" + hash1 + "  myfile.tar.gz\n",
 			filename: "myfile.tar.gz",
-			want:     "abc123",
+			want:     hash1,
 		},
 		{
 			name:     "multiple files pick correct one",
-			input:    "aaa  file1.bin\nbbb  file2.bin\nccc  file3.bin\n",
+			input:    hash2 + "  file1.bin\n" + hash3 + "  file2.bin\n" + hash4 + "  file3.bin\n",
 			filename: "file2.bin",
-			want:     "bbb",
+			want:     hash3,
+		},
+		{
+			name:     "uppercase hex is lowercased",
+			input:    "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2  myfile.tar.gz\n",
+			filename: "myfile.tar.gz",
+			want:     hash1,
+		},
+		{
+			name:     "invalid hex length",
+			input:    "abc123  myfile.tar.gz\n",
+			filename: "myfile.tar.gz",
+			wantErr:  true,
 		},
 	}
 

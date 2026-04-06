@@ -8,18 +8,18 @@ import (
 )
 
 // IsReadOnly checks if the filesystem at path is mounted read-only
-// by examining /proc/mounts.
-func IsReadOnly(path string) bool {
+// by examining mount options via findmnt.
+func IsReadOnly(path string) (bool, error) {
 	out, err := exec.Query("findmnt", "-n", "-o", "OPTIONS", "--target", path)
 	if err != nil {
-		return false
+		return false, err
 	}
 	for _, opt := range strings.Split(strings.TrimSpace(out), ",") {
 		if opt == "ro" {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 // RemountRW attempts to remount the filesystem at path as read-write

@@ -2,34 +2,31 @@ package fs
 
 import "path/filepath"
 
-// protectedPaths are system directories that should never be deleted.
-var protectedPaths = map[string]bool{
-	"/":      true,
-	"/bin":   true,
-	"/boot":  true,
-	"/dev":   true,
-	"/etc":   true,
-	"/home":  true,
-	"/lib":   true,
-	"/lib32": true,
-	"/lib64": true,
-	"/libx32": true,
-	"/media": true,
-	"/mnt":   true,
-	"/opt":   true,
-	"/proc":  true,
-	"/root":  true,
-	"/run":   true,
-	"/sbin":  true,
-	"/srv":   true,
-	"/sys":   true,
-	"/tmp":   true,
-	"/usr":   true,
-	"/var":   true,
+// IsProtectedPath returns true if path is a system directory that should
+// never be deleted. The path is cleaned and resolved to absolute before checking.
+// This uses the same set as dangerousPaths (used by RemoveDir) plus additional
+// top-level directories.
+func IsProtectedPath(path string) bool {
+	clean := filepath.Clean(path)
+	if !filepath.IsAbs(clean) {
+		abs, err := filepath.Abs(clean)
+		if err != nil {
+			return true // err on the side of caution
+		}
+		clean = abs
+	}
+	return dangerousPaths[clean] || extraProtectedPaths[clean]
 }
 
-// IsProtectedPath returns true if path is a system directory that should
-// never be deleted. The path is cleaned before checking.
-func IsProtectedPath(path string) bool {
-	return protectedPaths[filepath.Clean(path)]
+// extraProtectedPaths extends dangerousPaths with additional top-level
+// directories that IsProtectedPath should guard but RemoveDir does not
+// need to check (since they are less critical or already covered).
+var extraProtectedPaths = map[string]bool{
+	"/lib32":  true,
+	"/libx32": true,
+	"/media":  true,
+	"/mnt":    true,
+	"/opt":    true,
+	"/srv":    true,
+	"/tmp":    true,
 }

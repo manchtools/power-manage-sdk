@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 
@@ -16,9 +17,10 @@ func KillSessions(ctx context.Context, username string) error {
 	}
 
 	// Try loginctl first (systemd).
+	var loginctlErr error
 	if _, err := exec.LookPath("loginctl"); err == nil {
-		_, err := sysexec.Sudo(ctx, "loginctl", "terminate-user", username)
-		if err == nil {
+		_, loginctlErr = sysexec.Sudo(ctx, "loginctl", "terminate-user", username)
+		if loginctlErr == nil {
 			return nil
 		}
 		// Fall through to pkill on failure.
@@ -31,6 +33,10 @@ func KillSessions(ctx context.Context, username string) error {
 		// Exit code 1 means no processes found — not an error.
 		if result != nil && result.ExitCode == 1 {
 			return nil
+		}
+		// Combine both errors if loginctl also failed.
+		if loginctlErr != nil {
+			return fmt.Errorf("kill sessions for %s: %w", username, errors.Join(loginctlErr, err))
 		}
 		return fmt.Errorf("kill sessions for %s: %w", username, err)
 	}
