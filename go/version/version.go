@@ -116,7 +116,7 @@ func Compare(a, b string) int {
 	if pb.Suffix == "" {
 		return -1 // a is pre-release, b is release
 	}
-	return strings.Compare(pa.Suffix, pb.Suffix)
+	return compareSuffix(pa.Suffix, pb.Suffix)
 }
 
 // IsNewer returns true if a is strictly newer than b.
@@ -129,9 +129,38 @@ func IsNewerOrEqual(a, b string) bool {
 	return Compare(a, b) >= 0
 }
 
+// compareSuffix compares pre-release suffixes numerically.
+// Splits each into alpha prefix + numeric tail (e.g. "rc10" → "rc", 10).
+// Alpha prefixes are compared lexicographically, then numeric tails as integers.
+func compareSuffix(a, b string) int {
+	aPre, aNum := splitSuffix(a)
+	bPre, bNum := splitSuffix(b)
+	if aPre != bPre {
+		return strings.Compare(aPre, bPre)
+	}
+	return cmpInt(aNum, bNum)
+}
+
+// splitSuffix splits a suffix like "rc10" into ("rc", 10).
+// If there's no numeric tail, returns (suffix, 0).
+func splitSuffix(s string) (string, int) {
+	i := len(s)
+	for i > 0 && s[i-1] >= '0' && s[i-1] <= '9' {
+		i--
+	}
+	if i == len(s) {
+		return s, 0
+	}
+	n, _ := strconv.Atoi(s[i:])
+	return s[:i], n
+}
+
 func cmpInt(a, b int) int {
 	if a < b {
 		return -1
 	}
-	return 1
+	if a > b {
+		return 1
+	}
+	return 0
 }
