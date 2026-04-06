@@ -68,26 +68,29 @@ func DownloadAndVerify(ctx context.Context, client *http.Client, url, dest, expe
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
-	defer f.Close()
+
+	cleanup := func() {
+		f.Close()
+		os.Remove(dest)
+	}
 
 	checksum, err := Download(ctx, client, url, f, maxSize)
 	if err != nil {
-		os.Remove(dest)
+		cleanup()
 		return err
 	}
 
 	if !strings.EqualFold(checksum, expectedSHA256) {
-		os.Remove(dest)
+		cleanup()
 		return fmt.Errorf("checksum mismatch: got %s, want %s", checksum, expectedSHA256)
 	}
 
-	// Flush to stable storage before closing to ensure data integrity.
 	if err := f.Sync(); err != nil {
-		os.Remove(dest)
+		cleanup()
 		return fmt.Errorf("sync file: %w", err)
 	}
 
-	return nil
+	return f.Close()
 }
 
 // ExtractChecksum parses a SHA256SUMS-style file from reader and returns
@@ -111,14 +114,14 @@ func ExtractChecksum(reader io.Reader, filename string) (string, error) {
 			continue
 		}
 
-		// Split on first whitespace sequence.
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
+		// Split hash from filename on first whitespace.
+		// SHA256SUMS uses "hash  filename" (two spaces) or "hash *filename".
+		idx := strings.IndexAny(line, " \t")
+		if idx < 0 {
 			continue
 		}
-
-		hash := strings.ToLower(parts[0])
-		name := parts[1]
+		hash := strings.ToLower(line[:idx])
+		name := strings.TrimLeft(line[idx:], " \t")
 
 		// Strip common prefixes.
 		name = strings.TrimPrefix(name, "./")

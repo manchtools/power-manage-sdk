@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 // Repair attempts to fix common package manager issues.
@@ -59,8 +58,9 @@ func (d *Dnf) Repair(ctx context.Context) error {
 		slog.Warn("dnf remove --duplicates failed", "error", err, "stderr", result.Stderr)
 	}
 
-	// rpm --verifydb
+	// rpm --verifydb (read-only, no sudo needed)
 	c := exec.CommandContext(ctx, "rpm", "--verifydb")
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	if out, err := c.CombinedOutput(); err != nil {
 		slog.Warn("rpm --verifydb failed", "error", err, "output", string(out))
 	}
@@ -127,12 +127,4 @@ func removeStaleLock(path string) {
 	if err := exec.Command("sudo", "-n", "rm", "-f", path).Run(); err != nil {
 		slog.Warn("failed to remove stale lock", "path", path, "error", err)
 	}
-}
-
-// dpkgRun is a helper for running dpkg commands through the apt run() method.
-// The Apt.run() method handles sudo and apt-get fallback, but for dpkg we
-// need the command name passed through directly.
-func (a *Apt) dpkgRun(args ...string) (*CommandResult, error) {
-	_ = strings.Join(args, " ") // unused, just to keep strings imported
-	return a.run("dpkg", args...)
 }
