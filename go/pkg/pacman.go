@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -521,6 +522,9 @@ func (p *Pacman) run(args ...string) (*CommandResult, error) {
 	} else {
 		c = exec.CommandContext(p.ctx, "pacman", args...)
 	}
+
+	// Force English locale for reliable output parsing.
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout

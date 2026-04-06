@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -447,6 +448,9 @@ func (d *Dnf) run(args ...string) (*CommandResult, error) {
 	} else {
 		c = exec.CommandContext(d.ctx, "dnf", args...)
 	}
+
+	// Force English locale for reliable output parsing.
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout
