@@ -36,6 +36,9 @@ func Parse(v string) (Parts, error) {
 	var suffix string
 	if idx := strings.IndexByte(v, '-'); idx >= 0 {
 		suffix = v[idx+1:]
+		if suffix == "" {
+			return Parts{}, fmt.Errorf("invalid version %q: trailing '-' with no suffix", v)
+		}
 		v = v[:idx]
 	}
 
@@ -48,10 +51,16 @@ func Parse(v string) (Parts, error) {
 	if err != nil {
 		return Parts{}, fmt.Errorf("invalid year %q: %w", parts[0], err)
 	}
+	if year < 1 || year > 9999 {
+		return Parts{}, fmt.Errorf("invalid year %d: out of range [1-9999]", year)
+	}
 
 	month, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return Parts{}, fmt.Errorf("invalid month %q: %w", parts[1], err)
+	}
+	if month < 1 || month > 12 {
+		return Parts{}, fmt.Errorf("invalid month %d: out of range [1-12]", month)
 	}
 
 	day := 0
@@ -59,6 +68,9 @@ func Parse(v string) (Parts, error) {
 		day, err = strconv.Atoi(parts[2])
 		if err != nil {
 			return Parts{}, fmt.Errorf("invalid day %q: %w", parts[2], err)
+		}
+		if day < 1 || day > 31 {
+			return Parts{}, fmt.Errorf("invalid day %d: out of range [1-31]", day)
 		}
 	}
 
