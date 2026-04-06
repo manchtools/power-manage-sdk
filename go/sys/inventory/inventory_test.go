@@ -1,3 +1,5 @@
+//go:build linux
+
 package inventory
 
 import (
@@ -5,10 +7,17 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
+func testCtx(t *testing.T) context.Context {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	t.Cleanup(cancel)
+	return ctx
+}
+
 func TestGetSystemInfo(t *testing.T) {
-	ctx := context.Background()
+	ctx := testCtx(t)
 	info, err := GetSystemInfo(ctx)
 	if err != nil {
 		t.Fatalf("GetSystemInfo() error: %v", err)
@@ -46,10 +55,13 @@ func TestGetOSInfo(t *testing.T) {
 	if info.PrettyName == "" {
 		t.Error("PrettyName is empty")
 	}
+	if info.Arch == "" {
+		t.Error("Arch is empty")
+	}
 }
 
 func TestGetDisks(t *testing.T) {
-	ctx := context.Background()
+	ctx := testCtx(t)
 	disks, err := GetDisks(ctx)
 	if err != nil {
 		t.Fatalf("GetDisks() error: %v", err)
@@ -70,7 +82,7 @@ func TestGetDisks(t *testing.T) {
 }
 
 func TestGetNetworkInterfaces(t *testing.T) {
-	ctx := context.Background()
+	ctx := testCtx(t)
 	ifaces, err := GetNetworkInterfaces(ctx)
 	if err != nil {
 		t.Fatalf("GetNetworkInterfaces() error: %v", err)

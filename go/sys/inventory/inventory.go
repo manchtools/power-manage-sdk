@@ -1,3 +1,5 @@
+//go:build linux
+
 // Package inventory provides lightweight system inventory collection using
 // standard Linux interfaces (/proc, /etc, standard tools) without requiring
 // osquery.
@@ -128,11 +130,17 @@ type OSInfo struct {
 	ID         string // e.g. "fedora"
 	PrettyName string // e.g. "Fedora Linux 43 (Workstation Edition)"
 	VersionID  string // e.g. "43"
+	Arch       string // e.g. "x86_64" (from runtime.GOARCH mapped to uname convention)
 }
 
 // GetOSInfo returns operating system details from /etc/os-release.
 func GetOSInfo() (*OSInfo, error) {
-	return parseOSRelease("/etc/os-release")
+	info, err := parseOSRelease("/etc/os-release")
+	if err != nil {
+		return nil, err
+	}
+	info.Arch = runtime.GOARCH
+	return info, nil
 }
 
 // parseOSRelease parses an os-release file and returns OSInfo.
@@ -205,27 +213,37 @@ func GetDisks(ctx context.Context) ([]DiskInfo, error) {
 		return nil, fmt.Errorf("run lsblk: %w", err)
 	}
 
+	type blockDevice struct {
+		Name       string        `json:"name"`
+		Size       string        `json:"size"`
+		Type       string        `json:"type"`
+		Mountpoint string        `json:"mountpoint"`
+		Children   []blockDevice `json:"children"`
+	}
+
 	var output struct {
-		Blockdevices []struct {
-			Name       string `json:"name"`
-			Size       string `json:"size"`
-			Type       string `json:"type"`
-			Mountpoint string `json:"mountpoint"`
-		} `json:"blockdevices"`
+		Blockdevices []blockDevice `json:"blockdevices"`
 	}
 	if err := json.Unmarshal([]byte(result.Stdout), &output); err != nil {
 		return nil, fmt.Errorf("parse lsblk output: %w", err)
 	}
 
-	disks := make([]DiskInfo, 0, len(output.Blockdevices))
-	for _, bd := range output.Blockdevices {
-		disks = append(disks, DiskInfo{
-			Device: "/dev/" + bd.Name,
-			Size:   bd.Size,
-			Type:   bd.Type,
-			Mount:  bd.Mountpoint,
-		})
+	var disks []DiskInfo
+	var walk func(devices []blockDevice)
+	walk = func(devices []blockDevice) {
+		for _, bd := range devices {
+			disks = append(disks, DiskInfo{
+				Device: "/dev/" + bd.Name,
+				Size:   bd.Size,
+				Type:   bd.Type,
+				Mount:  bd.Mountpoint,
+			})
+			if len(bd.Children) > 0 {
+				walk(bd.Children)
+			}
+		}
 	}
+	walk(output.Blockdevices)
 	return disks, nil
 }
 
