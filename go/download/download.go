@@ -100,6 +100,10 @@ func DownloadAndVerify(ctx context.Context, client *http.Client, url, dest, expe
 //	<hash>  ./<filename>     (./ prefix)
 //	<hash>  *<filename>      (* prefix for binary mode)
 func ExtractChecksum(reader io.Reader, filename string) (string, error) {
+	// Normalize the input filename the same way we normalize parsed names.
+	filename = strings.TrimPrefix(filename, "./")
+	filename = strings.TrimPrefix(filename, "*")
+
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())

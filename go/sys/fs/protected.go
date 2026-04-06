@@ -29,4 +29,5 @@ var extraProtectedPaths = map[string]bool{
 	"/opt":    true,
 	"/srv":    true,
 	"/tmp":    true,
+	"/snap":   true, // snap-based distributions (Ubuntu)
 }

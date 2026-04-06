@@ -10,6 +10,10 @@ import (
 )
 
 // Repair attempts to fix common package manager issues.
+//
+// NOTE: The ctx parameter is accepted for API consistency but the underlying
+// run() method uses the manager's stored context (from NewXxxWithContext).
+// For proper context propagation, construct the manager with the desired context.
 
 // Repair for Apt: removes stale lock files, runs dpkg --configure -a,
 // apt --fix-broken install -y, and apt update.
@@ -105,23 +109,21 @@ func (f *Flatpak) Repair(ctx context.Context) error {
 	return nil
 }
 
-// removeStaleLock removes a lock file if no package manager process is running.
-// Rather than trying to detect lock types (apt/dpkg use fcntl, pacman uses
-// O_CREAT|O_EXCL), we simply check whether the owning process is still alive.
+// removeStaleLock removes a lock file if the owning package manager process
+// is not running. Uses fuser to check if any process has the file open,
+// which is more reliable than pgrep for detecting active locks.
 func removeStaleLock(path string) {
 	if _, err := os.Stat(path); err != nil {
 		return // file doesn't exist
 	}
 
-	// Check if any package manager process is running.
-	// If so, the lock is probably legitimate — don't touch it.
-	for _, proc := range []string{"apt", "apt-get", "dpkg", "pacman", "zypper", "dnf"} {
-		if err := exec.Command("pgrep", "-x", proc).Run(); err == nil {
-			return // process is running, lock may be active
-		}
+	// Check if any process has this specific file open.
+	// fuser exits 0 if processes are using the file, 1 if not.
+	if err := exec.Command("fuser", path).Run(); err == nil {
+		return // file is actively in use
 	}
 
-	// No package manager process running — lock is stale. Remove it.
+	// No process has the file open — lock is stale. Remove it.
 	if err := exec.Command("sudo", "-n", "rm", "-f", path).Run(); err != nil {
 		slog.Warn("failed to remove stale lock", "path", path, "error", err)
 	}
