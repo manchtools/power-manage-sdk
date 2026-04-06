@@ -43,6 +43,9 @@ func TestParse_Invalid(t *testing.T) {
 		"2026.00.01",
 		"2026.04.00",
 		"10000.01.01",
+		"0000.01.01",
+		"-2026.04.07",
+		"2026.04.32",
 	}
 	for _, v := range invalid {
 		if _, err := Parse(v); err == nil {
@@ -80,8 +83,9 @@ func TestCompare(t *testing.T) {
 		{"2026.04.07", "2026.04.07-rc1", 1},
 		{"2026.04.07-rc1", "2026.04.07", -1},
 
-		// Pre-release ordering (lexicographic)
+		// Pre-release ordering (numeric-aware)
 		{"2026.04.07-rc2", "2026.04.07-rc1", 1},
+		{"2026.04.07-rc10", "2026.04.07-rc2", 1},  // numeric: 10 > 2
 		{"2026.04.07-beta1", "2026.04.07-rc1", -1},
 
 		// Dev sorts after everything
