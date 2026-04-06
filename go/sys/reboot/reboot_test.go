@@ -1,28 +1,101 @@
 package reboot
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 )
 
-func TestIsRequired_DoesNotPanic(t *testing.T) {
-	// Just verify it runs without panicking — actual result depends on system state
-	result := IsRequired()
-	t.Logf("IsRequired() = %v", result)
-}
+func TestIsRequired_DebianFileExists(t *testing.T) {
+	dir := t.TempDir()
+	fakeFile := filepath.Join(dir, "reboot-required")
+	os.WriteFile(fakeFile, []byte("*** System restart required ***\n"), 0644)
 
-func TestIsRequired_DebianDetection(t *testing.T) {
-	// On Debian/Ubuntu, /var/run/reboot-required indicates a reboot is needed.
-	// We can't create this file without root, so just verify the path is checked.
-	// If the file happens to exist, IsRequired should return true.
-	t.Logf("Debian reboot-required detection: checked /var/run/reboot-required")
-}
-
-func TestIsRequired_FedoraDetection(t *testing.T) {
-	if _, err := exec.LookPath("needs-restarting"); err != nil {
-		t.Skip("needs-restarting not available")
+	origStat := statFunc
+	statFunc = func(name string) (os.FileInfo, error) {
+		if name == "/var/run/reboot-required" {
+			return os.Stat(fakeFile)
+		}
+		return os.Stat(name)
 	}
+	defer func() { statFunc = origStat }()
 
-	result := IsRequired()
-	t.Logf("IsRequired() via needs-restarting = %v", result)
+	if !IsRequired() {
+		t.Error("expected IsRequired() = true when reboot-required file exists")
+	}
 }
+
+func TestIsRequired_DebianFileAbsent(t *testing.T) {
+	origStat := statFunc
+	origLookPath := lookPathFunc
+	statFunc = func(name string) (os.FileInfo, error) {
+		return nil, os.ErrNotExist
+	}
+	lookPathFunc = func(file string) (string, error) {
+		return "", exec.ErrNotFound
+	}
+	defer func() { statFunc = origStat; lookPathFunc = origLookPath }()
+
+	if IsRequired() {
+		t.Error("expected IsRequired() = false when no detection method available")
+	}
+}
+
+func TestIsRequired_FedoraRebootNeeded(t *testing.T) {
+	origStat := statFunc
+	origLookPath := lookPathFunc
+	origRunCmd := runCmdFunc
+	statFunc = func(name string) (os.FileInfo, error) {
+		return nil, os.ErrNotExist
+	}
+	lookPathFunc = func(file string) (string, error) {
+		if file == "needs-restarting" {
+			return "/usr/bin/needs-restarting", nil
+		}
+		return "", exec.ErrNotFound
+	}
+	runCmdFunc = func(name string, args ...string) error {
+		// Simulate needs-restarting exit code 1 (reboot needed)
+		cmd := exec.Command("sh", "-c", "exit 1")
+		cmd.Run()
+		return &exec.ExitError{ProcessState: cmd.ProcessState}
+	}
+	defer func() { statFunc = origStat; lookPathFunc = origLookPath; runCmdFunc = origRunCmd }()
+
+	if !IsRequired() {
+		t.Error("expected IsRequired() = true when needs-restarting exits 1")
+	}
+}
+
+func TestIsRequired_FedoraNoReboot(t *testing.T) {
+	origStat := statFunc
+	origLookPath := lookPathFunc
+	origRunCmd := runCmdFunc
+	statFunc = func(name string) (os.FileInfo, error) {
+		return nil, os.ErrNotExist
+	}
+	lookPathFunc = func(file string) (string, error) {
+		if file == "needs-restarting" {
+			return "/usr/bin/needs-restarting", nil
+		}
+		return "", exec.ErrNotFound
+	}
+	runCmdFunc = func(name string, args ...string) error {
+		return nil // exit 0 = no reboot needed
+	}
+	defer func() { statFunc = origStat; lookPathFunc = origLookPath; runCmdFunc = origRunCmd }()
+
+	if IsRequired() {
+		t.Error("expected IsRequired() = false when needs-restarting exits 0")
+	}
+}
+
+func TestIsRequired_LiveSystem(t *testing.T) {
+	result := IsRequired()
+	t.Logf("IsRequired() = %v (live system)", result)
+}
+
+// Unused but kept for reference — fmt is used indirectly
+var _ = fmt.Sprintf

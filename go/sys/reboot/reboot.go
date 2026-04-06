@@ -9,6 +9,15 @@ import (
 	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
+// Injectable seams for testing. Production code uses the defaults.
+var (
+	statFunc     = os.Stat
+	lookPathFunc = exec.LookPath
+	runCmdFunc   = func(name string, args ...string) error {
+		return exec.Command(name, args...).Run()
+	}
+)
+
 // IsRequired checks if the system requires a reboot after updates.
 //
 // Detection methods:
@@ -18,14 +27,13 @@ import (
 // Returns false on unsupported systems or if detection fails.
 func IsRequired() bool {
 	// Debian/Ubuntu: file-based detection
-	if _, err := os.Stat("/var/run/reboot-required"); err == nil {
+	if _, err := statFunc("/var/run/reboot-required"); err == nil {
 		return true
 	}
 
 	// Fedora/RHEL: needs-restarting (from dnf-utils/yum-utils)
-	if path, err := exec.LookPath("needs-restarting"); err == nil {
-		cmd := exec.Command(path, "-r")
-		if err := cmd.Run(); err != nil {
+	if path, err := lookPathFunc("needs-restarting"); err == nil {
+		if err := runCmdFunc(path, "-r"); err != nil {
 			// needs-restarting exits 1 when reboot is needed
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				return exitErr.ExitCode() == 1
