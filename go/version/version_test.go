@@ -38,6 +38,11 @@ func TestParse_Invalid(t *testing.T) {
 		"2026",
 		"2026.04.07.01",
 		"2026.xx.07",
+		"2026.04.07-",
+		"2026.13.01",
+		"2026.00.01",
+		"2026.04.00",
+		"10000.01.01",
 	}
 	for _, v := range invalid {
 		if _, err := Parse(v); err == nil {
