@@ -448,7 +448,8 @@ func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
 	}
 
 	// Prevent debconf from trying interactive frontends when there is no terminal.
-	c.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
+	// Force English locale for reliable output parsing.
+	c.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive", "LANG=C", "LC_ALL=C")
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout

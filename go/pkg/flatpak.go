@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -583,6 +584,9 @@ func (f *Flatpak) run(args ...string) (*CommandResult, error) {
 	} else {
 		c = exec.CommandContext(f.ctx, "flatpak", args...)
 	}
+
+	// Force English locale for reliable output parsing.
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout

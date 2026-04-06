@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -470,6 +471,9 @@ func (z *Zypper) run(args ...string) (*CommandResult, error) {
 	} else {
 		c = exec.CommandContext(z.ctx, "zypper", args...)
 	}
+
+	// Force English locale for reliable output parsing.
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 
 	var stdout, stderr bytes.Buffer
 	c.Stdout = &stdout
