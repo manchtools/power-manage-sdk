@@ -2,6 +2,7 @@ package fs
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
@@ -26,5 +27,8 @@ func IsReadOnly(path string) (bool, error) {
 // via sudo mount -o remount,rw.
 func RemountRW(ctx context.Context, path string) error {
 	_, err := exec.Sudo(ctx, "mount", "-o", "remount,rw", path)
-	return err
+	if err != nil {
+		return fmt.Errorf("remount %s read-write: %w", path, err)
+	}
+	return nil
 }
