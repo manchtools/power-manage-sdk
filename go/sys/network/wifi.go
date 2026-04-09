@@ -21,9 +21,9 @@ const (
 	WiFiAuthEAPTLS WiFiAuthType = 2
 )
 
-// certBaseDir is the expected parent directory for cert directories.
-// Delete validates certDir is under this path before removing.
-const certBaseDir = "/var/lib/power-manage/wifi"
+// CertBaseDir is the expected parent directory for cert directories.
+// Both CreateOrUpdate and Delete validate paths against this.
+const CertBaseDir = "/var/lib/power-manage/wifi"
 
 // WiFiProfile represents a NetworkManager WiFi connection profile.
 type WiFiProfile struct {
@@ -38,7 +38,7 @@ type WiFiProfile struct {
 	AutoConnect bool
 	Hidden      bool
 	Priority    int
-	CertDir     string // Directory for EAP-TLS cert files
+	CertDir     string // Directory for EAP-TLS cert files (must be under CertBaseDir)
 }
 
 // IsAvailable returns true if NetworkManager nmcli is installed and reachable.
@@ -58,7 +58,6 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 		return false, err
 	}
 
-	// Write certificate files for EAP-TLS before configuring the connection.
 	if profile.AuthType == WiFiAuthEAPTLS {
 		if err := writeCerts(profile); err != nil {
 			return false, fmt.Errorf("write certificates: %w", err)
@@ -100,24 +99,31 @@ func Delete(ctx context.Context, name, certDir string) error {
 	return nil
 }
 
-// safeRemoveCertDir validates that certDir is safe to remove before calling
-// os.RemoveAll. Prevents accidental deletion of arbitrary paths.
+// isSubdirOf checks that child is a proper subdirectory of parent (not parent itself).
+func isSubdirOf(parent, child string) bool {
+	rel, err := filepath.Rel(parent, child)
+	if err != nil {
+		return false
+	}
+	// Must not be ".", "..", or start with "../"
+	return rel != "." && !strings.HasPrefix(rel, "..")
+}
+
+// safeRemoveCertDir validates that certDir is a proper subdirectory of
+// CertBaseDir before removing. Rejects the base dir itself, parent traversal,
+// non-directories, and paths outside the base.
 func safeRemoveCertDir(certDir string) error {
 	abs, err := filepath.Abs(filepath.Clean(certDir))
 	if err != nil {
 		return fmt.Errorf("resolve cert directory: %w", err)
 	}
-	if abs == "/" || abs == "." {
-		return fmt.Errorf("refusing to remove unsafe path: %s", abs)
-	}
-	rel, err := filepath.Rel(certBaseDir, abs)
-	if err != nil || strings.HasPrefix(rel, "..") {
-		return fmt.Errorf("cert directory %s is not under %s", abs, certBaseDir)
+	if !isSubdirOf(CertBaseDir, abs) {
+		return fmt.Errorf("cert directory %s is not a subdirectory of %s", abs, CertBaseDir)
 	}
 	info, err := os.Stat(abs)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // already gone
+			return nil
 		}
 		return fmt.Errorf("stat cert directory: %w", err)
 	}
@@ -184,7 +190,6 @@ func appendAuthArgs(args []string, p WiFiProfile) []string {
 			"802-1x.eap", "tls",
 			"802-1x.identity", p.Identity,
 		)
-		// Only add cert path args when cert content is provided
 		if p.CACert != "" {
 			args = append(args, "802-1x.ca-cert", filepath.Join(p.CertDir, "ca.pem"))
 		}
@@ -204,15 +209,12 @@ func appendCommonArgs(args []string, p WiFiProfile) []string {
 	} else {
 		args = append(args, "connection.autoconnect", "no")
 	}
-
 	args = append(args, "connection.autoconnect-priority", fmt.Sprintf("%d", p.Priority))
-
 	if p.Hidden {
 		args = append(args, "wifi.hidden", "yes")
 	} else {
 		args = append(args, "wifi.hidden", "no")
 	}
-
 	return args
 }
 
@@ -236,6 +238,10 @@ func validateProfile(p WiFiProfile) error {
 		if p.CertDir == "" {
 			return fmt.Errorf("cert directory is required for EAP-TLS authentication")
 		}
+		abs, err := filepath.Abs(filepath.Clean(p.CertDir))
+		if err != nil || !isSubdirOf(CertBaseDir, abs) {
+			return fmt.Errorf("cert directory must be under %s, got %s", CertBaseDir, p.CertDir)
+		}
 	default:
 		return fmt.Errorf("unknown auth type: %d", p.AuthType)
 	}
@@ -243,21 +249,54 @@ func validateProfile(p WiFiProfile) error {
 }
 
 // modifyIfNeeded checks current settings and modifies only if they differ from desired.
+// Performs a two-way comparison: detects both changed values and removed keys.
 func modifyIfNeeded(ctx context.Context, p WiFiProfile) (bool, error) {
 	current, err := GetSettings(ctx, p.Name)
 	if err != nil {
-		// Cannot read settings; modify unconditionally to be safe.
 		return modify(ctx, p)
 	}
 
 	desired := buildDesiredSettings(p)
 
+	// Check desired keys exist with correct values in current
 	for key, want := range desired {
 		if current[key] != want {
 			return modify(ctx, p)
 		}
 	}
+
+	// Check managed keys in current that are absent from desired (removed fields)
+	for _, key := range managedKeys(p.AuthType) {
+		if _, inCurrent := current[key]; !inCurrent {
+			continue
+		}
+		if _, inDesired := desired[key]; !inDesired {
+			return modify(ctx, p)
+		}
+	}
+
 	return false, nil
+}
+
+// managedKeys returns the set of nmcli keys that this package manages for the
+// given auth type. Used to detect when a key was removed from the profile.
+func managedKeys(authType WiFiAuthType) []string {
+	keys := []string{
+		"wifi.ssid",
+		"connection.autoconnect",
+		"connection.autoconnect-priority",
+		"wifi.hidden",
+	}
+	switch authType {
+	case WiFiAuthPSK:
+		keys = append(keys, "wifi-sec.key-mgmt", "wifi-sec.psk")
+	case WiFiAuthEAPTLS:
+		keys = append(keys,
+			"wifi-sec.key-mgmt", "802-1x.eap", "802-1x.identity",
+			"802-1x.ca-cert", "802-1x.client-cert", "802-1x.private-key",
+		)
+	}
+	return keys
 }
 
 func modify(ctx context.Context, p WiFiProfile) (bool, error) {

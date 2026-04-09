@@ -73,6 +73,35 @@ func TestBuildAddArgs_EAPTLS(t *testing.T) {
 	assertArgs(t, expected, args)
 }
 
+func TestBuildAddArgs_EAPTLS_NoCerts(t *testing.T) {
+	p := WiFiProfile{
+		Name:        "pm-wifi-xyz789",
+		SSID:        "SecureNet",
+		AuthType:    WiFiAuthEAPTLS,
+		Identity:    "user@corp.com",
+		CertDir:     "/var/lib/power-manage/wifi/xyz789",
+		AutoConnect: true,
+	}
+
+	args := BuildAddArgs(p)
+
+	// No cert path args when cert content is empty
+	expected := []string{
+		"con", "add",
+		"con-name", "pm-wifi-xyz789",
+		"type", "wifi",
+		"ssid", "SecureNet",
+		"wifi-sec.key-mgmt", "wpa-eap",
+		"802-1x.eap", "tls",
+		"802-1x.identity", "user@corp.com",
+		"connection.autoconnect", "yes",
+		"connection.autoconnect-priority", "0",
+		"wifi.hidden", "no",
+	}
+
+	assertArgs(t, expected, args)
+}
+
 func TestBuildModifyArgs_PSK(t *testing.T) {
 	p := WiFiProfile{
 		Name:        "pm-wifi-abc123",
@@ -184,12 +213,14 @@ func TestValidateProfile(t *testing.T) {
 		wantErr bool
 	}{
 		{"valid PSK", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthPSK, PSK: "pass"}, false},
-		{"valid EAP-TLS", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/tmp"}, false},
+		{"valid EAP-TLS", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/var/lib/power-manage/wifi/test"}, false},
 		{"missing name", WiFiProfile{SSID: "net", AuthType: WiFiAuthPSK, PSK: "pass"}, true},
 		{"missing SSID", WiFiProfile{Name: "test", AuthType: WiFiAuthPSK, PSK: "pass"}, true},
 		{"missing PSK", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthPSK}, true},
-		{"missing identity", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, CertDir: "/tmp"}, true},
+		{"missing identity", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, CertDir: "/var/lib/power-manage/wifi/test"}, true},
 		{"missing certdir", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user"}, true},
+		{"certdir outside base", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/tmp/evil"}, true},
+		{"certdir is base itself", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: CertBaseDir}, true},
 		{"unknown auth", WiFiProfile{Name: "test", SSID: "net", AuthType: 99}, true},
 	}
 	for _, tt := range tests {
@@ -199,6 +230,55 @@ func TestValidateProfile(t *testing.T) {
 				t.Errorf("validateProfile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestIsSubdirOf(t *testing.T) {
+	tests := []struct {
+		parent, child string
+		want          bool
+	}{
+		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi/abc", true},
+		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi/abc/def", true},
+		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi", false},  // base itself
+		{"/var/lib/power-manage/wifi", "/tmp/evil", false},                   // outside
+		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi/../x", false}, // traversal
+		{"/var/lib/power-manage/wifi", "/", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.child, func(t *testing.T) {
+			if got := isSubdirOf(tt.parent, tt.child); got != tt.want {
+				t.Errorf("isSubdirOf(%q, %q) = %v, want %v", tt.parent, tt.child, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSafeRemoveCertDir(t *testing.T) {
+	// Create a valid subdirectory
+	dir := filepath.Join(CertBaseDir, "test-safe-remove-"+t.Name())
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Skip("cannot create test dir under CertBaseDir (not root?)")
+	}
+	defer os.RemoveAll(dir)
+
+	if err := safeRemoveCertDir(dir); err != nil {
+		t.Errorf("safeRemoveCertDir(%q) = %v", dir, err)
+	}
+
+	// Should reject the base directory itself
+	if err := safeRemoveCertDir(CertBaseDir); err == nil {
+		t.Error("expected error when removing CertBaseDir itself")
+	}
+
+	// Should reject paths outside base
+	if err := safeRemoveCertDir("/tmp"); err == nil {
+		t.Error("expected error for path outside CertBaseDir")
+	}
+
+	// Should be fine for non-existent paths under base
+	if err := safeRemoveCertDir(filepath.Join(CertBaseDir, "nonexistent")); err != nil {
+		t.Errorf("expected nil for non-existent path, got: %v", err)
 	}
 }
 
@@ -216,7 +296,6 @@ func TestWriteCerts(t *testing.T) {
 		t.Fatalf("writeCerts: %v", err)
 	}
 
-	// Verify files exist and have correct content.
 	files := map[string]string{
 		"ca.pem":         "ca-content",
 		"client.pem":     "client-content",
@@ -265,12 +344,10 @@ func TestWriteCerts_SkipsEmpty(t *testing.T) {
 		t.Fatalf("writeCerts: %v", err)
 	}
 
-	// ca.pem should exist
 	if _, err := readFile(t, dir, "ca.pem"); err != nil {
 		t.Errorf("ca.pem should exist: %v", err)
 	}
 
-	// client.pem and client-key.pem should NOT exist
 	for _, name := range []string{"client.pem", "client-key.pem"} {
 		_, err := readFile(t, dir, name)
 		if err == nil {
@@ -279,25 +356,32 @@ func TestWriteCerts_SkipsEmpty(t *testing.T) {
 	}
 }
 
+func TestManagedKeys(t *testing.T) {
+	pskKeys := managedKeys(WiFiAuthPSK)
+	if len(pskKeys) < 6 {
+		t.Errorf("expected at least 6 managed keys for PSK, got %d", len(pskKeys))
+	}
+	eapKeys := managedKeys(WiFiAuthEAPTLS)
+	if len(eapKeys) < 10 {
+		t.Errorf("expected at least 10 managed keys for EAP-TLS, got %d", len(eapKeys))
+	}
+}
+
 func readFile(t *testing.T, dir, name string) ([]byte, error) {
 	t.Helper()
 	return os.ReadFile(filepath.Join(dir, name))
 }
 
-// assertArgs checks that actual contains all expected args in order.
+// assertArgs checks that actual exactly matches expected.
 func assertArgs(t *testing.T, expected, actual []string) {
 	t.Helper()
 
-	if len(actual) < len(expected) {
-		t.Errorf("got %d args, want at least %d\ngot:  %v\nwant: %v", len(actual), len(expected), actual, expected)
+	if len(actual) != len(expected) {
+		t.Errorf("got %d args, want %d\ngot:  %v\nwant: %v", len(actual), len(expected), actual, expected)
 		return
 	}
 
 	for i, want := range expected {
-		if i >= len(actual) {
-			t.Errorf("missing arg at index %d: want %q", i, want)
-			continue
-		}
 		if actual[i] != want {
 			t.Errorf("arg[%d] = %q, want %q\nfull args: %v", i, actual[i], want, actual)
 		}
