@@ -21,6 +21,10 @@ const (
 	WiFiAuthEAPTLS WiFiAuthType = 2
 )
 
+// certBaseDir is the expected parent directory for cert directories.
+// Delete validates certDir is under this path before removing.
+const certBaseDir = "/var/lib/power-manage/wifi"
+
 // WiFiProfile represents a NetworkManager WiFi connection profile.
 type WiFiProfile struct {
 	Name        string       // Connection name (e.g. "pm-wifi-<id>")
@@ -89,11 +93,38 @@ func Delete(ctx context.Context, name, certDir string) error {
 	}
 
 	if certDir != "" {
-		if err := os.RemoveAll(certDir); err != nil {
-			return fmt.Errorf("remove cert directory %s: %w", certDir, err)
+		if err := safeRemoveCertDir(certDir); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// safeRemoveCertDir validates that certDir is safe to remove before calling
+// os.RemoveAll. Prevents accidental deletion of arbitrary paths.
+func safeRemoveCertDir(certDir string) error {
+	abs, err := filepath.Abs(filepath.Clean(certDir))
+	if err != nil {
+		return fmt.Errorf("resolve cert directory: %w", err)
+	}
+	if abs == "/" || abs == "." {
+		return fmt.Errorf("refusing to remove unsafe path: %s", abs)
+	}
+	rel, err := filepath.Rel(certBaseDir, abs)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("cert directory %s is not under %s", abs, certBaseDir)
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // already gone
+		}
+		return fmt.Errorf("stat cert directory: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("cert path %s is not a directory", abs)
+	}
+	return os.RemoveAll(abs)
 }
 
 // GetSettings retrieves current settings of a connection as a key-value map.
@@ -152,10 +183,17 @@ func appendAuthArgs(args []string, p WiFiProfile) []string {
 			"wifi-sec.key-mgmt", "wpa-eap",
 			"802-1x.eap", "tls",
 			"802-1x.identity", p.Identity,
-			"802-1x.ca-cert", filepath.Join(p.CertDir, "ca.pem"),
-			"802-1x.client-cert", filepath.Join(p.CertDir, "client.pem"),
-			"802-1x.private-key", filepath.Join(p.CertDir, "client-key.pem"),
 		)
+		// Only add cert path args when cert content is provided
+		if p.CACert != "" {
+			args = append(args, "802-1x.ca-cert", filepath.Join(p.CertDir, "ca.pem"))
+		}
+		if p.ClientCert != "" {
+			args = append(args, "802-1x.client-cert", filepath.Join(p.CertDir, "client.pem"))
+		}
+		if p.ClientKey != "" {
+			args = append(args, "802-1x.private-key", filepath.Join(p.CertDir, "client-key.pem"))
+		}
 	}
 	return args
 }
@@ -247,6 +285,15 @@ func buildDesiredSettings(p WiFiProfile) map[string]string {
 		desired["wifi-sec.key-mgmt"] = "wpa-eap"
 		desired["802-1x.eap"] = "tls"
 		desired["802-1x.identity"] = p.Identity
+		if p.CACert != "" {
+			desired["802-1x.ca-cert"] = filepath.Join(p.CertDir, "ca.pem")
+		}
+		if p.ClientCert != "" {
+			desired["802-1x.client-cert"] = filepath.Join(p.CertDir, "client.pem")
+		}
+		if p.ClientKey != "" {
+			desired["802-1x.private-key"] = filepath.Join(p.CertDir, "client-key.pem")
+		}
 	}
 
 	if p.AutoConnect {
