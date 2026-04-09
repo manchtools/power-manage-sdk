@@ -167,7 +167,10 @@ func TestConnectionExists_NonExistent(t *testing.T) {
 		t.Skip("nmcli not available")
 	}
 
-	exists := ConnectionExists(context.Background(), "pm-wifi-nonexistent-test-98765")
+	exists, err := ConnectionExists(context.Background(), "pm-wifi-nonexistent-test-98765")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if exists {
 		t.Error("expected non-existent connection to return false")
 	}

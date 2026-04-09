@@ -47,8 +47,19 @@ func IsAvailable() bool {
 }
 
 // ConnectionExists checks if a named NetworkManager connection profile exists.
-func ConnectionExists(ctx context.Context, name string) bool {
-	return sysexec.CheckCtx(ctx, "nmcli", "-t", "-f", "NAME", "con", "show", name)
+// Returns (true, nil) if found, (false, nil) if not found, (false, err) on failure.
+func ConnectionExists(ctx context.Context, name string) (bool, error) {
+	result, err := sysexec.Run(ctx, "nmcli", "-t", "-f", "NAME", "con", "show", name)
+	if err == nil {
+		return true, nil
+	}
+	// nmcli returns a non-zero exit code when the connection doesn't exist.
+	// Distinguish from real errors (context cancelled, nmcli not installed)
+	// by checking if we got a result with an exit code at all.
+	if result != nil && result.ExitCode > 0 {
+		return false, nil
+	}
+	return false, fmt.Errorf("check connection %s: %w", name, err)
 }
 
 // CreateOrUpdate creates or updates a WiFi connection profile.
@@ -58,33 +69,151 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 		return false, err
 	}
 
-	if profile.AuthType == WiFiAuthEAPTLS {
-		if err := writeCerts(profile); err != nil {
+	exists, err := ConnectionExists(ctx, profile.Name)
+	if err != nil {
+		return false, err
+	}
+
+	if exists {
+		return updateConnection(ctx, profile)
+	}
+	return createConnection(ctx, profile)
+}
+
+// createConnection writes certs (if EAP-TLS) and creates a new connection.
+// Cleans up certs on failure since no connection exists to use them.
+func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
+	if p.AuthType == WiFiAuthEAPTLS {
+		if err := writeCerts(p); err != nil {
 			return false, fmt.Errorf("write certificates: %w", err)
 		}
 	}
-
-	if ConnectionExists(ctx, profile.Name) {
-		changed, err := modifyIfNeeded(ctx, profile)
-		if err != nil && profile.AuthType == WiFiAuthEAPTLS {
-			removeCerts(profile.CertDir)
-		}
-		return changed, err
-	}
-
-	args := BuildAddArgs(profile)
+	args := BuildAddArgs(p)
 	if _, err := sysexec.Sudo(ctx, "nmcli", args...); err != nil {
-		if profile.AuthType == WiFiAuthEAPTLS {
-			removeCerts(profile.CertDir)
+		if p.AuthType == WiFiAuthEAPTLS {
+			removeCerts(p.CertDir)
 		}
 		return false, fmt.Errorf("create connection: %w", err)
 	}
 	return true, nil
 }
 
+// updateConnection modifies an existing connection if settings differ.
+// For EAP-TLS, certs are written to a temp dir and only moved into place
+// on success, so the live certs aren't corrupted on failure.
+func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
+	current, err := GetSettings(ctx, p.Name)
+	if err != nil {
+		// Can't read current settings — force modify with certs in place
+		return forceModify(ctx, p, nil)
+	}
+
+	if !needsModify(current, p) {
+		return false, nil
+	}
+
+	if p.AuthType == WiFiAuthEAPTLS {
+		return modifyWithStagedCerts(ctx, p, current)
+	}
+	return forceModify(ctx, p, current)
+}
+
+// modifyWithStagedCerts writes certs to a temp dir, modifies the connection
+// pointing at the temp dir, then moves certs into the final location.
+// On failure the temp dir is cleaned up and live certs are untouched.
+func modifyWithStagedCerts(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
+	tmpDir := p.CertDir + ".tmp"
+	staged := p
+	staged.CertDir = tmpDir
+
+	if err := writeCerts(staged); err != nil {
+		return false, fmt.Errorf("write staged certificates: %w", err)
+	}
+
+	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(staged, current)...); err != nil {
+		os.RemoveAll(tmpDir)
+		return false, fmt.Errorf("modify connection: %w", err)
+	}
+
+	// Success — swap staged certs into final location
+	os.RemoveAll(p.CertDir)
+	if err := os.Rename(tmpDir, p.CertDir); err != nil {
+		// Rename failed — update nmcli to point at wherever certs actually are
+		os.RemoveAll(tmpDir)
+		return true, fmt.Errorf("move staged certs: %w", err)
+	}
+
+	// Update nmcli cert paths to final location
+	sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...)
+	return true, nil
+}
+
+// forceModify applies a modify command. For non-EAP-TLS or when we can't read
+// current settings. current may be nil if settings couldn't be read.
+func forceModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
+	if p.AuthType == WiFiAuthEAPTLS {
+		if err := writeCerts(p); err != nil {
+			return false, fmt.Errorf("write certificates: %w", err)
+		}
+	}
+	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
+		return false, fmt.Errorf("modify connection: %w", err)
+	}
+	return true, nil
+}
+
+// needsModify performs a two-way comparison between current settings and desired.
+func needsModify(current map[string]string, p WiFiProfile) bool {
+	desired := buildDesiredSettings(p)
+
+	for key, want := range desired {
+		if current[key] != want {
+			return true
+		}
+	}
+	for _, key := range managedKeys(p.AuthType) {
+		if _, inCurrent := current[key]; !inCurrent {
+			continue
+		}
+		if _, inDesired := desired[key]; !inDesired {
+			return true
+		}
+	}
+	return false
+}
+
+// buildModifyArgs builds nmcli modify arguments. If current is non-nil,
+// managed keys present in current but absent from the profile are set to ""
+// to clear them.
+func buildModifyArgs(p WiFiProfile, current map[string]string) []string {
+	args := []string{
+		"con", "mod", p.Name,
+		"wifi.ssid", p.SSID,
+	}
+	args = appendAuthArgs(args, p)
+	args = appendCommonArgs(args, p)
+
+	if current != nil {
+		desired := buildDesiredSettings(p)
+		for _, key := range managedKeys(p.AuthType) {
+			if _, inCurrent := current[key]; !inCurrent {
+				continue
+			}
+			if _, inDesired := desired[key]; !inDesired {
+				args = append(args, key, "")
+			}
+		}
+	}
+	return args
+}
+
 // Delete removes a WiFi connection by name and cleans up cert files in certDir.
 func Delete(ctx context.Context, name, certDir string) error {
-	if ConnectionExists(ctx, name) {
+	exists, err := ConnectionExists(ctx, name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		if _, err := sysexec.Sudo(ctx, "nmcli", "con", "delete", name); err != nil {
 			return fmt.Errorf("delete connection %s: %w", name, err)
 		}
@@ -170,6 +299,7 @@ func safeRemoveCertDir(certDir string) error {
 }
 
 // GetSettings retrieves current settings of a connection as a key-value map.
+// Values are unescaped from nmcli terse-mode encoding (\: -> :, \\ -> \).
 func GetSettings(ctx context.Context, name string) (map[string]string, error) {
 	result, err := sysexec.Run(ctx, "nmcli", "-t", "-f", "all", "con", "show", name)
 	if err != nil {
@@ -180,10 +310,18 @@ func GetSettings(ctx context.Context, name string) (map[string]string, error) {
 	for _, line := range strings.Split(result.Stdout, "\n") {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) == 2 {
-			settings[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+			settings[strings.TrimSpace(parts[0])] = unescapeNmcli(strings.TrimSpace(parts[1]))
 		}
 	}
 	return settings, nil
+}
+
+// unescapeNmcli reverses nmcli terse-mode escaping: \\ -> \, \: -> :
+func unescapeNmcli(s string) string {
+	s = strings.ReplaceAll(s, `\\`, "\x00")
+	s = strings.ReplaceAll(s, `\:`, ":")
+	s = strings.ReplaceAll(s, "\x00", `\`)
+	return s
 }
 
 // BuildAddArgs builds nmcli arguments for creating a WiFi connection.
@@ -200,14 +338,9 @@ func BuildAddArgs(p WiFiProfile) []string {
 }
 
 // BuildModifyArgs builds nmcli arguments for modifying an existing WiFi connection.
+// Does not include unset args for removed keys — use buildModifyArgs internally.
 func BuildModifyArgs(p WiFiProfile) []string {
-	args := []string{
-		"con", "mod", p.Name,
-		"wifi.ssid", p.SSID,
-	}
-	args = appendAuthArgs(args, p)
-	args = appendCommonArgs(args, p)
-	return args
+	return buildModifyArgs(p, nil)
 }
 
 func appendAuthArgs(args []string, p WiFiProfile) []string {
@@ -280,36 +413,6 @@ func validateProfile(p WiFiProfile) error {
 	return nil
 }
 
-// modifyIfNeeded checks current settings and modifies only if they differ from desired.
-// Performs a two-way comparison: detects both changed values and removed keys.
-func modifyIfNeeded(ctx context.Context, p WiFiProfile) (bool, error) {
-	current, err := GetSettings(ctx, p.Name)
-	if err != nil {
-		return modify(ctx, p)
-	}
-
-	desired := buildDesiredSettings(p)
-
-	// Check desired keys exist with correct values in current
-	for key, want := range desired {
-		if current[key] != want {
-			return modify(ctx, p)
-		}
-	}
-
-	// Check managed keys in current that are absent from desired (removed fields)
-	for _, key := range managedKeys(p.AuthType) {
-		if _, inCurrent := current[key]; !inCurrent {
-			continue
-		}
-		if _, inDesired := desired[key]; !inDesired {
-			return modify(ctx, p)
-		}
-	}
-
-	return false, nil
-}
-
 // managedKeys returns the set of nmcli keys that this package manages for the
 // given auth type. Used to detect when a key was removed from the profile.
 func managedKeys(authType WiFiAuthType) []string {
@@ -329,14 +432,6 @@ func managedKeys(authType WiFiAuthType) []string {
 		)
 	}
 	return keys
-}
-
-func modify(ctx context.Context, p WiFiProfile) (bool, error) {
-	args := BuildModifyArgs(p)
-	if _, err := sysexec.Sudo(ctx, "nmcli", args...); err != nil {
-		return false, fmt.Errorf("modify connection: %w", err)
-	}
-	return true, nil
 }
 
 func buildDesiredSettings(p WiFiProfile) map[string]string {
