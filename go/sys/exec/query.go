@@ -39,8 +39,8 @@ func Check(name string, args ...string) bool {
 
 // CheckCtx is like Check but respects context cancellation.
 func CheckCtx(ctx context.Context, name string, args ...string) bool {
-	result, err := Run(ctx, name, args...)
-	return err == nil && result.ExitCode == 0
+	_, err := Run(ctx, name, args...)
+	return err == nil
 }
 
 // FormatError formats a command error with stderr output for better diagnostics.

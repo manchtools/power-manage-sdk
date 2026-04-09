@@ -65,16 +65,19 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 	}
 
 	if ConnectionExists(ctx, profile.Name) {
-		return modifyIfNeeded(ctx, profile)
+		changed, err := modifyIfNeeded(ctx, profile)
+		if err != nil && profile.AuthType == WiFiAuthEAPTLS {
+			removeCerts(profile.CertDir)
+		}
+		return changed, err
 	}
 
 	args := BuildAddArgs(profile)
-	result, err := sysexec.Sudo(ctx, "nmcli", args...)
-	if err != nil {
+	if _, err := sysexec.Sudo(ctx, "nmcli", args...); err != nil {
+		if profile.AuthType == WiFiAuthEAPTLS {
+			removeCerts(profile.CertDir)
+		}
 		return false, fmt.Errorf("create connection: %w", err)
-	}
-	if result.ExitCode != 0 {
-		return false, fmt.Errorf("nmcli con add failed: %s", result.Stderr)
 	}
 	return true, nil
 }
@@ -82,12 +85,8 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 // Delete removes a WiFi connection by name and cleans up cert files in certDir.
 func Delete(ctx context.Context, name, certDir string) error {
 	if ConnectionExists(ctx, name) {
-		result, err := sysexec.Sudo(ctx, "nmcli", "con", "delete", name)
-		if err != nil {
+		if _, err := sysexec.Sudo(ctx, "nmcli", "con", "delete", name); err != nil {
 			return fmt.Errorf("delete connection %s: %w", name, err)
-		}
-		if result.ExitCode != 0 {
-			return fmt.Errorf("nmcli con delete failed: %s", result.Stderr)
 		}
 	}
 
@@ -175,9 +174,6 @@ func GetSettings(ctx context.Context, name string) (map[string]string, error) {
 	result, err := sysexec.Run(ctx, "nmcli", "-t", "-f", "all", "con", "show", name)
 	if err != nil {
 		return nil, fmt.Errorf("get settings for %s: %w", name, err)
-	}
-	if result.ExitCode != 0 {
-		return nil, fmt.Errorf("nmcli show failed: %s", result.Stderr)
 	}
 
 	settings := map[string]string{}
@@ -337,12 +333,8 @@ func managedKeys(authType WiFiAuthType) []string {
 
 func modify(ctx context.Context, p WiFiProfile) (bool, error) {
 	args := BuildModifyArgs(p)
-	result, err := sysexec.Sudo(ctx, "nmcli", args...)
-	if err != nil {
+	if _, err := sysexec.Sudo(ctx, "nmcli", args...); err != nil {
 		return false, fmt.Errorf("modify connection: %w", err)
-	}
-	if result.ExitCode != 0 {
-		return false, fmt.Errorf("nmcli con mod failed: %s", result.Stderr)
 	}
 	return true, nil
 }
@@ -384,6 +376,14 @@ func buildDesiredSettings(p WiFiProfile) map[string]string {
 	}
 
 	return desired
+}
+
+// removeCerts removes certificate files written by writeCerts.
+// Best-effort — errors are ignored since this is cleanup on failure.
+func removeCerts(certDir string) {
+	for _, name := range []string{"ca.pem", "client.pem", "client-key.pem"} {
+		os.Remove(filepath.Join(certDir, name))
+	}
 }
 
 // writeCerts writes EAP-TLS certificate files to the profile's CertDir.
