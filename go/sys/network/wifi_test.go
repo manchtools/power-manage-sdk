@@ -66,6 +66,8 @@ func TestBuildAddArgs_EAPTLS(t *testing.T) {
 		"802-1x.client-cert", "/var/lib/power-manage/wifi/xyz789/client.pem",
 		"802-1x.private-key", "/var/lib/power-manage/wifi/xyz789/client-key.pem",
 		"connection.autoconnect", "no",
+		"connection.autoconnect-priority", "0",
+		"wifi.hidden", "no",
 	}
 
 	assertArgs(t, expected, args)
@@ -90,6 +92,38 @@ func TestBuildModifyArgs_PSK(t *testing.T) {
 		"wifi-sec.psk", "newpass",
 		"connection.autoconnect", "yes",
 		"connection.autoconnect-priority", "5",
+		"wifi.hidden", "no",
+	}
+
+	assertArgs(t, expected, args)
+}
+
+func TestBuildModifyArgs_EAPTLS(t *testing.T) {
+	p := WiFiProfile{
+		Name:        "pm-wifi-xyz789",
+		SSID:        "SecureNet",
+		AuthType:    WiFiAuthEAPTLS,
+		Identity:    "user@corp.com",
+		CertDir:     "/var/lib/power-manage/wifi/xyz789",
+		AutoConnect: false,
+		Hidden:      true,
+		Priority:    3,
+	}
+
+	args := BuildModifyArgs(p)
+
+	expected := []string{
+		"con", "mod", "pm-wifi-xyz789",
+		"wifi.ssid", "SecureNet",
+		"wifi-sec.key-mgmt", "wpa-eap",
+		"802-1x.eap", "tls",
+		"802-1x.identity", "user@corp.com",
+		"802-1x.ca-cert", "/var/lib/power-manage/wifi/xyz789/ca.pem",
+		"802-1x.client-cert", "/var/lib/power-manage/wifi/xyz789/client.pem",
+		"802-1x.private-key", "/var/lib/power-manage/wifi/xyz789/client-key.pem",
+		"connection.autoconnect", "no",
+		"connection.autoconnect-priority", "3",
+		"wifi.hidden", "yes",
 	}
 
 	assertArgs(t, expected, args)
@@ -140,6 +174,31 @@ func TestBuildDesiredSettings(t *testing.T) {
 	}
 }
 
+func TestValidateProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile WiFiProfile
+		wantErr bool
+	}{
+		{"valid PSK", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthPSK, PSK: "pass"}, false},
+		{"valid EAP-TLS", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/tmp"}, false},
+		{"missing name", WiFiProfile{SSID: "net", AuthType: WiFiAuthPSK, PSK: "pass"}, true},
+		{"missing SSID", WiFiProfile{Name: "test", AuthType: WiFiAuthPSK, PSK: "pass"}, true},
+		{"missing PSK", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthPSK}, true},
+		{"missing identity", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, CertDir: "/tmp"}, true},
+		{"missing certdir", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user"}, true},
+		{"unknown auth", WiFiProfile{Name: "test", SSID: "net", AuthType: 99}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateProfile(tt.profile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateProfile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestWriteCerts(t *testing.T) {
 	dir := t.TempDir()
 
@@ -168,6 +227,23 @@ func TestWriteCerts(t *testing.T) {
 		}
 		if string(data) != want {
 			t.Errorf("%s content = %q, want %q", name, data, want)
+		}
+	}
+
+	// Verify file permissions
+	perms := map[string]os.FileMode{
+		"ca.pem":         0644,
+		"client.pem":     0644,
+		"client-key.pem": 0600,
+	}
+	for name, wantPerm := range perms {
+		info, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			t.Errorf("stat %s: %v", name, err)
+			continue
+		}
+		if got := info.Mode().Perm(); got != wantPerm {
+			t.Errorf("%s permissions = %o, want %o", name, got, wantPerm)
 		}
 	}
 }

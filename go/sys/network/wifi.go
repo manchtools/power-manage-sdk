@@ -50,6 +50,10 @@ func ConnectionExists(name string) bool {
 // CreateOrUpdate creates or updates a WiFi connection profile.
 // It returns whether a change was made and any error.
 func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
+	if err := validateProfile(profile); err != nil {
+		return false, err
+	}
+
 	// Write certificate files for EAP-TLS before configuring the connection.
 	if profile.AuthType == WiFiAuthEAPTLS {
 		if err := writeCerts(profile); err != nil {
@@ -85,7 +89,9 @@ func Delete(ctx context.Context, name, certDir string) error {
 	}
 
 	if certDir != "" {
-		os.RemoveAll(certDir)
+		if err := os.RemoveAll(certDir); err != nil {
+			return fmt.Errorf("remove cert directory %s: %w", certDir, err)
+		}
 	}
 	return nil
 }
@@ -161,15 +167,41 @@ func appendCommonArgs(args []string, p WiFiProfile) []string {
 		args = append(args, "connection.autoconnect", "no")
 	}
 
-	if p.Priority != 0 {
-		args = append(args, "connection.autoconnect-priority", fmt.Sprintf("%d", p.Priority))
-	}
+	args = append(args, "connection.autoconnect-priority", fmt.Sprintf("%d", p.Priority))
 
 	if p.Hidden {
 		args = append(args, "wifi.hidden", "yes")
+	} else {
+		args = append(args, "wifi.hidden", "no")
 	}
 
 	return args
+}
+
+// validateProfile checks required fields based on auth type.
+func validateProfile(p WiFiProfile) error {
+	if p.Name == "" {
+		return fmt.Errorf("connection name is required")
+	}
+	if p.SSID == "" {
+		return fmt.Errorf("SSID is required")
+	}
+	switch p.AuthType {
+	case WiFiAuthPSK:
+		if p.PSK == "" {
+			return fmt.Errorf("PSK is required for WPA authentication")
+		}
+	case WiFiAuthEAPTLS:
+		if p.Identity == "" {
+			return fmt.Errorf("identity is required for EAP-TLS authentication")
+		}
+		if p.CertDir == "" {
+			return fmt.Errorf("cert directory is required for EAP-TLS authentication")
+		}
+	default:
+		return fmt.Errorf("unknown auth type: %d", p.AuthType)
+	}
+	return nil
 }
 
 // modifyIfNeeded checks current settings and modifies only if they differ from desired.
