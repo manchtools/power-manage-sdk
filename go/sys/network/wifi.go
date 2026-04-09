@@ -47,8 +47,8 @@ func IsAvailable() bool {
 }
 
 // ConnectionExists checks if a named NetworkManager connection profile exists.
-func ConnectionExists(name string) bool {
-	return sysexec.Check("nmcli", "-t", "-f", "NAME", "con", "show", name)
+func ConnectionExists(ctx context.Context, name string) bool {
+	return sysexec.CheckCtx(ctx, "nmcli", "-t", "-f", "NAME", "con", "show", name)
 }
 
 // CreateOrUpdate creates or updates a WiFi connection profile.
@@ -64,7 +64,7 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 		}
 	}
 
-	if ConnectionExists(profile.Name) {
+	if ConnectionExists(ctx, profile.Name) {
 		return modifyIfNeeded(ctx, profile)
 	}
 
@@ -81,7 +81,7 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 
 // Delete removes a WiFi connection by name and cleans up cert files in certDir.
 func Delete(ctx context.Context, name, certDir string) error {
-	if ConnectionExists(name) {
+	if ConnectionExists(ctx, name) {
 		result, err := sysexec.Sudo(ctx, "nmcli", "con", "delete", name)
 		if err != nil {
 			return fmt.Errorf("delete connection %s: %w", name, err)
@@ -99,14 +99,51 @@ func Delete(ctx context.Context, name, certDir string) error {
 	return nil
 }
 
-// isSubdirOf checks that child is a proper subdirectory of parent (not parent itself).
+// isSubdirOf checks that child is a proper subdirectory of parent (not parent
+// itself). Resolves symlinks on existing path components to prevent escaping
+// the parent via symlinks. Handles non-existent paths by resolving the deepest
+// existing ancestor.
 func isSubdirOf(parent, child string) bool {
-	rel, err := filepath.Rel(parent, child)
+	resolvedParent := resolvePath(parent)
+	resolvedChild := resolvePath(child)
+	rel, err := filepath.Rel(resolvedParent, resolvedChild)
 	if err != nil {
 		return false
 	}
-	// Must not be ".", "..", or start with "../"
 	return rel != "." && !strings.HasPrefix(rel, "..")
+}
+
+// resolvePath resolves symlinks for existing path components. For paths that
+// don't fully exist, it resolves the deepest existing ancestor and appends
+// the remaining components.
+func resolvePath(p string) string {
+	abs, err := filepath.Abs(filepath.Clean(p))
+	if err != nil {
+		return filepath.Clean(p)
+	}
+	// Try full resolution first (fast path for existing paths)
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		return resolved
+	}
+	// Walk up to find the deepest existing ancestor
+	current := abs
+	var suffix []string
+	for {
+		if _, err := os.Stat(current); err == nil {
+			break
+		}
+		suffix = append([]string{filepath.Base(current)}, suffix...)
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	resolved, err := filepath.EvalSymlinks(current)
+	if err != nil {
+		return abs
+	}
+	return filepath.Join(append([]string{resolved}, suffix...)...)
 }
 
 // safeRemoveCertDir validates that certDir is a proper subdirectory of
@@ -238,8 +275,7 @@ func validateProfile(p WiFiProfile) error {
 		if p.CertDir == "" {
 			return fmt.Errorf("cert directory is required for EAP-TLS authentication")
 		}
-		abs, err := filepath.Abs(filepath.Clean(p.CertDir))
-		if err != nil || !isSubdirOf(CertBaseDir, abs) {
+		if !isSubdirOf(CertBaseDir, p.CertDir) {
 			return fmt.Errorf("cert directory must be under %s, got %s", CertBaseDir, p.CertDir)
 		}
 	default:

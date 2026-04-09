@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -166,7 +167,7 @@ func TestConnectionExists_NonExistent(t *testing.T) {
 		t.Skip("nmcli not available")
 	}
 
-	exists := ConnectionExists("pm-wifi-nonexistent-test-98765")
+	exists := ConnectionExists(context.Background(), "pm-wifi-nonexistent-test-98765")
 	if exists {
 		t.Error("expected non-existent connection to return false")
 	}
@@ -251,6 +252,33 @@ func TestIsSubdirOf(t *testing.T) {
 				t.Errorf("isSubdirOf(%q, %q) = %v, want %v", tt.parent, tt.child, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestIsSubdirOf_Symlink(t *testing.T) {
+	// Create a temp dir structure: base/sub and outside/
+	// Symlink base/link -> outside/
+	// isSubdirOf(base, base/link) should be false because link resolves outside
+	base := t.TempDir()
+	outside := t.TempDir()
+	sub := filepath.Join(base, "sub")
+	link := filepath.Join(base, "link")
+
+	if err := os.Mkdir(sub, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+
+	if isSubdirOf(base, sub) != true {
+		t.Error("real subdirectory should be accepted")
+	}
+	if isSubdirOf(base, link) != false {
+		t.Error("symlink escaping base should be rejected")
+	}
+	if isSubdirOf(base, filepath.Join(link, "deep")) != false {
+		t.Error("path under symlink escaping base should be rejected")
 	}
 }
 
