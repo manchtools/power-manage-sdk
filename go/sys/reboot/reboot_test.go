@@ -36,15 +36,20 @@ func assertNeedsRestartingArgs(t *testing.T, name string, args []string) {
 
 // exitErrCode returns an *exec.ExitError that reports the given exit code,
 // produced by actually running a tiny shell command. Constructing one
-// directly isn't portable since ProcessState is OS-specific.
+// directly isn't portable since ProcessState is OS-specific. Skips the test
+// if /bin/sh is not available in PATH (e.g. minimal containers).
 func exitErrCode(t *testing.T, code int) error {
 	t.Helper()
-	cmd := exec.Command("sh", "-c", "exit "+itoa(code))
-	err := cmd.Run()
-	if err == nil {
-		t.Fatalf("expected exit %d to produce an error", code)
+	shPath, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skipf("skipping test: sh not found in PATH: %v", err)
 	}
-	return err
+	cmd := exec.Command(shPath, "-c", "exit "+itoa(code))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	t.Fatalf("expected exit %d to produce an error", code)
+	return nil
 }
 
 func itoa(n int) string {
