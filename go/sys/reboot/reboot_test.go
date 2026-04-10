@@ -20,6 +20,20 @@ func withSeams(t *testing.T) {
 	})
 }
 
+// assertNeedsRestartingArgs fails the test if the runCmdFunc invocation does
+// not match the expected `needs-restarting -r` call. Used by Fedora-path
+// tests to catch regressions that would invoke the wrong binary or drop the
+// -r flag.
+func assertNeedsRestartingArgs(t *testing.T, name string, args []string) {
+	t.Helper()
+	if name != "/usr/bin/needs-restarting" {
+		t.Errorf("runCmd called with name=%q, want %q", name, "/usr/bin/needs-restarting")
+	}
+	if len(args) != 1 || args[0] != "-r" {
+		t.Errorf("runCmd called with args=%v, want [-r]", args)
+	}
+}
+
 // exitErrCode returns an *exec.ExitError that reports the given exit code,
 // produced by actually running a tiny shell command. Constructing one
 // directly isn't portable since ProcessState is OS-specific.
@@ -117,6 +131,7 @@ func TestIsRequired_FedoraRebootNeeded(t *testing.T) {
 		return "", exec.ErrNotFound
 	}
 	runCmdFunc = func(name string, args ...string) error {
+		assertNeedsRestartingArgs(t, name, args)
 		return exitErrCode(t, 1)
 	}
 
@@ -134,6 +149,7 @@ func TestIsRequired_FedoraNoReboot(t *testing.T) {
 		return "/usr/bin/needs-restarting", nil
 	}
 	runCmdFunc = func(name string, args ...string) error {
+		assertNeedsRestartingArgs(t, name, args)
 		return nil // exit 0
 	}
 
@@ -153,6 +169,7 @@ func TestIsRequired_FedoraOtherExitCode(t *testing.T) {
 		return "/usr/bin/needs-restarting", nil
 	}
 	runCmdFunc = func(name string, args ...string) error {
+		assertNeedsRestartingArgs(t, name, args)
 		return exitErrCode(t, 2)
 	}
 
@@ -172,6 +189,7 @@ func TestIsRequired_FedoraRunCmdNonExitError(t *testing.T) {
 		return "/usr/bin/needs-restarting", nil
 	}
 	runCmdFunc = func(name string, args ...string) error {
+		assertNeedsRestartingArgs(t, name, args)
 		return &exec.Error{Name: name, Err: errors.New("permission denied")}
 	}
 
