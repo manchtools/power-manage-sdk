@@ -56,7 +56,9 @@ func ConnectionExists(ctx context.Context, name string) (bool, error) {
 		return false, fmt.Errorf("list connections: %w", err)
 	}
 	for _, line := range strings.Split(result.Stdout, "\n") {
-		if unescapeNmcli(strings.TrimSpace(line)) == name {
+		// Only strip CR (for CRLF endings); leading/trailing whitespace can
+		// be part of a connection name.
+		if unescapeNmcli(strings.TrimRight(line, "\r")) == name {
 			return true, nil
 		}
 	}
@@ -184,7 +186,12 @@ func directModify(ctx context.Context, p WiFiProfile, current map[string]string)
 	return true, nil
 }
 
-// needsModify performs a two-way comparison between current settings and desired.
+// needsModify performs a two-way comparison between current settings and
+// desired. Considers keys from BOTH auth modes so a transition (e.g.
+// PSK → EAP-TLS) is detected and stale fields are flagged for clearing.
+// For EAP-TLS profiles it also compares the desired PEM contents against
+// the certificate files on disk so a cert rotation (same paths, new content)
+// triggers a re-write.
 func needsModify(current map[string]string, p WiFiProfile) bool {
 	desired := buildDesiredSettings(p)
 
@@ -193,11 +200,39 @@ func needsModify(current map[string]string, p WiFiProfile) bool {
 			return true
 		}
 	}
-	for _, key := range managedKeys(p.AuthType) {
+	for _, key := range allManagedKeys() {
 		if _, inCurrent := current[key]; !inCurrent {
 			continue
 		}
 		if _, inDesired := desired[key]; !inDesired {
+			return true
+		}
+	}
+	if p.AuthType == WiFiAuthEAPTLS && certsChanged(p) {
+		return true
+	}
+	return false
+}
+
+// certsChanged returns true if any of the desired PEM contents differ from
+// the file currently installed at the corresponding path under p.CertDir.
+// A missing or unreadable file (with non-empty desired content) counts as
+// changed so the cert writer runs and installs it.
+func certsChanged(p WiFiProfile) bool {
+	files := []struct {
+		name    string
+		content string
+	}{
+		{"ca.pem", p.CACert},
+		{"client.pem", p.ClientCert},
+		{"client-key.pem", p.ClientKey},
+	}
+	for _, f := range files {
+		if f.content == "" {
+			continue
+		}
+		existing, err := os.ReadFile(filepath.Join(p.CertDir, f.name))
+		if err != nil || string(existing) != f.content {
 			return true
 		}
 	}
@@ -206,7 +241,9 @@ func needsModify(current map[string]string, p WiFiProfile) bool {
 
 // buildModifyArgs builds nmcli modify arguments. If current is non-nil,
 // managed keys present in current but absent from the profile are set to ""
-// to clear them.
+// to clear them. The union of both auth-mode key sets is considered so that
+// switching auth modes (PSK ↔ EAP-TLS) clears the previous mode's fields
+// (e.g. wifi-sec.psk when moving to EAP-TLS).
 func buildModifyArgs(p WiFiProfile, current map[string]string) []string {
 	args := []string{
 		"con", "mod", p.Name,
@@ -217,7 +254,7 @@ func buildModifyArgs(p WiFiProfile, current map[string]string) []string {
 
 	if current != nil {
 		desired := buildDesiredSettings(p)
-		for _, key := range managedKeys(p.AuthType) {
+		for _, key := range allManagedKeys() {
 			if _, inCurrent := current[key]; !inCurrent {
 				continue
 			}
@@ -330,9 +367,13 @@ func GetSettings(ctx context.Context, name string) (map[string]string, error) {
 
 	settings := map[string]string{}
 	for _, line := range strings.Split(result.Stdout, "\n") {
+		line = strings.TrimRight(line, "\r")
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) == 2 {
-			settings[strings.TrimSpace(parts[0])] = unescapeNmcli(strings.TrimSpace(parts[1]))
+			// Keys are nmcli field names (no whitespace); values may contain
+			// meaningful leading/trailing whitespace (PSKs, SSIDs) and must
+			// not be trimmed.
+			settings[parts[0]] = unescapeNmcli(parts[1])
 		}
 	}
 	return settings, nil
@@ -460,6 +501,26 @@ func managedKeys(authType WiFiAuthType) []string {
 		)
 	}
 	return keys
+}
+
+// allManagedKeys returns the union of nmcli keys this package manages across
+// all auth modes. Used by drift detection and modify-arg construction so that
+// fields from a previous auth mode are flagged for clearing during a
+// transition (e.g. wifi-sec.psk when switching PSK → EAP-TLS).
+func allManagedKeys() []string {
+	return []string{
+		"wifi.ssid",
+		"connection.autoconnect",
+		"connection.autoconnect-priority",
+		"wifi.hidden",
+		"wifi-sec.key-mgmt",
+		"wifi-sec.psk",
+		"802-1x.eap",
+		"802-1x.identity",
+		"802-1x.ca-cert",
+		"802-1x.client-cert",
+		"802-1x.private-key",
+	}
 }
 
 func buildDesiredSettings(p WiFiProfile) map[string]string {
