@@ -133,18 +133,35 @@ func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 
-	// nmcli succeeded — replace live certs with staged ones atomically
-	if err := os.RemoveAll(p.CertDir); err != nil {
-		return true, fmt.Errorf("remove old cert directory: %w", err)
+	// nmcli succeeded — swap staged certs into place via rename-over.
+	// Move live → .old, staged → live, then delete .old. On failure, attempt
+	// to restore .old back so we never leave a missing cert directory.
+	oldDir := p.CertDir + ".old"
+	liveExists := false
+	if _, err := os.Stat(p.CertDir); err == nil {
+		if err := os.Rename(p.CertDir, oldDir); err != nil {
+			return true, fmt.Errorf("backup old cert directory: %w", err)
+		}
+		liveExists = true
 	}
 	if err := os.Rename(tmpDir, p.CertDir); err != nil {
+		// Restore the backup
+		if liveExists {
+			if rerr := os.Rename(oldDir, p.CertDir); rerr != nil {
+				return true, fmt.Errorf("install staged certs: %w (rollback also failed: %v)", err, rerr)
+			}
+		}
 		return true, fmt.Errorf("install staged certs: %w", err)
+	}
+	if liveExists {
+		os.RemoveAll(oldDir)
 	}
 	return true, nil
 }
 
 // directModify writes certs (if EAP-TLS) and applies a modify command without
 // staging. Used when current settings can't be read or for non-EAP-TLS.
+// Cleans up certs on modify failure.
 func directModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
 	if p.AuthType == WiFiAuthEAPTLS {
 		if err := writeCerts(p); err != nil {
@@ -152,6 +169,9 @@ func directModify(ctx context.Context, p WiFiProfile, current map[string]string)
 		}
 	}
 	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
+		if p.AuthType == WiFiAuthEAPTLS {
+			removeCerts(p.CertDir)
+		}
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 	return true, nil
