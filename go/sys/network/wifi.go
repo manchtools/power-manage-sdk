@@ -47,19 +47,20 @@ func IsAvailable() bool {
 }
 
 // ConnectionExists checks if a named NetworkManager connection profile exists.
-// Returns (true, nil) if found, (false, nil) if not found, (false, err) on failure.
+// Lists all connection names and searches for an exact match so that real
+// failures (NetworkManager not running, nmcli not installed, context
+// cancellation) propagate as errors instead of collapsing into "not found".
 func ConnectionExists(ctx context.Context, name string) (bool, error) {
-	result, err := sysexec.Run(ctx, "nmcli", "-t", "-f", "NAME", "con", "show", name)
-	if err == nil {
-		return true, nil
+	result, err := sysexec.Run(ctx, "nmcli", "-t", "-f", "NAME", "con", "show")
+	if err != nil {
+		return false, fmt.Errorf("list connections: %w", err)
 	}
-	// nmcli returns a non-zero exit code when the connection doesn't exist.
-	// Distinguish from real errors (context cancelled, nmcli not installed)
-	// by checking if we got a result with an exit code at all.
-	if result != nil && result.ExitCode > 0 {
-		return false, nil
+	for _, line := range strings.Split(result.Stdout, "\n") {
+		if unescapeNmcli(strings.TrimSpace(line)) == name {
+			return true, nil
+		}
 	}
-	return false, fmt.Errorf("check connection %s: %w", name, err)
+	return false, nil
 }
 
 // CreateOrUpdate creates or updates a WiFi connection profile.
@@ -101,11 +102,18 @@ func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 // updateConnection modifies an existing connection if settings differ.
 // For EAP-TLS, new certs are staged in a temp directory; only on successful
 // nmcli modify are they swapped into the final location, leaving live certs
-// untouched if modification fails.
+// untouched if modification fails. If GetSettings fails, EAP-TLS still uses
+// the staged path so a partial read never causes the live cert dir to be
+// overwritten.
 func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 	current, err := GetSettings(ctx, p.Name)
 	if err != nil {
-		// Can't read current settings — apply modify directly without staging
+		// Can't read current settings — proceed with modify but skip drift
+		// detection. EAP-TLS must still use the staged path so a partial read
+		// never destroys the live cert dir.
+		if p.AuthType == WiFiAuthEAPTLS {
+			return stagedModify(ctx, p, nil)
+		}
 		return directModify(ctx, p, nil)
 	}
 
@@ -116,8 +124,15 @@ func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 	if p.AuthType != WiFiAuthEAPTLS {
 		return directModify(ctx, p, current)
 	}
+	return stagedModify(ctx, p, current)
+}
 
-	// EAP-TLS staged update: write to .tmp, swap to live on nmcli success.
+// stagedModify applies an EAP-TLS modify with cert staging. New certs are
+// written to a temp directory, nmcli is reconfigured to point at the final
+// paths, and only after nmcli succeeds is the cert directory swapped via
+// rename-over with rollback. The live cert directory is never destroyed
+// before the staged copy is in place.
+func stagedModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
 	tmpDir := p.CertDir + ".tmp"
 	staged := p
 	staged.CertDir = tmpDir
@@ -159,19 +174,11 @@ func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 	return true, nil
 }
 
-// directModify writes certs (if EAP-TLS) and applies a modify command without
-// staging. Used when current settings can't be read or for non-EAP-TLS.
-// Cleans up certs on modify failure.
+// directModify applies a modify command without staging. Only used for
+// non-EAP-TLS profiles, since EAP-TLS always goes through stagedModify to
+// protect the live cert directory.
 func directModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
-	if p.AuthType == WiFiAuthEAPTLS {
-		if err := writeCerts(p); err != nil {
-			return false, fmt.Errorf("write certificates: %w", err)
-		}
-	}
 	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
-		if p.AuthType == WiFiAuthEAPTLS {
-			removeCerts(p.CertDir)
-		}
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 	return true, nil
