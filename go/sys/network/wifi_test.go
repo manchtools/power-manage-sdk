@@ -217,14 +217,16 @@ func TestValidateProfile(t *testing.T) {
 		wantErr bool
 	}{
 		{"valid PSK", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthPSK, PSK: "pass"}, false},
-		{"valid EAP-TLS", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/var/lib/power-manage/wifi/test"}, false},
+		{"valid EAP-TLS", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/var/lib/power-manage/wifi/test", ClientCert: "cert", ClientKey: "key"}, false},
 		{"missing name", WiFiProfile{SSID: "net", AuthType: WiFiAuthPSK, PSK: "pass"}, true},
 		{"missing SSID", WiFiProfile{Name: "test", AuthType: WiFiAuthPSK, PSK: "pass"}, true},
 		{"missing PSK", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthPSK}, true},
-		{"missing identity", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, CertDir: "/var/lib/power-manage/wifi/test"}, true},
-		{"missing certdir", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user"}, true},
-		{"certdir outside base", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/tmp/evil"}, true},
-		{"certdir is base itself", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: CertBaseDir}, true},
+		{"missing identity", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, CertDir: "/var/lib/power-manage/wifi/test", ClientCert: "cert", ClientKey: "key"}, true},
+		{"missing certdir", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", ClientCert: "cert", ClientKey: "key"}, true},
+		{"missing client cert", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/var/lib/power-manage/wifi/test", ClientKey: "key"}, true},
+		{"missing client key", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/var/lib/power-manage/wifi/test", ClientCert: "cert"}, true},
+		{"certdir outside base", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: "/tmp/evil", ClientCert: "cert", ClientKey: "key"}, true},
+		{"certdir is base itself", WiFiProfile{Name: "test", SSID: "net", AuthType: WiFiAuthEAPTLS, Identity: "user", CertDir: CertBaseDir, ClientCert: "cert", ClientKey: "key"}, true},
 		{"unknown auth", WiFiProfile{Name: "test", SSID: "net", AuthType: 99}, true},
 	}
 	for _, tt := range tests {
@@ -345,8 +347,8 @@ func TestWriteCerts(t *testing.T) {
 
 	// Verify file permissions
 	perms := map[string]os.FileMode{
-		"ca.pem":         0644,
-		"client.pem":     0644,
+		"ca.pem":         0640,
+		"client.pem":     0640,
 		"client-key.pem": 0600,
 	}
 	for name, wantPerm := range perms {

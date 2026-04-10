@@ -99,58 +99,53 @@ func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 }
 
 // updateConnection modifies an existing connection if settings differ.
-// For EAP-TLS, certs are written to a temp dir and only moved into place
-// on success, so the live certs aren't corrupted on failure.
+// For EAP-TLS, new certs are staged in a temp directory; only on successful
+// nmcli modify are they swapped into the final location, leaving live certs
+// untouched if modification fails.
 func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 	current, err := GetSettings(ctx, p.Name)
 	if err != nil {
-		// Can't read current settings — force modify with certs in place
-		return forceModify(ctx, p, nil)
+		// Can't read current settings — apply modify directly without staging
+		return directModify(ctx, p, nil)
 	}
 
 	if !needsModify(current, p) {
 		return false, nil
 	}
 
-	if p.AuthType == WiFiAuthEAPTLS {
-		return modifyWithStagedCerts(ctx, p, current)
+	if p.AuthType != WiFiAuthEAPTLS {
+		return directModify(ctx, p, current)
 	}
-	return forceModify(ctx, p, current)
-}
 
-// modifyWithStagedCerts writes certs to a temp dir, modifies the connection
-// pointing at the temp dir, then moves certs into the final location.
-// On failure the temp dir is cleaned up and live certs are untouched.
-func modifyWithStagedCerts(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
+	// EAP-TLS staged update: write to .tmp, swap to live on nmcli success.
 	tmpDir := p.CertDir + ".tmp"
 	staged := p
 	staged.CertDir = tmpDir
+	defer os.RemoveAll(tmpDir) // best-effort cleanup if anything below fails
 
 	if err := writeCerts(staged); err != nil {
 		return false, fmt.Errorf("write staged certificates: %w", err)
 	}
 
-	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(staged, current)...); err != nil {
-		os.RemoveAll(tmpDir)
+	// Modify with the FINAL cert paths (not temp), then move temp into place.
+	// This way nmcli's config never references the temp dir.
+	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 
-	// Success — swap staged certs into final location
-	os.RemoveAll(p.CertDir)
-	if err := os.Rename(tmpDir, p.CertDir); err != nil {
-		// Rename failed — update nmcli to point at wherever certs actually are
-		os.RemoveAll(tmpDir)
-		return true, fmt.Errorf("move staged certs: %w", err)
+	// nmcli succeeded — replace live certs with staged ones atomically
+	if err := os.RemoveAll(p.CertDir); err != nil {
+		return true, fmt.Errorf("remove old cert directory: %w", err)
 	}
-
-	// Update nmcli cert paths to final location
-	sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...)
+	if err := os.Rename(tmpDir, p.CertDir); err != nil {
+		return true, fmt.Errorf("install staged certs: %w", err)
+	}
 	return true, nil
 }
 
-// forceModify applies a modify command. For non-EAP-TLS or when we can't read
-// current settings. current may be nil if settings couldn't be read.
-func forceModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
+// directModify writes certs (if EAP-TLS) and applies a modify command without
+// staging. Used when current settings can't be read or for non-EAP-TLS.
+func directModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
 	if p.AuthType == WiFiAuthEAPTLS {
 		if err := writeCerts(p); err != nil {
 			return false, fmt.Errorf("write certificates: %w", err)
@@ -407,6 +402,12 @@ func validateProfile(p WiFiProfile) error {
 		if !isSubdirOf(CertBaseDir, p.CertDir) {
 			return fmt.Errorf("cert directory must be under %s, got %s", CertBaseDir, p.CertDir)
 		}
+		if p.ClientCert == "" {
+			return fmt.Errorf("client certificate is required for EAP-TLS authentication")
+		}
+		if p.ClientKey == "" {
+			return fmt.Errorf("client key is required for EAP-TLS authentication")
+		}
 	default:
 		return fmt.Errorf("unknown auth type: %d", p.AuthType)
 	}
@@ -483,7 +484,7 @@ func removeCerts(certDir string) {
 
 // writeCerts writes EAP-TLS certificate files to the profile's CertDir.
 func writeCerts(p WiFiProfile) error {
-	if err := os.MkdirAll(p.CertDir, 0755); err != nil {
+	if err := os.MkdirAll(p.CertDir, 0750); err != nil {
 		return fmt.Errorf("create cert directory: %w", err)
 	}
 
@@ -492,8 +493,8 @@ func writeCerts(p WiFiProfile) error {
 		content string
 		mode    os.FileMode
 	}{
-		{"ca.pem", p.CACert, 0644},
-		{"client.pem", p.ClientCert, 0644},
+		{"ca.pem", p.CACert, 0640},
+		{"client.pem", p.ClientCert, 0640},
 		{"client-key.pem", p.ClientKey, 0600},
 	}
 
