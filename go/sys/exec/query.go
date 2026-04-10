@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -34,6 +35,12 @@ func Check(name string, args ...string) bool {
 	c := cmd.NewCmd(name, args...)
 	status := <-c.Start()
 	return status.Exit == 0 && status.Error == nil
+}
+
+// CheckCtx is like Check but respects context cancellation.
+func CheckCtx(ctx context.Context, name string, args ...string) bool {
+	_, err := Run(ctx, name, args...)
+	return err == nil
 }
 
 // FormatError formats a command error with stderr output for better diagnostics.
