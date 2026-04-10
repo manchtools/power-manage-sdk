@@ -1,25 +1,74 @@
 package reboot
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
+// withSeams snapshots and restores the package-level injection points so
+// tests can override them safely.
+func withSeams(t *testing.T) {
+	t.Helper()
+	origStat, origLookPath, origRunCmd := statFunc, lookPathFunc, runCmdFunc
+	t.Cleanup(func() {
+		statFunc = origStat
+		lookPathFunc = origLookPath
+		runCmdFunc = origRunCmd
+	})
+}
+
+// exitErrCode returns an *exec.ExitError that reports the given exit code,
+// produced by actually running a tiny shell command. Constructing one
+// directly isn't portable since ProcessState is OS-specific.
+func exitErrCode(t *testing.T, code int) error {
+	t.Helper()
+	cmd := exec.Command("sh", "-c", "exit "+itoa(code))
+	err := cmd.Run()
+	if err == nil {
+		t.Fatalf("expected exit %d to produce an error", code)
+	}
+	return err
+}
+
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var buf [20]byte
+	i := len(buf)
+	for n > 0 {
+		i--
+		buf[i] = byte('0' + n%10)
+		n /= 10
+	}
+	if neg {
+		i--
+		buf[i] = '-'
+	}
+	return string(buf[i:])
+}
+
 func TestIsRequired_DebianFileExists(t *testing.T) {
+	withSeams(t)
 	dir := t.TempDir()
 	fakeFile := filepath.Join(dir, "reboot-required")
-	os.WriteFile(fakeFile, []byte("*** System restart required ***\n"), 0644)
+	if err := os.WriteFile(fakeFile, []byte("*** System restart required ***\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
-	origStat := statFunc
 	statFunc = func(name string) (os.FileInfo, error) {
 		if name == "/var/run/reboot-required" {
 			return os.Stat(fakeFile)
 		}
 		return os.Stat(name)
 	}
-	defer func() { statFunc = origStat }()
 
 	if !IsRequired() {
 		t.Error("expected IsRequired() = true when reboot-required file exists")
@@ -27,25 +76,37 @@ func TestIsRequired_DebianFileExists(t *testing.T) {
 }
 
 func TestIsRequired_DebianFileAbsent(t *testing.T) {
-	origStat := statFunc
-	origLookPath := lookPathFunc
+	withSeams(t)
 	statFunc = func(name string) (os.FileInfo, error) {
 		return nil, os.ErrNotExist
 	}
 	lookPathFunc = func(file string) (string, error) {
 		return "", exec.ErrNotFound
 	}
-	defer func() { statFunc = origStat; lookPathFunc = origLookPath }()
 
 	if IsRequired() {
 		t.Error("expected IsRequired() = false when no detection method available")
 	}
 }
 
+// An unexpected stat error (e.g. EACCES) must NOT short-circuit to true and
+// must fall through to the needs-restarting branch.
+func TestIsRequired_DebianStatUnexpectedError(t *testing.T) {
+	withSeams(t)
+	statFunc = func(name string) (os.FileInfo, error) {
+		return nil, os.ErrPermission
+	}
+	lookPathFunc = func(file string) (string, error) {
+		return "", exec.ErrNotFound
+	}
+
+	if IsRequired() {
+		t.Error("expected IsRequired() = false when stat fails with permission error and no fallback")
+	}
+}
+
 func TestIsRequired_FedoraRebootNeeded(t *testing.T) {
-	origStat := statFunc
-	origLookPath := lookPathFunc
-	origRunCmd := runCmdFunc
+	withSeams(t)
 	statFunc = func(name string) (os.FileInfo, error) {
 		return nil, os.ErrNotExist
 	}
@@ -56,12 +117,8 @@ func TestIsRequired_FedoraRebootNeeded(t *testing.T) {
 		return "", exec.ErrNotFound
 	}
 	runCmdFunc = func(name string, args ...string) error {
-		// Simulate needs-restarting exit code 1 (reboot needed)
-		cmd := exec.Command("sh", "-c", "exit 1")
-		cmd.Run()
-		return &exec.ExitError{ProcessState: cmd.ProcessState}
+		return exitErrCode(t, 1)
 	}
-	defer func() { statFunc = origStat; lookPathFunc = origLookPath; runCmdFunc = origRunCmd }()
 
 	if !IsRequired() {
 		t.Error("expected IsRequired() = true when needs-restarting exits 1")
@@ -69,25 +126,57 @@ func TestIsRequired_FedoraRebootNeeded(t *testing.T) {
 }
 
 func TestIsRequired_FedoraNoReboot(t *testing.T) {
-	origStat := statFunc
-	origLookPath := lookPathFunc
-	origRunCmd := runCmdFunc
+	withSeams(t)
 	statFunc = func(name string) (os.FileInfo, error) {
 		return nil, os.ErrNotExist
 	}
 	lookPathFunc = func(file string) (string, error) {
-		if file == "needs-restarting" {
-			return "/usr/bin/needs-restarting", nil
-		}
-		return "", exec.ErrNotFound
+		return "/usr/bin/needs-restarting", nil
 	}
 	runCmdFunc = func(name string, args ...string) error {
-		return nil // exit 0 = no reboot needed
+		return nil // exit 0
 	}
-	defer func() { statFunc = origStat; lookPathFunc = origLookPath; runCmdFunc = origRunCmd }()
 
 	if IsRequired() {
 		t.Error("expected IsRequired() = false when needs-restarting exits 0")
+	}
+}
+
+// needs-restarting exit codes other than 0 and 1 must NOT be interpreted as
+// "reboot needed" — only exit 1 means that.
+func TestIsRequired_FedoraOtherExitCode(t *testing.T) {
+	withSeams(t)
+	statFunc = func(name string) (os.FileInfo, error) {
+		return nil, os.ErrNotExist
+	}
+	lookPathFunc = func(file string) (string, error) {
+		return "/usr/bin/needs-restarting", nil
+	}
+	runCmdFunc = func(name string, args ...string) error {
+		return exitErrCode(t, 2)
+	}
+
+	if IsRequired() {
+		t.Error("expected IsRequired() = false when needs-restarting exits with code 2")
+	}
+}
+
+// If runCmd returns a non-ExitError (e.g. *exec.Error wrapping ENOENT), we
+// must NOT report a reboot — log and return false.
+func TestIsRequired_FedoraRunCmdNonExitError(t *testing.T) {
+	withSeams(t)
+	statFunc = func(name string) (os.FileInfo, error) {
+		return nil, os.ErrNotExist
+	}
+	lookPathFunc = func(file string) (string, error) {
+		return "/usr/bin/needs-restarting", nil
+	}
+	runCmdFunc = func(name string, args ...string) error {
+		return &exec.Error{Name: name, Err: errors.New("permission denied")}
+	}
+
+	if IsRequired() {
+		t.Error("expected IsRequired() = false when needs-restarting fails to execute")
 	}
 }
 
