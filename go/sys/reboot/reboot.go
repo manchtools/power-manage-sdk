@@ -3,6 +3,7 @@ package reboot
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 
@@ -35,7 +36,8 @@ func IsRequired() bool {
 	if path, err := lookPathFunc("needs-restarting"); err == nil {
 		if err := runCmdFunc(path, "-r"); err != nil {
 			// needs-restarting exits 1 when reboot is needed
-			if exitErr, ok := err.(*exec.ExitError); ok {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
 				return exitErr.ExitCode() == 1
 			}
 		}

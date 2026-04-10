@@ -1,7 +1,6 @@
 package reboot
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -96,6 +95,3 @@ func TestIsRequired_LiveSystem(t *testing.T) {
 	result := IsRequired()
 	t.Logf("IsRequired() = %v (live system)", result)
 }
-
-// Unused but kept for reference — fmt is used indirectly
-var _ = fmt.Sprintf
