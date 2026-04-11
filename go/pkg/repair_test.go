@@ -66,3 +66,45 @@ func TestRepairErr_WrapsSubprocessError(t *testing.T) {
 		t.Errorf("expected error message to contain stderr, got %q", msg)
 	}
 }
+
+// TestRemoveStaleLock_CancelledCtx verifies that removeStaleLock returns
+// ctx.Err() immediately on a pre-cancelled context, before stat'ing the
+// path or spawning fuser/sudo subprocesses.
+func TestRemoveStaleLock_CancelledCtx(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// Use a path that definitely exists so we know the early return is
+	// from the ctx check, not from the os.Stat ENOENT branch.
+	err := removeStaleLock(ctx, "/etc/hostname")
+
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected errors.Is(err, context.Canceled) = true, got err = %v", err)
+	}
+}
+
+// TestRemoveStaleLock_NonExistentPathHealthyCtx verifies the happy path:
+// a healthy context plus a non-existent path returns nil silently
+// (preserving the pre-existing best-effort behavior).
+func TestRemoveStaleLock_NonExistentPathHealthyCtx(t *testing.T) {
+	err := removeStaleLock(context.Background(), "/nonexistent/path/does/not/exist")
+	if err != nil {
+		t.Errorf("expected nil for non-existent path, got %v", err)
+	}
+}
+
+// TestAptRepair_PreflightCancellation verifies that Apt.Repair short-circuits
+// on a pre-cancelled context without spawning any subprocesses. The very
+// first thing it does is iterate lockFiles calling removeStaleLock, which
+// itself preflights ctx.Err().
+func TestAptRepair_PreflightCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	a := NewAptWithContext(context.Background())
+	err := a.Repair(ctx)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected errors.Is(err, context.Canceled) = true, got err = %v", err)
+	}
+}
