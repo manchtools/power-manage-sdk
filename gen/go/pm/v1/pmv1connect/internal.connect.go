@@ -53,6 +53,9 @@ const (
 	// InternalServiceProxyStoreLpsPasswordsProcedure is the fully-qualified name of the
 	// InternalService's ProxyStoreLpsPasswords RPC.
 	InternalServiceProxyStoreLpsPasswordsProcedure = "/pm.v1.InternalService/ProxyStoreLpsPasswords"
+	// InternalServiceProxyValidateTerminalTokenProcedure is the fully-qualified name of the
+	// InternalService's ProxyValidateTerminalToken RPC.
+	InternalServiceProxyValidateTerminalTokenProcedure = "/pm.v1.InternalService/ProxyValidateTerminalToken"
 	// GatewayServiceListGatewayTerminalSessionsProcedure is the fully-qualified name of the
 	// GatewayService's ListGatewayTerminalSessions RPC.
 	GatewayServiceListGatewayTerminalSessionsProcedure = "/pm.v1.GatewayService/ListGatewayTerminalSessions"
@@ -76,6 +79,18 @@ type InternalServiceClient interface {
 	ProxyStoreLuksKey(context.Context, *connect.Request[v1.InternalStoreLuksKeyRequest]) (*connect.Response[v1.StoreLuksKeyResponse], error)
 	// Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
 	ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error)
+	// ProxyValidateTerminalToken validates a session token presented by a
+	// web client opening the gateway's WebSocket terminal endpoint, and
+	// returns the session metadata the gateway needs to bridge the
+	// connection (target device, TTY user, initial cols/rows).
+	//
+	// The token entry is reusable for the lifetime of the gateway
+	// session: a successful validation MUST NOT consume the entry,
+	// because the same gateway needs the metadata for the duration of
+	// the WebSocket connection. Revocation happens explicitly via
+	// ControlService.StopTerminal or the admin TerminateTerminalSession
+	// path — never as a side effect of validation.
+	ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error)
 }
 
 // NewInternalServiceClient constructs a client for the pm.v1.InternalService service. By default,
@@ -125,17 +140,24 @@ func NewInternalServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(internalServiceMethods.ByName("ProxyStoreLpsPasswords")),
 			connect.WithClientOptions(opts...),
 		),
+		proxyValidateTerminalToken: connect.NewClient[v1.InternalValidateTerminalTokenRequest, v1.InternalValidateTerminalTokenResponse](
+			httpClient,
+			baseURL+InternalServiceProxyValidateTerminalTokenProcedure,
+			connect.WithSchema(internalServiceMethods.ByName("ProxyValidateTerminalToken")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // internalServiceClient implements InternalServiceClient.
 type internalServiceClient struct {
-	verifyDevice           *connect.Client[v1.VerifyDeviceRequest, v1.VerifyDeviceResponse]
-	proxySyncActions       *connect.Client[v1.InternalSyncActionsRequest, v1.SyncActionsResponse]
-	proxyValidateLuksToken *connect.Client[v1.InternalValidateLuksTokenRequest, v1.ValidateLuksTokenResponse]
-	proxyGetLuksKey        *connect.Client[v1.InternalGetLuksKeyRequest, v1.GetLuksKeyResponse]
-	proxyStoreLuksKey      *connect.Client[v1.InternalStoreLuksKeyRequest, v1.StoreLuksKeyResponse]
-	proxyStoreLpsPasswords *connect.Client[v1.InternalStoreLpsPasswordsRequest, v1.InternalStoreLpsPasswordsResponse]
+	verifyDevice               *connect.Client[v1.VerifyDeviceRequest, v1.VerifyDeviceResponse]
+	proxySyncActions           *connect.Client[v1.InternalSyncActionsRequest, v1.SyncActionsResponse]
+	proxyValidateLuksToken     *connect.Client[v1.InternalValidateLuksTokenRequest, v1.ValidateLuksTokenResponse]
+	proxyGetLuksKey            *connect.Client[v1.InternalGetLuksKeyRequest, v1.GetLuksKeyResponse]
+	proxyStoreLuksKey          *connect.Client[v1.InternalStoreLuksKeyRequest, v1.StoreLuksKeyResponse]
+	proxyStoreLpsPasswords     *connect.Client[v1.InternalStoreLpsPasswordsRequest, v1.InternalStoreLpsPasswordsResponse]
+	proxyValidateTerminalToken *connect.Client[v1.InternalValidateTerminalTokenRequest, v1.InternalValidateTerminalTokenResponse]
 }
 
 // VerifyDevice calls pm.v1.InternalService.VerifyDevice.
@@ -168,6 +190,11 @@ func (c *internalServiceClient) ProxyStoreLpsPasswords(ctx context.Context, req 
 	return c.proxyStoreLpsPasswords.CallUnary(ctx, req)
 }
 
+// ProxyValidateTerminalToken calls pm.v1.InternalService.ProxyValidateTerminalToken.
+func (c *internalServiceClient) ProxyValidateTerminalToken(ctx context.Context, req *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error) {
+	return c.proxyValidateTerminalToken.CallUnary(ctx, req)
+}
+
 // InternalServiceHandler is an implementation of the pm.v1.InternalService service.
 type InternalServiceHandler interface {
 	// VerifyDevice checks that a device exists and is not deleted.
@@ -183,6 +210,18 @@ type InternalServiceHandler interface {
 	ProxyStoreLuksKey(context.Context, *connect.Request[v1.InternalStoreLuksKeyRequest]) (*connect.Response[v1.StoreLuksKeyResponse], error)
 	// Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
 	ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error)
+	// ProxyValidateTerminalToken validates a session token presented by a
+	// web client opening the gateway's WebSocket terminal endpoint, and
+	// returns the session metadata the gateway needs to bridge the
+	// connection (target device, TTY user, initial cols/rows).
+	//
+	// The token entry is reusable for the lifetime of the gateway
+	// session: a successful validation MUST NOT consume the entry,
+	// because the same gateway needs the metadata for the duration of
+	// the WebSocket connection. Revocation happens explicitly via
+	// ControlService.StopTerminal or the admin TerminateTerminalSession
+	// path — never as a side effect of validation.
+	ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error)
 }
 
 // NewInternalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -228,6 +267,12 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 		connect.WithSchema(internalServiceMethods.ByName("ProxyStoreLpsPasswords")),
 		connect.WithHandlerOptions(opts...),
 	)
+	internalServiceProxyValidateTerminalTokenHandler := connect.NewUnaryHandler(
+		InternalServiceProxyValidateTerminalTokenProcedure,
+		svc.ProxyValidateTerminalToken,
+		connect.WithSchema(internalServiceMethods.ByName("ProxyValidateTerminalToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.InternalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case InternalServiceVerifyDeviceProcedure:
@@ -242,6 +287,8 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 			internalServiceProxyStoreLuksKeyHandler.ServeHTTP(w, r)
 		case InternalServiceProxyStoreLpsPasswordsProcedure:
 			internalServiceProxyStoreLpsPasswordsHandler.ServeHTTP(w, r)
+		case InternalServiceProxyValidateTerminalTokenProcedure:
+			internalServiceProxyValidateTerminalTokenHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -273,6 +320,10 @@ func (UnimplementedInternalServiceHandler) ProxyStoreLuksKey(context.Context, *c
 
 func (UnimplementedInternalServiceHandler) ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.ProxyStoreLpsPasswords is not implemented"))
+}
+
+func (UnimplementedInternalServiceHandler) ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.ProxyValidateTerminalToken is not implemented"))
 }
 
 // GatewayServiceClient is a client for the pm.v1.GatewayService service.
