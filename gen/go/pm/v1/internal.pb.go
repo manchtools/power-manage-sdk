@@ -675,10 +675,14 @@ func (x *ListGatewayTerminalSessionsResponse) GetSessions() []*GatewayTerminalSe
 }
 
 type TerminateGatewayTerminalSessionRequest struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	// Optional reason propagated to the agent and recorded in the audit log.
-	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// Optional reason propagated to the agent and recorded in the audit
+	// log. Length capped to match ControlService.TerminateTerminalSession
+	// so audit entries stay bounded.
+	// @gotags: validate:"omitempty,max=512"
+	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty" validate:"omitempty,max=512"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

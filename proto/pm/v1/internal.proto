@@ -148,8 +148,12 @@ message ListGatewayTerminalSessionsResponse {
 }
 
 message TerminateGatewayTerminalSessionRequest {
+  // @gotags: validate:"required,ulid"
   string session_id = 1;
-  // Optional reason propagated to the agent and recorded in the audit log.
+  // Optional reason propagated to the agent and recorded in the audit
+  // log. Length capped to match ControlService.TerminateTerminalSession
+  // so audit entries stay bounded.
+  // @gotags: validate:"omitempty,max=512"
   string reason = 2;
 }
 

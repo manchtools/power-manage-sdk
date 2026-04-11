@@ -326,12 +326,17 @@ export const ListGatewayTerminalSessionsResponseSchema: GenMessage<ListGatewayTe
  */
 export type TerminateGatewayTerminalSessionRequest = Message<"pm.v1.TerminateGatewayTerminalSessionRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
 
   /**
-   * Optional reason propagated to the agent and recorded in the audit log.
+   * Optional reason propagated to the agent and recorded in the audit
+   * log. Length capped to match ControlService.TerminateTerminalSession
+   * so audit entries stay bounded.
+   * @gotags: validate:"omitempty,max=512"
    *
    * @generated from field: string reason = 2;
    */

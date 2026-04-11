@@ -9501,16 +9501,20 @@ export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
   sessionId: string;
 
   /**
-   * Short-lived bearer token the web client passes to the gateway
-   * WebSocket as ?token=<session_token>.
+   * Short-lived bearer token the web client must append to gateway_url
+   * as ?token=<session_token> when opening the WebSocket. The token is
+   * intentionally returned separately from the URL so the URL can be
+   * logged or displayed without leaking the credential.
    *
    * @generated from field: string session_token = 2;
    */
   sessionToken: string;
 
   /**
-   * Fully-qualified WebSocket URL of the gateway endpoint
-   * (e.g. wss://gateway.example.com/terminal?token=...).
+   * Token-free base WebSocket URL of the gateway endpoint
+   * (e.g. wss://gateway.example.com/terminal). Clients MUST construct
+   * the final connect URL by appending ?token=<session_token>; this
+   * field never embeds the token.
    *
    * @generated from field: string gateway_url = 3;
    */

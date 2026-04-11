@@ -486,10 +486,16 @@ message TerminalResize {
 
 // Server -> Agent: terminate an active session.
 // The agent SIGTERMs the shell process group and reverts the user's
-// shell to nologin.
+// shell to nologin. The optional reason is propagated end-to-end from
+// ControlService.TerminateTerminalSession through
+// GatewayService.TerminateGatewayTerminalSession so the agent can
+// surface it in logs and the audit trail captures why the session
+// was killed.
 message TerminalStop {
   // @gotags: validate:"required,ulid"
   string session_id = 1;
+  // @gotags: validate:"omitempty,max=512"
+  string reason = 2;
 }
 
 // Agent -> Server: stdout/stderr data from the PTY.

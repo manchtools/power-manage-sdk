@@ -2607,11 +2607,17 @@ func (x *TerminalResize) GetRows() uint32 {
 
 // Server -> Agent: terminate an active session.
 // The agent SIGTERMs the shell process group and reverts the user's
-// shell to nologin.
+// shell to nologin. The optional reason is propagated end-to-end from
+// ControlService.TerminateTerminalSession through
+// GatewayService.TerminateGatewayTerminalSession so the agent can
+// surface it in logs and the audit trail captures why the session
+// was killed.
 type TerminalStop struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	SessionId     string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,max=512"
+	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty" validate:"omitempty,max=512"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2649,6 +2655,13 @@ func (*TerminalStop) Descriptor() ([]byte, []int) {
 func (x *TerminalStop) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalStop) GetReason() string {
+	if x != nil {
+		return x.Reason
 	}
 	return ""
 }
@@ -2958,10 +2971,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
 	"\x04cols\x18\x02 \x01(\rR\x04cols\x12\x12\n" +
-	"\x04rows\x18\x03 \x01(\rR\x04rows\"-\n" +
+	"\x04rows\x18\x03 \x01(\rR\x04rows\"E\n" +
 	"\fTerminalStop\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"C\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"C\n" +
 	"\x0eTerminalOutput\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
