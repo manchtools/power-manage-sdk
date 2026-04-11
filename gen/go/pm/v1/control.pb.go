@@ -20044,22 +20044,27 @@ func (x *StartTerminalRequest) GetRows() uint32 {
 type StartTerminalResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ULID identifying the session for the lifetime of the connection.
-	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
 	// Short-lived bearer token the web client must append to gateway_url
 	// as ?token=<session_token> when opening the WebSocket. The token is
 	// intentionally returned separately from the URL so the URL can be
 	// logged or displayed without leaking the credential.
-	SessionToken string `protobuf:"bytes,2,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
+	// @gotags: validate:"required,min=1"
+	SessionToken string `protobuf:"bytes,2,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty" validate:"required,min=1"`
 	// Token-free base WebSocket URL of the gateway endpoint
 	// (e.g. wss://gateway.example.com/terminal). Clients MUST construct
 	// the final connect URL by appending ?token=<session_token>; this
 	// field never embeds the token.
-	GatewayUrl string `protobuf:"bytes,3,opt,name=gateway_url,json=gatewayUrl,proto3" json:"gateway_url,omitempty"`
+	// @gotags: validate:"required,url"
+	GatewayUrl string `protobuf:"bytes,3,opt,name=gateway_url,json=gatewayUrl,proto3" json:"gateway_url,omitempty" validate:"required,url"`
 	// Token expiry; the client should connect well before this.
-	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	// @gotags: validate:"required"
+	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" validate:"required"`
 	// The TTY user the agent will spawn the shell as. Returned for the
 	// UI to display ("Connected as pm-tty-pdotterer") and for diagnostics.
-	TtyUser       string `protobuf:"bytes,5,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty"`
+	// @gotags: validate:"required,min=1,max=64"
+	TtyUser       string `protobuf:"bytes,5,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty" validate:"required,min=1,max=64"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

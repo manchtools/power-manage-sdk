@@ -9495,6 +9495,7 @@ export const StartTerminalRequestSchema: GenMessage<StartTerminalRequest> = /*@_
 export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
   /**
    * ULID identifying the session for the lifetime of the connection.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string session_id = 1;
    */
@@ -9505,6 +9506,7 @@ export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
    * as ?token=<session_token> when opening the WebSocket. The token is
    * intentionally returned separately from the URL so the URL can be
    * logged or displayed without leaking the credential.
+   * @gotags: validate:"required,min=1"
    *
    * @generated from field: string session_token = 2;
    */
@@ -9515,6 +9517,7 @@ export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
    * (e.g. wss://gateway.example.com/terminal). Clients MUST construct
    * the final connect URL by appending ?token=<session_token>; this
    * field never embeds the token.
+   * @gotags: validate:"required,url"
    *
    * @generated from field: string gateway_url = 3;
    */
@@ -9522,6 +9525,7 @@ export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
 
   /**
    * Token expiry; the client should connect well before this.
+   * @gotags: validate:"required"
    *
    * @generated from field: google.protobuf.Timestamp expires_at = 4;
    */
@@ -9530,6 +9534,7 @@ export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
   /**
    * The TTY user the agent will spawn the shell as. Returned for the
    * UI to display ("Connected as pm-tty-pdotterer") and for diagnostics.
+   * @gotags: validate:"required,min=1,max=64"
    *
    * @generated from field: string tty_user = 5;
    */
