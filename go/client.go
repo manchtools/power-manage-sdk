@@ -923,6 +923,16 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 				return fmt.Errorf("handle terminal stop: %w", err)
 			}
 		}
+
+	default:
+		// Forward-compat: a newer server may add a ServerMessage
+		// payload variant that this SDK build does not yet recognise.
+		// Logging at debug keeps this observable without spamming
+		// production logs, and we deliberately do NOT return an error
+		// — that would tear down the agent connection on every
+		// unknown frame, which is much worse than silently dropping it.
+		c.logger.Debug("dropping unknown ServerMessage payload",
+			"message_id", msg.Id, "type", fmt.Sprintf("%T", msg.Payload))
 	}
 	return nil
 }

@@ -215,6 +215,28 @@ func TestDispatch_Terminal_NoHandler_DropsSilently(t *testing.T) {
 	}
 }
 
+// An unknown / unrecognized ServerMessage payload (e.g. a future
+// variant from a newer server build) must NOT tear down the
+// connection. Returning an error from dispatchServerMessage causes
+// Run to terminate the stream, which is the wrong behaviour for an
+// unknown frame — silently drop it instead.
+//
+// We synthesize "unknown" by passing a ServerMessage with a nil
+// payload, which the type switch hits as the default case.
+func TestDispatch_UnknownPayload_DropsSilently(t *testing.T) {
+	c := newTestClient()
+	h := &fakeTerminalHandler{}
+
+	msg := &pm.ServerMessage{Id: NewULID()}
+	if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
+		t.Errorf("dispatch unknown payload: unexpected error: %v", err)
+	}
+	// And no handler method should have been touched.
+	if len(h.startCalls)+len(h.inputCalls)+len(h.resizeCalls)+len(h.stopCalls) != 0 {
+		t.Errorf("unknown payload should not invoke any handler method")
+	}
+}
+
 // TerminalHandler is a strict superset of StreamHandler — verify the
 // interface assertion at compile time so a future change that breaks
 // it shows up at build time, not at runtime.
