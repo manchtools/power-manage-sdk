@@ -329,6 +329,43 @@ type InventoryHandler interface {
 	CollectInventory(ctx context.Context) *pm.DeviceInventory
 }
 
+// TerminalHandler extends StreamHandler with remote terminal (PTY) session
+// support. Handlers that implement this interface receive the four
+// server-initiated session control messages from manchtools/power-manage-sdk#16
+// and are responsible for allocating PTYs, relaying I/O, and reporting
+// state back via Client.SendTerminalOutput / Client.SendTerminalStateChange.
+//
+// All four methods MUST return promptly: the SDK invokes them on the
+// receive loop, so a slow handler will stall delivery of every other
+// ServerMessage variant. Implementations should hand off to a per-session
+// goroutine for any blocking I/O.
+//
+// A nil error from these methods means the request was accepted; the
+// handler is expected to surface terminal-level failures via
+// SendTerminalStateChange with a TERMINAL_SESSION_STATE_ERROR payload.
+// Returning a non-nil error from OnTerminalStart/Input/Resize/Stop is
+// treated as a fatal stream error and tears down the agent connection.
+type TerminalHandler interface {
+	StreamHandler
+	// OnTerminalStart is called when the server requests a new PTY.
+	// The handler should validate tty_user, allocate the PTY, kick off
+	// I/O goroutines, and send a TERMINAL_SESSION_STATE_STARTED state
+	// change. If allocation fails, it MUST send a STATE_ERROR instead.
+	OnTerminalStart(ctx context.Context, req *pm.TerminalStart) error
+	// OnTerminalInput is called for every stdin frame from the server.
+	// The handler should write the bytes to the PTY of the matching
+	// session_id and ignore (with a debug log) frames for unknown
+	// sessions.
+	OnTerminalInput(ctx context.Context, req *pm.TerminalInput) error
+	// OnTerminalResize forwards a TIOCSWINSZ to the session's PTY.
+	// Unknown sessions are ignored.
+	OnTerminalResize(ctx context.Context, req *pm.TerminalResize) error
+	// OnTerminalStop terminates the session and reverts any side effects
+	// (shell unmask, temp home cleanup, etc.). Unknown sessions are
+	// idempotent no-ops so the server can fire and forget on disconnect.
+	OnTerminalStop(ctx context.Context, req *pm.TerminalStop) error
+}
+
 // Connect establishes a bidirectional stream with the server.
 func (c *Client) Connect(ctx context.Context) error {
 	c.mu.Lock()
@@ -452,6 +489,32 @@ func (c *Client) SendInventory(ctx context.Context, inventory *pm.DeviceInventor
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Inventory{
 			Inventory: inventory,
+		},
+	})
+}
+
+// SendTerminalOutput sends a stdout/stderr chunk from a remote terminal
+// session back to the server. The TerminalHandler is responsible for
+// chunking PTY reads to fit the proto's 64KB max data size.
+func (c *Client) SendTerminalOutput(ctx context.Context, out *pm.TerminalOutput) error {
+	return c.send(&pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_TerminalOutput{
+			TerminalOutput: out,
+		},
+	})
+}
+
+// SendTerminalStateChange reports a terminal session lifecycle event
+// (started, exited with code, error). Send STARTED immediately after
+// the PTY is allocated, EXITED when the shell process exits cleanly,
+// and ERROR for any failure that ends the session before STARTED or
+// in flight.
+func (c *Client) SendTerminalStateChange(ctx context.Context, change *pm.TerminalStateChange) error {
+	return c.send(&pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_TerminalStateChange{
+			TerminalStateChange: change,
 		},
 	})
 }
@@ -728,97 +791,140 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 			if result.err != nil {
 				return fmt.Errorf("receive: %w", result.err)
 			}
-
-			switch p := result.msg.Payload.(type) {
-			case *pm.ServerMessage_Welcome:
-				if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
-					return fmt.Errorf("handle welcome: %w", err)
-				}
-
-			case *pm.ServerMessage_Action:
-				var actionResult *pm.ActionResult
-				var err error
-
-				// Check if handler supports streaming
-				if streamingHandler, ok := handler.(StreamingHandler); ok {
-					// Create a callback that sends output chunks
-					sendChunk := func(chunk *pm.OutputChunk) error {
-						return c.SendOutputChunk(ctx, chunk)
-					}
-					actionResult, err = streamingHandler.OnActionWithStreaming(ctx, p.Action.Action, sendChunk)
-				} else {
-					actionResult, err = handler.OnAction(ctx, p.Action.Action)
-				}
-
-				if err != nil {
-					return fmt.Errorf("handle action: %w", err)
-				}
-				if actionResult != nil {
-					if err := c.SendActionResult(ctx, actionResult); err != nil {
-						return fmt.Errorf("send action result: %w", err)
-					}
-				}
-
-			case *pm.ServerMessage_Query:
-				queryResult, err := handler.OnQuery(ctx, p.Query)
-				if err != nil {
-					return fmt.Errorf("handle query: %w", err)
-				}
-				if queryResult != nil {
-					if err := c.SendQueryResult(ctx, queryResult); err != nil {
-						return fmt.Errorf("send query result: %w", err)
-					}
-				}
-
-			case *pm.ServerMessage_Error:
-				if err := handler.OnError(ctx, p.Error); err != nil {
-					return fmt.Errorf("handle error: %w", err)
-				}
-
-			case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey:
-				// LUKS request-response: deliver to pending request by message ID.
-				c.deliverPending(result.msg)
-
-			case *pm.ServerMessage_RequestInventory:
-				if invHandler, ok := handler.(InventoryHandler); ok {
-					go func() {
-						if inv := invHandler.CollectInventory(ctx); inv != nil {
-							if err := c.SendInventory(ctx, inv); err != nil {
-								c.logger.Warn("failed to send inventory", "error", err)
-							}
-						}
-					}()
-				}
-
-			case *pm.ServerMessage_LogQuery:
-				if lqHandler, ok := handler.(LogQueryHandler); ok {
-					result, err := lqHandler.OnLogQuery(ctx, p.LogQuery)
-					if err != nil {
-						return fmt.Errorf("handle log query: %w", err)
-					}
-					if result != nil {
-						if err := c.SendLogQueryResult(ctx, result); err != nil {
-							return fmt.Errorf("send log query result: %w", err)
-						}
-					}
-				}
-
-			case *pm.ServerMessage_RevokeLuksDeviceKey:
-				if luksHandler, ok := handler.(LuksHandler); ok {
-					actionID := p.RevokeLuksDeviceKey.ActionId
-					// Run in goroutine: the handler calls GetLuksKey which sends
-					// a request on the stream and waits for a response. Processing
-					// that response requires this receive loop to keep running.
-					go func() {
-						success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
-						if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
-							c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
-						}
-					}()
-				}
+			if err := c.dispatchServerMessage(ctx, result.msg, handler); err != nil {
+				return err
 			}
 		}
 	}
+}
+
+// dispatchServerMessage routes a single ServerMessage to the appropriate
+// handler method. Extracted from Run for testability — call sites that
+// need a fake stream or hand-built messages can drive this directly.
+// Returns a non-nil error only for fatal stream errors that should tear
+// down the connection; per-message handler failures (LUKS, terminal,
+// etc.) are wrapped before returning so callers see what failed.
+func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessage, handler StreamHandler) error {
+	switch p := msg.Payload.(type) {
+	case *pm.ServerMessage_Welcome:
+		if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
+			return fmt.Errorf("handle welcome: %w", err)
+		}
+
+	case *pm.ServerMessage_Action:
+		var actionResult *pm.ActionResult
+		var err error
+
+		// Check if handler supports streaming
+		if streamingHandler, ok := handler.(StreamingHandler); ok {
+			// Create a callback that sends output chunks
+			sendChunk := func(chunk *pm.OutputChunk) error {
+				return c.SendOutputChunk(ctx, chunk)
+			}
+			actionResult, err = streamingHandler.OnActionWithStreaming(ctx, p.Action.Action, sendChunk)
+		} else {
+			actionResult, err = handler.OnAction(ctx, p.Action.Action)
+		}
+
+		if err != nil {
+			return fmt.Errorf("handle action: %w", err)
+		}
+		if actionResult != nil {
+			if err := c.SendActionResult(ctx, actionResult); err != nil {
+				return fmt.Errorf("send action result: %w", err)
+			}
+		}
+
+	case *pm.ServerMessage_Query:
+		queryResult, err := handler.OnQuery(ctx, p.Query)
+		if err != nil {
+			return fmt.Errorf("handle query: %w", err)
+		}
+		if queryResult != nil {
+			if err := c.SendQueryResult(ctx, queryResult); err != nil {
+				return fmt.Errorf("send query result: %w", err)
+			}
+		}
+
+	case *pm.ServerMessage_Error:
+		if err := handler.OnError(ctx, p.Error); err != nil {
+			return fmt.Errorf("handle error: %w", err)
+		}
+
+	case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey:
+		// LUKS request-response: deliver to pending request by message ID.
+		c.deliverPending(msg)
+
+	case *pm.ServerMessage_RequestInventory:
+		if invHandler, ok := handler.(InventoryHandler); ok {
+			go func() {
+				if inv := invHandler.CollectInventory(ctx); inv != nil {
+					if err := c.SendInventory(ctx, inv); err != nil {
+						c.logger.Warn("failed to send inventory", "error", err)
+					}
+				}
+			}()
+		}
+
+	case *pm.ServerMessage_LogQuery:
+		if lqHandler, ok := handler.(LogQueryHandler); ok {
+			result, err := lqHandler.OnLogQuery(ctx, p.LogQuery)
+			if err != nil {
+				return fmt.Errorf("handle log query: %w", err)
+			}
+			if result != nil {
+				if err := c.SendLogQueryResult(ctx, result); err != nil {
+					return fmt.Errorf("send log query result: %w", err)
+				}
+			}
+		}
+
+	case *pm.ServerMessage_RevokeLuksDeviceKey:
+		if luksHandler, ok := handler.(LuksHandler); ok {
+			actionID := p.RevokeLuksDeviceKey.ActionId
+			// Run in goroutine: the handler calls GetLuksKey which sends
+			// a request on the stream and waits for a response. Processing
+			// that response requires this receive loop to keep running.
+			go func() {
+				success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
+				if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
+					c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
+				}
+			}()
+		}
+
+	case *pm.ServerMessage_TerminalStart:
+		if termHandler, ok := handler.(TerminalHandler); ok {
+			if err := termHandler.OnTerminalStart(ctx, p.TerminalStart); err != nil {
+				return fmt.Errorf("handle terminal start: %w", err)
+			}
+		} else {
+			c.logger.Debug("dropping TerminalStart: handler does not implement TerminalHandler",
+				"session_id", p.TerminalStart.SessionId)
+		}
+
+	case *pm.ServerMessage_TerminalInput:
+		if termHandler, ok := handler.(TerminalHandler); ok {
+			if err := termHandler.OnTerminalInput(ctx, p.TerminalInput); err != nil {
+				return fmt.Errorf("handle terminal input: %w", err)
+			}
+		}
+
+	case *pm.ServerMessage_TerminalResize:
+		if termHandler, ok := handler.(TerminalHandler); ok {
+			if err := termHandler.OnTerminalResize(ctx, p.TerminalResize); err != nil {
+				return fmt.Errorf("handle terminal resize: %w", err)
+			}
+		}
+
+	case *pm.ServerMessage_TerminalStop:
+		if termHandler, ok := handler.(TerminalHandler); ok {
+			if err := termHandler.OnTerminalStop(ctx, p.TerminalStop); err != nil {
+				return fmt.Errorf("handle terminal stop: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 // NewULID generates a new ULID string.
