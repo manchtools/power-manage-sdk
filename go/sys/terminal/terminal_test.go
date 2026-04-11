@@ -7,9 +7,37 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
+
+// isSandboxStartErr reports whether err looks like a sandbox/seccomp
+// restriction that should cause the test to skip rather than fail. We
+// match on EPERM/EACCES/ENOSYS so genuine bugs (panics, validation
+// failures, missing shell) still surface as test failures.
+func isSandboxStartErr(err error) bool {
+	return errors.Is(err, syscall.EPERM) ||
+		errors.Is(err, syscall.EACCES) ||
+		errors.Is(err, syscall.ENOSYS) ||
+		errors.Is(err, os.ErrPermission)
+}
+
+// startSessionOrSkip is the canonical helper for tests that need a live
+// session: it returns the Session on success, skips the test on a
+// sandbox-related Start failure, and fatally fails the test on any other
+// error so real bugs are not silently masked.
+func startSessionOrSkip(t *testing.T, cfg SessionConfig) *Session {
+	t.Helper()
+	s, err := Start(cfg)
+	if err != nil {
+		if isSandboxStartErr(err) {
+			t.Skipf("start session: sandbox restriction: %v", err)
+		}
+		t.Fatalf("start session: %v", err)
+	}
+	return s
+}
 
 func TestStart_EmptyUser(t *testing.T) {
 	_, err := Start(SessionConfig{})
@@ -63,6 +91,40 @@ func TestStart_ShellIsDirectory(t *testing.T) {
 	}
 }
 
+func TestStart_ShellNotAbsolute(t *testing.T) {
+	cur, err := user.Current()
+	if err != nil {
+		t.Skipf("user.Current() failed: %v", err)
+	}
+	_, err = Start(SessionConfig{User: cur.Username, Shell: "bash"})
+	if err == nil {
+		t.Fatal("expected error for non-absolute shell path")
+	}
+	if !strings.Contains(err.Error(), "absolute path") {
+		t.Errorf("expected absolute-path error, got: %v", err)
+	}
+}
+
+func TestStart_ShellNotExecutable(t *testing.T) {
+	cur, err := user.Current()
+	if err != nil {
+		t.Skipf("user.Current() failed: %v", err)
+	}
+	// A regular non-executable file under our temp dir.
+	dir := t.TempDir()
+	notExec := dir + "/not-a-shell"
+	if err := os.WriteFile(notExec, []byte("#!/bin/sh\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Start(SessionConfig{User: cur.Username, Shell: notExec})
+	if err == nil {
+		t.Fatal("expected error for non-executable shell")
+	}
+	if !strings.Contains(err.Error(), "not executable") {
+		t.Errorf("expected not-executable error, got: %v", err)
+	}
+}
+
 // pickShell returns a usable shell on the current system or skips the test.
 func pickShell(t *testing.T) string {
 	t.Helper()
@@ -84,18 +146,12 @@ func TestSession_EchoAndExit(t *testing.T) {
 		t.Skipf("user.Current() failed: %v", err)
 	}
 
-	s, err := Start(SessionConfig{
+	s := startSessionOrSkip(t, SessionConfig{
 		User:  cur.Username,
 		Shell: pickShell(t),
 		Cols:  80,
 		Rows:  24,
 	})
-	if err != nil {
-		// setresuid to the same UID is allowed without privileges, but
-		// some sandboxed CI environments still refuse the syscall —
-		// skip rather than fail spuriously.
-		t.Skipf("start session: %v", err)
-	}
 	defer s.Close()
 
 	// Send a command and an exit.
@@ -125,10 +181,7 @@ func TestSession_ResizeBeforeExit(t *testing.T) {
 		t.Skipf("user.Current() failed: %v", err)
 	}
 
-	s, err := Start(SessionConfig{User: cur.Username, Shell: pickShell(t)})
-	if err != nil {
-		t.Skipf("start session: %v", err)
-	}
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 	defer s.Close()
 
 	if err := s.Resize(120, 40); err != nil {
@@ -151,10 +204,7 @@ func TestSession_CloseUnblocksWait(t *testing.T) {
 		t.Skipf("user.Current() failed: %v", err)
 	}
 
-	s, err := Start(SessionConfig{User: cur.Username, Shell: pickShell(t)})
-	if err != nil {
-		t.Skipf("start session: %v", err)
-	}
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
 	// Wait in a goroutine; assert it returns within a reasonable window
 	// after Close.
@@ -184,10 +234,7 @@ func TestSession_CloseIsIdempotent(t *testing.T) {
 		t.Skipf("user.Current() failed: %v", err)
 	}
 
-	s, err := Start(SessionConfig{User: cur.Username, Shell: pickShell(t)})
-	if err != nil {
-		t.Skipf("start session: %v", err)
-	}
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
 	if err := s.Close(); err != nil {
 		t.Errorf("first close: %v", err)
@@ -210,10 +257,7 @@ func TestSession_ReapClosesPTYWithoutExplicitClose(t *testing.T) {
 		t.Skipf("user.Current() failed: %v", err)
 	}
 
-	s, err := Start(SessionConfig{User: cur.Username, Shell: pickShell(t)})
-	if err != nil {
-		t.Skipf("start session: %v", err)
-	}
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
 	// Trigger a clean exit and wait for it.
 	if _, err := io.WriteString(s, "exit\n"); err != nil {
@@ -251,10 +295,7 @@ func TestSession_DoneChannel(t *testing.T) {
 		t.Skipf("user.Current() failed: %v", err)
 	}
 
-	s, err := Start(SessionConfig{User: cur.Username, Shell: pickShell(t)})
-	if err != nil {
-		t.Skipf("start session: %v", err)
-	}
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
 	// Done must not be closed yet.
 	select {
@@ -336,9 +377,12 @@ func TestDefaultWorkDir_PrefersExistingHome(t *testing.T) {
 	}
 }
 
-// drain reads from the session until the channel signals exit, the read
-// returns EOF, or the deadline elapses, whichever comes first. It returns
-// whatever was read so far for assertion in the caller.
+// drain reads from the session until the read loop returns EOF (or any
+// other error from the closed PTY) and returns everything it collected.
+// A timeout is treated as a hard test failure via t.Fatalf rather than
+// silently returning an empty string, so a hang in Resize/Read/Close
+// surfaces as a clear failure instead of a passing test that masks the
+// bug.
 func drain(t *testing.T, s *Session, timeout time.Duration) string {
 	t.Helper()
 	type chunk struct {
@@ -365,7 +409,8 @@ func drain(t *testing.T, s *Session, timeout time.Duration) string {
 		return string(c.buf)
 	case <-time.After(timeout):
 		_ = s.Close()
-		return ""
+		t.Fatalf("drain: read did not finish within %v", timeout)
+		return "" // unreachable; t.Fatalf aborts
 	}
 }
 

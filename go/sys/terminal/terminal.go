@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,10 +99,18 @@ func Start(cfg SessionConfig) (*Session, error) {
 	if shell == "" {
 		shell = DefaultShell
 	}
-	if info, err := os.Stat(shell); err != nil {
+	if !filepath.IsAbs(shell) {
+		return nil, fmt.Errorf("terminal: shell %q must be an absolute path", shell)
+	}
+	info, err := os.Stat(shell)
+	if err != nil {
 		return nil, fmt.Errorf("terminal: stat shell %q: %w", shell, err)
-	} else if info.IsDir() {
+	}
+	if info.IsDir() {
 		return nil, fmt.Errorf("terminal: shell %q is a directory", shell)
+	}
+	if info.Mode()&0o111 == 0 {
+		return nil, fmt.Errorf("terminal: shell %q is not executable", shell)
 	}
 
 	cols := cfg.Cols
@@ -190,19 +199,32 @@ func (s *Session) Resize(cols, rows uint16) error {
 	return nil
 }
 
-// Close terminates the shell session. It sends SIGTERM to the shell's
-// process group and closes the PTY master. Safe to call multiple times;
-// subsequent calls return the same error (or nil).
+// Close terminates the shell session. If the shell is still running it
+// sends SIGTERM to the entire process group; if the shell has already
+// exited (Done channel closed) the signal is skipped to avoid the small
+// PID-recycling race window where the original PGID may belong to an
+// unrelated process. Closing the PTY master is always performed.
+// Safe to call multiple times; subsequent calls return the same error
+// (or nil).
 //
 // After Close, Read and Write return errors. Use Wait or Done to observe
 // the actual exit.
 func (s *Session) Close() error {
 	s.closeOnce.Do(func() {
-		// Setsid above made the shell its own process-group leader, so a
-		// negative pid signals the entire group (the shell plus any
-		// children it forked). Best-effort: process may already be gone.
-		if s.cmd.Process != nil {
-			_ = syscall.Kill(-s.cmd.Process.Pid, syscall.SIGTERM)
+		// Only signal the shell while it is still running. After reap
+		// has signaled Done, the PID may have been recycled by the
+		// kernel and a stray kill could hit an unrelated process group.
+		select {
+		case <-s.done:
+			// Already exited — nothing to signal.
+		default:
+			// Setsid above made the shell its own process-group leader,
+			// so a negative pid signals the entire group (the shell
+			// plus any children it forked). Best-effort: a SIGTERM
+			// race with natural exit is harmless.
+			if s.cmd.Process != nil {
+				_ = syscall.Kill(-s.cmd.Process.Pid, syscall.SIGTERM)
+			}
 		}
 		// Closing the master also sends SIGHUP to the group, which is
 		// the polite shell-termination signal. ErrClosed is expected if
