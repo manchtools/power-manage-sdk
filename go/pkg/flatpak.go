@@ -68,7 +68,7 @@ func (f *Flatpak) Install(packages ...string) (*CommandResult, error) {
 		args = append(args, "--user")
 	}
 	args = append(args, packages...)
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // InstallVersion installs a package with specific version options.
@@ -92,7 +92,7 @@ func (f *Flatpak) Remove(packages ...string) (*CommandResult, error) {
 		args = append(args, "--user")
 	}
 	args = append(args, packages...)
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // Purge removes packages and their data.
@@ -107,7 +107,7 @@ func (f *Flatpak) Purge(packages ...string) (*CommandResult, error) {
 		args = append(args, "--user")
 	}
 	args = append(args, packages...)
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // Update updates the Flatpak remote metadata.
@@ -118,7 +118,7 @@ func (f *Flatpak) Update() (*CommandResult, error) {
 	} else {
 		args = append(args, "--user")
 	}
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // Upgrade upgrades packages.
@@ -132,7 +132,7 @@ func (f *Flatpak) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) > 0 {
 		args = append(args, packages...)
 	}
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // Search searches for packages in configured remotes.
@@ -400,7 +400,7 @@ func (f *Flatpak) Pin(packages ...string) (*CommandResult, error) {
 		} else {
 			args = append(args, "--user")
 		}
-		result, err := f.run(args...)
+		result, err := f.run(f.ctx, args...)
 		if result != nil {
 			allOutput.WriteString(result.Stdout)
 			allOutput.WriteString(result.Stderr)
@@ -432,7 +432,7 @@ func (f *Flatpak) Unpin(packages ...string) (*CommandResult, error) {
 		} else {
 			args = append(args, "--user")
 		}
-		result, err := f.run(args...)
+		result, err := f.run(f.ctx, args...)
 		if result != nil {
 			allOutput.WriteString(result.Stdout)
 			allOutput.WriteString(result.Stderr)
@@ -535,7 +535,7 @@ func (f *Flatpak) AddRemote(name, url string) (*CommandResult, error) {
 	} else {
 		args = append(args, "--user")
 	}
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // RemoveRemote removes a Flatpak remote repository.
@@ -546,7 +546,7 @@ func (f *Flatpak) RemoveRemote(name string) (*CommandResult, error) {
 	} else {
 		args = append(args, "--user")
 	}
-	return f.run(args...)
+	return f.run(f.ctx, args...)
 }
 
 // ListRemotes lists configured Flatpak remotes.
@@ -574,15 +574,15 @@ func (f *Flatpak) ListRemotes() ([]string, error) {
 	return remotes, nil
 }
 
-func (f *Flatpak) run(args ...string) (*CommandResult, error) {
+func (f *Flatpak) run(ctx context.Context, args ...string) (*CommandResult, error) {
 	start := time.Now()
 
 	var c *exec.Cmd
 	if f.useSudo {
 		sudoArgs := append([]string{"-n", "flatpak"}, args...)
-		c = exec.CommandContext(f.ctx, "sudo", sudoArgs...)
+		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
 	} else {
-		c = exec.CommandContext(f.ctx, "flatpak", args...)
+		c = exec.CommandContext(ctx, "flatpak", args...)
 	}
 
 	// Force English locale for reliable output parsing.

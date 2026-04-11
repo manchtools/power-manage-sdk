@@ -59,7 +59,7 @@ func (z *Zypper) Install(packages ...string) (*CommandResult, error) {
 	}
 	// --non-interactive: non-interactive mode
 	args := append([]string{"--non-interactive", "install"}, packages...)
-	return z.run(args...)
+	return z.run(z.ctx, args...)
 }
 
 // InstallVersion installs a package with specific version options.
@@ -76,7 +76,7 @@ func (z *Zypper) InstallVersion(name string, opts InstallOptions) (*CommandResul
 	}
 	args = append(args, pkgSpec)
 
-	return z.run(args...)
+	return z.run(z.ctx, args...)
 }
 
 // Remove removes packages.
@@ -85,7 +85,7 @@ func (z *Zypper) Remove(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"--non-interactive", "remove"}, packages...)
-	return z.run(args...)
+	return z.run(z.ctx, args...)
 }
 
 // Purge removes packages (zypper doesn't distinguish purge from remove).
@@ -95,23 +95,23 @@ func (z *Zypper) Purge(packages ...string) (*CommandResult, error) {
 
 // Update updates the package database (refresh repositories).
 func (z *Zypper) Update() (*CommandResult, error) {
-	return z.run("--non-interactive", "refresh")
+	return z.run(z.ctx, "--non-interactive", "refresh")
 }
 
 // Upgrade upgrades packages.
 func (z *Zypper) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		// Upgrade all packages
-		return z.run("--non-interactive", "update")
+		return z.run(z.ctx, "--non-interactive", "update")
 	}
 	// Upgrade specific packages
 	args := append([]string{"--non-interactive", "update"}, packages...)
-	return z.run(args...)
+	return z.run(z.ctx, args...)
 }
 
 // DistUpgrade performs a distribution upgrade.
 func (z *Zypper) DistUpgrade() (*CommandResult, error) {
-	return z.run("--non-interactive", "dist-upgrade")
+	return z.run(z.ctx, "--non-interactive", "dist-upgrade")
 }
 
 // Search searches for packages.
@@ -372,7 +372,7 @@ func (z *Zypper) Pin(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"--non-interactive", "addlock"}, packages...)
-	return z.run(args...)
+	return z.run(z.ctx, args...)
 }
 
 // Unpin allows a package to be upgraded again by removing the lock.
@@ -381,7 +381,7 @@ func (z *Zypper) Unpin(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"--non-interactive", "removelock"}, packages...)
-	return z.run(args...)
+	return z.run(z.ctx, args...)
 }
 
 // ListPinned lists all pinned (locked) packages.
@@ -461,15 +461,15 @@ func (z *Zypper) getPinnedSet() (map[string]bool, error) {
 	return pinned, nil
 }
 
-func (z *Zypper) run(args ...string) (*CommandResult, error) {
+func (z *Zypper) run(ctx context.Context, args ...string) (*CommandResult, error) {
 	start := time.Now()
 
 	var c *exec.Cmd
 	if z.useSudo {
 		sudoArgs := append([]string{"-n", "zypper"}, args...)
-		c = exec.CommandContext(z.ctx, "sudo", sudoArgs...)
+		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
 	} else {
-		c = exec.CommandContext(z.ctx, "zypper", args...)
+		c = exec.CommandContext(ctx, "zypper", args...)
 	}
 
 	// Force English locale for reliable output parsing.

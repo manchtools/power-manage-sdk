@@ -72,7 +72,7 @@ func (d *Dnf) Install(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"install", "-y"}, packages...)
-	return d.run(args...)
+	return d.run(d.ctx, args...)
 }
 
 // InstallVersion installs a package with specific version options.
@@ -88,11 +88,11 @@ func (d *Dnf) InstallVersion(name string, opts InstallOptions) (*CommandResult, 
 	}
 	args = append(args, pkgSpec)
 
-	result, err := d.run(args...)
+	result, err := d.run(d.ctx, args...)
 
 	// If downgrade is allowed and install failed, try explicit downgrade
 	if opts.AllowDowngrade && err != nil && opts.Version != "" {
-		return d.run("downgrade", "-y", pkgSpec)
+		return d.run(d.ctx, "downgrade", "-y", pkgSpec)
 	}
 
 	return result, err
@@ -104,14 +104,14 @@ func (d *Dnf) Remove(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"remove", "-y"}, packages...)
-	return d.run(args...)
+	return d.run(d.ctx, args...)
 }
 
 // Update updates the package database (dnf check-update).
 // dnf check-update returns exit code 100 when updates are available,
 // which is a success case, not an error.
 func (d *Dnf) Update() (*CommandResult, error) {
-	result, err := d.run("check-update")
+	result, err := d.run(d.ctx, "check-update")
 	if err != nil && result != nil && result.ExitCode == 100 {
 		result.Success = true
 		return result, nil
@@ -122,10 +122,10 @@ func (d *Dnf) Update() (*CommandResult, error) {
 // Upgrade upgrades packages.
 func (d *Dnf) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
-		return d.run("upgrade", "-y")
+		return d.run(d.ctx, "upgrade", "-y")
 	}
 	args := append([]string{"upgrade", "-y"}, packages...)
-	return d.run(args...)
+	return d.run(d.ctx, args...)
 }
 
 // Search searches for packages.
@@ -343,7 +343,7 @@ func (d *Dnf) ensureVersionLock() error {
 	}
 
 	// Install the plugin
-	_, err = d.run("install", "-y", "python3-dnf-plugin-versionlock")
+	_, err = d.run(d.ctx, "install", "-y", "python3-dnf-plugin-versionlock")
 	return err
 }
 
@@ -357,7 +357,7 @@ func (d *Dnf) Pin(packages ...string) (*CommandResult, error) {
 		return nil, err
 	}
 	args := append([]string{"versionlock", "add"}, packages...)
-	return d.run(args...)
+	return d.run(d.ctx, args...)
 }
 
 // Unpin allows a package to be upgraded again (dnf versionlock delete).
@@ -370,7 +370,7 @@ func (d *Dnf) Unpin(packages ...string) (*CommandResult, error) {
 		return nil, err
 	}
 	args := append([]string{"versionlock", "delete"}, packages...)
-	return d.run(args...)
+	return d.run(d.ctx, args...)
 }
 
 // ListPinned lists all pinned (versionlocked) packages.
@@ -437,16 +437,16 @@ func (d *Dnf) getPinnedSet() (map[string]bool, error) {
 	return pinned, nil
 }
 
-func (d *Dnf) run(args ...string) (*CommandResult, error) {
+func (d *Dnf) run(ctx context.Context, args ...string) (*CommandResult, error) {
 	start := time.Now()
 
 	var c *exec.Cmd
 	if d.useSudo {
 		// Prepend sudo -n (non-interactive) to avoid password prompts
 		sudoArgs := append([]string{"-n", "dnf"}, args...)
-		c = exec.CommandContext(d.ctx, "sudo", sudoArgs...)
+		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
 	} else {
-		c = exec.CommandContext(d.ctx, "dnf", args...)
+		c = exec.CommandContext(ctx, "dnf", args...)
 	}
 
 	// Force English locale for reliable output parsing.
