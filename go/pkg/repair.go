@@ -12,6 +12,20 @@ import (
 //
 // The ctx parameter is propagated through to the underlying subprocess
 // invocations, so deadlines and cancellations from the caller are honored.
+// Repair methods short-circuit and return ctx.Err() the moment ctx is
+// cancelled, so a cancelled caller does not cause additional sudo
+// subprocesses to be spawned.
+
+// repairErr returns ctx.Err() if the context has been cancelled, otherwise
+// it wraps err with the given message and the subprocess stderr. The
+// returned error is detectable via errors.Is(err, context.Canceled) /
+// errors.Is(err, context.DeadlineExceeded).
+func repairErr(ctx context.Context, msg, stderr string, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	return fmt.Errorf("%s: %s: %w", msg, stderr, err)
+}
 
 // Repair for Apt: removes stale lock files, runs dpkg --configure -a,
 // apt --fix-broken install -y, and apt update.
@@ -29,17 +43,23 @@ func (a *Apt) Repair(ctx context.Context) error {
 
 	// dpkg --configure -a
 	if result, err := a.run(ctx, "dpkg", "--configure", "-a"); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Warn("dpkg --configure -a failed", "error", err, "stderr", result.Stderr)
 	}
 
 	// apt --fix-broken install -y
 	if result, err := a.fixBroken(ctx); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Warn("apt --fix-broken install failed", "error", err, "stderr", result.Stderr)
 	}
 
 	// apt update
 	if result, err := a.run(ctx, "apt", "update"); err != nil {
-		return fmt.Errorf("apt update failed: %s", result.Stderr)
+		return repairErr(ctx, "apt update failed", result.Stderr, err)
 	}
 
 	return nil
@@ -49,11 +69,17 @@ func (a *Apt) Repair(ctx context.Context) error {
 func (d *Dnf) Repair(ctx context.Context) error {
 	// dnf -y history redo last
 	if result, err := d.run(ctx, "history", "redo", "last", "-y"); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Warn("dnf history redo last failed", "error", err, "stderr", result.Stderr)
 	}
 
 	// dnf -y remove --duplicates
 	if result, err := d.run(ctx, "remove", "--duplicates", "-y"); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Warn("dnf remove --duplicates failed", "error", err, "stderr", result.Stderr)
 	}
 
@@ -61,6 +87,9 @@ func (d *Dnf) Repair(ctx context.Context) error {
 	c := exec.CommandContext(ctx, "rpm", "--verifydb")
 	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	if out, err := c.CombinedOutput(); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Warn("rpm --verifydb failed", "error", err, "output", string(out))
 	}
 
@@ -74,7 +103,7 @@ func (p *Pacman) Repair(ctx context.Context) error {
 
 	// pacman -Syy --noconfirm (force refresh all databases)
 	if result, err := p.run(ctx, "-Syy", "--noconfirm"); err != nil {
-		return fmt.Errorf("pacman -Syy failed: %s", result.Stderr)
+		return repairErr(ctx, "pacman -Syy failed", result.Stderr, err)
 	}
 
 	return nil
@@ -87,7 +116,7 @@ func (z *Zypper) Repair(ctx context.Context) error {
 
 	// zypper --non-interactive refresh
 	if result, err := z.run(ctx, "--non-interactive", "refresh"); err != nil {
-		return fmt.Errorf("zypper refresh failed: %s", result.Stderr)
+		return repairErr(ctx, "zypper refresh failed", result.Stderr, err)
 	}
 
 	return nil
@@ -102,7 +131,7 @@ func (f *Flatpak) Repair(ctx context.Context) error {
 		args = append(args, "--user")
 	}
 	if result, err := f.run(ctx, args...); err != nil {
-		return fmt.Errorf("flatpak repair failed: %s", result.Stderr)
+		return repairErr(ctx, "flatpak repair failed", result.Stderr, err)
 	}
 
 	return nil
