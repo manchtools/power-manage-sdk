@@ -20134,6 +20134,39 @@ func (x *StartTerminalResponse) GetTtyUser() string {
 	return ""
 }
 
+// StopTerminal vs TerminateTerminalSession
+//
+// These two RPCs both end a session but have different semantics and
+// permission requirements; implementations MUST honour the split:
+//
+// StopTerminal — graceful, owner-initiated stop.
+//   - Caller MUST be the user that opened the session (the same
+//     identity that received it from StartTerminal). Other users get
+//     PermissionDenied even if they hold admin permissions; admins
+//     wanting to kill someone else's session must use
+//     TerminateTerminalSession.
+//   - Idempotent: calling StopTerminal twice on the same session_id
+//     returns OK both times. An unknown or already-ended session
+//     returns OK with no body, NOT NotFound, so clients can fire and
+//     forget on disconnect.
+//   - No reason field: graceful stops are not audited beyond the
+//     existing TerminalSessionEnded event the gateway already emits.
+//   - Agent/gateway failures while delivering the stop signal are
+//     logged but never surface as RPC errors — the session is
+//     considered closed once the control server has accepted the
+//     request.
+//
+// TerminateTerminalSession — admin/forcible termination.
+//   - Caller MUST hold the TerminateTerminalSession permission;
+//     ownership is NOT sufficient (use StopTerminal for that path).
+//   - NOT idempotent in the same sense: an unknown session returns
+//     NotFound so the admin can distinguish "killed it" from "it was
+//     already gone".
+//   - Carries a reason that is recorded in the audit log alongside the
+//     terminating user, propagated through GatewayService and surfaced
+//     to the agent so the user sees why their session disappeared.
+//   - Underlying gateway/agent failures DO surface as RPC errors so
+//     the admin knows the kill did not actually land.
 type StopTerminalRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -20215,7 +20248,8 @@ func (*StopTerminalResponse) Descriptor() ([]byte, []int) {
 	return file_pm_v1_control_proto_rawDescGZIP(), []int{333}
 }
 
-// TerminalSessionInfo is the admin view of an active session.
+// TerminalSessionInfo is the admin view of an active session, returned
+// by ListActiveTerminalSessions and used by the admin UI for display.
 type TerminalSessionInfo struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -20330,19 +20364,20 @@ func (x *TerminalSessionInfo) GetGatewayId() string {
 	return ""
 }
 
+// ListActiveTerminalSessionsRequest follows the project-wide pagination
+// contract: page_size + page_token in, next_page_token + total_count out.
 type ListActiveTerminalSessionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"omitempty,gte=1,lte=200"
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=1,lte=200"`
+	// @gotags: validate:"omitempty"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// Optional filter: only sessions on this device.
 	// @gotags: validate:"omitempty,ulid"
-	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"`
+	DeviceId string `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"`
 	// Optional filter: only sessions opened by this user.
 	// @gotags: validate:"omitempty,ulid"
-	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"omitempty,ulid"`
-	// Pagination
-	// @gotags: validate:"omitempty,gte=1"
-	Page int32 `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty" validate:"omitempty,gte=1"`
-	// @gotags: validate:"omitempty,gte=1,lte=200"
-	PageSize      int32 `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=1,lte=200"`
+	UserId        string `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"omitempty,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20377,6 +20412,20 @@ func (*ListActiveTerminalSessionsRequest) Descriptor() ([]byte, []int) {
 	return file_pm_v1_control_proto_rawDescGZIP(), []int{335}
 }
 
+func (x *ListActiveTerminalSessionsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListActiveTerminalSessionsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 func (x *ListActiveTerminalSessionsRequest) GetDeviceId() string {
 	if x != nil {
 		return x.DeviceId
@@ -20391,24 +20440,11 @@ func (x *ListActiveTerminalSessionsRequest) GetUserId() string {
 	return ""
 }
 
-func (x *ListActiveTerminalSessionsRequest) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *ListActiveTerminalSessionsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
 type ListActiveTerminalSessionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sessions      []*TerminalSessionInfo `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
-	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20450,18 +20486,31 @@ func (x *ListActiveTerminalSessionsResponse) GetSessions() []*TerminalSessionInf
 	return nil
 }
 
-func (x *ListActiveTerminalSessionsResponse) GetTotal() int32 {
+func (x *ListActiveTerminalSessionsResponse) GetNextPageToken() string {
 	if x != nil {
-		return x.Total
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *ListActiveTerminalSessionsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
 	}
 	return 0
 }
 
+// See the StopTerminal vs TerminateTerminalSession comment block above
+// for the full semantic split. Summary: this is the admin/forcible
+// path, gated by the TerminateTerminalSession permission, returns
+// NotFound for unknown sessions, and records the reason in the audit
+// log alongside the terminating user.
 type TerminateTerminalSessionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
-	// Optional reason for the audit log.
+	// Optional reason for the audit log; surfaced to the agent and the
+	// affected user.
 	// @gotags: validate:"omitempty,max=512"
 	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty" validate:"omitempty,max=512"`
 	unknownFields protoimpl.UnknownFields
@@ -22013,15 +22062,18 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12D\n" +
 	"\x10last_activity_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0elastActivityAt\x12\x1d\n" +
 	"\n" +
-	"gateway_id\x18\t \x01(\tR\tgatewayId\"\x8a\x01\n" +
+	"gateway_id\x18\t \x01(\tR\tgatewayId\"\x95\x01\n" +
 	"!ListActiveTerminalSessionsRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x12\n" +
-	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"r\n" +
+	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x1b\n" +
+	"\tdevice_id\x18\x03 \x01(\tR\bdeviceId\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\tR\x06userId\"\xa5\x01\n" +
 	"\"ListActiveTerminalSessionsResponse\x126\n" +
-	"\bsessions\x18\x01 \x03(\v2\x1a.pm.v1.TerminalSessionInfoR\bsessions\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"X\n" +
+	"\bsessions\x18\x01 \x03(\v2\x1a.pm.v1.TerminalSessionInfoR\bsessions\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
+	"\vtotal_count\x18\x03 \x01(\x05R\n" +
+	"totalCount\"X\n" +
 	"\x1fTerminateTerminalSessionRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +

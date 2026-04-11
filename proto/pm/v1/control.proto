@@ -2679,6 +2679,39 @@ message StartTerminalResponse {
   string tty_user = 5;
 }
 
+// StopTerminal vs TerminateTerminalSession
+//
+// These two RPCs both end a session but have different semantics and
+// permission requirements; implementations MUST honour the split:
+//
+// StopTerminal — graceful, owner-initiated stop.
+//   - Caller MUST be the user that opened the session (the same
+//     identity that received it from StartTerminal). Other users get
+//     PermissionDenied even if they hold admin permissions; admins
+//     wanting to kill someone else's session must use
+//     TerminateTerminalSession.
+//   - Idempotent: calling StopTerminal twice on the same session_id
+//     returns OK both times. An unknown or already-ended session
+//     returns OK with no body, NOT NotFound, so clients can fire and
+//     forget on disconnect.
+//   - No reason field: graceful stops are not audited beyond the
+//     existing TerminalSessionEnded event the gateway already emits.
+//   - Agent/gateway failures while delivering the stop signal are
+//     logged but never surface as RPC errors — the session is
+//     considered closed once the control server has accepted the
+//     request.
+//
+// TerminateTerminalSession — admin/forcible termination.
+//   - Caller MUST hold the TerminateTerminalSession permission;
+//     ownership is NOT sufficient (use StopTerminal for that path).
+//   - NOT idempotent in the same sense: an unknown session returns
+//     NotFound so the admin can distinguish "killed it" from "it was
+//     already gone".
+//   - Carries a reason that is recorded in the audit log alongside the
+//     terminating user, propagated through GatewayService and surfaced
+//     to the agent so the user sees why their session disappeared.
+//   - Underlying gateway/agent failures DO surface as RPC errors so
+//     the admin knows the kill did not actually land.
 message StopTerminalRequest {
   // @gotags: validate:"required,ulid"
   string session_id = 1;
@@ -2686,7 +2719,8 @@ message StopTerminalRequest {
 
 message StopTerminalResponse {}
 
-// TerminalSessionInfo is the admin view of an active session.
+// TerminalSessionInfo is the admin view of an active session, returned
+// by ListActiveTerminalSessions and used by the admin UI for display.
 message TerminalSessionInfo {
   string session_id = 1;
   // ID and email of the Power Manage user who opened the session.
@@ -2705,29 +2739,37 @@ message TerminalSessionInfo {
   string gateway_id = 9;
 }
 
+// ListActiveTerminalSessionsRequest follows the project-wide pagination
+// contract: page_size + page_token in, next_page_token + total_count out.
 message ListActiveTerminalSessionsRequest {
+  // @gotags: validate:"omitempty,gte=1,lte=200"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
   // Optional filter: only sessions on this device.
   // @gotags: validate:"omitempty,ulid"
-  string device_id = 1;
+  string device_id = 3;
   // Optional filter: only sessions opened by this user.
   // @gotags: validate:"omitempty,ulid"
-  string user_id = 2;
-  // Pagination
-  // @gotags: validate:"omitempty,gte=1"
-  int32 page = 3;
-  // @gotags: validate:"omitempty,gte=1,lte=200"
-  int32 page_size = 4;
+  string user_id = 4;
 }
 
 message ListActiveTerminalSessionsResponse {
   repeated TerminalSessionInfo sessions = 1;
-  int32 total = 2;
+  string next_page_token = 2;
+  int32 total_count = 3;
 }
 
+// See the StopTerminal vs TerminateTerminalSession comment block above
+// for the full semantic split. Summary: this is the admin/forcible
+// path, gated by the TerminateTerminalSession permission, returns
+// NotFound for unknown sessions, and records the reason in the audit
+// log alongside the terminating user.
 message TerminateTerminalSessionRequest {
   // @gotags: validate:"required,ulid"
   string session_id = 1;
-  // Optional reason for the audit log.
+  // Optional reason for the audit log; surfaced to the agent and the
+  // affected user.
   // @gotags: validate:"omitempty,max=512"
   string reason = 2;
 }
