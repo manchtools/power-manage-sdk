@@ -23,6 +23,8 @@ const _ = connect.IsAtLeastVersion1_13_0
 const (
 	// InternalServiceName is the fully-qualified name of the InternalService service.
 	InternalServiceName = "pm.v1.InternalService"
+	// GatewayServiceName is the fully-qualified name of the GatewayService service.
+	GatewayServiceName = "pm.v1.GatewayService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -51,6 +53,12 @@ const (
 	// InternalServiceProxyStoreLpsPasswordsProcedure is the fully-qualified name of the
 	// InternalService's ProxyStoreLpsPasswords RPC.
 	InternalServiceProxyStoreLpsPasswordsProcedure = "/pm.v1.InternalService/ProxyStoreLpsPasswords"
+	// GatewayServiceListGatewayTerminalSessionsProcedure is the fully-qualified name of the
+	// GatewayService's ListGatewayTerminalSessions RPC.
+	GatewayServiceListGatewayTerminalSessionsProcedure = "/pm.v1.GatewayService/ListGatewayTerminalSessions"
+	// GatewayServiceTerminateGatewayTerminalSessionProcedure is the fully-qualified name of the
+	// GatewayService's TerminateGatewayTerminalSession RPC.
+	GatewayServiceTerminateGatewayTerminalSessionProcedure = "/pm.v1.GatewayService/TerminateGatewayTerminalSession"
 )
 
 // InternalServiceClient is a client for the pm.v1.InternalService service.
@@ -265,4 +273,118 @@ func (UnimplementedInternalServiceHandler) ProxyStoreLuksKey(context.Context, *c
 
 func (UnimplementedInternalServiceHandler) ProxyStoreLpsPasswords(context.Context, *connect.Request[v1.InternalStoreLpsPasswordsRequest]) (*connect.Response[v1.InternalStoreLpsPasswordsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.ProxyStoreLpsPasswords is not implemented"))
+}
+
+// GatewayServiceClient is a client for the pm.v1.GatewayService service.
+type GatewayServiceClient interface {
+	// ListGatewayTerminalSessions returns the gateway's snapshot of
+	// currently-active terminal sessions. The control server fans this
+	// out to every known gateway and merges the results to power
+	// ControlService.ListActiveTerminalSessions.
+	ListGatewayTerminalSessions(context.Context, *connect.Request[v1.ListGatewayTerminalSessionsRequest]) (*connect.Response[v1.ListGatewayTerminalSessionsResponse], error)
+	// TerminateGatewayTerminalSession kills a session on this gateway.
+	// The control server routes ControlService.TerminateTerminalSession
+	// to whichever gateway owns the session_id (looked up via the prior
+	// List call or via session affinity). No-op + ok if the session
+	// is not on this gateway.
+	TerminateGatewayTerminalSession(context.Context, *connect.Request[v1.TerminateGatewayTerminalSessionRequest]) (*connect.Response[v1.TerminateGatewayTerminalSessionResponse], error)
+}
+
+// NewGatewayServiceClient constructs a client for the pm.v1.GatewayService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
+// connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewGatewayServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) GatewayServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	gatewayServiceMethods := v1.File_pm_v1_internal_proto.Services().ByName("GatewayService").Methods()
+	return &gatewayServiceClient{
+		listGatewayTerminalSessions: connect.NewClient[v1.ListGatewayTerminalSessionsRequest, v1.ListGatewayTerminalSessionsResponse](
+			httpClient,
+			baseURL+GatewayServiceListGatewayTerminalSessionsProcedure,
+			connect.WithSchema(gatewayServiceMethods.ByName("ListGatewayTerminalSessions")),
+			connect.WithClientOptions(opts...),
+		),
+		terminateGatewayTerminalSession: connect.NewClient[v1.TerminateGatewayTerminalSessionRequest, v1.TerminateGatewayTerminalSessionResponse](
+			httpClient,
+			baseURL+GatewayServiceTerminateGatewayTerminalSessionProcedure,
+			connect.WithSchema(gatewayServiceMethods.ByName("TerminateGatewayTerminalSession")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// gatewayServiceClient implements GatewayServiceClient.
+type gatewayServiceClient struct {
+	listGatewayTerminalSessions     *connect.Client[v1.ListGatewayTerminalSessionsRequest, v1.ListGatewayTerminalSessionsResponse]
+	terminateGatewayTerminalSession *connect.Client[v1.TerminateGatewayTerminalSessionRequest, v1.TerminateGatewayTerminalSessionResponse]
+}
+
+// ListGatewayTerminalSessions calls pm.v1.GatewayService.ListGatewayTerminalSessions.
+func (c *gatewayServiceClient) ListGatewayTerminalSessions(ctx context.Context, req *connect.Request[v1.ListGatewayTerminalSessionsRequest]) (*connect.Response[v1.ListGatewayTerminalSessionsResponse], error) {
+	return c.listGatewayTerminalSessions.CallUnary(ctx, req)
+}
+
+// TerminateGatewayTerminalSession calls pm.v1.GatewayService.TerminateGatewayTerminalSession.
+func (c *gatewayServiceClient) TerminateGatewayTerminalSession(ctx context.Context, req *connect.Request[v1.TerminateGatewayTerminalSessionRequest]) (*connect.Response[v1.TerminateGatewayTerminalSessionResponse], error) {
+	return c.terminateGatewayTerminalSession.CallUnary(ctx, req)
+}
+
+// GatewayServiceHandler is an implementation of the pm.v1.GatewayService service.
+type GatewayServiceHandler interface {
+	// ListGatewayTerminalSessions returns the gateway's snapshot of
+	// currently-active terminal sessions. The control server fans this
+	// out to every known gateway and merges the results to power
+	// ControlService.ListActiveTerminalSessions.
+	ListGatewayTerminalSessions(context.Context, *connect.Request[v1.ListGatewayTerminalSessionsRequest]) (*connect.Response[v1.ListGatewayTerminalSessionsResponse], error)
+	// TerminateGatewayTerminalSession kills a session on this gateway.
+	// The control server routes ControlService.TerminateTerminalSession
+	// to whichever gateway owns the session_id (looked up via the prior
+	// List call or via session affinity). No-op + ok if the session
+	// is not on this gateway.
+	TerminateGatewayTerminalSession(context.Context, *connect.Request[v1.TerminateGatewayTerminalSessionRequest]) (*connect.Response[v1.TerminateGatewayTerminalSessionResponse], error)
+}
+
+// NewGatewayServiceHandler builds an HTTP handler from the service implementation. It returns the
+// path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewGatewayServiceHandler(svc GatewayServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	gatewayServiceMethods := v1.File_pm_v1_internal_proto.Services().ByName("GatewayService").Methods()
+	gatewayServiceListGatewayTerminalSessionsHandler := connect.NewUnaryHandler(
+		GatewayServiceListGatewayTerminalSessionsProcedure,
+		svc.ListGatewayTerminalSessions,
+		connect.WithSchema(gatewayServiceMethods.ByName("ListGatewayTerminalSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	gatewayServiceTerminateGatewayTerminalSessionHandler := connect.NewUnaryHandler(
+		GatewayServiceTerminateGatewayTerminalSessionProcedure,
+		svc.TerminateGatewayTerminalSession,
+		connect.WithSchema(gatewayServiceMethods.ByName("TerminateGatewayTerminalSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/pm.v1.GatewayService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case GatewayServiceListGatewayTerminalSessionsProcedure:
+			gatewayServiceListGatewayTerminalSessionsHandler.ServeHTTP(w, r)
+		case GatewayServiceTerminateGatewayTerminalSessionProcedure:
+			gatewayServiceTerminateGatewayTerminalSessionHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedGatewayServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedGatewayServiceHandler struct{}
+
+func (UnimplementedGatewayServiceHandler) ListGatewayTerminalSessions(context.Context, *connect.Request[v1.ListGatewayTerminalSessionsRequest]) (*connect.Response[v1.ListGatewayTerminalSessionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.GatewayService.ListGatewayTerminalSessions is not implemented"))
+}
+
+func (UnimplementedGatewayServiceHandler) TerminateGatewayTerminalSession(context.Context, *connect.Request[v1.TerminateGatewayTerminalSessionRequest]) (*connect.Response[v1.TerminateGatewayTerminalSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.GatewayService.TerminateGatewayTerminalSession is not implemented"))
 }

@@ -2617,4 +2617,161 @@ service ControlService {
 
   // User Provisioning Per-User
   rpc SetUserProvisioningEnabled(SetUserProvisioningEnabledRequest) returns (UpdateUserResponse);
+
+  // Remote Terminal (PTY) sessions
+  rpc StartTerminal(StartTerminalRequest) returns (StartTerminalResponse);
+  rpc StopTerminal(StopTerminalRequest) returns (StopTerminalResponse);
+  rpc ListActiveTerminalSessions(ListActiveTerminalSessionsRequest) returns (ListActiveTerminalSessionsResponse);
+  rpc TerminateTerminalSession(TerminateTerminalSessionRequest) returns (TerminateTerminalSessionResponse);
 }
+
+// ============================================================================
+// Remote Terminal Sessions
+// ============================================================================
+//
+// StartTerminal verifies the caller's TerminalAccess permission, resolves
+// the dedicated TTY username (pm-tty-<linux_username>), creates an audit
+// event, mints a short-lived session token, and returns the gateway
+// WebSocket URL the web client should connect to.
+//
+// The control server is NOT in the data path: it only handles signaling.
+// The actual PTY traffic flows web ↔ gateway ↔ agent over WebSocket and
+// the existing AgentService Stream RPC.
+//
+// ListActiveTerminalSessions and TerminateTerminalSession are admin-only
+// operations gated by the corresponding permissions. Both fan out to the
+// gateways via internal.proto's GatewayService since session state lives
+// in gateway memory.
+
+message StartTerminalRequest {
+  // @gotags: validate:"required,ulid"
+  string device_id = 1;
+  // Initial window size. The web client may send a Resize immediately
+  // after connecting if these turn out to be wrong.
+  // @gotags: validate:"omitempty,gt=0,lte=65535"
+  uint32 cols = 2;
+  // @gotags: validate:"omitempty,gt=0,lte=65535"
+  uint32 rows = 3;
+}
+
+message StartTerminalResponse {
+  // ULID identifying the session for the lifetime of the connection.
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // Short-lived bearer token the web client must append to gateway_url
+  // as ?token=<session_token> when opening the WebSocket. The token is
+  // intentionally returned separately from the URL so the URL can be
+  // logged or displayed without leaking the credential.
+  // @gotags: validate:"required,min=1"
+  string session_token = 2;
+  // Token-free base WebSocket URL of the gateway endpoint
+  // (e.g. wss://gateway.example.com/terminal). Clients MUST construct
+  // the final connect URL by appending ?token=<session_token>; this
+  // field never embeds the token.
+  // @gotags: validate:"required,url"
+  string gateway_url = 3;
+  // Token expiry; the client should connect well before this.
+  // @gotags: validate:"required"
+  google.protobuf.Timestamp expires_at = 4;
+  // The TTY user the agent will spawn the shell as. Returned for the
+  // UI to display ("Connected as pm-tty-pdotterer") and for diagnostics.
+  // @gotags: validate:"required,min=1,max=64"
+  string tty_user = 5;
+}
+
+// StopTerminal vs TerminateTerminalSession
+//
+// These two RPCs both end a session but have different semantics and
+// permission requirements; implementations MUST honour the split:
+//
+// StopTerminal — graceful, owner-initiated stop.
+//   - Caller MUST be the user that opened the session (the same
+//     identity that received it from StartTerminal). Other users get
+//     PermissionDenied even if they hold admin permissions; admins
+//     wanting to kill someone else's session must use
+//     TerminateTerminalSession.
+//   - Idempotent: calling StopTerminal twice on the same session_id
+//     returns OK both times. An unknown or already-ended session
+//     returns OK with no body, NOT NotFound, so clients can fire and
+//     forget on disconnect.
+//   - No reason field: graceful stops are not audited beyond the
+//     existing TerminalSessionEnded event the gateway already emits.
+//   - Agent/gateway failures while delivering the stop signal are
+//     logged but never surface as RPC errors — the session is
+//     considered closed once the control server has accepted the
+//     request.
+//
+// TerminateTerminalSession — admin/forcible termination.
+//   - Caller MUST hold the TerminateTerminalSession permission;
+//     ownership is NOT sufficient (use StopTerminal for that path).
+//   - NOT idempotent in the same sense: an unknown session returns
+//     NotFound so the admin can distinguish "killed it" from "it was
+//     already gone".
+//   - Carries a reason that is recorded in the audit log alongside the
+//     terminating user, propagated through GatewayService and surfaced
+//     to the agent so the user sees why their session disappeared.
+//   - Underlying gateway/agent failures DO surface as RPC errors so
+//     the admin knows the kill did not actually land.
+message StopTerminalRequest {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+}
+
+message StopTerminalResponse {}
+
+// TerminalSessionInfo is the admin view of an active session, returned
+// by ListActiveTerminalSessions and used by the admin UI for display.
+message TerminalSessionInfo {
+  string session_id = 1;
+  // ID and email of the Power Manage user who opened the session.
+  string user_id = 2;
+  string user_email = 3;
+  // Target device.
+  string device_id = 4;
+  string device_hostname = 5;
+  // The dedicated TTY user the shell is running as.
+  string tty_user = 6;
+  google.protobuf.Timestamp started_at = 7;
+  // Last activity timestamp (any input or output traffic).
+  google.protobuf.Timestamp last_activity_at = 8;
+  // Identifier of the gateway instance hosting the session, so admins
+  // can correlate with gateway logs in clustered deployments.
+  string gateway_id = 9;
+}
+
+// ListActiveTerminalSessionsRequest follows the project-wide pagination
+// contract: page_size + page_token in, next_page_token + total_count out.
+message ListActiveTerminalSessionsRequest {
+  // @gotags: validate:"omitempty,gte=1,lte=200"
+  int32 page_size = 1;
+  // @gotags: validate:"omitempty"
+  string page_token = 2;
+  // Optional filter: only sessions on this device.
+  // @gotags: validate:"omitempty,ulid"
+  string device_id = 3;
+  // Optional filter: only sessions opened by this user.
+  // @gotags: validate:"omitempty,ulid"
+  string user_id = 4;
+}
+
+message ListActiveTerminalSessionsResponse {
+  repeated TerminalSessionInfo sessions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// See the StopTerminal vs TerminateTerminalSession comment block above
+// for the full semantic split. Summary: this is the admin/forcible
+// path, gated by the TerminateTerminalSession permission, returns
+// NotFound for unknown sessions, and records the reason in the audit
+// log alongside the terminating user.
+message TerminateTerminalSessionRequest {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // Optional reason for the audit log; surfaced to the agent and the
+  // affected user.
+  // @gotags: validate:"omitempty,max=512"
+  string reason = 2;
+}
+
+message TerminateTerminalSessionResponse {}
