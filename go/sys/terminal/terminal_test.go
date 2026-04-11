@@ -39,6 +39,23 @@ func startSessionOrSkip(t *testing.T, cfg SessionConfig) *Session {
 	return s
 }
 
+// requireLinuxCurrentUser skips the test on non-Linux platforms or if
+// user.Current() fails (e.g., NSS misconfigured), and otherwise returns
+// the current user. PTY integration tests share this preamble — calling
+// it once per test makes the intent clearer than the previous repeated
+// 6-line block.
+func requireLinuxCurrentUser(t *testing.T) *user.User {
+	t.Helper()
+	if runtime.GOOS != "linux" {
+		t.Skip("PTY tests are linux-only")
+	}
+	cur, err := user.Current()
+	if err != nil {
+		t.Skipf("user.Current() failed: %v", err)
+	}
+	return cur
+}
+
 func TestStart_EmptyUser(t *testing.T) {
 	_, err := Start(SessionConfig{})
 	if err == nil {
@@ -146,13 +163,7 @@ func pickShell(t *testing.T) string {
 }
 
 func TestSession_EchoAndExit(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("PTY tests are linux-only")
-	}
-	cur, err := user.Current()
-	if err != nil {
-		t.Skipf("user.Current() failed: %v", err)
-	}
+	cur := requireLinuxCurrentUser(t)
 
 	s := startSessionOrSkip(t, SessionConfig{
 		User:  cur.Username,
@@ -184,13 +195,7 @@ func TestSession_EchoAndExit(t *testing.T) {
 }
 
 func TestSession_ResizeBeforeExit(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("PTY tests are linux-only")
-	}
-	cur, err := user.Current()
-	if err != nil {
-		t.Skipf("user.Current() failed: %v", err)
-	}
+	cur := requireLinuxCurrentUser(t)
 
 	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 	defer s.Close()
@@ -207,13 +212,7 @@ func TestSession_ResizeBeforeExit(t *testing.T) {
 }
 
 func TestSession_CloseUnblocksWait(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("PTY tests are linux-only")
-	}
-	cur, err := user.Current()
-	if err != nil {
-		t.Skipf("user.Current() failed: %v", err)
-	}
+	cur := requireLinuxCurrentUser(t)
 
 	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
@@ -237,13 +236,7 @@ func TestSession_CloseUnblocksWait(t *testing.T) {
 }
 
 func TestSession_CloseIsIdempotent(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("PTY tests are linux-only")
-	}
-	cur, err := user.Current()
-	if err != nil {
-		t.Skipf("user.Current() failed: %v", err)
-	}
+	cur := requireLinuxCurrentUser(t)
 
 	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
@@ -260,13 +253,7 @@ func TestSession_CloseIsIdempotent(t *testing.T) {
 // fd even if the caller never calls Close. This protects against
 // fd leaks from sloppy callers.
 func TestSession_ReapClosesPTYWithoutExplicitClose(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("PTY tests are linux-only")
-	}
-	cur, err := user.Current()
-	if err != nil {
-		t.Skipf("user.Current() failed: %v", err)
-	}
+	cur := requireLinuxCurrentUser(t)
 
 	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
@@ -298,13 +285,7 @@ func TestSession_ReapClosesPTYWithoutExplicitClose(t *testing.T) {
 }
 
 func TestSession_DoneChannel(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("PTY tests are linux-only")
-	}
-	cur, err := user.Current()
-	if err != nil {
-		t.Skipf("user.Current() failed: %v", err)
-	}
+	cur := requireLinuxCurrentUser(t)
 
 	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
 
