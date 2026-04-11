@@ -491,6 +491,18 @@ const (
 	// ControlServiceSetUserProvisioningEnabledProcedure is the fully-qualified name of the
 	// ControlService's SetUserProvisioningEnabled RPC.
 	ControlServiceSetUserProvisioningEnabledProcedure = "/pm.v1.ControlService/SetUserProvisioningEnabled"
+	// ControlServiceStartTerminalProcedure is the fully-qualified name of the ControlService's
+	// StartTerminal RPC.
+	ControlServiceStartTerminalProcedure = "/pm.v1.ControlService/StartTerminal"
+	// ControlServiceStopTerminalProcedure is the fully-qualified name of the ControlService's
+	// StopTerminal RPC.
+	ControlServiceStopTerminalProcedure = "/pm.v1.ControlService/StopTerminal"
+	// ControlServiceListActiveTerminalSessionsProcedure is the fully-qualified name of the
+	// ControlService's ListActiveTerminalSessions RPC.
+	ControlServiceListActiveTerminalSessionsProcedure = "/pm.v1.ControlService/ListActiveTerminalSessions"
+	// ControlServiceTerminateTerminalSessionProcedure is the fully-qualified name of the
+	// ControlService's TerminateTerminalSession RPC.
+	ControlServiceTerminateTerminalSessionProcedure = "/pm.v1.ControlService/TerminateTerminalSession"
 )
 
 // ControlServiceClient is a client for the pm.v1.ControlService service.
@@ -678,6 +690,11 @@ type ControlServiceClient interface {
 	UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error)
 	// User Provisioning Per-User
 	SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	// Remote Terminal (PTY) sessions
+	StartTerminal(context.Context, *connect.Request[v1.StartTerminalRequest]) (*connect.Response[v1.StartTerminalResponse], error)
+	StopTerminal(context.Context, *connect.Request[v1.StopTerminalRequest]) (*connect.Response[v1.StopTerminalResponse], error)
+	ListActiveTerminalSessions(context.Context, *connect.Request[v1.ListActiveTerminalSessionsRequest]) (*connect.Response[v1.ListActiveTerminalSessionsResponse], error)
+	TerminateTerminalSession(context.Context, *connect.Request[v1.TerminateTerminalSessionRequest]) (*connect.Response[v1.TerminateTerminalSessionResponse], error)
 }
 
 // NewControlServiceClient constructs a client for the pm.v1.ControlService service. By default, it
@@ -1621,6 +1638,30 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("SetUserProvisioningEnabled")),
 			connect.WithClientOptions(opts...),
 		),
+		startTerminal: connect.NewClient[v1.StartTerminalRequest, v1.StartTerminalResponse](
+			httpClient,
+			baseURL+ControlServiceStartTerminalProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("StartTerminal")),
+			connect.WithClientOptions(opts...),
+		),
+		stopTerminal: connect.NewClient[v1.StopTerminalRequest, v1.StopTerminalResponse](
+			httpClient,
+			baseURL+ControlServiceStopTerminalProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("StopTerminal")),
+			connect.WithClientOptions(opts...),
+		),
+		listActiveTerminalSessions: connect.NewClient[v1.ListActiveTerminalSessionsRequest, v1.ListActiveTerminalSessionsResponse](
+			httpClient,
+			baseURL+ControlServiceListActiveTerminalSessionsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListActiveTerminalSessions")),
+			connect.WithClientOptions(opts...),
+		),
+		terminateTerminalSession: connect.NewClient[v1.TerminateTerminalSessionRequest, v1.TerminateTerminalSessionResponse](
+			httpClient,
+			baseURL+ControlServiceTerminateTerminalSessionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("TerminateTerminalSession")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1781,6 +1822,10 @@ type controlServiceClient struct {
 	getServerSettings                 *connect.Client[v1.GetServerSettingsRequest, v1.GetServerSettingsResponse]
 	updateServerSettings              *connect.Client[v1.UpdateServerSettingsRequest, v1.UpdateServerSettingsResponse]
 	setUserProvisioningEnabled        *connect.Client[v1.SetUserProvisioningEnabledRequest, v1.UpdateUserResponse]
+	startTerminal                     *connect.Client[v1.StartTerminalRequest, v1.StartTerminalResponse]
+	stopTerminal                      *connect.Client[v1.StopTerminalRequest, v1.StopTerminalResponse]
+	listActiveTerminalSessions        *connect.Client[v1.ListActiveTerminalSessionsRequest, v1.ListActiveTerminalSessionsResponse]
+	terminateTerminalSession          *connect.Client[v1.TerminateTerminalSessionRequest, v1.TerminateTerminalSessionResponse]
 }
 
 // Register calls pm.v1.ControlService.Register.
@@ -2558,6 +2603,26 @@ func (c *controlServiceClient) SetUserProvisioningEnabled(ctx context.Context, r
 	return c.setUserProvisioningEnabled.CallUnary(ctx, req)
 }
 
+// StartTerminal calls pm.v1.ControlService.StartTerminal.
+func (c *controlServiceClient) StartTerminal(ctx context.Context, req *connect.Request[v1.StartTerminalRequest]) (*connect.Response[v1.StartTerminalResponse], error) {
+	return c.startTerminal.CallUnary(ctx, req)
+}
+
+// StopTerminal calls pm.v1.ControlService.StopTerminal.
+func (c *controlServiceClient) StopTerminal(ctx context.Context, req *connect.Request[v1.StopTerminalRequest]) (*connect.Response[v1.StopTerminalResponse], error) {
+	return c.stopTerminal.CallUnary(ctx, req)
+}
+
+// ListActiveTerminalSessions calls pm.v1.ControlService.ListActiveTerminalSessions.
+func (c *controlServiceClient) ListActiveTerminalSessions(ctx context.Context, req *connect.Request[v1.ListActiveTerminalSessionsRequest]) (*connect.Response[v1.ListActiveTerminalSessionsResponse], error) {
+	return c.listActiveTerminalSessions.CallUnary(ctx, req)
+}
+
+// TerminateTerminalSession calls pm.v1.ControlService.TerminateTerminalSession.
+func (c *controlServiceClient) TerminateTerminalSession(ctx context.Context, req *connect.Request[v1.TerminateTerminalSessionRequest]) (*connect.Response[v1.TerminateTerminalSessionResponse], error) {
+	return c.terminateTerminalSession.CallUnary(ctx, req)
+}
+
 // ControlServiceHandler is an implementation of the pm.v1.ControlService service.
 type ControlServiceHandler interface {
 	// Agent Registration
@@ -2743,6 +2808,11 @@ type ControlServiceHandler interface {
 	UpdateServerSettings(context.Context, *connect.Request[v1.UpdateServerSettingsRequest]) (*connect.Response[v1.UpdateServerSettingsResponse], error)
 	// User Provisioning Per-User
 	SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error)
+	// Remote Terminal (PTY) sessions
+	StartTerminal(context.Context, *connect.Request[v1.StartTerminalRequest]) (*connect.Response[v1.StartTerminalResponse], error)
+	StopTerminal(context.Context, *connect.Request[v1.StopTerminalRequest]) (*connect.Response[v1.StopTerminalResponse], error)
+	ListActiveTerminalSessions(context.Context, *connect.Request[v1.ListActiveTerminalSessionsRequest]) (*connect.Response[v1.ListActiveTerminalSessionsResponse], error)
+	TerminateTerminalSession(context.Context, *connect.Request[v1.TerminateTerminalSessionRequest]) (*connect.Response[v1.TerminateTerminalSessionResponse], error)
 }
 
 // NewControlServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -3682,6 +3752,30 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("SetUserProvisioningEnabled")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceStartTerminalHandler := connect.NewUnaryHandler(
+		ControlServiceStartTerminalProcedure,
+		svc.StartTerminal,
+		connect.WithSchema(controlServiceMethods.ByName("StartTerminal")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceStopTerminalHandler := connect.NewUnaryHandler(
+		ControlServiceStopTerminalProcedure,
+		svc.StopTerminal,
+		connect.WithSchema(controlServiceMethods.ByName("StopTerminal")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListActiveTerminalSessionsHandler := connect.NewUnaryHandler(
+		ControlServiceListActiveTerminalSessionsProcedure,
+		svc.ListActiveTerminalSessions,
+		connect.WithSchema(controlServiceMethods.ByName("ListActiveTerminalSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceTerminateTerminalSessionHandler := connect.NewUnaryHandler(
+		ControlServiceTerminateTerminalSessionProcedure,
+		svc.TerminateTerminalSession,
+		connect.WithSchema(controlServiceMethods.ByName("TerminateTerminalSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.ControlService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ControlServiceRegisterProcedure:
@@ -3994,6 +4088,14 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceUpdateServerSettingsHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserProvisioningEnabledProcedure:
 			controlServiceSetUserProvisioningEnabledHandler.ServeHTTP(w, r)
+		case ControlServiceStartTerminalProcedure:
+			controlServiceStartTerminalHandler.ServeHTTP(w, r)
+		case ControlServiceStopTerminalProcedure:
+			controlServiceStopTerminalHandler.ServeHTTP(w, r)
+		case ControlServiceListActiveTerminalSessionsProcedure:
+			controlServiceListActiveTerminalSessionsHandler.ServeHTTP(w, r)
+		case ControlServiceTerminateTerminalSessionProcedure:
+			controlServiceTerminateTerminalSessionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -4621,4 +4723,20 @@ func (UnimplementedControlServiceHandler) UpdateServerSettings(context.Context, 
 
 func (UnimplementedControlServiceHandler) SetUserProvisioningEnabled(context.Context, *connect.Request[v1.SetUserProvisioningEnabledRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserProvisioningEnabled is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) StartTerminal(context.Context, *connect.Request[v1.StartTerminalRequest]) (*connect.Response[v1.StartTerminalResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.StartTerminal is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) StopTerminal(context.Context, *connect.Request[v1.StopTerminalRequest]) (*connect.Response[v1.StopTerminalResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.StopTerminal is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListActiveTerminalSessions(context.Context, *connect.Request[v1.ListActiveTerminalSessionsRequest]) (*connect.Response[v1.ListActiveTerminalSessionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListActiveTerminalSessions is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) TerminateTerminalSession(context.Context, *connect.Request[v1.TerminateTerminalSessionRequest]) (*connect.Response[v1.TerminateTerminalSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.TerminateTerminalSession is not implemented"))
 }

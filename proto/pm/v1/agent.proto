@@ -58,6 +58,11 @@ message AgentMessage {
     // Log query result (journalctl output)
     // @gotags: validate:"omitempty"
     LogQueryResult log_query_result = 60;
+    // Remote terminal (PTY) session messages
+    // @gotags: validate:"omitempty"
+    TerminalOutput terminal_output = 70;
+    // @gotags: validate:"omitempty"
+    TerminalStateChange terminal_state_change = 71;
   }
 }
 
@@ -163,6 +168,15 @@ message ServerMessage {
     // Log query dispatch (journalctl)
     // @gotags: validate:"omitempty"
     LogQuery log_query = 60;
+    // Remote terminal (PTY) session control
+    // @gotags: validate:"omitempty"
+    TerminalStart terminal_start = 70;
+    // @gotags: validate:"omitempty"
+    TerminalInput terminal_input = 71;
+    // @gotags: validate:"omitempty"
+    TerminalResize terminal_resize = 72;
+    // @gotags: validate:"omitempty"
+    TerminalStop terminal_stop = 73;
   }
 }
 
@@ -408,4 +422,103 @@ message LogQueryResult {
   string error = 3;
   // Raw journalctl output (plain text)
   string logs = 4;
+}
+
+// ============================================================================
+// Remote Terminal (PTY) Sessions
+// ============================================================================
+//
+// Terminal sessions flow over the existing bidirectional Stream RPC. The
+// gateway is the source of truth for active sessions: it bridges WebSocket
+// traffic from the web client to the agent and tees stdin to the
+// control:inbox queue for audit. Stdout is NOT audited (high volume).
+//
+// cols/rows use uint32 because proto3 has no uint16. Validation caps both
+// at 65535 (the underlying TIOCSWINSZ ioctl uses unsigned shorts).
+
+// Terminal session lifecycle states reported by the agent.
+enum TerminalSessionState {
+  TERMINAL_SESSION_STATE_UNSPECIFIED = 0;
+  // PTY allocated and the shell is running.
+  TERMINAL_SESSION_STATE_STARTED = 1;
+  // Shell exited cleanly; exit_code is set.
+  TERMINAL_SESSION_STATE_EXITED = 2;
+  // Session ended with an error (auth, missing TTY user, PTY alloc, etc.);
+  // error is populated.
+  TERMINAL_SESSION_STATE_ERROR = 3;
+}
+
+// Server -> Agent: open a PTY session as the given TTY user.
+// The agent must verify that tty_user exists locally and is not disabled
+// before allocating the PTY. The shell is activated for the duration of
+// the session and reverted to nologin on disconnect.
+message TerminalStart {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // The dedicated TTY username (e.g. "pm-tty-pdotterer"). The agent
+  // never uses the original Linux username for the shell.
+  // @gotags: validate:"required,min=1,max=64"
+  string tty_user = 2;
+  // @gotags: validate:"required,gt=0,lte=65535"
+  uint32 cols = 3;
+  // @gotags: validate:"required,gt=0,lte=65535"
+  uint32 rows = 4;
+}
+
+// Server -> Agent: stdin data for an active session.
+message TerminalInput {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // @gotags: validate:"required,max=65536"
+  bytes data = 2;
+}
+
+// Server -> Agent: window resize.
+// The agent forwards the new size to the PTY via TIOCSWINSZ.
+message TerminalResize {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // @gotags: validate:"required,gt=0,lte=65535"
+  uint32 cols = 2;
+  // @gotags: validate:"required,gt=0,lte=65535"
+  uint32 rows = 3;
+}
+
+// Server -> Agent: terminate an active session.
+// The agent SIGTERMs the shell process group and reverts the user's
+// shell to nologin. The optional reason is propagated end-to-end from
+// ControlService.TerminateTerminalSession through
+// GatewayService.TerminateGatewayTerminalSession so the agent can
+// surface it in logs and the audit trail captures why the session
+// was killed.
+message TerminalStop {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // @gotags: validate:"omitempty,max=512"
+  string reason = 2;
+}
+
+// Agent -> Server: stdout/stderr data from the PTY.
+message TerminalOutput {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // @gotags: validate:"required,max=65536"
+  bytes data = 2;
+}
+
+// Agent -> Server: session state transition.
+// STARTED is sent immediately after the PTY is allocated and the shell
+// has begun. EXITED is sent when the shell process exits cleanly, with
+// exit_code populated. ERROR is sent for any failure that ends the
+// session early, with error populated.
+message TerminalStateChange {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // @gotags: validate:"required,ne=0"
+  TerminalSessionState state = 2;
+  // Set when state is EXITED.
+  int32 exit_code = 3;
+  // Set when state is ERROR.
+  // @gotags: validate:"omitempty,max=1024"
+  string error = 4;
 }

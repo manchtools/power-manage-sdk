@@ -195,6 +195,63 @@ func (OSQueryOp) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
+// Terminal session lifecycle states reported by the agent.
+type TerminalSessionState int32
+
+const (
+	TerminalSessionState_TERMINAL_SESSION_STATE_UNSPECIFIED TerminalSessionState = 0
+	// PTY allocated and the shell is running.
+	TerminalSessionState_TERMINAL_SESSION_STATE_STARTED TerminalSessionState = 1
+	// Shell exited cleanly; exit_code is set.
+	TerminalSessionState_TERMINAL_SESSION_STATE_EXITED TerminalSessionState = 2
+	// Session ended with an error (auth, missing TTY user, PTY alloc, etc.);
+	// error is populated.
+	TerminalSessionState_TERMINAL_SESSION_STATE_ERROR TerminalSessionState = 3
+)
+
+// Enum value maps for TerminalSessionState.
+var (
+	TerminalSessionState_name = map[int32]string{
+		0: "TERMINAL_SESSION_STATE_UNSPECIFIED",
+		1: "TERMINAL_SESSION_STATE_STARTED",
+		2: "TERMINAL_SESSION_STATE_EXITED",
+		3: "TERMINAL_SESSION_STATE_ERROR",
+	}
+	TerminalSessionState_value = map[string]int32{
+		"TERMINAL_SESSION_STATE_UNSPECIFIED": 0,
+		"TERMINAL_SESSION_STATE_STARTED":     1,
+		"TERMINAL_SESSION_STATE_EXITED":      2,
+		"TERMINAL_SESSION_STATE_ERROR":       3,
+	}
+)
+
+func (x TerminalSessionState) Enum() *TerminalSessionState {
+	p := new(TerminalSessionState)
+	*p = x
+	return p
+}
+
+func (x TerminalSessionState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TerminalSessionState) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_agent_proto_enumTypes[3].Descriptor()
+}
+
+func (TerminalSessionState) Type() protoreflect.EnumType {
+	return &file_pm_v1_agent_proto_enumTypes[3]
+}
+
+func (x TerminalSessionState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TerminalSessionState.Descriptor instead.
+func (TerminalSessionState) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{3}
+}
+
 type AgentMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -212,6 +269,8 @@ type AgentMessage struct {
 	//	*AgentMessage_StoreLuksKey
 	//	*AgentMessage_RevokeLuksDeviceKeyResult
 	//	*AgentMessage_LogQueryResult
+	//	*AgentMessage_TerminalOutput
+	//	*AgentMessage_TerminalStateChange
 	Payload       isAgentMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -360,6 +419,24 @@ func (x *AgentMessage) GetLogQueryResult() *LogQueryResult {
 	return nil
 }
 
+func (x *AgentMessage) GetTerminalOutput() *TerminalOutput {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_TerminalOutput); ok {
+			return x.TerminalOutput
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetTerminalStateChange() *TerminalStateChange {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_TerminalStateChange); ok {
+			return x.TerminalStateChange
+		}
+	}
+	return nil
+}
+
 type isAgentMessage_Payload interface {
 	isAgentMessage_Payload()
 }
@@ -421,6 +498,17 @@ type AgentMessage_LogQueryResult struct {
 	LogQueryResult *LogQueryResult `protobuf:"bytes,60,opt,name=log_query_result,json=logQueryResult,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_TerminalOutput struct {
+	// Remote terminal (PTY) session messages
+	// @gotags: validate:"omitempty"
+	TerminalOutput *TerminalOutput `protobuf:"bytes,70,opt,name=terminal_output,json=terminalOutput,proto3,oneof" validate:"omitempty"`
+}
+
+type AgentMessage_TerminalStateChange struct {
+	// @gotags: validate:"omitempty"
+	TerminalStateChange *TerminalStateChange `protobuf:"bytes,71,opt,name=terminal_state_change,json=terminalStateChange,proto3,oneof" validate:"omitempty"`
+}
+
 func (*AgentMessage_Hello) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Heartbeat) isAgentMessage_Payload() {}
@@ -442,6 +530,10 @@ func (*AgentMessage_StoreLuksKey) isAgentMessage_Payload() {}
 func (*AgentMessage_RevokeLuksDeviceKeyResult) isAgentMessage_Payload() {}
 
 func (*AgentMessage_LogQueryResult) isAgentMessage_Payload() {}
+
+func (*AgentMessage_TerminalOutput) isAgentMessage_Payload() {}
+
+func (*AgentMessage_TerminalStateChange) isAgentMessage_Payload() {}
 
 // Output chunk sent during action execution (Agent -> Server)
 type OutputChunk struct {
@@ -749,6 +841,10 @@ type ServerMessage struct {
 	//	*ServerMessage_StoreLuksKey
 	//	*ServerMessage_RevokeLuksDeviceKey
 	//	*ServerMessage_LogQuery
+	//	*ServerMessage_TerminalStart
+	//	*ServerMessage_TerminalInput
+	//	*ServerMessage_TerminalResize
+	//	*ServerMessage_TerminalStop
 	Payload       isServerMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -879,6 +975,42 @@ func (x *ServerMessage) GetLogQuery() *LogQuery {
 	return nil
 }
 
+func (x *ServerMessage) GetTerminalStart() *TerminalStart {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_TerminalStart); ok {
+			return x.TerminalStart
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetTerminalInput() *TerminalInput {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_TerminalInput); ok {
+			return x.TerminalInput
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetTerminalResize() *TerminalResize {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_TerminalResize); ok {
+			return x.TerminalResize
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetTerminalStop() *TerminalStop {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_TerminalStop); ok {
+			return x.TerminalStop
+		}
+	}
+	return nil
+}
+
 type isServerMessage_Payload interface {
 	isServerMessage_Payload()
 }
@@ -930,6 +1062,27 @@ type ServerMessage_LogQuery struct {
 	LogQuery *LogQuery `protobuf:"bytes,60,opt,name=log_query,json=logQuery,proto3,oneof" validate:"omitempty"`
 }
 
+type ServerMessage_TerminalStart struct {
+	// Remote terminal (PTY) session control
+	// @gotags: validate:"omitempty"
+	TerminalStart *TerminalStart `protobuf:"bytes,70,opt,name=terminal_start,json=terminalStart,proto3,oneof" validate:"omitempty"`
+}
+
+type ServerMessage_TerminalInput struct {
+	// @gotags: validate:"omitempty"
+	TerminalInput *TerminalInput `protobuf:"bytes,71,opt,name=terminal_input,json=terminalInput,proto3,oneof" validate:"omitempty"`
+}
+
+type ServerMessage_TerminalResize struct {
+	// @gotags: validate:"omitempty"
+	TerminalResize *TerminalResize `protobuf:"bytes,72,opt,name=terminal_resize,json=terminalResize,proto3,oneof" validate:"omitempty"`
+}
+
+type ServerMessage_TerminalStop struct {
+	// @gotags: validate:"omitempty"
+	TerminalStop *TerminalStop `protobuf:"bytes,73,opt,name=terminal_stop,json=terminalStop,proto3,oneof" validate:"omitempty"`
+}
+
 func (*ServerMessage_Welcome) isServerMessage_Payload() {}
 
 func (*ServerMessage_Action) isServerMessage_Payload() {}
@@ -947,6 +1100,14 @@ func (*ServerMessage_StoreLuksKey) isServerMessage_Payload() {}
 func (*ServerMessage_RevokeLuksDeviceKey) isServerMessage_Payload() {}
 
 func (*ServerMessage_LogQuery) isServerMessage_Payload() {}
+
+func (*ServerMessage_TerminalStart) isServerMessage_Payload() {}
+
+func (*ServerMessage_TerminalInput) isServerMessage_Payload() {}
+
+func (*ServerMessage_TerminalResize) isServerMessage_Payload() {}
+
+func (*ServerMessage_TerminalStop) isServerMessage_Payload() {}
 
 type Welcome struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2246,11 +2407,403 @@ func (x *LogQueryResult) GetLogs() string {
 	return ""
 }
 
+// Server -> Agent: open a PTY session as the given TTY user.
+// The agent must verify that tty_user exists locally and is not disabled
+// before allocating the PTY. The shell is activated for the duration of
+// the session and reverted to nologin on disconnect.
+type TerminalStart struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// The dedicated TTY username (e.g. "pm-tty-pdotterer"). The agent
+	// never uses the original Linux username for the shell.
+	// @gotags: validate:"required,min=1,max=64"
+	TtyUser string `protobuf:"bytes,2,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty" validate:"required,min=1,max=64"`
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Cols uint32 `protobuf:"varint,3,opt,name=cols,proto3" json:"cols,omitempty" validate:"required,gt=0,lte=65535"`
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Rows          uint32 `protobuf:"varint,4,opt,name=rows,proto3" json:"rows,omitempty" validate:"required,gt=0,lte=65535"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalStart) Reset() {
+	*x = TerminalStart{}
+	mi := &file_pm_v1_agent_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalStart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalStart) ProtoMessage() {}
+
+func (x *TerminalStart) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalStart.ProtoReflect.Descriptor instead.
+func (*TerminalStart) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *TerminalStart) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalStart) GetTtyUser() string {
+	if x != nil {
+		return x.TtyUser
+	}
+	return ""
+}
+
+func (x *TerminalStart) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+func (x *TerminalStart) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
+// Server -> Agent: stdin data for an active session.
+type TerminalInput struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,max=65536"
+	Data          []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty" validate:"required,max=65536"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalInput) Reset() {
+	*x = TerminalInput{}
+	mi := &file_pm_v1_agent_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalInput) ProtoMessage() {}
+
+func (x *TerminalInput) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalInput.ProtoReflect.Descriptor instead.
+func (*TerminalInput) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *TerminalInput) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalInput) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+// Server -> Agent: window resize.
+// The agent forwards the new size to the PTY via TIOCSWINSZ.
+type TerminalResize struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Cols uint32 `protobuf:"varint,2,opt,name=cols,proto3" json:"cols,omitempty" validate:"required,gt=0,lte=65535"`
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Rows          uint32 `protobuf:"varint,3,opt,name=rows,proto3" json:"rows,omitempty" validate:"required,gt=0,lte=65535"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalResize) Reset() {
+	*x = TerminalResize{}
+	mi := &file_pm_v1_agent_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalResize) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalResize) ProtoMessage() {}
+
+func (x *TerminalResize) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalResize.ProtoReflect.Descriptor instead.
+func (*TerminalResize) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *TerminalResize) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalResize) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+func (x *TerminalResize) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
+// Server -> Agent: terminate an active session.
+// The agent SIGTERMs the shell process group and reverts the user's
+// shell to nologin. The optional reason is propagated end-to-end from
+// ControlService.TerminateTerminalSession through
+// GatewayService.TerminateGatewayTerminalSession so the agent can
+// surface it in logs and the audit trail captures why the session
+// was killed.
+type TerminalStop struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,max=512"
+	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty" validate:"omitempty,max=512"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalStop) Reset() {
+	*x = TerminalStop{}
+	mi := &file_pm_v1_agent_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalStop) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalStop) ProtoMessage() {}
+
+func (x *TerminalStop) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalStop.ProtoReflect.Descriptor instead.
+func (*TerminalStop) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *TerminalStop) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalStop) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+// Agent -> Server: stdout/stderr data from the PTY.
+type TerminalOutput struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,max=65536"
+	Data          []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty" validate:"required,max=65536"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalOutput) Reset() {
+	*x = TerminalOutput{}
+	mi := &file_pm_v1_agent_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalOutput) ProtoMessage() {}
+
+func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalOutput.ProtoReflect.Descriptor instead.
+func (*TerminalOutput) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *TerminalOutput) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalOutput) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+// Agent -> Server: session state transition.
+// STARTED is sent immediately after the PTY is allocated and the shell
+// has begun. EXITED is sent when the shell process exits cleanly, with
+// exit_code populated. ERROR is sent for any failure that ends the
+// session early, with error populated.
+type TerminalStateChange struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ne=0"
+	State TerminalSessionState `protobuf:"varint,2,opt,name=state,proto3,enum=pm.v1.TerminalSessionState" json:"state,omitempty" validate:"required,ne=0"`
+	// Set when state is EXITED.
+	ExitCode int32 `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	// Set when state is ERROR.
+	// @gotags: validate:"omitempty,max=1024"
+	Error         string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty" validate:"omitempty,max=1024"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalStateChange) Reset() {
+	*x = TerminalStateChange{}
+	mi := &file_pm_v1_agent_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalStateChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalStateChange) ProtoMessage() {}
+
+func (x *TerminalStateChange) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_agent_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalStateChange.ProtoReflect.Descriptor instead.
+func (*TerminalStateChange) Descriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *TerminalStateChange) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalStateChange) GetState() TerminalSessionState {
+	if x != nil {
+		return x.State
+	}
+	return TerminalSessionState_TERMINAL_SESSION_STATE_UNSPECIFIED
+}
+
+func (x *TerminalStateChange) GetExitCode() int32 {
+	if x != nil {
+		return x.ExitCode
+	}
+	return 0
+}
+
+func (x *TerminalStateChange) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xd3\x05\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xe7\x06\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
@@ -2265,7 +2818,9 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"getLuksKey\x12B\n" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1a.pm.v1.StoreLuksKeyRequestH\x00R\fstoreLuksKey\x12d\n" +
 	"\x1drevoke_luks_device_key_result\x184 \x01(\v2 .pm.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResult\x12A\n" +
-	"\x10log_query_result\x18< \x01(\v2\x15.pm.v1.LogQueryResultH\x00R\x0elogQueryResultB\t\n" +
+	"\x10log_query_result\x18< \x01(\v2\x15.pm.v1.LogQueryResultH\x00R\x0elogQueryResult\x12@\n" +
+	"\x0fterminal_output\x18F \x01(\v2\x15.pm.v1.TerminalOutputH\x00R\x0eterminalOutput\x12P\n" +
+	"\x15terminal_state_change\x18G \x01(\v2\x1a.pm.v1.TerminalStateChangeH\x00R\x13terminalStateChangeB\t\n" +
 	"\apayload\"\x91\x01\n" +
 	"\vOutputChunk\x12!\n" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12/\n" +
@@ -2291,7 +2846,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\adetails\x18\x03 \x03(\v2!.pm.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa4\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa0\x06\n" +
 	"\rServerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\awelcome\x18\n" +
@@ -2304,7 +2859,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"getLuksKey\x12C\n" +
 	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
 	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12.\n" +
-	"\tlog_query\x18< \x01(\v2\x0f.pm.v1.LogQueryH\x00R\blogQueryB\t\n" +
+	"\tlog_query\x18< \x01(\v2\x0f.pm.v1.LogQueryH\x00R\blogQuery\x12=\n" +
+	"\x0eterminal_start\x18F \x01(\v2\x14.pm.v1.TerminalStartH\x00R\rterminalStart\x12=\n" +
+	"\x0eterminal_input\x18G \x01(\v2\x14.pm.v1.TerminalInputH\x00R\rterminalInput\x12@\n" +
+	"\x0fterminal_resize\x18H \x01(\v2\x15.pm.v1.TerminalResizeH\x00R\x0eterminalResize\x12:\n" +
+	"\rterminal_stop\x18I \x01(\v2\x13.pm.v1.TerminalStopH\x00R\fterminalStopB\t\n" +
 	"\apayload\"\xe9\x01\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
@@ -2397,7 +2956,36 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x03 \x01(\tR\x05error\x12\x12\n" +
-	"\x04logs\x18\x04 \x01(\tR\x04logs*t\n" +
+	"\x04logs\x18\x04 \x01(\tR\x04logs\"q\n" +
+	"\rTerminalStart\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x19\n" +
+	"\btty_user\x18\x02 \x01(\tR\attyUser\x12\x12\n" +
+	"\x04cols\x18\x03 \x01(\rR\x04cols\x12\x12\n" +
+	"\x04rows\x18\x04 \x01(\rR\x04rows\"B\n" +
+	"\rTerminalInput\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"W\n" +
+	"\x0eTerminalResize\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04cols\x18\x02 \x01(\rR\x04cols\x12\x12\n" +
+	"\x04rows\x18\x03 \x01(\rR\x04rows\"E\n" +
+	"\fTerminalStop\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"C\n" +
+	"\x0eTerminalOutput\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"\x9a\x01\n" +
+	"\x13TerminalStateChange\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x121\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x1b.pm.v1.TerminalSessionStateR\x05state\x12\x1b\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error*t\n" +
 	"\x10OutputStreamType\x12\"\n" +
 	"\x1eOUTPUT_STREAM_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19OUTPUT_STREAM_TYPE_STDOUT\x10\x01\x12\x1d\n" +
@@ -2416,7 +3004,12 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eOS_QUERY_OP_GE\x10\x05\x12\x12\n" +
 	"\x0eOS_QUERY_OP_LE\x10\x06\x12\x14\n" +
 	"\x10OS_QUERY_OP_LIKE\x10\a\x12\x14\n" +
-	"\x10OS_QUERY_OP_GLOB\x10\b2\xe5\x01\n" +
+	"\x10OS_QUERY_OP_GLOB\x10\b*\xa7\x01\n" +
+	"\x14TerminalSessionState\x12&\n" +
+	"\"TERMINAL_SESSION_STATE_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eTERMINAL_SESSION_STATE_STARTED\x10\x01\x12!\n" +
+	"\x1dTERMINAL_SESSION_STATE_EXITED\x10\x02\x12 \n" +
+	"\x1cTERMINAL_SESSION_STATE_ERROR\x10\x032\xe5\x01\n" +
 	"\fAgentService\x127\n" +
 	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12D\n" +
 	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12V\n" +
@@ -2434,96 +3027,110 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 	return file_pm_v1_agent_proto_rawDescData
 }
 
-var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),             // 0: pm.v1.OutputStreamType
 	(SecurityAlertType)(0),            // 1: pm.v1.SecurityAlertType
 	(OSQueryOp)(0),                    // 2: pm.v1.OSQueryOp
-	(*AgentMessage)(nil),              // 3: pm.v1.AgentMessage
-	(*OutputChunk)(nil),               // 4: pm.v1.OutputChunk
-	(*Hello)(nil),                     // 5: pm.v1.Hello
-	(*Heartbeat)(nil),                 // 6: pm.v1.Heartbeat
-	(*SecurityAlert)(nil),             // 7: pm.v1.SecurityAlert
-	(*ServerMessage)(nil),             // 8: pm.v1.ServerMessage
-	(*Welcome)(nil),                   // 9: pm.v1.Welcome
-	(*ActionDispatch)(nil),            // 10: pm.v1.ActionDispatch
-	(*Error)(nil),                     // 11: pm.v1.Error
-	(*OSQuery)(nil),                   // 12: pm.v1.OSQuery
-	(*OSQueryCondition)(nil),          // 13: pm.v1.OSQueryCondition
-	(*OSQueryResult)(nil),             // 14: pm.v1.OSQueryResult
-	(*OSQueryRow)(nil),                // 15: pm.v1.OSQueryRow
-	(*DeviceInventory)(nil),           // 16: pm.v1.DeviceInventory
-	(*InventoryTable)(nil),            // 17: pm.v1.InventoryTable
-	(*RequestInventory)(nil),          // 18: pm.v1.RequestInventory
-	(*GetLuksKeyRequest)(nil),         // 19: pm.v1.GetLuksKeyRequest
-	(*GetLuksKeyResponse)(nil),        // 20: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyRequest)(nil),       // 21: pm.v1.StoreLuksKeyRequest
-	(*StoreLuksKeyResponse)(nil),      // 22: pm.v1.StoreLuksKeyResponse
-	(*RevokeLuksDeviceKey)(nil),       // 23: pm.v1.RevokeLuksDeviceKey
-	(*RevokeLuksDeviceKeyResult)(nil), // 24: pm.v1.RevokeLuksDeviceKeyResult
-	(*ValidateLuksTokenRequest)(nil),  // 25: pm.v1.ValidateLuksTokenRequest
-	(*ValidateLuksTokenResponse)(nil), // 26: pm.v1.ValidateLuksTokenResponse
-	(*SyncActionsRequest)(nil),        // 27: pm.v1.SyncActionsRequest
-	(*SyncActionsResponse)(nil),       // 28: pm.v1.SyncActionsResponse
-	(*LogQuery)(nil),                  // 29: pm.v1.LogQuery
-	(*LogQueryResult)(nil),            // 30: pm.v1.LogQueryResult
-	nil,                               // 31: pm.v1.SecurityAlert.DetailsEntry
-	nil,                               // 32: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),              // 33: pm.v1.ActionResult
-	(*DeviceId)(nil),                  // 34: pm.v1.DeviceId
-	(*durationpb.Duration)(nil),       // 35: google.protobuf.Duration
-	(*Action)(nil),                    // 36: pm.v1.Action
-	(LpsPasswordComplexity)(0),        // 37: pm.v1.LpsPasswordComplexity
+	(TerminalSessionState)(0),         // 3: pm.v1.TerminalSessionState
+	(*AgentMessage)(nil),              // 4: pm.v1.AgentMessage
+	(*OutputChunk)(nil),               // 5: pm.v1.OutputChunk
+	(*Hello)(nil),                     // 6: pm.v1.Hello
+	(*Heartbeat)(nil),                 // 7: pm.v1.Heartbeat
+	(*SecurityAlert)(nil),             // 8: pm.v1.SecurityAlert
+	(*ServerMessage)(nil),             // 9: pm.v1.ServerMessage
+	(*Welcome)(nil),                   // 10: pm.v1.Welcome
+	(*ActionDispatch)(nil),            // 11: pm.v1.ActionDispatch
+	(*Error)(nil),                     // 12: pm.v1.Error
+	(*OSQuery)(nil),                   // 13: pm.v1.OSQuery
+	(*OSQueryCondition)(nil),          // 14: pm.v1.OSQueryCondition
+	(*OSQueryResult)(nil),             // 15: pm.v1.OSQueryResult
+	(*OSQueryRow)(nil),                // 16: pm.v1.OSQueryRow
+	(*DeviceInventory)(nil),           // 17: pm.v1.DeviceInventory
+	(*InventoryTable)(nil),            // 18: pm.v1.InventoryTable
+	(*RequestInventory)(nil),          // 19: pm.v1.RequestInventory
+	(*GetLuksKeyRequest)(nil),         // 20: pm.v1.GetLuksKeyRequest
+	(*GetLuksKeyResponse)(nil),        // 21: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyRequest)(nil),       // 22: pm.v1.StoreLuksKeyRequest
+	(*StoreLuksKeyResponse)(nil),      // 23: pm.v1.StoreLuksKeyResponse
+	(*RevokeLuksDeviceKey)(nil),       // 24: pm.v1.RevokeLuksDeviceKey
+	(*RevokeLuksDeviceKeyResult)(nil), // 25: pm.v1.RevokeLuksDeviceKeyResult
+	(*ValidateLuksTokenRequest)(nil),  // 26: pm.v1.ValidateLuksTokenRequest
+	(*ValidateLuksTokenResponse)(nil), // 27: pm.v1.ValidateLuksTokenResponse
+	(*SyncActionsRequest)(nil),        // 28: pm.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil),       // 29: pm.v1.SyncActionsResponse
+	(*LogQuery)(nil),                  // 30: pm.v1.LogQuery
+	(*LogQueryResult)(nil),            // 31: pm.v1.LogQueryResult
+	(*TerminalStart)(nil),             // 32: pm.v1.TerminalStart
+	(*TerminalInput)(nil),             // 33: pm.v1.TerminalInput
+	(*TerminalResize)(nil),            // 34: pm.v1.TerminalResize
+	(*TerminalStop)(nil),              // 35: pm.v1.TerminalStop
+	(*TerminalOutput)(nil),            // 36: pm.v1.TerminalOutput
+	(*TerminalStateChange)(nil),       // 37: pm.v1.TerminalStateChange
+	nil,                               // 38: pm.v1.SecurityAlert.DetailsEntry
+	nil,                               // 39: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),              // 40: pm.v1.ActionResult
+	(*DeviceId)(nil),                  // 41: pm.v1.DeviceId
+	(*durationpb.Duration)(nil),       // 42: google.protobuf.Duration
+	(*Action)(nil),                    // 43: pm.v1.Action
+	(LpsPasswordComplexity)(0),        // 44: pm.v1.LpsPasswordComplexity
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
-	5,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
-	6,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	33, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
-	4,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
-	14, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
-	16, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
-	7,  // 6: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
-	19, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
-	21, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
-	24, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
-	30, // 10: pm.v1.AgentMessage.log_query_result:type_name -> pm.v1.LogQueryResult
-	0,  // 11: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	34, // 12: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	35, // 13: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	1,  // 14: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	31, // 15: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
-	9,  // 16: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	10, // 17: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	12, // 18: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	18, // 19: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
-	11, // 20: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	20, // 21: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
-	22, // 22: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
-	23, // 23: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
-	29, // 24: pm.v1.ServerMessage.log_query:type_name -> pm.v1.LogQuery
-	35, // 25: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	36, // 26: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
-	13, // 27: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
-	2,  // 28: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	15, // 29: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	32, // 30: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	17, // 31: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
-	15, // 32: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
-	37, // 33: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	34, // 34: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	36, // 35: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
-	3,  // 36: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	27, // 37: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	25, // 38: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	8,  // 39: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	28, // 40: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	26, // 41: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	39, // [39:42] is the sub-list for method output_type
-	36, // [36:39] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	6,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
+	7,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
+	40, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	5,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
+	15, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
+	17, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
+	8,  // 6: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
+	20, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
+	22, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
+	25, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
+	31, // 10: pm.v1.AgentMessage.log_query_result:type_name -> pm.v1.LogQueryResult
+	36, // 11: pm.v1.AgentMessage.terminal_output:type_name -> pm.v1.TerminalOutput
+	37, // 12: pm.v1.AgentMessage.terminal_state_change:type_name -> pm.v1.TerminalStateChange
+	0,  // 13: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
+	41, // 14: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	42, // 15: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 16: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
+	38, // 17: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	10, // 18: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	11, // 19: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	13, // 20: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	19, // 21: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
+	12, // 22: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	21, // 23: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
+	23, // 24: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
+	24, // 25: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
+	30, // 26: pm.v1.ServerMessage.log_query:type_name -> pm.v1.LogQuery
+	32, // 27: pm.v1.ServerMessage.terminal_start:type_name -> pm.v1.TerminalStart
+	33, // 28: pm.v1.ServerMessage.terminal_input:type_name -> pm.v1.TerminalInput
+	34, // 29: pm.v1.ServerMessage.terminal_resize:type_name -> pm.v1.TerminalResize
+	35, // 30: pm.v1.ServerMessage.terminal_stop:type_name -> pm.v1.TerminalStop
+	42, // 31: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	43, // 32: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	14, // 33: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	2,  // 34: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
+	16, // 35: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	39, // 36: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	18, // 37: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
+	16, // 38: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
+	44, // 39: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	41, // 40: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	43, // 41: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 42: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
+	4,  // 43: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	28, // 44: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	26, // 45: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	9,  // 46: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	29, // 47: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	27, // 48: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	46, // [46:49] is the sub-list for method output_type
+	43, // [43:46] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -2545,6 +3152,8 @@ func file_pm_v1_agent_proto_init() {
 		(*AgentMessage_StoreLuksKey)(nil),
 		(*AgentMessage_RevokeLuksDeviceKeyResult)(nil),
 		(*AgentMessage_LogQueryResult)(nil),
+		(*AgentMessage_TerminalOutput)(nil),
+		(*AgentMessage_TerminalStateChange)(nil),
 	}
 	file_pm_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
@@ -2556,14 +3165,18 @@ func file_pm_v1_agent_proto_init() {
 		(*ServerMessage_StoreLuksKey)(nil),
 		(*ServerMessage_RevokeLuksDeviceKey)(nil),
 		(*ServerMessage_LogQuery)(nil),
+		(*ServerMessage_TerminalStart)(nil),
+		(*ServerMessage_TerminalInput)(nil),
+		(*ServerMessage_TerminalResize)(nil),
+		(*ServerMessage_TerminalStop)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   30,
+			NumEnums:      4,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

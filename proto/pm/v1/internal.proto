@@ -4,6 +4,7 @@ package pm.v1;
 
 option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
+import "google/protobuf/timestamp.proto";
 import "pm/v1/agent.proto";
 
 // ============================================================================
@@ -92,3 +93,73 @@ message VerifyDeviceRequest {
 
 // VerifyDeviceResponse indicates whether the device is valid for connection.
 message VerifyDeviceResponse {}
+
+// ============================================================================
+// Gateway Service — Control → Gateway control-plane operations
+// ============================================================================
+//
+// This service runs on each gateway instance and is called by the control
+// server. It is NOT exposed externally — only accessible on the internal
+// network. Used for fan-out queries and admin commands against gateway
+// in-memory state (currently: terminal sessions; future: connection
+// inventory, broadcast signals).
+//
+// Sessions are state on the gateway, not the control DB. Listing or
+// terminating them therefore requires control to call into each gateway
+// rather than read from a shared database.
+
+service GatewayService {
+  // ListGatewayTerminalSessions returns the gateway's snapshot of
+  // currently-active terminal sessions. The control server fans this
+  // out to every known gateway and merges the results to power
+  // ControlService.ListActiveTerminalSessions.
+  rpc ListGatewayTerminalSessions(ListGatewayTerminalSessionsRequest) returns (ListGatewayTerminalSessionsResponse);
+
+  // TerminateGatewayTerminalSession kills a session on this gateway.
+  // The control server routes ControlService.TerminateTerminalSession
+  // to whichever gateway owns the session_id (looked up via the prior
+  // List call or via session affinity). No-op + ok if the session
+  // is not on this gateway.
+  rpc TerminateGatewayTerminalSession(TerminateGatewayTerminalSessionRequest) returns (TerminateGatewayTerminalSessionResponse);
+}
+
+// GatewayTerminalSessionInfo is a single entry in a gateway's session
+// snapshot. The control server enriches it with user/device metadata
+// from its own database before returning the merged result to clients.
+message GatewayTerminalSessionInfo {
+  string session_id = 1;
+  // ID of the Power Manage user that opened the session.
+  string user_id = 2;
+  // Target device ID (the gateway already knows this from the active
+  // agent connection).
+  string device_id = 3;
+  // The dedicated TTY user the agent spawned the shell as.
+  string tty_user = 4;
+  google.protobuf.Timestamp started_at = 5;
+  // Last activity (any input or output traffic) — used by the gateway's
+  // idle-timeout enforcement and surfaced in the admin view.
+  google.protobuf.Timestamp last_activity_at = 6;
+}
+
+message ListGatewayTerminalSessionsRequest {}
+
+message ListGatewayTerminalSessionsResponse {
+  repeated GatewayTerminalSessionInfo sessions = 1;
+}
+
+message TerminateGatewayTerminalSessionRequest {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // Optional reason propagated to the agent and recorded in the audit
+  // log. Length capped to match ControlService.TerminateTerminalSession
+  // so audit entries stay bounded.
+  // @gotags: validate:"omitempty,max=512"
+  string reason = 2;
+}
+
+message TerminateGatewayTerminalSessionResponse {
+  // True if a session with the given id existed on this gateway and was
+  // terminated. False is not an error: the session may have lived on a
+  // different gateway or already exited naturally.
+  bool found = 1;
+}
