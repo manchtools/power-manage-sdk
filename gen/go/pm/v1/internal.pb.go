@@ -418,6 +418,158 @@ func (*InternalStoreLpsPasswordsResponse) Descriptor() ([]byte, []int) {
 	return file_pm_v1_internal_proto_rawDescGZIP(), []int{6}
 }
 
+// InternalValidateTerminalTokenRequest is sent by the gateway when a
+// web client opens the WebSocket terminal endpoint with a session_id
+// and bearer token. The control server looks the session up in the
+// Valkey-backed token store, compares the SHA-256 of the supplied
+// token against the stored hash, and returns the session metadata.
+type InternalValidateTerminalTokenRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
+	// The plaintext bearer token the web client received from
+	// ControlService.StartTerminal.
+	// @gotags: validate:"required,min=1"
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,min=1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InternalValidateTerminalTokenRequest) Reset() {
+	*x = InternalValidateTerminalTokenRequest{}
+	mi := &file_pm_v1_internal_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InternalValidateTerminalTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InternalValidateTerminalTokenRequest) ProtoMessage() {}
+
+func (x *InternalValidateTerminalTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_internal_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InternalValidateTerminalTokenRequest.ProtoReflect.Descriptor instead.
+func (*InternalValidateTerminalTokenRequest) Descriptor() ([]byte, []int) {
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *InternalValidateTerminalTokenRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *InternalValidateTerminalTokenRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+// InternalValidateTerminalTokenResponse carries the session metadata
+// the gateway needs to bridge the WebSocket connection to the matching
+// agent. The user_id is included so the gateway can record it on the
+// active session for the admin List path; the gateway never trusts the
+// session_id for ownership decisions because it has no access to the
+// JWT.
+type InternalValidateTerminalTokenResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// Matches the agent-side username constraint and the public
+	// TerminalStart bounds.
+	// @gotags: validate:"required,min=1,max=64"
+	TtyUser string `protobuf:"bytes,3,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty" validate:"required,min=1,max=64"`
+	// Same window-size bounds as the public TerminalStart message
+	// (proto3 has no uint16; cap at 65535).
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Cols uint32 `protobuf:"varint,4,opt,name=cols,proto3" json:"cols,omitempty" validate:"required,gt=0,lte=65535"`
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Rows          uint32 `protobuf:"varint,5,opt,name=rows,proto3" json:"rows,omitempty" validate:"required,gt=0,lte=65535"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InternalValidateTerminalTokenResponse) Reset() {
+	*x = InternalValidateTerminalTokenResponse{}
+	mi := &file_pm_v1_internal_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InternalValidateTerminalTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InternalValidateTerminalTokenResponse) ProtoMessage() {}
+
+func (x *InternalValidateTerminalTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_internal_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InternalValidateTerminalTokenResponse.ProtoReflect.Descriptor instead.
+func (*InternalValidateTerminalTokenResponse) Descriptor() ([]byte, []int) {
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *InternalValidateTerminalTokenResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *InternalValidateTerminalTokenResponse) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *InternalValidateTerminalTokenResponse) GetTtyUser() string {
+	if x != nil {
+		return x.TtyUser
+	}
+	return ""
+}
+
+func (x *InternalValidateTerminalTokenResponse) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+func (x *InternalValidateTerminalTokenResponse) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
 // VerifyDeviceRequest is sent by the gateway to verify a device before
 // allowing it to connect. Contains the device_id from the mTLS certificate.
 type VerifyDeviceRequest struct {
@@ -429,7 +581,7 @@ type VerifyDeviceRequest struct {
 
 func (x *VerifyDeviceRequest) Reset() {
 	*x = VerifyDeviceRequest{}
-	mi := &file_pm_v1_internal_proto_msgTypes[7]
+	mi := &file_pm_v1_internal_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -441,7 +593,7 @@ func (x *VerifyDeviceRequest) String() string {
 func (*VerifyDeviceRequest) ProtoMessage() {}
 
 func (x *VerifyDeviceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[7]
+	mi := &file_pm_v1_internal_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -454,7 +606,7 @@ func (x *VerifyDeviceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyDeviceRequest.ProtoReflect.Descriptor instead.
 func (*VerifyDeviceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *VerifyDeviceRequest) GetDeviceId() string {
@@ -473,7 +625,7 @@ type VerifyDeviceResponse struct {
 
 func (x *VerifyDeviceResponse) Reset() {
 	*x = VerifyDeviceResponse{}
-	mi := &file_pm_v1_internal_proto_msgTypes[8]
+	mi := &file_pm_v1_internal_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -485,7 +637,7 @@ func (x *VerifyDeviceResponse) String() string {
 func (*VerifyDeviceResponse) ProtoMessage() {}
 
 func (x *VerifyDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[8]
+	mi := &file_pm_v1_internal_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -498,7 +650,7 @@ func (x *VerifyDeviceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyDeviceResponse.ProtoReflect.Descriptor instead.
 func (*VerifyDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{10}
 }
 
 // GatewayTerminalSessionInfo is a single entry in a gateway's session
@@ -524,7 +676,7 @@ type GatewayTerminalSessionInfo struct {
 
 func (x *GatewayTerminalSessionInfo) Reset() {
 	*x = GatewayTerminalSessionInfo{}
-	mi := &file_pm_v1_internal_proto_msgTypes[9]
+	mi := &file_pm_v1_internal_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -536,7 +688,7 @@ func (x *GatewayTerminalSessionInfo) String() string {
 func (*GatewayTerminalSessionInfo) ProtoMessage() {}
 
 func (x *GatewayTerminalSessionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[9]
+	mi := &file_pm_v1_internal_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -549,7 +701,7 @@ func (x *GatewayTerminalSessionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GatewayTerminalSessionInfo.ProtoReflect.Descriptor instead.
 func (*GatewayTerminalSessionInfo) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GatewayTerminalSessionInfo) GetSessionId() string {
@@ -602,7 +754,7 @@ type ListGatewayTerminalSessionsRequest struct {
 
 func (x *ListGatewayTerminalSessionsRequest) Reset() {
 	*x = ListGatewayTerminalSessionsRequest{}
-	mi := &file_pm_v1_internal_proto_msgTypes[10]
+	mi := &file_pm_v1_internal_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -614,7 +766,7 @@ func (x *ListGatewayTerminalSessionsRequest) String() string {
 func (*ListGatewayTerminalSessionsRequest) ProtoMessage() {}
 
 func (x *ListGatewayTerminalSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[10]
+	mi := &file_pm_v1_internal_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -627,7 +779,7 @@ func (x *ListGatewayTerminalSessionsRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ListGatewayTerminalSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListGatewayTerminalSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{12}
 }
 
 type ListGatewayTerminalSessionsResponse struct {
@@ -639,7 +791,7 @@ type ListGatewayTerminalSessionsResponse struct {
 
 func (x *ListGatewayTerminalSessionsResponse) Reset() {
 	*x = ListGatewayTerminalSessionsResponse{}
-	mi := &file_pm_v1_internal_proto_msgTypes[11]
+	mi := &file_pm_v1_internal_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -651,7 +803,7 @@ func (x *ListGatewayTerminalSessionsResponse) String() string {
 func (*ListGatewayTerminalSessionsResponse) ProtoMessage() {}
 
 func (x *ListGatewayTerminalSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[11]
+	mi := &file_pm_v1_internal_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +816,7 @@ func (x *ListGatewayTerminalSessionsResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use ListGatewayTerminalSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListGatewayTerminalSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{11}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListGatewayTerminalSessionsResponse) GetSessions() []*GatewayTerminalSessionInfo {
@@ -689,7 +841,7 @@ type TerminateGatewayTerminalSessionRequest struct {
 
 func (x *TerminateGatewayTerminalSessionRequest) Reset() {
 	*x = TerminateGatewayTerminalSessionRequest{}
-	mi := &file_pm_v1_internal_proto_msgTypes[12]
+	mi := &file_pm_v1_internal_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -701,7 +853,7 @@ func (x *TerminateGatewayTerminalSessionRequest) String() string {
 func (*TerminateGatewayTerminalSessionRequest) ProtoMessage() {}
 
 func (x *TerminateGatewayTerminalSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[12]
+	mi := &file_pm_v1_internal_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -714,7 +866,7 @@ func (x *TerminateGatewayTerminalSessionRequest) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use TerminateGatewayTerminalSessionRequest.ProtoReflect.Descriptor instead.
 func (*TerminateGatewayTerminalSessionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{12}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *TerminateGatewayTerminalSessionRequest) GetSessionId() string {
@@ -743,7 +895,7 @@ type TerminateGatewayTerminalSessionResponse struct {
 
 func (x *TerminateGatewayTerminalSessionResponse) Reset() {
 	*x = TerminateGatewayTerminalSessionResponse{}
-	mi := &file_pm_v1_internal_proto_msgTypes[13]
+	mi := &file_pm_v1_internal_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -755,7 +907,7 @@ func (x *TerminateGatewayTerminalSessionResponse) String() string {
 func (*TerminateGatewayTerminalSessionResponse) ProtoMessage() {}
 
 func (x *TerminateGatewayTerminalSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_internal_proto_msgTypes[13]
+	mi := &file_pm_v1_internal_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -768,7 +920,7 @@ func (x *TerminateGatewayTerminalSessionResponse) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use TerminateGatewayTerminalSessionResponse.ProtoReflect.Descriptor instead.
 func (*TerminateGatewayTerminalSessionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_internal_proto_rawDescGZIP(), []int{13}
+	return file_pm_v1_internal_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *TerminateGatewayTerminalSessionResponse) GetFound() bool {
@@ -810,7 +962,17 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x128\n" +
 	"\trotations\x18\x03 \x03(\v2\x1a.pm.v1.LpsPasswordRotationR\trotations\"#\n" +
-	"!InternalStoreLpsPasswordsResponse\"2\n" +
+	"!InternalStoreLpsPasswordsResponse\"[\n" +
+	"$InternalValidateTerminalTokenRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\xa0\x01\n" +
+	"%InternalValidateTerminalTokenResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1b\n" +
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x19\n" +
+	"\btty_user\x18\x03 \x01(\tR\attyUser\x12\x12\n" +
+	"\x04cols\x18\x04 \x01(\rR\x04cols\x12\x12\n" +
+	"\x04rows\x18\x05 \x01(\rR\x04rows\"2\n" +
 	"\x13VerifyDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
 	"\x14VerifyDeviceResponse\"\x8d\x02\n" +
@@ -831,14 +993,15 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"?\n" +
 	"'TerminateGatewayTerminalSessionResponse\x12\x14\n" +
-	"\x05found\x18\x01 \x01(\bR\x05found2\xa5\x04\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found2\x9e\x05\n" +
 	"\x0fInternalService\x12G\n" +
 	"\fVerifyDevice\x12\x1a.pm.v1.VerifyDeviceRequest\x1a\x1b.pm.v1.VerifyDeviceResponse\x12Q\n" +
 	"\x10ProxySyncActions\x12!.pm.v1.InternalSyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12c\n" +
 	"\x16ProxyValidateLuksToken\x12'.pm.v1.InternalValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponse\x12N\n" +
 	"\x0fProxyGetLuksKey\x12 .pm.v1.InternalGetLuksKeyRequest\x1a\x19.pm.v1.GetLuksKeyResponse\x12T\n" +
 	"\x11ProxyStoreLuksKey\x12\".pm.v1.InternalStoreLuksKeyRequest\x1a\x1b.pm.v1.StoreLuksKeyResponse\x12k\n" +
-	"\x16ProxyStoreLpsPasswords\x12'.pm.v1.InternalStoreLpsPasswordsRequest\x1a(.pm.v1.InternalStoreLpsPasswordsResponse2\x89\x02\n" +
+	"\x16ProxyStoreLpsPasswords\x12'.pm.v1.InternalStoreLpsPasswordsRequest\x1a(.pm.v1.InternalStoreLpsPasswordsResponse\x12w\n" +
+	"\x1aProxyValidateTerminalToken\x12+.pm.v1.InternalValidateTerminalTokenRequest\x1a,.pm.v1.InternalValidateTerminalTokenResponse2\x89\x02\n" +
 	"\x0eGatewayService\x12t\n" +
 	"\x1bListGatewayTerminalSessions\x12).pm.v1.ListGatewayTerminalSessionsRequest\x1a*.pm.v1.ListGatewayTerminalSessionsResponse\x12\x80\x01\n" +
 	"\x1fTerminateGatewayTerminalSession\x12-.pm.v1.TerminateGatewayTerminalSessionRequest\x1a..pm.v1.TerminateGatewayTerminalSessionResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
@@ -855,7 +1018,7 @@ func file_pm_v1_internal_proto_rawDescGZIP() []byte {
 	return file_pm_v1_internal_proto_rawDescData
 }
 
-var file_pm_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_pm_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_pm_v1_internal_proto_goTypes = []any{
 	(*InternalSyncActionsRequest)(nil),              // 0: pm.v1.InternalSyncActionsRequest
 	(*InternalValidateLuksTokenRequest)(nil),        // 1: pm.v1.InternalValidateLuksTokenRequest
@@ -864,42 +1027,46 @@ var file_pm_v1_internal_proto_goTypes = []any{
 	(*LpsPasswordRotation)(nil),                     // 4: pm.v1.LpsPasswordRotation
 	(*InternalStoreLpsPasswordsRequest)(nil),        // 5: pm.v1.InternalStoreLpsPasswordsRequest
 	(*InternalStoreLpsPasswordsResponse)(nil),       // 6: pm.v1.InternalStoreLpsPasswordsResponse
-	(*VerifyDeviceRequest)(nil),                     // 7: pm.v1.VerifyDeviceRequest
-	(*VerifyDeviceResponse)(nil),                    // 8: pm.v1.VerifyDeviceResponse
-	(*GatewayTerminalSessionInfo)(nil),              // 9: pm.v1.GatewayTerminalSessionInfo
-	(*ListGatewayTerminalSessionsRequest)(nil),      // 10: pm.v1.ListGatewayTerminalSessionsRequest
-	(*ListGatewayTerminalSessionsResponse)(nil),     // 11: pm.v1.ListGatewayTerminalSessionsResponse
-	(*TerminateGatewayTerminalSessionRequest)(nil),  // 12: pm.v1.TerminateGatewayTerminalSessionRequest
-	(*TerminateGatewayTerminalSessionResponse)(nil), // 13: pm.v1.TerminateGatewayTerminalSessionResponse
-	(*timestamppb.Timestamp)(nil),                   // 14: google.protobuf.Timestamp
-	(*SyncActionsResponse)(nil),                     // 15: pm.v1.SyncActionsResponse
-	(*ValidateLuksTokenResponse)(nil),               // 16: pm.v1.ValidateLuksTokenResponse
-	(*GetLuksKeyResponse)(nil),                      // 17: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyResponse)(nil),                    // 18: pm.v1.StoreLuksKeyResponse
+	(*InternalValidateTerminalTokenRequest)(nil),    // 7: pm.v1.InternalValidateTerminalTokenRequest
+	(*InternalValidateTerminalTokenResponse)(nil),   // 8: pm.v1.InternalValidateTerminalTokenResponse
+	(*VerifyDeviceRequest)(nil),                     // 9: pm.v1.VerifyDeviceRequest
+	(*VerifyDeviceResponse)(nil),                    // 10: pm.v1.VerifyDeviceResponse
+	(*GatewayTerminalSessionInfo)(nil),              // 11: pm.v1.GatewayTerminalSessionInfo
+	(*ListGatewayTerminalSessionsRequest)(nil),      // 12: pm.v1.ListGatewayTerminalSessionsRequest
+	(*ListGatewayTerminalSessionsResponse)(nil),     // 13: pm.v1.ListGatewayTerminalSessionsResponse
+	(*TerminateGatewayTerminalSessionRequest)(nil),  // 14: pm.v1.TerminateGatewayTerminalSessionRequest
+	(*TerminateGatewayTerminalSessionResponse)(nil), // 15: pm.v1.TerminateGatewayTerminalSessionResponse
+	(*timestamppb.Timestamp)(nil),                   // 16: google.protobuf.Timestamp
+	(*SyncActionsResponse)(nil),                     // 17: pm.v1.SyncActionsResponse
+	(*ValidateLuksTokenResponse)(nil),               // 18: pm.v1.ValidateLuksTokenResponse
+	(*GetLuksKeyResponse)(nil),                      // 19: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyResponse)(nil),                    // 20: pm.v1.StoreLuksKeyResponse
 }
 var file_pm_v1_internal_proto_depIdxs = []int32{
 	4,  // 0: pm.v1.InternalStoreLpsPasswordsRequest.rotations:type_name -> pm.v1.LpsPasswordRotation
-	14, // 1: pm.v1.GatewayTerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
-	14, // 2: pm.v1.GatewayTerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
-	9,  // 3: pm.v1.ListGatewayTerminalSessionsResponse.sessions:type_name -> pm.v1.GatewayTerminalSessionInfo
-	7,  // 4: pm.v1.InternalService.VerifyDevice:input_type -> pm.v1.VerifyDeviceRequest
+	16, // 1: pm.v1.GatewayTerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
+	16, // 2: pm.v1.GatewayTerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
+	11, // 3: pm.v1.ListGatewayTerminalSessionsResponse.sessions:type_name -> pm.v1.GatewayTerminalSessionInfo
+	9,  // 4: pm.v1.InternalService.VerifyDevice:input_type -> pm.v1.VerifyDeviceRequest
 	0,  // 5: pm.v1.InternalService.ProxySyncActions:input_type -> pm.v1.InternalSyncActionsRequest
 	1,  // 6: pm.v1.InternalService.ProxyValidateLuksToken:input_type -> pm.v1.InternalValidateLuksTokenRequest
 	2,  // 7: pm.v1.InternalService.ProxyGetLuksKey:input_type -> pm.v1.InternalGetLuksKeyRequest
 	3,  // 8: pm.v1.InternalService.ProxyStoreLuksKey:input_type -> pm.v1.InternalStoreLuksKeyRequest
 	5,  // 9: pm.v1.InternalService.ProxyStoreLpsPasswords:input_type -> pm.v1.InternalStoreLpsPasswordsRequest
-	10, // 10: pm.v1.GatewayService.ListGatewayTerminalSessions:input_type -> pm.v1.ListGatewayTerminalSessionsRequest
-	12, // 11: pm.v1.GatewayService.TerminateGatewayTerminalSession:input_type -> pm.v1.TerminateGatewayTerminalSessionRequest
-	8,  // 12: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
-	15, // 13: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
-	16, // 14: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	17, // 15: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
-	18, // 16: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
-	6,  // 17: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
-	11, // 18: pm.v1.GatewayService.ListGatewayTerminalSessions:output_type -> pm.v1.ListGatewayTerminalSessionsResponse
-	13, // 19: pm.v1.GatewayService.TerminateGatewayTerminalSession:output_type -> pm.v1.TerminateGatewayTerminalSessionResponse
-	12, // [12:20] is the sub-list for method output_type
-	4,  // [4:12] is the sub-list for method input_type
+	7,  // 10: pm.v1.InternalService.ProxyValidateTerminalToken:input_type -> pm.v1.InternalValidateTerminalTokenRequest
+	12, // 11: pm.v1.GatewayService.ListGatewayTerminalSessions:input_type -> pm.v1.ListGatewayTerminalSessionsRequest
+	14, // 12: pm.v1.GatewayService.TerminateGatewayTerminalSession:input_type -> pm.v1.TerminateGatewayTerminalSessionRequest
+	10, // 13: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
+	17, // 14: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
+	18, // 15: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	19, // 16: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
+	20, // 17: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
+	6,  // 18: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
+	8,  // 19: pm.v1.InternalService.ProxyValidateTerminalToken:output_type -> pm.v1.InternalValidateTerminalTokenResponse
+	13, // 20: pm.v1.GatewayService.ListGatewayTerminalSessions:output_type -> pm.v1.ListGatewayTerminalSessionsResponse
+	15, // 21: pm.v1.GatewayService.TerminateGatewayTerminalSession:output_type -> pm.v1.TerminateGatewayTerminalSessionResponse
+	13, // [13:22] is the sub-list for method output_type
+	4,  // [4:13] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -917,7 +1084,7 @@ func file_pm_v1_internal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_internal_proto_rawDesc), len(file_pm_v1_internal_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

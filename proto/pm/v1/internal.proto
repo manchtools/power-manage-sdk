@@ -34,6 +34,19 @@ service InternalService {
 
   // Proxy StoreLpsPasswords: encrypts and stores LPS password rotation entries.
   rpc ProxyStoreLpsPasswords(InternalStoreLpsPasswordsRequest) returns (InternalStoreLpsPasswordsResponse);
+
+  // ProxyValidateTerminalToken validates a session token presented by a
+  // web client opening the gateway's WebSocket terminal endpoint, and
+  // returns the session metadata the gateway needs to bridge the
+  // connection (target device, TTY user, initial cols/rows).
+  //
+  // The token entry is reusable for the lifetime of the gateway
+  // session: a successful validation MUST NOT consume the entry,
+  // because the same gateway needs the metadata for the duration of
+  // the WebSocket connection. Revocation happens explicitly via
+  // ControlService.StopTerminal or the admin TerminateTerminalSession
+  // path — never as a side effect of validation.
+  rpc ProxyValidateTerminalToken(InternalValidateTerminalTokenRequest) returns (InternalValidateTerminalTokenResponse);
 }
 
 // ============================================================================
@@ -84,6 +97,43 @@ message InternalStoreLpsPasswordsRequest {
 }
 
 message InternalStoreLpsPasswordsResponse {}
+
+// InternalValidateTerminalTokenRequest is sent by the gateway when a
+// web client opens the WebSocket terminal endpoint with a session_id
+// and bearer token. The control server looks the session up in the
+// Valkey-backed token store, compares the SHA-256 of the supplied
+// token against the stored hash, and returns the session metadata.
+message InternalValidateTerminalTokenRequest {
+  // @gotags: validate:"required,ulid"
+  string session_id = 1;
+  // The plaintext bearer token the web client received from
+  // ControlService.StartTerminal.
+  // @gotags: validate:"required,min=1"
+  string token = 2;
+}
+
+// InternalValidateTerminalTokenResponse carries the session metadata
+// the gateway needs to bridge the WebSocket connection to the matching
+// agent. The user_id is included so the gateway can record it on the
+// active session for the admin List path; the gateway never trusts the
+// session_id for ownership decisions because it has no access to the
+// JWT.
+message InternalValidateTerminalTokenResponse {
+  // @gotags: validate:"required,ulid"
+  string user_id = 1;
+  // @gotags: validate:"required,ulid"
+  string device_id = 2;
+  // Matches the agent-side username constraint and the public
+  // TerminalStart bounds.
+  // @gotags: validate:"required,min=1,max=64"
+  string tty_user = 3;
+  // Same window-size bounds as the public TerminalStart message
+  // (proto3 has no uint16; cap at 65535).
+  // @gotags: validate:"required,gt=0,lte=65535"
+  uint32 cols = 4;
+  // @gotags: validate:"required,gt=0,lte=65535"
+  uint32 rows = 5;
+}
 
 // VerifyDeviceRequest is sent by the gateway to verify a device before
 // allowing it to connect. Contains the device_id from the mTLS certificate.

@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/internal.proto.
  */
 export const file_pm_v1_internal: GenFile = /*@__PURE__*/
-  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZSLMAQoaR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbkluZm8SEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEhEKCWRldmljZV9pZBgDIAEoCRIQCgh0dHlfdXNlchgEIAEoCRIuCgpzdGFydGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChBsYXN0X2FjdGl2aXR5X2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIkCiJMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0IloKI0xpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1Jlc3BvbnNlEjMKCHNlc3Npb25zGAEgAygLMiEucG0udjEuR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbkluZm8iTAomVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkiOAonVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlc3BvbnNlEg0KBWZvdW5kGAEgASgIMqUECg9JbnRlcm5hbFNlcnZpY2USRwoMVmVyaWZ5RGV2aWNlEhoucG0udjEuVmVyaWZ5RGV2aWNlUmVxdWVzdBobLnBtLnYxLlZlcmlmeURldmljZVJlc3BvbnNlElEKEFByb3h5U3luY0FjdGlvbnMSIS5wbS52MS5JbnRlcm5hbFN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USYwoWUHJveHlWYWxpZGF0ZUx1a3NUb2tlbhInLnBtLnYxLkludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZRJOCg9Qcm94eUdldEx1a3NLZXkSIC5wbS52MS5JbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0GhkucG0udjEuR2V0THVrc0tleVJlc3BvbnNlElQKEVByb3h5U3RvcmVMdWtzS2V5EiIucG0udjEuSW50ZXJuYWxTdG9yZUx1a3NLZXlSZXF1ZXN0GhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2USawoWUHJveHlTdG9yZUxwc1Bhc3N3b3JkcxInLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0GigucG0udjEuSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlMokCCg5HYXRld2F5U2VydmljZRJ0ChtMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnMSKS5wbS52MS5MaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0GioucG0udjEuTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVzcG9uc2USgAEKH1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb24SLS5wbS52MS5UZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVxdWVzdBouLnBtLnYxLlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_agent]);
+  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSJJCiRJbnRlcm5hbFZhbGlkYXRlVGVybWluYWxUb2tlblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJ5CiVJbnRlcm5hbFZhbGlkYXRlVGVybWluYWxUb2tlblJlc3BvbnNlEg8KB3VzZXJfaWQYASABKAkSEQoJZGV2aWNlX2lkGAIgASgJEhAKCHR0eV91c2VyGAMgASgJEgwKBGNvbHMYBCABKA0SDAoEcm93cxgFIAEoDSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZSLMAQoaR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbkluZm8SEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEhEKCWRldmljZV9pZBgDIAEoCRIQCgh0dHlfdXNlchgEIAEoCRIuCgpzdGFydGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChBsYXN0X2FjdGl2aXR5X2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIkCiJMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0IloKI0xpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1Jlc3BvbnNlEjMKCHNlc3Npb25zGAEgAygLMiEucG0udjEuR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbkluZm8iTAomVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkiOAonVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlc3BvbnNlEg0KBWZvdW5kGAEgASgIMp4FCg9JbnRlcm5hbFNlcnZpY2USRwoMVmVyaWZ5RGV2aWNlEhoucG0udjEuVmVyaWZ5RGV2aWNlUmVxdWVzdBobLnBtLnYxLlZlcmlmeURldmljZVJlc3BvbnNlElEKEFByb3h5U3luY0FjdGlvbnMSIS5wbS52MS5JbnRlcm5hbFN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USYwoWUHJveHlWYWxpZGF0ZUx1a3NUb2tlbhInLnBtLnYxLkludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZRJOCg9Qcm94eUdldEx1a3NLZXkSIC5wbS52MS5JbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0GhkucG0udjEuR2V0THVrc0tleVJlc3BvbnNlElQKEVByb3h5U3RvcmVMdWtzS2V5EiIucG0udjEuSW50ZXJuYWxTdG9yZUx1a3NLZXlSZXF1ZXN0GhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2USawoWUHJveHlTdG9yZUxwc1Bhc3N3b3JkcxInLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0GigucG0udjEuSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlEncKGlByb3h5VmFsaWRhdGVUZXJtaW5hbFRva2VuEisucG0udjEuSW50ZXJuYWxWYWxpZGF0ZVRlcm1pbmFsVG9rZW5SZXF1ZXN0GiwucG0udjEuSW50ZXJuYWxWYWxpZGF0ZVRlcm1pbmFsVG9rZW5SZXNwb25zZTKJAgoOR2F0ZXdheVNlcnZpY2USdAobTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zEikucG0udjEuTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVxdWVzdBoqLnBtLnYxLkxpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1Jlc3BvbnNlEoABCh9UZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uEi0ucG0udjEuVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlcXVlc3QaLi5wbS52MS5UZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVzcG9uc2VCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_agent]);
 
 /**
  * InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
@@ -201,6 +201,98 @@ export const InternalStoreLpsPasswordsResponseSchema: GenMessage<InternalStoreLp
   messageDesc(file_pm_v1_internal, 6);
 
 /**
+ * InternalValidateTerminalTokenRequest is sent by the gateway when a
+ * web client opens the WebSocket terminal endpoint with a session_id
+ * and bearer token. The control server looks the session up in the
+ * Valkey-backed token store, compares the SHA-256 of the supplied
+ * token against the stored hash, and returns the session metadata.
+ *
+ * @generated from message pm.v1.InternalValidateTerminalTokenRequest
+ */
+export type InternalValidateTerminalTokenRequest = Message<"pm.v1.InternalValidateTerminalTokenRequest"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * The plaintext bearer token the web client received from
+   * ControlService.StartTerminal.
+   * @gotags: validate:"required,min=1"
+   *
+   * @generated from field: string token = 2;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message pm.v1.InternalValidateTerminalTokenRequest.
+ * Use `create(InternalValidateTerminalTokenRequestSchema)` to create a new message.
+ */
+export const InternalValidateTerminalTokenRequestSchema: GenMessage<InternalValidateTerminalTokenRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 7);
+
+/**
+ * InternalValidateTerminalTokenResponse carries the session metadata
+ * the gateway needs to bridge the WebSocket connection to the matching
+ * agent. The user_id is included so the gateway can record it on the
+ * active session for the admin List path; the gateway never trusts the
+ * session_id for ownership decisions because it has no access to the
+ * JWT.
+ *
+ * @generated from message pm.v1.InternalValidateTerminalTokenResponse
+ */
+export type InternalValidateTerminalTokenResponse = Message<"pm.v1.InternalValidateTerminalTokenResponse"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string device_id = 2;
+   */
+  deviceId: string;
+
+  /**
+   * Matches the agent-side username constraint and the public
+   * TerminalStart bounds.
+   * @gotags: validate:"required,min=1,max=64"
+   *
+   * @generated from field: string tty_user = 3;
+   */
+  ttyUser: string;
+
+  /**
+   * Same window-size bounds as the public TerminalStart message
+   * (proto3 has no uint16; cap at 65535).
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
+   * @generated from field: uint32 cols = 4;
+   */
+  cols: number;
+
+  /**
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
+   * @generated from field: uint32 rows = 5;
+   */
+  rows: number;
+};
+
+/**
+ * Describes the message pm.v1.InternalValidateTerminalTokenResponse.
+ * Use `create(InternalValidateTerminalTokenResponseSchema)` to create a new message.
+ */
+export const InternalValidateTerminalTokenResponseSchema: GenMessage<InternalValidateTerminalTokenResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 8);
+
+/**
  * VerifyDeviceRequest is sent by the gateway to verify a device before
  * allowing it to connect. Contains the device_id from the mTLS certificate.
  *
@@ -218,7 +310,7 @@ export type VerifyDeviceRequest = Message<"pm.v1.VerifyDeviceRequest"> & {
  * Use `create(VerifyDeviceRequestSchema)` to create a new message.
  */
 export const VerifyDeviceRequestSchema: GenMessage<VerifyDeviceRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 7);
+  messageDesc(file_pm_v1_internal, 9);
 
 /**
  * VerifyDeviceResponse indicates whether the device is valid for connection.
@@ -233,7 +325,7 @@ export type VerifyDeviceResponse = Message<"pm.v1.VerifyDeviceResponse"> & {
  * Use `create(VerifyDeviceResponseSchema)` to create a new message.
  */
 export const VerifyDeviceResponseSchema: GenMessage<VerifyDeviceResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 8);
+  messageDesc(file_pm_v1_internal, 10);
 
 /**
  * GatewayTerminalSessionInfo is a single entry in a gateway's session
@@ -289,7 +381,7 @@ export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionIn
  * Use `create(GatewayTerminalSessionInfoSchema)` to create a new message.
  */
 export const GatewayTerminalSessionInfoSchema: GenMessage<GatewayTerminalSessionInfo> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 9);
+  messageDesc(file_pm_v1_internal, 11);
 
 /**
  * @generated from message pm.v1.ListGatewayTerminalSessionsRequest
@@ -302,7 +394,7 @@ export type ListGatewayTerminalSessionsRequest = Message<"pm.v1.ListGatewayTermi
  * Use `create(ListGatewayTerminalSessionsRequestSchema)` to create a new message.
  */
 export const ListGatewayTerminalSessionsRequestSchema: GenMessage<ListGatewayTerminalSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 10);
+  messageDesc(file_pm_v1_internal, 12);
 
 /**
  * @generated from message pm.v1.ListGatewayTerminalSessionsResponse
@@ -319,7 +411,7 @@ export type ListGatewayTerminalSessionsResponse = Message<"pm.v1.ListGatewayTerm
  * Use `create(ListGatewayTerminalSessionsResponseSchema)` to create a new message.
  */
 export const ListGatewayTerminalSessionsResponseSchema: GenMessage<ListGatewayTerminalSessionsResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 11);
+  messageDesc(file_pm_v1_internal, 13);
 
 /**
  * @generated from message pm.v1.TerminateGatewayTerminalSessionRequest
@@ -348,7 +440,7 @@ export type TerminateGatewayTerminalSessionRequest = Message<"pm.v1.TerminateGat
  * Use `create(TerminateGatewayTerminalSessionRequestSchema)` to create a new message.
  */
 export const TerminateGatewayTerminalSessionRequestSchema: GenMessage<TerminateGatewayTerminalSessionRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 12);
+  messageDesc(file_pm_v1_internal, 14);
 
 /**
  * @generated from message pm.v1.TerminateGatewayTerminalSessionResponse
@@ -369,7 +461,7 @@ export type TerminateGatewayTerminalSessionResponse = Message<"pm.v1.TerminateGa
  * Use `create(TerminateGatewayTerminalSessionResponseSchema)` to create a new message.
  */
 export const TerminateGatewayTerminalSessionResponseSchema: GenMessage<TerminateGatewayTerminalSessionResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 13);
+  messageDesc(file_pm_v1_internal, 15);
 
 /**
  * @generated from service pm.v1.InternalService
@@ -435,6 +527,26 @@ export const InternalService: GenService<{
     methodKind: "unary";
     input: typeof InternalStoreLpsPasswordsRequestSchema;
     output: typeof InternalStoreLpsPasswordsResponseSchema;
+  },
+  /**
+   * ProxyValidateTerminalToken validates a session token presented by a
+   * web client opening the gateway's WebSocket terminal endpoint, and
+   * returns the session metadata the gateway needs to bridge the
+   * connection (target device, TTY user, initial cols/rows).
+   *
+   * The token entry is reusable for the lifetime of the gateway
+   * session: a successful validation MUST NOT consume the entry,
+   * because the same gateway needs the metadata for the duration of
+   * the WebSocket connection. Revocation happens explicitly via
+   * ControlService.StopTerminal or the admin TerminateTerminalSession
+   * path — never as a side effect of validation.
+   *
+   * @generated from rpc pm.v1.InternalService.ProxyValidateTerminalToken
+   */
+  proxyValidateTerminalToken: {
+    methodKind: "unary";
+    input: typeof InternalValidateTerminalTokenRequestSchema;
+    output: typeof InternalValidateTerminalTokenResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pm_v1_internal, 0);
