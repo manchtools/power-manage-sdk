@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/agent.proto.
  */
 export const file_pm_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChFwbS92MS9hZ2VudC5wcm90bxIFcG0udjEitgQKDEFnZW50TWVzc2FnZRIKCgJpZBgBIAEoCRIdCgVoZWxsbxgKIAEoCzIMLnBtLnYxLkhlbGxvSAASJQoJaGVhcnRiZWF0GAsgASgLMhAucG0udjEuSGVhcnRiZWF0SAASLAoNYWN0aW9uX3Jlc3VsdBgUIAEoCzITLnBtLnYxLkFjdGlvblJlc3VsdEgAEioKDG91dHB1dF9jaHVuaxgVIAEoCzISLnBtLnYxLk91dHB1dENodW5rSAASLAoMcXVlcnlfcmVzdWx0GB4gASgLMhQucG0udjEuT1NRdWVyeVJlc3VsdEgAEisKCWludmVudG9yeRgfIAEoCzIWLnBtLnYxLkRldmljZUludmVudG9yeUgAEi4KDnNlY3VyaXR5X2FsZXJ0GCggASgLMhQucG0udjEuU2VjdXJpdHlBbGVydEgAEjAKDGdldF9sdWtzX2tleRgyIAEoCzIYLnBtLnYxLkdldEx1a3NLZXlSZXF1ZXN0SAASNAoOc3RvcmVfbHVrc19rZXkYMyABKAsyGi5wbS52MS5TdG9yZUx1a3NLZXlSZXF1ZXN0SAASSQodcmV2b2tlX2x1a3NfZGV2aWNlX2tleV9yZXN1bHQYNCABKAsyIC5wbS52MS5SZXZva2VMdWtzRGV2aWNlS2V5UmVzdWx0SAASMQoQbG9nX3F1ZXJ5X3Jlc3VsdBg8IAEoCzIVLnBtLnYxLkxvZ1F1ZXJ5UmVzdWx0SABCCQoHcGF5bG9hZCJsCgtPdXRwdXRDaHVuaxIUCgxleGVjdXRpb25faWQYASABKAkSJwoGc3RyZWFtGAIgASgOMhcucG0udjEuT3V0cHV0U3RyZWFtVHlwZRIMCgRkYXRhGAMgASgMEhAKCHNlcXVlbmNlGAQgASgDInYKBUhlbGxvEiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkEhUKDWFnZW50X3ZlcnNpb24YAiABKAkSEAoIaG9zdG5hbWUYAyABKAkSEgoKYXV0aF90b2tlbhgEIAEoCRIMCgRhcmNoGAUgASgJInkKCUhlYXJ0YmVhdBIpCgZ1cHRpbWUYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SEwoLY3B1X3BlcmNlbnQYAiABKAISFgoObWVtb3J5X3BlcmNlbnQYAyABKAISFAoMZGlza19wZXJjZW50GAQgASgCIqwBCg1TZWN1cml0eUFsZXJ0EiYKBHR5cGUYASABKA4yGC5wbS52MS5TZWN1cml0eUFsZXJ0VHlwZRIPCgdtZXNzYWdlGAIgASgJEjIKB2RldGFpbHMYAyADKAsyIS5wbS52MS5TZWN1cml0eUFsZXJ0LkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASK2AwoNU2VydmVyTWVzc2FnZRIKCgJpZBgBIAEoCRIhCgd3ZWxjb21lGAogASgLMg4ucG0udjEuV2VsY29tZUgAEicKBmFjdGlvbhgUIAEoCzIVLnBtLnYxLkFjdGlvbkRpc3BhdGNoSAASHwoFcXVlcnkYHiABKAsyDi5wbS52MS5PU1F1ZXJ5SAASNAoRcmVxdWVzdF9pbnZlbnRvcnkYHyABKAsyFy5wbS52MS5SZXF1ZXN0SW52ZW50b3J5SAASHQoFZXJyb3IYKCABKAsyDC5wbS52MS5FcnJvckgAEjEKDGdldF9sdWtzX2tleRgyIAEoCzIZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZUgAEjUKDnN0b3JlX2x1a3Nfa2V5GDMgASgLMhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2VIABI8ChZyZXZva2VfbHVrc19kZXZpY2Vfa2V5GDQgASgLMhoucG0udjEuUmV2b2tlTHVrc0RldmljZUtleUgAEiQKCWxvZ19xdWVyeRg8IAEoCzIPLnBtLnYxLkxvZ1F1ZXJ5SABCCQoHcGF5bG9hZCK3AQoHV2VsY29tZRIWCg5zZXJ2ZXJfdmVyc2lvbhgBIAEoCRI1ChJoZWFydGJlYXRfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SGAoQZGV2aWNlX2xvZ2luX3VybBgDIAEoCUoECAQQBUoECAUQBkoECAYQB1IUbGF0ZXN0X2FnZW50X3ZlcnNpb25SCnVwZGF0ZV91cmxSD3VwZGF0ZV9jaGVja3N1bSIvCg5BY3Rpb25EaXNwYXRjaBIdCgZhY3Rpb24YASABKAsyDS5wbS52MS5BY3Rpb24iJgoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIoMBCgdPU1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBXRhYmxlGAIgASgJEg8KB2NvbHVtbnMYAyADKAkSJgoFd2hlcmUYBCADKAsyFy5wbS52MS5PU1F1ZXJ5Q29uZGl0aW9uEg0KBWxpbWl0GAUgASgFEg8KB3Jhd19zcWwYBiABKAkiTwoQT1NRdWVyeUNvbmRpdGlvbhIOCgZjb2x1bW4YASABKAkSHAoCb3AYAiABKA4yEC5wbS52MS5PU1F1ZXJ5T3ASDQoFdmFsdWUYAyABKAkiYgoNT1NRdWVyeVJlc3VsdBIQCghxdWVyeV9pZBgBIAEoCRIPCgdzdWNjZXNzGAIgASgIEg0KBWVycm9yGAMgASgJEh8KBHJvd3MYBCADKAsyES5wbS52MS5PU1F1ZXJ5Um93ImQKCk9TUXVlcnlSb3cSKQoEZGF0YRgBIAMoCzIbLnBtLnYxLk9TUXVlcnlSb3cuRGF0YUVudHJ5GisKCURhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKD0RldmljZUludmVudG9yeRIlCgZ0YWJsZXMYASADKAsyFS5wbS52MS5JbnZlbnRvcnlUYWJsZSJFCg5JbnZlbnRvcnlUYWJsZRISCgp0YWJsZV9uYW1lGAEgASgJEh8KBHJvd3MYAiADKAsyES5wbS52MS5PU1F1ZXJ5Um93IhIKEFJlcXVlc3RJbnZlbnRvcnkiJgoRR2V0THVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJIigKEkdldEx1a3NLZXlSZXNwb25zZRISCgpwYXNzcGhyYXNlGAEgASgJImoKE1N0b3JlTHVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJEhMKC2RldmljZV9wYXRoGAIgASgJEhIKCnBhc3NwaHJhc2UYAyABKAkSFwoPcm90YXRpb25fcmVhc29uGAQgASgJIicKFFN0b3JlTHVrc0tleVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgiKAoTUmV2b2tlTHVrc0RldmljZUtleRIRCglhY3Rpb25faWQYASABKAkiTgoZUmV2b2tlTHVrc0RldmljZUtleVJlc3VsdBIRCglhY3Rpb25faWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCSI8ChhWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJIokBChlWYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgptaW5fbGVuZ3RoGAMgASgFEjAKCmNvbXBsZXhpdHkYBCABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkiOAoSU3luY0FjdGlvbnNSZXF1ZXN0EiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkIlQKE1N5bmNBY3Rpb25zUmVzcG9uc2USHgoHYWN0aW9ucxgBIAMoCzINLnBtLnYxLkFjdGlvbhIdChVzeW5jX2ludGVydmFsX21pbnV0ZXMYAiABKAUihwEKCExvZ1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBWxpbmVzGAIgASgFEgwKBHVuaXQYAyABKAkSDQoFc2luY2UYBCABKAkSDQoFdW50aWwYBSABKAkSEAoIcHJpb3JpdHkYBiABKAkSDAoEZ3JlcBgHIAEoCRIOCgZrZXJuZWwYCCABKAgiUAoOTG9nUXVlcnlSZXN1bHQSEAoIcXVlcnlfaWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCRIMCgRsb2dzGAQgASgJKnQKEE91dHB1dFN0cmVhbVR5cGUSIgoeT1VUUFVUX1NUUkVBTV9UWVBFX1VOU1BFQ0lGSUVEEAASHQoZT1VUUFVUX1NUUkVBTV9UWVBFX1NURE9VVBABEh0KGU9VVFBVVF9TVFJFQU1fVFlQRV9TVERFUlIQAirIAQoRU2VjdXJpdHlBbGVydFR5cGUSIwofU0VDVVJJVFlfQUxFUlRfVFlQRV9VTlNQRUNJRklFRBAAEjMKL1NFQ1VSSVRZX0FMRVJUX1RZUEVfU0VSVkVSX1JFQVNTSUdOTUVOVF9BVFRFTVBUEAESLAooU0VDVVJJVFlfQUxFUlRfVFlQRV9DUkVERU5USUFMX1RBTVBFUklORxACEisKJ1NFQ1VSSVRZX0FMRVJUX1RZUEVfSU5WQUxJRF9DRVJUSUZJQ0FURRADKswBCglPU1F1ZXJ5T3ASGwoXT1NfUVVFUllfT1BfVU5TUEVDSUZJRUQQABISCg5PU19RVUVSWV9PUF9FURABEhIKDk9TX1FVRVJZX09QX05FEAISEgoOT1NfUVVFUllfT1BfR1QQAxISCg5PU19RVUVSWV9PUF9MVBAEEhIKDk9TX1FVRVJZX09QX0dFEAUSEgoOT1NfUVVFUllfT1BfTEUQBhIUChBPU19RVUVSWV9PUF9MSUtFEAcSFAoQT1NfUVVFUllfT1BfR0xPQhAIMuUBCgxBZ2VudFNlcnZpY2USNwoGU3RyZWFtEhMucG0udjEuQWdlbnRNZXNzYWdlGhQucG0udjEuU2VydmVyTWVzc2FnZSgBMAESRAoLU3luY0FjdGlvbnMSGS5wbS52MS5TeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlElYKEVZhbGlkYXRlTHVrc1Rva2VuEh8ucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_duration, file_pm_v1_common, file_pm_v1_actions]);
+  fileDesc("ChFwbS92MS9hZ2VudC5wcm90bxIFcG0udjEipQUKDEFnZW50TWVzc2FnZRIKCgJpZBgBIAEoCRIdCgVoZWxsbxgKIAEoCzIMLnBtLnYxLkhlbGxvSAASJQoJaGVhcnRiZWF0GAsgASgLMhAucG0udjEuSGVhcnRiZWF0SAASLAoNYWN0aW9uX3Jlc3VsdBgUIAEoCzITLnBtLnYxLkFjdGlvblJlc3VsdEgAEioKDG91dHB1dF9jaHVuaxgVIAEoCzISLnBtLnYxLk91dHB1dENodW5rSAASLAoMcXVlcnlfcmVzdWx0GB4gASgLMhQucG0udjEuT1NRdWVyeVJlc3VsdEgAEisKCWludmVudG9yeRgfIAEoCzIWLnBtLnYxLkRldmljZUludmVudG9yeUgAEi4KDnNlY3VyaXR5X2FsZXJ0GCggASgLMhQucG0udjEuU2VjdXJpdHlBbGVydEgAEjAKDGdldF9sdWtzX2tleRgyIAEoCzIYLnBtLnYxLkdldEx1a3NLZXlSZXF1ZXN0SAASNAoOc3RvcmVfbHVrc19rZXkYMyABKAsyGi5wbS52MS5TdG9yZUx1a3NLZXlSZXF1ZXN0SAASSQodcmV2b2tlX2x1a3NfZGV2aWNlX2tleV9yZXN1bHQYNCABKAsyIC5wbS52MS5SZXZva2VMdWtzRGV2aWNlS2V5UmVzdWx0SAASMQoQbG9nX3F1ZXJ5X3Jlc3VsdBg8IAEoCzIVLnBtLnYxLkxvZ1F1ZXJ5UmVzdWx0SAASMAoPdGVybWluYWxfb3V0cHV0GEYgASgLMhUucG0udjEuVGVybWluYWxPdXRwdXRIABI7ChV0ZXJtaW5hbF9zdGF0ZV9jaGFuZ2UYRyABKAsyGi5wbS52MS5UZXJtaW5hbFN0YXRlQ2hhbmdlSABCCQoHcGF5bG9hZCJsCgtPdXRwdXRDaHVuaxIUCgxleGVjdXRpb25faWQYASABKAkSJwoGc3RyZWFtGAIgASgOMhcucG0udjEuT3V0cHV0U3RyZWFtVHlwZRIMCgRkYXRhGAMgASgMEhAKCHNlcXVlbmNlGAQgASgDInYKBUhlbGxvEiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkEhUKDWFnZW50X3ZlcnNpb24YAiABKAkSEAoIaG9zdG5hbWUYAyABKAkSEgoKYXV0aF90b2tlbhgEIAEoCRIMCgRhcmNoGAUgASgJInkKCUhlYXJ0YmVhdBIpCgZ1cHRpbWUYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SEwoLY3B1X3BlcmNlbnQYAiABKAISFgoObWVtb3J5X3BlcmNlbnQYAyABKAISFAoMZGlza19wZXJjZW50GAQgASgCIqwBCg1TZWN1cml0eUFsZXJ0EiYKBHR5cGUYASABKA4yGC5wbS52MS5TZWN1cml0eUFsZXJ0VHlwZRIPCgdtZXNzYWdlGAIgASgJEjIKB2RldGFpbHMYAyADKAsyIS5wbS52MS5TZWN1cml0eUFsZXJ0LkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASL2BAoNU2VydmVyTWVzc2FnZRIKCgJpZBgBIAEoCRIhCgd3ZWxjb21lGAogASgLMg4ucG0udjEuV2VsY29tZUgAEicKBmFjdGlvbhgUIAEoCzIVLnBtLnYxLkFjdGlvbkRpc3BhdGNoSAASHwoFcXVlcnkYHiABKAsyDi5wbS52MS5PU1F1ZXJ5SAASNAoRcmVxdWVzdF9pbnZlbnRvcnkYHyABKAsyFy5wbS52MS5SZXF1ZXN0SW52ZW50b3J5SAASHQoFZXJyb3IYKCABKAsyDC5wbS52MS5FcnJvckgAEjEKDGdldF9sdWtzX2tleRgyIAEoCzIZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZUgAEjUKDnN0b3JlX2x1a3Nfa2V5GDMgASgLMhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2VIABI8ChZyZXZva2VfbHVrc19kZXZpY2Vfa2V5GDQgASgLMhoucG0udjEuUmV2b2tlTHVrc0RldmljZUtleUgAEiQKCWxvZ19xdWVyeRg8IAEoCzIPLnBtLnYxLkxvZ1F1ZXJ5SAASLgoOdGVybWluYWxfc3RhcnQYRiABKAsyFC5wbS52MS5UZXJtaW5hbFN0YXJ0SAASLgoOdGVybWluYWxfaW5wdXQYRyABKAsyFC5wbS52MS5UZXJtaW5hbElucHV0SAASMAoPdGVybWluYWxfcmVzaXplGEggASgLMhUucG0udjEuVGVybWluYWxSZXNpemVIABIsCg10ZXJtaW5hbF9zdG9wGEkgASgLMhMucG0udjEuVGVybWluYWxTdG9wSABCCQoHcGF5bG9hZCK3AQoHV2VsY29tZRIWCg5zZXJ2ZXJfdmVyc2lvbhgBIAEoCRI1ChJoZWFydGJlYXRfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SGAoQZGV2aWNlX2xvZ2luX3VybBgDIAEoCUoECAQQBUoECAUQBkoECAYQB1IUbGF0ZXN0X2FnZW50X3ZlcnNpb25SCnVwZGF0ZV91cmxSD3VwZGF0ZV9jaGVja3N1bSIvCg5BY3Rpb25EaXNwYXRjaBIdCgZhY3Rpb24YASABKAsyDS5wbS52MS5BY3Rpb24iJgoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIoMBCgdPU1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBXRhYmxlGAIgASgJEg8KB2NvbHVtbnMYAyADKAkSJgoFd2hlcmUYBCADKAsyFy5wbS52MS5PU1F1ZXJ5Q29uZGl0aW9uEg0KBWxpbWl0GAUgASgFEg8KB3Jhd19zcWwYBiABKAkiTwoQT1NRdWVyeUNvbmRpdGlvbhIOCgZjb2x1bW4YASABKAkSHAoCb3AYAiABKA4yEC5wbS52MS5PU1F1ZXJ5T3ASDQoFdmFsdWUYAyABKAkiYgoNT1NRdWVyeVJlc3VsdBIQCghxdWVyeV9pZBgBIAEoCRIPCgdzdWNjZXNzGAIgASgIEg0KBWVycm9yGAMgASgJEh8KBHJvd3MYBCADKAsyES5wbS52MS5PU1F1ZXJ5Um93ImQKCk9TUXVlcnlSb3cSKQoEZGF0YRgBIAMoCzIbLnBtLnYxLk9TUXVlcnlSb3cuRGF0YUVudHJ5GisKCURhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKD0RldmljZUludmVudG9yeRIlCgZ0YWJsZXMYASADKAsyFS5wbS52MS5JbnZlbnRvcnlUYWJsZSJFCg5JbnZlbnRvcnlUYWJsZRISCgp0YWJsZV9uYW1lGAEgASgJEh8KBHJvd3MYAiADKAsyES5wbS52MS5PU1F1ZXJ5Um93IhIKEFJlcXVlc3RJbnZlbnRvcnkiJgoRR2V0THVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJIigKEkdldEx1a3NLZXlSZXNwb25zZRISCgpwYXNzcGhyYXNlGAEgASgJImoKE1N0b3JlTHVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJEhMKC2RldmljZV9wYXRoGAIgASgJEhIKCnBhc3NwaHJhc2UYAyABKAkSFwoPcm90YXRpb25fcmVhc29uGAQgASgJIicKFFN0b3JlTHVrc0tleVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgiKAoTUmV2b2tlTHVrc0RldmljZUtleRIRCglhY3Rpb25faWQYASABKAkiTgoZUmV2b2tlTHVrc0RldmljZUtleVJlc3VsdBIRCglhY3Rpb25faWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCSI8ChhWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJIokBChlWYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgptaW5fbGVuZ3RoGAMgASgFEjAKCmNvbXBsZXhpdHkYBCABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkiOAoSU3luY0FjdGlvbnNSZXF1ZXN0EiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkIlQKE1N5bmNBY3Rpb25zUmVzcG9uc2USHgoHYWN0aW9ucxgBIAMoCzINLnBtLnYxLkFjdGlvbhIdChVzeW5jX2ludGVydmFsX21pbnV0ZXMYAiABKAUihwEKCExvZ1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBWxpbmVzGAIgASgFEgwKBHVuaXQYAyABKAkSDQoFc2luY2UYBCABKAkSDQoFdW50aWwYBSABKAkSEAoIcHJpb3JpdHkYBiABKAkSDAoEZ3JlcBgHIAEoCRIOCgZrZXJuZWwYCCABKAgiUAoOTG9nUXVlcnlSZXN1bHQSEAoIcXVlcnlfaWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCRIMCgRsb2dzGAQgASgJIlEKDVRlcm1pbmFsU3RhcnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRIQCgh0dHlfdXNlchgCIAEoCRIMCgRjb2xzGAMgASgNEgwKBHJvd3MYBCABKA0iMQoNVGVybWluYWxJbnB1dBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGRhdGEYAiABKAwiQAoOVGVybWluYWxSZXNpemUSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRjb2xzGAIgASgNEgwKBHJvd3MYAyABKA0iIgoMVGVybWluYWxTdG9wEhIKCnNlc3Npb25faWQYASABKAkiMgoOVGVybWluYWxPdXRwdXQSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRkYXRhGAIgASgMIncKE1Rlcm1pbmFsU3RhdGVDaGFuZ2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIqCgVzdGF0ZRgCIAEoDjIbLnBtLnYxLlRlcm1pbmFsU2Vzc2lvblN0YXRlEhEKCWV4aXRfY29kZRgDIAEoBRINCgVlcnJvchgEIAEoCSp0ChBPdXRwdXRTdHJlYW1UeXBlEiIKHk9VVFBVVF9TVFJFQU1fVFlQRV9VTlNQRUNJRklFRBAAEh0KGU9VVFBVVF9TVFJFQU1fVFlQRV9TVERPVVQQARIdChlPVVRQVVRfU1RSRUFNX1RZUEVfU1RERVJSEAIqyAEKEVNlY3VyaXR5QWxlcnRUeXBlEiMKH1NFQ1VSSVRZX0FMRVJUX1RZUEVfVU5TUEVDSUZJRUQQABIzCi9TRUNVUklUWV9BTEVSVF9UWVBFX1NFUlZFUl9SRUFTU0lHTk1FTlRfQVRURU1QVBABEiwKKFNFQ1VSSVRZX0FMRVJUX1RZUEVfQ1JFREVOVElBTF9UQU1QRVJJTkcQAhIrCidTRUNVUklUWV9BTEVSVF9UWVBFX0lOVkFMSURfQ0VSVElGSUNBVEUQAyrMAQoJT1NRdWVyeU9wEhsKF09TX1FVRVJZX09QX1VOU1BFQ0lGSUVEEAASEgoOT1NfUVVFUllfT1BfRVEQARISCg5PU19RVUVSWV9PUF9ORRACEhIKDk9TX1FVRVJZX09QX0dUEAMSEgoOT1NfUVVFUllfT1BfTFQQBBISCg5PU19RVUVSWV9PUF9HRRAFEhIKDk9TX1FVRVJZX09QX0xFEAYSFAoQT1NfUVVFUllfT1BfTElLRRAHEhQKEE9TX1FVRVJZX09QX0dMT0IQCCqnAQoUVGVybWluYWxTZXNzaW9uU3RhdGUSJgoiVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9VTlNQRUNJRklFRBAAEiIKHlRFUk1JTkFMX1NFU1NJT05fU1RBVEVfU1RBUlRFRBABEiEKHVRFUk1JTkFMX1NFU1NJT05fU1RBVEVfRVhJVEVEEAISIAocVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9FUlJPUhADMuUBCgxBZ2VudFNlcnZpY2USNwoGU3RyZWFtEhMucG0udjEuQWdlbnRNZXNzYWdlGhQucG0udjEuU2VydmVyTWVzc2FnZSgBMAESRAoLU3luY0FjdGlvbnMSGS5wbS52MS5TeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlElYKEVZhbGlkYXRlTHVrc1Rva2VuEh8ucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_duration, file_pm_v1_common, file_pm_v1_actions]);
 
 /**
  * @generated from message pm.v1.AgentMessage
@@ -122,6 +122,23 @@ export type AgentMessage = Message<"pm.v1.AgentMessage"> & {
      */
     value: LogQueryResult;
     case: "logQueryResult";
+  } | {
+    /**
+     * Remote terminal (PTY) session messages
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.TerminalOutput terminal_output = 70;
+     */
+    value: TerminalOutput;
+    case: "terminalOutput";
+  } | {
+    /**
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.TerminalStateChange terminal_state_change = 71;
+     */
+    value: TerminalStateChange;
+    case: "terminalStateChange";
   } | { case: undefined; value?: undefined };
 };
 
@@ -385,6 +402,39 @@ export type ServerMessage = Message<"pm.v1.ServerMessage"> & {
      */
     value: LogQuery;
     case: "logQuery";
+  } | {
+    /**
+     * Remote terminal (PTY) session control
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.TerminalStart terminal_start = 70;
+     */
+    value: TerminalStart;
+    case: "terminalStart";
+  } | {
+    /**
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.TerminalInput terminal_input = 71;
+     */
+    value: TerminalInput;
+    case: "terminalInput";
+  } | {
+    /**
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.TerminalResize terminal_resize = 72;
+     */
+    value: TerminalResize;
+    case: "terminalResize";
+  } | {
+    /**
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.TerminalStop terminal_stop = 73;
+     */
+    value: TerminalStop;
+    case: "terminalStop";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1058,6 +1108,215 @@ export const LogQueryResultSchema: GenMessage<LogQueryResult> = /*@__PURE__*/
   messageDesc(file_pm_v1_agent, 27);
 
 /**
+ * Server -> Agent: open a PTY session as the given TTY user.
+ * The agent must verify that tty_user exists locally and is not disabled
+ * before allocating the PTY. The shell is activated for the duration of
+ * the session and reverted to nologin on disconnect.
+ *
+ * @generated from message pm.v1.TerminalStart
+ */
+export type TerminalStart = Message<"pm.v1.TerminalStart"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * The dedicated TTY username (e.g. "pm-tty-pdotterer"). The agent
+   * never uses the original Linux username for the shell.
+   * @gotags: validate:"required,min=1,max=64"
+   *
+   * @generated from field: string tty_user = 2;
+   */
+  ttyUser: string;
+
+  /**
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
+   * @generated from field: uint32 cols = 3;
+   */
+  cols: number;
+
+  /**
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
+   * @generated from field: uint32 rows = 4;
+   */
+  rows: number;
+};
+
+/**
+ * Describes the message pm.v1.TerminalStart.
+ * Use `create(TerminalStartSchema)` to create a new message.
+ */
+export const TerminalStartSchema: GenMessage<TerminalStart> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 28);
+
+/**
+ * Server -> Agent: stdin data for an active session.
+ *
+ * @generated from message pm.v1.TerminalInput
+ */
+export type TerminalInput = Message<"pm.v1.TerminalInput"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * @gotags: validate:"required,max=65536"
+   *
+   * @generated from field: bytes data = 2;
+   */
+  data: Uint8Array;
+};
+
+/**
+ * Describes the message pm.v1.TerminalInput.
+ * Use `create(TerminalInputSchema)` to create a new message.
+ */
+export const TerminalInputSchema: GenMessage<TerminalInput> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 29);
+
+/**
+ * Server -> Agent: window resize.
+ * The agent forwards the new size to the PTY via TIOCSWINSZ.
+ *
+ * @generated from message pm.v1.TerminalResize
+ */
+export type TerminalResize = Message<"pm.v1.TerminalResize"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
+   * @generated from field: uint32 cols = 2;
+   */
+  cols: number;
+
+  /**
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
+   * @generated from field: uint32 rows = 3;
+   */
+  rows: number;
+};
+
+/**
+ * Describes the message pm.v1.TerminalResize.
+ * Use `create(TerminalResizeSchema)` to create a new message.
+ */
+export const TerminalResizeSchema: GenMessage<TerminalResize> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 30);
+
+/**
+ * Server -> Agent: terminate an active session.
+ * The agent SIGTERMs the shell process group and reverts the user's
+ * shell to nologin.
+ *
+ * @generated from message pm.v1.TerminalStop
+ */
+export type TerminalStop = Message<"pm.v1.TerminalStop"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
+
+/**
+ * Describes the message pm.v1.TerminalStop.
+ * Use `create(TerminalStopSchema)` to create a new message.
+ */
+export const TerminalStopSchema: GenMessage<TerminalStop> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 31);
+
+/**
+ * Agent -> Server: stdout/stderr data from the PTY.
+ *
+ * @generated from message pm.v1.TerminalOutput
+ */
+export type TerminalOutput = Message<"pm.v1.TerminalOutput"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * @gotags: validate:"required,max=65536"
+   *
+   * @generated from field: bytes data = 2;
+   */
+  data: Uint8Array;
+};
+
+/**
+ * Describes the message pm.v1.TerminalOutput.
+ * Use `create(TerminalOutputSchema)` to create a new message.
+ */
+export const TerminalOutputSchema: GenMessage<TerminalOutput> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 32);
+
+/**
+ * Agent -> Server: session state transition.
+ * STARTED is sent immediately after the PTY is allocated and the shell
+ * has begun. EXITED is sent when the shell process exits cleanly, with
+ * exit_code populated. ERROR is sent for any failure that ends the
+ * session early, with error populated.
+ *
+ * @generated from message pm.v1.TerminalStateChange
+ */
+export type TerminalStateChange = Message<"pm.v1.TerminalStateChange"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * @gotags: validate:"required,ne=0"
+   *
+   * @generated from field: pm.v1.TerminalSessionState state = 2;
+   */
+  state: TerminalSessionState;
+
+  /**
+   * Set when state is EXITED.
+   *
+   * @generated from field: int32 exit_code = 3;
+   */
+  exitCode: number;
+
+  /**
+   * Set when state is ERROR.
+   * @gotags: validate:"omitempty,max=1024"
+   *
+   * @generated from field: string error = 4;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message pm.v1.TerminalStateChange.
+ * Use `create(TerminalStateChangeSchema)` to create a new message.
+ */
+export const TerminalStateChangeSchema: GenMessage<TerminalStateChange> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 33);
+
+/**
  * Output stream type for stdout/stderr differentiation
  *
  * @generated from enum pm.v1.OutputStreamType
@@ -1179,6 +1438,46 @@ export enum OSQueryOp {
  */
 export const OSQueryOpSchema: GenEnum<OSQueryOp> = /*@__PURE__*/
   enumDesc(file_pm_v1_agent, 2);
+
+/**
+ * Terminal session lifecycle states reported by the agent.
+ *
+ * @generated from enum pm.v1.TerminalSessionState
+ */
+export enum TerminalSessionState {
+  /**
+   * @generated from enum value: TERMINAL_SESSION_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * PTY allocated and the shell is running.
+   *
+   * @generated from enum value: TERMINAL_SESSION_STATE_STARTED = 1;
+   */
+  STARTED = 1,
+
+  /**
+   * Shell exited cleanly; exit_code is set.
+   *
+   * @generated from enum value: TERMINAL_SESSION_STATE_EXITED = 2;
+   */
+  EXITED = 2,
+
+  /**
+   * Session ended with an error (auth, missing TTY user, PTY alloc, etc.);
+   * error is populated.
+   *
+   * @generated from enum value: TERMINAL_SESSION_STATE_ERROR = 3;
+   */
+  ERROR = 3,
+}
+
+/**
+ * Describes the enum pm.v1.TerminalSessionState.
+ */
+export const TerminalSessionStateSchema: GenEnum<TerminalSessionState> = /*@__PURE__*/
+  enumDesc(file_pm_v1_agent, 3);
 
 /**
  * @generated from service pm.v1.AgentService

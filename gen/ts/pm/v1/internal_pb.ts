@@ -4,6 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { GetLuksKeyResponseSchema, StoreLuksKeyResponseSchema, SyncActionsResponseSchema, ValidateLuksTokenResponseSchema } from "./agent_pb";
 import { file_pm_v1_agent } from "./agent_pb";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/internal.proto.
  */
 export const file_pm_v1_internal: GenFile = /*@__PURE__*/
-  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZTKlBAoPSW50ZXJuYWxTZXJ2aWNlEkcKDFZlcmlmeURldmljZRIaLnBtLnYxLlZlcmlmeURldmljZVJlcXVlc3QaGy5wbS52MS5WZXJpZnlEZXZpY2VSZXNwb25zZRJRChBQcm94eVN5bmNBY3Rpb25zEiEucG0udjEuSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlEmMKFlByb3h5VmFsaWRhdGVMdWtzVG9rZW4SJy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlTHVrc1Rva2VuUmVxdWVzdBogLnBtLnYxLlZhbGlkYXRlTHVrc1Rva2VuUmVzcG9uc2USTgoPUHJveHlHZXRMdWtzS2V5EiAucG0udjEuSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBoZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZRJUChFQcm94eVN0b3JlTHVrc0tleRIiLnBtLnYxLkludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBobLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlEmsKFlByb3h5U3RvcmVMcHNQYXNzd29yZHMSJy5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBooLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_pm_v1_agent]);
+  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkihQEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSFwoPcm90YXRpb25fcmVhc29uGAUgASgJIl0KE0xwc1Bhc3N3b3JkUm90YXRpb24SEAoIdXNlcm5hbWUYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSEgoKcm90YXRlZF9hdBgDIAEoCRIOCgZyZWFzb24YBCABKAkidwogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSIoChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIWChRWZXJpZnlEZXZpY2VSZXNwb25zZSLMAQoaR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbkluZm8SEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEhEKCWRldmljZV9pZBgDIAEoCRIQCgh0dHlfdXNlchgEIAEoCRIuCgpzdGFydGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChBsYXN0X2FjdGl2aXR5X2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIkCiJMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0IloKI0xpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1Jlc3BvbnNlEjMKCHNlc3Npb25zGAEgAygLMiEucG0udjEuR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbkluZm8iTAomVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkiOAonVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlc3BvbnNlEg0KBWZvdW5kGAEgASgIMqUECg9JbnRlcm5hbFNlcnZpY2USRwoMVmVyaWZ5RGV2aWNlEhoucG0udjEuVmVyaWZ5RGV2aWNlUmVxdWVzdBobLnBtLnYxLlZlcmlmeURldmljZVJlc3BvbnNlElEKEFByb3h5U3luY0FjdGlvbnMSIS5wbS52MS5JbnRlcm5hbFN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USYwoWUHJveHlWYWxpZGF0ZUx1a3NUb2tlbhInLnBtLnYxLkludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZRJOCg9Qcm94eUdldEx1a3NLZXkSIC5wbS52MS5JbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0GhkucG0udjEuR2V0THVrc0tleVJlc3BvbnNlElQKEVByb3h5U3RvcmVMdWtzS2V5EiIucG0udjEuSW50ZXJuYWxTdG9yZUx1a3NLZXlSZXF1ZXN0GhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2USawoWUHJveHlTdG9yZUxwc1Bhc3N3b3JkcxInLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0GigucG0udjEuSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlMokCCg5HYXRld2F5U2VydmljZRJ0ChtMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnMSKS5wbS52MS5MaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0GioucG0udjEuTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVzcG9uc2USgAEKH1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb24SLS5wbS52MS5UZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVxdWVzdBouLnBtLnYxLlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_agent]);
 
 /**
  * InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
@@ -234,6 +236,137 @@ export const VerifyDeviceResponseSchema: GenMessage<VerifyDeviceResponse> = /*@_
   messageDesc(file_pm_v1_internal, 8);
 
 /**
+ * GatewayTerminalSessionInfo is a single entry in a gateway's session
+ * snapshot. The control server enriches it with user/device metadata
+ * from its own database before returning the merged result to clients.
+ *
+ * @generated from message pm.v1.GatewayTerminalSessionInfo
+ */
+export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionInfo"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * ID of the Power Manage user that opened the session.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId: string;
+
+  /**
+   * Target device ID (the gateway already knows this from the active
+   * agent connection).
+   *
+   * @generated from field: string device_id = 3;
+   */
+  deviceId: string;
+
+  /**
+   * The dedicated TTY user the agent spawned the shell as.
+   *
+   * @generated from field: string tty_user = 4;
+   */
+  ttyUser: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp started_at = 5;
+   */
+  startedAt?: Timestamp;
+
+  /**
+   * Last activity (any input or output traffic) — used by the gateway's
+   * idle-timeout enforcement and surfaced in the admin view.
+   *
+   * @generated from field: google.protobuf.Timestamp last_activity_at = 6;
+   */
+  lastActivityAt?: Timestamp;
+};
+
+/**
+ * Describes the message pm.v1.GatewayTerminalSessionInfo.
+ * Use `create(GatewayTerminalSessionInfoSchema)` to create a new message.
+ */
+export const GatewayTerminalSessionInfoSchema: GenMessage<GatewayTerminalSessionInfo> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 9);
+
+/**
+ * @generated from message pm.v1.ListGatewayTerminalSessionsRequest
+ */
+export type ListGatewayTerminalSessionsRequest = Message<"pm.v1.ListGatewayTerminalSessionsRequest"> & {
+};
+
+/**
+ * Describes the message pm.v1.ListGatewayTerminalSessionsRequest.
+ * Use `create(ListGatewayTerminalSessionsRequestSchema)` to create a new message.
+ */
+export const ListGatewayTerminalSessionsRequestSchema: GenMessage<ListGatewayTerminalSessionsRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 10);
+
+/**
+ * @generated from message pm.v1.ListGatewayTerminalSessionsResponse
+ */
+export type ListGatewayTerminalSessionsResponse = Message<"pm.v1.ListGatewayTerminalSessionsResponse"> & {
+  /**
+   * @generated from field: repeated pm.v1.GatewayTerminalSessionInfo sessions = 1;
+   */
+  sessions: GatewayTerminalSessionInfo[];
+};
+
+/**
+ * Describes the message pm.v1.ListGatewayTerminalSessionsResponse.
+ * Use `create(ListGatewayTerminalSessionsResponseSchema)` to create a new message.
+ */
+export const ListGatewayTerminalSessionsResponseSchema: GenMessage<ListGatewayTerminalSessionsResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 11);
+
+/**
+ * @generated from message pm.v1.TerminateGatewayTerminalSessionRequest
+ */
+export type TerminateGatewayTerminalSessionRequest = Message<"pm.v1.TerminateGatewayTerminalSessionRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * Optional reason propagated to the agent and recorded in the audit log.
+   *
+   * @generated from field: string reason = 2;
+   */
+  reason: string;
+};
+
+/**
+ * Describes the message pm.v1.TerminateGatewayTerminalSessionRequest.
+ * Use `create(TerminateGatewayTerminalSessionRequestSchema)` to create a new message.
+ */
+export const TerminateGatewayTerminalSessionRequestSchema: GenMessage<TerminateGatewayTerminalSessionRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 12);
+
+/**
+ * @generated from message pm.v1.TerminateGatewayTerminalSessionResponse
+ */
+export type TerminateGatewayTerminalSessionResponse = Message<"pm.v1.TerminateGatewayTerminalSessionResponse"> & {
+  /**
+   * True if a session with the given id existed on this gateway and was
+   * terminated. False is not an error: the session may have lived on a
+   * different gateway or already exited naturally.
+   *
+   * @generated from field: bool found = 1;
+   */
+  found: boolean;
+};
+
+/**
+ * Describes the message pm.v1.TerminateGatewayTerminalSessionResponse.
+ * Use `create(TerminateGatewayTerminalSessionResponseSchema)` to create a new message.
+ */
+export const TerminateGatewayTerminalSessionResponseSchema: GenMessage<TerminateGatewayTerminalSessionResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 13);
+
+/**
  * @generated from service pm.v1.InternalService
  */
 export const InternalService: GenService<{
@@ -300,4 +433,38 @@ export const InternalService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pm_v1_internal, 0);
+
+/**
+ * @generated from service pm.v1.GatewayService
+ */
+export const GatewayService: GenService<{
+  /**
+   * ListGatewayTerminalSessions returns the gateway's snapshot of
+   * currently-active terminal sessions. The control server fans this
+   * out to every known gateway and merges the results to power
+   * ControlService.ListActiveTerminalSessions.
+   *
+   * @generated from rpc pm.v1.GatewayService.ListGatewayTerminalSessions
+   */
+  listGatewayTerminalSessions: {
+    methodKind: "unary";
+    input: typeof ListGatewayTerminalSessionsRequestSchema;
+    output: typeof ListGatewayTerminalSessionsResponseSchema;
+  },
+  /**
+   * TerminateGatewayTerminalSession kills a session on this gateway.
+   * The control server routes ControlService.TerminateTerminalSession
+   * to whichever gateway owns the session_id (looked up via the prior
+   * List call or via session affinity). No-op + ok if the session
+   * is not on this gateway.
+   *
+   * @generated from rpc pm.v1.GatewayService.TerminateGatewayTerminalSession
+   */
+  terminateGatewayTerminalSession: {
+    methodKind: "unary";
+    input: typeof TerminateGatewayTerminalSessionRequestSchema;
+    output: typeof TerminateGatewayTerminalSessionResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_pm_v1_internal, 1);
 
