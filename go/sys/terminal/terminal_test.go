@@ -125,15 +125,23 @@ func TestStart_ShellNotExecutable(t *testing.T) {
 	}
 }
 
-// pickShell returns a usable shell on the current system or skips the test.
+// pickShell returns a usable shell from a fixed list of well-known
+// locations or skips the test. A candidate is "usable" only if it
+// exists, is not a directory, and has at least one execute bit set —
+// the same constraints Start now enforces.
 func pickShell(t *testing.T) string {
 	t.Helper()
 	for _, candidate := range []string{"/bin/bash", "/bin/sh", "/usr/bin/bash"} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			return candidate
+		info, err := os.Stat(candidate)
+		if err != nil || info.IsDir() {
+			continue
 		}
+		if info.Mode().Perm()&0o111 == 0 {
+			continue
+		}
+		return candidate
 	}
-	t.Skip("no usable shell found in PATH")
+	t.Skip("no usable shell found in fixed locations (/bin/bash, /bin/sh, /usr/bin/bash)")
 	return ""
 }
 
@@ -166,7 +174,10 @@ func TestSession_EchoAndExit(t *testing.T) {
 	}
 
 	// Wait for the shell to exit cleanly.
-	code, _ := s.Wait()
+	code, err := s.Wait()
+	if err != nil {
+		t.Fatalf("wait failed: %v", err)
+	}
 	if code != 0 {
 		t.Errorf("expected exit code 0, got %d", code)
 	}
