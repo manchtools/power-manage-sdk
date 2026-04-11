@@ -70,7 +70,7 @@ func (p *Pacman) Install(packages ...string) (*CommandResult, error) {
 	}
 	// -S: sync, --noconfirm: non-interactive, --needed: don't reinstall if up to date
 	args := append([]string{"-S", "--noconfirm", "--needed"}, packages...)
-	return p.run(args...)
+	return p.run(p.ctx, args...)
 }
 
 // InstallVersion installs a package with specific version options.
@@ -91,7 +91,7 @@ func (p *Pacman) InstallVersion(name string, opts InstallOptions) (*CommandResul
 	}
 	args = append(args, pkgSpec)
 
-	return p.run(args...)
+	return p.run(p.ctx, args...)
 }
 
 // Remove removes packages.
@@ -101,7 +101,7 @@ func (p *Pacman) Remove(packages ...string) (*CommandResult, error) {
 	}
 	// -R: remove, --noconfirm: non-interactive
 	args := append([]string{"-R", "--noconfirm"}, packages...)
-	return p.run(args...)
+	return p.run(p.ctx, args...)
 }
 
 // Purge removes packages including configuration files.
@@ -111,24 +111,24 @@ func (p *Pacman) Purge(packages ...string) (*CommandResult, error) {
 	}
 	// -Rns: remove with dependencies and config files
 	args := append([]string{"-Rns", "--noconfirm"}, packages...)
-	return p.run(args...)
+	return p.run(p.ctx, args...)
 }
 
 // Update updates the package database.
 func (p *Pacman) Update() (*CommandResult, error) {
 	// -Sy: sync database
-	return p.run("-Sy", "--noconfirm")
+	return p.run(p.ctx, "-Sy", "--noconfirm")
 }
 
 // Upgrade upgrades packages.
 func (p *Pacman) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		// -Syu: sync, refresh, upgrade all
-		return p.run("-Syu", "--noconfirm")
+		return p.run(p.ctx, "-Syu", "--noconfirm")
 	}
 	// Upgrade specific packages
 	args := append([]string{"-S", "--noconfirm"}, packages...)
-	return p.run(args...)
+	return p.run(p.ctx, args...)
 }
 
 // Search searches for packages.
@@ -512,15 +512,15 @@ func (p *Pacman) updateIgnorePkg(confContent string, ignoredPkgs []string) (*Com
 	return p.runWithStdin("tee", "/etc/pacman.conf", newConf.String())
 }
 
-func (p *Pacman) run(args ...string) (*CommandResult, error) {
+func (p *Pacman) run(ctx context.Context, args ...string) (*CommandResult, error) {
 	start := time.Now()
 
 	var c *exec.Cmd
 	if p.useSudo {
 		sudoArgs := append([]string{"-n", "pacman"}, args...)
-		c = exec.CommandContext(p.ctx, "sudo", sudoArgs...)
+		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
 	} else {
-		c = exec.CommandContext(p.ctx, "pacman", args...)
+		c = exec.CommandContext(ctx, "pacman", args...)
 	}
 
 	// Force English locale for reliable output parsing.
