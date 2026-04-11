@@ -10,9 +10,8 @@ import (
 
 // Repair attempts to fix common package manager issues.
 //
-// NOTE: The ctx parameter is accepted for API consistency but the underlying
-// run() method uses the manager's stored context (from NewXxxWithContext).
-// For proper context propagation, construct the manager with the desired context.
+// The ctx parameter is propagated through to the underlying subprocess
+// invocations, so deadlines and cancellations from the caller are honored.
 
 // Repair for Apt: removes stale lock files, runs dpkg --configure -a,
 // apt --fix-broken install -y, and apt update.
@@ -29,17 +28,17 @@ func (a *Apt) Repair(ctx context.Context) error {
 	}
 
 	// dpkg --configure -a
-	if result, err := a.run("dpkg", "--configure", "-a"); err != nil {
+	if result, err := a.run(ctx, "dpkg", "--configure", "-a"); err != nil {
 		slog.Warn("dpkg --configure -a failed", "error", err, "stderr", result.Stderr)
 	}
 
 	// apt --fix-broken install -y
-	if result, err := a.FixBroken(); err != nil {
+	if result, err := a.fixBroken(ctx); err != nil {
 		slog.Warn("apt --fix-broken install failed", "error", err, "stderr", result.Stderr)
 	}
 
 	// apt update
-	if result, err := a.run("apt", "update"); err != nil {
+	if result, err := a.run(ctx, "apt", "update"); err != nil {
 		return fmt.Errorf("apt update failed: %s", result.Stderr)
 	}
 
@@ -49,12 +48,12 @@ func (a *Apt) Repair(ctx context.Context) error {
 // Repair for Dnf: runs dnf history redo last, dnf remove --duplicates, rpm --verifydb.
 func (d *Dnf) Repair(ctx context.Context) error {
 	// dnf -y history redo last
-	if result, err := d.run("history", "redo", "last", "-y"); err != nil {
+	if result, err := d.run(ctx, "history", "redo", "last", "-y"); err != nil {
 		slog.Warn("dnf history redo last failed", "error", err, "stderr", result.Stderr)
 	}
 
 	// dnf -y remove --duplicates
-	if result, err := d.run("remove", "--duplicates", "-y"); err != nil {
+	if result, err := d.run(ctx, "remove", "--duplicates", "-y"); err != nil {
 		slog.Warn("dnf remove --duplicates failed", "error", err, "stderr", result.Stderr)
 	}
 
@@ -74,7 +73,7 @@ func (p *Pacman) Repair(ctx context.Context) error {
 	removeStaleLock("/var/lib/pacman/db.lck")
 
 	// pacman -Syy --noconfirm (force refresh all databases)
-	if result, err := p.run("-Syy", "--noconfirm"); err != nil {
+	if result, err := p.run(ctx, "-Syy", "--noconfirm"); err != nil {
 		return fmt.Errorf("pacman -Syy failed: %s", result.Stderr)
 	}
 
@@ -87,7 +86,7 @@ func (z *Zypper) Repair(ctx context.Context) error {
 	removeStaleLock("/run/zypp.pid")
 
 	// zypper --non-interactive refresh
-	if result, err := z.run("--non-interactive", "refresh"); err != nil {
+	if result, err := z.run(ctx, "--non-interactive", "refresh"); err != nil {
 		return fmt.Errorf("zypper refresh failed: %s", result.Stderr)
 	}
 
@@ -102,7 +101,7 @@ func (f *Flatpak) Repair(ctx context.Context) error {
 	} else {
 		args = append(args, "--user")
 	}
-	if result, err := f.run(args...); err != nil {
+	if result, err := f.run(ctx, args...); err != nil {
 		return fmt.Errorf("flatpak repair failed: %s", result.Stderr)
 	}
 

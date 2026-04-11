@@ -61,7 +61,7 @@ func (a *Apt) Install(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"install", "-y", "--fix-broken"}, packages...)
-	return a.run("apt", args...)
+	return a.run(a.ctx, "apt", args...)
 }
 
 // InstallVersion installs a package with specific version options.
@@ -78,7 +78,7 @@ func (a *Apt) InstallVersion(name string, opts InstallOptions) (*CommandResult, 
 	}
 	args = append(args, pkgSpec)
 
-	return a.run("apt", args...)
+	return a.run(a.ctx, "apt", args...)
 }
 
 // Remove removes packages.
@@ -87,7 +87,7 @@ func (a *Apt) Remove(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"remove", "-y"}, packages...)
-	return a.run("apt", args...)
+	return a.run(a.ctx, "apt", args...)
 }
 
 // Purge removes packages including configuration files.
@@ -96,12 +96,12 @@ func (a *Apt) Purge(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"purge", "-y"}, packages...)
-	return a.run("apt", args...)
+	return a.run(a.ctx, "apt", args...)
 }
 
 // Update updates the package database.
 func (a *Apt) Update() (*CommandResult, error) {
-	return a.run("apt", "update")
+	return a.run(a.ctx, "apt", "update")
 }
 
 // dpkgConfOptions are passed to apt commands that may trigger dpkg config file
@@ -118,28 +118,33 @@ var dpkgConfOptions = []string{
 func (a *Apt) Upgrade(packages ...string) (*CommandResult, error) {
 	if len(packages) == 0 {
 		args := append([]string{"upgrade", "-y"}, dpkgConfOptions...)
-		return a.run("apt", args...)
+		return a.run(a.ctx, "apt", args...)
 	}
 	args := append([]string{"install", "-y", "--only-upgrade"}, dpkgConfOptions...)
 	args = append(args, packages...)
-	return a.run("apt", args...)
+	return a.run(a.ctx, "apt", args...)
 }
 
 // DistUpgrade runs apt dist-upgrade -y for packages with held-back dependencies.
 func (a *Apt) DistUpgrade() (*CommandResult, error) {
 	args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
-	return a.run("apt", args...)
+	return a.run(a.ctx, "apt", args...)
 }
 
 // FixBroken runs apt --fix-broken install -y to repair broken dependencies.
 func (a *Apt) FixBroken() (*CommandResult, error) {
+	return a.fixBroken(a.ctx)
+}
+
+// fixBroken is the context-aware variant used internally by Repair.
+func (a *Apt) fixBroken(ctx context.Context) (*CommandResult, error) {
 	args := append([]string{"--fix-broken", "install", "-y"}, dpkgConfOptions...)
-	return a.run("apt", args...)
+	return a.run(ctx, "apt", args...)
 }
 
 // Autoremove runs apt autoremove -y to remove unused packages.
 func (a *Apt) Autoremove() (*CommandResult, error) {
-	return a.run("apt", "autoremove", "-y")
+	return a.run(a.ctx, "apt", "autoremove", "-y")
 }
 
 // Search searches for packages.
@@ -349,7 +354,7 @@ func (a *Apt) Pin(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"hold"}, packages...)
-	return a.run("apt-mark", args...)
+	return a.run(a.ctx, "apt-mark", args...)
 }
 
 // Unpin allows a package to be upgraded again (apt-mark unhold).
@@ -358,7 +363,7 @@ func (a *Apt) Unpin(packages ...string) (*CommandResult, error) {
 		return &CommandResult{Success: true}, nil
 	}
 	args := append([]string{"unhold"}, packages...)
-	return a.run("apt-mark", args...)
+	return a.run(a.ctx, "apt-mark", args...)
 }
 
 // ListPinned lists all pinned (held) packages.
@@ -430,7 +435,7 @@ func (a *Apt) hasApt() bool {
 	return a.getAptCmd() == "apt"
 }
 
-func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
+func (a *Apt) run(ctx context.Context, cmd string, args ...string) (*CommandResult, error) {
 	start := time.Now()
 
 	// Use preferred apt command for apt/apt-get operations
@@ -442,9 +447,9 @@ func (a *Apt) run(cmd string, args ...string) (*CommandResult, error) {
 	if a.useSudo {
 		// Prepend sudo -n (non-interactive) to avoid password prompts
 		sudoArgs := append([]string{"-n", cmd}, args...)
-		c = exec.CommandContext(a.ctx, "sudo", sudoArgs...)
+		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
 	} else {
-		c = exec.CommandContext(a.ctx, cmd, args...)
+		c = exec.CommandContext(ctx, cmd, args...)
 	}
 
 	// Prevent debconf from trying interactive frontends when there is no terminal.
