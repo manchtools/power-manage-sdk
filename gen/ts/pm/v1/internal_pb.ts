@@ -246,26 +246,40 @@ export const InternalValidateTerminalTokenRequestSchema: GenMessage<InternalVali
  */
 export type InternalValidateTerminalTokenResponse = Message<"pm.v1.InternalValidateTerminalTokenResponse"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string user_id = 1;
    */
   userId: string;
 
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 2;
    */
   deviceId: string;
 
   /**
+   * Matches the agent-side username constraint and the public
+   * TerminalStart bounds.
+   * @gotags: validate:"required,min=1,max=64"
+   *
    * @generated from field: string tty_user = 3;
    */
   ttyUser: string;
 
   /**
+   * Same window-size bounds as the public TerminalStart message
+   * (proto3 has no uint16; cap at 65535).
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
    * @generated from field: uint32 cols = 4;
    */
   cols: number;
 
   /**
+   * @gotags: validate:"required,gt=0,lte=65535"
+   *
    * @generated from field: uint32 rows = 5;
    */
   rows: number;
@@ -518,12 +532,14 @@ export const InternalService: GenService<{
    * ProxyValidateTerminalToken validates a session token presented by a
    * web client opening the gateway's WebSocket terminal endpoint, and
    * returns the session metadata the gateway needs to bridge the
-   * connection (target device, TTY user, initial cols/rows). The token
-   * is single-use: a successful validation MUST NOT consume the entry,
-   * because the same gateway uses the metadata across the lifetime of
-   * the session. Revocation happens explicitly via
+   * connection (target device, TTY user, initial cols/rows).
+   *
+   * The token entry is reusable for the lifetime of the gateway
+   * session: a successful validation MUST NOT consume the entry,
+   * because the same gateway needs the metadata for the duration of
+   * the WebSocket connection. Revocation happens explicitly via
    * ControlService.StopTerminal or the admin TerminateTerminalSession
-   * path.
+   * path — never as a side effect of validation.
    *
    * @generated from rpc pm.v1.InternalService.ProxyValidateTerminalToken
    */

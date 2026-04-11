@@ -486,12 +486,21 @@ func (x *InternalValidateTerminalTokenRequest) GetToken() string {
 // session_id for ownership decisions because it has no access to the
 // JWT.
 type InternalValidateTerminalTokenResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DeviceId      string                 `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	TtyUser       string                 `protobuf:"bytes,3,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty"`
-	Cols          uint32                 `protobuf:"varint,4,opt,name=cols,proto3" json:"cols,omitempty"`
-	Rows          uint32                 `protobuf:"varint,5,opt,name=rows,proto3" json:"rows,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// Matches the agent-side username constraint and the public
+	// TerminalStart bounds.
+	// @gotags: validate:"required,min=1,max=64"
+	TtyUser string `protobuf:"bytes,3,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty" validate:"required,min=1,max=64"`
+	// Same window-size bounds as the public TerminalStart message
+	// (proto3 has no uint16; cap at 65535).
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Cols uint32 `protobuf:"varint,4,opt,name=cols,proto3" json:"cols,omitempty" validate:"required,gt=0,lte=65535"`
+	// @gotags: validate:"required,gt=0,lte=65535"
+	Rows          uint32 `protobuf:"varint,5,opt,name=rows,proto3" json:"rows,omitempty" validate:"required,gt=0,lte=65535"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

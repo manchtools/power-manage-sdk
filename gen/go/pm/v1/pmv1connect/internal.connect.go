@@ -82,12 +82,14 @@ type InternalServiceClient interface {
 	// ProxyValidateTerminalToken validates a session token presented by a
 	// web client opening the gateway's WebSocket terminal endpoint, and
 	// returns the session metadata the gateway needs to bridge the
-	// connection (target device, TTY user, initial cols/rows). The token
-	// is single-use: a successful validation MUST NOT consume the entry,
-	// because the same gateway uses the metadata across the lifetime of
-	// the session. Revocation happens explicitly via
+	// connection (target device, TTY user, initial cols/rows).
+	//
+	// The token entry is reusable for the lifetime of the gateway
+	// session: a successful validation MUST NOT consume the entry,
+	// because the same gateway needs the metadata for the duration of
+	// the WebSocket connection. Revocation happens explicitly via
 	// ControlService.StopTerminal or the admin TerminateTerminalSession
-	// path.
+	// path — never as a side effect of validation.
 	ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error)
 }
 
@@ -211,12 +213,14 @@ type InternalServiceHandler interface {
 	// ProxyValidateTerminalToken validates a session token presented by a
 	// web client opening the gateway's WebSocket terminal endpoint, and
 	// returns the session metadata the gateway needs to bridge the
-	// connection (target device, TTY user, initial cols/rows). The token
-	// is single-use: a successful validation MUST NOT consume the entry,
-	// because the same gateway uses the metadata across the lifetime of
-	// the session. Revocation happens explicitly via
+	// connection (target device, TTY user, initial cols/rows).
+	//
+	// The token entry is reusable for the lifetime of the gateway
+	// session: a successful validation MUST NOT consume the entry,
+	// because the same gateway needs the metadata for the duration of
+	// the WebSocket connection. Revocation happens explicitly via
 	// ControlService.StopTerminal or the admin TerminateTerminalSession
-	// path.
+	// path — never as a side effect of validation.
 	ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error)
 }
 
