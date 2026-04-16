@@ -111,40 +111,39 @@ func IsValidName(username string) bool {
 
 // Create creates a new user account with the given options.
 // Extra args are passed before the username (e.g., "-m", "-s", "/bin/bash").
-func Create(ctx context.Context, username string, args ...string) error {
+// Returns the command result (stdout/stderr/exit code) so callers can
+// surface useradd's stderr — important context like "user 'foo' already
+// exists" lives there. The Result is non-nil on most failure paths too.
+func Create(ctx context.Context, username string, args ...string) (*exec.Result, error) {
 	fullArgs := append(args, username)
-	_, err := exec.Sudo(ctx, "useradd", fullArgs...)
-	return err
+	return exec.Sudo(ctx, "useradd", fullArgs...)
 }
 
 // Modify modifies an existing user account.
 // Extra args are passed before the username (e.g., "-s", "/bin/zsh").
-func Modify(ctx context.Context, username string, args ...string) error {
+// Returns the command result so callers can surface usermod's stderr.
+func Modify(ctx context.Context, username string, args ...string) (*exec.Result, error) {
 	fullArgs := append(args, username)
-	_, err := exec.Sudo(ctx, "usermod", fullArgs...)
-	return err
+	return exec.Sudo(ctx, "usermod", fullArgs...)
 }
 
 // Delete removes a user account. If removeHome is true, also removes the home directory.
-func Delete(ctx context.Context, username string, removeHome bool) error {
+// Returns the command result so callers can surface userdel's stderr.
+func Delete(ctx context.Context, username string, removeHome bool) (*exec.Result, error) {
 	if removeHome {
-		_, err := exec.Sudo(ctx, "userdel", "-r", username)
-		return err
+		return exec.Sudo(ctx, "userdel", "-r", username)
 	}
-	_, err := exec.Sudo(ctx, "userdel", username)
-	return err
+	return exec.Sudo(ctx, "userdel", username)
 }
 
 // Lock locks a user account (usermod -L).
-func Lock(ctx context.Context, username string) error {
-	_, err := exec.Sudo(ctx, "usermod", "-L", username)
-	return err
+func Lock(ctx context.Context, username string) (*exec.Result, error) {
+	return exec.Sudo(ctx, "usermod", "-L", username)
 }
 
 // Unlock unlocks a user account (usermod -U).
-func Unlock(ctx context.Context, username string) error {
-	_, err := exec.Sudo(ctx, "usermod", "-U", username)
-	return err
+func Unlock(ctx context.Context, username string) (*exec.Result, error) {
+	return exec.Sudo(ctx, "usermod", "-U", username)
 }
 
 // =============================================================================
@@ -189,15 +188,13 @@ func SupplementaryGroups(username string) ([]string, error) {
 // =============================================================================
 
 // SetPassword sets a user's password using chpasswd.
-func SetPassword(ctx context.Context, username, password string) error {
-	_, err := exec.SudoWithStdin(ctx, strings.NewReader(fmt.Sprintf("%s:%s", username, password)), "chpasswd")
-	return err
+func SetPassword(ctx context.Context, username, password string) (*exec.Result, error) {
+	return exec.SudoWithStdin(ctx, strings.NewReader(fmt.Sprintf("%s:%s", username, password)), "chpasswd")
 }
 
 // ExpirePassword forces a user to change their password on next login.
-func ExpirePassword(ctx context.Context, username string) error {
-	_, err := exec.Sudo(ctx, "chage", "-d", "0", username)
-	return err
+func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) {
+	return exec.Sudo(ctx, "chage", "-d", "0", username)
 }
 
 // =============================================================================
@@ -205,11 +202,11 @@ func ExpirePassword(ctx context.Context, username string) error {
 // =============================================================================
 
 // ChownRecursive changes ownership of a path and all its contents.
-func ChownRecursive(ctx context.Context, path, owner, group string) error {
+// Returns nil result with nil error when owner+group are both empty (no-op).
+func ChownRecursive(ctx context.Context, path, owner, group string) (*exec.Result, error) {
 	ownership := fs.Ownership(owner, group)
 	if ownership == "" {
-		return nil
+		return nil, nil
 	}
-	_, err := exec.Sudo(ctx, "chown", "-R", ownership, path)
-	return err
+	return exec.Sudo(ctx, "chown", "-R", ownership, path)
 }

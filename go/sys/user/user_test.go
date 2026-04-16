@@ -26,7 +26,7 @@ func cleanupUser(t *testing.T, username string) {
 func createTestUser(t *testing.T, username string) {
 	t.Helper()
 	ctx := context.Background()
-	if err := user.Create(ctx, username, "-m", "-s", "/bin/bash"); err != nil {
+	if _, err := user.Create(ctx, username, "-m", "-s", "/bin/bash"); err != nil {
 		t.Fatalf("failed to create test user %s: %v", username, err)
 	}
 }
@@ -36,7 +36,7 @@ func TestCreate(t *testing.T) {
 	name := testUsername("cr")
 	defer cleanupUser(t, name)
 
-	err := user.Create(ctx, name, "-m", "-s", "/bin/bash")
+	_, err := user.Create(ctx, name, "-m", "-s", "/bin/bash")
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestCreateSystemUser(t *testing.T) {
 	name := testUsername("sys")
 	defer cleanupUser(t, name)
 
-	err := user.Create(ctx, name, "--system", "--no-create-home", "-s", "/usr/sbin/nologin")
+	_, err := user.Create(ctx, name, "--system", "--no-create-home", "-s", "/usr/sbin/nologin")
 	if err != nil {
 		t.Fatalf("Create system user failed: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestGet(t *testing.T) {
 	name := testUsername("gt")
 	defer cleanupUser(t, name)
 
-	if err := user.Create(ctx, name, "-m", "-s", "/bin/bash", "-c", "Test User"); err != nil {
+	if _, err := user.Create(ctx, name, "-m", "-s", "/bin/bash", "-c", "Test User"); err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
 
@@ -127,7 +127,7 @@ func TestModify(t *testing.T) {
 
 	createTestUser(t, name)
 
-	err := user.Modify(ctx, name, "-s", "/bin/sh")
+	_, err := user.Modify(ctx, name, "-s", "/bin/sh")
 	if err != nil {
 		t.Fatalf("Modify failed: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestDelete(t *testing.T) {
 
 	createTestUser(t, name)
 
-	err := user.Delete(ctx, name, false)
+	_, err := user.Delete(ctx, name, false)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestDeleteWithHome(t *testing.T) {
 	}
 	homeDir := info.HomeDir
 
-	err = user.Delete(ctx, name, true)
+	_, err = user.Delete(ctx, name, true)
 	if err != nil {
 		t.Fatalf("Delete with home failed: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestDeleteWithHome(t *testing.T) {
 
 func TestDeleteNonexistent(t *testing.T) {
 	ctx := context.Background()
-	err := user.Delete(ctx, "pm-nonexistent-user-12345", false)
+	_, err := user.Delete(ctx, "pm-nonexistent-user-12345", false)
 	if err == nil {
 		t.Fatal("expected error deleting non-existent user")
 	}
@@ -198,12 +198,12 @@ func TestLockUnlock(t *testing.T) {
 	createTestUser(t, name)
 
 	// Set a password first so lock is meaningful
-	if err := user.SetPassword(ctx, name, "TestPass123!"); err != nil {
+	if _, err := user.SetPassword(ctx, name, "TestPass123!"); err != nil {
 		t.Fatalf("SetPassword failed: %v", err)
 	}
 
 	// Lock
-	if err := user.Lock(ctx, name); err != nil {
+	if _, err := user.Lock(ctx, name); err != nil {
 		t.Fatalf("Lock failed: %v", err)
 	}
 	info, err := user.Get(name)
@@ -215,7 +215,7 @@ func TestLockUnlock(t *testing.T) {
 	}
 
 	// Unlock
-	if err := user.Unlock(ctx, name); err != nil {
+	if _, err := user.Unlock(ctx, name); err != nil {
 		t.Fatalf("Unlock failed: %v", err)
 	}
 	info, err = user.Get(name)
@@ -234,7 +234,7 @@ func TestSetPassword(t *testing.T) {
 
 	createTestUser(t, name)
 
-	err := user.SetPassword(ctx, name, "TestPass123!")
+	_, err := user.SetPassword(ctx, name, "TestPass123!")
 	if err != nil {
 		t.Fatalf("SetPassword failed: %v", err)
 	}
@@ -255,11 +255,11 @@ func TestExpirePassword(t *testing.T) {
 	defer cleanupUser(t, name)
 
 	createTestUser(t, name)
-	if err := user.SetPassword(ctx, name, "TestPass123!"); err != nil {
+	if _, err := user.SetPassword(ctx, name, "TestPass123!"); err != nil {
 		t.Fatalf("SetPassword failed: %v", err)
 	}
 
-	err := user.ExpirePassword(ctx, name)
+	_, err := user.ExpirePassword(ctx, name)
 	if err != nil {
 		t.Fatalf("ExpirePassword failed: %v", err)
 	}
@@ -352,7 +352,7 @@ func TestChownRecursive(t *testing.T) {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	if err := user.ChownRecursive(ctx, dir, name, name); err != nil {
+	if _, err := user.ChownRecursive(ctx, dir, name, name); err != nil {
 		t.Fatalf("ChownRecursive failed: %v", err)
 	}
 
