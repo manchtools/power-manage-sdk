@@ -383,6 +383,16 @@ func TestChownRecursive(t *testing.T) {
 	if group != name {
 		t.Errorf("expected group %q, got %q", name, group)
 	}
+
+	// No-op path: empty owner and group should return (nil, nil) so
+	// callers can distinguish skipped from succeeded.
+	res, err := user.ChownRecursive(ctx, dir, "", "")
+	if err != nil {
+		t.Fatalf("ChownRecursive no-op returned error: %v", err)
+	}
+	if res != nil {
+		t.Errorf("expected nil *exec.Result on no-op, got %+v", res)
+	}
 }
 
 func TestIsValidName(t *testing.T) {
