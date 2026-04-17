@@ -36,9 +36,16 @@ func TestCreate(t *testing.T) {
 	name := testUsername("cr")
 	defer cleanupUser(t, name)
 
-	_, err := user.Create(ctx, name, "-m", "-s", "/bin/bash")
+	result, err := user.Create(ctx, name, "-m", "-s", "/bin/bash")
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
+	}
+	// Verify the *exec.Result contract on the success path.
+	if result == nil {
+		t.Fatal("expected non-nil *exec.Result on success")
+	}
+	if result.ExitCode != 0 {
+		t.Errorf("expected exit code 0 on success, got %d", result.ExitCode)
 	}
 
 	if !user.Exists(name) {
@@ -184,9 +191,21 @@ func TestDeleteWithHome(t *testing.T) {
 
 func TestDeleteNonexistent(t *testing.T) {
 	ctx := context.Background()
-	_, err := user.Delete(ctx, "pm-nonexistent-user-12345", false)
+	result, err := user.Delete(ctx, "pm-nonexistent-user-12345", false)
 	if err == nil {
 		t.Fatal("expected error deleting non-existent user")
+	}
+	// The whole point of returning *exec.Result is that callers can
+	// surface the underlying tool's stderr. Verify the contract holds
+	// on a deterministic failure path.
+	if result == nil {
+		t.Fatal("expected non-nil *exec.Result on failure")
+	}
+	if result.ExitCode == 0 {
+		t.Errorf("expected non-zero exit code on failure, got %d", result.ExitCode)
+	}
+	if result.Stderr == "" {
+		t.Errorf("expected stderr to be populated on failure, got empty (exit=%d)", result.ExitCode)
 	}
 }
 
