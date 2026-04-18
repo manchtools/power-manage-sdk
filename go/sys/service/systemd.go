@@ -30,11 +30,17 @@ func statusSystemd(unitName string) UnitStatus {
 	}
 	enabledStatus := strings.TrimSpace(out)
 
+	// systemctl distinguishes explicitly-enabled units ("enabled",
+	// "enabled-runtime") from units that happen to start at boot via
+	// dependencies ("static", "indirect", "generated"). Callers asking
+	// "is this explicitly enabled?" should get false for the latter
+	// group — `systemctl enable` on a static unit fails with "has no
+	// [Install] section". Callers that need "will it run at boot?"
+	// should check Enabled || Static.
 	switch enabledStatus {
 	case "enabled", "enabled-runtime":
 		status.Enabled = true
 	case "static", "indirect", "generated":
-		status.Enabled = true
 		status.Static = true
 	case "masked":
 		status.Masked = true
@@ -54,15 +60,13 @@ func isEnabledSystemd(unitName string) bool {
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
-	status := strings.TrimSpace(out)
-	switch status {
-	case "enabled", "enabled-runtime":
-		return true
-	case "static", "indirect", "generated":
-		return true
-	default:
-		return false
-	}
+	// Only "enabled" and "enabled-runtime" count as explicitly enabled.
+	// Static / indirect / generated units boot via dependencies but
+	// cannot be toggled with systemctl enable/disable, so reporting
+	// them as enabled here would mislead callers that use this result
+	// to decide whether to call Enable().
+	trimmed := strings.TrimSpace(out)
+	return trimmed == "enabled" || trimmed == "enabled-runtime"
 }
 
 func isMaskedSystemd(unitName string) bool {
