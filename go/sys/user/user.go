@@ -106,18 +106,22 @@ func IsValidName(username string) bool {
 	return true
 }
 
-// validateUsername returns a descriptive error if the name fails
-// IsValidName. Every privileged user-management helper in this package
-// goes through this guard so that (a) a username starting with "-"
-// cannot become a useradd/usermod flag, and (b) a username containing
-// control characters (newline, colon) cannot inject extra chpasswd
-// lines.
-func validateUsername(username string) error {
-	if !IsValidName(username) {
-		return fmt.Errorf("invalid username %q: must start with a lowercase letter and contain only [a-z0-9_-], max 32 chars", username)
+// validateName checks a POSIX-style account name (user or group)
+// against IsValidName and returns a descriptive error naming the
+// argument kind. Every privileged helper in this package goes
+// through it so that (a) a name starting with "-" cannot become a
+// useradd/usermod/groupadd flag, and (b) a name containing control
+// characters (newline, colon) cannot inject extra chpasswd records.
+func validateName(kind, name string) error {
+	if !IsValidName(name) {
+		return fmt.Errorf("invalid %s %q: must start with a lowercase letter and contain only [a-z0-9_-], max 32 chars", kind, name)
 	}
 	return nil
 }
+
+// validateUsername is a thin wrapper around validateName for
+// readability at call sites that specifically handle usernames.
+func validateUsername(username string) error { return validateName("username", username) }
 
 // =============================================================================
 // User Management Operations

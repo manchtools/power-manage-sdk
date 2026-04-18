@@ -80,7 +80,7 @@ func GroupMembersMatch(groupName string, desiredUsers []string) bool {
 // the same IsValidName rules apply because groupadd/usermod parse argv
 // identically to useradd.
 func GroupCreate(ctx context.Context, name string, args ...string) error {
-	if err := validateUsername(name); err != nil {
+	if err := validateName("group name", name); err != nil {
 		return err
 	}
 	// slices.Clone avoids aliasing the caller's backing array — a
@@ -93,7 +93,7 @@ func GroupCreate(ctx context.Context, name string, args ...string) error {
 
 // GroupDelete deletes a group.
 func GroupDelete(ctx context.Context, name string) error {
-	if err := validateUsername(name); err != nil {
+	if err := validateName("group name", name); err != nil {
 		return err
 	}
 	_, err := exec.Privileged(ctx, "groupdel", name)
@@ -114,10 +114,10 @@ func GroupEnsureExists(ctx context.Context, name string) error {
 
 // GroupAddUser adds a user to a supplementary group.
 func GroupAddUser(ctx context.Context, username, groupName string) error {
-	if err := validateUsername(username); err != nil {
+	if err := validateName("username", username); err != nil {
 		return err
 	}
-	if err := validateUsername(groupName); err != nil {
+	if err := validateName("group name", groupName); err != nil {
 		return err
 	}
 	_, err := exec.Privileged(ctx, "usermod", "-aG", groupName, username)
@@ -126,10 +126,10 @@ func GroupAddUser(ctx context.Context, username, groupName string) error {
 
 // GroupRemoveUser removes a user from a supplementary group.
 func GroupRemoveUser(ctx context.Context, username, groupName string) error {
-	if err := validateUsername(username); err != nil {
+	if err := validateName("username", username); err != nil {
 		return err
 	}
-	if err := validateUsername(groupName); err != nil {
+	if err := validateName("group name", groupName); err != nil {
 		return err
 	}
 	_, err := exec.Privileged(ctx, "gpasswd", "-d", username, groupName)
