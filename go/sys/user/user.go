@@ -54,23 +54,29 @@ func Get(username string) (*Info, error) {
 		Shell:   fields[6],
 	}
 
-	// Get supplementary groups
+	// Resolve the primary group name from the GID we already have, so we
+	// don't have to shell out to `id -gn` in addition to `id -Gn`.
+	var primary string
+	if out, err := exec.Query("getent", "group", strconv.Itoa(gid)); err == nil {
+		// getent group format: name:passwd:gid:members
+		if idx := strings.IndexByte(out, ':'); idx > 0 {
+			primary = out[:idx]
+		}
+	}
+
+	// Get supplementary groups (filter out the primary group).
 	if allGroups, err := exec.Query("id", "-Gn", username); err == nil {
-		groups := strings.Fields(strings.TrimSpace(allGroups))
-		// Filter out the primary group
-		if primaryGroup, err := exec.Query("id", "-gn", username); err == nil {
-			primary := strings.TrimSpace(primaryGroup)
-			for _, g := range groups {
-				if g != primary {
-					info.Groups = append(info.Groups, g)
-				}
+		for _, g := range strings.Fields(strings.TrimSpace(allGroups)) {
+			if g != primary {
+				info.Groups = append(info.Groups, g)
 			}
 		}
 	}
 
-	// Check if account is locked (password field starts with ! or *)
-	// Use sudo to read shadow file
-	if shadowOut, _, _ := exec.QueryOutput("sudo", "-n", "getent", "shadow", username); shadowOut != "" {
+	// Check if account is locked (password field starts with ! or *).
+	// Uses sudo because the shadow file is root-only; if sudo -n is not
+	// authorized for this caller, leave Locked=false rather than guessing.
+	if shadowOut, exit, err := exec.QueryOutput("sudo", "-n", "getent", "shadow", username); err == nil && exit == 0 && shadowOut != "" {
 		shadowFields := strings.Split(shadowOut, ":")
 		if len(shadowFields) >= 2 {
 			passField := shadowFields[1]
