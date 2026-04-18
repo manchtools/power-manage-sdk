@@ -195,6 +195,58 @@ func (OSQueryOp) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
+// LogSource selects which system log source the agent queries.
+// JOURNALD is the default and is what current agents implement;
+// SYSLOG slots in for openrc/syslog-ng/rsyslog systems (Alpine, Void,
+// legacy Debian/RHEL). Agents must report a clear "source not
+// supported on this device" error when asked for a source they can't
+// serve.
+type LogSource int32
+
+const (
+	LogSource_LOG_SOURCE_JOURNALD LogSource = 0 // default — journalctl
+	LogSource_LOG_SOURCE_SYSLOG   LogSource = 1 // syslog files in /var/log (rsyslog, syslog-ng, busybox syslog)
+)
+
+// Enum value maps for LogSource.
+var (
+	LogSource_name = map[int32]string{
+		0: "LOG_SOURCE_JOURNALD",
+		1: "LOG_SOURCE_SYSLOG",
+	}
+	LogSource_value = map[string]int32{
+		"LOG_SOURCE_JOURNALD": 0,
+		"LOG_SOURCE_SYSLOG":   1,
+	}
+)
+
+func (x LogSource) Enum() *LogSource {
+	p := new(LogSource)
+	*p = x
+	return p
+}
+
+func (x LogSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LogSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_agent_proto_enumTypes[3].Descriptor()
+}
+
+func (LogSource) Type() protoreflect.EnumType {
+	return &file_pm_v1_agent_proto_enumTypes[3]
+}
+
+func (x LogSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LogSource.Descriptor instead.
+func (LogSource) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{3}
+}
+
 // Terminal session lifecycle states reported by the agent.
 type TerminalSessionState int32
 
@@ -236,11 +288,11 @@ func (x TerminalSessionState) String() string {
 }
 
 func (TerminalSessionState) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[3].Descriptor()
+	return file_pm_v1_agent_proto_enumTypes[4].Descriptor()
 }
 
 func (TerminalSessionState) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[3]
+	return &file_pm_v1_agent_proto_enumTypes[4]
 }
 
 func (x TerminalSessionState) Number() protoreflect.EnumNumber {
@@ -249,7 +301,7 @@ func (x TerminalSessionState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TerminalSessionState.Descriptor instead.
 func (TerminalSessionState) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_agent_proto_rawDescGZIP(), []int{4}
 }
 
 type AgentMessage struct {
@@ -2227,7 +2279,7 @@ func (x *SyncActionsResponse) GetSyncIntervalMinutes() int32 {
 	return 0
 }
 
-// Server -> Agent: request journalctl output
+// Server -> Agent: request system log output
 type LogQuery struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -2243,8 +2295,12 @@ type LogQuery struct {
 	// @gotags: validate:"omitempty,max=32"
 	Priority string `protobuf:"bytes,6,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,max=32"`
 	// @gotags: validate:"omitempty,max=256"
-	Grep          string `protobuf:"bytes,7,opt,name=grep,proto3" json:"grep,omitempty" validate:"omitempty,max=256"`
-	Kernel        bool   `protobuf:"varint,8,opt,name=kernel,proto3" json:"kernel,omitempty"`
+	Grep   string `protobuf:"bytes,7,opt,name=grep,proto3" json:"grep,omitempty" validate:"omitempty,max=256"`
+	Kernel bool   `protobuf:"varint,8,opt,name=kernel,proto3" json:"kernel,omitempty"`
+	// Log source. Defaults to LOG_SOURCE_JOURNALD. Agents without
+	// support for a requested source return an error.
+	// @gotags: validate:"omitempty"
+	Source        LogSource `protobuf:"varint,9,opt,name=source,proto3,enum=pm.v1.LogSource" json:"source,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2333,6 +2389,13 @@ func (x *LogQuery) GetKernel() bool {
 		return x.Kernel
 	}
 	return false
+}
+
+func (x *LogQuery) GetSource() LogSource {
+	if x != nil {
+		return x.Source
+	}
+	return LogSource_LOG_SOURCE_JOURNALD
 }
 
 // Agent -> Server: journalctl output result
@@ -2942,7 +3005,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\"r\n" +
 	"\x13SyncActionsResponse\x12'\n" +
 	"\aactions\x18\x01 \x03(\v2\r.pm.v1.ActionR\aactions\x122\n" +
-	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\"\xc3\x01\n" +
+	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\"\xed\x01\n" +
 	"\bLogQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
@@ -2951,7 +3014,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x05until\x18\x05 \x01(\tR\x05until\x12\x1a\n" +
 	"\bpriority\x18\x06 \x01(\tR\bpriority\x12\x12\n" +
 	"\x04grep\x18\a \x01(\tR\x04grep\x12\x16\n" +
-	"\x06kernel\x18\b \x01(\bR\x06kernel\"o\n" +
+	"\x06kernel\x18\b \x01(\bR\x06kernel\x12(\n" +
+	"\x06source\x18\t \x01(\x0e2\x10.pm.v1.LogSourceR\x06source\"o\n" +
 	"\x0eLogQueryResult\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
@@ -3004,7 +3068,10 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eOS_QUERY_OP_GE\x10\x05\x12\x12\n" +
 	"\x0eOS_QUERY_OP_LE\x10\x06\x12\x14\n" +
 	"\x10OS_QUERY_OP_LIKE\x10\a\x12\x14\n" +
-	"\x10OS_QUERY_OP_GLOB\x10\b*\xa7\x01\n" +
+	"\x10OS_QUERY_OP_GLOB\x10\b*;\n" +
+	"\tLogSource\x12\x17\n" +
+	"\x13LOG_SOURCE_JOURNALD\x10\x00\x12\x15\n" +
+	"\x11LOG_SOURCE_SYSLOG\x10\x01*\xa7\x01\n" +
 	"\x14TerminalSessionState\x12&\n" +
 	"\"TERMINAL_SESSION_STATE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eTERMINAL_SESSION_STATE_STARTED\x10\x01\x12!\n" +
@@ -3027,110 +3094,112 @@ func file_pm_v1_agent_proto_rawDescGZIP() []byte {
 	return file_pm_v1_agent_proto_rawDescData
 }
 
-var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_pm_v1_agent_proto_goTypes = []any{
 	(OutputStreamType)(0),             // 0: pm.v1.OutputStreamType
 	(SecurityAlertType)(0),            // 1: pm.v1.SecurityAlertType
 	(OSQueryOp)(0),                    // 2: pm.v1.OSQueryOp
-	(TerminalSessionState)(0),         // 3: pm.v1.TerminalSessionState
-	(*AgentMessage)(nil),              // 4: pm.v1.AgentMessage
-	(*OutputChunk)(nil),               // 5: pm.v1.OutputChunk
-	(*Hello)(nil),                     // 6: pm.v1.Hello
-	(*Heartbeat)(nil),                 // 7: pm.v1.Heartbeat
-	(*SecurityAlert)(nil),             // 8: pm.v1.SecurityAlert
-	(*ServerMessage)(nil),             // 9: pm.v1.ServerMessage
-	(*Welcome)(nil),                   // 10: pm.v1.Welcome
-	(*ActionDispatch)(nil),            // 11: pm.v1.ActionDispatch
-	(*Error)(nil),                     // 12: pm.v1.Error
-	(*OSQuery)(nil),                   // 13: pm.v1.OSQuery
-	(*OSQueryCondition)(nil),          // 14: pm.v1.OSQueryCondition
-	(*OSQueryResult)(nil),             // 15: pm.v1.OSQueryResult
-	(*OSQueryRow)(nil),                // 16: pm.v1.OSQueryRow
-	(*DeviceInventory)(nil),           // 17: pm.v1.DeviceInventory
-	(*InventoryTable)(nil),            // 18: pm.v1.InventoryTable
-	(*RequestInventory)(nil),          // 19: pm.v1.RequestInventory
-	(*GetLuksKeyRequest)(nil),         // 20: pm.v1.GetLuksKeyRequest
-	(*GetLuksKeyResponse)(nil),        // 21: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyRequest)(nil),       // 22: pm.v1.StoreLuksKeyRequest
-	(*StoreLuksKeyResponse)(nil),      // 23: pm.v1.StoreLuksKeyResponse
-	(*RevokeLuksDeviceKey)(nil),       // 24: pm.v1.RevokeLuksDeviceKey
-	(*RevokeLuksDeviceKeyResult)(nil), // 25: pm.v1.RevokeLuksDeviceKeyResult
-	(*ValidateLuksTokenRequest)(nil),  // 26: pm.v1.ValidateLuksTokenRequest
-	(*ValidateLuksTokenResponse)(nil), // 27: pm.v1.ValidateLuksTokenResponse
-	(*SyncActionsRequest)(nil),        // 28: pm.v1.SyncActionsRequest
-	(*SyncActionsResponse)(nil),       // 29: pm.v1.SyncActionsResponse
-	(*LogQuery)(nil),                  // 30: pm.v1.LogQuery
-	(*LogQueryResult)(nil),            // 31: pm.v1.LogQueryResult
-	(*TerminalStart)(nil),             // 32: pm.v1.TerminalStart
-	(*TerminalInput)(nil),             // 33: pm.v1.TerminalInput
-	(*TerminalResize)(nil),            // 34: pm.v1.TerminalResize
-	(*TerminalStop)(nil),              // 35: pm.v1.TerminalStop
-	(*TerminalOutput)(nil),            // 36: pm.v1.TerminalOutput
-	(*TerminalStateChange)(nil),       // 37: pm.v1.TerminalStateChange
-	nil,                               // 38: pm.v1.SecurityAlert.DetailsEntry
-	nil,                               // 39: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),              // 40: pm.v1.ActionResult
-	(*DeviceId)(nil),                  // 41: pm.v1.DeviceId
-	(*durationpb.Duration)(nil),       // 42: google.protobuf.Duration
-	(*Action)(nil),                    // 43: pm.v1.Action
-	(LpsPasswordComplexity)(0),        // 44: pm.v1.LpsPasswordComplexity
+	(LogSource)(0),                    // 3: pm.v1.LogSource
+	(TerminalSessionState)(0),         // 4: pm.v1.TerminalSessionState
+	(*AgentMessage)(nil),              // 5: pm.v1.AgentMessage
+	(*OutputChunk)(nil),               // 6: pm.v1.OutputChunk
+	(*Hello)(nil),                     // 7: pm.v1.Hello
+	(*Heartbeat)(nil),                 // 8: pm.v1.Heartbeat
+	(*SecurityAlert)(nil),             // 9: pm.v1.SecurityAlert
+	(*ServerMessage)(nil),             // 10: pm.v1.ServerMessage
+	(*Welcome)(nil),                   // 11: pm.v1.Welcome
+	(*ActionDispatch)(nil),            // 12: pm.v1.ActionDispatch
+	(*Error)(nil),                     // 13: pm.v1.Error
+	(*OSQuery)(nil),                   // 14: pm.v1.OSQuery
+	(*OSQueryCondition)(nil),          // 15: pm.v1.OSQueryCondition
+	(*OSQueryResult)(nil),             // 16: pm.v1.OSQueryResult
+	(*OSQueryRow)(nil),                // 17: pm.v1.OSQueryRow
+	(*DeviceInventory)(nil),           // 18: pm.v1.DeviceInventory
+	(*InventoryTable)(nil),            // 19: pm.v1.InventoryTable
+	(*RequestInventory)(nil),          // 20: pm.v1.RequestInventory
+	(*GetLuksKeyRequest)(nil),         // 21: pm.v1.GetLuksKeyRequest
+	(*GetLuksKeyResponse)(nil),        // 22: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyRequest)(nil),       // 23: pm.v1.StoreLuksKeyRequest
+	(*StoreLuksKeyResponse)(nil),      // 24: pm.v1.StoreLuksKeyResponse
+	(*RevokeLuksDeviceKey)(nil),       // 25: pm.v1.RevokeLuksDeviceKey
+	(*RevokeLuksDeviceKeyResult)(nil), // 26: pm.v1.RevokeLuksDeviceKeyResult
+	(*ValidateLuksTokenRequest)(nil),  // 27: pm.v1.ValidateLuksTokenRequest
+	(*ValidateLuksTokenResponse)(nil), // 28: pm.v1.ValidateLuksTokenResponse
+	(*SyncActionsRequest)(nil),        // 29: pm.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil),       // 30: pm.v1.SyncActionsResponse
+	(*LogQuery)(nil),                  // 31: pm.v1.LogQuery
+	(*LogQueryResult)(nil),            // 32: pm.v1.LogQueryResult
+	(*TerminalStart)(nil),             // 33: pm.v1.TerminalStart
+	(*TerminalInput)(nil),             // 34: pm.v1.TerminalInput
+	(*TerminalResize)(nil),            // 35: pm.v1.TerminalResize
+	(*TerminalStop)(nil),              // 36: pm.v1.TerminalStop
+	(*TerminalOutput)(nil),            // 37: pm.v1.TerminalOutput
+	(*TerminalStateChange)(nil),       // 38: pm.v1.TerminalStateChange
+	nil,                               // 39: pm.v1.SecurityAlert.DetailsEntry
+	nil,                               // 40: pm.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),              // 41: pm.v1.ActionResult
+	(*DeviceId)(nil),                  // 42: pm.v1.DeviceId
+	(*durationpb.Duration)(nil),       // 43: google.protobuf.Duration
+	(*Action)(nil),                    // 44: pm.v1.Action
+	(LpsPasswordComplexity)(0),        // 45: pm.v1.LpsPasswordComplexity
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
-	6,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
-	7,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	40, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
-	5,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
-	15, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
-	17, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
-	8,  // 6: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
-	20, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
-	22, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
-	25, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
-	31, // 10: pm.v1.AgentMessage.log_query_result:type_name -> pm.v1.LogQueryResult
-	36, // 11: pm.v1.AgentMessage.terminal_output:type_name -> pm.v1.TerminalOutput
-	37, // 12: pm.v1.AgentMessage.terminal_state_change:type_name -> pm.v1.TerminalStateChange
+	7,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
+	8,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
+	41, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
+	6,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
+	16, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
+	18, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
+	9,  // 6: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
+	21, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
+	23, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
+	26, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
+	32, // 10: pm.v1.AgentMessage.log_query_result:type_name -> pm.v1.LogQueryResult
+	37, // 11: pm.v1.AgentMessage.terminal_output:type_name -> pm.v1.TerminalOutput
+	38, // 12: pm.v1.AgentMessage.terminal_state_change:type_name -> pm.v1.TerminalStateChange
 	0,  // 13: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	41, // 14: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	42, // 15: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	42, // 14: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
+	43, // 15: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
 	1,  // 16: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	38, // 17: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
-	10, // 18: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	11, // 19: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	13, // 20: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	19, // 21: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
-	12, // 22: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	21, // 23: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
-	23, // 24: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
-	24, // 25: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
-	30, // 26: pm.v1.ServerMessage.log_query:type_name -> pm.v1.LogQuery
-	32, // 27: pm.v1.ServerMessage.terminal_start:type_name -> pm.v1.TerminalStart
-	33, // 28: pm.v1.ServerMessage.terminal_input:type_name -> pm.v1.TerminalInput
-	34, // 29: pm.v1.ServerMessage.terminal_resize:type_name -> pm.v1.TerminalResize
-	35, // 30: pm.v1.ServerMessage.terminal_stop:type_name -> pm.v1.TerminalStop
-	42, // 31: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	43, // 32: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
-	14, // 33: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
+	39, // 17: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
+	11, // 18: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
+	12, // 19: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
+	14, // 20: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
+	20, // 21: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
+	13, // 22: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
+	22, // 23: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
+	24, // 24: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
+	25, // 25: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
+	31, // 26: pm.v1.ServerMessage.log_query:type_name -> pm.v1.LogQuery
+	33, // 27: pm.v1.ServerMessage.terminal_start:type_name -> pm.v1.TerminalStart
+	34, // 28: pm.v1.ServerMessage.terminal_input:type_name -> pm.v1.TerminalInput
+	35, // 29: pm.v1.ServerMessage.terminal_resize:type_name -> pm.v1.TerminalResize
+	36, // 30: pm.v1.ServerMessage.terminal_stop:type_name -> pm.v1.TerminalStop
+	43, // 31: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	44, // 32: pm.v1.ActionDispatch.action:type_name -> pm.v1.Action
+	15, // 33: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
 	2,  // 34: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	16, // 35: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	39, // 36: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	18, // 37: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
-	16, // 38: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
-	44, // 39: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	41, // 40: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	43, // 41: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
-	3,  // 42: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
-	4,  // 43: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	28, // 44: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	26, // 45: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	9,  // 46: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	29, // 47: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	27, // 48: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	46, // [46:49] is the sub-list for method output_type
-	43, // [43:46] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	17, // 35: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
+	40, // 36: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
+	19, // 37: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
+	17, // 38: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
+	45, // 39: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	42, // 40: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	44, // 41: pm.v1.SyncActionsResponse.actions:type_name -> pm.v1.Action
+	3,  // 42: pm.v1.LogQuery.source:type_name -> pm.v1.LogSource
+	4,  // 43: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
+	5,  // 44: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	29, // 45: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	27, // 46: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	10, // 47: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	30, // 48: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	28, // 49: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	47, // [47:50] is the sub-list for method output_type
+	44, // [44:47] is the sub-list for method input_type
+	44, // [44:44] is the sub-list for extension type_name
+	44, // [44:44] is the sub-list for extension extendee
+	0,  // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }
@@ -3175,7 +3244,7 @@ func file_pm_v1_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,

@@ -39,7 +39,7 @@ const (
 	ActionType_ACTION_TYPE_SHELL      ActionType = 200 // Shell script
 	ActionType_ACTION_TYPE_SCRIPT_RUN ActionType = 201 // One-off script execution (not scheduled)
 	// Services (300-399)
-	ActionType_ACTION_TYPE_SYSTEMD ActionType = 300 // Systemd unit
+	ActionType_ACTION_TYPE_SERVICE ActionType = 300 // Service unit (systemd, openrc, runit, s6)
 	// Files (400-499)
 	ActionType_ACTION_TYPE_FILE      ActionType = 400 // File management
 	ActionType_ACTION_TYPE_DIRECTORY ActionType = 401 // Directory management
@@ -57,7 +57,7 @@ const (
 	// Password management (900-999)
 	ActionType_ACTION_TYPE_LPS ActionType = 900 // Local Password Solution
 	// Encryption management (1000-1099)
-	ActionType_ACTION_TYPE_LUKS ActionType = 1000 // LUKS disk encryption management
+	ActionType_ACTION_TYPE_ENCRYPTION ActionType = 1000 // Disk encryption management (LUKS, GELI, etc.)
 	// Network management (1100-1199)
 	ActionType_ACTION_TYPE_WIFI ActionType = 1100 // WiFi connection management
 	// Agent management (1200-1299)
@@ -77,7 +77,7 @@ var (
 		103:  "ACTION_TYPE_FLATPAK",
 		200:  "ACTION_TYPE_SHELL",
 		201:  "ACTION_TYPE_SCRIPT_RUN",
-		300:  "ACTION_TYPE_SYSTEMD",
+		300:  "ACTION_TYPE_SERVICE",
 		400:  "ACTION_TYPE_FILE",
 		401:  "ACTION_TYPE_DIRECTORY",
 		500:  "ACTION_TYPE_REBOOT",
@@ -88,7 +88,7 @@ var (
 		701:  "ACTION_TYPE_SSHD",
 		800:  "ACTION_TYPE_ADMIN_POLICY",
 		900:  "ACTION_TYPE_LPS",
-		1000: "ACTION_TYPE_LUKS",
+		1000: "ACTION_TYPE_ENCRYPTION",
 		1100: "ACTION_TYPE_WIFI",
 		1200: "ACTION_TYPE_AGENT_UPDATE",
 	}
@@ -103,7 +103,7 @@ var (
 		"ACTION_TYPE_FLATPAK":      103,
 		"ACTION_TYPE_SHELL":        200,
 		"ACTION_TYPE_SCRIPT_RUN":   201,
-		"ACTION_TYPE_SYSTEMD":      300,
+		"ACTION_TYPE_SERVICE":      300,
 		"ACTION_TYPE_FILE":         400,
 		"ACTION_TYPE_DIRECTORY":    401,
 		"ACTION_TYPE_REBOOT":       500,
@@ -114,7 +114,7 @@ var (
 		"ACTION_TYPE_SSHD":         701,
 		"ACTION_TYPE_ADMIN_POLICY": 800,
 		"ACTION_TYPE_LPS":          900,
-		"ACTION_TYPE_LUKS":         1000,
+		"ACTION_TYPE_ENCRYPTION":   1000,
 		"ACTION_TYPE_WIFI":         1100,
 		"ACTION_TYPE_AGENT_UPDATE": 1200,
 	}
@@ -147,56 +147,113 @@ func (ActionType) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{0}
 }
 
-type SystemdUnitState int32
+// ServiceBackend selects which init/service manager the agent targets.
+// The default (SYSTEMD) matches most mainstream distros. OPENRC/RUNIT/S6
+// slots exist so adding those implementations later does not require a
+// second proto rename. Agents set their active backend via
+// sys/service.SetServiceBackend at startup.
+type ServiceBackend int32
 
 const (
-	SystemdUnitState_SYSTEMD_UNIT_STATE_UNSPECIFIED SystemdUnitState = 0
-	SystemdUnitState_SYSTEMD_UNIT_STATE_STARTED     SystemdUnitState = 1
-	SystemdUnitState_SYSTEMD_UNIT_STATE_STOPPED     SystemdUnitState = 2
-	SystemdUnitState_SYSTEMD_UNIT_STATE_RESTARTED   SystemdUnitState = 3
+	ServiceBackend_SERVICE_BACKEND_SYSTEMD ServiceBackend = 0 // default
+	ServiceBackend_SERVICE_BACKEND_OPENRC  ServiceBackend = 1
+	ServiceBackend_SERVICE_BACKEND_RUNIT   ServiceBackend = 2
+	ServiceBackend_SERVICE_BACKEND_S6      ServiceBackend = 3
 )
 
-// Enum value maps for SystemdUnitState.
+// Enum value maps for ServiceBackend.
 var (
-	SystemdUnitState_name = map[int32]string{
-		0: "SYSTEMD_UNIT_STATE_UNSPECIFIED",
-		1: "SYSTEMD_UNIT_STATE_STARTED",
-		2: "SYSTEMD_UNIT_STATE_STOPPED",
-		3: "SYSTEMD_UNIT_STATE_RESTARTED",
+	ServiceBackend_name = map[int32]string{
+		0: "SERVICE_BACKEND_SYSTEMD",
+		1: "SERVICE_BACKEND_OPENRC",
+		2: "SERVICE_BACKEND_RUNIT",
+		3: "SERVICE_BACKEND_S6",
 	}
-	SystemdUnitState_value = map[string]int32{
-		"SYSTEMD_UNIT_STATE_UNSPECIFIED": 0,
-		"SYSTEMD_UNIT_STATE_STARTED":     1,
-		"SYSTEMD_UNIT_STATE_STOPPED":     2,
-		"SYSTEMD_UNIT_STATE_RESTARTED":   3,
+	ServiceBackend_value = map[string]int32{
+		"SERVICE_BACKEND_SYSTEMD": 0,
+		"SERVICE_BACKEND_OPENRC":  1,
+		"SERVICE_BACKEND_RUNIT":   2,
+		"SERVICE_BACKEND_S6":      3,
 	}
 )
 
-func (x SystemdUnitState) Enum() *SystemdUnitState {
-	p := new(SystemdUnitState)
+func (x ServiceBackend) Enum() *ServiceBackend {
+	p := new(ServiceBackend)
 	*p = x
 	return p
 }
 
-func (x SystemdUnitState) String() string {
+func (x ServiceBackend) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (SystemdUnitState) Descriptor() protoreflect.EnumDescriptor {
+func (ServiceBackend) Descriptor() protoreflect.EnumDescriptor {
 	return file_pm_v1_actions_proto_enumTypes[1].Descriptor()
 }
 
-func (SystemdUnitState) Type() protoreflect.EnumType {
+func (ServiceBackend) Type() protoreflect.EnumType {
 	return &file_pm_v1_actions_proto_enumTypes[1]
 }
 
-func (x SystemdUnitState) Number() protoreflect.EnumNumber {
+func (x ServiceBackend) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use SystemdUnitState.Descriptor instead.
-func (SystemdUnitState) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use ServiceBackend.Descriptor instead.
+func (ServiceBackend) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
+}
+
+type ServiceUnitState int32
+
+const (
+	ServiceUnitState_SERVICE_UNIT_STATE_UNSPECIFIED ServiceUnitState = 0
+	ServiceUnitState_SERVICE_UNIT_STATE_STARTED     ServiceUnitState = 1
+	ServiceUnitState_SERVICE_UNIT_STATE_STOPPED     ServiceUnitState = 2
+	ServiceUnitState_SERVICE_UNIT_STATE_RESTARTED   ServiceUnitState = 3
+)
+
+// Enum value maps for ServiceUnitState.
+var (
+	ServiceUnitState_name = map[int32]string{
+		0: "SERVICE_UNIT_STATE_UNSPECIFIED",
+		1: "SERVICE_UNIT_STATE_STARTED",
+		2: "SERVICE_UNIT_STATE_STOPPED",
+		3: "SERVICE_UNIT_STATE_RESTARTED",
+	}
+	ServiceUnitState_value = map[string]int32{
+		"SERVICE_UNIT_STATE_UNSPECIFIED": 0,
+		"SERVICE_UNIT_STATE_STARTED":     1,
+		"SERVICE_UNIT_STATE_STOPPED":     2,
+		"SERVICE_UNIT_STATE_RESTARTED":   3,
+	}
+)
+
+func (x ServiceUnitState) Enum() *ServiceUnitState {
+	p := new(ServiceUnitState)
+	*p = x
+	return p
+}
+
+func (x ServiceUnitState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ServiceUnitState) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
+}
+
+func (ServiceUnitState) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[2]
+}
+
+func (x ServiceUnitState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ServiceUnitState.Descriptor instead.
+func (ServiceUnitState) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 // AdminAccessLevel defines the level of administrative access granted.
@@ -240,11 +297,11 @@ func (x AdminAccessLevel) String() string {
 }
 
 func (AdminAccessLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
 }
 
 func (AdminAccessLevel) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[2]
+	return &file_pm_v1_actions_proto_enumTypes[3]
 }
 
 func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
@@ -253,7 +310,7 @@ func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AdminAccessLevel.Descriptor instead.
 func (AdminAccessLevel) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 // PrivilegeBackend selects which privilege-escalation tool the agent
@@ -290,11 +347,11 @@ func (x PrivilegeBackend) String() string {
 }
 
 func (PrivilegeBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
 }
 
 func (PrivilegeBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[3]
+	return &file_pm_v1_actions_proto_enumTypes[4]
 }
 
 func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
@@ -303,7 +360,7 @@ func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PrivilegeBackend.Descriptor instead.
 func (PrivilegeBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.
@@ -340,11 +397,11 @@ func (x LpsPasswordComplexity) String() string {
 }
 
 func (LpsPasswordComplexity) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
 }
 
 func (LpsPasswordComplexity) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[4]
+	return &file_pm_v1_actions_proto_enumTypes[5]
 }
 
 func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
@@ -353,57 +410,113 @@ func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LpsPasswordComplexity.Descriptor instead.
 func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
-// LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
-type LuksDeviceBoundKeyType int32
+// EncryptionBackend selects the disk-encryption implementation the
+// agent targets. LUKS covers virtually all managed Linux today; the
+// other slots exist so implementations for other platforms can land
+// later without another proto rename.
+type EncryptionBackend int32
 
 const (
-	LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_NONE            LuksDeviceBoundKeyType = 0 // No device-bound key (managed passphrase only)
-	LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_TPM             LuksDeviceBoundKeyType = 1 // TPM2 auto-unlock at boot
-	LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE LuksDeviceBoundKeyType = 2 // User-defined passphrase via CLI
+	EncryptionBackend_ENCRYPTION_BACKEND_LUKS EncryptionBackend = 0 // default — cryptsetup/LUKS2
+	EncryptionBackend_ENCRYPTION_BACKEND_GELI EncryptionBackend = 1 // FreeBSD GELI
+	EncryptionBackend_ENCRYPTION_BACKEND_CGD  EncryptionBackend = 2 // NetBSD CGD
 )
 
-// Enum value maps for LuksDeviceBoundKeyType.
+// Enum value maps for EncryptionBackend.
 var (
-	LuksDeviceBoundKeyType_name = map[int32]string{
-		0: "LUKS_DEVICE_BOUND_KEY_TYPE_NONE",
-		1: "LUKS_DEVICE_BOUND_KEY_TYPE_TPM",
-		2: "LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE",
+	EncryptionBackend_name = map[int32]string{
+		0: "ENCRYPTION_BACKEND_LUKS",
+		1: "ENCRYPTION_BACKEND_GELI",
+		2: "ENCRYPTION_BACKEND_CGD",
 	}
-	LuksDeviceBoundKeyType_value = map[string]int32{
-		"LUKS_DEVICE_BOUND_KEY_TYPE_NONE":            0,
-		"LUKS_DEVICE_BOUND_KEY_TYPE_TPM":             1,
-		"LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE": 2,
+	EncryptionBackend_value = map[string]int32{
+		"ENCRYPTION_BACKEND_LUKS": 0,
+		"ENCRYPTION_BACKEND_GELI": 1,
+		"ENCRYPTION_BACKEND_CGD":  2,
 	}
 )
 
-func (x LuksDeviceBoundKeyType) Enum() *LuksDeviceBoundKeyType {
-	p := new(LuksDeviceBoundKeyType)
+func (x EncryptionBackend) Enum() *EncryptionBackend {
+	p := new(EncryptionBackend)
 	*p = x
 	return p
 }
 
-func (x LuksDeviceBoundKeyType) String() string {
+func (x EncryptionBackend) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (LuksDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
+func (EncryptionBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[6].Descriptor()
 }
 
-func (LuksDeviceBoundKeyType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[5]
+func (EncryptionBackend) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[6]
 }
 
-func (x LuksDeviceBoundKeyType) Number() protoreflect.EnumNumber {
+func (x EncryptionBackend) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use LuksDeviceBoundKeyType.Descriptor instead.
-func (LuksDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+// Deprecated: Use EncryptionBackend.Descriptor instead.
+func (EncryptionBackend) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+}
+
+// EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
+// slot (e.g. LUKS slot 7). Backends without an equivalent concept
+// should treat non-NONE values as best-effort and report whichever
+// subset of modes they support.
+type EncryptionDeviceBoundKeyType int32
+
+const (
+	EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE            EncryptionDeviceBoundKeyType = 0 // Managed passphrase only, no device-bound key
+	EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM             EncryptionDeviceBoundKeyType = 1 // TPM2 auto-unlock at boot
+	EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE EncryptionDeviceBoundKeyType = 2 // User-defined passphrase via CLI
+)
+
+// Enum value maps for EncryptionDeviceBoundKeyType.
+var (
+	EncryptionDeviceBoundKeyType_name = map[int32]string{
+		0: "ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE",
+		1: "ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM",
+		2: "ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE",
+	}
+	EncryptionDeviceBoundKeyType_value = map[string]int32{
+		"ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE":            0,
+		"ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM":             1,
+		"ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE": 2,
+	}
+)
+
+func (x EncryptionDeviceBoundKeyType) Enum() *EncryptionDeviceBoundKeyType {
+	p := new(EncryptionDeviceBoundKeyType)
+	*p = x
+	return p
+}
+
+func (x EncryptionDeviceBoundKeyType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (EncryptionDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[7].Descriptor()
+}
+
+func (EncryptionDeviceBoundKeyType) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[7]
+}
+
+func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use EncryptionDeviceBoundKeyType.Descriptor instead.
+func (EncryptionDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
 }
 
 // WiFi authentication type.
@@ -440,11 +553,11 @@ func (x WifiAuthType) String() string {
 }
 
 func (WifiAuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[6].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[8].Descriptor()
 }
 
 func (WifiAuthType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[6]
+	return &file_pm_v1_actions_proto_enumTypes[8]
 }
 
 func (x WifiAuthType) Number() protoreflect.EnumNumber {
@@ -453,7 +566,63 @@ func (x WifiAuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiAuthType.Descriptor instead.
 func (WifiAuthType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+}
+
+// WifiBackend selects which WiFi-management tool the agent targets.
+// NetworkManager covers most mainstream distros; the other slots exist
+// so implementations for connman- or wpa_supplicant-only systems can
+// land later without another proto rename.
+type WifiBackend int32
+
+const (
+	WifiBackend_WIFI_BACKEND_NETWORKMANAGER WifiBackend = 0 // default — nmcli
+	WifiBackend_WIFI_BACKEND_CONNMAN        WifiBackend = 1 // connmanctl
+	WifiBackend_WIFI_BACKEND_WPA_SUPPLICANT WifiBackend = 2 // direct wpa_supplicant.conf management
+	WifiBackend_WIFI_BACKEND_IWD            WifiBackend = 3 // iwctl (systemd / Arch / Alpine default on some installs)
+)
+
+// Enum value maps for WifiBackend.
+var (
+	WifiBackend_name = map[int32]string{
+		0: "WIFI_BACKEND_NETWORKMANAGER",
+		1: "WIFI_BACKEND_CONNMAN",
+		2: "WIFI_BACKEND_WPA_SUPPLICANT",
+		3: "WIFI_BACKEND_IWD",
+	}
+	WifiBackend_value = map[string]int32{
+		"WIFI_BACKEND_NETWORKMANAGER": 0,
+		"WIFI_BACKEND_CONNMAN":        1,
+		"WIFI_BACKEND_WPA_SUPPLICANT": 2,
+		"WIFI_BACKEND_IWD":            3,
+	}
+)
+
+func (x WifiBackend) Enum() *WifiBackend {
+	p := new(WifiBackend)
+	*p = x
+	return p
+}
+
+func (x WifiBackend) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WifiBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[9].Descriptor()
+}
+
+func (WifiBackend) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[9]
+}
+
+func (x WifiBackend) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WifiBackend.Descriptor instead.
+func (WifiBackend) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
 }
 
 type Action struct {
@@ -481,7 +650,7 @@ type Action struct {
 	//	*Action_Package
 	//	*Action_App
 	//	*Action_Shell
-	//	*Action_Systemd
+	//	*Action_Service
 	//	*Action_File
 	//	*Action_Update
 	//	*Action_Repository
@@ -493,7 +662,7 @@ type Action struct {
 	//	*Action_AdminPolicy
 	//	*Action_Lps
 	//	*Action_Group
-	//	*Action_Luks
+	//	*Action_Encryption
 	//	*Action_Wifi
 	//	*Action_AgentUpdate
 	Params        isAction_Params `protobuf_oneof:"params"`
@@ -614,10 +783,10 @@ func (x *Action) GetShell() *ShellParams {
 	return nil
 }
 
-func (x *Action) GetSystemd() *SystemdParams {
+func (x *Action) GetService() *ServiceParams {
 	if x != nil {
-		if x, ok := x.Params.(*Action_Systemd); ok {
-			return x.Systemd
+		if x, ok := x.Params.(*Action_Service); ok {
+			return x.Service
 		}
 	}
 	return nil
@@ -722,10 +891,10 @@ func (x *Action) GetGroup() *GroupParams {
 	return nil
 }
 
-func (x *Action) GetLuks() *LuksParams {
+func (x *Action) GetEncryption() *EncryptionParams {
 	if x != nil {
-		if x, ok := x.Params.(*Action_Luks); ok {
-			return x.Luks
+		if x, ok := x.Params.(*Action_Encryption); ok {
+			return x.Encryption
 		}
 	}
 	return nil
@@ -765,8 +934,8 @@ type Action_Shell struct {
 	Shell *ShellParams `protobuf:"bytes,10,opt,name=shell,proto3,oneof"`
 }
 
-type Action_Systemd struct {
-	Systemd *SystemdParams `protobuf:"bytes,11,opt,name=systemd,proto3,oneof"`
+type Action_Service struct {
+	Service *ServiceParams `protobuf:"bytes,11,opt,name=service,proto3,oneof"`
 }
 
 type Action_File struct {
@@ -813,8 +982,8 @@ type Action_Group struct {
 	Group *GroupParams `protobuf:"bytes,22,opt,name=group,proto3,oneof"`
 }
 
-type Action_Luks struct {
-	Luks *LuksParams `protobuf:"bytes,23,opt,name=luks,proto3,oneof"`
+type Action_Encryption struct {
+	Encryption *EncryptionParams `protobuf:"bytes,23,opt,name=encryption,proto3,oneof"`
 }
 
 type Action_Wifi struct {
@@ -831,7 +1000,7 @@ func (*Action_App) isAction_Params() {}
 
 func (*Action_Shell) isAction_Params() {}
 
-func (*Action_Systemd) isAction_Params() {}
+func (*Action_Service) isAction_Params() {}
 
 func (*Action_File) isAction_Params() {}
 
@@ -855,7 +1024,7 @@ func (*Action_Lps) isAction_Params() {}
 
 func (*Action_Group) isAction_Params() {}
 
-func (*Action_Luks) isAction_Params() {}
+func (*Action_Encryption) isAction_Params() {}
 
 func (*Action_Wifi) isAction_Params() {}
 
@@ -1218,34 +1387,42 @@ func (x *ShellParams) GetIsCompliance() bool {
 	return false
 }
 
-type SystemdParams struct {
+// ServiceParams configures a service unit. unit_content is the verbatim
+// unit file; the agent writes it to the location expected by the chosen
+// backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
+// OPENRC: /etc/init.d/<unit_name>; etc.). Previously SystemdParams.
+type ServiceParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,min=1,max=255"
 	UnitName string `protobuf:"bytes,1,opt,name=unit_name,json=unitName,proto3" json:"unit_name,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"omitempty"
-	DesiredState SystemdUnitState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.SystemdUnitState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState ServiceUnitState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.ServiceUnitState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty"
 	Enable bool `protobuf:"varint,3,opt,name=enable,proto3" json:"enable,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,max=65536"
-	UnitContent   string `protobuf:"bytes,4,opt,name=unit_content,json=unitContent,proto3" json:"unit_content,omitempty" validate:"omitempty,max=65536"`
+	UnitContent string `protobuf:"bytes,4,opt,name=unit_content,json=unitContent,proto3" json:"unit_content,omitempty" validate:"omitempty,max=65536"`
+	// Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
+	// compatibility with devices that don't explicitly set it.
+	// @gotags: validate:"omitempty"
+	Backend       ServiceBackend `protobuf:"varint,5,opt,name=backend,proto3,enum=pm.v1.ServiceBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SystemdParams) Reset() {
-	*x = SystemdParams{}
+func (x *ServiceParams) Reset() {
+	*x = ServiceParams{}
 	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SystemdParams) String() string {
+func (x *ServiceParams) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SystemdParams) ProtoMessage() {}
+func (*ServiceParams) ProtoMessage() {}
 
-func (x *SystemdParams) ProtoReflect() protoreflect.Message {
+func (x *ServiceParams) ProtoReflect() protoreflect.Message {
 	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1257,37 +1434,44 @@ func (x *SystemdParams) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SystemdParams.ProtoReflect.Descriptor instead.
-func (*SystemdParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use ServiceParams.ProtoReflect.Descriptor instead.
+func (*ServiceParams) Descriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *SystemdParams) GetUnitName() string {
+func (x *ServiceParams) GetUnitName() string {
 	if x != nil {
 		return x.UnitName
 	}
 	return ""
 }
 
-func (x *SystemdParams) GetDesiredState() SystemdUnitState {
+func (x *ServiceParams) GetDesiredState() ServiceUnitState {
 	if x != nil {
 		return x.DesiredState
 	}
-	return SystemdUnitState_SYSTEMD_UNIT_STATE_UNSPECIFIED
+	return ServiceUnitState_SERVICE_UNIT_STATE_UNSPECIFIED
 }
 
-func (x *SystemdParams) GetEnable() bool {
+func (x *ServiceParams) GetEnable() bool {
 	if x != nil {
 		return x.Enable
 	}
 	return false
 }
 
-func (x *SystemdParams) GetUnitContent() string {
+func (x *ServiceParams) GetUnitContent() string {
 	if x != nil {
 		return x.UnitContent
 	}
 	return ""
+}
+
+func (x *ServiceParams) GetBackend() ServiceBackend {
+	if x != nil {
+		return x.Backend
+	}
+	return ServiceBackend_SERVICE_BACKEND_SYSTEMD
 }
 
 type FileParams struct {
@@ -2713,11 +2897,13 @@ func (x *LpsParams) GetGracePeriodHours() int32 {
 	return 0
 }
 
-// LuksParams configures LUKS disk encryption management.
-// The agent auto-detects the primary LUKS-encrypted volume on the device.
-// A managed passphrase is generated, stored on the server, and rotated on schedule.
-// Optionally, a device-bound key (TPM or user passphrase) can be enrolled in slot 7.
-type LuksParams struct {
+// EncryptionParams configures disk encryption management. Previously
+// LuksParams. The agent auto-detects the primary encrypted volume on
+// the device (format depends on the chosen backend). A managed
+// passphrase is generated, stored on the server, and rotated on
+// schedule. Optionally, a device-bound key (TPM or user passphrase)
+// can be enrolled in the backend's designated slot.
+type EncryptionParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Pre-shared key for initial ownership (only needed for first run)
 	// @gotags: validate:"required,min=1,max=256"
@@ -2728,33 +2914,36 @@ type LuksParams struct {
 	// Minimum words in generated managed passphrase (default 5, min 3, max 10)
 	// @gotags: validate:"omitempty,gte=3,lte=10"
 	MinWords int32 `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty" validate:"omitempty,gte=3,lte=10"`
-	// What to put in slot 7 — TPM, user passphrase, or nothing
+	// What to put in the device-bound key slot — TPM, user passphrase, or nothing
 	// @gotags: validate:"omitempty"
-	DeviceBoundKeyType LuksDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=pm.v1.LuksDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
+	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=pm.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
 	// Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
 	// @gotags: validate:"omitempty,gte=16,lte=128"
 	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
 	// Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
 	// @gotags: validate:"omitempty"
 	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
+	// @gotags: validate:"omitempty"
+	Backend       EncryptionBackend `protobuf:"varint,7,opt,name=backend,proto3,enum=pm.v1.EncryptionBackend" json:"backend,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LuksParams) Reset() {
-	*x = LuksParams{}
+func (x *EncryptionParams) Reset() {
+	*x = EncryptionParams{}
 	mi := &file_pm_v1_actions_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LuksParams) String() string {
+func (x *EncryptionParams) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LuksParams) ProtoMessage() {}
+func (*EncryptionParams) ProtoMessage() {}
 
-func (x *LuksParams) ProtoReflect() protoreflect.Message {
+func (x *EncryptionParams) ProtoReflect() protoreflect.Message {
 	mi := &file_pm_v1_actions_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2766,56 +2955,64 @@ func (x *LuksParams) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LuksParams.ProtoReflect.Descriptor instead.
-func (*LuksParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use EncryptionParams.ProtoReflect.Descriptor instead.
+func (*EncryptionParams) Descriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *LuksParams) GetPresharedKey() string {
+func (x *EncryptionParams) GetPresharedKey() string {
 	if x != nil {
 		return x.PresharedKey
 	}
 	return ""
 }
 
-func (x *LuksParams) GetRotationIntervalDays() int32 {
+func (x *EncryptionParams) GetRotationIntervalDays() int32 {
 	if x != nil {
 		return x.RotationIntervalDays
 	}
 	return 0
 }
 
-func (x *LuksParams) GetMinWords() int32 {
+func (x *EncryptionParams) GetMinWords() int32 {
 	if x != nil {
 		return x.MinWords
 	}
 	return 0
 }
 
-func (x *LuksParams) GetDeviceBoundKeyType() LuksDeviceBoundKeyType {
+func (x *EncryptionParams) GetDeviceBoundKeyType() EncryptionDeviceBoundKeyType {
 	if x != nil {
 		return x.DeviceBoundKeyType
 	}
-	return LuksDeviceBoundKeyType_LUKS_DEVICE_BOUND_KEY_TYPE_NONE
+	return EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE
 }
 
-func (x *LuksParams) GetUserPassphraseMinLength() int32 {
+func (x *EncryptionParams) GetUserPassphraseMinLength() int32 {
 	if x != nil {
 		return x.UserPassphraseMinLength
 	}
 	return 0
 }
 
-func (x *LuksParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
+func (x *EncryptionParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
 	if x != nil {
 		return x.UserPassphraseComplexity
 	}
 	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
 }
 
-// WifiParams configures WiFi connection management via NetworkManager.
-// Each action creates a connection profile named pm-wifi-{actionId}.
-// Supports PSK (password) and EAP-TLS (certificate) authentication.
+func (x *EncryptionParams) GetBackend() EncryptionBackend {
+	if x != nil {
+		return x.Backend
+	}
+	return EncryptionBackend_ENCRYPTION_BACKEND_LUKS
+}
+
+// WifiParams configures WiFi connection management.
+// Each action creates a connection profile named pm-wifi-{actionId} in
+// the chosen backend's native format. Supports PSK (password) and
+// EAP-TLS (certificate) authentication.
 type WifiParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Network name (SSID)
@@ -2840,7 +3037,10 @@ type WifiParams struct {
 	AutoConnect bool `protobuf:"varint,8,opt,name=auto_connect,json=autoConnect,proto3" json:"auto_connect,omitempty"`
 	Hidden      bool `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
 	// @gotags: validate:"omitempty,gte=-1,lte=999"
-	Priority      int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
+	Priority int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
+	// WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
+	// @gotags: validate:"omitempty"
+	Backend       WifiBackend `protobuf:"varint,11,opt,name=backend,proto3,enum=pm.v1.WifiBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2943,6 +3143,13 @@ func (x *WifiParams) GetPriority() int32 {
 		return x.Priority
 	}
 	return 0
+}
+
+func (x *WifiParams) GetBackend() WifiBackend {
+	if x != nil {
+		return x.Backend
+	}
+	return WifiBackend_WIFI_BACKEND_NETWORKMANAGER
 }
 
 type ActionResult struct {
@@ -3191,7 +3398,7 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x8d\t\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9f\t\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -3204,7 +3411,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x03app\x18\t \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
 	"\x05shell\x18\n" +
 	" \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\asystemd\x18\v \x01(\v2\x14.pm.v1.SystemdParamsH\x00R\asystemd\x12'\n" +
+	"\aservice\x18\v \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
 	"\x04file\x18\f \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
 	"\x06update\x18\r \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
 	"\n" +
@@ -3217,8 +3424,10 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x04sshd\x18\x13 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
 	"\fadmin_policy\x18\x14 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
 	"\x03lps\x18\x15 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
-	"\x04luks\x18\x17 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
+	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
+	"\n" +
+	"encryption\x18\x17 \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
+	"encryption\x12'\n" +
 	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
 	"\fagent_update\x18\x19 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
 	"\x06params\"\x9b\x01\n" +
@@ -3252,12 +3461,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\ris_compliance\x18\a \x01(\bR\fisCompliance\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +
-	"\rSystemdParams\x12\x1b\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd6\x01\n" +
+	"\rServiceParams\x12\x1b\n" +
 	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12<\n" +
-	"\rdesired_state\x18\x02 \x01(\x0e2\x17.pm.v1.SystemdUnitStateR\fdesiredState\x12\x16\n" +
+	"\rdesired_state\x18\x02 \x01(\x0e2\x17.pm.v1.ServiceUnitStateR\fdesiredState\x12\x16\n" +
 	"\x06enable\x18\x03 \x01(\bR\x06enable\x12!\n" +
-	"\funit_content\x18\x04 \x01(\tR\vunitContent\"\x9f\x01\n" +
+	"\funit_content\x18\x04 \x01(\tR\vunitContent\x12/\n" +
+	"\abackend\x18\x05 \x01(\x0e2\x15.pm.v1.ServiceBackendR\abackend\"\x9f\x01\n" +
 	"\n" +
 	"FileParams\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
@@ -3369,15 +3579,15 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"complexity\x18\x03 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
 	"complexity\x124\n" +
 	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
-	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xef\x02\n" +
-	"\n" +
-	"LuksParams\x12#\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xaf\x03\n" +
+	"\x10EncryptionParams\x12#\n" +
 	"\rpreshared_key\x18\x01 \x01(\tR\fpresharedKey\x124\n" +
 	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
-	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12P\n" +
-	"\x15device_bound_key_type\x18\x04 \x01(\x0e2\x1d.pm.v1.LuksDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
+	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12V\n" +
+	"\x15device_bound_key_type\x18\x04 \x01(\x0e2#.pm.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
 	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12Z\n" +
-	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xb0\x02\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\x122\n" +
+	"\abackend\x18\a \x01(\x0e2\x18.pm.v1.EncryptionBackendR\abackend\"\xde\x02\n" +
 	"\n" +
 	"WifiParams\x12\x12\n" +
 	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x120\n" +
@@ -3392,7 +3602,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
 	"\bpriority\x18\n" +
-	" \x01(\x05R\bpriority\"\x85\x04\n" +
+	" \x01(\x05R\bpriority\x12,\n" +
+	"\abackend\x18\v \x01(\x0e2\x12.pm.v1.WifiBackendR\abackend\"\x85\x04\n" +
 	"\fActionResult\x12,\n" +
 	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -3415,7 +3626,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\"o\n" +
 	"\x11AgentUpdateParams\x12,\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
-	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xe4\x04\n" +
+	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xea\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -3428,7 +3639,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x13ACTION_TYPE_FLATPAK\x10g\x12\x16\n" +
 	"\x11ACTION_TYPE_SHELL\x10\xc8\x01\x12\x1b\n" +
 	"\x16ACTION_TYPE_SCRIPT_RUN\x10\xc9\x01\x12\x18\n" +
-	"\x13ACTION_TYPE_SYSTEMD\x10\xac\x02\x12\x15\n" +
+	"\x13ACTION_TYPE_SERVICE\x10\xac\x02\x12\x15\n" +
 	"\x10ACTION_TYPE_FILE\x10\x90\x03\x12\x1a\n" +
 	"\x15ACTION_TYPE_DIRECTORY\x10\x91\x03\x12\x17\n" +
 	"\x12ACTION_TYPE_REBOOT\x10\xf4\x03\x12\x15\n" +
@@ -3438,15 +3649,20 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x0fACTION_TYPE_SSH\x10\xbc\x05\x12\x15\n" +
 	"\x10ACTION_TYPE_SSHD\x10\xbd\x05\x12\x1d\n" +
 	"\x18ACTION_TYPE_ADMIN_POLICY\x10\xa0\x06\x12\x14\n" +
-	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x15\n" +
-	"\x10ACTION_TYPE_LUKS\x10\xe8\a\x12\x15\n" +
+	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x1b\n" +
+	"\x16ACTION_TYPE_ENCRYPTION\x10\xe8\a\x12\x15\n" +
 	"\x10ACTION_TYPE_WIFI\x10\xcc\b\x12\x1d\n" +
-	"\x18ACTION_TYPE_AGENT_UPDATE\x10\xb0\t*\x98\x01\n" +
-	"\x10SystemdUnitState\x12\"\n" +
-	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
-	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
-	"\x1aSYSTEMD_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03*\x92\x01\n" +
+	"\x18ACTION_TYPE_AGENT_UPDATE\x10\xb0\t*|\n" +
+	"\x0eServiceBackend\x12\x1b\n" +
+	"\x17SERVICE_BACKEND_SYSTEMD\x10\x00\x12\x1a\n" +
+	"\x16SERVICE_BACKEND_OPENRC\x10\x01\x12\x19\n" +
+	"\x15SERVICE_BACKEND_RUNIT\x10\x02\x12\x16\n" +
+	"\x12SERVICE_BACKEND_S6\x10\x03*\x98\x01\n" +
+	"\x10ServiceUnitState\x12\"\n" +
+	"\x1eSERVICE_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aSERVICE_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
+	"\x1aSERVICE_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
+	"\x1cSERVICE_UNIT_STATE_RESTARTED\x10\x03*\x92\x01\n" +
 	"\x10AdminAccessLevel\x12\"\n" +
 	"\x1eADMIN_ACCESS_LEVEL_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ADMIN_ACCESS_LEVEL_FULL\x10\x01\x12\x1e\n" +
@@ -3458,15 +3674,24 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x15LpsPasswordComplexity\x12'\n" +
 	"#LPS_PASSWORD_COMPLEXITY_UNSPECIFIED\x10\x00\x12(\n" +
 	"$LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC\x10\x01\x12#\n" +
-	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02*\x91\x01\n" +
-	"\x16LuksDeviceBoundKeyType\x12#\n" +
-	"\x1fLUKS_DEVICE_BOUND_KEY_TYPE_NONE\x10\x00\x12\"\n" +
-	"\x1eLUKS_DEVICE_BOUND_KEY_TYPE_TPM\x10\x01\x12.\n" +
-	"*LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE\x10\x02*b\n" +
+	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02*i\n" +
+	"\x11EncryptionBackend\x12\x1b\n" +
+	"\x17ENCRYPTION_BACKEND_LUKS\x10\x00\x12\x1b\n" +
+	"\x17ENCRYPTION_BACKEND_GELI\x10\x01\x12\x1a\n" +
+	"\x16ENCRYPTION_BACKEND_CGD\x10\x02*\xa9\x01\n" +
+	"\x1cEncryptionDeviceBoundKeyType\x12)\n" +
+	"%ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE\x10\x00\x12(\n" +
+	"$ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM\x10\x01\x124\n" +
+	"0ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE\x10\x02*b\n" +
 	"\fWifiAuthType\x12\x1e\n" +
 	"\x1aWIFI_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12WIFI_AUTH_TYPE_PSK\x10\x01\x12\x1a\n" +
-	"\x16WIFI_AUTH_TYPE_EAP_TLS\x10\x02B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x16WIFI_AUTH_TYPE_EAP_TLS\x10\x02*\x7f\n" +
+	"\vWifiBackend\x12\x1f\n" +
+	"\x1bWIFI_BACKEND_NETWORKMANAGER\x10\x00\x12\x18\n" +
+	"\x14WIFI_BACKEND_CONNMAN\x10\x01\x12\x1f\n" +
+	"\x1bWIFI_BACKEND_WPA_SUPPLICANT\x10\x02\x12\x14\n" +
+	"\x10WIFI_BACKEND_IWD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_actions_proto_rawDescOnce sync.Once
@@ -3480,100 +3705,106 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
 var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_pm_v1_actions_proto_goTypes = []any{
-	(ActionType)(0),               // 0: pm.v1.ActionType
-	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
-	(AdminAccessLevel)(0),         // 2: pm.v1.AdminAccessLevel
-	(PrivilegeBackend)(0),         // 3: pm.v1.PrivilegeBackend
-	(LpsPasswordComplexity)(0),    // 4: pm.v1.LpsPasswordComplexity
-	(LuksDeviceBoundKeyType)(0),   // 5: pm.v1.LuksDeviceBoundKeyType
-	(WifiAuthType)(0),             // 6: pm.v1.WifiAuthType
-	(*Action)(nil),                // 7: pm.v1.Action
-	(*ActionSchedule)(nil),        // 8: pm.v1.ActionSchedule
-	(*PackageParams)(nil),         // 9: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 10: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 11: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 12: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 13: pm.v1.FileParams
-	(*DirectoryParams)(nil),       // 14: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),          // 15: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),         // 16: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),      // 17: pm.v1.RepositoryParams
-	(*AptRepository)(nil),         // 18: pm.v1.AptRepository
-	(*DnfRepository)(nil),         // 19: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),      // 20: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),      // 21: pm.v1.ZypperRepository
-	(*UserParams)(nil),            // 22: pm.v1.UserParams
-	(*GroupParams)(nil),           // 23: pm.v1.GroupParams
-	(*SshParams)(nil),             // 24: pm.v1.SshParams
-	(*SshdDirective)(nil),         // 25: pm.v1.SshdDirective
-	(*SshdParams)(nil),            // 26: pm.v1.SshdParams
-	(*AdminPolicyParams)(nil),     // 27: pm.v1.AdminPolicyParams
-	(*LpsParams)(nil),             // 28: pm.v1.LpsParams
-	(*LuksParams)(nil),            // 29: pm.v1.LuksParams
-	(*WifiParams)(nil),            // 30: pm.v1.WifiParams
-	(*ActionResult)(nil),          // 31: pm.v1.ActionResult
-	(*AgentUpdateArch)(nil),       // 32: pm.v1.AgentUpdateArch
-	(*AgentUpdateParams)(nil),     // 33: pm.v1.AgentUpdateParams
-	nil,                           // 34: pm.v1.ShellParams.EnvironmentEntry
-	nil,                           // 35: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),              // 36: pm.v1.ActionId
-	(DesiredState)(0),             // 37: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 38: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 39: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 40: google.protobuf.Timestamp
+	(ActionType)(0),                   // 0: pm.v1.ActionType
+	(ServiceBackend)(0),               // 1: pm.v1.ServiceBackend
+	(ServiceUnitState)(0),             // 2: pm.v1.ServiceUnitState
+	(AdminAccessLevel)(0),             // 3: pm.v1.AdminAccessLevel
+	(PrivilegeBackend)(0),             // 4: pm.v1.PrivilegeBackend
+	(LpsPasswordComplexity)(0),        // 5: pm.v1.LpsPasswordComplexity
+	(EncryptionBackend)(0),            // 6: pm.v1.EncryptionBackend
+	(EncryptionDeviceBoundKeyType)(0), // 7: pm.v1.EncryptionDeviceBoundKeyType
+	(WifiAuthType)(0),                 // 8: pm.v1.WifiAuthType
+	(WifiBackend)(0),                  // 9: pm.v1.WifiBackend
+	(*Action)(nil),                    // 10: pm.v1.Action
+	(*ActionSchedule)(nil),            // 11: pm.v1.ActionSchedule
+	(*PackageParams)(nil),             // 12: pm.v1.PackageParams
+	(*AppInstallParams)(nil),          // 13: pm.v1.AppInstallParams
+	(*ShellParams)(nil),               // 14: pm.v1.ShellParams
+	(*ServiceParams)(nil),             // 15: pm.v1.ServiceParams
+	(*FileParams)(nil),                // 16: pm.v1.FileParams
+	(*DirectoryParams)(nil),           // 17: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),              // 18: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),             // 19: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),          // 20: pm.v1.RepositoryParams
+	(*AptRepository)(nil),             // 21: pm.v1.AptRepository
+	(*DnfRepository)(nil),             // 22: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),          // 23: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),          // 24: pm.v1.ZypperRepository
+	(*UserParams)(nil),                // 25: pm.v1.UserParams
+	(*GroupParams)(nil),               // 26: pm.v1.GroupParams
+	(*SshParams)(nil),                 // 27: pm.v1.SshParams
+	(*SshdDirective)(nil),             // 28: pm.v1.SshdDirective
+	(*SshdParams)(nil),                // 29: pm.v1.SshdParams
+	(*AdminPolicyParams)(nil),         // 30: pm.v1.AdminPolicyParams
+	(*LpsParams)(nil),                 // 31: pm.v1.LpsParams
+	(*EncryptionParams)(nil),          // 32: pm.v1.EncryptionParams
+	(*WifiParams)(nil),                // 33: pm.v1.WifiParams
+	(*ActionResult)(nil),              // 34: pm.v1.ActionResult
+	(*AgentUpdateArch)(nil),           // 35: pm.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),         // 36: pm.v1.AgentUpdateParams
+	nil,                               // 37: pm.v1.ShellParams.EnvironmentEntry
+	nil,                               // 38: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),                  // 39: pm.v1.ActionId
+	(DesiredState)(0),                 // 40: pm.v1.DesiredState
+	(ExecutionStatus)(0),              // 41: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),             // 42: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil),     // 43: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	36, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	39, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	37, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	8,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	9,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	10, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	11, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	12, // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
-	13, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	15, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	17, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	16, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	14, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	22, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	24, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	26, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	27, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	28, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	23, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	29, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
-	30, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
-	33, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
-	34, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	1,  // 23: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	18, // 24: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	19, // 25: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	20, // 26: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	21, // 27: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	25, // 28: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	2,  // 29: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
-	3,  // 30: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
-	4,  // 31: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	5,  // 32: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
-	4,  // 33: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	6,  // 34: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
-	36, // 35: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	38, // 36: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	39, // 37: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	40, // 38: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	35, // 39: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	39, // 40: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
-	32, // 41: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
-	32, // 42: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	40, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	11, // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	12, // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	13, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	14, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	15, // 7: pm.v1.Action.service:type_name -> pm.v1.ServiceParams
+	16, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	18, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	20, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	19, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	17, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	25, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	27, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	29, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	30, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
+	31, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	26, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
+	32, // 19: pm.v1.Action.encryption:type_name -> pm.v1.EncryptionParams
+	33, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
+	36, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
+	37, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	2,  // 23: pm.v1.ServiceParams.desired_state:type_name -> pm.v1.ServiceUnitState
+	1,  // 24: pm.v1.ServiceParams.backend:type_name -> pm.v1.ServiceBackend
+	21, // 25: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	22, // 26: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	23, // 27: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	24, // 28: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	28, // 29: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	3,  // 30: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
+	4,  // 31: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
+	5,  // 32: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	7,  // 33: pm.v1.EncryptionParams.device_bound_key_type:type_name -> pm.v1.EncryptionDeviceBoundKeyType
+	5,  // 34: pm.v1.EncryptionParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	6,  // 35: pm.v1.EncryptionParams.backend:type_name -> pm.v1.EncryptionBackend
+	8,  // 36: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
+	9,  // 37: pm.v1.WifiParams.backend:type_name -> pm.v1.WifiBackend
+	39, // 38: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	41, // 39: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	42, // 40: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	43, // 41: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	38, // 42: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	42, // 43: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	35, // 44: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
+	35, // 45: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
+	46, // [46:46] is the sub-list for method output_type
+	46, // [46:46] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -3586,7 +3817,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Package)(nil),
 		(*Action_App)(nil),
 		(*Action_Shell)(nil),
-		(*Action_Systemd)(nil),
+		(*Action_Service)(nil),
 		(*Action_File)(nil),
 		(*Action_Update)(nil),
 		(*Action_Repository)(nil),
@@ -3598,7 +3829,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_AdminPolicy)(nil),
 		(*Action_Lps)(nil),
 		(*Action_Group)(nil),
-		(*Action_Luks)(nil),
+		(*Action_Encryption)(nil),
 		(*Action_Wifi)(nil),
 		(*Action_AgentUpdate)(nil),
 	}
@@ -3607,7 +3838,7 @@ func file_pm_v1_actions_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      10,
 			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,

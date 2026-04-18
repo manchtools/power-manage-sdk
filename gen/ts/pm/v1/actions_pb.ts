@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/actions.proto.
  */
 export const file_pm_v1_actions: GenFile = /*@__PURE__*/
-  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSKwBwoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgHIAEoDBInCgdwYWNrYWdlGAggASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgJIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgKIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgLIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGAwgASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgNIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYDiABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgPIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYECABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBEgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgSIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYEyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASMAoMYWRtaW5fcG9saWN5GBQgASgLMhgucG0udjEuQWRtaW5Qb2xpY3lQYXJhbXNIABIfCgNscHMYFSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgWIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASIQoEbHVrcxgXIAEoCzIRLnBtLnYxLkx1a3NQYXJhbXNIABIhCgR3aWZpGBggASgLMhEucG0udjEuV2lmaVBhcmFtc0gAEjAKDGFnZW50X3VwZGF0ZRgZIAEoCzIYLnBtLnYxLkFnZW50VXBkYXRlUGFyYW1zSABCCAoGcGFyYW1zImgKDkFjdGlvblNjaGVkdWxlEgwKBGNyb24YASABKAkSFgoOaW50ZXJ2YWxfaG91cnMYAiABKAUSFQoNcnVuX29uX2Fzc2lnbhgDIAEoCBIZChFza2lwX2lmX3VuY2hhbmdlZBgEIAEoCCKiAQoNUGFja2FnZVBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSFwoPYWxsb3dfZG93bmdyYWRlGAMgASgIEgsKA3BpbhgEIAEoCBIQCghhcHRfbmFtZRgFIAEoCRIQCghkbmZfbmFtZRgGIAEoCRITCgtwYWNtYW5fbmFtZRgHIAEoCRITCgt6eXBwZXJfbmFtZRgIIAEoCSJOChBBcHBJbnN0YWxsUGFyYW1zEgsKA3VybBgBIAEoCRIXCg9jaGVja3N1bV9zaGEyNTYYAiABKAkSFAoMaW5zdGFsbF9wYXRoGAMgASgJIoECCgtTaGVsbFBhcmFtcxIOCgZzY3JpcHQYASABKAkSEwoLaW50ZXJwcmV0ZXIYAiABKAkSEwoLcnVuX2FzX3Jvb3QYAyABKAgSGQoRd29ya2luZ19kaXJlY3RvcnkYBCABKAkSOAoLZW52aXJvbm1lbnQYBSADKAsyIy5wbS52MS5TaGVsbFBhcmFtcy5FbnZpcm9ubWVudEVudHJ5EhgKEGRldGVjdGlvbl9zY3JpcHQYBiABKAkSFQoNaXNfY29tcGxpYW5jZRgHIAEoCBoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEieAoNU3lzdGVtZFBhcmFtcxIRCgl1bml0X25hbWUYASABKAkSLgoNZGVzaXJlZF9zdGF0ZRgCIAEoDjIXLnBtLnYxLlN5c3RlbWRVbml0U3RhdGUSDgoGZW5hYmxlGAMgASgIEhQKDHVuaXRfY29udGVudBgEIAEoCSJuCgpGaWxlUGFyYW1zEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoCRINCgVvd25lchgDIAEoCRINCgVncm91cBgEIAEoCRIMCgRtb2RlGAUgASgJEhUKDW1hbmFnZWRfYmxvY2sYBiABKAgiXgoPRGlyZWN0b3J5UGFyYW1zEgwKBHBhdGgYASABKAkSDQoFb3duZXIYAiABKAkSDQoFZ3JvdXAYAyABKAkSDAoEbW9kZRgEIAEoCRIRCglyZWN1cnNpdmUYBSABKAgiVQoMVXBkYXRlUGFyYW1zEhUKDXNlY3VyaXR5X29ubHkYASABKAgSEgoKYXV0b3JlbW92ZRgCIAEoCBIaChJyZWJvb3RfaWZfcmVxdWlyZWQYAyABKAgiUQoNRmxhdHBha1BhcmFtcxIOCgZhcHBfaWQYASABKAkSDgoGcmVtb3RlGAIgASgJEhMKC3N5c3RlbV93aWRlGAMgASgIEgsKA3BpbhgEIAEoCCK4AQoQUmVwb3NpdG9yeVBhcmFtcxIMCgRuYW1lGAEgASgJEiEKA2FwdBgCIAEoCzIULnBtLnYxLkFwdFJlcG9zaXRvcnkSIQoDZG5mGAMgASgLMhQucG0udjEuRG5mUmVwb3NpdG9yeRInCgZwYWNtYW4YBCABKAsyFy5wbS52MS5QYWNtYW5SZXBvc2l0b3J5EicKBnp5cHBlchgFIAEoCzIXLnBtLnYxLlp5cHBlclJlcG9zaXRvcnkinQEKDUFwdFJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhQKDGRpc3RyaWJ1dGlvbhgCIAEoCRISCgpjb21wb25lbnRzGAMgAygJEhMKC2dwZ19rZXlfdXJsGAQgASgJEg8KB2dwZ19rZXkYBSABKAkSDwoHdHJ1c3RlZBgGIAEoCBIMCgRhcmNoGAcgASgJEhAKCGRpc2FibGVkGAggASgIIpMBCg1EbmZSZXBvc2l0b3J5Eg8KB2Jhc2V1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIQCghncGdjaGVjaxgEIAEoCBIOCgZncGdrZXkYBSABKAkSFwoPbW9kdWxlX2hvdGZpeGVzGAYgASgIEhAKCGRpc2FibGVkGAcgASgIIkcKEFBhY21hblJlcG9zaXRvcnkSDgoGc2VydmVyGAEgASgJEhEKCXNpZ19sZXZlbBgCIAEoCRIQCghkaXNhYmxlZBgDIAEoCCKcAQoQWnlwcGVyUmVwb3NpdG9yeRILCgN1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBITCgthdXRvcmVmcmVzaBgEIAEoCBIQCghncGdjaGVjaxgFIAEoCBIOCgZncGdrZXkYBiABKAkSDAoEdHlwZRgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCLqAQoKVXNlclBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRILCgN1aWQYAiABKAUSCwoDZ2lkGAMgASgFEhAKCGhvbWVfZGlyGAQgASgJEg0KBXNoZWxsGAUgASgJEhsKE3NzaF9hdXRob3JpemVkX2tleXMYBiADKAkSDwoHY29tbWVudBgHIAEoCRITCgtzeXN0ZW1fdXNlchgIIAEoCBITCgtjcmVhdGVfaG9tZRgJIAEoCBIQCghkaXNhYmxlZBgKIAEoCBIVCg1wcmltYXJ5X2dyb3VwGAsgASgJEg4KBmhpZGRlbhgMIAEoCCJPCgtHcm91cFBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB21lbWJlcnMYAiADKAkSCwoDZ2lkGAMgASgFEhQKDHN5c3RlbV9ncm91cBgEIAEoCCJICglTc2hQYXJhbXMSFAoMYWxsb3dfcHVia2V5GAEgASgIEhYKDmFsbG93X3Bhc3N3b3JkGAIgASgIEg0KBXVzZXJzGAMgAygJIisKDVNzaGREaXJlY3RpdmUSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJIkgKClNzaGRQYXJhbXMSEAoIcHJpb3JpdHkYASABKA0SKAoKZGlyZWN0aXZlcxgCIAMoCzIULnBtLnYxLlNzaGREaXJlY3RpdmUikgEKEUFkbWluUG9saWN5UGFyYW1zEi0KDGFjY2Vzc19sZXZlbBgBIAEoDjIXLnBtLnYxLkFkbWluQWNjZXNzTGV2ZWwSDQoFdXNlcnMYAiADKAkSFQoNY3VzdG9tX2NvbmZpZxgDIAEoCRIoCgdiYWNrZW5kGAQgASgOMhcucG0udjEuUHJpdmlsZWdlQmFja2VuZCKlAQoJTHBzUGFyYW1zEhEKCXVzZXJuYW1lcxgBIAMoCRIXCg9wYXNzd29yZF9sZW5ndGgYAiABKAUSMAoKY29tcGxleGl0eRgDIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eRIeChZyb3RhdGlvbl9pbnRlcnZhbF9kYXlzGAQgASgFEhoKEmdyYWNlX3BlcmlvZF9ob3VycxgFIAEoBSL6AQoKTHVrc1BhcmFtcxIVCg1wcmVzaGFyZWRfa2V5GAEgASgJEh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYAiABKAUSEQoJbWluX3dvcmRzGAMgASgFEjwKFWRldmljZV9ib3VuZF9rZXlfdHlwZRgEIAEoDjIdLnBtLnYxLkx1a3NEZXZpY2VCb3VuZEtleVR5cGUSIgoadXNlcl9wYXNzcGhyYXNlX21pbl9sZW5ndGgYBSABKAUSQAoadXNlcl9wYXNzcGhyYXNlX2NvbXBsZXhpdHkYBiABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHki0wEKCldpZmlQYXJhbXMSDAoEc3NpZBgBIAEoCRImCglhdXRoX3R5cGUYAiABKA4yEy5wbS52MS5XaWZpQXV0aFR5cGUSCwoDcHNrGAMgASgJEg8KB2NhX2NlcnQYBCABKAkSEwoLY2xpZW50X2NlcnQYBSABKAkSEgoKY2xpZW50X2tleRgGIAEoCRIQCghpZGVudGl0eRgHIAEoCRIUCgxhdXRvX2Nvbm5lY3QYCCABKAgSDgoGaGlkZGVuGAkgASgIEhAKCHByaW9yaXR5GAogASgFIpADCgxBY3Rpb25SZXN1bHQSIgoJYWN0aW9uX2lkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSJgoGc3RhdHVzGAIgASgOMhYucG0udjEuRXhlY3V0aW9uU3RhdHVzEg0KBWVycm9yGAMgASgJEiQKBm91dHB1dBgEIAEoCzIULnBtLnYxLkNvbW1hbmRPdXRwdXQSMAoMY29tcGxldGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtkdXJhdGlvbl9tcxgGIAEoAxIPCgdjaGFuZ2VkGAcgASgIEjMKCG1ldGFkYXRhGAggAygLMiEucG0udjEuQWN0aW9uUmVzdWx0Lk1ldGFkYXRhRW50cnkSEQoJY29tcGxpYW50GAkgASgIEi4KEGRldGVjdGlvbl9vdXRwdXQYCiABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0Gi8KDU1ldGFkYXRhRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI7Cg9BZ2VudFVwZGF0ZUFyY2gSEgoKYmluYXJ5X3VybBgBIAEoCRIUCgxjaGVja3N1bV91cmwYAiABKAkiYQoRQWdlbnRVcGRhdGVQYXJhbXMSJQoFYW1kNjQYASABKAsyFi5wbS52MS5BZ2VudFVwZGF0ZUFyY2gSJQoFYXJtNjQYAiABKAsyFi5wbS52MS5BZ2VudFVwZGF0ZUFyY2gq5AQKCkFjdGlvblR5cGUSGwoXQUNUSU9OX1RZUEVfVU5TUEVDSUZJRUQQABIXChNBQ1RJT05fVFlQRV9QQUNLQUdFEAESFgoSQUNUSU9OX1RZUEVfVVBEQVRFEAISGgoWQUNUSU9OX1RZUEVfUkVQT1NJVE9SWRADEhkKFUFDVElPTl9UWVBFX0FQUF9JTUFHRRBkEhMKD0FDVElPTl9UWVBFX0RFQhBlEhMKD0FDVElPTl9UWVBFX1JQTRBmEhcKE0FDVElPTl9UWVBFX0ZMQVRQQUsQZxIWChFBQ1RJT05fVFlQRV9TSEVMTBDIARIbChZBQ1RJT05fVFlQRV9TQ1JJUFRfUlVOEMkBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMSFQoQQUNUSU9OX1RZUEVfVVNFUhDYBBIWChFBQ1RJT05fVFlQRV9HUk9VUBDZBBIUCg9BQ1RJT05fVFlQRV9TU0gQvAUSFQoQQUNUSU9OX1RZUEVfU1NIRBC9BRIdChhBQ1RJT05fVFlQRV9BRE1JTl9QT0xJQ1kQoAYSFAoPQUNUSU9OX1RZUEVfTFBTEIQHEhUKEEFDVElPTl9UWVBFX0xVS1MQ6AcSFQoQQUNUSU9OX1RZUEVfV0lGSRDMCBIdChhBQ1RJT05fVFlQRV9BR0VOVF9VUERBVEUQsAkqmAEKEFN5c3RlbWRVbml0U3RhdGUSIgoeU1lTVEVNRF9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTWVNURU1EX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNZU1RFTURfVU5JVF9TVEFURV9SRVNUQVJURUQQAyqSAQoQQWRtaW5BY2Nlc3NMZXZlbBIiCh5BRE1JTl9BQ0NFU1NfTEVWRUxfVU5TUEVDSUZJRUQQABIbChdBRE1JTl9BQ0NFU1NfTEVWRUxfRlVMTBABEh4KGkFETUlOX0FDQ0VTU19MRVZFTF9MSU1JVEVEEAISHQoZQURNSU5fQUNDRVNTX0xFVkVMX0NVU1RPTRADKkoKEFByaXZpbGVnZUJhY2tlbmQSGgoWUFJJVklMRUdFX0JBQ0tFTkRfU1VETxAAEhoKFlBSSVZJTEVHRV9CQUNLRU5EX0RPQVMQASqPAQoVTHBzUGFzc3dvcmRDb21wbGV4aXR5EicKI0xQU19QQVNTV09SRF9DT01QTEVYSVRZX1VOU1BFQ0lGSUVEEAASKAokTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQUxQSEFOVU1FUklDEAESIwofTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQ09NUExFWBACKpEBChZMdWtzRGV2aWNlQm91bmRLZXlUeXBlEiMKH0xVS1NfREVWSUNFX0JPVU5EX0tFWV9UWVBFX05PTkUQABIiCh5MVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9UUE0QARIuCipMVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9VU0VSX1BBU1NQSFJBU0UQAipiCgxXaWZpQXV0aFR5cGUSHgoaV0lGSV9BVVRIX1RZUEVfVU5TUEVDSUZJRUQQABIWChJXSUZJX0FVVEhfVFlQRV9QU0sQARIaChZXSUZJX0FVVEhfVFlQRV9FQVBfVExTEAJCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
+  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSK8BwoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgHIAEoDBInCgdwYWNrYWdlGAggASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgJIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgKIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc2VydmljZRgLIAEoCzIULnBtLnYxLlNlcnZpY2VQYXJhbXNIABIhCgRmaWxlGAwgASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgNIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYDiABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgPIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYECABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBEgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgSIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYEyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASMAoMYWRtaW5fcG9saWN5GBQgASgLMhgucG0udjEuQWRtaW5Qb2xpY3lQYXJhbXNIABIfCgNscHMYFSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgWIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASLQoKZW5jcnlwdGlvbhgXIAEoCzIXLnBtLnYxLkVuY3J5cHRpb25QYXJhbXNIABIhCgR3aWZpGBggASgLMhEucG0udjEuV2lmaVBhcmFtc0gAEjAKDGFnZW50X3VwZGF0ZRgZIAEoCzIYLnBtLnYxLkFnZW50VXBkYXRlUGFyYW1zSABCCAoGcGFyYW1zImgKDkFjdGlvblNjaGVkdWxlEgwKBGNyb24YASABKAkSFgoOaW50ZXJ2YWxfaG91cnMYAiABKAUSFQoNcnVuX29uX2Fzc2lnbhgDIAEoCBIZChFza2lwX2lmX3VuY2hhbmdlZBgEIAEoCCKiAQoNUGFja2FnZVBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSFwoPYWxsb3dfZG93bmdyYWRlGAMgASgIEgsKA3BpbhgEIAEoCBIQCghhcHRfbmFtZRgFIAEoCRIQCghkbmZfbmFtZRgGIAEoCRITCgtwYWNtYW5fbmFtZRgHIAEoCRITCgt6eXBwZXJfbmFtZRgIIAEoCSJOChBBcHBJbnN0YWxsUGFyYW1zEgsKA3VybBgBIAEoCRIXCg9jaGVja3N1bV9zaGEyNTYYAiABKAkSFAoMaW5zdGFsbF9wYXRoGAMgASgJIoECCgtTaGVsbFBhcmFtcxIOCgZzY3JpcHQYASABKAkSEwoLaW50ZXJwcmV0ZXIYAiABKAkSEwoLcnVuX2FzX3Jvb3QYAyABKAgSGQoRd29ya2luZ19kaXJlY3RvcnkYBCABKAkSOAoLZW52aXJvbm1lbnQYBSADKAsyIy5wbS52MS5TaGVsbFBhcmFtcy5FbnZpcm9ubWVudEVudHJ5EhgKEGRldGVjdGlvbl9zY3JpcHQYBiABKAkSFQoNaXNfY29tcGxpYW5jZRgHIAEoCBoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEioAEKDVNlcnZpY2VQYXJhbXMSEQoJdW5pdF9uYW1lGAEgASgJEi4KDWRlc2lyZWRfc3RhdGUYAiABKA4yFy5wbS52MS5TZXJ2aWNlVW5pdFN0YXRlEg4KBmVuYWJsZRgDIAEoCBIUCgx1bml0X2NvbnRlbnQYBCABKAkSJgoHYmFja2VuZBgFIAEoDjIVLnBtLnYxLlNlcnZpY2VCYWNrZW5kIm4KCkZpbGVQYXJhbXMSDAoEcGF0aBgBIAEoCRIPCgdjb250ZW50GAIgASgJEg0KBW93bmVyGAMgASgJEg0KBWdyb3VwGAQgASgJEgwKBG1vZGUYBSABKAkSFQoNbWFuYWdlZF9ibG9jaxgGIAEoCCJeCg9EaXJlY3RvcnlQYXJhbXMSDAoEcGF0aBgBIAEoCRINCgVvd25lchgCIAEoCRINCgVncm91cBgDIAEoCRIMCgRtb2RlGAQgASgJEhEKCXJlY3Vyc2l2ZRgFIAEoCCJVCgxVcGRhdGVQYXJhbXMSFQoNc2VjdXJpdHlfb25seRgBIAEoCBISCgphdXRvcmVtb3ZlGAIgASgIEhoKEnJlYm9vdF9pZl9yZXF1aXJlZBgDIAEoCCJRCg1GbGF0cGFrUGFyYW1zEg4KBmFwcF9pZBgBIAEoCRIOCgZyZW1vdGUYAiABKAkSEwoLc3lzdGVtX3dpZGUYAyABKAgSCwoDcGluGAQgASgIIrgBChBSZXBvc2l0b3J5UGFyYW1zEgwKBG5hbWUYASABKAkSIQoDYXB0GAIgASgLMhQucG0udjEuQXB0UmVwb3NpdG9yeRIhCgNkbmYYAyABKAsyFC5wbS52MS5EbmZSZXBvc2l0b3J5EicKBnBhY21hbhgEIAEoCzIXLnBtLnYxLlBhY21hblJlcG9zaXRvcnkSJwoGenlwcGVyGAUgASgLMhcucG0udjEuWnlwcGVyUmVwb3NpdG9yeSKdAQoNQXB0UmVwb3NpdG9yeRILCgN1cmwYASABKAkSFAoMZGlzdHJpYnV0aW9uGAIgASgJEhIKCmNvbXBvbmVudHMYAyADKAkSEwoLZ3BnX2tleV91cmwYBCABKAkSDwoHZ3BnX2tleRgFIAEoCRIPCgd0cnVzdGVkGAYgASgIEgwKBGFyY2gYByABKAkSEAoIZGlzYWJsZWQYCCABKAgikwEKDURuZlJlcG9zaXRvcnkSDwoHYmFzZXVybBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhAKCGdwZ2NoZWNrGAQgASgIEg4KBmdwZ2tleRgFIAEoCRIXCg9tb2R1bGVfaG90Zml4ZXMYBiABKAgSEAoIZGlzYWJsZWQYByABKAgiRwoQUGFjbWFuUmVwb3NpdG9yeRIOCgZzZXJ2ZXIYASABKAkSEQoJc2lnX2xldmVsGAIgASgJEhAKCGRpc2FibGVkGAMgASgIIpwBChBaeXBwZXJSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhMKC2F1dG9yZWZyZXNoGAQgASgIEhAKCGdwZ2NoZWNrGAUgASgIEg4KBmdwZ2tleRgGIAEoCRIMCgR0eXBlGAcgASgJEhAKCGRpc2FibGVkGAggASgIIuoBCgpVc2VyUGFyYW1zEhAKCHVzZXJuYW1lGAEgASgJEgsKA3VpZBgCIAEoBRILCgNnaWQYAyABKAUSEAoIaG9tZV9kaXIYBCABKAkSDQoFc2hlbGwYBSABKAkSGwoTc3NoX2F1dGhvcml6ZWRfa2V5cxgGIAMoCRIPCgdjb21tZW50GAcgASgJEhMKC3N5c3RlbV91c2VyGAggASgIEhMKC2NyZWF0ZV9ob21lGAkgASgIEhAKCGRpc2FibGVkGAogASgIEhUKDXByaW1hcnlfZ3JvdXAYCyABKAkSDgoGaGlkZGVuGAwgASgIIk8KC0dyb3VwUGFyYW1zEgwKBG5hbWUYASABKAkSDwoHbWVtYmVycxgCIAMoCRILCgNnaWQYAyABKAUSFAoMc3lzdGVtX2dyb3VwGAQgASgIIkgKCVNzaFBhcmFtcxIUCgxhbGxvd19wdWJrZXkYASABKAgSFgoOYWxsb3dfcGFzc3dvcmQYAiABKAgSDQoFdXNlcnMYAyADKAkiKwoNU3NoZERpcmVjdGl2ZRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAkiSAoKU3NoZFBhcmFtcxIQCghwcmlvcml0eRgBIAEoDRIoCgpkaXJlY3RpdmVzGAIgAygLMhQucG0udjEuU3NoZERpcmVjdGl2ZSKSAQoRQWRtaW5Qb2xpY3lQYXJhbXMSLQoMYWNjZXNzX2xldmVsGAEgASgOMhcucG0udjEuQWRtaW5BY2Nlc3NMZXZlbBINCgV1c2VycxgCIAMoCRIVCg1jdXN0b21fY29uZmlnGAMgASgJEigKB2JhY2tlbmQYBCABKA4yFy5wbS52MS5Qcml2aWxlZ2VCYWNrZW5kIqUBCglMcHNQYXJhbXMSEQoJdXNlcm5hbWVzGAEgAygJEhcKD3Bhc3N3b3JkX2xlbmd0aBgCIAEoBRIwCgpjb21wbGV4aXR5GAMgASgOMhwucG0udjEuTHBzUGFzc3dvcmRDb21wbGV4aXR5Eh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYBCABKAUSGgoSZ3JhY2VfcGVyaW9kX2hvdXJzGAUgASgFIrECChBFbmNyeXB0aW9uUGFyYW1zEhUKDXByZXNoYXJlZF9rZXkYASABKAkSHgoWcm90YXRpb25faW50ZXJ2YWxfZGF5cxgCIAEoBRIRCgltaW5fd29yZHMYAyABKAUSQgoVZGV2aWNlX2JvdW5kX2tleV90eXBlGAQgASgOMiMucG0udjEuRW5jcnlwdGlvbkRldmljZUJvdW5kS2V5VHlwZRIiChp1c2VyX3Bhc3NwaHJhc2VfbWluX2xlbmd0aBgFIAEoBRJAChp1c2VyX3Bhc3NwaHJhc2VfY29tcGxleGl0eRgGIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eRIpCgdiYWNrZW5kGAcgASgOMhgucG0udjEuRW5jcnlwdGlvbkJhY2tlbmQi+AEKCldpZmlQYXJhbXMSDAoEc3NpZBgBIAEoCRImCglhdXRoX3R5cGUYAiABKA4yEy5wbS52MS5XaWZpQXV0aFR5cGUSCwoDcHNrGAMgASgJEg8KB2NhX2NlcnQYBCABKAkSEwoLY2xpZW50X2NlcnQYBSABKAkSEgoKY2xpZW50X2tleRgGIAEoCRIQCghpZGVudGl0eRgHIAEoCRIUCgxhdXRvX2Nvbm5lY3QYCCABKAgSDgoGaGlkZGVuGAkgASgIEhAKCHByaW9yaXR5GAogASgFEiMKB2JhY2tlbmQYCyABKA4yEi5wbS52MS5XaWZpQmFja2VuZCKQAwoMQWN0aW9uUmVzdWx0EiIKCWFjdGlvbl9pZBgBIAEoCzIPLnBtLnYxLkFjdGlvbklkEiYKBnN0YXR1cxgCIAEoDjIWLnBtLnYxLkV4ZWN1dGlvblN0YXR1cxINCgVlcnJvchgDIAEoCRIkCgZvdXRwdXQYBCABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0EjAKDGNvbXBsZXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLZHVyYXRpb25fbXMYBiABKAMSDwoHY2hhbmdlZBgHIAEoCBIzCghtZXRhZGF0YRgIIAMoCzIhLnBtLnYxLkFjdGlvblJlc3VsdC5NZXRhZGF0YUVudHJ5EhEKCWNvbXBsaWFudBgJIAEoCBIuChBkZXRlY3Rpb25fb3V0cHV0GAogASgLMhQucG0udjEuQ29tbWFuZE91dHB1dBovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOwoPQWdlbnRVcGRhdGVBcmNoEhIKCmJpbmFyeV91cmwYASABKAkSFAoMY2hlY2tzdW1fdXJsGAIgASgJImEKEUFnZW50VXBkYXRlUGFyYW1zEiUKBWFtZDY0GAEgASgLMhYucG0udjEuQWdlbnRVcGRhdGVBcmNoEiUKBWFybTY0GAIgASgLMhYucG0udjEuQWdlbnRVcGRhdGVBcmNoKuoECgpBY3Rpb25UeXBlEhsKF0FDVElPTl9UWVBFX1VOU1BFQ0lGSUVEEAASFwoTQUNUSU9OX1RZUEVfUEFDS0FHRRABEhYKEkFDVElPTl9UWVBFX1VQREFURRACEhoKFkFDVElPTl9UWVBFX1JFUE9TSVRPUlkQAxIZChVBQ1RJT05fVFlQRV9BUFBfSU1BR0UQZBITCg9BQ1RJT05fVFlQRV9ERUIQZRITCg9BQ1RJT05fVFlQRV9SUE0QZhIXChNBQ1RJT05fVFlQRV9GTEFUUEFLEGcSFgoRQUNUSU9OX1RZUEVfU0hFTEwQyAESGwoWQUNUSU9OX1RZUEVfU0NSSVBUX1JVThDJARIYChNBQ1RJT05fVFlQRV9TRVJWSUNFEKwCEhUKEEFDVElPTl9UWVBFX0ZJTEUQkAMSGgoVQUNUSU9OX1RZUEVfRElSRUNUT1JZEJEDEhcKEkFDVElPTl9UWVBFX1JFQk9PVBD0AxIVChBBQ1RJT05fVFlQRV9TWU5DEPUDEhUKEEFDVElPTl9UWVBFX1VTRVIQ2AQSFgoRQUNUSU9OX1RZUEVfR1JPVVAQ2QQSFAoPQUNUSU9OX1RZUEVfU1NIELwFEhUKEEFDVElPTl9UWVBFX1NTSEQQvQUSHQoYQUNUSU9OX1RZUEVfQURNSU5fUE9MSUNZEKAGEhQKD0FDVElPTl9UWVBFX0xQUxCEBxIbChZBQ1RJT05fVFlQRV9FTkNSWVBUSU9OEOgHEhUKEEFDVElPTl9UWVBFX1dJRkkQzAgSHQoYQUNUSU9OX1RZUEVfQUdFTlRfVVBEQVRFELAJKnwKDlNlcnZpY2VCYWNrZW5kEhsKF1NFUlZJQ0VfQkFDS0VORF9TWVNURU1EEAASGgoWU0VSVklDRV9CQUNLRU5EX09QRU5SQxABEhkKFVNFUlZJQ0VfQkFDS0VORF9SVU5JVBACEhYKElNFUlZJQ0VfQkFDS0VORF9TNhADKpgBChBTZXJ2aWNlVW5pdFN0YXRlEiIKHlNFUlZJQ0VfVU5JVF9TVEFURV9VTlNQRUNJRklFRBAAEh4KGlNFUlZJQ0VfVU5JVF9TVEFURV9TVEFSVEVEEAESHgoaU0VSVklDRV9VTklUX1NUQVRFX1NUT1BQRUQQAhIgChxTRVJWSUNFX1VOSVRfU1RBVEVfUkVTVEFSVEVEEAMqkgEKEEFkbWluQWNjZXNzTGV2ZWwSIgoeQURNSU5fQUNDRVNTX0xFVkVMX1VOU1BFQ0lGSUVEEAASGwoXQURNSU5fQUNDRVNTX0xFVkVMX0ZVTEwQARIeChpBRE1JTl9BQ0NFU1NfTEVWRUxfTElNSVRFRBACEh0KGUFETUlOX0FDQ0VTU19MRVZFTF9DVVNUT00QAypKChBQcml2aWxlZ2VCYWNrZW5kEhoKFlBSSVZJTEVHRV9CQUNLRU5EX1NVRE8QABIaChZQUklWSUxFR0VfQkFDS0VORF9ET0FTEAEqjwEKFUxwc1Bhc3N3b3JkQ29tcGxleGl0eRInCiNMUFNfUEFTU1dPUkRfQ09NUExFWElUWV9VTlNQRUNJRklFRBAAEigKJExQU19QQVNTV09SRF9DT01QTEVYSVRZX0FMUEhBTlVNRVJJQxABEiMKH0xQU19QQVNTV09SRF9DT01QTEVYSVRZX0NPTVBMRVgQAippChFFbmNyeXB0aW9uQmFja2VuZBIbChdFTkNSWVBUSU9OX0JBQ0tFTkRfTFVLUxAAEhsKF0VOQ1JZUFRJT05fQkFDS0VORF9HRUxJEAESGgoWRU5DUllQVElPTl9CQUNLRU5EX0NHRBACKqkBChxFbmNyeXB0aW9uRGV2aWNlQm91bmRLZXlUeXBlEikKJUVOQ1JZUFRJT05fREVWSUNFX0JPVU5EX0tFWV9UWVBFX05PTkUQABIoCiRFTkNSWVBUSU9OX0RFVklDRV9CT1VORF9LRVlfVFlQRV9UUE0QARI0CjBFTkNSWVBUSU9OX0RFVklDRV9CT1VORF9LRVlfVFlQRV9VU0VSX1BBU1NQSFJBU0UQAipiCgxXaWZpQXV0aFR5cGUSHgoaV0lGSV9BVVRIX1RZUEVfVU5TUEVDSUZJRUQQABIWChJXSUZJX0FVVEhfVFlQRV9QU0sQARIaChZXSUZJX0FVVEhfVFlQRV9FQVBfVExTEAIqfwoLV2lmaUJhY2tlbmQSHwobV0lGSV9CQUNLRU5EX05FVFdPUktNQU5BR0VSEAASGAoUV0lGSV9CQUNLRU5EX0NPTk5NQU4QARIfChtXSUZJX0JBQ0tFTkRfV1BBX1NVUFBMSUNBTlQQAhIUChBXSUZJX0JBQ0tFTkRfSVdEEANCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.Action
@@ -96,10 +96,10 @@ export type Action = Message<"pm.v1.Action"> & {
     case: "shell";
   } | {
     /**
-     * @generated from field: pm.v1.SystemdParams systemd = 11;
+     * @generated from field: pm.v1.ServiceParams service = 11;
      */
-    value: SystemdParams;
-    case: "systemd";
+    value: ServiceParams;
+    case: "service";
   } | {
     /**
      * @generated from field: pm.v1.FileParams file = 12;
@@ -168,10 +168,10 @@ export type Action = Message<"pm.v1.Action"> & {
     case: "group";
   } | {
     /**
-     * @generated from field: pm.v1.LuksParams luks = 23;
+     * @generated from field: pm.v1.EncryptionParams encryption = 23;
      */
-    value: LuksParams;
-    case: "luks";
+    value: EncryptionParams;
+    case: "encryption";
   } | {
     /**
      * @generated from field: pm.v1.WifiParams wifi = 24;
@@ -421,9 +421,14 @@ export const ShellParamsSchema: GenMessage<ShellParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 4);
 
 /**
- * @generated from message pm.v1.SystemdParams
+ * ServiceParams configures a service unit. unit_content is the verbatim
+ * unit file; the agent writes it to the location expected by the chosen
+ * backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
+ * OPENRC: /etc/init.d/<unit_name>; etc.). Previously SystemdParams.
+ *
+ * @generated from message pm.v1.ServiceParams
  */
-export type SystemdParams = Message<"pm.v1.SystemdParams"> & {
+export type ServiceParams = Message<"pm.v1.ServiceParams"> & {
   /**
    * @gotags: validate:"required,min=1,max=255"
    *
@@ -434,9 +439,9 @@ export type SystemdParams = Message<"pm.v1.SystemdParams"> & {
   /**
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: pm.v1.SystemdUnitState desired_state = 2;
+   * @generated from field: pm.v1.ServiceUnitState desired_state = 2;
    */
-  desiredState: SystemdUnitState;
+  desiredState: ServiceUnitState;
 
   /**
    * @gotags: validate:"omitempty"
@@ -451,13 +456,22 @@ export type SystemdParams = Message<"pm.v1.SystemdParams"> & {
    * @generated from field: string unit_content = 4;
    */
   unitContent: string;
+
+  /**
+   * Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
+   * compatibility with devices that don't explicitly set it.
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: pm.v1.ServiceBackend backend = 5;
+   */
+  backend: ServiceBackend;
 };
 
 /**
- * Describes the message pm.v1.SystemdParams.
- * Use `create(SystemdParamsSchema)` to create a new message.
+ * Describes the message pm.v1.ServiceParams.
+ * Use `create(ServiceParamsSchema)` to create a new message.
  */
-export const SystemdParamsSchema: GenMessage<SystemdParams> = /*@__PURE__*/
+export const ServiceParamsSchema: GenMessage<ServiceParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 5);
 
 /**
@@ -1359,14 +1373,16 @@ export const LpsParamsSchema: GenMessage<LpsParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 21);
 
 /**
- * LuksParams configures LUKS disk encryption management.
- * The agent auto-detects the primary LUKS-encrypted volume on the device.
- * A managed passphrase is generated, stored on the server, and rotated on schedule.
- * Optionally, a device-bound key (TPM or user passphrase) can be enrolled in slot 7.
+ * EncryptionParams configures disk encryption management. Previously
+ * LuksParams. The agent auto-detects the primary encrypted volume on
+ * the device (format depends on the chosen backend). A managed
+ * passphrase is generated, stored on the server, and rotated on
+ * schedule. Optionally, a device-bound key (TPM or user passphrase)
+ * can be enrolled in the backend's designated slot.
  *
- * @generated from message pm.v1.LuksParams
+ * @generated from message pm.v1.EncryptionParams
  */
-export type LuksParams = Message<"pm.v1.LuksParams"> & {
+export type EncryptionParams = Message<"pm.v1.EncryptionParams"> & {
   /**
    * Pre-shared key for initial ownership (only needed for first run)
    * @gotags: validate:"required,min=1,max=256"
@@ -1392,12 +1408,12 @@ export type LuksParams = Message<"pm.v1.LuksParams"> & {
   minWords: number;
 
   /**
-   * What to put in slot 7 — TPM, user passphrase, or nothing
+   * What to put in the device-bound key slot — TPM, user passphrase, or nothing
    * @gotags: validate:"omitempty"
    *
-   * @generated from field: pm.v1.LuksDeviceBoundKeyType device_bound_key_type = 4;
+   * @generated from field: pm.v1.EncryptionDeviceBoundKeyType device_bound_key_type = 4;
    */
-  deviceBoundKeyType: LuksDeviceBoundKeyType;
+  deviceBoundKeyType: EncryptionDeviceBoundKeyType;
 
   /**
    * Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
@@ -1414,19 +1430,28 @@ export type LuksParams = Message<"pm.v1.LuksParams"> & {
    * @generated from field: pm.v1.LpsPasswordComplexity user_passphrase_complexity = 6;
    */
   userPassphraseComplexity: LpsPasswordComplexity;
+
+  /**
+   * Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: pm.v1.EncryptionBackend backend = 7;
+   */
+  backend: EncryptionBackend;
 };
 
 /**
- * Describes the message pm.v1.LuksParams.
- * Use `create(LuksParamsSchema)` to create a new message.
+ * Describes the message pm.v1.EncryptionParams.
+ * Use `create(EncryptionParamsSchema)` to create a new message.
  */
-export const LuksParamsSchema: GenMessage<LuksParams> = /*@__PURE__*/
+export const EncryptionParamsSchema: GenMessage<EncryptionParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 22);
 
 /**
- * WifiParams configures WiFi connection management via NetworkManager.
- * Each action creates a connection profile named pm-wifi-{actionId}.
- * Supports PSK (password) and EAP-TLS (certificate) authentication.
+ * WifiParams configures WiFi connection management.
+ * Each action creates a connection profile named pm-wifi-{actionId} in
+ * the chosen backend's native format. Supports PSK (password) and
+ * EAP-TLS (certificate) authentication.
  *
  * @generated from message pm.v1.WifiParams
  */
@@ -1510,6 +1535,14 @@ export type WifiParams = Message<"pm.v1.WifiParams"> & {
    * @generated from field: int32 priority = 10;
    */
   priority: number;
+
+  /**
+   * WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: pm.v1.WifiBackend backend = 11;
+   */
+  backend: WifiBackend;
 };
 
 /**
@@ -1744,11 +1777,11 @@ export enum ActionType {
   /**
    * Services (300-399)
    *
-   * Systemd unit
+   * Service unit (systemd, openrc, runit, s6)
    *
-   * @generated from enum value: ACTION_TYPE_SYSTEMD = 300;
+   * @generated from enum value: ACTION_TYPE_SERVICE = 300;
    */
-  SYSTEMD = 300,
+  SERVICE = 300,
 
   /**
    * Files (400-499)
@@ -1835,11 +1868,11 @@ export enum ActionType {
   /**
    * Encryption management (1000-1099)
    *
-   * LUKS disk encryption management
+   * Disk encryption management (LUKS, GELI, etc.)
    *
-   * @generated from enum value: ACTION_TYPE_LUKS = 1000;
+   * @generated from enum value: ACTION_TYPE_ENCRYPTION = 1000;
    */
-  LUKS = 1000,
+  ENCRYPTION = 1000,
 
   /**
    * Network management (1100-1199)
@@ -1867,35 +1900,74 @@ export const ActionTypeSchema: GenEnum<ActionType> = /*@__PURE__*/
   enumDesc(file_pm_v1_actions, 0);
 
 /**
- * @generated from enum pm.v1.SystemdUnitState
+ * ServiceBackend selects which init/service manager the agent targets.
+ * The default (SYSTEMD) matches most mainstream distros. OPENRC/RUNIT/S6
+ * slots exist so adding those implementations later does not require a
+ * second proto rename. Agents set their active backend via
+ * sys/service.SetServiceBackend at startup.
+ *
+ * @generated from enum pm.v1.ServiceBackend
  */
-export enum SystemdUnitState {
+export enum ServiceBackend {
   /**
-   * @generated from enum value: SYSTEMD_UNIT_STATE_UNSPECIFIED = 0;
+   * default
+   *
+   * @generated from enum value: SERVICE_BACKEND_SYSTEMD = 0;
+   */
+  SYSTEMD = 0,
+
+  /**
+   * @generated from enum value: SERVICE_BACKEND_OPENRC = 1;
+   */
+  OPENRC = 1,
+
+  /**
+   * @generated from enum value: SERVICE_BACKEND_RUNIT = 2;
+   */
+  RUNIT = 2,
+
+  /**
+   * @generated from enum value: SERVICE_BACKEND_S6 = 3;
+   */
+  S6 = 3,
+}
+
+/**
+ * Describes the enum pm.v1.ServiceBackend.
+ */
+export const ServiceBackendSchema: GenEnum<ServiceBackend> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 1);
+
+/**
+ * @generated from enum pm.v1.ServiceUnitState
+ */
+export enum ServiceUnitState {
+  /**
+   * @generated from enum value: SERVICE_UNIT_STATE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: SYSTEMD_UNIT_STATE_STARTED = 1;
+   * @generated from enum value: SERVICE_UNIT_STATE_STARTED = 1;
    */
   STARTED = 1,
 
   /**
-   * @generated from enum value: SYSTEMD_UNIT_STATE_STOPPED = 2;
+   * @generated from enum value: SERVICE_UNIT_STATE_STOPPED = 2;
    */
   STOPPED = 2,
 
   /**
-   * @generated from enum value: SYSTEMD_UNIT_STATE_RESTARTED = 3;
+   * @generated from enum value: SERVICE_UNIT_STATE_RESTARTED = 3;
    */
   RESTARTED = 3,
 }
 
 /**
- * Describes the enum pm.v1.SystemdUnitState.
+ * Describes the enum pm.v1.ServiceUnitState.
  */
-export const SystemdUnitStateSchema: GenEnum<SystemdUnitState> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 1);
+export const ServiceUnitStateSchema: GenEnum<ServiceUnitState> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 2);
 
 /**
  * AdminAccessLevel defines the level of administrative access granted.
@@ -1938,7 +2010,7 @@ export enum AdminAccessLevel {
  * Describes the enum pm.v1.AdminAccessLevel.
  */
 export const AdminAccessLevelSchema: GenEnum<AdminAccessLevel> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 2);
+  enumDesc(file_pm_v1_actions, 3);
 
 /**
  * PrivilegeBackend selects which privilege-escalation tool the agent
@@ -1968,7 +2040,7 @@ export enum PrivilegeBackend {
  * Describes the enum pm.v1.PrivilegeBackend.
  */
 export const PrivilegeBackendSchema: GenEnum<PrivilegeBackend> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 3);
+  enumDesc(file_pm_v1_actions, 4);
 
 /**
  * LpsPasswordComplexity defines the character set for generated passwords.
@@ -2000,41 +2072,81 @@ export enum LpsPasswordComplexity {
  * Describes the enum pm.v1.LpsPasswordComplexity.
  */
 export const LpsPasswordComplexitySchema: GenEnum<LpsPasswordComplexity> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 4);
+  enumDesc(file_pm_v1_actions, 5);
 
 /**
- * LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
+ * EncryptionBackend selects the disk-encryption implementation the
+ * agent targets. LUKS covers virtually all managed Linux today; the
+ * other slots exist so implementations for other platforms can land
+ * later without another proto rename.
  *
- * @generated from enum pm.v1.LuksDeviceBoundKeyType
+ * @generated from enum pm.v1.EncryptionBackend
  */
-export enum LuksDeviceBoundKeyType {
+export enum EncryptionBackend {
   /**
-   * No device-bound key (managed passphrase only)
+   * default — cryptsetup/LUKS2
    *
-   * @generated from enum value: LUKS_DEVICE_BOUND_KEY_TYPE_NONE = 0;
+   * @generated from enum value: ENCRYPTION_BACKEND_LUKS = 0;
+   */
+  LUKS = 0,
+
+  /**
+   * FreeBSD GELI
+   *
+   * @generated from enum value: ENCRYPTION_BACKEND_GELI = 1;
+   */
+  GELI = 1,
+
+  /**
+   * NetBSD CGD
+   *
+   * @generated from enum value: ENCRYPTION_BACKEND_CGD = 2;
+   */
+  CGD = 2,
+}
+
+/**
+ * Describes the enum pm.v1.EncryptionBackend.
+ */
+export const EncryptionBackendSchema: GenEnum<EncryptionBackend> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 6);
+
+/**
+ * EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
+ * slot (e.g. LUKS slot 7). Backends without an equivalent concept
+ * should treat non-NONE values as best-effort and report whichever
+ * subset of modes they support.
+ *
+ * @generated from enum pm.v1.EncryptionDeviceBoundKeyType
+ */
+export enum EncryptionDeviceBoundKeyType {
+  /**
+   * Managed passphrase only, no device-bound key
+   *
+   * @generated from enum value: ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE = 0;
    */
   NONE = 0,
 
   /**
    * TPM2 auto-unlock at boot
    *
-   * @generated from enum value: LUKS_DEVICE_BOUND_KEY_TYPE_TPM = 1;
+   * @generated from enum value: ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM = 1;
    */
   TPM = 1,
 
   /**
    * User-defined passphrase via CLI
    *
-   * @generated from enum value: LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2;
+   * @generated from enum value: ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2;
    */
   USER_PASSPHRASE = 2,
 }
 
 /**
- * Describes the enum pm.v1.LuksDeviceBoundKeyType.
+ * Describes the enum pm.v1.EncryptionDeviceBoundKeyType.
  */
-export const LuksDeviceBoundKeyTypeSchema: GenEnum<LuksDeviceBoundKeyType> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 5);
+export const EncryptionDeviceBoundKeyTypeSchema: GenEnum<EncryptionDeviceBoundKeyType> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 7);
 
 /**
  * WiFi authentication type.
@@ -2066,5 +2178,49 @@ export enum WifiAuthType {
  * Describes the enum pm.v1.WifiAuthType.
  */
 export const WifiAuthTypeSchema: GenEnum<WifiAuthType> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 6);
+  enumDesc(file_pm_v1_actions, 8);
+
+/**
+ * WifiBackend selects which WiFi-management tool the agent targets.
+ * NetworkManager covers most mainstream distros; the other slots exist
+ * so implementations for connman- or wpa_supplicant-only systems can
+ * land later without another proto rename.
+ *
+ * @generated from enum pm.v1.WifiBackend
+ */
+export enum WifiBackend {
+  /**
+   * default — nmcli
+   *
+   * @generated from enum value: WIFI_BACKEND_NETWORKMANAGER = 0;
+   */
+  NETWORKMANAGER = 0,
+
+  /**
+   * connmanctl
+   *
+   * @generated from enum value: WIFI_BACKEND_CONNMAN = 1;
+   */
+  CONNMAN = 1,
+
+  /**
+   * direct wpa_supplicant.conf management
+   *
+   * @generated from enum value: WIFI_BACKEND_WPA_SUPPLICANT = 2;
+   */
+  WPA_SUPPLICANT = 2,
+
+  /**
+   * iwctl (systemd / Arch / Alpine default on some installs)
+   *
+   * @generated from enum value: WIFI_BACKEND_IWD = 3;
+   */
+  IWD = 3,
+}
+
+/**
+ * Describes the enum pm.v1.WifiBackend.
+ */
+export const WifiBackendSchema: GenEnum<WifiBackend> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 9);
 

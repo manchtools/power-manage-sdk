@@ -30,7 +30,7 @@ enum ActionType {
   ACTION_TYPE_SCRIPT_RUN = 201; // One-off script execution (not scheduled)
 
   // Services (300-399)
-  ACTION_TYPE_SYSTEMD = 300;    // Systemd unit
+  ACTION_TYPE_SERVICE = 300;    // Service unit (systemd, openrc, runit, s6)
 
   // Files (400-499)
   ACTION_TYPE_FILE = 400;       // File management
@@ -55,7 +55,7 @@ enum ActionType {
   ACTION_TYPE_LPS = 900;        // Local Password Solution
 
   // Encryption management (1000-1099)
-  ACTION_TYPE_LUKS = 1000;      // LUKS disk encryption management
+  ACTION_TYPE_ENCRYPTION = 1000;  // Disk encryption management (LUKS, GELI, etc.)
 
   // Network management (1100-1199)
   ACTION_TYPE_WIFI = 1100;      // WiFi connection management
@@ -94,7 +94,7 @@ message Action {
     PackageParams package = 8;
     AppInstallParams app = 9;
     ShellParams shell = 10;
-    SystemdParams systemd = 11;
+    ServiceParams service = 11;
     FileParams file = 12;
     UpdateParams update = 13;
     RepositoryParams repository = 14;
@@ -106,7 +106,7 @@ message Action {
     AdminPolicyParams admin_policy = 20;
     LpsParams lps = 21;
     GroupParams group = 22;
-    LuksParams luks = 23;
+    EncryptionParams encryption = 23;
     WifiParams wifi = 24;
     AgentUpdateParams agent_update = 25;
   }
@@ -191,22 +191,42 @@ message ShellParams {
   bool is_compliance = 7;
 }
 
-message SystemdParams {
+// ServiceBackend selects which init/service manager the agent targets.
+// The default (SYSTEMD) matches most mainstream distros. OPENRC/RUNIT/S6
+// slots exist so adding those implementations later does not require a
+// second proto rename. Agents set their active backend via
+// sys/service.SetServiceBackend at startup.
+enum ServiceBackend {
+  SERVICE_BACKEND_SYSTEMD = 0;  // default
+  SERVICE_BACKEND_OPENRC = 1;
+  SERVICE_BACKEND_RUNIT = 2;
+  SERVICE_BACKEND_S6 = 3;
+}
+
+// ServiceParams configures a service unit. unit_content is the verbatim
+// unit file; the agent writes it to the location expected by the chosen
+// backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
+// OPENRC: /etc/init.d/<unit_name>; etc.). Previously SystemdParams.
+message ServiceParams {
   // @gotags: validate:"required,min=1,max=255"
   string unit_name = 1;
   // @gotags: validate:"omitempty"
-  SystemdUnitState desired_state = 2;
+  ServiceUnitState desired_state = 2;
   // @gotags: validate:"omitempty"
   bool enable = 3;
   // @gotags: validate:"omitempty,max=65536"
   string unit_content = 4;
+  // Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
+  // compatibility with devices that don't explicitly set it.
+  // @gotags: validate:"omitempty"
+  ServiceBackend backend = 5;
 }
 
-enum SystemdUnitState {
-  SYSTEMD_UNIT_STATE_UNSPECIFIED = 0;
-  SYSTEMD_UNIT_STATE_STARTED = 1;
-  SYSTEMD_UNIT_STATE_STOPPED = 2;
-  SYSTEMD_UNIT_STATE_RESTARTED = 3;
+enum ServiceUnitState {
+  SERVICE_UNIT_STATE_UNSPECIFIED = 0;
+  SERVICE_UNIT_STATE_STARTED = 1;
+  SERVICE_UNIT_STATE_STOPPED = 2;
+  SERVICE_UNIT_STATE_RESTARTED = 3;
 }
 
 message FileParams {
@@ -616,18 +636,33 @@ message LpsParams {
   int32 grace_period_hours = 5;
 }
 
-// LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
-enum LuksDeviceBoundKeyType {
-  LUKS_DEVICE_BOUND_KEY_TYPE_NONE = 0;            // No device-bound key (managed passphrase only)
-  LUKS_DEVICE_BOUND_KEY_TYPE_TPM = 1;             // TPM2 auto-unlock at boot
-  LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
+// EncryptionBackend selects the disk-encryption implementation the
+// agent targets. LUKS covers virtually all managed Linux today; the
+// other slots exist so implementations for other platforms can land
+// later without another proto rename.
+enum EncryptionBackend {
+  ENCRYPTION_BACKEND_LUKS = 0;  // default — cryptsetup/LUKS2
+  ENCRYPTION_BACKEND_GELI = 1;  // FreeBSD GELI
+  ENCRYPTION_BACKEND_CGD = 2;   // NetBSD CGD
 }
 
-// LuksParams configures LUKS disk encryption management.
-// The agent auto-detects the primary LUKS-encrypted volume on the device.
-// A managed passphrase is generated, stored on the server, and rotated on schedule.
-// Optionally, a device-bound key (TPM or user passphrase) can be enrolled in slot 7.
-message LuksParams {
+// EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
+// slot (e.g. LUKS slot 7). Backends without an equivalent concept
+// should treat non-NONE values as best-effort and report whichever
+// subset of modes they support.
+enum EncryptionDeviceBoundKeyType {
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE = 0;            // Managed passphrase only, no device-bound key
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM = 1;             // TPM2 auto-unlock at boot
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
+}
+
+// EncryptionParams configures disk encryption management. Previously
+// LuksParams. The agent auto-detects the primary encrypted volume on
+// the device (format depends on the chosen backend). A managed
+// passphrase is generated, stored on the server, and rotated on
+// schedule. Optionally, a device-bound key (TPM or user passphrase)
+// can be enrolled in the backend's designated slot.
+message EncryptionParams {
   // Pre-shared key for initial ownership (only needed for first run)
   // @gotags: validate:"required,min=1,max=256"
   string preshared_key = 1;
@@ -637,15 +672,18 @@ message LuksParams {
   // Minimum words in generated managed passphrase (default 5, min 3, max 10)
   // @gotags: validate:"omitempty,gte=3,lte=10"
   int32 min_words = 3;
-  // What to put in slot 7 — TPM, user passphrase, or nothing
+  // What to put in the device-bound key slot — TPM, user passphrase, or nothing
   // @gotags: validate:"omitempty"
-  LuksDeviceBoundKeyType device_bound_key_type = 4;
+  EncryptionDeviceBoundKeyType device_bound_key_type = 4;
   // Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty,gte=16,lte=128"
   int32 user_passphrase_min_length = 5;
   // Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty"
   LpsPasswordComplexity user_passphrase_complexity = 6;
+  // Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
+  // @gotags: validate:"omitempty"
+  EncryptionBackend backend = 7;
 }
 
 // WiFi authentication type.
@@ -655,9 +693,21 @@ enum WifiAuthType {
   WIFI_AUTH_TYPE_EAP_TLS = 2;   // 802.1X with client certificate
 }
 
-// WifiParams configures WiFi connection management via NetworkManager.
-// Each action creates a connection profile named pm-wifi-{actionId}.
-// Supports PSK (password) and EAP-TLS (certificate) authentication.
+// WifiBackend selects which WiFi-management tool the agent targets.
+// NetworkManager covers most mainstream distros; the other slots exist
+// so implementations for connman- or wpa_supplicant-only systems can
+// land later without another proto rename.
+enum WifiBackend {
+  WIFI_BACKEND_NETWORKMANAGER = 0;  // default — nmcli
+  WIFI_BACKEND_CONNMAN = 1;         // connmanctl
+  WIFI_BACKEND_WPA_SUPPLICANT = 2;  // direct wpa_supplicant.conf management
+  WIFI_BACKEND_IWD = 3;             // iwctl (systemd / Arch / Alpine default on some installs)
+}
+
+// WifiParams configures WiFi connection management.
+// Each action creates a connection profile named pm-wifi-{actionId} in
+// the chosen backend's native format. Supports PSK (password) and
+// EAP-TLS (certificate) authentication.
 message WifiParams {
   // Network name (SSID)
   // @gotags: validate:"required,min=1,max=255"
@@ -685,6 +735,10 @@ message WifiParams {
   bool hidden = 9;
   // @gotags: validate:"omitempty,gte=-1,lte=999"
   int32 priority = 10;
+
+  // WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
+  // @gotags: validate:"omitempty"
+  WifiBackend backend = 11;
 }
 
 // ============================================================================
