@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 
@@ -82,7 +83,10 @@ func GroupCreate(ctx context.Context, name string, args ...string) error {
 	if err := validateUsername(name); err != nil {
 		return err
 	}
-	fullArgs := append(args, name)
+	// slices.Clone avoids aliasing the caller's backing array — a
+	// bare `append(args, name)` would write into the caller's slice
+	// whenever it has spare capacity.
+	fullArgs := append(slices.Clone(args), name)
 	_, err := exec.Privileged(ctx, "groupadd", fullArgs...)
 	return err
 }

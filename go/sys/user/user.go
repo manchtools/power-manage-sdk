@@ -8,6 +8,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -131,7 +132,10 @@ func Create(ctx context.Context, username string, args ...string) (*exec.Result,
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	fullArgs := append(args, username)
+	// slices.Clone avoids aliasing the caller's backing array — a
+	// bare `append(args, username)` would write into the caller's
+	// slice whenever it has spare capacity.
+	fullArgs := append(slices.Clone(args), username)
 	return exec.Privileged(ctx, "useradd", fullArgs...)
 }
 
@@ -142,7 +146,7 @@ func Modify(ctx context.Context, username string, args ...string) (*exec.Result,
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	fullArgs := append(args, username)
+	fullArgs := append(slices.Clone(args), username)
 	return exec.Privileged(ctx, "usermod", fullArgs...)
 }
 
