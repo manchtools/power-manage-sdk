@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
@@ -80,7 +81,14 @@ func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) 
 	for i := range volumes {
 		ok, err := TestPassphrase(ctx, volumes[i].DevicePath, passphrase)
 		if err != nil {
-			continue // Skip volumes we can't test (e.g., permission issues)
+			// Don't abort: a single volume we can't test (permissions,
+			// transient cryptsetup error) shouldn't hide a match on
+			// another volume. Log so operators can diagnose.
+			slog.Warn("failed to test passphrase on LUKS volume; skipping",
+				"device", volumes[i].DevicePath,
+				"error", err,
+			)
+			continue
 		}
 		if ok {
 			return &volumes[i], nil

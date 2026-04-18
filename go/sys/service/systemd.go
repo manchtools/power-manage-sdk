@@ -16,8 +16,10 @@ import (
 )
 
 // validSystemdUnitName restricts systemd unit names to safe characters,
-// preventing path traversal attacks (e.g. "../../../etc/shadow").
-var validSystemdUnitName = regexp.MustCompile(`^[a-zA-Z0-9@._:-]+\.(service|socket|timer|mount|automount|swap|target|path|slice|scope)$`)
+// preventing path traversal attacks (e.g. "../../../etc/shadow") and
+// flag injection (a leading '-' would be parsed by systemctl as an
+// option rather than a unit name).
+var validSystemdUnitName = regexp.MustCompile(`^[a-zA-Z0-9@._:][a-zA-Z0-9@._:-]*\.(service|socket|timer|mount|automount|swap|target|path|slice|scope)$`)
 
 func statusSystemd(unitName string) UnitStatus {
 	status := UnitStatus{}
@@ -158,7 +160,7 @@ func disableNowSystemd(ctx context.Context, unitName string) error {
 
 func validateUnitNameSystemd(unitName string) error {
 	if !validSystemdUnitName.MatchString(unitName) {
-		return fmt.Errorf("invalid systemd unit name %q: must match [a-zA-Z0-9@._:-]+.<type>", unitName)
+		return fmt.Errorf("invalid systemd unit name %q: must start with [a-zA-Z0-9@._:] and match <name>.<type>", unitName)
 	}
 	return nil
 }

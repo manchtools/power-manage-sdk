@@ -88,10 +88,14 @@ func (b ServiceBackend) String() string {
 // =============================================================================
 
 // Status retrieves the current status of a unit. Returns
-// ErrBackendNotSupported if the active backend has no implementation.
+// ErrBackendNotSupported if the active backend has no implementation,
+// or a validation error if the unit name is not well-formed.
 func Status(unitName string) (UnitStatus, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
+		if err := validateUnitNameSystemd(unitName); err != nil {
+			return UnitStatus{}, err
+		}
 		return statusSystemd(unitName), nil
 	default:
 		return UnitStatus{}, unsupported("Status")
@@ -101,10 +105,14 @@ func Status(unitName string) (UnitStatus, error) {
 // IsEnabled reports whether a unit is enabled (or in a state where
 // enabling is not needed, for backends that track that distinction).
 // Returns ErrBackendNotSupported if the active backend has no
-// implementation.
+// implementation, or a validation error if the unit name is not
+// well-formed.
 func IsEnabled(unitName string) (bool, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
+		if err := validateUnitNameSystemd(unitName); err != nil {
+			return false, err
+		}
 		return isEnabledSystemd(unitName), nil
 	default:
 		return false, unsupported("IsEnabled")
@@ -113,10 +121,14 @@ func IsEnabled(unitName string) (bool, error) {
 
 // IsMasked reports whether a unit is masked. Returns
 // ErrBackendNotSupported on backends without a masking concept so
-// callers can distinguish "not masked" from "backend cannot tell".
+// callers can distinguish "not masked" from "backend cannot tell",
+// or a validation error if the unit name is not well-formed.
 func IsMasked(unitName string) (bool, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
+		if err := validateUnitNameSystemd(unitName); err != nil {
+			return false, err
+		}
 		return isMaskedSystemd(unitName), nil
 	default:
 		return false, unsupported("IsMasked")
@@ -125,10 +137,14 @@ func IsMasked(unitName string) (bool, error) {
 
 // IsActive reports whether a unit is currently active (running).
 // Returns ErrBackendNotSupported if the active backend has no
-// implementation.
+// implementation, or a validation error if the unit name is not
+// well-formed.
 func IsActive(unitName string) (bool, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
+		if err := validateUnitNameSystemd(unitName); err != nil {
+			return false, err
+		}
 		return isActiveSystemd(unitName), nil
 	default:
 		return false, unsupported("IsActive")
