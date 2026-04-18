@@ -255,6 +255,10 @@ cd ../web && npx buf generate
 make install-tools
 ```
 
+## Release coordination
+
+Downstream repos (agent, server) pin the SDK to a specific commit via a Go pseudo-version. SDK `main` can change without breaking downstream builds; bumps are explicit PRs. For the full release flow — pinning, cross-cutting development with `go.work`, tagging conventions, and the separation between human-readable GitHub Release tags and Go module pins — see [docs/release-coordination.md](docs/release-coordination.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
