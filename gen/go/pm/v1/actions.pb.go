@@ -204,6 +204,177 @@ func (ServiceBackend) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
+// FirewallBackend selects which packet-filter framework the agent
+// targets when a future ACTION_TYPE_FIREWALL lands. Defined here up
+// front so the wire format doesn't churn when the feature ships.
+type FirewallBackend int32
+
+const (
+	FirewallBackend_FIREWALL_BACKEND_NFTABLES  FirewallBackend = 0 // default — Linux nftables (modern)
+	FirewallBackend_FIREWALL_BACKEND_IPTABLES  FirewallBackend = 1 // Linux iptables (legacy)
+	FirewallBackend_FIREWALL_BACKEND_FIREWALLD FirewallBackend = 2 // Red Hat firewalld wrapper
+	FirewallBackend_FIREWALL_BACKEND_UFW       FirewallBackend = 3 // Debian/Ubuntu ufw wrapper
+	FirewallBackend_FIREWALL_BACKEND_PF        FirewallBackend = 4 // BSD pf
+)
+
+// Enum value maps for FirewallBackend.
+var (
+	FirewallBackend_name = map[int32]string{
+		0: "FIREWALL_BACKEND_NFTABLES",
+		1: "FIREWALL_BACKEND_IPTABLES",
+		2: "FIREWALL_BACKEND_FIREWALLD",
+		3: "FIREWALL_BACKEND_UFW",
+		4: "FIREWALL_BACKEND_PF",
+	}
+	FirewallBackend_value = map[string]int32{
+		"FIREWALL_BACKEND_NFTABLES":  0,
+		"FIREWALL_BACKEND_IPTABLES":  1,
+		"FIREWALL_BACKEND_FIREWALLD": 2,
+		"FIREWALL_BACKEND_UFW":       3,
+		"FIREWALL_BACKEND_PF":        4,
+	}
+)
+
+func (x FirewallBackend) Enum() *FirewallBackend {
+	p := new(FirewallBackend)
+	*p = x
+	return p
+}
+
+func (x FirewallBackend) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FirewallBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
+}
+
+func (FirewallBackend) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[2]
+}
+
+func (x FirewallBackend) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FirewallBackend.Descriptor instead.
+func (FirewallBackend) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+}
+
+// DnsBackend selects which resolver framework the agent targets when a
+// future ACTION_TYPE_DNS lands. Forward-compat only.
+type DnsBackend int32
+
+const (
+	DnsBackend_DNS_BACKEND_RESOLVED       DnsBackend = 0 // default — systemd-resolved / resolvectl
+	DnsBackend_DNS_BACKEND_RESOLVCONF     DnsBackend = 1 // plain /etc/resolv.conf (via resolvconf or direct)
+	DnsBackend_DNS_BACKEND_DNSMASQ        DnsBackend = 2 // local dnsmasq
+	DnsBackend_DNS_BACKEND_NETWORKMANAGER DnsBackend = 3 // NetworkManager-managed DNS
+)
+
+// Enum value maps for DnsBackend.
+var (
+	DnsBackend_name = map[int32]string{
+		0: "DNS_BACKEND_RESOLVED",
+		1: "DNS_BACKEND_RESOLVCONF",
+		2: "DNS_BACKEND_DNSMASQ",
+		3: "DNS_BACKEND_NETWORKMANAGER",
+	}
+	DnsBackend_value = map[string]int32{
+		"DNS_BACKEND_RESOLVED":       0,
+		"DNS_BACKEND_RESOLVCONF":     1,
+		"DNS_BACKEND_DNSMASQ":        2,
+		"DNS_BACKEND_NETWORKMANAGER": 3,
+	}
+)
+
+func (x DnsBackend) Enum() *DnsBackend {
+	p := new(DnsBackend)
+	*p = x
+	return p
+}
+
+func (x DnsBackend) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DnsBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+}
+
+func (DnsBackend) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[3]
+}
+
+func (x DnsBackend) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DnsBackend.Descriptor instead.
+func (DnsBackend) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+}
+
+// NetworkConfigBackend selects which tool manages interface IP,
+// routing, and DHCP configuration when a future ACTION_TYPE_NETWORK
+// _CONFIG lands. Distinct from WifiBackend — a device can use one
+// tool for connection profiles and another for IP config.
+type NetworkConfigBackend int32
+
+const (
+	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_NETWORKMANAGER   NetworkConfigBackend = 0 // default — nmcli
+	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD NetworkConfigBackend = 1 // /etc/systemd/network/*.network
+	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_NETPLAN          NetworkConfigBackend = 2 // /etc/netplan/*.yaml
+	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_DHCPCD           NetworkConfigBackend = 3 // /etc/dhcpcd.conf (Alpine, OpenBSD)
+	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_IFUPDOWN         NetworkConfigBackend = 4 // /etc/network/interfaces (classic Debian)
+)
+
+// Enum value maps for NetworkConfigBackend.
+var (
+	NetworkConfigBackend_name = map[int32]string{
+		0: "NETWORK_CONFIG_BACKEND_NETWORKMANAGER",
+		1: "NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD",
+		2: "NETWORK_CONFIG_BACKEND_NETPLAN",
+		3: "NETWORK_CONFIG_BACKEND_DHCPCD",
+		4: "NETWORK_CONFIG_BACKEND_IFUPDOWN",
+	}
+	NetworkConfigBackend_value = map[string]int32{
+		"NETWORK_CONFIG_BACKEND_NETWORKMANAGER":   0,
+		"NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD": 1,
+		"NETWORK_CONFIG_BACKEND_NETPLAN":          2,
+		"NETWORK_CONFIG_BACKEND_DHCPCD":           3,
+		"NETWORK_CONFIG_BACKEND_IFUPDOWN":         4,
+	}
+)
+
+func (x NetworkConfigBackend) Enum() *NetworkConfigBackend {
+	p := new(NetworkConfigBackend)
+	*p = x
+	return p
+}
+
+func (x NetworkConfigBackend) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NetworkConfigBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
+}
+
+func (NetworkConfigBackend) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[4]
+}
+
+func (x NetworkConfigBackend) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NetworkConfigBackend.Descriptor instead.
+func (NetworkConfigBackend) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+}
+
 type ServiceUnitState int32
 
 const (
@@ -240,11 +411,11 @@ func (x ServiceUnitState) String() string {
 }
 
 func (ServiceUnitState) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
 }
 
 func (ServiceUnitState) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[2]
+	return &file_pm_v1_actions_proto_enumTypes[5]
 }
 
 func (x ServiceUnitState) Number() protoreflect.EnumNumber {
@@ -253,7 +424,7 @@ func (x ServiceUnitState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ServiceUnitState.Descriptor instead.
 func (ServiceUnitState) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 // AdminAccessLevel defines the level of administrative access granted.
@@ -297,11 +468,11 @@ func (x AdminAccessLevel) String() string {
 }
 
 func (AdminAccessLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[6].Descriptor()
 }
 
 func (AdminAccessLevel) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[3]
+	return &file_pm_v1_actions_proto_enumTypes[6]
 }
 
 func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
@@ -310,7 +481,7 @@ func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AdminAccessLevel.Descriptor instead.
 func (AdminAccessLevel) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 // PrivilegeBackend selects which privilege-escalation tool the agent
@@ -347,11 +518,11 @@ func (x PrivilegeBackend) String() string {
 }
 
 func (PrivilegeBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[7].Descriptor()
 }
 
 func (PrivilegeBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[4]
+	return &file_pm_v1_actions_proto_enumTypes[7]
 }
 
 func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
@@ -360,7 +531,7 @@ func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PrivilegeBackend.Descriptor instead.
 func (PrivilegeBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.
@@ -397,11 +568,11 @@ func (x LpsPasswordComplexity) String() string {
 }
 
 func (LpsPasswordComplexity) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[8].Descriptor()
 }
 
 func (LpsPasswordComplexity) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[5]
+	return &file_pm_v1_actions_proto_enumTypes[8]
 }
 
 func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
@@ -410,7 +581,7 @@ func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LpsPasswordComplexity.Descriptor instead.
 func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
 }
 
 // EncryptionBackend selects the disk-encryption implementation the
@@ -450,11 +621,11 @@ func (x EncryptionBackend) String() string {
 }
 
 func (EncryptionBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[6].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[9].Descriptor()
 }
 
 func (EncryptionBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[6]
+	return &file_pm_v1_actions_proto_enumTypes[9]
 }
 
 func (x EncryptionBackend) Number() protoreflect.EnumNumber {
@@ -463,7 +634,7 @@ func (x EncryptionBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncryptionBackend.Descriptor instead.
 func (EncryptionBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
 }
 
 // EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
@@ -503,11 +674,11 @@ func (x EncryptionDeviceBoundKeyType) String() string {
 }
 
 func (EncryptionDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[7].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[10].Descriptor()
 }
 
 func (EncryptionDeviceBoundKeyType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[7]
+	return &file_pm_v1_actions_proto_enumTypes[10]
 }
 
 func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
@@ -516,7 +687,7 @@ func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncryptionDeviceBoundKeyType.Descriptor instead.
 func (EncryptionDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
 }
 
 // WiFi authentication type.
@@ -553,11 +724,11 @@ func (x WifiAuthType) String() string {
 }
 
 func (WifiAuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[8].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[11].Descriptor()
 }
 
 func (WifiAuthType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[8]
+	return &file_pm_v1_actions_proto_enumTypes[11]
 }
 
 func (x WifiAuthType) Number() protoreflect.EnumNumber {
@@ -566,7 +737,7 @@ func (x WifiAuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiAuthType.Descriptor instead.
 func (WifiAuthType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
 }
 
 // WifiBackend selects which WiFi-management tool the agent targets.
@@ -609,11 +780,11 @@ func (x WifiBackend) String() string {
 }
 
 func (WifiBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[9].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[12].Descriptor()
 }
 
 func (WifiBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[9]
+	return &file_pm_v1_actions_proto_enumTypes[12]
 }
 
 func (x WifiBackend) Number() protoreflect.EnumNumber {
@@ -622,7 +793,7 @@ func (x WifiBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiBackend.Descriptor instead.
 func (WifiBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
 }
 
 type Action struct {
@@ -3657,7 +3828,25 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x17SERVICE_BACKEND_SYSTEMD\x10\x00\x12\x1a\n" +
 	"\x16SERVICE_BACKEND_OPENRC\x10\x01\x12\x19\n" +
 	"\x15SERVICE_BACKEND_RUNIT\x10\x02\x12\x16\n" +
-	"\x12SERVICE_BACKEND_S6\x10\x03*\x98\x01\n" +
+	"\x12SERVICE_BACKEND_S6\x10\x03*\xa2\x01\n" +
+	"\x0fFirewallBackend\x12\x1d\n" +
+	"\x19FIREWALL_BACKEND_NFTABLES\x10\x00\x12\x1d\n" +
+	"\x19FIREWALL_BACKEND_IPTABLES\x10\x01\x12\x1e\n" +
+	"\x1aFIREWALL_BACKEND_FIREWALLD\x10\x02\x12\x18\n" +
+	"\x14FIREWALL_BACKEND_UFW\x10\x03\x12\x17\n" +
+	"\x13FIREWALL_BACKEND_PF\x10\x04*{\n" +
+	"\n" +
+	"DnsBackend\x12\x18\n" +
+	"\x14DNS_BACKEND_RESOLVED\x10\x00\x12\x1a\n" +
+	"\x16DNS_BACKEND_RESOLVCONF\x10\x01\x12\x17\n" +
+	"\x13DNS_BACKEND_DNSMASQ\x10\x02\x12\x1e\n" +
+	"\x1aDNS_BACKEND_NETWORKMANAGER\x10\x03*\xda\x01\n" +
+	"\x14NetworkConfigBackend\x12)\n" +
+	"%NETWORK_CONFIG_BACKEND_NETWORKMANAGER\x10\x00\x12+\n" +
+	"'NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD\x10\x01\x12\"\n" +
+	"\x1eNETWORK_CONFIG_BACKEND_NETPLAN\x10\x02\x12!\n" +
+	"\x1dNETWORK_CONFIG_BACKEND_DHCPCD\x10\x03\x12#\n" +
+	"\x1fNETWORK_CONFIG_BACKEND_IFUPDOWN\x10\x04*\x98\x01\n" +
 	"\x10ServiceUnitState\x12\"\n" +
 	"\x1eSERVICE_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSERVICE_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -3705,101 +3894,104 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
 var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),                   // 0: pm.v1.ActionType
 	(ServiceBackend)(0),               // 1: pm.v1.ServiceBackend
-	(ServiceUnitState)(0),             // 2: pm.v1.ServiceUnitState
-	(AdminAccessLevel)(0),             // 3: pm.v1.AdminAccessLevel
-	(PrivilegeBackend)(0),             // 4: pm.v1.PrivilegeBackend
-	(LpsPasswordComplexity)(0),        // 5: pm.v1.LpsPasswordComplexity
-	(EncryptionBackend)(0),            // 6: pm.v1.EncryptionBackend
-	(EncryptionDeviceBoundKeyType)(0), // 7: pm.v1.EncryptionDeviceBoundKeyType
-	(WifiAuthType)(0),                 // 8: pm.v1.WifiAuthType
-	(WifiBackend)(0),                  // 9: pm.v1.WifiBackend
-	(*Action)(nil),                    // 10: pm.v1.Action
-	(*ActionSchedule)(nil),            // 11: pm.v1.ActionSchedule
-	(*PackageParams)(nil),             // 12: pm.v1.PackageParams
-	(*AppInstallParams)(nil),          // 13: pm.v1.AppInstallParams
-	(*ShellParams)(nil),               // 14: pm.v1.ShellParams
-	(*ServiceParams)(nil),             // 15: pm.v1.ServiceParams
-	(*FileParams)(nil),                // 16: pm.v1.FileParams
-	(*DirectoryParams)(nil),           // 17: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),              // 18: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),             // 19: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),          // 20: pm.v1.RepositoryParams
-	(*AptRepository)(nil),             // 21: pm.v1.AptRepository
-	(*DnfRepository)(nil),             // 22: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),          // 23: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),          // 24: pm.v1.ZypperRepository
-	(*UserParams)(nil),                // 25: pm.v1.UserParams
-	(*GroupParams)(nil),               // 26: pm.v1.GroupParams
-	(*SshParams)(nil),                 // 27: pm.v1.SshParams
-	(*SshdDirective)(nil),             // 28: pm.v1.SshdDirective
-	(*SshdParams)(nil),                // 29: pm.v1.SshdParams
-	(*AdminPolicyParams)(nil),         // 30: pm.v1.AdminPolicyParams
-	(*LpsParams)(nil),                 // 31: pm.v1.LpsParams
-	(*EncryptionParams)(nil),          // 32: pm.v1.EncryptionParams
-	(*WifiParams)(nil),                // 33: pm.v1.WifiParams
-	(*ActionResult)(nil),              // 34: pm.v1.ActionResult
-	(*AgentUpdateArch)(nil),           // 35: pm.v1.AgentUpdateArch
-	(*AgentUpdateParams)(nil),         // 36: pm.v1.AgentUpdateParams
-	nil,                               // 37: pm.v1.ShellParams.EnvironmentEntry
-	nil,                               // 38: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),                  // 39: pm.v1.ActionId
-	(DesiredState)(0),                 // 40: pm.v1.DesiredState
-	(ExecutionStatus)(0),              // 41: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),             // 42: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil),     // 43: google.protobuf.Timestamp
+	(FirewallBackend)(0),              // 2: pm.v1.FirewallBackend
+	(DnsBackend)(0),                   // 3: pm.v1.DnsBackend
+	(NetworkConfigBackend)(0),         // 4: pm.v1.NetworkConfigBackend
+	(ServiceUnitState)(0),             // 5: pm.v1.ServiceUnitState
+	(AdminAccessLevel)(0),             // 6: pm.v1.AdminAccessLevel
+	(PrivilegeBackend)(0),             // 7: pm.v1.PrivilegeBackend
+	(LpsPasswordComplexity)(0),        // 8: pm.v1.LpsPasswordComplexity
+	(EncryptionBackend)(0),            // 9: pm.v1.EncryptionBackend
+	(EncryptionDeviceBoundKeyType)(0), // 10: pm.v1.EncryptionDeviceBoundKeyType
+	(WifiAuthType)(0),                 // 11: pm.v1.WifiAuthType
+	(WifiBackend)(0),                  // 12: pm.v1.WifiBackend
+	(*Action)(nil),                    // 13: pm.v1.Action
+	(*ActionSchedule)(nil),            // 14: pm.v1.ActionSchedule
+	(*PackageParams)(nil),             // 15: pm.v1.PackageParams
+	(*AppInstallParams)(nil),          // 16: pm.v1.AppInstallParams
+	(*ShellParams)(nil),               // 17: pm.v1.ShellParams
+	(*ServiceParams)(nil),             // 18: pm.v1.ServiceParams
+	(*FileParams)(nil),                // 19: pm.v1.FileParams
+	(*DirectoryParams)(nil),           // 20: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),              // 21: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),             // 22: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),          // 23: pm.v1.RepositoryParams
+	(*AptRepository)(nil),             // 24: pm.v1.AptRepository
+	(*DnfRepository)(nil),             // 25: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),          // 26: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),          // 27: pm.v1.ZypperRepository
+	(*UserParams)(nil),                // 28: pm.v1.UserParams
+	(*GroupParams)(nil),               // 29: pm.v1.GroupParams
+	(*SshParams)(nil),                 // 30: pm.v1.SshParams
+	(*SshdDirective)(nil),             // 31: pm.v1.SshdDirective
+	(*SshdParams)(nil),                // 32: pm.v1.SshdParams
+	(*AdminPolicyParams)(nil),         // 33: pm.v1.AdminPolicyParams
+	(*LpsParams)(nil),                 // 34: pm.v1.LpsParams
+	(*EncryptionParams)(nil),          // 35: pm.v1.EncryptionParams
+	(*WifiParams)(nil),                // 36: pm.v1.WifiParams
+	(*ActionResult)(nil),              // 37: pm.v1.ActionResult
+	(*AgentUpdateArch)(nil),           // 38: pm.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),         // 39: pm.v1.AgentUpdateParams
+	nil,                               // 40: pm.v1.ShellParams.EnvironmentEntry
+	nil,                               // 41: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),                  // 42: pm.v1.ActionId
+	(DesiredState)(0),                 // 43: pm.v1.DesiredState
+	(ExecutionStatus)(0),              // 44: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),             // 45: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil),     // 46: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	39, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	42, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	40, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	11, // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	12, // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	13, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	14, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	15, // 7: pm.v1.Action.service:type_name -> pm.v1.ServiceParams
-	16, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	18, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	20, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	19, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	17, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	25, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	27, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	29, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	30, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	31, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	26, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	32, // 19: pm.v1.Action.encryption:type_name -> pm.v1.EncryptionParams
-	33, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
-	36, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
-	37, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	2,  // 23: pm.v1.ServiceParams.desired_state:type_name -> pm.v1.ServiceUnitState
+	43, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	14, // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	15, // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	16, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	17, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	18, // 7: pm.v1.Action.service:type_name -> pm.v1.ServiceParams
+	19, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	21, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	23, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	22, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	20, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	28, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	30, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	32, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	33, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
+	34, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	29, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
+	35, // 19: pm.v1.Action.encryption:type_name -> pm.v1.EncryptionParams
+	36, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
+	39, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
+	40, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	5,  // 23: pm.v1.ServiceParams.desired_state:type_name -> pm.v1.ServiceUnitState
 	1,  // 24: pm.v1.ServiceParams.backend:type_name -> pm.v1.ServiceBackend
-	21, // 25: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	22, // 26: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	23, // 27: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	24, // 28: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	28, // 29: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	3,  // 30: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
-	4,  // 31: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
-	5,  // 32: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	7,  // 33: pm.v1.EncryptionParams.device_bound_key_type:type_name -> pm.v1.EncryptionDeviceBoundKeyType
-	5,  // 34: pm.v1.EncryptionParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	6,  // 35: pm.v1.EncryptionParams.backend:type_name -> pm.v1.EncryptionBackend
-	8,  // 36: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
-	9,  // 37: pm.v1.WifiParams.backend:type_name -> pm.v1.WifiBackend
-	39, // 38: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	41, // 39: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	42, // 40: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	43, // 41: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	38, // 42: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	42, // 43: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
-	35, // 44: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
-	35, // 45: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
+	24, // 25: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	25, // 26: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	26, // 27: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	27, // 28: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	31, // 29: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	6,  // 30: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
+	7,  // 31: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
+	8,  // 32: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	10, // 33: pm.v1.EncryptionParams.device_bound_key_type:type_name -> pm.v1.EncryptionDeviceBoundKeyType
+	8,  // 34: pm.v1.EncryptionParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	9,  // 35: pm.v1.EncryptionParams.backend:type_name -> pm.v1.EncryptionBackend
+	11, // 36: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
+	12, // 37: pm.v1.WifiParams.backend:type_name -> pm.v1.WifiBackend
+	42, // 38: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	44, // 39: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	45, // 40: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	46, // 41: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	41, // 42: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	45, // 43: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	38, // 44: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
+	38, // 45: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
 	46, // [46:46] is the sub-list for method output_type
 	46, // [46:46] is the sub-list for method input_type
 	46, // [46:46] is the sub-list for extension type_name
@@ -3838,7 +4030,7 @@ func file_pm_v1_actions_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
-			NumEnums:      10,
+			NumEnums:      13,
 			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -203,6 +203,38 @@ enum ServiceBackend {
   SERVICE_BACKEND_S6 = 3;
 }
 
+// FirewallBackend selects which packet-filter framework the agent
+// targets when a future ACTION_TYPE_FIREWALL lands. Defined here up
+// front so the wire format doesn't churn when the feature ships.
+enum FirewallBackend {
+  FIREWALL_BACKEND_NFTABLES = 0;   // default — Linux nftables (modern)
+  FIREWALL_BACKEND_IPTABLES = 1;   // Linux iptables (legacy)
+  FIREWALL_BACKEND_FIREWALLD = 2;  // Red Hat firewalld wrapper
+  FIREWALL_BACKEND_UFW = 3;        // Debian/Ubuntu ufw wrapper
+  FIREWALL_BACKEND_PF = 4;         // BSD pf
+}
+
+// DnsBackend selects which resolver framework the agent targets when a
+// future ACTION_TYPE_DNS lands. Forward-compat only.
+enum DnsBackend {
+  DNS_BACKEND_RESOLVED = 0;         // default — systemd-resolved / resolvectl
+  DNS_BACKEND_RESOLVCONF = 1;       // plain /etc/resolv.conf (via resolvconf or direct)
+  DNS_BACKEND_DNSMASQ = 2;          // local dnsmasq
+  DNS_BACKEND_NETWORKMANAGER = 3;   // NetworkManager-managed DNS
+}
+
+// NetworkConfigBackend selects which tool manages interface IP,
+// routing, and DHCP configuration when a future ACTION_TYPE_NETWORK
+// _CONFIG lands. Distinct from WifiBackend — a device can use one
+// tool for connection profiles and another for IP config.
+enum NetworkConfigBackend {
+  NETWORK_CONFIG_BACKEND_NETWORKMANAGER = 0;   // default — nmcli
+  NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD = 1; // /etc/systemd/network/*.network
+  NETWORK_CONFIG_BACKEND_NETPLAN = 2;          // /etc/netplan/*.yaml
+  NETWORK_CONFIG_BACKEND_DHCPCD = 3;           // /etc/dhcpcd.conf (Alpine, OpenBSD)
+  NETWORK_CONFIG_BACKEND_IFUPDOWN = 4;         // /etc/network/interfaces (classic Debian)
+}
+
 // ServiceParams configures a service unit. unit_content is the verbatim
 // unit file; the agent writes it to the location expected by the chosen
 // backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
