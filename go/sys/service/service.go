@@ -87,45 +87,51 @@ func (b ServiceBackend) String() string {
 // Public API — dispatches to the active backend
 // =============================================================================
 
-// Status retrieves the current status of a unit.
-func Status(unitName string) UnitStatus {
+// Status retrieves the current status of a unit. Returns
+// ErrBackendNotSupported if the active backend has no implementation.
+func Status(unitName string) (UnitStatus, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
-		return statusSystemd(unitName)
+		return statusSystemd(unitName), nil
 	default:
-		return UnitStatus{}
+		return UnitStatus{}, unsupported("Status")
 	}
 }
 
 // IsEnabled reports whether a unit is enabled (or in a state where
 // enabling is not needed, for backends that track that distinction).
-func IsEnabled(unitName string) bool {
+// Returns ErrBackendNotSupported if the active backend has no
+// implementation.
+func IsEnabled(unitName string) (bool, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
-		return isEnabledSystemd(unitName)
+		return isEnabledSystemd(unitName), nil
 	default:
-		return false
+		return false, unsupported("IsEnabled")
 	}
 }
 
-// IsMasked reports whether a unit is masked.
-// Non-systemd backends without a masking concept always return false.
-func IsMasked(unitName string) bool {
+// IsMasked reports whether a unit is masked. Returns
+// ErrBackendNotSupported on backends without a masking concept so
+// callers can distinguish "not masked" from "backend cannot tell".
+func IsMasked(unitName string) (bool, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
-		return isMaskedSystemd(unitName)
+		return isMaskedSystemd(unitName), nil
 	default:
-		return false
+		return false, unsupported("IsMasked")
 	}
 }
 
 // IsActive reports whether a unit is currently active (running).
-func IsActive(unitName string) bool {
+// Returns ErrBackendNotSupported if the active backend has no
+// implementation.
+func IsActive(unitName string) (bool, error) {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
-		return isActiveSystemd(unitName)
+		return isActiveSystemd(unitName), nil
 	default:
-		return false
+		return false, unsupported("IsActive")
 	}
 }
 
@@ -256,13 +262,14 @@ func WriteUnit(ctx context.Context, unitName, content string) error {
 }
 
 // RemoveUnit deletes the unit file from the backend's location.
-// Best-effort — callers that need to observe failure should use
-// the backend-specific helper directly.
-func RemoveUnit(ctx context.Context, unitName string) {
+// Returns an error if the unit name is invalid for the active backend
+// or if the backend has no implementation; the filesystem removal
+// itself remains best-effort.
+func RemoveUnit(ctx context.Context, unitName string) error {
 	switch CurrentServiceBackend() {
 	case ServiceBackendSystemd:
-		removeUnitSystemd(ctx, unitName)
+		return removeUnitSystemd(ctx, unitName)
 	default:
-		// no-op on unsupported backends; RemoveUnit is best-effort
+		return unsupported("RemoveUnit")
 	}
 }

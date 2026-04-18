@@ -14,6 +14,9 @@ import (
 
 // IsLuks checks if a device is a LUKS-encrypted volume.
 func IsLuks(ctx context.Context, devicePath string) (bool, error) {
+	if err := requireBackend(BackendLUKS, "IsLuks"); err != nil {
+		return false, err
+	}
 	result, err := exec.Privileged(ctx, "cryptsetup", "isLuks", devicePath)
 	if err != nil {
 		if result != nil && result.ExitCode == 1 {
@@ -26,6 +29,9 @@ func IsLuks(ctx context.Context, devicePath string) (bool, error) {
 
 // AddKey adds a new passphrase to a LUKS volume using an existing key for authentication.
 func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
+	if err := requireBackend(BackendLUKS, "AddKey"); err != nil {
+		return err
+	}
 	existingFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
@@ -47,6 +53,9 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 
 // AddKeyToSlot adds a new passphrase to a specific LUKS slot.
 func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey, newKey string) error {
+	if err := requireBackend(BackendLUKS, "AddKeyToSlot"); err != nil {
+		return err
+	}
 	existingFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
@@ -69,6 +78,9 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 
 // RemoveKey removes a passphrase from a LUKS volume.
 func RemoveKey(ctx context.Context, devicePath, key string) error {
+	if err := requireBackend(BackendLUKS, "RemoveKey"); err != nil {
+		return err
+	}
 	keyFile, err := writeKeyFile(key)
 	if err != nil {
 		return err
@@ -84,6 +96,9 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 
 // KillSlot removes a specific LUKS slot using an existing key for authentication.
 func KillSlot(ctx context.Context, devicePath string, slot int, existingKey string) error {
+	if err := requireBackend(BackendLUKS, "KillSlot"); err != nil {
+		return err
+	}
 	keyFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
@@ -157,6 +172,9 @@ const keyFileDir = "/dev/shm/pm-luks"
 // TestPassphrase checks if a passphrase is valid for a LUKS volume without unlocking it.
 // Returns true if the passphrase is accepted, false if rejected.
 func TestPassphrase(ctx context.Context, devicePath, passphrase string) (bool, error) {
+	if err := requireBackend(BackendLUKS, "TestPassphrase"); err != nil {
+		return false, err
+	}
 	keyFile, err := writeKeyFile(passphrase)
 	if err != nil {
 		return false, err

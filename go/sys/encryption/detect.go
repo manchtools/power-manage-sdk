@@ -32,6 +32,9 @@ type lsblkDevice struct {
 // Priority: volume with /home mounted > volume with / mounted > first found.
 // Returns error if no LUKS volumes are found.
 func DetectVolume(ctx context.Context) (*Volume, error) {
+	if err := requireBackend(BackendLUKS, "DetectVolume"); err != nil {
+		return nil, err
+	}
 	volumes, err := DetectAllVolumes(ctx)
 	if err != nil {
 		return nil, err
@@ -63,6 +66,9 @@ func DetectVolume(ctx context.Context) (*Volume, error) {
 // Enumerates all volumes and tests the passphrase against each one.
 // Returns error if no volume matches or if detection fails.
 func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) {
+	if err := requireBackend(BackendLUKS, "DetectVolumeByKey"); err != nil {
+		return nil, err
+	}
 	volumes, err := DetectAllVolumes(ctx)
 	if err != nil {
 		return nil, err
@@ -86,6 +92,9 @@ func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) 
 
 // DetectAllVolumes returns all LUKS-encrypted volumes on the system.
 func DetectAllVolumes(ctx context.Context) ([]Volume, error) {
+	if err := requireBackend(BackendLUKS, "DetectAllVolumes"); err != nil {
+		return nil, err
+	}
 	result, err := exec.Run(ctx, "lsblk", "-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT")
 	if err != nil {
 		return nil, fmt.Errorf("lsblk failed: %w", err)

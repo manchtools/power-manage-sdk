@@ -168,7 +168,7 @@ func FileExists(ctx context.Context, path string) bool {
 // Remove removes a file using sudo rm -f.
 // This is a best-effort operation that doesn't return errors.
 func Remove(ctx context.Context, path string) {
-	exec.Privileged(ctx, "rm", "-f", path)
+	_, _ = exec.Privileged(ctx, "rm", "-f", path)
 }
 
 // RemoveStrict removes a file using sudo rm -f and returns any error.

@@ -1289,8 +1289,8 @@ export type AdminPolicyParams = Message<"pm.v1.AdminPolicyParams"> & {
    * Raw policy content (only used when access_level is CUSTOM). Must be
    * valid syntax for the chosen backend — sudoers grammar for SUDO and
    * doas.conf(5) grammar for DOAS. Use {group} as placeholder for the
-   * auto-generated group name.
-   * @gotags: validate:"omitempty,max=65536"
+   * auto-generated group name. Required when access_level is CUSTOM (3).
+   * @gotags: validate:"required_if=AccessLevel 3,max=65536"
    *
    * @generated from field: string custom_config = 3;
    */

@@ -25,6 +25,9 @@ func HasTPM2(_ context.Context) (bool, error) {
 // EnrollTPM enrolls a TPM2 key for a LUKS volume using the managed passphrase
 // for authentication. Uses PCRs 7+14 (Secure Boot + shim/MOK).
 func EnrollTPM(ctx context.Context, devicePath, existingKey string) error {
+	if err := requireBackend(BackendLUKS, "EnrollTPM"); err != nil {
+		return err
+	}
 	stdin := strings.NewReader(existingKey)
 	_, err := exec.PrivilegedWithStdin(ctx, stdin, "systemd-cryptenroll",
 		"--tpm2-device=auto", "--tpm2-pcrs=7+14", devicePath)
@@ -37,6 +40,9 @@ func EnrollTPM(ctx context.Context, devicePath, existingKey string) error {
 // WipeTPM removes the TPM2 enrollment from a LUKS volume using the managed
 // passphrase for authentication.
 func WipeTPM(ctx context.Context, devicePath, existingKey string) error {
+	if err := requireBackend(BackendLUKS, "WipeTPM"); err != nil {
+		return err
+	}
 	stdin := strings.NewReader(existingKey)
 	_, err := exec.PrivilegedWithStdin(ctx, stdin, "systemd-cryptenroll",
 		"--wipe-slot=tpm2", devicePath)

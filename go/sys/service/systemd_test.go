@@ -28,11 +28,11 @@ WantedBy=multi-user.target
 func cleanupUnit(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
-	exec.Privileged(ctx, "systemctl", "stop", testUnitName)
-	exec.Privileged(ctx, "systemctl", "disable", testUnitName)
-	exec.Privileged(ctx, "systemctl", "unmask", testUnitName)
+	_, _ = exec.Privileged(ctx, "systemctl", "stop", testUnitName)
+	_, _ = exec.Privileged(ctx, "systemctl", "disable", testUnitName)
+	_, _ = exec.Privileged(ctx, "systemctl", "unmask", testUnitName)
 	fs.Remove(ctx, "/etc/systemd/system/"+testUnitName)
-	exec.Privileged(ctx, "systemctl", "daemon-reload")
+	_, _ = exec.Privileged(ctx, "systemctl", "daemon-reload")
 }
 
 func TestWriteUnit(t *testing.T) {
@@ -91,7 +91,9 @@ func TestRemoveUnit(t *testing.T) {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
 
-	service.RemoveUnit(ctx, testUnitName)
+	if err := service.RemoveUnit(ctx, testUnitName); err != nil {
+		t.Fatalf("RemoveUnit failed: %v", err)
+	}
 
 	if fs.FileExists(ctx, "/etc/systemd/system/"+testUnitName) {
 		t.Error("unit file should be removed")
@@ -100,13 +102,17 @@ func TestRemoveUnit(t *testing.T) {
 
 func TestRemoveUnitMissing(t *testing.T) {
 	ctx := context.Background()
-	// Should not panic
-	service.RemoveUnit(ctx, "pm-nonexistent-unit.service")
+	if err := service.RemoveUnit(ctx, "pm-nonexistent-unit.service"); err != nil {
+		t.Fatalf("RemoveUnit should tolerate missing files: %v", err)
+	}
 }
 
 func TestStatus(t *testing.T) {
 	// Query ssh.service which should be enabled in the test container
-	status := service.Status("ssh.service")
+	status, err := service.Status("ssh.service")
+	if err != nil {
+		t.Fatalf("Status failed: %v", err)
+	}
 	t.Logf("ssh status: enabled=%v active=%v masked=%v static=%v", status.Enabled, status.Active, status.Masked, status.Static)
 	if !status.Enabled {
 		t.Error("ssh.service should be enabled")
@@ -114,7 +120,10 @@ func TestStatus(t *testing.T) {
 }
 
 func TestStatusUnknown(t *testing.T) {
-	status := service.Status("pm-nonexistent-12345.service")
+	status, err := service.Status("pm-nonexistent-12345.service")
+	if err != nil {
+		t.Fatalf("Status failed: %v", err)
+	}
 	if status.Enabled {
 		t.Error("unknown unit should not be enabled")
 	}
@@ -146,7 +155,9 @@ func TestIsEnabled(t *testing.T) {
 	}
 
 	// Not enabled yet
-	if service.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if enabled {
 		t.Error("unit should not be enabled initially")
 	}
 
@@ -155,7 +166,9 @@ func TestIsEnabled(t *testing.T) {
 		t.Fatalf("Enable failed: %v", err)
 	}
 
-	if !service.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if !enabled {
 		t.Error("unit should be enabled after Enable")
 	}
 }
@@ -172,7 +185,9 @@ func TestIsActive(t *testing.T) {
 	}
 
 	// Not active yet
-	if service.IsActive(testUnitName) {
+	if active, err := service.IsActive(testUnitName); err != nil {
+		t.Fatalf("IsActive failed: %v", err)
+	} else if active {
 		t.Error("unit should not be active initially")
 	}
 
@@ -181,7 +196,9 @@ func TestIsActive(t *testing.T) {
 		t.Fatalf("Start failed: %v", err)
 	}
 
-	if !service.IsActive(testUnitName) {
+	if active, err := service.IsActive(testUnitName); err != nil {
+		t.Fatalf("IsActive failed: %v", err)
+	} else if !active {
 		t.Error("unit should be active after Start")
 	}
 
@@ -190,7 +207,9 @@ func TestIsActive(t *testing.T) {
 		t.Fatalf("Stop failed: %v", err)
 	}
 
-	if service.IsActive(testUnitName) {
+	if active, err := service.IsActive(testUnitName); err != nil {
+		t.Fatalf("IsActive failed: %v", err)
+	} else if active {
 		t.Error("unit should not be active after Stop")
 	}
 }
@@ -199,7 +218,9 @@ func TestIsMasked(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	if service.IsMasked(testUnitName) {
+	if masked, err := service.IsMasked(testUnitName); err != nil {
+		t.Fatalf("IsMasked failed: %v", err)
+	} else if masked {
 		t.Error("unit should not be masked initially")
 	}
 
@@ -211,7 +232,9 @@ func TestIsMasked(t *testing.T) {
 		t.Fatalf("Mask failed: %v", err)
 	}
 
-	if !service.IsMasked(testUnitName) {
+	if masked, err := service.IsMasked(testUnitName); err != nil {
+		t.Fatalf("IsMasked failed: %v", err)
+	} else if !masked {
 		t.Error("unit should be masked after Mask")
 	}
 
@@ -220,7 +243,9 @@ func TestIsMasked(t *testing.T) {
 		t.Fatalf("Unmask failed: %v", err)
 	}
 
-	if service.IsMasked(testUnitName) {
+	if masked, err := service.IsMasked(testUnitName); err != nil {
+		t.Fatalf("IsMasked failed: %v", err)
+	} else if masked {
 		t.Error("unit should not be masked after Unmask")
 	}
 }
@@ -239,14 +264,18 @@ func TestEnableDisable(t *testing.T) {
 	if err := service.Enable(ctx, testUnitName); err != nil {
 		t.Fatalf("Enable failed: %v", err)
 	}
-	if !service.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if !enabled {
 		t.Error("should be enabled after Enable")
 	}
 
 	if err := service.Disable(ctx, testUnitName); err != nil {
 		t.Fatalf("Disable failed: %v", err)
 	}
-	if service.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if enabled {
 		t.Error("should not be enabled after Disable")
 	}
 }

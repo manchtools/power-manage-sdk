@@ -85,46 +85,73 @@ func daemonReloadSystemd(ctx context.Context) error {
 }
 
 func enableSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "enable", unitName)
 	return err
 }
 
 func disableSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "disable", unitName)
 	return err
 }
 
 func startSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "start", unitName)
 	return err
 }
 
 func stopSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "stop", unitName)
 	return err
 }
 
 func restartSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "restart", unitName)
 	return err
 }
 
 func maskSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "mask", unitName)
 	return err
 }
 
 func unmaskSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "unmask", unitName)
 	return err
 }
 
 func enableNowSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "enable", "--now", unitName)
 	return err
 }
 
 func disableNowSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
+	}
 	_, err := exec.Privileged(ctx, "systemctl", "disable", "--now", unitName)
 	return err
 }
@@ -144,10 +171,11 @@ func writeUnitSystemd(ctx context.Context, unitName, content string) error {
 	return fs.WriteFileAtomic(ctx, unitPath, content, "0644", "root", "root")
 }
 
-func removeUnitSystemd(ctx context.Context, unitName string) {
-	if validateUnitNameSystemd(unitName) != nil {
-		return
+func removeUnitSystemd(ctx context.Context, unitName string) error {
+	if err := validateUnitNameSystemd(unitName); err != nil {
+		return err
 	}
 	unitPath := "/etc/systemd/system/" + unitName
 	fs.Remove(ctx, unitPath)
+	return nil
 }
