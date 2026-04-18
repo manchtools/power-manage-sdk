@@ -178,6 +178,8 @@ func removeUnitSystemd(ctx context.Context, unitName string) error {
 		return err
 	}
 	unitPath := "/etc/systemd/system/" + unitName
-	fs.Remove(ctx, unitPath)
+	if err := fs.RemoveStrict(ctx, unitPath); err != nil {
+		return fmt.Errorf("remove systemd unit %s: %w", unitPath, err)
+	}
 	return nil
 }
