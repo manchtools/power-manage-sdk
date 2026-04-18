@@ -18,8 +18,12 @@ import (
 // validSystemdUnitName restricts systemd unit names to safe characters,
 // preventing path traversal attacks (e.g. "../../../etc/shadow") and
 // flag injection (a leading '-' would be parsed by systemctl as an
-// option rather than a unit name).
-var validSystemdUnitName = regexp.MustCompile(`^[a-zA-Z0-9@._:][a-zA-Z0-9@._:-]*\.(service|socket|timer|mount|automount|swap|target|path|slice|scope)$`)
+// option rather than a unit name). systemd allows `\xHH` hex-escape
+// sequences for reserved characters in unit names (systemd.unit(5),
+// "STRING ESCAPING FOR INCLUSION IN UNIT NAMES"); the regex accepts
+// those alongside the plain character class so `systemd-escape`-
+// produced names survive validation.
+var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@._:]|\\x[0-9A-Fa-f]{2})(?:[a-zA-Z0-9@._:-]|\\x[0-9A-Fa-f]{2})*\.(service|socket|timer|mount|automount|swap|target|path|slice|scope)$`)
 
 func statusSystemd(unitName string) UnitStatus {
 	status := UnitStatus{}
@@ -42,7 +46,10 @@ func statusSystemd(unitName string) UnitStatus {
 		status.Enabled = true
 	case "static", "indirect", "generated":
 		status.Static = true
-	case "masked":
+	case "masked", "masked-runtime":
+		// masked-runtime is the session-only variant produced by
+		// `systemctl mask --runtime`; reporting both as Masked
+		// matches operator intent.
 		status.Masked = true
 	}
 
@@ -74,7 +81,10 @@ func isMaskedSystemd(unitName string) bool {
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
-	return strings.TrimSpace(out) == "masked"
+	// "masked-runtime" is `systemctl mask --runtime`'s session-only
+	// variant — still masked from the caller's perspective.
+	trimmed := strings.TrimSpace(out)
+	return trimmed == "masked" || trimmed == "masked-runtime"
 }
 
 func isActiveSystemd(unitName string) bool {
