@@ -611,7 +611,7 @@ message ManagedAction {
     UserParams user = 20;
     SshParams ssh = 21;
     SshdParams sshd = 22;
-    SudoParams sudo = 23;
+    AdminPolicyParams admin_policy = 23;
     // @gotags: validate:"omitempty"
     LpsParams lps = 24;
     GroupParams group = 25;
@@ -661,7 +661,7 @@ message CreateActionRequest {
     // @gotags: validate:"omitempty"
     SshdParams sshd = 18;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 19;
+    AdminPolicyParams admin_policy = 19;
     // @gotags: validate:"omitempty"
     LpsParams lps = 20;
     // @gotags: validate:"omitempty"
@@ -753,7 +753,7 @@ message UpdateActionParamsRequest {
     // @gotags: validate:"omitempty"
     SshdParams sshd = 16;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 17;
+    AdminPolicyParams admin_policy = 17;
     // @gotags: validate:"omitempty"
     LpsParams lps = 18;
     // @gotags: validate:"omitempty"

@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/actions.proto.
  */
 export const file_pm_v1_actions: GenFile = /*@__PURE__*/
-  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSKhBwoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgHIAEoDBInCgdwYWNrYWdlGAggASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgJIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgKIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgLIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGAwgASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgNIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYDiABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgPIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYECABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBEgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgSIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYEyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASIQoEc3VkbxgUIAEoCzIRLnBtLnYxLlN1ZG9QYXJhbXNIABIfCgNscHMYFSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgWIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASIQoEbHVrcxgXIAEoCzIRLnBtLnYxLkx1a3NQYXJhbXNIABIhCgR3aWZpGBggASgLMhEucG0udjEuV2lmaVBhcmFtc0gAEjAKDGFnZW50X3VwZGF0ZRgZIAEoCzIYLnBtLnYxLkFnZW50VXBkYXRlUGFyYW1zSABCCAoGcGFyYW1zImgKDkFjdGlvblNjaGVkdWxlEgwKBGNyb24YASABKAkSFgoOaW50ZXJ2YWxfaG91cnMYAiABKAUSFQoNcnVuX29uX2Fzc2lnbhgDIAEoCBIZChFza2lwX2lmX3VuY2hhbmdlZBgEIAEoCCKiAQoNUGFja2FnZVBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSFwoPYWxsb3dfZG93bmdyYWRlGAMgASgIEgsKA3BpbhgEIAEoCBIQCghhcHRfbmFtZRgFIAEoCRIQCghkbmZfbmFtZRgGIAEoCRITCgtwYWNtYW5fbmFtZRgHIAEoCRITCgt6eXBwZXJfbmFtZRgIIAEoCSJOChBBcHBJbnN0YWxsUGFyYW1zEgsKA3VybBgBIAEoCRIXCg9jaGVja3N1bV9zaGEyNTYYAiABKAkSFAoMaW5zdGFsbF9wYXRoGAMgASgJIoECCgtTaGVsbFBhcmFtcxIOCgZzY3JpcHQYASABKAkSEwoLaW50ZXJwcmV0ZXIYAiABKAkSEwoLcnVuX2FzX3Jvb3QYAyABKAgSGQoRd29ya2luZ19kaXJlY3RvcnkYBCABKAkSOAoLZW52aXJvbm1lbnQYBSADKAsyIy5wbS52MS5TaGVsbFBhcmFtcy5FbnZpcm9ubWVudEVudHJ5EhgKEGRldGVjdGlvbl9zY3JpcHQYBiABKAkSFQoNaXNfY29tcGxpYW5jZRgHIAEoCBoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEieAoNU3lzdGVtZFBhcmFtcxIRCgl1bml0X25hbWUYASABKAkSLgoNZGVzaXJlZF9zdGF0ZRgCIAEoDjIXLnBtLnYxLlN5c3RlbWRVbml0U3RhdGUSDgoGZW5hYmxlGAMgASgIEhQKDHVuaXRfY29udGVudBgEIAEoCSJuCgpGaWxlUGFyYW1zEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoCRINCgVvd25lchgDIAEoCRINCgVncm91cBgEIAEoCRIMCgRtb2RlGAUgASgJEhUKDW1hbmFnZWRfYmxvY2sYBiABKAgiXgoPRGlyZWN0b3J5UGFyYW1zEgwKBHBhdGgYASABKAkSDQoFb3duZXIYAiABKAkSDQoFZ3JvdXAYAyABKAkSDAoEbW9kZRgEIAEoCRIRCglyZWN1cnNpdmUYBSABKAgiVQoMVXBkYXRlUGFyYW1zEhUKDXNlY3VyaXR5X29ubHkYASABKAgSEgoKYXV0b3JlbW92ZRgCIAEoCBIaChJyZWJvb3RfaWZfcmVxdWlyZWQYAyABKAgiUQoNRmxhdHBha1BhcmFtcxIOCgZhcHBfaWQYASABKAkSDgoGcmVtb3RlGAIgASgJEhMKC3N5c3RlbV93aWRlGAMgASgIEgsKA3BpbhgEIAEoCCK4AQoQUmVwb3NpdG9yeVBhcmFtcxIMCgRuYW1lGAEgASgJEiEKA2FwdBgCIAEoCzIULnBtLnYxLkFwdFJlcG9zaXRvcnkSIQoDZG5mGAMgASgLMhQucG0udjEuRG5mUmVwb3NpdG9yeRInCgZwYWNtYW4YBCABKAsyFy5wbS52MS5QYWNtYW5SZXBvc2l0b3J5EicKBnp5cHBlchgFIAEoCzIXLnBtLnYxLlp5cHBlclJlcG9zaXRvcnkinQEKDUFwdFJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhQKDGRpc3RyaWJ1dGlvbhgCIAEoCRISCgpjb21wb25lbnRzGAMgAygJEhMKC2dwZ19rZXlfdXJsGAQgASgJEg8KB2dwZ19rZXkYBSABKAkSDwoHdHJ1c3RlZBgGIAEoCBIMCgRhcmNoGAcgASgJEhAKCGRpc2FibGVkGAggASgIIpMBCg1EbmZSZXBvc2l0b3J5Eg8KB2Jhc2V1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIQCghncGdjaGVjaxgEIAEoCBIOCgZncGdrZXkYBSABKAkSFwoPbW9kdWxlX2hvdGZpeGVzGAYgASgIEhAKCGRpc2FibGVkGAcgASgIIkcKEFBhY21hblJlcG9zaXRvcnkSDgoGc2VydmVyGAEgASgJEhEKCXNpZ19sZXZlbBgCIAEoCRIQCghkaXNhYmxlZBgDIAEoCCKcAQoQWnlwcGVyUmVwb3NpdG9yeRILCgN1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBITCgthdXRvcmVmcmVzaBgEIAEoCBIQCghncGdjaGVjaxgFIAEoCBIOCgZncGdrZXkYBiABKAkSDAoEdHlwZRgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCLqAQoKVXNlclBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRILCgN1aWQYAiABKAUSCwoDZ2lkGAMgASgFEhAKCGhvbWVfZGlyGAQgASgJEg0KBXNoZWxsGAUgASgJEhsKE3NzaF9hdXRob3JpemVkX2tleXMYBiADKAkSDwoHY29tbWVudBgHIAEoCRITCgtzeXN0ZW1fdXNlchgIIAEoCBITCgtjcmVhdGVfaG9tZRgJIAEoCBIQCghkaXNhYmxlZBgKIAEoCBIVCg1wcmltYXJ5X2dyb3VwGAsgASgJEg4KBmhpZGRlbhgMIAEoCCJPCgtHcm91cFBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB21lbWJlcnMYAiADKAkSCwoDZ2lkGAMgASgFEhQKDHN5c3RlbV9ncm91cBgEIAEoCCJICglTc2hQYXJhbXMSFAoMYWxsb3dfcHVia2V5GAEgASgIEhYKDmFsbG93X3Bhc3N3b3JkGAIgASgIEg0KBXVzZXJzGAMgAygJIisKDVNzaGREaXJlY3RpdmUSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJIkgKClNzaGRQYXJhbXMSEAoIcHJpb3JpdHkYASABKA0SKAoKZGlyZWN0aXZlcxgCIAMoCzIULnBtLnYxLlNzaGREaXJlY3RpdmUiYAoKU3Vkb1BhcmFtcxIsCgxhY2Nlc3NfbGV2ZWwYASABKA4yFi5wbS52MS5TdWRvQWNjZXNzTGV2ZWwSDQoFdXNlcnMYAiADKAkSFQoNY3VzdG9tX2NvbmZpZxgDIAEoCSKlAQoJTHBzUGFyYW1zEhEKCXVzZXJuYW1lcxgBIAMoCRIXCg9wYXNzd29yZF9sZW5ndGgYAiABKAUSMAoKY29tcGxleGl0eRgDIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eRIeChZyb3RhdGlvbl9pbnRlcnZhbF9kYXlzGAQgASgFEhoKEmdyYWNlX3BlcmlvZF9ob3VycxgFIAEoBSL6AQoKTHVrc1BhcmFtcxIVCg1wcmVzaGFyZWRfa2V5GAEgASgJEh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYAiABKAUSEQoJbWluX3dvcmRzGAMgASgFEjwKFWRldmljZV9ib3VuZF9rZXlfdHlwZRgEIAEoDjIdLnBtLnYxLkx1a3NEZXZpY2VCb3VuZEtleVR5cGUSIgoadXNlcl9wYXNzcGhyYXNlX21pbl9sZW5ndGgYBSABKAUSQAoadXNlcl9wYXNzcGhyYXNlX2NvbXBsZXhpdHkYBiABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHki0wEKCldpZmlQYXJhbXMSDAoEc3NpZBgBIAEoCRImCglhdXRoX3R5cGUYAiABKA4yEy5wbS52MS5XaWZpQXV0aFR5cGUSCwoDcHNrGAMgASgJEg8KB2NhX2NlcnQYBCABKAkSEwoLY2xpZW50X2NlcnQYBSABKAkSEgoKY2xpZW50X2tleRgGIAEoCRIQCghpZGVudGl0eRgHIAEoCRIUCgxhdXRvX2Nvbm5lY3QYCCABKAgSDgoGaGlkZGVuGAkgASgIEhAKCHByaW9yaXR5GAogASgFIpADCgxBY3Rpb25SZXN1bHQSIgoJYWN0aW9uX2lkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSJgoGc3RhdHVzGAIgASgOMhYucG0udjEuRXhlY3V0aW9uU3RhdHVzEg0KBWVycm9yGAMgASgJEiQKBm91dHB1dBgEIAEoCzIULnBtLnYxLkNvbW1hbmRPdXRwdXQSMAoMY29tcGxldGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtkdXJhdGlvbl9tcxgGIAEoAxIPCgdjaGFuZ2VkGAcgASgIEjMKCG1ldGFkYXRhGAggAygLMiEucG0udjEuQWN0aW9uUmVzdWx0Lk1ldGFkYXRhRW50cnkSEQoJY29tcGxpYW50GAkgASgIEi4KEGRldGVjdGlvbl9vdXRwdXQYCiABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0Gi8KDU1ldGFkYXRhRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI7Cg9BZ2VudFVwZGF0ZUFyY2gSEgoKYmluYXJ5X3VybBgBIAEoCRIUCgxjaGVja3N1bV91cmwYAiABKAkiYQoRQWdlbnRVcGRhdGVQYXJhbXMSJQoFYW1kNjQYASABKAsyFi5wbS52MS5BZ2VudFVwZGF0ZUFyY2gSJQoFYXJtNjQYAiABKAsyFi5wbS52MS5BZ2VudFVwZGF0ZUFyY2gq3AQKCkFjdGlvblR5cGUSGwoXQUNUSU9OX1RZUEVfVU5TUEVDSUZJRUQQABIXChNBQ1RJT05fVFlQRV9QQUNLQUdFEAESFgoSQUNUSU9OX1RZUEVfVVBEQVRFEAISGgoWQUNUSU9OX1RZUEVfUkVQT1NJVE9SWRADEhkKFUFDVElPTl9UWVBFX0FQUF9JTUFHRRBkEhMKD0FDVElPTl9UWVBFX0RFQhBlEhMKD0FDVElPTl9UWVBFX1JQTRBmEhcKE0FDVElPTl9UWVBFX0ZMQVRQQUsQZxIWChFBQ1RJT05fVFlQRV9TSEVMTBDIARIbChZBQ1RJT05fVFlQRV9TQ1JJUFRfUlVOEMkBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMSFQoQQUNUSU9OX1RZUEVfVVNFUhDYBBIWChFBQ1RJT05fVFlQRV9HUk9VUBDZBBIUCg9BQ1RJT05fVFlQRV9TU0gQvAUSFQoQQUNUSU9OX1RZUEVfU1NIRBC9BRIVChBBQ1RJT05fVFlQRV9TVURPEKAGEhQKD0FDVElPTl9UWVBFX0xQUxCEBxIVChBBQ1RJT05fVFlQRV9MVUtTEOgHEhUKEEFDVElPTl9UWVBFX1dJRkkQzAgSHQoYQUNUSU9OX1RZUEVfQUdFTlRfVVBEQVRFELAJKpgBChBTeXN0ZW1kVW5pdFN0YXRlEiIKHlNZU1RFTURfVU5JVF9TVEFURV9VTlNQRUNJRklFRBAAEh4KGlNZU1RFTURfVU5JVF9TVEFURV9TVEFSVEVEEAESHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUT1BQRUQQAhIgChxTWVNURU1EX1VOSVRfU1RBVEVfUkVTVEFSVEVEEAMqjQEKD1N1ZG9BY2Nlc3NMZXZlbBIhCh1TVURPX0FDQ0VTU19MRVZFTF9VTlNQRUNJRklFRBAAEhoKFlNVRE9fQUNDRVNTX0xFVkVMX0ZVTEwQARIdChlTVURPX0FDQ0VTU19MRVZFTF9MSU1JVEVEEAISHAoYU1VET19BQ0NFU1NfTEVWRUxfQ1VTVE9NEAMqjwEKFUxwc1Bhc3N3b3JkQ29tcGxleGl0eRInCiNMUFNfUEFTU1dPUkRfQ09NUExFWElUWV9VTlNQRUNJRklFRBAAEigKJExQU19QQVNTV09SRF9DT01QTEVYSVRZX0FMUEhBTlVNRVJJQxABEiMKH0xQU19QQVNTV09SRF9DT01QTEVYSVRZX0NPTVBMRVgQAiqRAQoWTHVrc0RldmljZUJvdW5kS2V5VHlwZRIjCh9MVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9OT05FEAASIgoeTFVLU19ERVZJQ0VfQk9VTkRfS0VZX1RZUEVfVFBNEAESLgoqTFVLU19ERVZJQ0VfQk9VTkRfS0VZX1RZUEVfVVNFUl9QQVNTUEhSQVNFEAIqYgoMV2lmaUF1dGhUeXBlEh4KGldJRklfQVVUSF9UWVBFX1VOU1BFQ0lGSUVEEAASFgoSV0lGSV9BVVRIX1RZUEVfUFNLEAESGgoWV0lGSV9BVVRIX1RZUEVfRUFQX1RMUxACQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_pm_v1_common]);
+  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSKwBwoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgHIAEoDBInCgdwYWNrYWdlGAggASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgJIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgKIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc3lzdGVtZBgLIAEoCzIULnBtLnYxLlN5c3RlbWRQYXJhbXNIABIhCgRmaWxlGAwgASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgNIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYDiABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgPIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYECABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBEgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgSIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYEyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASMAoMYWRtaW5fcG9saWN5GBQgASgLMhgucG0udjEuQWRtaW5Qb2xpY3lQYXJhbXNIABIfCgNscHMYFSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgWIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASIQoEbHVrcxgXIAEoCzIRLnBtLnYxLkx1a3NQYXJhbXNIABIhCgR3aWZpGBggASgLMhEucG0udjEuV2lmaVBhcmFtc0gAEjAKDGFnZW50X3VwZGF0ZRgZIAEoCzIYLnBtLnYxLkFnZW50VXBkYXRlUGFyYW1zSABCCAoGcGFyYW1zImgKDkFjdGlvblNjaGVkdWxlEgwKBGNyb24YASABKAkSFgoOaW50ZXJ2YWxfaG91cnMYAiABKAUSFQoNcnVuX29uX2Fzc2lnbhgDIAEoCBIZChFza2lwX2lmX3VuY2hhbmdlZBgEIAEoCCKiAQoNUGFja2FnZVBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSFwoPYWxsb3dfZG93bmdyYWRlGAMgASgIEgsKA3BpbhgEIAEoCBIQCghhcHRfbmFtZRgFIAEoCRIQCghkbmZfbmFtZRgGIAEoCRITCgtwYWNtYW5fbmFtZRgHIAEoCRITCgt6eXBwZXJfbmFtZRgIIAEoCSJOChBBcHBJbnN0YWxsUGFyYW1zEgsKA3VybBgBIAEoCRIXCg9jaGVja3N1bV9zaGEyNTYYAiABKAkSFAoMaW5zdGFsbF9wYXRoGAMgASgJIoECCgtTaGVsbFBhcmFtcxIOCgZzY3JpcHQYASABKAkSEwoLaW50ZXJwcmV0ZXIYAiABKAkSEwoLcnVuX2FzX3Jvb3QYAyABKAgSGQoRd29ya2luZ19kaXJlY3RvcnkYBCABKAkSOAoLZW52aXJvbm1lbnQYBSADKAsyIy5wbS52MS5TaGVsbFBhcmFtcy5FbnZpcm9ubWVudEVudHJ5EhgKEGRldGVjdGlvbl9zY3JpcHQYBiABKAkSFQoNaXNfY29tcGxpYW5jZRgHIAEoCBoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEieAoNU3lzdGVtZFBhcmFtcxIRCgl1bml0X25hbWUYASABKAkSLgoNZGVzaXJlZF9zdGF0ZRgCIAEoDjIXLnBtLnYxLlN5c3RlbWRVbml0U3RhdGUSDgoGZW5hYmxlGAMgASgIEhQKDHVuaXRfY29udGVudBgEIAEoCSJuCgpGaWxlUGFyYW1zEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoCRINCgVvd25lchgDIAEoCRINCgVncm91cBgEIAEoCRIMCgRtb2RlGAUgASgJEhUKDW1hbmFnZWRfYmxvY2sYBiABKAgiXgoPRGlyZWN0b3J5UGFyYW1zEgwKBHBhdGgYASABKAkSDQoFb3duZXIYAiABKAkSDQoFZ3JvdXAYAyABKAkSDAoEbW9kZRgEIAEoCRIRCglyZWN1cnNpdmUYBSABKAgiVQoMVXBkYXRlUGFyYW1zEhUKDXNlY3VyaXR5X29ubHkYASABKAgSEgoKYXV0b3JlbW92ZRgCIAEoCBIaChJyZWJvb3RfaWZfcmVxdWlyZWQYAyABKAgiUQoNRmxhdHBha1BhcmFtcxIOCgZhcHBfaWQYASABKAkSDgoGcmVtb3RlGAIgASgJEhMKC3N5c3RlbV93aWRlGAMgASgIEgsKA3BpbhgEIAEoCCK4AQoQUmVwb3NpdG9yeVBhcmFtcxIMCgRuYW1lGAEgASgJEiEKA2FwdBgCIAEoCzIULnBtLnYxLkFwdFJlcG9zaXRvcnkSIQoDZG5mGAMgASgLMhQucG0udjEuRG5mUmVwb3NpdG9yeRInCgZwYWNtYW4YBCABKAsyFy5wbS52MS5QYWNtYW5SZXBvc2l0b3J5EicKBnp5cHBlchgFIAEoCzIXLnBtLnYxLlp5cHBlclJlcG9zaXRvcnkinQEKDUFwdFJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhQKDGRpc3RyaWJ1dGlvbhgCIAEoCRISCgpjb21wb25lbnRzGAMgAygJEhMKC2dwZ19rZXlfdXJsGAQgASgJEg8KB2dwZ19rZXkYBSABKAkSDwoHdHJ1c3RlZBgGIAEoCBIMCgRhcmNoGAcgASgJEhAKCGRpc2FibGVkGAggASgIIpMBCg1EbmZSZXBvc2l0b3J5Eg8KB2Jhc2V1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIQCghncGdjaGVjaxgEIAEoCBIOCgZncGdrZXkYBSABKAkSFwoPbW9kdWxlX2hvdGZpeGVzGAYgASgIEhAKCGRpc2FibGVkGAcgASgIIkcKEFBhY21hblJlcG9zaXRvcnkSDgoGc2VydmVyGAEgASgJEhEKCXNpZ19sZXZlbBgCIAEoCRIQCghkaXNhYmxlZBgDIAEoCCKcAQoQWnlwcGVyUmVwb3NpdG9yeRILCgN1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBITCgthdXRvcmVmcmVzaBgEIAEoCBIQCghncGdjaGVjaxgFIAEoCBIOCgZncGdrZXkYBiABKAkSDAoEdHlwZRgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCLqAQoKVXNlclBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRILCgN1aWQYAiABKAUSCwoDZ2lkGAMgASgFEhAKCGhvbWVfZGlyGAQgASgJEg0KBXNoZWxsGAUgASgJEhsKE3NzaF9hdXRob3JpemVkX2tleXMYBiADKAkSDwoHY29tbWVudBgHIAEoCRITCgtzeXN0ZW1fdXNlchgIIAEoCBITCgtjcmVhdGVfaG9tZRgJIAEoCBIQCghkaXNhYmxlZBgKIAEoCBIVCg1wcmltYXJ5X2dyb3VwGAsgASgJEg4KBmhpZGRlbhgMIAEoCCJPCgtHcm91cFBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB21lbWJlcnMYAiADKAkSCwoDZ2lkGAMgASgFEhQKDHN5c3RlbV9ncm91cBgEIAEoCCJICglTc2hQYXJhbXMSFAoMYWxsb3dfcHVia2V5GAEgASgIEhYKDmFsbG93X3Bhc3N3b3JkGAIgASgIEg0KBXVzZXJzGAMgAygJIisKDVNzaGREaXJlY3RpdmUSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJIkgKClNzaGRQYXJhbXMSEAoIcHJpb3JpdHkYASABKA0SKAoKZGlyZWN0aXZlcxgCIAMoCzIULnBtLnYxLlNzaGREaXJlY3RpdmUikgEKEUFkbWluUG9saWN5UGFyYW1zEi0KDGFjY2Vzc19sZXZlbBgBIAEoDjIXLnBtLnYxLkFkbWluQWNjZXNzTGV2ZWwSDQoFdXNlcnMYAiADKAkSFQoNY3VzdG9tX2NvbmZpZxgDIAEoCRIoCgdiYWNrZW5kGAQgASgOMhcucG0udjEuUHJpdmlsZWdlQmFja2VuZCKlAQoJTHBzUGFyYW1zEhEKCXVzZXJuYW1lcxgBIAMoCRIXCg9wYXNzd29yZF9sZW5ndGgYAiABKAUSMAoKY29tcGxleGl0eRgDIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eRIeChZyb3RhdGlvbl9pbnRlcnZhbF9kYXlzGAQgASgFEhoKEmdyYWNlX3BlcmlvZF9ob3VycxgFIAEoBSL6AQoKTHVrc1BhcmFtcxIVCg1wcmVzaGFyZWRfa2V5GAEgASgJEh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYAiABKAUSEQoJbWluX3dvcmRzGAMgASgFEjwKFWRldmljZV9ib3VuZF9rZXlfdHlwZRgEIAEoDjIdLnBtLnYxLkx1a3NEZXZpY2VCb3VuZEtleVR5cGUSIgoadXNlcl9wYXNzcGhyYXNlX21pbl9sZW5ndGgYBSABKAUSQAoadXNlcl9wYXNzcGhyYXNlX2NvbXBsZXhpdHkYBiABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHki0wEKCldpZmlQYXJhbXMSDAoEc3NpZBgBIAEoCRImCglhdXRoX3R5cGUYAiABKA4yEy5wbS52MS5XaWZpQXV0aFR5cGUSCwoDcHNrGAMgASgJEg8KB2NhX2NlcnQYBCABKAkSEwoLY2xpZW50X2NlcnQYBSABKAkSEgoKY2xpZW50X2tleRgGIAEoCRIQCghpZGVudGl0eRgHIAEoCRIUCgxhdXRvX2Nvbm5lY3QYCCABKAgSDgoGaGlkZGVuGAkgASgIEhAKCHByaW9yaXR5GAogASgFIpADCgxBY3Rpb25SZXN1bHQSIgoJYWN0aW9uX2lkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSJgoGc3RhdHVzGAIgASgOMhYucG0udjEuRXhlY3V0aW9uU3RhdHVzEg0KBWVycm9yGAMgASgJEiQKBm91dHB1dBgEIAEoCzIULnBtLnYxLkNvbW1hbmRPdXRwdXQSMAoMY29tcGxldGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtkdXJhdGlvbl9tcxgGIAEoAxIPCgdjaGFuZ2VkGAcgASgIEjMKCG1ldGFkYXRhGAggAygLMiEucG0udjEuQWN0aW9uUmVzdWx0Lk1ldGFkYXRhRW50cnkSEQoJY29tcGxpYW50GAkgASgIEi4KEGRldGVjdGlvbl9vdXRwdXQYCiABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0Gi8KDU1ldGFkYXRhRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI7Cg9BZ2VudFVwZGF0ZUFyY2gSEgoKYmluYXJ5X3VybBgBIAEoCRIUCgxjaGVja3N1bV91cmwYAiABKAkiYQoRQWdlbnRVcGRhdGVQYXJhbXMSJQoFYW1kNjQYASABKAsyFi5wbS52MS5BZ2VudFVwZGF0ZUFyY2gSJQoFYXJtNjQYAiABKAsyFi5wbS52MS5BZ2VudFVwZGF0ZUFyY2gq5AQKCkFjdGlvblR5cGUSGwoXQUNUSU9OX1RZUEVfVU5TUEVDSUZJRUQQABIXChNBQ1RJT05fVFlQRV9QQUNLQUdFEAESFgoSQUNUSU9OX1RZUEVfVVBEQVRFEAISGgoWQUNUSU9OX1RZUEVfUkVQT1NJVE9SWRADEhkKFUFDVElPTl9UWVBFX0FQUF9JTUFHRRBkEhMKD0FDVElPTl9UWVBFX0RFQhBlEhMKD0FDVElPTl9UWVBFX1JQTRBmEhcKE0FDVElPTl9UWVBFX0ZMQVRQQUsQZxIWChFBQ1RJT05fVFlQRV9TSEVMTBDIARIbChZBQ1RJT05fVFlQRV9TQ1JJUFRfUlVOEMkBEhgKE0FDVElPTl9UWVBFX1NZU1RFTUQQrAISFQoQQUNUSU9OX1RZUEVfRklMRRCQAxIaChVBQ1RJT05fVFlQRV9ESVJFQ1RPUlkQkQMSFwoSQUNUSU9OX1RZUEVfUkVCT09UEPQDEhUKEEFDVElPTl9UWVBFX1NZTkMQ9QMSFQoQQUNUSU9OX1RZUEVfVVNFUhDYBBIWChFBQ1RJT05fVFlQRV9HUk9VUBDZBBIUCg9BQ1RJT05fVFlQRV9TU0gQvAUSFQoQQUNUSU9OX1RZUEVfU1NIRBC9BRIdChhBQ1RJT05fVFlQRV9BRE1JTl9QT0xJQ1kQoAYSFAoPQUNUSU9OX1RZUEVfTFBTEIQHEhUKEEFDVElPTl9UWVBFX0xVS1MQ6AcSFQoQQUNUSU9OX1RZUEVfV0lGSRDMCBIdChhBQ1RJT05fVFlQRV9BR0VOVF9VUERBVEUQsAkqmAEKEFN5c3RlbWRVbml0U3RhdGUSIgoeU1lTVEVNRF9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU1lTVEVNRF9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTWVNURU1EX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNZU1RFTURfVU5JVF9TVEFURV9SRVNUQVJURUQQAyqSAQoQQWRtaW5BY2Nlc3NMZXZlbBIiCh5BRE1JTl9BQ0NFU1NfTEVWRUxfVU5TUEVDSUZJRUQQABIbChdBRE1JTl9BQ0NFU1NfTEVWRUxfRlVMTBABEh4KGkFETUlOX0FDQ0VTU19MRVZFTF9MSU1JVEVEEAISHQoZQURNSU5fQUNDRVNTX0xFVkVMX0NVU1RPTRADKkoKEFByaXZpbGVnZUJhY2tlbmQSGgoWUFJJVklMRUdFX0JBQ0tFTkRfU1VETxAAEhoKFlBSSVZJTEVHRV9CQUNLRU5EX0RPQVMQASqPAQoVTHBzUGFzc3dvcmRDb21wbGV4aXR5EicKI0xQU19QQVNTV09SRF9DT01QTEVYSVRZX1VOU1BFQ0lGSUVEEAASKAokTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQUxQSEFOVU1FUklDEAESIwofTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQ09NUExFWBACKpEBChZMdWtzRGV2aWNlQm91bmRLZXlUeXBlEiMKH0xVS1NfREVWSUNFX0JPVU5EX0tFWV9UWVBFX05PTkUQABIiCh5MVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9UUE0QARIuCipMVUtTX0RFVklDRV9CT1VORF9LRVlfVFlQRV9VU0VSX1BBU1NQSFJBU0UQAipiCgxXaWZpQXV0aFR5cGUSHgoaV0lGSV9BVVRIX1RZUEVfVU5TUEVDSUZJRUQQABIWChJXSUZJX0FVVEhfVFlQRV9QU0sQARIaChZXSUZJX0FVVEhfVFlQRV9FQVBfVExTEAJCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.Action
@@ -150,10 +150,10 @@ export type Action = Message<"pm.v1.Action"> & {
     case: "sshd";
   } | {
     /**
-     * @generated from field: pm.v1.SudoParams sudo = 20;
+     * @generated from field: pm.v1.AdminPolicyParams admin_policy = 20;
      */
-    value: SudoParams;
-    case: "sudo";
+    value: AdminPolicyParams;
+    case: "adminPolicy";
   } | {
     /**
      * @generated from field: pm.v1.LpsParams lps = 21;
@@ -1244,24 +1244,27 @@ export const SshdParamsSchema: GenMessage<SshdParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 19);
 
 /**
- * SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
- * Each action creates a Linux group pm-sudo-{actionId} and a corresponding
- * sudoers file. Users specified in the users list are added to the group.
- * When removed, the group and sudoers file are cleaned up.
+ * AdminPolicyParams configures privilege-delegation policies.
+ * Previously named SudoParams. Under PRIVILEGE_BACKEND_SUDO the action
+ * manages /etc/sudoers.d/ drop-ins; under PRIVILEGE_BACKEND_DOAS it
+ * manages /etc/doas.d/ drop-ins. Each action creates a Linux group
+ * pm-admin-{actionId} and the corresponding policy file. Users
+ * specified in the users list are added to the group. When removed,
+ * the group and policy file are cleaned up.
  *
- * @generated from message pm.v1.SudoParams
+ * @generated from message pm.v1.AdminPolicyParams
  */
-export type SudoParams = Message<"pm.v1.SudoParams"> & {
+export type AdminPolicyParams = Message<"pm.v1.AdminPolicyParams"> & {
   /**
-   * Access level determines the sudo policy template
+   * Access level determines the policy template
    * @gotags: validate:"required,ne=0"
    *
-   * @generated from field: pm.v1.SudoAccessLevel access_level = 1;
+   * @generated from field: pm.v1.AdminAccessLevel access_level = 1;
    */
-  accessLevel: SudoAccessLevel;
+  accessLevel: AdminAccessLevel;
 
   /**
-   * Users to add to the sudo group (must be valid Linux usernames)
+   * Users to add to the admin group (must be valid Linux usernames)
    * @gotags: validate:"required,min=1,dive,min=1,max=32"
    *
    * @generated from field: repeated string users = 2;
@@ -1269,20 +1272,31 @@ export type SudoParams = Message<"pm.v1.SudoParams"> & {
   users: string[];
 
   /**
-   * Custom sudoers rules (only used when access_level is CUSTOM)
-   * Use {group} as placeholder for the auto-generated group name.
+   * Raw policy content (only used when access_level is CUSTOM). Must be
+   * valid syntax for the chosen backend — sudoers grammar for SUDO and
+   * doas.conf(5) grammar for DOAS. Use {group} as placeholder for the
+   * auto-generated group name.
    * @gotags: validate:"omitempty,max=65536"
    *
    * @generated from field: string custom_config = 3;
    */
   customConfig: string;
+
+  /**
+   * Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
+   * compatibility with devices that don't explicitly set it.
+   * @gotags: validate:"omitempty"
+   *
+   * @generated from field: pm.v1.PrivilegeBackend backend = 4;
+   */
+  backend: PrivilegeBackend;
 };
 
 /**
- * Describes the message pm.v1.SudoParams.
- * Use `create(SudoParamsSchema)` to create a new message.
+ * Describes the message pm.v1.AdminPolicyParams.
+ * Use `create(AdminPolicyParamsSchema)` to create a new message.
  */
-export const SudoParamsSchema: GenMessage<SudoParams> = /*@__PURE__*/
+export const AdminPolicyParamsSchema: GenMessage<AdminPolicyParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 20);
 
 /**
@@ -1803,11 +1817,11 @@ export enum ActionType {
   /**
    * Privilege management (800-899)
    *
-   * Sudoers policy management
+   * Administrative privilege policy (sudoers or doas)
    *
-   * @generated from enum value: ACTION_TYPE_SUDO = 800;
+   * @generated from enum value: ACTION_TYPE_ADMIN_POLICY = 800;
    */
-  SUDO = 800,
+  ADMIN_POLICY = 800,
 
   /**
    * Password management (900-999)
@@ -1884,43 +1898,77 @@ export const SystemdUnitStateSchema: GenEnum<SystemdUnitState> = /*@__PURE__*/
   enumDesc(file_pm_v1_actions, 1);
 
 /**
- * SudoAccessLevel defines the level of sudo access granted.
+ * AdminAccessLevel defines the level of administrative access granted.
+ * The server renders FULL/LIMITED into the concrete policy file format
+ * for the selected PrivilegeBackend (sudoers or doas); CUSTOM carries
+ * raw admin-authored config that must be valid syntax for the chosen
+ * backend.
  *
- * @generated from enum pm.v1.SudoAccessLevel
+ * @generated from enum pm.v1.AdminAccessLevel
  */
-export enum SudoAccessLevel {
+export enum AdminAccessLevel {
   /**
-   * @generated from enum value: SUDO_ACCESS_LEVEL_UNSPECIFIED = 0;
+   * @generated from enum value: ADMIN_ACCESS_LEVEL_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * Unrestricted sudo (password required)
+   * Unrestricted access (password required)
    *
-   * @generated from enum value: SUDO_ACCESS_LEVEL_FULL = 1;
+   * @generated from enum value: ADMIN_ACCESS_LEVEL_FULL = 1;
    */
   FULL = 1,
 
   /**
    * System management commands only (password required)
    *
-   * @generated from enum value: SUDO_ACCESS_LEVEL_LIMITED = 2;
+   * @generated from enum value: ADMIN_ACCESS_LEVEL_LIMITED = 2;
    */
   LIMITED = 2,
 
   /**
-   * Admin-defined sudoers rules
+   * Admin-defined raw policy
    *
-   * @generated from enum value: SUDO_ACCESS_LEVEL_CUSTOM = 3;
+   * @generated from enum value: ADMIN_ACCESS_LEVEL_CUSTOM = 3;
    */
   CUSTOM = 3,
 }
 
 /**
- * Describes the enum pm.v1.SudoAccessLevel.
+ * Describes the enum pm.v1.AdminAccessLevel.
  */
-export const SudoAccessLevelSchema: GenEnum<SudoAccessLevel> = /*@__PURE__*/
+export const AdminAccessLevelSchema: GenEnum<AdminAccessLevel> = /*@__PURE__*/
   enumDesc(file_pm_v1_actions, 2);
+
+/**
+ * PrivilegeBackend selects which privilege-escalation tool the agent
+ * uses, both for its own operations and for rendering admin policies.
+ * The agent reads its configured backend at startup and passes it to
+ * the SDK via exec.SetPrivilegeBackend.
+ *
+ * @generated from enum pm.v1.PrivilegeBackend
+ */
+export enum PrivilegeBackend {
+  /**
+   * Default. Drops files into /etc/sudoers.d/.
+   *
+   * @generated from enum value: PRIVILEGE_BACKEND_SUDO = 0;
+   */
+  SUDO = 0,
+
+  /**
+   * Drops files into /etc/doas.d/.
+   *
+   * @generated from enum value: PRIVILEGE_BACKEND_DOAS = 1;
+   */
+  DOAS = 1,
+}
+
+/**
+ * Describes the enum pm.v1.PrivilegeBackend.
+ */
+export const PrivilegeBackendSchema: GenEnum<PrivilegeBackend> = /*@__PURE__*/
+  enumDesc(file_pm_v1_actions, 3);
 
 /**
  * LpsPasswordComplexity defines the character set for generated passwords.
@@ -1952,7 +2000,7 @@ export enum LpsPasswordComplexity {
  * Describes the enum pm.v1.LpsPasswordComplexity.
  */
 export const LpsPasswordComplexitySchema: GenEnum<LpsPasswordComplexity> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 3);
+  enumDesc(file_pm_v1_actions, 4);
 
 /**
  * LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
@@ -1986,7 +2034,7 @@ export enum LuksDeviceBoundKeyType {
  * Describes the enum pm.v1.LuksDeviceBoundKeyType.
  */
 export const LuksDeviceBoundKeyTypeSchema: GenEnum<LuksDeviceBoundKeyType> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 4);
+  enumDesc(file_pm_v1_actions, 5);
 
 /**
  * WiFi authentication type.
@@ -2018,5 +2066,5 @@ export enum WifiAuthType {
  * Describes the enum pm.v1.WifiAuthType.
  */
 export const WifiAuthTypeSchema: GenEnum<WifiAuthType> = /*@__PURE__*/
-  enumDesc(file_pm_v1_actions, 5);
+  enumDesc(file_pm_v1_actions, 6);
 

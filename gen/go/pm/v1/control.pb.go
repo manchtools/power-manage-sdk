@@ -4686,7 +4686,7 @@ type ManagedAction struct {
 	//	*ManagedAction_User
 	//	*ManagedAction_Ssh
 	//	*ManagedAction_Sshd
-	//	*ManagedAction_Sudo
+	//	*ManagedAction_AdminPolicy
 	//	*ManagedAction_Lps
 	//	*ManagedAction_Group
 	//	*ManagedAction_Luks
@@ -4912,10 +4912,10 @@ func (x *ManagedAction) GetSshd() *SshdParams {
 	return nil
 }
 
-func (x *ManagedAction) GetSudo() *SudoParams {
+func (x *ManagedAction) GetAdminPolicy() *AdminPolicyParams {
 	if x != nil {
-		if x, ok := x.Params.(*ManagedAction_Sudo); ok {
-			return x.Sudo
+		if x, ok := x.Params.(*ManagedAction_AdminPolicy); ok {
+			return x.AdminPolicy
 		}
 	}
 	return nil
@@ -5018,8 +5018,8 @@ type ManagedAction_Sshd struct {
 	Sshd *SshdParams `protobuf:"bytes,22,opt,name=sshd,proto3,oneof"`
 }
 
-type ManagedAction_Sudo struct {
-	Sudo *SudoParams `protobuf:"bytes,23,opt,name=sudo,proto3,oneof"`
+type ManagedAction_AdminPolicy struct {
+	AdminPolicy *AdminPolicyParams `protobuf:"bytes,23,opt,name=admin_policy,json=adminPolicy,proto3,oneof"`
 }
 
 type ManagedAction_Lps struct {
@@ -5067,7 +5067,7 @@ func (*ManagedAction_Ssh) isManagedAction_Params() {}
 
 func (*ManagedAction_Sshd) isManagedAction_Params() {}
 
-func (*ManagedAction_Sudo) isManagedAction_Params() {}
+func (*ManagedAction_AdminPolicy) isManagedAction_Params() {}
 
 func (*ManagedAction_Lps) isManagedAction_Params() {}
 
@@ -5107,7 +5107,7 @@ type CreateActionRequest struct {
 	//	*CreateActionRequest_User
 	//	*CreateActionRequest_Ssh
 	//	*CreateActionRequest_Sshd
-	//	*CreateActionRequest_Sudo
+	//	*CreateActionRequest_AdminPolicy
 	//	*CreateActionRequest_Lps
 	//	*CreateActionRequest_Group
 	//	*CreateActionRequest_Luks
@@ -5305,10 +5305,10 @@ func (x *CreateActionRequest) GetSshd() *SshdParams {
 	return nil
 }
 
-func (x *CreateActionRequest) GetSudo() *SudoParams {
+func (x *CreateActionRequest) GetAdminPolicy() *AdminPolicyParams {
 	if x != nil {
-		if x, ok := x.Params.(*CreateActionRequest_Sudo); ok {
-			return x.Sudo
+		if x, ok := x.Params.(*CreateActionRequest_AdminPolicy); ok {
+			return x.AdminPolicy
 		}
 	}
 	return nil
@@ -5423,9 +5423,9 @@ type CreateActionRequest_Sshd struct {
 	Sshd *SshdParams `protobuf:"bytes,18,opt,name=sshd,proto3,oneof" validate:"omitempty"`
 }
 
-type CreateActionRequest_Sudo struct {
+type CreateActionRequest_AdminPolicy struct {
 	// @gotags: validate:"omitempty"
-	Sudo *SudoParams `protobuf:"bytes,19,opt,name=sudo,proto3,oneof" validate:"omitempty"`
+	AdminPolicy *AdminPolicyParams `protobuf:"bytes,19,opt,name=admin_policy,json=adminPolicy,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Lps struct {
@@ -5477,7 +5477,7 @@ func (*CreateActionRequest_Ssh) isCreateActionRequest_Params() {}
 
 func (*CreateActionRequest_Sshd) isCreateActionRequest_Params() {}
 
-func (*CreateActionRequest_Sudo) isCreateActionRequest_Params() {}
+func (*CreateActionRequest_AdminPolicy) isCreateActionRequest_Params() {}
 
 func (*CreateActionRequest_Lps) isCreateActionRequest_Params() {}
 
@@ -5884,7 +5884,7 @@ type UpdateActionParamsRequest struct {
 	//	*UpdateActionParamsRequest_User
 	//	*UpdateActionParamsRequest_Ssh
 	//	*UpdateActionParamsRequest_Sshd
-	//	*UpdateActionParamsRequest_Sudo
+	//	*UpdateActionParamsRequest_AdminPolicy
 	//	*UpdateActionParamsRequest_Lps
 	//	*UpdateActionParamsRequest_Group
 	//	*UpdateActionParamsRequest_Luks
@@ -6068,10 +6068,10 @@ func (x *UpdateActionParamsRequest) GetSshd() *SshdParams {
 	return nil
 }
 
-func (x *UpdateActionParamsRequest) GetSudo() *SudoParams {
+func (x *UpdateActionParamsRequest) GetAdminPolicy() *AdminPolicyParams {
 	if x != nil {
-		if x, ok := x.Params.(*UpdateActionParamsRequest_Sudo); ok {
-			return x.Sudo
+		if x, ok := x.Params.(*UpdateActionParamsRequest_AdminPolicy); ok {
+			return x.AdminPolicy
 		}
 	}
 	return nil
@@ -6186,9 +6186,9 @@ type UpdateActionParamsRequest_Sshd struct {
 	Sshd *SshdParams `protobuf:"bytes,16,opt,name=sshd,proto3,oneof" validate:"omitempty"`
 }
 
-type UpdateActionParamsRequest_Sudo struct {
+type UpdateActionParamsRequest_AdminPolicy struct {
 	// @gotags: validate:"omitempty"
-	Sudo *SudoParams `protobuf:"bytes,17,opt,name=sudo,proto3,oneof" validate:"omitempty"`
+	AdminPolicy *AdminPolicyParams `protobuf:"bytes,17,opt,name=admin_policy,json=adminPolicy,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Lps struct {
@@ -6240,7 +6240,7 @@ func (*UpdateActionParamsRequest_Ssh) isUpdateActionParamsRequest_Params() {}
 
 func (*UpdateActionParamsRequest_Sshd) isUpdateActionParamsRequest_Params() {}
 
-func (*UpdateActionParamsRequest_Sudo) isUpdateActionParamsRequest_Params() {}
+func (*UpdateActionParamsRequest_AdminPolicy) isUpdateActionParamsRequest_Params() {}
 
 func (*UpdateActionParamsRequest_Lps) isUpdateActionParamsRequest_Params() {}
 
@@ -20922,7 +20922,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\v2\x18.pm.v1.RegistrationTokenR\x05token\"$\n" +
 	"\x12DeleteTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteTokenResponse\"\xef\t\n" +
+	"\x13DeleteTokenResponse\"\x85\n" +
+	"\n" +
 	"\rManagedAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -20951,14 +20952,14 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\tdirectory\x18\x13 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x14 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
 	"\x03ssh\x18\x15 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x16 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x17 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x04sshd\x18\x16 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
+	"\fadmin_policy\x18\x17 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
 	"\x03lps\x18\x18 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
 	"\x05group\x18\x19 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
 	"\x04luks\x18\x1a \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
 	"\x04wifi\x18\x1b \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
 	"\fagent_update\x18\x1c \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
-	"\x06params\"\xd0\b\n" +
+	"\x06params\"\xe6\b\n" +
 	"\x13CreateActionRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
@@ -20980,8 +20981,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\tdirectory\x18\x0f \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x10 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
 	"\x03ssh\x18\x11 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x12 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x13 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x04sshd\x18\x12 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
+	"\fadmin_policy\x18\x13 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
 	"\x03lps\x18\x14 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
 	"\x05group\x18\x15 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
 	"\x04luks\x18\x16 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
@@ -21011,7 +21012,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"R\n" +
 	"\x1eUpdateActionDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"\x89\b\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\x9f\b\n" +
 	"\x19UpdateActionParamsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\rdesired_state\x18\x02 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
@@ -21031,8 +21032,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\tdirectory\x18\r \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x0e \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
 	"\x03ssh\x18\x0f \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x10 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x11 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x04sshd\x18\x10 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
+	"\fadmin_policy\x18\x11 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
 	"\x03lps\x18\x12 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
 	"\x05group\x18\x13 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
 	"\x04luks\x18\x14 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
@@ -22626,7 +22627,7 @@ var file_pm_v1_control_proto_goTypes = []any{
 	(*UserParams)(nil),                               // 361: pm.v1.UserParams
 	(*SshParams)(nil),                                // 362: pm.v1.SshParams
 	(*SshdParams)(nil),                               // 363: pm.v1.SshdParams
-	(*SudoParams)(nil),                               // 364: pm.v1.SudoParams
+	(*AdminPolicyParams)(nil),                        // 364: pm.v1.AdminPolicyParams
 	(*LpsParams)(nil),                                // 365: pm.v1.LpsParams
 	(*GroupParams)(nil),                              // 366: pm.v1.GroupParams
 	(*LuksParams)(nil),                               // 367: pm.v1.LuksParams
@@ -22697,7 +22698,7 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	361, // 55: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
 	362, // 56: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
 	363, // 57: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
-	364, // 58: pm.v1.ManagedAction.sudo:type_name -> pm.v1.SudoParams
+	364, // 58: pm.v1.ManagedAction.admin_policy:type_name -> pm.v1.AdminPolicyParams
 	365, // 59: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
 	366, // 60: pm.v1.ManagedAction.group:type_name -> pm.v1.GroupParams
 	367, // 61: pm.v1.ManagedAction.luks:type_name -> pm.v1.LuksParams
@@ -22718,7 +22719,7 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	361, // 76: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
 	362, // 77: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
 	363, // 78: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
-	364, // 79: pm.v1.CreateActionRequest.sudo:type_name -> pm.v1.SudoParams
+	364, // 79: pm.v1.CreateActionRequest.admin_policy:type_name -> pm.v1.AdminPolicyParams
 	365, // 80: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
 	366, // 81: pm.v1.CreateActionRequest.group:type_name -> pm.v1.GroupParams
 	367, // 82: pm.v1.CreateActionRequest.luks:type_name -> pm.v1.LuksParams
@@ -22742,7 +22743,7 @@ var file_pm_v1_control_proto_depIdxs = []int32{
 	361, // 100: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
 	362, // 101: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
 	363, // 102: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
-	364, // 103: pm.v1.UpdateActionParamsRequest.sudo:type_name -> pm.v1.SudoParams
+	364, // 103: pm.v1.UpdateActionParamsRequest.admin_policy:type_name -> pm.v1.AdminPolicyParams
 	365, // 104: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
 	366, // 105: pm.v1.UpdateActionParamsRequest.group:type_name -> pm.v1.GroupParams
 	367, // 106: pm.v1.UpdateActionParamsRequest.luks:type_name -> pm.v1.LuksParams
@@ -23244,7 +23245,7 @@ func file_pm_v1_control_proto_init() {
 		(*ManagedAction_User)(nil),
 		(*ManagedAction_Ssh)(nil),
 		(*ManagedAction_Sshd)(nil),
-		(*ManagedAction_Sudo)(nil),
+		(*ManagedAction_AdminPolicy)(nil),
 		(*ManagedAction_Lps)(nil),
 		(*ManagedAction_Group)(nil),
 		(*ManagedAction_Luks)(nil),
@@ -23264,7 +23265,7 @@ func file_pm_v1_control_proto_init() {
 		(*CreateActionRequest_User)(nil),
 		(*CreateActionRequest_Ssh)(nil),
 		(*CreateActionRequest_Sshd)(nil),
-		(*CreateActionRequest_Sudo)(nil),
+		(*CreateActionRequest_AdminPolicy)(nil),
 		(*CreateActionRequest_Lps)(nil),
 		(*CreateActionRequest_Group)(nil),
 		(*CreateActionRequest_Luks)(nil),
@@ -23284,7 +23285,7 @@ func file_pm_v1_control_proto_init() {
 		(*UpdateActionParamsRequest_User)(nil),
 		(*UpdateActionParamsRequest_Ssh)(nil),
 		(*UpdateActionParamsRequest_Sshd)(nil),
-		(*UpdateActionParamsRequest_Sudo)(nil),
+		(*UpdateActionParamsRequest_AdminPolicy)(nil),
 		(*UpdateActionParamsRequest_Lps)(nil),
 		(*UpdateActionParamsRequest_Group)(nil),
 		(*UpdateActionParamsRequest_Luks)(nil),

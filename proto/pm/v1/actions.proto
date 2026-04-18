@@ -49,7 +49,7 @@ enum ActionType {
   ACTION_TYPE_SSHD = 701;       // SSH daemon configuration
 
   // Privilege management (800-899)
-  ACTION_TYPE_SUDO = 800;       // Sudoers policy management
+  ACTION_TYPE_ADMIN_POLICY = 800;       // Administrative privilege policy (sudoers or doas)
 
   // Password management (900-999)
   ACTION_TYPE_LPS = 900;        // Local Password Solution
@@ -103,7 +103,7 @@ message Action {
     UserParams user = 17;
     SshParams ssh = 18;
     SshdParams sshd = 19;
-    SudoParams sudo = 20;
+    AdminPolicyParams admin_policy = 20;
     LpsParams lps = 21;
     GroupParams group = 22;
     LuksParams luks = 23;
@@ -535,31 +535,54 @@ message SshdParams {
   repeated SshdDirective directives = 2;
 }
 
-// SudoAccessLevel defines the level of sudo access granted.
-enum SudoAccessLevel {
-  SUDO_ACCESS_LEVEL_UNSPECIFIED = 0;
-  SUDO_ACCESS_LEVEL_FULL = 1;       // Unrestricted sudo (password required)
-  SUDO_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (password required)
-  SUDO_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined sudoers rules
+// AdminAccessLevel defines the level of administrative access granted.
+// The server renders FULL/LIMITED into the concrete policy file format
+// for the selected PrivilegeBackend (sudoers or doas); CUSTOM carries
+// raw admin-authored config that must be valid syntax for the chosen
+// backend.
+enum AdminAccessLevel {
+  ADMIN_ACCESS_LEVEL_UNSPECIFIED = 0;
+  ADMIN_ACCESS_LEVEL_FULL = 1;       // Unrestricted access (password required)
+  ADMIN_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (password required)
+  ADMIN_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined raw policy
 }
 
-// SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
-// Each action creates a Linux group pm-sudo-{actionId} and a corresponding
-// sudoers file. Users specified in the users list are added to the group.
-// When removed, the group and sudoers file are cleaned up.
-message SudoParams {
-  // Access level determines the sudo policy template
-  // @gotags: validate:"required,ne=0"
-  SudoAccessLevel access_level = 1;
+// PrivilegeBackend selects which privilege-escalation tool the agent
+// uses, both for its own operations and for rendering admin policies.
+// The agent reads its configured backend at startup and passes it to
+// the SDK via exec.SetPrivilegeBackend.
+enum PrivilegeBackend {
+  PRIVILEGE_BACKEND_SUDO = 0;  // Default. Drops files into /etc/sudoers.d/.
+  PRIVILEGE_BACKEND_DOAS = 1;  // Drops files into /etc/doas.d/.
+}
 
-  // Users to add to the sudo group (must be valid Linux usernames)
+// AdminPolicyParams configures privilege-delegation policies.
+// Previously named SudoParams. Under PRIVILEGE_BACKEND_SUDO the action
+// manages /etc/sudoers.d/ drop-ins; under PRIVILEGE_BACKEND_DOAS it
+// manages /etc/doas.d/ drop-ins. Each action creates a Linux group
+// pm-admin-{actionId} and the corresponding policy file. Users
+// specified in the users list are added to the group. When removed,
+// the group and policy file are cleaned up.
+message AdminPolicyParams {
+  // Access level determines the policy template
+  // @gotags: validate:"required,ne=0"
+  AdminAccessLevel access_level = 1;
+
+  // Users to add to the admin group (must be valid Linux usernames)
   // @gotags: validate:"required,min=1,dive,min=1,max=32"
   repeated string users = 2;
 
-  // Custom sudoers rules (only used when access_level is CUSTOM)
-  // Use {group} as placeholder for the auto-generated group name.
+  // Raw policy content (only used when access_level is CUSTOM). Must be
+  // valid syntax for the chosen backend — sudoers grammar for SUDO and
+  // doas.conf(5) grammar for DOAS. Use {group} as placeholder for the
+  // auto-generated group name.
   // @gotags: validate:"omitempty,max=65536"
   string custom_config = 3;
+
+  // Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
+  // compatibility with devices that don't explicitly set it.
+  // @gotags: validate:"omitempty"
+  PrivilegeBackend backend = 4;
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.

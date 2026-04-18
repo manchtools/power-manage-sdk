@@ -53,7 +53,7 @@ const (
 	ActionType_ACTION_TYPE_SSH  ActionType = 700 // SSH access configuration
 	ActionType_ACTION_TYPE_SSHD ActionType = 701 // SSH daemon configuration
 	// Privilege management (800-899)
-	ActionType_ACTION_TYPE_SUDO ActionType = 800 // Sudoers policy management
+	ActionType_ACTION_TYPE_ADMIN_POLICY ActionType = 800 // Administrative privilege policy (sudoers or doas)
 	// Password management (900-999)
 	ActionType_ACTION_TYPE_LPS ActionType = 900 // Local Password Solution
 	// Encryption management (1000-1099)
@@ -86,7 +86,7 @@ var (
 		601:  "ACTION_TYPE_GROUP",
 		700:  "ACTION_TYPE_SSH",
 		701:  "ACTION_TYPE_SSHD",
-		800:  "ACTION_TYPE_SUDO",
+		800:  "ACTION_TYPE_ADMIN_POLICY",
 		900:  "ACTION_TYPE_LPS",
 		1000: "ACTION_TYPE_LUKS",
 		1100: "ACTION_TYPE_WIFI",
@@ -112,7 +112,7 @@ var (
 		"ACTION_TYPE_GROUP":        601,
 		"ACTION_TYPE_SSH":          700,
 		"ACTION_TYPE_SSHD":         701,
-		"ACTION_TYPE_SUDO":         800,
+		"ACTION_TYPE_ADMIN_POLICY": 800,
 		"ACTION_TYPE_LPS":          900,
 		"ACTION_TYPE_LUKS":         1000,
 		"ACTION_TYPE_WIFI":         1100,
@@ -199,57 +199,111 @@ func (SystemdUnitState) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
-// SudoAccessLevel defines the level of sudo access granted.
-type SudoAccessLevel int32
+// AdminAccessLevel defines the level of administrative access granted.
+// The server renders FULL/LIMITED into the concrete policy file format
+// for the selected PrivilegeBackend (sudoers or doas); CUSTOM carries
+// raw admin-authored config that must be valid syntax for the chosen
+// backend.
+type AdminAccessLevel int32
 
 const (
-	SudoAccessLevel_SUDO_ACCESS_LEVEL_UNSPECIFIED SudoAccessLevel = 0
-	SudoAccessLevel_SUDO_ACCESS_LEVEL_FULL        SudoAccessLevel = 1 // Unrestricted sudo (password required)
-	SudoAccessLevel_SUDO_ACCESS_LEVEL_LIMITED     SudoAccessLevel = 2 // System management commands only (password required)
-	SudoAccessLevel_SUDO_ACCESS_LEVEL_CUSTOM      SudoAccessLevel = 3 // Admin-defined sudoers rules
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_UNSPECIFIED AdminAccessLevel = 0
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_FULL        AdminAccessLevel = 1 // Unrestricted access (password required)
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_LIMITED     AdminAccessLevel = 2 // System management commands only (password required)
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_CUSTOM      AdminAccessLevel = 3 // Admin-defined raw policy
 )
 
-// Enum value maps for SudoAccessLevel.
+// Enum value maps for AdminAccessLevel.
 var (
-	SudoAccessLevel_name = map[int32]string{
-		0: "SUDO_ACCESS_LEVEL_UNSPECIFIED",
-		1: "SUDO_ACCESS_LEVEL_FULL",
-		2: "SUDO_ACCESS_LEVEL_LIMITED",
-		3: "SUDO_ACCESS_LEVEL_CUSTOM",
+	AdminAccessLevel_name = map[int32]string{
+		0: "ADMIN_ACCESS_LEVEL_UNSPECIFIED",
+		1: "ADMIN_ACCESS_LEVEL_FULL",
+		2: "ADMIN_ACCESS_LEVEL_LIMITED",
+		3: "ADMIN_ACCESS_LEVEL_CUSTOM",
 	}
-	SudoAccessLevel_value = map[string]int32{
-		"SUDO_ACCESS_LEVEL_UNSPECIFIED": 0,
-		"SUDO_ACCESS_LEVEL_FULL":        1,
-		"SUDO_ACCESS_LEVEL_LIMITED":     2,
-		"SUDO_ACCESS_LEVEL_CUSTOM":      3,
+	AdminAccessLevel_value = map[string]int32{
+		"ADMIN_ACCESS_LEVEL_UNSPECIFIED": 0,
+		"ADMIN_ACCESS_LEVEL_FULL":        1,
+		"ADMIN_ACCESS_LEVEL_LIMITED":     2,
+		"ADMIN_ACCESS_LEVEL_CUSTOM":      3,
 	}
 )
 
-func (x SudoAccessLevel) Enum() *SudoAccessLevel {
-	p := new(SudoAccessLevel)
+func (x AdminAccessLevel) Enum() *AdminAccessLevel {
+	p := new(AdminAccessLevel)
 	*p = x
 	return p
 }
 
-func (x SudoAccessLevel) String() string {
+func (x AdminAccessLevel) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (SudoAccessLevel) Descriptor() protoreflect.EnumDescriptor {
+func (AdminAccessLevel) Descriptor() protoreflect.EnumDescriptor {
 	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
 }
 
-func (SudoAccessLevel) Type() protoreflect.EnumType {
+func (AdminAccessLevel) Type() protoreflect.EnumType {
 	return &file_pm_v1_actions_proto_enumTypes[2]
 }
 
-func (x SudoAccessLevel) Number() protoreflect.EnumNumber {
+func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use SudoAccessLevel.Descriptor instead.
-func (SudoAccessLevel) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use AdminAccessLevel.Descriptor instead.
+func (AdminAccessLevel) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+}
+
+// PrivilegeBackend selects which privilege-escalation tool the agent
+// uses, both for its own operations and for rendering admin policies.
+// The agent reads its configured backend at startup and passes it to
+// the SDK via exec.SetPrivilegeBackend.
+type PrivilegeBackend int32
+
+const (
+	PrivilegeBackend_PRIVILEGE_BACKEND_SUDO PrivilegeBackend = 0 // Default. Drops files into /etc/sudoers.d/.
+	PrivilegeBackend_PRIVILEGE_BACKEND_DOAS PrivilegeBackend = 1 // Drops files into /etc/doas.d/.
+)
+
+// Enum value maps for PrivilegeBackend.
+var (
+	PrivilegeBackend_name = map[int32]string{
+		0: "PRIVILEGE_BACKEND_SUDO",
+		1: "PRIVILEGE_BACKEND_DOAS",
+	}
+	PrivilegeBackend_value = map[string]int32{
+		"PRIVILEGE_BACKEND_SUDO": 0,
+		"PRIVILEGE_BACKEND_DOAS": 1,
+	}
+)
+
+func (x PrivilegeBackend) Enum() *PrivilegeBackend {
+	p := new(PrivilegeBackend)
+	*p = x
+	return p
+}
+
+func (x PrivilegeBackend) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PrivilegeBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+}
+
+func (PrivilegeBackend) Type() protoreflect.EnumType {
+	return &file_pm_v1_actions_proto_enumTypes[3]
+}
+
+func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PrivilegeBackend.Descriptor instead.
+func (PrivilegeBackend) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.
@@ -286,11 +340,11 @@ func (x LpsPasswordComplexity) String() string {
 }
 
 func (LpsPasswordComplexity) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
 }
 
 func (LpsPasswordComplexity) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[3]
+	return &file_pm_v1_actions_proto_enumTypes[4]
 }
 
 func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
@@ -299,7 +353,7 @@ func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LpsPasswordComplexity.Descriptor instead.
 func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 // LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
@@ -336,11 +390,11 @@ func (x LuksDeviceBoundKeyType) String() string {
 }
 
 func (LuksDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
 }
 
 func (LuksDeviceBoundKeyType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[4]
+	return &file_pm_v1_actions_proto_enumTypes[5]
 }
 
 func (x LuksDeviceBoundKeyType) Number() protoreflect.EnumNumber {
@@ -349,7 +403,7 @@ func (x LuksDeviceBoundKeyType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LuksDeviceBoundKeyType.Descriptor instead.
 func (LuksDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 // WiFi authentication type.
@@ -386,11 +440,11 @@ func (x WifiAuthType) String() string {
 }
 
 func (WifiAuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
+	return file_pm_v1_actions_proto_enumTypes[6].Descriptor()
 }
 
 func (WifiAuthType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[5]
+	return &file_pm_v1_actions_proto_enumTypes[6]
 }
 
 func (x WifiAuthType) Number() protoreflect.EnumNumber {
@@ -399,7 +453,7 @@ func (x WifiAuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiAuthType.Descriptor instead.
 func (WifiAuthType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 type Action struct {
@@ -436,7 +490,7 @@ type Action struct {
 	//	*Action_User
 	//	*Action_Ssh
 	//	*Action_Sshd
-	//	*Action_Sudo
+	//	*Action_AdminPolicy
 	//	*Action_Lps
 	//	*Action_Group
 	//	*Action_Luks
@@ -641,10 +695,10 @@ func (x *Action) GetSshd() *SshdParams {
 	return nil
 }
 
-func (x *Action) GetSudo() *SudoParams {
+func (x *Action) GetAdminPolicy() *AdminPolicyParams {
 	if x != nil {
-		if x, ok := x.Params.(*Action_Sudo); ok {
-			return x.Sudo
+		if x, ok := x.Params.(*Action_AdminPolicy); ok {
+			return x.AdminPolicy
 		}
 	}
 	return nil
@@ -747,8 +801,8 @@ type Action_Sshd struct {
 	Sshd *SshdParams `protobuf:"bytes,19,opt,name=sshd,proto3,oneof"`
 }
 
-type Action_Sudo struct {
-	Sudo *SudoParams `protobuf:"bytes,20,opt,name=sudo,proto3,oneof"`
+type Action_AdminPolicy struct {
+	AdminPolicy *AdminPolicyParams `protobuf:"bytes,20,opt,name=admin_policy,json=adminPolicy,proto3,oneof"`
 }
 
 type Action_Lps struct {
@@ -795,7 +849,7 @@ func (*Action_Ssh) isAction_Params() {}
 
 func (*Action_Sshd) isAction_Params() {}
 
-func (*Action_Sudo) isAction_Params() {}
+func (*Action_AdminPolicy) isAction_Params() {}
 
 func (*Action_Lps) isAction_Params() {}
 
@@ -2480,40 +2534,49 @@ func (x *SshdParams) GetDirectives() []*SshdDirective {
 	return nil
 }
 
-// SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
-// Each action creates a Linux group pm-sudo-{actionId} and a corresponding
-// sudoers file. Users specified in the users list are added to the group.
-// When removed, the group and sudoers file are cleaned up.
-type SudoParams struct {
+// AdminPolicyParams configures privilege-delegation policies.
+// Previously named SudoParams. Under PRIVILEGE_BACKEND_SUDO the action
+// manages /etc/sudoers.d/ drop-ins; under PRIVILEGE_BACKEND_DOAS it
+// manages /etc/doas.d/ drop-ins. Each action creates a Linux group
+// pm-admin-{actionId} and the corresponding policy file. Users
+// specified in the users list are added to the group. When removed,
+// the group and policy file are cleaned up.
+type AdminPolicyParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Access level determines the sudo policy template
+	// Access level determines the policy template
 	// @gotags: validate:"required,ne=0"
-	AccessLevel SudoAccessLevel `protobuf:"varint,1,opt,name=access_level,json=accessLevel,proto3,enum=pm.v1.SudoAccessLevel" json:"access_level,omitempty" validate:"required,ne=0"`
-	// Users to add to the sudo group (must be valid Linux usernames)
+	AccessLevel AdminAccessLevel `protobuf:"varint,1,opt,name=access_level,json=accessLevel,proto3,enum=pm.v1.AdminAccessLevel" json:"access_level,omitempty" validate:"required,ne=0"`
+	// Users to add to the admin group (must be valid Linux usernames)
 	// @gotags: validate:"required,min=1,dive,min=1,max=32"
 	Users []string `protobuf:"bytes,2,rep,name=users,proto3" json:"users,omitempty" validate:"required,min=1,dive,min=1,max=32"`
-	// Custom sudoers rules (only used when access_level is CUSTOM)
-	// Use {group} as placeholder for the auto-generated group name.
+	// Raw policy content (only used when access_level is CUSTOM). Must be
+	// valid syntax for the chosen backend — sudoers grammar for SUDO and
+	// doas.conf(5) grammar for DOAS. Use {group} as placeholder for the
+	// auto-generated group name.
 	// @gotags: validate:"omitempty,max=65536"
-	CustomConfig  string `protobuf:"bytes,3,opt,name=custom_config,json=customConfig,proto3" json:"custom_config,omitempty" validate:"omitempty,max=65536"`
+	CustomConfig string `protobuf:"bytes,3,opt,name=custom_config,json=customConfig,proto3" json:"custom_config,omitempty" validate:"omitempty,max=65536"`
+	// Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
+	// compatibility with devices that don't explicitly set it.
+	// @gotags: validate:"omitempty"
+	Backend       PrivilegeBackend `protobuf:"varint,4,opt,name=backend,proto3,enum=pm.v1.PrivilegeBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SudoParams) Reset() {
-	*x = SudoParams{}
+func (x *AdminPolicyParams) Reset() {
+	*x = AdminPolicyParams{}
 	mi := &file_pm_v1_actions_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SudoParams) String() string {
+func (x *AdminPolicyParams) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SudoParams) ProtoMessage() {}
+func (*AdminPolicyParams) ProtoMessage() {}
 
-func (x *SudoParams) ProtoReflect() protoreflect.Message {
+func (x *AdminPolicyParams) ProtoReflect() protoreflect.Message {
 	mi := &file_pm_v1_actions_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2525,30 +2588,37 @@ func (x *SudoParams) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SudoParams.ProtoReflect.Descriptor instead.
-func (*SudoParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use AdminPolicyParams.ProtoReflect.Descriptor instead.
+func (*AdminPolicyParams) Descriptor() ([]byte, []int) {
 	return file_pm_v1_actions_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *SudoParams) GetAccessLevel() SudoAccessLevel {
+func (x *AdminPolicyParams) GetAccessLevel() AdminAccessLevel {
 	if x != nil {
 		return x.AccessLevel
 	}
-	return SudoAccessLevel_SUDO_ACCESS_LEVEL_UNSPECIFIED
+	return AdminAccessLevel_ADMIN_ACCESS_LEVEL_UNSPECIFIED
 }
 
-func (x *SudoParams) GetUsers() []string {
+func (x *AdminPolicyParams) GetUsers() []string {
 	if x != nil {
 		return x.Users
 	}
 	return nil
 }
 
-func (x *SudoParams) GetCustomConfig() string {
+func (x *AdminPolicyParams) GetCustomConfig() string {
 	if x != nil {
 		return x.CustomConfig
 	}
 	return ""
+}
+
+func (x *AdminPolicyParams) GetBackend() PrivilegeBackend {
+	if x != nil {
+		return x.Backend
+	}
+	return PrivilegeBackend_PRIVILEGE_BACKEND_SUDO
 }
 
 // LpsParams configures Local Password Solution (LAPS-like) password management.
@@ -3121,7 +3191,7 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\xf7\b\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x8d\t\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -3144,8 +3214,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\tdirectory\x18\x10 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
 	"\x04user\x18\x11 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
 	"\x03ssh\x18\x12 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x13 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12'\n" +
-	"\x04sudo\x18\x14 \x01(\v2\x11.pm.v1.SudoParamsH\x00R\x04sudo\x12$\n" +
+	"\x04sshd\x18\x13 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
+	"\fadmin_policy\x18\x14 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
 	"\x03lps\x18\x15 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
 	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x12'\n" +
 	"\x04luks\x18\x17 \x01(\v2\x11.pm.v1.LuksParamsH\x00R\x04luks\x12'\n" +
@@ -3286,12 +3356,12 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\bpriority\x18\x01 \x01(\rR\bpriority\x124\n" +
 	"\n" +
 	"directives\x18\x02 \x03(\v2\x14.pm.v1.SshdDirectiveR\n" +
-	"directives\"\x82\x01\n" +
-	"\n" +
-	"SudoParams\x129\n" +
-	"\faccess_level\x18\x01 \x01(\x0e2\x16.pm.v1.SudoAccessLevelR\vaccessLevel\x12\x14\n" +
+	"directives\"\xbd\x01\n" +
+	"\x11AdminPolicyParams\x12:\n" +
+	"\faccess_level\x18\x01 \x01(\x0e2\x17.pm.v1.AdminAccessLevelR\vaccessLevel\x12\x14\n" +
 	"\x05users\x18\x02 \x03(\tR\x05users\x12#\n" +
-	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\"\xf4\x01\n" +
+	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\x121\n" +
+	"\abackend\x18\x04 \x01(\x0e2\x17.pm.v1.PrivilegeBackendR\abackend\"\xf4\x01\n" +
 	"\tLpsParams\x12\x1c\n" +
 	"\tusernames\x18\x01 \x03(\tR\tusernames\x12'\n" +
 	"\x0fpassword_length\x18\x02 \x01(\x05R\x0epasswordLength\x12<\n" +
@@ -3345,7 +3415,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\"o\n" +
 	"\x11AgentUpdateParams\x12,\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
-	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xdc\x04\n" +
+	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xe4\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -3366,8 +3436,8 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x10ACTION_TYPE_USER\x10\xd8\x04\x12\x16\n" +
 	"\x11ACTION_TYPE_GROUP\x10\xd9\x04\x12\x14\n" +
 	"\x0fACTION_TYPE_SSH\x10\xbc\x05\x12\x15\n" +
-	"\x10ACTION_TYPE_SSHD\x10\xbd\x05\x12\x15\n" +
-	"\x10ACTION_TYPE_SUDO\x10\xa0\x06\x12\x14\n" +
+	"\x10ACTION_TYPE_SSHD\x10\xbd\x05\x12\x1d\n" +
+	"\x18ACTION_TYPE_ADMIN_POLICY\x10\xa0\x06\x12\x14\n" +
 	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x15\n" +
 	"\x10ACTION_TYPE_LUKS\x10\xe8\a\x12\x15\n" +
 	"\x10ACTION_TYPE_WIFI\x10\xcc\b\x12\x1d\n" +
@@ -3376,12 +3446,15 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x1eSYSTEMD_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
 	"\x1aSYSTEMD_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03*\x8d\x01\n" +
-	"\x0fSudoAccessLevel\x12!\n" +
-	"\x1dSUDO_ACCESS_LEVEL_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16SUDO_ACCESS_LEVEL_FULL\x10\x01\x12\x1d\n" +
-	"\x19SUDO_ACCESS_LEVEL_LIMITED\x10\x02\x12\x1c\n" +
-	"\x18SUDO_ACCESS_LEVEL_CUSTOM\x10\x03*\x8f\x01\n" +
+	"\x1cSYSTEMD_UNIT_STATE_RESTARTED\x10\x03*\x92\x01\n" +
+	"\x10AdminAccessLevel\x12\"\n" +
+	"\x1eADMIN_ACCESS_LEVEL_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17ADMIN_ACCESS_LEVEL_FULL\x10\x01\x12\x1e\n" +
+	"\x1aADMIN_ACCESS_LEVEL_LIMITED\x10\x02\x12\x1d\n" +
+	"\x19ADMIN_ACCESS_LEVEL_CUSTOM\x10\x03*J\n" +
+	"\x10PrivilegeBackend\x12\x1a\n" +
+	"\x16PRIVILEGE_BACKEND_SUDO\x10\x00\x12\x1a\n" +
+	"\x16PRIVILEGE_BACKEND_DOAS\x10\x01*\x8f\x01\n" +
 	"\x15LpsPasswordComplexity\x12'\n" +
 	"#LPS_PASSWORD_COMPLEXITY_UNSPECIFIED\x10\x00\x12(\n" +
 	"$LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC\x10\x01\x12#\n" +
@@ -3407,98 +3480,100 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 	return file_pm_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),               // 0: pm.v1.ActionType
 	(SystemdUnitState)(0),         // 1: pm.v1.SystemdUnitState
-	(SudoAccessLevel)(0),          // 2: pm.v1.SudoAccessLevel
-	(LpsPasswordComplexity)(0),    // 3: pm.v1.LpsPasswordComplexity
-	(LuksDeviceBoundKeyType)(0),   // 4: pm.v1.LuksDeviceBoundKeyType
-	(WifiAuthType)(0),             // 5: pm.v1.WifiAuthType
-	(*Action)(nil),                // 6: pm.v1.Action
-	(*ActionSchedule)(nil),        // 7: pm.v1.ActionSchedule
-	(*PackageParams)(nil),         // 8: pm.v1.PackageParams
-	(*AppInstallParams)(nil),      // 9: pm.v1.AppInstallParams
-	(*ShellParams)(nil),           // 10: pm.v1.ShellParams
-	(*SystemdParams)(nil),         // 11: pm.v1.SystemdParams
-	(*FileParams)(nil),            // 12: pm.v1.FileParams
-	(*DirectoryParams)(nil),       // 13: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),          // 14: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),         // 15: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),      // 16: pm.v1.RepositoryParams
-	(*AptRepository)(nil),         // 17: pm.v1.AptRepository
-	(*DnfRepository)(nil),         // 18: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),      // 19: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),      // 20: pm.v1.ZypperRepository
-	(*UserParams)(nil),            // 21: pm.v1.UserParams
-	(*GroupParams)(nil),           // 22: pm.v1.GroupParams
-	(*SshParams)(nil),             // 23: pm.v1.SshParams
-	(*SshdDirective)(nil),         // 24: pm.v1.SshdDirective
-	(*SshdParams)(nil),            // 25: pm.v1.SshdParams
-	(*SudoParams)(nil),            // 26: pm.v1.SudoParams
-	(*LpsParams)(nil),             // 27: pm.v1.LpsParams
-	(*LuksParams)(nil),            // 28: pm.v1.LuksParams
-	(*WifiParams)(nil),            // 29: pm.v1.WifiParams
-	(*ActionResult)(nil),          // 30: pm.v1.ActionResult
-	(*AgentUpdateArch)(nil),       // 31: pm.v1.AgentUpdateArch
-	(*AgentUpdateParams)(nil),     // 32: pm.v1.AgentUpdateParams
-	nil,                           // 33: pm.v1.ShellParams.EnvironmentEntry
-	nil,                           // 34: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),              // 35: pm.v1.ActionId
-	(DesiredState)(0),             // 36: pm.v1.DesiredState
-	(ExecutionStatus)(0),          // 37: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),         // 38: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil), // 39: google.protobuf.Timestamp
+	(AdminAccessLevel)(0),         // 2: pm.v1.AdminAccessLevel
+	(PrivilegeBackend)(0),         // 3: pm.v1.PrivilegeBackend
+	(LpsPasswordComplexity)(0),    // 4: pm.v1.LpsPasswordComplexity
+	(LuksDeviceBoundKeyType)(0),   // 5: pm.v1.LuksDeviceBoundKeyType
+	(WifiAuthType)(0),             // 6: pm.v1.WifiAuthType
+	(*Action)(nil),                // 7: pm.v1.Action
+	(*ActionSchedule)(nil),        // 8: pm.v1.ActionSchedule
+	(*PackageParams)(nil),         // 9: pm.v1.PackageParams
+	(*AppInstallParams)(nil),      // 10: pm.v1.AppInstallParams
+	(*ShellParams)(nil),           // 11: pm.v1.ShellParams
+	(*SystemdParams)(nil),         // 12: pm.v1.SystemdParams
+	(*FileParams)(nil),            // 13: pm.v1.FileParams
+	(*DirectoryParams)(nil),       // 14: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),          // 15: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),         // 16: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),      // 17: pm.v1.RepositoryParams
+	(*AptRepository)(nil),         // 18: pm.v1.AptRepository
+	(*DnfRepository)(nil),         // 19: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),      // 20: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),      // 21: pm.v1.ZypperRepository
+	(*UserParams)(nil),            // 22: pm.v1.UserParams
+	(*GroupParams)(nil),           // 23: pm.v1.GroupParams
+	(*SshParams)(nil),             // 24: pm.v1.SshParams
+	(*SshdDirective)(nil),         // 25: pm.v1.SshdDirective
+	(*SshdParams)(nil),            // 26: pm.v1.SshdParams
+	(*AdminPolicyParams)(nil),     // 27: pm.v1.AdminPolicyParams
+	(*LpsParams)(nil),             // 28: pm.v1.LpsParams
+	(*LuksParams)(nil),            // 29: pm.v1.LuksParams
+	(*WifiParams)(nil),            // 30: pm.v1.WifiParams
+	(*ActionResult)(nil),          // 31: pm.v1.ActionResult
+	(*AgentUpdateArch)(nil),       // 32: pm.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),     // 33: pm.v1.AgentUpdateParams
+	nil,                           // 34: pm.v1.ShellParams.EnvironmentEntry
+	nil,                           // 35: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),              // 36: pm.v1.ActionId
+	(DesiredState)(0),             // 37: pm.v1.DesiredState
+	(ExecutionStatus)(0),          // 38: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),         // 39: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil), // 40: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	35, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	36, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	36, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	7,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	8,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	9,  // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	10, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	11, // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
-	12, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	14, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	16, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	15, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	13, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	21, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	23, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	25, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	26, // 16: pm.v1.Action.sudo:type_name -> pm.v1.SudoParams
-	27, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	22, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	28, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
-	29, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
-	32, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
-	33, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	37, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	8,  // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	9,  // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	10, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	11, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	12, // 7: pm.v1.Action.systemd:type_name -> pm.v1.SystemdParams
+	13, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	15, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	17, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	16, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	14, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	22, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	24, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	26, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	27, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
+	28, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	23, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
+	29, // 19: pm.v1.Action.luks:type_name -> pm.v1.LuksParams
+	30, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
+	33, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
+	34, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
 	1,  // 23: pm.v1.SystemdParams.desired_state:type_name -> pm.v1.SystemdUnitState
-	17, // 24: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	18, // 25: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	19, // 26: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	20, // 27: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	24, // 28: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	2,  // 29: pm.v1.SudoParams.access_level:type_name -> pm.v1.SudoAccessLevel
-	3,  // 30: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	4,  // 31: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
-	3,  // 32: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	5,  // 33: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
-	35, // 34: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	37, // 35: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	38, // 36: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	39, // 37: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	34, // 38: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	38, // 39: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
-	31, // 40: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
-	31, // 41: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	18, // 24: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	19, // 25: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	20, // 26: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	21, // 27: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	25, // 28: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	2,  // 29: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
+	3,  // 30: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
+	4,  // 31: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	5,  // 32: pm.v1.LuksParams.device_bound_key_type:type_name -> pm.v1.LuksDeviceBoundKeyType
+	4,  // 33: pm.v1.LuksParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	6,  // 34: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
+	36, // 35: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	38, // 36: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	39, // 37: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	40, // 38: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	35, // 39: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	39, // 40: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	32, // 41: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
+	32, // 42: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -3520,7 +3595,7 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_User)(nil),
 		(*Action_Ssh)(nil),
 		(*Action_Sshd)(nil),
-		(*Action_Sudo)(nil),
+		(*Action_AdminPolicy)(nil),
 		(*Action_Lps)(nil),
 		(*Action_Group)(nil),
 		(*Action_Luks)(nil),
@@ -3532,7 +3607,7 @@ func file_pm_v1_actions_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      7,
 			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
