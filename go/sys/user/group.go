@@ -77,13 +77,13 @@ func GroupMembersMatch(groupName string, desiredUsers []string) bool {
 // Extra args are passed before the group name (e.g., "-g", "1001", "-r").
 func GroupCreate(ctx context.Context, name string, args ...string) error {
 	fullArgs := append(args, name)
-	_, err := exec.Sudo(ctx, "groupadd", fullArgs...)
+	_, err := exec.Privileged(ctx, "groupadd", fullArgs...)
 	return err
 }
 
 // GroupDelete deletes a group.
 func GroupDelete(ctx context.Context, name string) error {
-	_, err := exec.Sudo(ctx, "groupdel", name)
+	_, err := exec.Privileged(ctx, "groupdel", name)
 	return err
 }
 
@@ -101,12 +101,12 @@ func GroupEnsureExists(ctx context.Context, name string) error {
 
 // GroupAddUser adds a user to a supplementary group.
 func GroupAddUser(ctx context.Context, username, groupName string) error {
-	_, err := exec.Sudo(ctx, "usermod", "-aG", groupName, username)
+	_, err := exec.Privileged(ctx, "usermod", "-aG", groupName, username)
 	return err
 }
 
 // GroupRemoveUser removes a user from a supplementary group.
 func GroupRemoveUser(ctx context.Context, username, groupName string) error {
-	_, err := exec.Sudo(ctx, "gpasswd", "-d", username, groupName)
+	_, err := exec.Privileged(ctx, "gpasswd", "-d", username, groupName)
 	return err
 }

@@ -343,7 +343,7 @@ func TestCopyFileWithPermissions(t *testing.T) {
 func TestMkdir(t *testing.T) {
 	ctx := context.Background()
 	path := tmpPath(t, "mkdir")
-	defer func() { exec.Sudo(ctx, "rm", "-rf", path) }()
+	defer func() { exec.Privileged(ctx, "rm", "-rf", path) }()
 
 	if err := fs.Mkdir(ctx, path, false); err != nil {
 		t.Fatalf("Mkdir failed: %v", err)
@@ -358,7 +358,7 @@ func TestMkdirRecursive(t *testing.T) {
 	ctx := context.Background()
 	path := tmpPath(t, "mkdir-recursive") + "/a/b/c"
 	basePath := tmpPath(t, "mkdir-recursive")
-	defer func() { exec.Sudo(ctx, "rm", "-rf", basePath) }()
+	defer func() { exec.Privileged(ctx, "rm", "-rf", basePath) }()
 
 	if err := fs.Mkdir(ctx, path, true); err != nil {
 		t.Fatalf("Mkdir recursive failed: %v", err)
@@ -372,7 +372,7 @@ func TestMkdirRecursive(t *testing.T) {
 func TestMkdirWithPermissions(t *testing.T) {
 	ctx := context.Background()
 	path := tmpPath(t, "mkdir-perms")
-	defer func() { exec.Sudo(ctx, "rm", "-rf", path) }()
+	defer func() { exec.Privileged(ctx, "rm", "-rf", path) }()
 
 	if err := fs.MkdirWithPermissions(ctx, path, "0750", "root", "root", false); err != nil {
 		t.Fatalf("MkdirWithPermissions failed: %v", err)

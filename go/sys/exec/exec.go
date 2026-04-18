@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
 	"strings"
 	"sync/atomic"
 
@@ -24,27 +23,6 @@ func RunInDir(ctx context.Context, dir, name string, args ...string) (*Result, e
 // RunWithStdin executes a command with stdin input.
 func RunWithStdin(ctx context.Context, stdin io.Reader, name string, args ...string) (*Result, error) {
 	return runWithOptions(ctx, name, args, stdin, "")
-}
-
-// Sudo wraps a command with sudo -n for privileged operations.
-// The command is resolved to an absolute path so it matches sudoers rules.
-func Sudo(ctx context.Context, name string, args ...string) (*Result, error) {
-	absPath, err := exec.LookPath(name)
-	if err != nil {
-		return nil, fmt.Errorf("command not found: %s", name)
-	}
-	sudoArgs := append([]string{"-n", absPath}, args...)
-	return Run(ctx, "sudo", sudoArgs...)
-}
-
-// SudoWithStdin wraps a command with sudo and provides stdin input.
-func SudoWithStdin(ctx context.Context, stdin io.Reader, name string, args ...string) (*Result, error) {
-	absPath, err := exec.LookPath(name)
-	if err != nil {
-		return nil, fmt.Errorf("command not found: %s", name)
-	}
-	sudoArgs := append([]string{"-n", absPath}, args...)
-	return RunWithStdin(ctx, stdin, "sudo", sudoArgs...)
 }
 
 // RunStreaming executes a command with real-time output streaming.

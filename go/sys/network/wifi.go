@@ -92,7 +92,7 @@ func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 		}
 	}
 	args := BuildAddArgs(p)
-	if _, err := sysexec.Sudo(ctx, "nmcli", args...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "nmcli", args...); err != nil {
 		if p.AuthType == WiFiAuthEAPTLS {
 			removeCerts(p.CertDir)
 		}
@@ -146,7 +146,7 @@ func stagedModify(ctx context.Context, p WiFiProfile, current map[string]string)
 
 	// Modify with the FINAL cert paths (not temp), then move temp into place.
 	// This way nmcli's config never references the temp dir.
-	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 
@@ -180,7 +180,7 @@ func stagedModify(ctx context.Context, p WiFiProfile, current map[string]string)
 // non-EAP-TLS profiles, since EAP-TLS always goes through stagedModify to
 // protect the live cert directory.
 func directModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
-	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 	return true, nil
@@ -273,7 +273,7 @@ func Delete(ctx context.Context, name, certDir string) error {
 		return err
 	}
 	if exists {
-		if _, err := sysexec.Sudo(ctx, "nmcli", "con", "delete", name); err != nil {
+		if _, err := sysexec.Privileged(ctx, "nmcli", "con", "delete", name); err != nil {
 			return fmt.Errorf("delete connection %s: %w", name, err)
 		}
 	}

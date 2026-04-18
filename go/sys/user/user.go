@@ -116,7 +116,7 @@ func IsValidName(username string) bool {
 // exists" lives there. The Result is non-nil on most failure paths too.
 func Create(ctx context.Context, username string, args ...string) (*exec.Result, error) {
 	fullArgs := append(args, username)
-	return exec.Sudo(ctx, "useradd", fullArgs...)
+	return exec.Privileged(ctx, "useradd", fullArgs...)
 }
 
 // Modify modifies an existing user account.
@@ -124,26 +124,26 @@ func Create(ctx context.Context, username string, args ...string) (*exec.Result,
 // Returns the command result so callers can surface usermod's stderr.
 func Modify(ctx context.Context, username string, args ...string) (*exec.Result, error) {
 	fullArgs := append(args, username)
-	return exec.Sudo(ctx, "usermod", fullArgs...)
+	return exec.Privileged(ctx, "usermod", fullArgs...)
 }
 
 // Delete removes a user account. If removeHome is true, also removes the home directory.
 // Returns the command result so callers can surface userdel's stderr.
 func Delete(ctx context.Context, username string, removeHome bool) (*exec.Result, error) {
 	if removeHome {
-		return exec.Sudo(ctx, "userdel", "-r", username)
+		return exec.Privileged(ctx, "userdel", "-r", username)
 	}
-	return exec.Sudo(ctx, "userdel", username)
+	return exec.Privileged(ctx, "userdel", username)
 }
 
 // Lock locks a user account (usermod -L).
 func Lock(ctx context.Context, username string) (*exec.Result, error) {
-	return exec.Sudo(ctx, "usermod", "-L", username)
+	return exec.Privileged(ctx, "usermod", "-L", username)
 }
 
 // Unlock unlocks a user account (usermod -U).
 func Unlock(ctx context.Context, username string) (*exec.Result, error) {
-	return exec.Sudo(ctx, "usermod", "-U", username)
+	return exec.Privileged(ctx, "usermod", "-U", username)
 }
 
 // =============================================================================
@@ -189,12 +189,12 @@ func SupplementaryGroups(username string) ([]string, error) {
 
 // SetPassword sets a user's password using chpasswd.
 func SetPassword(ctx context.Context, username, password string) (*exec.Result, error) {
-	return exec.SudoWithStdin(ctx, strings.NewReader(fmt.Sprintf("%s:%s", username, password)), "chpasswd")
+	return exec.PrivilegedWithStdin(ctx, strings.NewReader(fmt.Sprintf("%s:%s", username, password)), "chpasswd")
 }
 
 // ExpirePassword forces a user to change their password on next login.
 func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) {
-	return exec.Sudo(ctx, "chage", "-d", "0", username)
+	return exec.Privileged(ctx, "chage", "-d", "0", username)
 }
 
 // =============================================================================
@@ -208,5 +208,5 @@ func ChownRecursive(ctx context.Context, path, owner, group string) (*exec.Resul
 	if ownership == "" {
 		return nil, nil
 	}
-	return exec.Sudo(ctx, "chown", "-R", ownership, path)
+	return exec.Privileged(ctx, "chown", "-R", ownership, path)
 }

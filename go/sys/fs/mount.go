@@ -26,7 +26,7 @@ func IsReadOnly(path string) (bool, error) {
 // RemountRW attempts to remount the filesystem at path as read-write
 // via sudo mount -o remount,rw.
 func RemountRW(ctx context.Context, path string) error {
-	_, err := exec.Sudo(ctx, "mount", "-o", "remount,rw", path)
+	_, err := exec.Privileged(ctx, "mount", "-o", "remount,rw", path)
 	if err != nil {
 		return fmt.Errorf("remount %s read-write: %w", path, err)
 	}

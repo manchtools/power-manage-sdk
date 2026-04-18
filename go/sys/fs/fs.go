@@ -59,7 +59,7 @@ func GetOwnership(path string) (owner, group string) {
 // WriteFile writes content to a file using sudo tee.
 // This is the basic building block for privileged file writes.
 func WriteFile(ctx context.Context, path, content string) error {
-	_, err := exec.SudoWithStdin(ctx, strings.NewReader(content), "tee", path)
+	_, err := exec.PrivilegedWithStdin(ctx, strings.NewReader(content), "tee", path)
 	return err
 }
 
@@ -70,7 +70,7 @@ func SetMode(ctx context.Context, path, mode string) error {
 	if mode == "" {
 		return nil
 	}
-	_, err := exec.Sudo(ctx, "chmod", mode, path)
+	_, err := exec.Privileged(ctx, "chmod", mode, path)
 	return err
 }
 
@@ -82,7 +82,7 @@ func SetOwnership(ctx context.Context, path, owner, group string) error {
 	if ownership == "" {
 		return nil
 	}
-	_, err := exec.Sudo(ctx, "chown", ownership, path)
+	_, err := exec.Privileged(ctx, "chown", ownership, path)
 	return err
 }
 
@@ -121,7 +121,7 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 	}
 
 	// Atomic move into place
-	if _, err := exec.Sudo(ctx, "mv", "-f", tmpPath, path); err != nil {
+	if _, err := exec.Privileged(ctx, "mv", "-f", tmpPath, path); err != nil {
 		Remove(ctx, tmpPath) // cleanup
 		return fmt.Errorf("move file into place: %w", err)
 	}
@@ -137,7 +137,7 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 // Returns the content with trailing newline preserved (matching what's on disk).
 // If the file doesn't exist, returns an empty string and nil error.
 func ReadFile(ctx context.Context, path string) (string, error) {
-	result, err := exec.Sudo(ctx, "cat", path)
+	result, err := exec.Privileged(ctx, "cat", path)
 	if err != nil {
 		if result != nil && strings.Contains(result.Stderr, "No such file") {
 			return "", nil
@@ -157,7 +157,7 @@ func ReadFile(ctx context.Context, path string) (string, error) {
 // This is needed for paths in directories not readable by the current user
 // (e.g. /etc/sudoers.d is mode 0750 on Fedora/RHEL).
 func FileExists(ctx context.Context, path string) bool {
-	_, err := exec.Sudo(ctx, "test", "-e", path)
+	_, err := exec.Privileged(ctx, "test", "-e", path)
 	return err == nil
 }
 
@@ -168,12 +168,12 @@ func FileExists(ctx context.Context, path string) bool {
 // Remove removes a file using sudo rm -f.
 // This is a best-effort operation that doesn't return errors.
 func Remove(ctx context.Context, path string) {
-	exec.Sudo(ctx, "rm", "-f", path)
+	exec.Privileged(ctx, "rm", "-f", path)
 }
 
 // RemoveStrict removes a file using sudo rm -f and returns any error.
 func RemoveStrict(ctx context.Context, path string) error {
-	_, err := exec.Sudo(ctx, "rm", "-f", path)
+	_, err := exec.Privileged(ctx, "rm", "-f", path)
 	return err
 }
 
@@ -189,7 +189,7 @@ func Mkdir(ctx context.Context, path string, recursive bool) error {
 		args = append(args, "-p")
 	}
 	args = append(args, path)
-	_, err := exec.Sudo(ctx, "mkdir", args...)
+	_, err := exec.Privileged(ctx, "mkdir", args...)
 	return err
 }
 
@@ -234,7 +234,7 @@ func RemoveDir(ctx context.Context, path string) error {
 	if dangerousPaths[clean] {
 		return fmt.Errorf("refusing to remove protected path: %s", clean)
 	}
-	_, err := exec.Sudo(ctx, "rm", "-rf", clean)
+	_, err := exec.Privileged(ctx, "rm", "-rf", clean)
 	return err
 }
 
@@ -244,7 +244,7 @@ func RemoveDir(ctx context.Context, path string) error {
 
 // CopyFile copies a file from src to dst using sudo cp.
 func CopyFile(ctx context.Context, src, dst string) error {
-	_, err := exec.Sudo(ctx, "cp", src, dst)
+	_, err := exec.Privileged(ctx, "cp", src, dst)
 	return err
 }
 

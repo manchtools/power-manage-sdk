@@ -19,7 +19,7 @@ func KillSessions(ctx context.Context, username string) error {
 	// Try loginctl first (systemd).
 	var loginctlErr error
 	if _, err := exec.LookPath("loginctl"); err == nil {
-		_, loginctlErr = sysexec.Sudo(ctx, "loginctl", "terminate-user", username)
+		_, loginctlErr = sysexec.Privileged(ctx, "loginctl", "terminate-user", username)
 		if loginctlErr == nil {
 			return nil
 		}
@@ -28,7 +28,7 @@ func KillSessions(ctx context.Context, username string) error {
 
 	// Fallback: pkill -KILL -u.
 	// pkill exits 1 if no processes matched, which is fine.
-	result, err := sysexec.Sudo(ctx, "pkill", "-KILL", "-u", username)
+	result, err := sysexec.Privileged(ctx, "pkill", "-KILL", "-u", username)
 	if err != nil {
 		// Exit code 1 means no processes found — not an error.
 		if result != nil && result.ExitCode == 1 {

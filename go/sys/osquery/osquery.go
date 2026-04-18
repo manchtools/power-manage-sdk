@@ -179,7 +179,7 @@ func (c *Client) execQuery(ctx context.Context, query string) (string, error) {
 		args = append(args, "--json", query)
 	}
 
-	result, err := sysexec.Sudo(ctx, c.binaryPath, args...)
+	result, err := sysexec.Privileged(ctx, c.binaryPath, args...)
 	if err != nil {
 		stderr := ""
 		if result != nil {

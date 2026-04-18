@@ -105,61 +105,61 @@ func IsActive(unitName string) bool {
 
 // DaemonReload runs systemctl daemon-reload to reload systemd configuration.
 func DaemonReload(ctx context.Context) error {
-	_, err := exec.Sudo(ctx, "systemctl", "daemon-reload")
+	_, err := exec.Privileged(ctx, "systemctl", "daemon-reload")
 	return err
 }
 
 // Enable enables a systemd unit.
 func Enable(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "enable", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "enable", unitName)
 	return err
 }
 
 // Disable disables a systemd unit.
 func Disable(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "disable", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "disable", unitName)
 	return err
 }
 
 // Start starts a systemd unit.
 func Start(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "start", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "start", unitName)
 	return err
 }
 
 // Stop stops a systemd unit.
 func Stop(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "stop", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "stop", unitName)
 	return err
 }
 
 // Restart restarts a systemd unit.
 func Restart(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "restart", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "restart", unitName)
 	return err
 }
 
 // Mask masks a systemd unit, preventing it from being started.
 func Mask(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "mask", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "mask", unitName)
 	return err
 }
 
 // Unmask unmasks a systemd unit.
 func Unmask(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "unmask", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "unmask", unitName)
 	return err
 }
 
 // EnableNow enables and starts a systemd unit.
 func EnableNow(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "enable", "--now", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "enable", "--now", unitName)
 	return err
 }
 
 // DisableNow disables and stops a systemd unit.
 func DisableNow(ctx context.Context, unitName string) error {
-	_, err := exec.Sudo(ctx, "systemctl", "disable", "--now", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "disable", "--now", unitName)
 	return err
 }
 

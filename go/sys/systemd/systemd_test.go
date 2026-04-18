@@ -28,11 +28,11 @@ WantedBy=multi-user.target
 func cleanupUnit(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
-	exec.Sudo(ctx, "systemctl", "stop", testUnitName)
-	exec.Sudo(ctx, "systemctl", "disable", testUnitName)
-	exec.Sudo(ctx, "systemctl", "unmask", testUnitName)
+	exec.Privileged(ctx, "systemctl", "stop", testUnitName)
+	exec.Privileged(ctx, "systemctl", "disable", testUnitName)
+	exec.Privileged(ctx, "systemctl", "unmask", testUnitName)
 	fs.Remove(ctx, "/etc/systemd/system/"+testUnitName)
-	exec.Sudo(ctx, "systemctl", "daemon-reload")
+	exec.Privileged(ctx, "systemctl", "daemon-reload")
 }
 
 func TestWriteUnit(t *testing.T) {

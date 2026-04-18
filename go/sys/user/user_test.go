@@ -20,7 +20,7 @@ func testUsername(suffix string) string {
 func cleanupUser(t *testing.T, username string) {
 	t.Helper()
 	ctx := context.Background()
-	exec.Sudo(ctx, "userdel", "-r", username)
+	exec.Privileged(ctx, "userdel", "-r", username)
 }
 
 func createTestUser(t *testing.T, username string) {
@@ -317,7 +317,7 @@ func TestSupplementaryGroups(t *testing.T) {
 	name := testUsername("sg")
 	groupName := testUsername("sgg")
 	defer cleanupUser(t, name)
-	defer func() { exec.Sudo(ctx, "groupdel", groupName) }()
+	defer func() { exec.Privileged(ctx, "groupdel", groupName) }()
 
 	createTestUser(t, name)
 
@@ -362,7 +362,7 @@ func TestChownRecursive(t *testing.T) {
 	createTestUser(t, name)
 
 	dir := fmt.Sprintf("/tmp/pm-chown-test-%d", os.Getpid())
-	defer func() { exec.Sudo(ctx, "rm", "-rf", dir) }()
+	defer func() { exec.Privileged(ctx, "rm", "-rf", dir) }()
 
 	if err := fs.Mkdir(ctx, dir+"/sub", true); err != nil {
 		t.Fatalf("Mkdir failed: %v", err)

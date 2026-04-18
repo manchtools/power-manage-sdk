@@ -14,7 +14,7 @@ import (
 
 // IsLuks checks if a device is a LUKS-encrypted volume.
 func IsLuks(ctx context.Context, devicePath string) (bool, error) {
-	result, err := exec.Sudo(ctx, "cryptsetup", "isLuks", devicePath)
+	result, err := exec.Privileged(ctx, "cryptsetup", "isLuks", devicePath)
 	if err != nil {
 		if result != nil && result.ExitCode == 1 {
 			return false, nil
@@ -38,7 +38,7 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 	}
 	defer cleanupKeyFile(newFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
 	if err != nil {
 		return cryptsetupError("luksAddKey", result, err)
 	}
@@ -59,7 +59,7 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 	}
 	defer cleanupKeyFile(newFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
 		"--key-file", existingFile, "--key-slot", strconv.Itoa(slot), "--batch-mode")
 	if err != nil {
 		return cryptsetupError(fmt.Sprintf("luksAddKey (slot %d)", slot), result, err)
@@ -75,7 +75,7 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 	}
 	defer cleanupKeyFile(keyFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		return cryptsetupError("luksRemoveKey", result, err)
 	}
@@ -90,7 +90,7 @@ func KillSlot(ctx context.Context, devicePath string, slot int, existingKey stri
 	}
 	defer cleanupKeyFile(keyFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		return cryptsetupError(fmt.Sprintf("luksKillSlot %d", slot), result, err)
@@ -163,7 +163,7 @@ func TestPassphrase(ctx context.Context, devicePath, passphrase string) (bool, e
 	}
 	defer cleanupKeyFile(keyFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
+	result, err := exec.Privileged(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		if result != nil && result.ExitCode == 2 {
