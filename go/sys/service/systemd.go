@@ -15,20 +15,34 @@ import (
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
-// validSystemdUnitName restricts systemd unit names to safe characters,
-// preventing path traversal attacks (e.g. "../../../etc/shadow") and
-// flag injection (a leading '-' would be parsed by systemctl as an
-// option rather than a unit name). systemd allows `\xHH` hex-escape
-// sequences for reserved characters in unit names (systemd.unit(5),
-// "STRING ESCAPING FOR INCLUSION IN UNIT NAMES"); the regex accepts
-// those alongside the plain character class so `systemd-escape`-
-// produced names survive validation.
-var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@._:]|\\x[0-9A-Fa-f]{2})(?:[a-zA-Z0-9@._:-]|\\x[0-9A-Fa-f]{2})*\.(service|socket|timer|mount|automount|swap|target|path|slice|scope)$`)
+// validSystemdUnitName restricts systemd unit names to safe characters.
+//
+// Three design choices worth calling out:
+//
+//   * Leading '.' is rejected. Unit names starting with a dot aren't
+//     valid systemd names and would look like hidden filesystem
+//     entries; rejecting them here prevents any path-traversal-style
+//     confusion downstream.
+//
+//   * Leading '-' IS allowed. systemd has legitimate unit names that
+//     start with '-' (e.g. "-.mount", the root mount for '/'). Flag
+//     injection at the argv level is prevented by always passing
+//     unitName after an explicit "--" end-of-options separator in
+//     every systemctl call in this file (defence in depth).
+//
+//   * `\xHH` hex-escape sequences are permitted so names produced by
+//     systemd-escape(1) for paths or reserved characters flow through
+//     validation unchanged (systemd.unit(5), "STRING ESCAPING FOR
+//     INCLUSION IN UNIT NAMES").
+//
+// Suffixes cover every unit type systemd recognises, including the
+// auto-generated .device units for hardware.
+var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@_:-]|\\x[0-9A-Fa-f]{2})(?:[a-zA-Z0-9@._:-]|\\x[0-9A-Fa-f]{2})*\.(service|socket|device|timer|mount|automount|swap|target|path|slice|scope)$`)
 
 func statusSystemd(unitName string) UnitStatus {
 	status := UnitStatus{}
 
-	out, _, err := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-enabled", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
@@ -53,7 +67,7 @@ func statusSystemd(unitName string) UnitStatus {
 		status.Masked = true
 	}
 
-	out, _, err = exec.QueryOutput("systemctl", "is-active", unitName)
+	out, _, err = exec.QueryOutput("systemctl", "is-active", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
 	}
@@ -63,7 +77,7 @@ func statusSystemd(unitName string) UnitStatus {
 }
 
 func isEnabledSystemd(unitName string) bool {
-	out, _, err := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-enabled", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
@@ -77,7 +91,7 @@ func isEnabledSystemd(unitName string) bool {
 }
 
 func isMaskedSystemd(unitName string) bool {
-	out, _, err := exec.QueryOutput("systemctl", "is-enabled", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-enabled", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
@@ -88,7 +102,7 @@ func isMaskedSystemd(unitName string) bool {
 }
 
 func isActiveSystemd(unitName string) bool {
-	out, _, err := exec.QueryOutput("systemctl", "is-active", unitName)
+	out, _, err := exec.QueryOutput("systemctl", "is-active", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
 	}
@@ -104,7 +118,7 @@ func enableSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "enable", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "enable", "--", unitName)
 	return err
 }
 
@@ -112,7 +126,7 @@ func disableSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "disable", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "disable", "--", unitName)
 	return err
 }
 
@@ -120,7 +134,7 @@ func startSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "start", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "start", "--", unitName)
 	return err
 }
 
@@ -128,7 +142,7 @@ func stopSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "stop", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "stop", "--", unitName)
 	return err
 }
 
@@ -136,7 +150,7 @@ func restartSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "restart", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "restart", "--", unitName)
 	return err
 }
 
@@ -144,7 +158,7 @@ func maskSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "mask", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "mask", "--", unitName)
 	return err
 }
 
@@ -152,7 +166,7 @@ func unmaskSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "unmask", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "unmask", "--", unitName)
 	return err
 }
 
@@ -160,7 +174,7 @@ func enableNowSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "enable", "--now", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "enable", "--now", "--", unitName)
 	return err
 }
 
@@ -168,13 +182,13 @@ func disableNowSystemd(ctx context.Context, unitName string) error {
 	if err := validateUnitNameSystemd(unitName); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "disable", "--now", unitName)
+	_, err := exec.Privileged(ctx, "systemctl", "disable", "--now", "--", unitName)
 	return err
 }
 
 func validateUnitNameSystemd(unitName string) error {
 	if !validSystemdUnitName.MatchString(unitName) {
-		return fmt.Errorf("invalid systemd unit name %q: must start with [a-zA-Z0-9@._:] and match <name>.<type>", unitName)
+		return fmt.Errorf("invalid systemd unit name %q: must not start with '.' and must match <name>.<type> where type is one of service, socket, device, timer, mount, automount, swap, target, path, slice, scope", unitName)
 	}
 	return nil
 }
