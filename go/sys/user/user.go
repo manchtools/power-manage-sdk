@@ -105,6 +105,19 @@ func IsValidName(username string) bool {
 	return true
 }
 
+// validateUsername returns a descriptive error if the name fails
+// IsValidName. Every privileged user-management helper in this package
+// goes through this guard so that (a) a username starting with "-"
+// cannot become a useradd/usermod flag, and (b) a username containing
+// control characters (newline, colon) cannot inject extra chpasswd
+// lines.
+func validateUsername(username string) error {
+	if !IsValidName(username) {
+		return fmt.Errorf("invalid username %q: must start with a lowercase letter and contain only [a-z0-9_-], max 32 chars", username)
+	}
+	return nil
+}
+
 // =============================================================================
 // User Management Operations
 // =============================================================================
@@ -115,6 +128,9 @@ func IsValidName(username string) bool {
 // surface useradd's stderr — important context like "user 'foo' already
 // exists" lives there. The Result is non-nil on most failure paths too.
 func Create(ctx context.Context, username string, args ...string) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
 	fullArgs := append(args, username)
 	return exec.Privileged(ctx, "useradd", fullArgs...)
 }
@@ -123,6 +139,9 @@ func Create(ctx context.Context, username string, args ...string) (*exec.Result,
 // Extra args are passed before the username (e.g., "-s", "/bin/zsh").
 // Returns the command result so callers can surface usermod's stderr.
 func Modify(ctx context.Context, username string, args ...string) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
 	fullArgs := append(args, username)
 	return exec.Privileged(ctx, "usermod", fullArgs...)
 }
@@ -130,6 +149,9 @@ func Modify(ctx context.Context, username string, args ...string) (*exec.Result,
 // Delete removes a user account. If removeHome is true, also removes the home directory.
 // Returns the command result so callers can surface userdel's stderr.
 func Delete(ctx context.Context, username string, removeHome bool) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
 	if removeHome {
 		return exec.Privileged(ctx, "userdel", "-r", username)
 	}
@@ -138,11 +160,17 @@ func Delete(ctx context.Context, username string, removeHome bool) (*exec.Result
 
 // Lock locks a user account (usermod -L).
 func Lock(ctx context.Context, username string) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
 	return exec.Privileged(ctx, "usermod", "-L", username)
 }
 
 // Unlock unlocks a user account (usermod -U).
 func Unlock(ctx context.Context, username string) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
 	return exec.Privileged(ctx, "usermod", "-U", username)
 }
 
@@ -188,12 +216,26 @@ func SupplementaryGroups(username string) ([]string, error) {
 // =============================================================================
 
 // SetPassword sets a user's password using chpasswd.
+// Rejects passwords containing newlines — chpasswd reads newline-
+// separated "user:password" records from stdin, so a newline in the
+// password (or a crafted username) would inject a second record and
+// let a caller change an unrelated account. IsValidName already
+// eliminates newline-carrying usernames.
 func SetPassword(ctx context.Context, username, password string) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
+	if strings.ContainsAny(password, "\n\r") {
+		return nil, fmt.Errorf("invalid password: must not contain newline or carriage-return characters")
+	}
 	return exec.PrivilegedWithStdin(ctx, strings.NewReader(fmt.Sprintf("%s:%s", username, password)), "chpasswd")
 }
 
 // ExpirePassword forces a user to change their password on next login.
 func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) {
+	if err := validateUsername(username); err != nil {
+		return nil, err
+	}
 	return exec.Privileged(ctx, "chage", "-d", "0", username)
 }
 
@@ -203,10 +245,13 @@ func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) 
 
 // ChownRecursive changes ownership of a path and all its contents.
 // Returns nil result with nil error when owner+group are both empty (no-op).
+// The "--" end-of-options separator is passed so an ownership or path
+// value that happens to start with "-" cannot be misread as a flag by
+// chown.
 func ChownRecursive(ctx context.Context, path, owner, group string) (*exec.Result, error) {
 	ownership := fs.Ownership(owner, group)
 	if ownership == "" {
 		return nil, nil
 	}
-	return exec.Privileged(ctx, "chown", "-R", ownership, path)
+	return exec.Privileged(ctx, "chown", "-R", "--", ownership, path)
 }
