@@ -42,7 +42,7 @@ Agent and server repos consume the SDK via a `replace ../sdk` directive in dev. 
 The proto tree is the public wire format. Everything about a proto change is high-consequence.
 
 - **Never reuse field numbers.** Even if a field is removed, don't reuse its wire number.
-- **Don't rename enum values after release.** Wire numbers are the API; names are the code binding. Add a new value and deprecate the old in a comment. (Exception: the coordinated sudo → admin_policy and systemd → service renames in this PR happen because no downstream had encoded events yet; future renames of released types must go through a deprecation cycle.)
+- **Renames are breaking changes.** Wire numbers are the API; names are the code binding. If a rename is necessary, it's a coordinated breaking change across SDK + agent + server + web in one window, not a deprecation dance. If you can't commit to landing all four in the same release, don't start the rename.
 - **Default values matter.** An unset enum or bool is the zero value, so always pick the zero case to be "most common / safest." Agents built before a new enum value was added will silently see field=0 — make sure that keeps working.
 - **After edits, regenerate** with `make generate` and commit both the proto and the `gen/` changes in the same commit. CI will reject mismatched state.
 

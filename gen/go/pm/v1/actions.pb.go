@@ -1561,7 +1561,7 @@ func (x *ShellParams) GetIsCompliance() bool {
 // ServiceParams configures a service unit. unit_content is the verbatim
 // unit file; the agent writes it to the location expected by the chosen
 // backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
-// OPENRC: /etc/init.d/<unit_name>; etc.). Previously SystemdParams.
+// OPENRC: /etc/init.d/<unit_name>; etc.).
 type ServiceParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,min=1,max=255"
@@ -2890,12 +2890,12 @@ func (x *SshdParams) GetDirectives() []*SshdDirective {
 }
 
 // AdminPolicyParams configures privilege-delegation policies.
-// Previously named SudoParams. Under PRIVILEGE_BACKEND_SUDO the action
-// manages /etc/sudoers.d/ drop-ins; under PRIVILEGE_BACKEND_DOAS it
-// manages /etc/doas.d/ drop-ins. Each action creates a Linux group
-// pm-admin-{actionId} and the corresponding policy file. Users
-// specified in the users list are added to the group. When removed,
-// the group and policy file are cleaned up.
+// Under PRIVILEGE_BACKEND_SUDO the action manages /etc/sudoers.d/
+// drop-ins; under PRIVILEGE_BACKEND_DOAS it manages /etc/doas.d/
+// drop-ins. Each action creates a Linux group pm-admin-{actionId}
+// and the corresponding policy file. Users specified in the users
+// list are added to the group. When removed, the group and policy
+// file are cleaned up.
 type AdminPolicyParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Access level determines the policy template
@@ -3068,12 +3068,12 @@ func (x *LpsParams) GetGracePeriodHours() int32 {
 	return 0
 }
 
-// EncryptionParams configures disk encryption management. Previously
-// LuksParams. The agent auto-detects the primary encrypted volume on
-// the device (format depends on the chosen backend). A managed
-// passphrase is generated, stored on the server, and rotated on
-// schedule. Optionally, a device-bound key (TPM or user passphrase)
-// can be enrolled in the backend's designated slot.
+// EncryptionParams configures disk encryption management. The agent
+// auto-detects the primary encrypted volume on the device (format
+// depends on the chosen backend). A managed passphrase is generated,
+// stored on the server, and rotated on schedule. Optionally, a
+// device-bound key (TPM or user passphrase) can be enrolled in the
+// backend's designated slot.
 type EncryptionParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Pre-shared key for initial ownership (only needed for first run)

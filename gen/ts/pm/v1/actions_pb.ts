@@ -424,7 +424,7 @@ export const ShellParamsSchema: GenMessage<ShellParams> = /*@__PURE__*/
  * ServiceParams configures a service unit. unit_content is the verbatim
  * unit file; the agent writes it to the location expected by the chosen
  * backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
- * OPENRC: /etc/init.d/<unit_name>; etc.). Previously SystemdParams.
+ * OPENRC: /etc/init.d/<unit_name>; etc.).
  *
  * @generated from message pm.v1.ServiceParams
  */
@@ -1259,12 +1259,12 @@ export const SshdParamsSchema: GenMessage<SshdParams> = /*@__PURE__*/
 
 /**
  * AdminPolicyParams configures privilege-delegation policies.
- * Previously named SudoParams. Under PRIVILEGE_BACKEND_SUDO the action
- * manages /etc/sudoers.d/ drop-ins; under PRIVILEGE_BACKEND_DOAS it
- * manages /etc/doas.d/ drop-ins. Each action creates a Linux group
- * pm-admin-{actionId} and the corresponding policy file. Users
- * specified in the users list are added to the group. When removed,
- * the group and policy file are cleaned up.
+ * Under PRIVILEGE_BACKEND_SUDO the action manages /etc/sudoers.d/
+ * drop-ins; under PRIVILEGE_BACKEND_DOAS it manages /etc/doas.d/
+ * drop-ins. Each action creates a Linux group pm-admin-{actionId}
+ * and the corresponding policy file. Users specified in the users
+ * list are added to the group. When removed, the group and policy
+ * file are cleaned up.
  *
  * @generated from message pm.v1.AdminPolicyParams
  */
@@ -1373,12 +1373,12 @@ export const LpsParamsSchema: GenMessage<LpsParams> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 21);
 
 /**
- * EncryptionParams configures disk encryption management. Previously
- * LuksParams. The agent auto-detects the primary encrypted volume on
- * the device (format depends on the chosen backend). A managed
- * passphrase is generated, stored on the server, and rotated on
- * schedule. Optionally, a device-bound key (TPM or user passphrase)
- * can be enrolled in the backend's designated slot.
+ * EncryptionParams configures disk encryption management. The agent
+ * auto-detects the primary encrypted volume on the device (format
+ * depends on the chosen backend). A managed passphrase is generated,
+ * stored on the server, and rotated on schedule. Optionally, a
+ * device-bound key (TPM or user passphrase) can be enrolled in the
+ * backend's designated slot.
  *
  * @generated from message pm.v1.EncryptionParams
  */
