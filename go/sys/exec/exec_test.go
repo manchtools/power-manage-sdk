@@ -73,41 +73,41 @@ func TestRunContextCancel(t *testing.T) {
 	}
 }
 
-func TestSudo(t *testing.T) {
+func TestPrivileged(t *testing.T) {
 	ctx := context.Background()
-	result, err := exec.Sudo(ctx, "id", "-u")
+	result, err := exec.Privileged(ctx, "id", "-u")
 	if err != nil {
-		t.Fatalf("Sudo failed: %v", err)
+		t.Fatalf("Privileged failed: %v", err)
 	}
 	if strings.TrimSpace(result.Stdout) != "0" {
 		t.Errorf("expected uid '0' (root), got %q", strings.TrimSpace(result.Stdout))
 	}
 }
 
-func TestSudoWithStdin(t *testing.T) {
+func TestPrivilegedWithStdin(t *testing.T) {
 	ctx := context.Background()
-	result, err := exec.SudoWithStdin(ctx, strings.NewReader("test input"), "cat")
+	result, err := exec.PrivilegedWithStdin(ctx, strings.NewReader("test input"), "cat")
 	if err != nil {
-		t.Fatalf("SudoWithStdin failed: %v", err)
+		t.Fatalf("PrivilegedWithStdin failed: %v", err)
 	}
 	if !strings.Contains(result.Stdout, "test input") {
 		t.Errorf("expected stdout to contain 'test input', got %q", result.Stdout)
 	}
 }
 
-func TestSudoResolvesPath(t *testing.T) {
-	// Verify that Sudo resolves the command to an absolute path
-	// by running a command that exists in PATH
+func TestPrivilegedResolvesPath(t *testing.T) {
+	// Verify that Privileged resolves the command to an absolute path
+	// by running a command that exists in PATH.
 	ctx := context.Background()
-	_, err := exec.Sudo(ctx, "id")
+	_, err := exec.Privileged(ctx, "id")
 	if err != nil {
-		t.Fatalf("Sudo path resolution failed: %v", err)
+		t.Fatalf("Privileged path resolution failed: %v", err)
 	}
 }
 
-func TestSudoCommandNotFound(t *testing.T) {
+func TestPrivilegedCommandNotFound(t *testing.T) {
 	ctx := context.Background()
-	_, err := exec.Sudo(ctx, "nonexistent-command-12345")
+	_, err := exec.Privileged(ctx, "nonexistent-command-12345")
 	if err == nil {
 		t.Fatal("expected error for non-existent command")
 	}

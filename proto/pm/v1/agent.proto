@@ -394,7 +394,18 @@ message SyncActionsResponse {
 // Log Query (Remote journalctl)
 // ============================================================================
 
-// Server -> Agent: request journalctl output
+// LogSource selects which system log source the agent queries.
+// JOURNALD is the default and is what current agents implement;
+// SYSLOG slots in for openrc/syslog-ng/rsyslog systems (Alpine, Void,
+// legacy Debian/RHEL). Agents must report a clear "source not
+// supported on this device" error when asked for a source they can't
+// serve.
+enum LogSource {
+  LOG_SOURCE_JOURNALD = 0;  // default — journalctl
+  LOG_SOURCE_SYSLOG = 1;    // syslog files in /var/log (rsyslog, syslog-ng, busybox syslog)
+}
+
+// Server -> Agent: request system log output
 message LogQuery {
   // @gotags: validate:"required,ulid"
   string query_id = 1;
@@ -411,6 +422,10 @@ message LogQuery {
   // @gotags: validate:"omitempty,max=256"
   string grep = 7;
   bool kernel = 8;
+  // Log source. Defaults to LOG_SOURCE_JOURNALD. Agents without
+  // support for a requested source return an error.
+  // @gotags: validate:"omitempty"
+  LogSource source = 9;
 }
 
 // Agent -> Server: journalctl output result

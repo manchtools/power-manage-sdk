@@ -41,9 +41,18 @@ type WiFiProfile struct {
 	CertDir     string // Directory for EAP-TLS cert files (must be under CertBaseDir)
 }
 
-// IsAvailable returns true if NetworkManager nmcli is installed and reachable.
+// IsAvailable returns true if the CLI for the active WifiBackend is
+// installed and reachable. Defaults to nmcli (NetworkManager).
 func IsAvailable() bool {
-	return sysexec.Check("nmcli", "--version")
+	switch CurrentWifiBackend() {
+	case WifiBackendNetworkManager:
+		return sysexec.Check("nmcli", "--version")
+	default:
+		// No concrete implementation for the other backends yet — report
+		// unavailable so callers fall through to "wifi not supported"
+		// error paths rather than claiming availability.
+		return false
+	}
 }
 
 // ConnectionExists checks if a named NetworkManager connection profile exists.
@@ -67,7 +76,12 @@ func ConnectionExists(ctx context.Context, name string) (bool, error) {
 
 // CreateOrUpdate creates or updates a WiFi connection profile.
 // It returns whether a change was made and any error.
+// Currently only WifiBackendNetworkManager is implemented; calls on
+// other backends return ErrWifiBackendNotSupported.
 func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
+	if err := requireWifiBackend(WifiBackendNetworkManager, "CreateOrUpdate"); err != nil {
+		return false, err
+	}
 	if err := validateProfile(profile); err != nil {
 		return false, err
 	}
@@ -92,7 +106,7 @@ func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 		}
 	}
 	args := BuildAddArgs(p)
-	if _, err := sysexec.Sudo(ctx, "nmcli", args...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "nmcli", args...); err != nil {
 		if p.AuthType == WiFiAuthEAPTLS {
 			removeCerts(p.CertDir)
 		}
@@ -146,7 +160,7 @@ func stagedModify(ctx context.Context, p WiFiProfile, current map[string]string)
 
 	// Modify with the FINAL cert paths (not temp), then move temp into place.
 	// This way nmcli's config never references the temp dir.
-	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 
@@ -180,7 +194,7 @@ func stagedModify(ctx context.Context, p WiFiProfile, current map[string]string)
 // non-EAP-TLS profiles, since EAP-TLS always goes through stagedModify to
 // protect the live cert directory.
 func directModify(ctx context.Context, p WiFiProfile, current map[string]string) (bool, error) {
-	if _, err := sysexec.Sudo(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "nmcli", buildModifyArgs(p, current)...); err != nil {
 		return false, fmt.Errorf("modify connection: %w", err)
 	}
 	return true, nil
@@ -267,13 +281,22 @@ func buildModifyArgs(p WiFiProfile, current map[string]string) []string {
 }
 
 // Delete removes a WiFi connection by name and cleans up cert files in certDir.
+// Currently only WifiBackendNetworkManager is implemented.
 func Delete(ctx context.Context, name, certDir string) error {
+	if err := requireWifiBackend(WifiBackendNetworkManager, "Delete"); err != nil {
+		return err
+	}
+	return deleteNM(ctx, name, certDir)
+}
+
+// deleteNM is the NetworkManager-specific Delete implementation.
+func deleteNM(ctx context.Context, name, certDir string) error {
 	exists, err := ConnectionExists(ctx, name)
 	if err != nil {
 		return err
 	}
 	if exists {
-		if _, err := sysexec.Sudo(ctx, "nmcli", "con", "delete", name); err != nil {
+		if _, err := sysexec.Privileged(ctx, "nmcli", "con", "delete", name); err != nil {
 			return fmt.Errorf("delete connection %s: %w", name, err)
 		}
 	}

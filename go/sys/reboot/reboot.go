@@ -80,7 +80,7 @@ func Schedule(ctx context.Context, delay, message string) error {
 	if message != "" {
 		args = append(args, message)
 	}
-	if _, err := sysexec.Sudo(ctx, "shutdown", args...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "shutdown", args...); err != nil {
 		return fmt.Errorf("schedule reboot: %w", err)
 	}
 	return nil
@@ -88,7 +88,7 @@ func Schedule(ctx context.Context, delay, message string) error {
 
 // Cancel cancels a pending scheduled reboot.
 func Cancel(ctx context.Context) error {
-	if _, err := sysexec.Sudo(ctx, "shutdown", "-c"); err != nil {
+	if _, err := sysexec.Privileged(ctx, "shutdown", "-c"); err != nil {
 		return fmt.Errorf("cancel reboot: %w", err)
 	}
 	return nil

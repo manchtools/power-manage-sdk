@@ -30,7 +30,7 @@ enum ActionType {
   ACTION_TYPE_SCRIPT_RUN = 201; // One-off script execution (not scheduled)
 
   // Services (300-399)
-  ACTION_TYPE_SYSTEMD = 300;    // Systemd unit
+  ACTION_TYPE_SERVICE = 300;    // Service unit (systemd, openrc, runit, s6)
 
   // Files (400-499)
   ACTION_TYPE_FILE = 400;       // File management
@@ -49,13 +49,13 @@ enum ActionType {
   ACTION_TYPE_SSHD = 701;       // SSH daemon configuration
 
   // Privilege management (800-899)
-  ACTION_TYPE_SUDO = 800;       // Sudoers policy management
+  ACTION_TYPE_ADMIN_POLICY = 800;       // Administrative privilege policy (sudoers or doas)
 
   // Password management (900-999)
   ACTION_TYPE_LPS = 900;        // Local Password Solution
 
   // Encryption management (1000-1099)
-  ACTION_TYPE_LUKS = 1000;      // LUKS disk encryption management
+  ACTION_TYPE_ENCRYPTION = 1000;  // Disk encryption management (LUKS, GELI, etc.)
 
   // Network management (1100-1199)
   ACTION_TYPE_WIFI = 1100;      // WiFi connection management
@@ -94,7 +94,7 @@ message Action {
     PackageParams package = 8;
     AppInstallParams app = 9;
     ShellParams shell = 10;
-    SystemdParams systemd = 11;
+    ServiceParams service = 11;
     FileParams file = 12;
     UpdateParams update = 13;
     RepositoryParams repository = 14;
@@ -103,10 +103,10 @@ message Action {
     UserParams user = 17;
     SshParams ssh = 18;
     SshdParams sshd = 19;
-    SudoParams sudo = 20;
+    AdminPolicyParams admin_policy = 20;
     LpsParams lps = 21;
     GroupParams group = 22;
-    LuksParams luks = 23;
+    EncryptionParams encryption = 23;
     WifiParams wifi = 24;
     AgentUpdateParams agent_update = 25;
   }
@@ -191,22 +191,74 @@ message ShellParams {
   bool is_compliance = 7;
 }
 
-message SystemdParams {
+// ServiceBackend selects which init/service manager the agent targets.
+// The default (SYSTEMD) matches most mainstream distros. OPENRC/RUNIT/S6
+// slots exist so adding those implementations later does not require a
+// second proto rename. Agents set their active backend via
+// sys/service.SetServiceBackend at startup.
+enum ServiceBackend {
+  SERVICE_BACKEND_SYSTEMD = 0;  // default
+  SERVICE_BACKEND_OPENRC = 1;
+  SERVICE_BACKEND_RUNIT = 2;
+  SERVICE_BACKEND_S6 = 3;
+}
+
+// FirewallBackend selects which packet-filter framework the agent
+// targets when a future ACTION_TYPE_FIREWALL lands. Defined here up
+// front so the wire format doesn't churn when the feature ships.
+enum FirewallBackend {
+  FIREWALL_BACKEND_NFTABLES = 0;   // default — Linux nftables (modern)
+  FIREWALL_BACKEND_IPTABLES = 1;   // Linux iptables (legacy)
+  FIREWALL_BACKEND_FIREWALLD = 2;  // Red Hat firewalld wrapper
+  FIREWALL_BACKEND_UFW = 3;        // Debian/Ubuntu ufw wrapper
+  FIREWALL_BACKEND_PF = 4;         // BSD pf
+}
+
+// DnsBackend selects which resolver framework the agent targets when a
+// future ACTION_TYPE_DNS lands. Forward-compat only.
+enum DnsBackend {
+  DNS_BACKEND_RESOLVED = 0;         // default — systemd-resolved / resolvectl
+  DNS_BACKEND_RESOLVCONF = 1;       // plain /etc/resolv.conf (via resolvconf or direct)
+  DNS_BACKEND_DNSMASQ = 2;          // local dnsmasq
+  DNS_BACKEND_NETWORKMANAGER = 3;   // NetworkManager-managed DNS
+}
+
+// NetworkConfigBackend selects which tool manages interface IP,
+// routing, and DHCP configuration when a future ACTION_TYPE_NETWORK
+// _CONFIG lands. Distinct from WifiBackend — a device can use one
+// tool for connection profiles and another for IP config.
+enum NetworkConfigBackend {
+  NETWORK_CONFIG_BACKEND_NETWORKMANAGER = 0;   // default — nmcli
+  NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD = 1; // /etc/systemd/network/*.network
+  NETWORK_CONFIG_BACKEND_NETPLAN = 2;          // /etc/netplan/*.yaml
+  NETWORK_CONFIG_BACKEND_DHCPCD = 3;           // /etc/dhcpcd.conf (Alpine, OpenBSD)
+  NETWORK_CONFIG_BACKEND_IFUPDOWN = 4;         // /etc/network/interfaces (classic Debian)
+}
+
+// ServiceParams configures a service unit. unit_content is the verbatim
+// unit file; the agent writes it to the location expected by the chosen
+// backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
+// OPENRC: /etc/init.d/<unit_name>; etc.).
+message ServiceParams {
   // @gotags: validate:"required,min=1,max=255"
   string unit_name = 1;
   // @gotags: validate:"omitempty"
-  SystemdUnitState desired_state = 2;
+  ServiceUnitState desired_state = 2;
   // @gotags: validate:"omitempty"
   bool enable = 3;
   // @gotags: validate:"omitempty,max=65536"
   string unit_content = 4;
+  // Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
+  // compatibility with devices that don't explicitly set it.
+  // @gotags: validate:"omitempty"
+  ServiceBackend backend = 5;
 }
 
-enum SystemdUnitState {
-  SYSTEMD_UNIT_STATE_UNSPECIFIED = 0;
-  SYSTEMD_UNIT_STATE_STARTED = 1;
-  SYSTEMD_UNIT_STATE_STOPPED = 2;
-  SYSTEMD_UNIT_STATE_RESTARTED = 3;
+enum ServiceUnitState {
+  SERVICE_UNIT_STATE_UNSPECIFIED = 0;
+  SERVICE_UNIT_STATE_STARTED = 1;
+  SERVICE_UNIT_STATE_STOPPED = 2;
+  SERVICE_UNIT_STATE_RESTARTED = 3;
 }
 
 message FileParams {
@@ -535,31 +587,54 @@ message SshdParams {
   repeated SshdDirective directives = 2;
 }
 
-// SudoAccessLevel defines the level of sudo access granted.
-enum SudoAccessLevel {
-  SUDO_ACCESS_LEVEL_UNSPECIFIED = 0;
-  SUDO_ACCESS_LEVEL_FULL = 1;       // Unrestricted sudo (password required)
-  SUDO_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (password required)
-  SUDO_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined sudoers rules
+// AdminAccessLevel defines the level of administrative access granted.
+// The server renders FULL/LIMITED into the concrete policy file format
+// for the selected PrivilegeBackend (sudoers or doas); CUSTOM carries
+// raw admin-authored config that must be valid syntax for the chosen
+// backend.
+enum AdminAccessLevel {
+  ADMIN_ACCESS_LEVEL_UNSPECIFIED = 0;
+  ADMIN_ACCESS_LEVEL_FULL = 1;       // Unrestricted access (password required)
+  ADMIN_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (password required)
+  ADMIN_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined raw policy
 }
 
-// SudoParams configures sudoers policies via /etc/sudoers.d/ drop-in files.
-// Each action creates a Linux group pm-sudo-{actionId} and a corresponding
-// sudoers file. Users specified in the users list are added to the group.
-// When removed, the group and sudoers file are cleaned up.
-message SudoParams {
-  // Access level determines the sudo policy template
-  // @gotags: validate:"required,ne=0"
-  SudoAccessLevel access_level = 1;
+// PrivilegeBackend selects which privilege-escalation tool the agent
+// uses, both for its own operations and for rendering admin policies.
+// The agent reads its configured backend at startup and passes it to
+// the SDK via exec.SetPrivilegeBackend.
+enum PrivilegeBackend {
+  PRIVILEGE_BACKEND_SUDO = 0;  // Default. Drops files into /etc/sudoers.d/.
+  PRIVILEGE_BACKEND_DOAS = 1;  // Drops files into /etc/doas.d/.
+}
 
-  // Users to add to the sudo group (must be valid Linux usernames)
+// AdminPolicyParams configures privilege-delegation policies.
+// Under PRIVILEGE_BACKEND_SUDO the action manages /etc/sudoers.d/
+// drop-ins; under PRIVILEGE_BACKEND_DOAS it manages /etc/doas.d/
+// drop-ins. Each action creates a Linux group pm-admin-{actionId}
+// and the corresponding policy file. Users specified in the users
+// list are added to the group. When removed, the group and policy
+// file are cleaned up.
+message AdminPolicyParams {
+  // Access level determines the policy template
+  // @gotags: validate:"required,ne=0"
+  AdminAccessLevel access_level = 1;
+
+  // Users to add to the admin group (must be valid Linux usernames)
   // @gotags: validate:"required,min=1,dive,min=1,max=32"
   repeated string users = 2;
 
-  // Custom sudoers rules (only used when access_level is CUSTOM)
-  // Use {group} as placeholder for the auto-generated group name.
-  // @gotags: validate:"omitempty,max=65536"
+  // Raw policy content (only used when access_level is CUSTOM). Must be
+  // valid syntax for the chosen backend — sudoers grammar for SUDO and
+  // doas.conf(5) grammar for DOAS. Use {group} as placeholder for the
+  // auto-generated group name. Required when access_level is CUSTOM (3).
+  // @gotags: validate:"required_if=AccessLevel 3,max=65536"
   string custom_config = 3;
+
+  // Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
+  // compatibility with devices that don't explicitly set it.
+  // @gotags: validate:"omitempty"
+  PrivilegeBackend backend = 4;
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.
@@ -593,18 +668,33 @@ message LpsParams {
   int32 grace_period_hours = 5;
 }
 
-// LuksDeviceBoundKeyType determines what goes in LUKS slot 7.
-enum LuksDeviceBoundKeyType {
-  LUKS_DEVICE_BOUND_KEY_TYPE_NONE = 0;            // No device-bound key (managed passphrase only)
-  LUKS_DEVICE_BOUND_KEY_TYPE_TPM = 1;             // TPM2 auto-unlock at boot
-  LUKS_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
+// EncryptionBackend selects the disk-encryption implementation the
+// agent targets. LUKS covers virtually all managed Linux today; the
+// other slots exist so implementations for other platforms can land
+// later without another proto rename.
+enum EncryptionBackend {
+  ENCRYPTION_BACKEND_LUKS = 0;  // default — cryptsetup/LUKS2
+  ENCRYPTION_BACKEND_GELI = 1;  // FreeBSD GELI
+  ENCRYPTION_BACKEND_CGD = 2;   // NetBSD CGD
 }
 
-// LuksParams configures LUKS disk encryption management.
-// The agent auto-detects the primary LUKS-encrypted volume on the device.
-// A managed passphrase is generated, stored on the server, and rotated on schedule.
-// Optionally, a device-bound key (TPM or user passphrase) can be enrolled in slot 7.
-message LuksParams {
+// EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
+// slot (e.g. LUKS slot 7). Backends without an equivalent concept
+// should treat non-NONE values as best-effort and report whichever
+// subset of modes they support.
+enum EncryptionDeviceBoundKeyType {
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE = 0;            // Managed passphrase only, no device-bound key
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM = 1;             // TPM2 auto-unlock at boot
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
+}
+
+// EncryptionParams configures disk encryption management. The agent
+// auto-detects the primary encrypted volume on the device (format
+// depends on the chosen backend). A managed passphrase is generated,
+// stored on the server, and rotated on schedule. Optionally, a
+// device-bound key (TPM or user passphrase) can be enrolled in the
+// backend's designated slot.
+message EncryptionParams {
   // Pre-shared key for initial ownership (only needed for first run)
   // @gotags: validate:"required,min=1,max=256"
   string preshared_key = 1;
@@ -614,15 +704,18 @@ message LuksParams {
   // Minimum words in generated managed passphrase (default 5, min 3, max 10)
   // @gotags: validate:"omitempty,gte=3,lte=10"
   int32 min_words = 3;
-  // What to put in slot 7 — TPM, user passphrase, or nothing
+  // What to put in the device-bound key slot — TPM, user passphrase, or nothing
   // @gotags: validate:"omitempty"
-  LuksDeviceBoundKeyType device_bound_key_type = 4;
+  EncryptionDeviceBoundKeyType device_bound_key_type = 4;
   // Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty,gte=16,lte=128"
   int32 user_passphrase_min_length = 5;
   // Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty"
   LpsPasswordComplexity user_passphrase_complexity = 6;
+  // Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
+  // @gotags: validate:"omitempty"
+  EncryptionBackend backend = 7;
 }
 
 // WiFi authentication type.
@@ -632,9 +725,21 @@ enum WifiAuthType {
   WIFI_AUTH_TYPE_EAP_TLS = 2;   // 802.1X with client certificate
 }
 
-// WifiParams configures WiFi connection management via NetworkManager.
-// Each action creates a connection profile named pm-wifi-{actionId}.
-// Supports PSK (password) and EAP-TLS (certificate) authentication.
+// WifiBackend selects which WiFi-management tool the agent targets.
+// NetworkManager covers most mainstream distros; the other slots exist
+// so implementations for connman- or wpa_supplicant-only systems can
+// land later without another proto rename.
+enum WifiBackend {
+  WIFI_BACKEND_NETWORKMANAGER = 0;  // default — nmcli
+  WIFI_BACKEND_CONNMAN = 1;         // connmanctl
+  WIFI_BACKEND_WPA_SUPPLICANT = 2;  // direct wpa_supplicant.conf management
+  WIFI_BACKEND_IWD = 3;             // iwctl (systemd / Arch / Alpine default on some installs)
+}
+
+// WifiParams configures WiFi connection management.
+// Each action creates a connection profile named pm-wifi-{actionId} in
+// the chosen backend's native format. Supports PSK (password) and
+// EAP-TLS (certificate) authentication.
 message WifiParams {
   // Network name (SSID)
   // @gotags: validate:"required,min=1,max=255"
@@ -662,6 +767,10 @@ message WifiParams {
   bool hidden = 9;
   // @gotags: validate:"omitempty,gte=-1,lte=999"
   int32 priority = 10;
+
+  // WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
+  // @gotags: validate:"omitempty"
+  WifiBackend backend = 11;
 }
 
 // ============================================================================

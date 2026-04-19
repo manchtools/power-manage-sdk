@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 
@@ -75,15 +76,27 @@ func GroupMembersMatch(groupName string, desiredUsers []string) bool {
 
 // GroupCreate creates a new group.
 // Extra args are passed before the group name (e.g., "-g", "1001", "-r").
+// Rejects names that would become flags or contain control characters —
+// the same IsValidName rules apply because groupadd/usermod parse argv
+// identically to useradd.
 func GroupCreate(ctx context.Context, name string, args ...string) error {
-	fullArgs := append(args, name)
-	_, err := exec.Sudo(ctx, "groupadd", fullArgs...)
+	if err := validateName("group name", name); err != nil {
+		return err
+	}
+	// slices.Clone avoids aliasing the caller's backing array — a
+	// bare `append(args, name)` would write into the caller's slice
+	// whenever it has spare capacity.
+	fullArgs := append(slices.Clone(args), name)
+	_, err := exec.Privileged(ctx, "groupadd", fullArgs...)
 	return err
 }
 
 // GroupDelete deletes a group.
 func GroupDelete(ctx context.Context, name string) error {
-	_, err := exec.Sudo(ctx, "groupdel", name)
+	if err := validateName("group name", name); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "groupdel", name)
 	return err
 }
 
@@ -101,12 +114,24 @@ func GroupEnsureExists(ctx context.Context, name string) error {
 
 // GroupAddUser adds a user to a supplementary group.
 func GroupAddUser(ctx context.Context, username, groupName string) error {
-	_, err := exec.Sudo(ctx, "usermod", "-aG", groupName, username)
+	if err := validateName("username", username); err != nil {
+		return err
+	}
+	if err := validateName("group name", groupName); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "usermod", "-aG", groupName, username)
 	return err
 }
 
 // GroupRemoveUser removes a user from a supplementary group.
 func GroupRemoveUser(ctx context.Context, username, groupName string) error {
-	_, err := exec.Sudo(ctx, "gpasswd", "-d", username, groupName)
+	if err := validateName("username", username); err != nil {
+		return err
+	}
+	if err := validateName("group name", groupName); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "gpasswd", "-d", username, groupName)
 	return err
 }

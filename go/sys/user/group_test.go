@@ -17,7 +17,7 @@ func testGroupName(suffix string) string {
 func cleanupGroup(t *testing.T, name string) {
 	t.Helper()
 	ctx := context.Background()
-	exec.Sudo(ctx, "groupdel", name)
+	exec.Privileged(ctx, "groupdel", name)
 }
 
 func TestGroupCreate(t *testing.T) {

@@ -1,4 +1,4 @@
-package luks
+package encryption
 
 import (
 	"crypto/sha512"

@@ -45,7 +45,7 @@ func NotifyUsers(ctx context.Context, usernames []string, title, message string)
 
 // sendWall broadcasts a message to all terminal sessions.
 func sendWall(ctx context.Context, message string) {
-	result, err := exec.SudoWithStdin(ctx, strings.NewReader(message), "wall")
+	result, err := exec.PrivilegedWithStdin(ctx, strings.NewReader(message), "wall")
 	if err != nil {
 		stderr := ""
 		if result != nil {
@@ -76,7 +76,7 @@ func sendDesktopNotifications(ctx context.Context, title, message string, userFi
 
 // listGraphicalSessions returns all active graphical login sessions.
 func listGraphicalSessions(ctx context.Context) []session {
-	result, err := exec.Sudo(ctx, "loginctl", "list-sessions", "--no-legend")
+	result, err := exec.Privileged(ctx, "loginctl", "list-sessions", "--no-legend")
 	if err != nil || result.ExitCode != 0 {
 		stderr := ""
 		if result != nil {
@@ -95,7 +95,7 @@ func listGraphicalSessions(ctx context.Context) []session {
 		sessionID := fields[0]
 
 		// Query session type and user details
-		info, err := exec.Sudo(ctx, "loginctl", "show-session", sessionID,
+		info, err := exec.Privileged(ctx, "loginctl", "show-session", sessionID,
 			"-p", "Type", "-p", "Name", "-p", "User", "--value")
 		if err != nil || info.ExitCode != 0 {
 			continue
@@ -138,7 +138,7 @@ func sendDesktopNotification(ctx context.Context, s session, title, message stri
 
 	// Use runuser to execute notify-send as the target user.
 	// Each argument is passed separately to avoid shell injection.
-	result, err := exec.Sudo(ctx, "env",
+	result, err := exec.Privileged(ctx, "env",
 		"DBUS_SESSION_BUS_ADDRESS="+dbusAddr,
 		"runuser", "-u", s.user, "--",
 		"notify-send", "-u", "critical", "-a", "Power Manage", "-i", "dialog-warning",

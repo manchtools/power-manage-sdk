@@ -38,4 +38,4 @@ echo "==> Running integration tests..."
 podman exec -w /workspace "$CONTAINER_NAME" \
     runuser -u power-manage -- /usr/local/go/bin/go test \
         -v -tags=integration -count=1 -timeout=10m \
-        ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/systemd/
+        ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/service/
