@@ -2,10 +2,11 @@ package service
 
 import "testing"
 
-// TestValidateUnitNameSystemd locks down the unit-name regex against
-// the edge cases that have been tweaked over multiple CodeRabbit
-// review rounds on PR #32. Future refactors that silently re-break
-// any of these cases should fail loudly.
+// TestValidateUnitNameSystemd pins down the unit-name regex against
+// the edge cases that matter for systemd compatibility and argv
+// safety. Each rule below corresponds to a real-world unit name or
+// attack surface; the table asserts the regex keeps its current
+// semantics so future refactors can't silently re-break any of them.
 //
 // The rules (see the comment on validSystemdUnitName):
 //
