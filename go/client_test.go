@@ -5,6 +5,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
+
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
 )
@@ -295,3 +298,165 @@ func TestDispatch_UnknownPayload_DropsSilently(t *testing.T) {
 // it shows up at build time, not at runtime.
 var _ TerminalHandler = (*fakeTerminalHandler)(nil)
 var _ StreamHandler = fakeBareHandler{}
+
+// applyWelcomeHeartbeat is the contract the server relies on: any
+// Welcome with a non-zero heartbeat_interval replaces the running
+// cadence, clamped to [Min, Max]. These tests lock that in so a
+// future change to the clamp or the dispatch path can't silently
+// regress the reconnect-reconfig flow.
+func TestApplyWelcomeHeartbeat_ClampsAndPushes(t *testing.T) {
+	cases := []struct {
+		name  string
+		input time.Duration
+		want  time.Duration
+	}{
+		{"within range", 45 * time.Second, 45 * time.Second},
+		{"min edge", MinHeartbeatInterval, MinHeartbeatInterval},
+		{"max edge", MaxHeartbeatInterval, MaxHeartbeatInterval},
+		{"below min clamps up", 1 * time.Second, MinHeartbeatInterval},
+		{"above max clamps down", 10 * time.Minute, MaxHeartbeatInterval},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newTestClient()
+			// Simulate an active Run: install the update channel.
+			hb := make(chan time.Duration, 1)
+			c.mu.Lock()
+			c.heartbeatUpdate = hb
+			c.mu.Unlock()
+
+			c.applyWelcomeHeartbeat(&pm.Welcome{
+				HeartbeatInterval: durationpb.New(tc.input),
+			})
+
+			select {
+			case got := <-hb:
+				if got != tc.want {
+					t.Errorf("interval = %v, want %v", got, tc.want)
+				}
+			default:
+				t.Fatal("no interval pushed to heartbeat channel")
+			}
+		})
+	}
+}
+
+// A Welcome without heartbeat_interval (field unset) must not push
+// anything — the caller-supplied initial cadence stays in effect.
+// Same for zero / negative durations, which are nonsensical and
+// should be ignored rather than silently clamped.
+func TestApplyWelcomeHeartbeat_NoOpCases(t *testing.T) {
+	cases := []struct {
+		name string
+		w    *pm.Welcome
+	}{
+		{"nil welcome", nil},
+		{"unset field", &pm.Welcome{}},
+		{"zero duration", &pm.Welcome{HeartbeatInterval: durationpb.New(0)}},
+		{"negative duration", &pm.Welcome{HeartbeatInterval: durationpb.New(-5 * time.Second)}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newTestClient()
+			hb := make(chan time.Duration, 1)
+			c.mu.Lock()
+			c.heartbeatUpdate = hb
+			c.mu.Unlock()
+
+			c.applyWelcomeHeartbeat(tc.w)
+
+			select {
+			case got := <-hb:
+				t.Errorf("expected no push, got %v", got)
+			default:
+			}
+		})
+	}
+}
+
+// When Run() isn't active the update channel is nil; applying a
+// Welcome heartbeat must be a safe no-op rather than panicking on a
+// nil-channel send.
+func TestApplyWelcomeHeartbeat_NoRunActive(t *testing.T) {
+	c := newTestClient()
+	// heartbeatUpdate is nil by default.
+	c.applyWelcomeHeartbeat(&pm.Welcome{
+		HeartbeatInterval: durationpb.New(42 * time.Second),
+	})
+	// Assertion is the absence of a panic.
+}
+
+// Second Welcome overwrites a stale pending update rather than
+// queuing — latest-wins is what the heartbeat goroutine expects,
+// otherwise an old value could be picked up after the server
+// already changed its mind.
+func TestApplyWelcomeHeartbeat_LatestWins(t *testing.T) {
+	c := newTestClient()
+	hb := make(chan time.Duration, 1)
+	c.mu.Lock()
+	c.heartbeatUpdate = hb
+	c.mu.Unlock()
+
+	c.applyWelcomeHeartbeat(&pm.Welcome{HeartbeatInterval: durationpb.New(10 * time.Second)})
+	c.applyWelcomeHeartbeat(&pm.Welcome{HeartbeatInterval: durationpb.New(45 * time.Second)})
+
+	got := <-hb
+	if got != 45*time.Second {
+		t.Errorf("interval = %v, want 45s", got)
+	}
+	select {
+	case extra := <-hb:
+		t.Errorf("channel should be drained, got extra %v", extra)
+	default:
+	}
+}
+
+// Dispatching a Welcome through dispatchServerMessage must apply the
+// heartbeat interval AND still call handler.OnWelcome — the two
+// behaviours are independent and both must fire.
+func TestDispatch_Welcome_AppliesHeartbeatAndHandler(t *testing.T) {
+	c := newTestClient()
+	hb := make(chan time.Duration, 1)
+	c.mu.Lock()
+	c.heartbeatUpdate = hb
+	c.mu.Unlock()
+
+	rec := &recordingWelcomeHandler{}
+	msg := &pm.ServerMessage{
+		Id: NewULID(),
+		Payload: &pm.ServerMessage_Welcome{Welcome: &pm.Welcome{
+			ServerVersion:     "test",
+			HeartbeatInterval: durationpb.New(60 * time.Second),
+		}},
+	}
+	if err := c.dispatchServerMessage(context.Background(), msg, rec); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	if !rec.called {
+		t.Error("OnWelcome was not called")
+	}
+	select {
+	case got := <-hb:
+		if got != 60*time.Second {
+			t.Errorf("interval = %v, want 60s", got)
+		}
+	default:
+		t.Fatal("heartbeat update not pushed")
+	}
+}
+
+type recordingWelcomeHandler struct {
+	called bool
+}
+
+func (h *recordingWelcomeHandler) OnWelcome(ctx context.Context, w *pm.Welcome) error {
+	h.called = true
+	return nil
+}
+func (h *recordingWelcomeHandler) OnAction(ctx context.Context, a *pm.Action) (*pm.ActionResult, error) {
+	return nil, nil
+}
+func (h *recordingWelcomeHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {
+	return nil, nil
+}
+func (h *recordingWelcomeHandler) OnError(ctx context.Context, e *pm.Error) error { return nil }

@@ -16,8 +16,8 @@ export function getActionTypeEnum(type: string): ActionType {
 			return ActionType.UPDATE;
 		case 'SHELL':
 			return ActionType.SHELL;
-		case 'SYSTEMD':
-			return ActionType.SYSTEMD;
+		case 'SERVICE':
+			return ActionType.SERVICE;
 		case 'FILE':
 			return ActionType.FILE;
 		case 'APP_IMAGE':
@@ -36,14 +36,14 @@ export function getActionTypeEnum(type: string): ActionType {
 			return ActionType.SSH;
 		case 'SSHD':
 			return ActionType.SSHD;
-		case 'SUDO':
-			return ActionType.SUDO;
+		case 'ADMIN_POLICY':
+			return ActionType.ADMIN_POLICY;
 		case 'LPS':
 			return ActionType.LPS;
 		case 'GROUP':
 			return ActionType.GROUP;
-		case 'LUKS':
-			return ActionType.LUKS;
+		case 'ENCRYPTION':
+			return ActionType.ENCRYPTION;
 		case 'SCRIPT_RUN':
 			return ActionType.SCRIPT_RUN;
 		case 'WIFI':
@@ -70,8 +70,8 @@ export function actionTypeToString(type: ActionType): string {
 			return 'UPDATE';
 		case ActionType.SHELL:
 			return 'SHELL';
-		case ActionType.SYSTEMD:
-			return 'SYSTEMD';
+		case ActionType.SERVICE:
+			return 'SERVICE';
 		case ActionType.FILE:
 			return 'FILE';
 		case ActionType.APP_IMAGE:
@@ -90,14 +90,14 @@ export function actionTypeToString(type: ActionType): string {
 			return 'SSH';
 		case ActionType.SSHD:
 			return 'SSHD';
-		case ActionType.SUDO:
-			return 'SUDO';
+		case ActionType.ADMIN_POLICY:
+			return 'ADMIN_POLICY';
 		case ActionType.LPS:
 			return 'LPS';
 		case ActionType.GROUP:
 			return 'GROUP';
-		case ActionType.LUKS:
-			return 'LUKS';
+		case ActionType.ENCRYPTION:
+			return 'ENCRYPTION';
 		case ActionType.SCRIPT_RUN:
 			return 'SCRIPT_RUN';
 		case ActionType.WIFI:
@@ -117,7 +117,7 @@ export const ACTION_TYPE_OPTIONS = [
 	{ value: 'REPOSITORY', type: ActionType.REPOSITORY },
 	{ value: 'UPDATE', type: ActionType.UPDATE },
 	{ value: 'SHELL', type: ActionType.SHELL },
-	{ value: 'SYSTEMD', type: ActionType.SYSTEMD },
+	{ value: 'SERVICE', type: ActionType.SERVICE },
 	{ value: 'FILE', type: ActionType.FILE },
 	{ value: 'DIRECTORY', type: ActionType.DIRECTORY },
 	{ value: 'APP_IMAGE', type: ActionType.APP_IMAGE },
@@ -127,9 +127,9 @@ export const ACTION_TYPE_OPTIONS = [
 	{ value: 'USER', type: ActionType.USER },
 	{ value: 'SSH', type: ActionType.SSH },
 	{ value: 'SSHD', type: ActionType.SSHD },
-	{ value: 'SUDO', type: ActionType.SUDO },
+	{ value: 'ADMIN_POLICY', type: ActionType.ADMIN_POLICY },
 	{ value: 'LPS', type: ActionType.LPS },
-	{ value: 'LUKS', type: ActionType.LUKS },
+	{ value: 'ENCRYPTION', type: ActionType.ENCRYPTION },
 	{ value: 'GROUP', type: ActionType.GROUP },
 	{ value: 'AGENT_UPDATE', type: ActionType.AGENT_UPDATE }
 ] as const;

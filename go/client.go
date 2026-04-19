@@ -24,6 +24,16 @@ import (
 	"github.com/manchtools/power-manage/sdk/gen/go/pm/v1/pmv1connect"
 )
 
+// Heartbeat interval bounds. The SDK clamps server-supplied values from
+// Welcome.heartbeat_interval into this range before applying them, so a
+// misconfigured or malicious server can never push the cadence outside
+// what's safe for both sides (too fast = stream spam, too slow = agent
+// looks dead to the gateway's liveness tracking).
+const (
+	MinHeartbeatInterval = 5 * time.Second
+	MaxHeartbeatInterval = 5 * time.Minute
+)
+
 // Client provides methods to communicate with the power-manage server.
 type Client struct {
 	client    pmv1connect.AgentServiceClient
@@ -41,6 +51,11 @@ type Client struct {
 	// pendingMu protects pendingRequests for LUKS request-response correlation.
 	pendingMu       sync.Mutex
 	pendingRequests map[string]chan *pm.ServerMessage
+
+	// heartbeatUpdate is the channel Run's heartbeat goroutine reads
+	// to reset its ticker when Welcome arrives with a new interval.
+	// Non-nil only while Run() is active; guarded by mu.
+	heartbeatUpdate chan time.Duration
 }
 
 // NewClient creates a new SDK client.
@@ -700,6 +715,14 @@ func (c *Client) StartReceiver(ctx context.Context) context.CancelFunc {
 }
 
 // Run connects to the server and processes messages using the provided handler.
+//
+// heartbeatInterval is the initial cadence used until the server's
+// Welcome message arrives. If Welcome.heartbeat_interval is set and
+// falls within [MinHeartbeatInterval, MaxHeartbeatInterval], the SDK
+// resets the heartbeat ticker to that value — both on the initial
+// connect and on every subsequent reconnect (each reconnect is a fresh
+// Run() call that receives a fresh Welcome). Out-of-range values are
+// clamped; zero / unset keeps the caller-supplied interval.
 func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbeatInterval time.Duration, handler StreamHandler) error {
 	if err := c.Connect(ctx); err != nil {
 		return err
@@ -714,6 +737,20 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 	heartbeatCtx, cancelHeartbeat := context.WithCancel(ctx)
 	defer cancelHeartbeat()
 
+	// Buffered channel (capacity 1, latest-wins) lets dispatchServerMessage
+	// push a new interval without blocking. Published on Client so the
+	// Welcome handler can find it; cleared on Run exit so a reconnect's
+	// next Run() call starts from scratch.
+	hbUpdate := make(chan time.Duration, 1)
+	c.mu.Lock()
+	c.heartbeatUpdate = hbUpdate
+	c.mu.Unlock()
+	defer func() {
+		c.mu.Lock()
+		c.heartbeatUpdate = nil
+		c.mu.Unlock()
+	}()
+
 	go func() {
 		ticker := time.NewTicker(heartbeatInterval)
 		defer ticker.Stop()
@@ -722,6 +759,8 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 			select {
 			case <-heartbeatCtx.Done():
 				return
+			case d := <-hbUpdate:
+				ticker.Reset(d)
 			case <-ticker.C:
 				hb := &pm.Heartbeat{}
 				// Handler can populate heartbeat data if needed
@@ -798,6 +837,46 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 	}
 }
 
+// applyWelcomeHeartbeat extracts the server-requested heartbeat
+// interval from a Welcome message, clamps it to [MinHeartbeatInterval,
+// MaxHeartbeatInterval], and pushes it to the running heartbeat
+// goroutine. No-op when Welcome.heartbeat_interval is zero/unset or
+// when no Run() is currently active. The update channel has capacity
+// 1 and latest-wins semantics — a stale pending update is dropped so
+// the goroutine always picks up the most recent value the server sent.
+func (c *Client) applyWelcomeHeartbeat(w *pm.Welcome) {
+	if w == nil || w.HeartbeatInterval == nil {
+		return
+	}
+	d := w.HeartbeatInterval.AsDuration()
+	if d <= 0 {
+		return
+	}
+	if d < MinHeartbeatInterval {
+		d = MinHeartbeatInterval
+	}
+	if d > MaxHeartbeatInterval {
+		d = MaxHeartbeatInterval
+	}
+	c.mu.RLock()
+	ch := c.heartbeatUpdate
+	c.mu.RUnlock()
+	if ch == nil {
+		return
+	}
+	// Drain any stale pending value, then push the fresh one. Both
+	// sends are non-blocking so a hung / exited heartbeat goroutine
+	// can't wedge the dispatcher.
+	select {
+	case <-ch:
+	default:
+	}
+	select {
+	case ch <- d:
+	default:
+	}
+}
+
 // dispatchServerMessage routes a single ServerMessage to the appropriate
 // handler method. Extracted from Run for testability — call sites that
 // need a fake stream or hand-built messages can drive this directly.
@@ -807,6 +886,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessage, handler StreamHandler) error {
 	switch p := msg.Payload.(type) {
 	case *pm.ServerMessage_Welcome:
+		c.applyWelcomeHeartbeat(p.Welcome)
 		if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
 			return fmt.Errorf("handle welcome: %w", err)
 		}
