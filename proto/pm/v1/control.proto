@@ -602,7 +602,7 @@ message ManagedAction {
     PackageParams package = 11;
     AppInstallParams app = 12;
     ShellParams shell = 13;
-    SystemdParams systemd = 14;
+    ServiceParams service = 14;
     FileParams file = 15;
     UpdateParams update = 16;
     RepositoryParams repository = 17;
@@ -611,11 +611,11 @@ message ManagedAction {
     UserParams user = 20;
     SshParams ssh = 21;
     SshdParams sshd = 22;
-    SudoParams sudo = 23;
+    AdminPolicyParams admin_policy = 23;
     // @gotags: validate:"omitempty"
     LpsParams lps = 24;
     GroupParams group = 25;
-    LuksParams luks = 26;
+    EncryptionParams encryption = 26;
     WifiParams wifi = 27;
     AgentUpdateParams agent_update = 28;
   }
@@ -643,7 +643,7 @@ message CreateActionRequest {
     // @gotags: validate:"omitempty"
     ShellParams shell = 9;
     // @gotags: validate:"omitempty"
-    SystemdParams systemd = 10;
+    ServiceParams service = 10;
     // @gotags: validate:"omitempty"
     FileParams file = 11;
     // @gotags: validate:"omitempty"
@@ -661,13 +661,13 @@ message CreateActionRequest {
     // @gotags: validate:"omitempty"
     SshdParams sshd = 18;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 19;
+    AdminPolicyParams admin_policy = 19;
     // @gotags: validate:"omitempty"
     LpsParams lps = 20;
     // @gotags: validate:"omitempty"
     GroupParams group = 21;
     // @gotags: validate:"omitempty"
-    LuksParams luks = 22;
+    EncryptionParams encryption = 22;
     // @gotags: validate:"omitempty"
     WifiParams wifi = 23;
     // @gotags: validate:"omitempty"
@@ -735,7 +735,7 @@ message UpdateActionParamsRequest {
     // @gotags: validate:"omitempty"
     ShellParams shell = 7;
     // @gotags: validate:"omitempty"
-    SystemdParams systemd = 8;
+    ServiceParams service = 8;
     // @gotags: validate:"omitempty"
     FileParams file = 9;
     // @gotags: validate:"omitempty"
@@ -753,13 +753,13 @@ message UpdateActionParamsRequest {
     // @gotags: validate:"omitempty"
     SshdParams sshd = 16;
     // @gotags: validate:"omitempty"
-    SudoParams sudo = 17;
+    AdminPolicyParams admin_policy = 17;
     // @gotags: validate:"omitempty"
     LpsParams lps = 18;
     // @gotags: validate:"omitempty"
     GroupParams group = 19;
     // @gotags: validate:"omitempty"
-    LuksParams luks = 20;
+    EncryptionParams encryption = 20;
     // @gotags: validate:"omitempty"
     WifiParams wifi = 21;
     // @gotags: validate:"omitempty"

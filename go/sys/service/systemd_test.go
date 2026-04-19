@@ -1,6 +1,6 @@
 //go:build integration
 
-package systemd_test
+package service_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
-	"github.com/manchtools/power-manage/sdk/go/sys/systemd"
+	"github.com/manchtools/power-manage/sdk/go/sys/service"
 )
 
 const testUnitName = "pm-test-unit.service"
@@ -28,18 +28,18 @@ WantedBy=multi-user.target
 func cleanupUnit(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
-	exec.Sudo(ctx, "systemctl", "stop", testUnitName)
-	exec.Sudo(ctx, "systemctl", "disable", testUnitName)
-	exec.Sudo(ctx, "systemctl", "unmask", testUnitName)
+	_, _ = exec.Privileged(ctx, "systemctl", "stop", testUnitName)
+	_, _ = exec.Privileged(ctx, "systemctl", "disable", testUnitName)
+	_, _ = exec.Privileged(ctx, "systemctl", "unmask", testUnitName)
 	fs.Remove(ctx, "/etc/systemd/system/"+testUnitName)
-	exec.Sudo(ctx, "systemctl", "daemon-reload")
+	_, _ = exec.Privileged(ctx, "systemctl", "daemon-reload")
 }
 
 func TestWriteUnit(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	err := systemd.WriteUnit(ctx, testUnitName, testUnitContent)
+	err := service.WriteUnit(ctx, testUnitName, testUnitContent)
 	if err != nil {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestWriteUnitAtomic(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	err := systemd.WriteUnit(ctx, testUnitName, testUnitContent)
+	err := service.WriteUnit(ctx, testUnitName, testUnitContent)
 	if err != nil {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
@@ -87,11 +87,13 @@ func TestRemoveUnit(t *testing.T) {
 	ctx := context.Background()
 
 	// Write then remove
-	if err := systemd.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
+	if err := service.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
 
-	systemd.RemoveUnit(ctx, testUnitName)
+	if err := service.RemoveUnit(ctx, testUnitName); err != nil {
+		t.Fatalf("RemoveUnit failed: %v", err)
+	}
 
 	if fs.FileExists(ctx, "/etc/systemd/system/"+testUnitName) {
 		t.Error("unit file should be removed")
@@ -100,13 +102,17 @@ func TestRemoveUnit(t *testing.T) {
 
 func TestRemoveUnitMissing(t *testing.T) {
 	ctx := context.Background()
-	// Should not panic
-	systemd.RemoveUnit(ctx, "pm-nonexistent-unit.service")
+	if err := service.RemoveUnit(ctx, "pm-nonexistent-unit.service"); err != nil {
+		t.Fatalf("RemoveUnit should tolerate missing files: %v", err)
+	}
 }
 
 func TestStatus(t *testing.T) {
 	// Query ssh.service which should be enabled in the test container
-	status := systemd.Status("ssh.service")
+	status, err := service.Status("ssh.service")
+	if err != nil {
+		t.Fatalf("Status failed: %v", err)
+	}
 	t.Logf("ssh status: enabled=%v active=%v masked=%v static=%v", status.Enabled, status.Active, status.Masked, status.Static)
 	if !status.Enabled {
 		t.Error("ssh.service should be enabled")
@@ -114,7 +120,10 @@ func TestStatus(t *testing.T) {
 }
 
 func TestStatusUnknown(t *testing.T) {
-	status := systemd.Status("pm-nonexistent-12345.service")
+	status, err := service.Status("pm-nonexistent-12345.service")
+	if err != nil {
+		t.Fatalf("Status failed: %v", err)
+	}
 	if status.Enabled {
 		t.Error("unknown unit should not be enabled")
 	}
@@ -128,7 +137,7 @@ func TestStatusUnknown(t *testing.T) {
 
 func TestDaemonReload(t *testing.T) {
 	ctx := context.Background()
-	err := systemd.DaemonReload(ctx)
+	err := service.DaemonReload(ctx)
 	if err != nil {
 		t.Fatalf("DaemonReload failed: %v", err)
 	}
@@ -138,24 +147,28 @@ func TestIsEnabled(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	if err := systemd.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
+	if err := service.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
-	if err := systemd.DaemonReload(ctx); err != nil {
+	if err := service.DaemonReload(ctx); err != nil {
 		t.Fatalf("DaemonReload failed: %v", err)
 	}
 
 	// Not enabled yet
-	if systemd.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if enabled {
 		t.Error("unit should not be enabled initially")
 	}
 
 	// Enable it
-	if err := systemd.Enable(ctx, testUnitName); err != nil {
+	if err := service.Enable(ctx, testUnitName); err != nil {
 		t.Fatalf("Enable failed: %v", err)
 	}
 
-	if !systemd.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if !enabled {
 		t.Error("unit should be enabled after Enable")
 	}
 }
@@ -164,33 +177,39 @@ func TestIsActive(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	if err := systemd.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
+	if err := service.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
-	if err := systemd.DaemonReload(ctx); err != nil {
+	if err := service.DaemonReload(ctx); err != nil {
 		t.Fatalf("DaemonReload failed: %v", err)
 	}
 
 	// Not active yet
-	if systemd.IsActive(testUnitName) {
+	if active, err := service.IsActive(testUnitName); err != nil {
+		t.Fatalf("IsActive failed: %v", err)
+	} else if active {
 		t.Error("unit should not be active initially")
 	}
 
 	// Start it
-	if err := systemd.Start(ctx, testUnitName); err != nil {
+	if err := service.Start(ctx, testUnitName); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 
-	if !systemd.IsActive(testUnitName) {
+	if active, err := service.IsActive(testUnitName); err != nil {
+		t.Fatalf("IsActive failed: %v", err)
+	} else if !active {
 		t.Error("unit should be active after Start")
 	}
 
 	// Stop it
-	if err := systemd.Stop(ctx, testUnitName); err != nil {
+	if err := service.Stop(ctx, testUnitName); err != nil {
 		t.Fatalf("Stop failed: %v", err)
 	}
 
-	if systemd.IsActive(testUnitName) {
+	if active, err := service.IsActive(testUnitName); err != nil {
+		t.Fatalf("IsActive failed: %v", err)
+	} else if active {
 		t.Error("unit should not be active after Stop")
 	}
 }
@@ -199,7 +218,9 @@ func TestIsMasked(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	if systemd.IsMasked(testUnitName) {
+	if masked, err := service.IsMasked(testUnitName); err != nil {
+		t.Fatalf("IsMasked failed: %v", err)
+	} else if masked {
 		t.Error("unit should not be masked initially")
 	}
 
@@ -207,20 +228,24 @@ func TestIsMasked(t *testing.T) {
 	// Note: systemctl mask fails if a regular file already exists at the path,
 	// so masking works for units installed by packages (in /lib/systemd/system/)
 	// or units that don't have a file in /etc/systemd/system/.
-	if err := systemd.Mask(ctx, testUnitName); err != nil {
+	if err := service.Mask(ctx, testUnitName); err != nil {
 		t.Fatalf("Mask failed: %v", err)
 	}
 
-	if !systemd.IsMasked(testUnitName) {
+	if masked, err := service.IsMasked(testUnitName); err != nil {
+		t.Fatalf("IsMasked failed: %v", err)
+	} else if !masked {
 		t.Error("unit should be masked after Mask")
 	}
 
 	// Unmask it
-	if err := systemd.Unmask(ctx, testUnitName); err != nil {
+	if err := service.Unmask(ctx, testUnitName); err != nil {
 		t.Fatalf("Unmask failed: %v", err)
 	}
 
-	if systemd.IsMasked(testUnitName) {
+	if masked, err := service.IsMasked(testUnitName); err != nil {
+		t.Fatalf("IsMasked failed: %v", err)
+	} else if masked {
 		t.Error("unit should not be masked after Unmask")
 	}
 }
@@ -229,24 +254,28 @@ func TestEnableDisable(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	if err := systemd.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
+	if err := service.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
 		t.Fatalf("WriteUnit failed: %v", err)
 	}
-	if err := systemd.DaemonReload(ctx); err != nil {
+	if err := service.DaemonReload(ctx); err != nil {
 		t.Fatalf("DaemonReload failed: %v", err)
 	}
 
-	if err := systemd.Enable(ctx, testUnitName); err != nil {
+	if err := service.Enable(ctx, testUnitName); err != nil {
 		t.Fatalf("Enable failed: %v", err)
 	}
-	if !systemd.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if !enabled {
 		t.Error("should be enabled after Enable")
 	}
 
-	if err := systemd.Disable(ctx, testUnitName); err != nil {
+	if err := service.Disable(ctx, testUnitName); err != nil {
 		t.Fatalf("Disable failed: %v", err)
 	}
-	if systemd.IsEnabled(testUnitName) {
+	if enabled, err := service.IsEnabled(testUnitName); err != nil {
+		t.Fatalf("IsEnabled failed: %v", err)
+	} else if enabled {
 		t.Error("should not be enabled after Disable")
 	}
 }

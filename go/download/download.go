@@ -90,7 +90,16 @@ func DownloadAndVerify(ctx context.Context, client *http.Client, url, dest, expe
 		return fmt.Errorf("sync file: %w", err)
 	}
 
-	return f.Close()
+	if err := f.Close(); err != nil {
+		// Sync already flushed, so the data is on disk — but a Close
+		// error can surface a stacked write error the OS only
+		// reported at close time. Remove the file so the next run
+		// re-downloads rather than treating a possibly-corrupt file
+		// as good.
+		os.Remove(dest)
+		return fmt.Errorf("close file: %w", err)
+	}
+	return nil
 }
 
 // ExtractChecksum parses a SHA256SUMS-style file from reader and returns

@@ -29,12 +29,18 @@ sdk/
 │   │   ├── zypper.go          Zypper (openSUSE)
 │   │   └── flatpak.go         Flatpak (cross-distro)
 │   ├── sys/                 Linux system management libraries
-│   │   ├── exec/              Command execution (sudo, streaming, queries)
+│   │   ├── exec/              Command execution with pluggable PrivilegeBackend (sudo/doas)
 │   │   ├── fs/                Filesystem operations (read, write, atomic, permissions)
-│   │   ├── luks/              LUKS disk encryption utilities
+│   │   ├── service/           Service manager — pluggable ServiceBackend (systemd/openrc/runit/s6)
+│   │   ├── encryption/        Disk encryption — pluggable Backend (luks/geli/cgd)
+│   │   ├── network/           WiFi connection profiles — pluggable WifiBackend (nm/connman/wpa/iwd)
+│   │   ├── firewall/          Packet filter — pluggable Backend (nftables/iptables/firewalld/ufw/pf)
+│   │   ├── dns/               Resolver config — pluggable Backend (resolved/resolvconf/dnsmasq/nm)
+│   │   ├── netconfig/         IP / routing / DHCP — pluggable Backend (nm/networkd/netplan/dhcpcd/ifupdown)
 │   │   ├── notify/            Desktop notification utilities
 │   │   ├── osquery/           osquery integration (lazy-init, system queries)
-│   │   ├── systemd/           Systemd unit management
+│   │   ├── reboot/            Reboot scheduling
+│   │   ├── terminal/          PTY session management
 │   │   └── user/              User & group management, password generation
 │   ├── validate/            Input validation (paths, env vars, usernames)
 │   └── verify/              Action payload signature verification
@@ -62,7 +68,7 @@ Six proto files define the entire API surface:
 | File | Purpose |
 |------|---------|
 | `common.proto` | ULID identifiers, execution status, assignment modes, error detail codes |
-| `actions.proto` | 16 action types (package, update, repository, app_image, deb, rpm, flatpak, shell, systemd, file, directory, user, group, ssh, sshd, sudo, lps, luks), parameters, scheduling |
+| `actions.proto` | Action types (package, update, repository, app_image, deb, rpm, flatpak, shell, service, file, directory, user, group, ssh, sshd, admin_policy, lps, encryption, wifi, agent_update), parameters, scheduling. Several capability areas are modelled with a backend enum so the same action type can target multiple implementations (e.g. `AdminPolicyParams.backend = sudo|doas`, `ServiceParams.backend = systemd|openrc|…`). See [docs/backend-pattern.md](docs/backend-pattern.md). |
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries. Hello includes `arch` for platform detection. Welcome includes auto-update fields (`latest_agent_version`, `update_url`, `update_checksum`). |
 | `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, server settings (including `auto_update_agents`), and more |
 | `device_auth.proto` | `DeviceAuthService` — agent enrollment via local unix socket |

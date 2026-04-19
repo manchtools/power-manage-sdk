@@ -1,4 +1,4 @@
-package luks
+package encryption
 
 import (
 	"context"
@@ -14,7 +14,10 @@ import (
 
 // IsLuks checks if a device is a LUKS-encrypted volume.
 func IsLuks(ctx context.Context, devicePath string) (bool, error) {
-	result, err := exec.Sudo(ctx, "cryptsetup", "isLuks", devicePath)
+	if err := requireBackend(BackendLUKS, "IsLuks"); err != nil {
+		return false, err
+	}
+	result, err := exec.Privileged(ctx, "cryptsetup", "isLuks", devicePath)
 	if err != nil {
 		if result != nil && result.ExitCode == 1 {
 			return false, nil
@@ -26,6 +29,9 @@ func IsLuks(ctx context.Context, devicePath string) (bool, error) {
 
 // AddKey adds a new passphrase to a LUKS volume using an existing key for authentication.
 func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
+	if err := requireBackend(BackendLUKS, "AddKey"); err != nil {
+		return err
+	}
 	existingFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
@@ -38,7 +44,7 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 	}
 	defer cleanupKeyFile(newFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
 	if err != nil {
 		return cryptsetupError("luksAddKey", result, err)
 	}
@@ -47,6 +53,9 @@ func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
 
 // AddKeyToSlot adds a new passphrase to a specific LUKS slot.
 func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey, newKey string) error {
+	if err := requireBackend(BackendLUKS, "AddKeyToSlot"); err != nil {
+		return err
+	}
 	existingFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
@@ -59,7 +68,7 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 	}
 	defer cleanupKeyFile(newFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
 		"--key-file", existingFile, "--key-slot", strconv.Itoa(slot), "--batch-mode")
 	if err != nil {
 		return cryptsetupError(fmt.Sprintf("luksAddKey (slot %d)", slot), result, err)
@@ -69,13 +78,16 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 
 // RemoveKey removes a passphrase from a LUKS volume.
 func RemoveKey(ctx context.Context, devicePath, key string) error {
+	if err := requireBackend(BackendLUKS, "RemoveKey"); err != nil {
+		return err
+	}
 	keyFile, err := writeKeyFile(key)
 	if err != nil {
 		return err
 	}
 	defer cleanupKeyFile(keyFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		return cryptsetupError("luksRemoveKey", result, err)
 	}
@@ -84,13 +96,16 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 
 // KillSlot removes a specific LUKS slot using an existing key for authentication.
 func KillSlot(ctx context.Context, devicePath string, slot int, existingKey string) error {
+	if err := requireBackend(BackendLUKS, "KillSlot"); err != nil {
+		return err
+	}
 	keyFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
 	}
 	defer cleanupKeyFile(keyFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
+	result, err := exec.Privileged(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		return cryptsetupError(fmt.Sprintf("luksKillSlot %d", slot), result, err)
@@ -157,13 +172,16 @@ const keyFileDir = "/dev/shm/pm-luks"
 // TestPassphrase checks if a passphrase is valid for a LUKS volume without unlocking it.
 // Returns true if the passphrase is accepted, false if rejected.
 func TestPassphrase(ctx context.Context, devicePath, passphrase string) (bool, error) {
+	if err := requireBackend(BackendLUKS, "TestPassphrase"); err != nil {
+		return false, err
+	}
 	keyFile, err := writeKeyFile(passphrase)
 	if err != nil {
 		return false, err
 	}
 	defer cleanupKeyFile(keyFile)
 
-	result, err := exec.Sudo(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
+	result, err := exec.Privileged(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
 		"--key-file", keyFile, "--batch-mode")
 	if err != nil {
 		if result != nil && result.ExitCode == 2 {

@@ -1,9 +1,10 @@
-package luks
+package encryption
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
@@ -32,6 +33,9 @@ type lsblkDevice struct {
 // Priority: volume with /home mounted > volume with / mounted > first found.
 // Returns error if no LUKS volumes are found.
 func DetectVolume(ctx context.Context) (*Volume, error) {
+	if err := requireBackend(BackendLUKS, "DetectVolume"); err != nil {
+		return nil, err
+	}
 	volumes, err := DetectAllVolumes(ctx)
 	if err != nil {
 		return nil, err
@@ -63,6 +67,9 @@ func DetectVolume(ctx context.Context) (*Volume, error) {
 // Enumerates all volumes and tests the passphrase against each one.
 // Returns error if no volume matches or if detection fails.
 func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) {
+	if err := requireBackend(BackendLUKS, "DetectVolumeByKey"); err != nil {
+		return nil, err
+	}
 	volumes, err := DetectAllVolumes(ctx)
 	if err != nil {
 		return nil, err
@@ -74,7 +81,14 @@ func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) 
 	for i := range volumes {
 		ok, err := TestPassphrase(ctx, volumes[i].DevicePath, passphrase)
 		if err != nil {
-			continue // Skip volumes we can't test (e.g., permission issues)
+			// Don't abort: a single volume we can't test (permissions,
+			// transient cryptsetup error) shouldn't hide a match on
+			// another volume. Log so operators can diagnose.
+			slog.Warn("failed to test passphrase on LUKS volume; skipping",
+				"device", volumes[i].DevicePath,
+				"error", err,
+			)
+			continue
 		}
 		if ok {
 			return &volumes[i], nil
@@ -86,6 +100,9 @@ func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) 
 
 // DetectAllVolumes returns all LUKS-encrypted volumes on the system.
 func DetectAllVolumes(ctx context.Context) ([]Volume, error) {
+	if err := requireBackend(BackendLUKS, "DetectAllVolumes"); err != nil {
+		return nil, err
+	}
 	result, err := exec.Run(ctx, "lsblk", "-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT")
 	if err != nil {
 		return nil, fmt.Errorf("lsblk failed: %w", err)
