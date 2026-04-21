@@ -107,3 +107,66 @@ func TestWithValidation_NilPassthrough(t *testing.T) {
 		t.Errorf("WithValidation(nil) = %v, want nil", got)
 	}
 }
+
+// fakePurger wraps fakeManager and implements the Purger interface
+// so validatingManager's Purge forwarding can be exercised.
+type fakePurger struct {
+	fakeManager
+	purgeCalled bool
+}
+
+func (f *fakePurger) Purge(packages ...string) (*CommandResult, error) {
+	f.purgeCalled = true
+	return &CommandResult{Success: true}, nil
+}
+
+// TestValidatingManager_ForwardsPurge is the regression guard for
+// the SDK audit finding that `RemoveBuilder.Run().Purge()` silently
+// degraded to Remove() when the underlying Manager was wrapped in
+// validatingManager — the builder used to type-assert against the
+// concrete *Apt rather than the Purger interface. Once Detect()
+// returns a wrapped Manager, that assertion fails and Purge is
+// lost. This test pins the new shape: validatingManager implements
+// Purger and forwards with validation intact.
+func TestValidatingManager_ForwardsPurge(t *testing.T) {
+	inner := &fakePurger{}
+	v := WithValidation(inner)
+
+	p, ok := v.(Purger)
+	if !ok {
+		t.Fatal("validatingManager should satisfy the Purger interface when wrapped Manager does")
+	}
+	if _, err := p.Purge("nginx"); err != nil {
+		t.Errorf("Purge('nginx'): unexpected error: %v", err)
+	}
+	if !inner.purgeCalled {
+		t.Error("Purge did not reach the underlying manager via the Purger interface")
+	}
+
+	// Validation still runs in front of purge — injection-shaped
+	// names must be refused before the underlying Purge is reached.
+	inner.purgeCalled = false
+	if _, err := p.Purge("-y"); err == nil {
+		t.Error("Purge('-y'): expected validation rejection")
+	}
+	if inner.purgeCalled {
+		t.Error("Purge reached underlying manager despite option-injection name")
+	}
+}
+
+// TestValidatingManager_PurgeFallsBackToRemove asserts that when the
+// wrapped Manager does NOT implement Purger (dnf/pacman/zypper), the
+// wrapper falls back to Remove rather than failing silently or
+// panicking on a failed type assertion.
+func TestValidatingManager_PurgeFallsBackToRemove(t *testing.T) {
+	inner := &fakeManager{} // no Purge method
+	v := WithValidation(inner)
+
+	p := v.(Purger) // validatingManager itself implements Purger
+	if _, err := p.Purge("nginx"); err != nil {
+		t.Errorf("Purge fallback: unexpected error: %v", err)
+	}
+	if !inner.removeCalled {
+		t.Error("Purge should fall back to Remove when wrapped manager does not implement Purger")
+	}
+}

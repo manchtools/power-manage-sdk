@@ -27,6 +27,37 @@ func WithValidation(m Manager) Manager {
 	return &validatingManager{Manager: m}
 }
 
+// Purger is the opt-in interface package managers implement to signal
+// they support `apt purge`-style removal (delete packages AND
+// configuration files). Currently only apt honours this semantically;
+// dnf/pacman/zypper have no equivalent and the RemoveBuilder falls
+// back to plain Remove().
+//
+// validatingManager implements Purger when the wrapped Manager does,
+// so `RemoveBuilder.Run()` continues to reach the underlying purge
+// path through the validation wrapper. Without this interface, the
+// builder's old `b.manager.(*Apt)` type assertion would fail against
+// *validatingManager and silently degrade `.Purge()` to `.Remove()`,
+// leaving /etc/* config files on disk on `apt` deployments.
+type Purger interface {
+	Purge(packages ...string) (*CommandResult, error)
+}
+
+// Purge forwards to the wrapped Manager if it implements Purger.
+// Callers typically reach this via RemoveBuilder.Run(); direct
+// invocation is valid too. Validation runs before dispatch; if the
+// wrapped Manager does not implement Purger, fall back to Remove()
+// so the caller never gets a silent no-op.
+func (v *validatingManager) Purge(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
+	if p, ok := v.Manager.(Purger); ok {
+		return p.Purge(packages...)
+	}
+	return v.Manager.Remove(packages...)
+}
+
 func (v *validatingManager) Install(packages ...string) (*CommandResult, error) {
 	if err := ValidatePackageNames(packages); err != nil {
 		return nil, err
