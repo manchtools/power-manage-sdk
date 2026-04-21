@@ -217,7 +217,13 @@ import {
 	type DeviceGroupMember,
 	type InheritedRole,
 	type ActionSetMember,
-	type DefinitionMember
+	type DefinitionMember,
+	StartTerminalRequestSchema,
+	StopTerminalRequestSchema,
+	ListActiveTerminalSessionsRequestSchema,
+	TerminateTerminalSessionRequestSchema,
+	type StartTerminalResponse,
+	type TerminalSessionInfo
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
@@ -1659,6 +1665,54 @@ export class ApiClient {
 		}));
 	}
 
+	// Remote terminal (PTY) sessions.
+	//
+	// startTerminal mints a short-lived session token + public gateway
+	// WebSocket URL; stopTerminal ends the session gracefully (owner-
+	// initiated, idempotent). The admin-only listActiveTerminalSessions
+	// / terminateTerminalSession pair is for moderation — see the
+	// StopTerminal vs TerminateTerminalSession block in control.proto
+	// for the full semantic split (ownership vs admin, audit reason,
+	// idempotency vs NotFound on unknown sessions).
+	async startTerminal(deviceId: string, cols: number = 80, rows: number = 24) {
+		const client = this.getClient();
+		return client.startTerminal(create(StartTerminalRequestSchema, {
+			deviceId,
+			cols,
+			rows,
+		}));
+	}
+
+	async stopTerminal(sessionId: string) {
+		const client = this.getClient();
+		return client.stopTerminal(create(StopTerminalRequestSchema, {
+			sessionId,
+		}));
+	}
+
+	async listActiveTerminalSessions(
+		pageSize: number = 50,
+		pageToken: string = '',
+		deviceId: string = '',
+		userId: string = ''
+	) {
+		const client = this.getClient();
+		return client.listActiveTerminalSessions(create(ListActiveTerminalSessionsRequestSchema, {
+			pageSize,
+			pageToken,
+			deviceId,
+			userId,
+		}));
+	}
+
+	async terminateTerminalSession(sessionId: string, reason: string = '') {
+		const client = this.getClient();
+		return client.terminateTerminalSession(create(TerminateTerminalSessionRequestSchema, {
+			sessionId,
+			reason,
+		}));
+	}
+
 }
 
 /**
@@ -1695,5 +1749,6 @@ export type {
 	Role, PermissionInfo, UserGroup, UserGroupMember, IdentityProvider, IdentityLink,
 	LpsPassword, LuksKey, CreateActionRequest, UpdateActionParamsRequest,
 	AvailableItem, DeviceAssignee, CompliancePolicy, CompliancePolicyRule, DevicePolicyEvaluation,
-	SearchResult, SshPublicKey, DeviceGroupMember, InheritedRole, ActionSetMember, DefinitionMember
+	SearchResult, SshPublicKey, DeviceGroupMember, InheritedRole, ActionSetMember, DefinitionMember,
+	StartTerminalResponse, TerminalSessionInfo
 };
