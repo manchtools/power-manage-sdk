@@ -9,31 +9,38 @@ import (
 // ErrNoPackageManager is returned when no supported package manager is found.
 var ErrNoPackageManager = errors.New("no supported package manager found")
 
-// Detect returns the appropriate package manager for the current system.
+// Detect returns the appropriate package manager for the current
+// system. The returned Manager has package-name validation applied
+// via WithValidation — every public method that takes a package
+// name refuses inputs that fail ValidatePackageName. Callers that
+// want the raw underlying Manager (e.g. for tests that deliberately
+// exercise invalid names) can instantiate NewApt / NewDnf /
+// NewPacman / NewZypper directly.
 func Detect() (Manager, error) {
 	return DetectWithContext(context.Background())
 }
 
-// DetectWithContext returns the appropriate package manager with context.
+// DetectWithContext returns the appropriate package manager with
+// context. See Detect for the validation-wrapping contract.
 func DetectWithContext(ctx context.Context) (Manager, error) {
 	// Check for apt (Debian/Ubuntu)
 	if _, err := os.Stat("/usr/bin/apt-get"); err == nil {
-		return NewAptWithContext(ctx), nil
+		return WithValidation(NewAptWithContext(ctx)), nil
 	}
 
 	// Check for dnf (Fedora/RHEL 8+)
 	if _, err := os.Stat("/usr/bin/dnf"); err == nil {
-		return NewDnfWithContext(ctx), nil
+		return WithValidation(NewDnfWithContext(ctx)), nil
 	}
 
 	// Check for pacman (Arch Linux)
 	if _, err := os.Stat("/usr/bin/pacman"); err == nil {
-		return NewPacmanWithContext(ctx), nil
+		return WithValidation(NewPacmanWithContext(ctx)), nil
 	}
 
 	// Check for zypper (openSUSE/SLES)
 	if _, err := os.Stat("/usr/bin/zypper"); err == nil {
-		return NewZypperWithContext(ctx), nil
+		return WithValidation(NewZypperWithContext(ctx)), nil
 	}
 
 	return nil, ErrNoPackageManager
