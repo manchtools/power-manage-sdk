@@ -45,10 +45,17 @@ func (b *RemoveBuilder) Purge() *RemoveBuilder {
 }
 
 // Run executes the remove operation.
+//
+// Type-asserts the Manager against the Purger interface rather than
+// the concrete *Apt type so validation-wrapped managers (from
+// WithValidation / Detect) continue to dispatch to the purge path.
+// A previous `b.manager.(*Apt)` shape silently degraded to Remove
+// when the manager was wrapped, leaving apt package configs on
+// disk under /etc/* despite the caller's Purge() request.
 func (b *RemoveBuilder) Run() (*CommandResult, error) {
 	if b.purge {
-		if apt, ok := b.manager.(*Apt); ok {
-			return apt.Purge(b.packages...)
+		if p, ok := b.manager.(Purger); ok {
+			return p.Purge(b.packages...)
 		}
 	}
 	return b.manager.Remove(b.packages...)
