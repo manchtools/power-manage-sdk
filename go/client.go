@@ -146,17 +146,61 @@ func WithTLSConfig(tlsConfig *tls.Config) ClientOption {
 }
 
 // WithMTLSFromPEM configures mTLS using PEM-encoded certificate data.
-// This is useful when certificates are stored in memory (e.g., from registration response).
+//
+// Trust is strict: the returned TLS config verifies the server ONLY
+// against caPEM. This is the correct setup for talking to the
+// internal-CA-signed gateway over mTLS — system roots are NOT
+// consulted, so a cert signed by any public CA cannot impersonate
+// the gateway even if its SNI matches.
+//
+// For reaching servers whose public-facing HTTPS cert is signed by
+// a public CA (typically a Traefik reverse proxy with Let's Encrypt
+// in front of the control server), pair the client certificate with
+// system roots via WithMTLSFromPEMAndSystemRoots instead.
 func WithMTLSFromPEM(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
 		return nil, fmt.Errorf("parse client certificate: %w", err)
 	}
 
-	// Start from system roots so we also trust publicly-issued certificates
-	// (e.g. Let's Encrypt on a reverse proxy), then add the internal CA.
-	caPool, err := x509.SystemCertPool()
+	caPool := x509.NewCertPool()
+	if !caPool.AppendCertsFromPEM(caPEM) {
+		return nil, errors.New("failed to parse CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caPool,
+		MinVersion:   tls.VersionTLS13,
+	}
+
+	return &funcOption{func(c *Client, httpClient **http.Client) {
+		*httpClient = newHTTPClientWithTLS(tlsConfig)
+	}}, nil
+}
+
+// WithMTLSFromPEMAndSystemRoots is like WithMTLSFromPEM but the
+// server-verification root pool contains caPEM PLUS the host's
+// system roots. Use this when the server sits behind a public CA
+// (e.g. a Traefik reverse proxy terminating TLS with Let's Encrypt)
+// and the client cert must still authenticate the agent's identity
+// at the application layer — for example the
+// ControlService.RenewCertificate RPC, which can travel over a
+// public-LE-fronted HTTPS endpoint and also passes the current
+// certificate in the request body.
+//
+// Do NOT use this for the agent-to-gateway mTLS connection: the
+// gateway is internal-CA only, and broadening its trust to system
+// roots lets any publicly-trusted cert with a matching SNI
+// impersonate the gateway.
+func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
+		return nil, fmt.Errorf("parse client certificate: %w", err)
+	}
+
+	caPool, err := x509.SystemCertPool()
+	if err != nil || caPool == nil {
 		caPool = x509.NewCertPool()
 	}
 	if !caPool.AppendCertsFromPEM(caPEM) {
