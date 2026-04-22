@@ -13,6 +13,19 @@ import (
 
 // GenerateCSR creates a new ECDSA P-256 key pair and returns the CSR (PEM)
 // and private key (PEM).
+//
+// The CSR carries no SANs (no DNSNames, IPAddresses, EmailAddresses,
+// or URIs). Agent certificates are client certs — identified by the
+// deviceID that the Control Server writes into the issued cert's
+// Subject.SerialNumber, not by anything the agent puts in the CSR.
+// The Control Server's CA rejects any CSR with SANs:
+//
+//     internal/ca/ca.go: "CSR must not request subject alternative names"
+//
+// so including a DNS SAN here fails registration immediately. The
+// hostname is still put in the CSR's CN for operator debuggability
+// (the CA discards the CN and replaces it with the device ID), but
+// the DNS SAN is omitted.
 func GenerateCSR(hostname string) (csrPEM, keyPEM []byte, err error) {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -23,7 +36,6 @@ func GenerateCSR(hostname string) (csrPEM, keyPEM []byte, err error) {
 		Subject: pkix.Name{
 			CommonName: hostname,
 		},
-		DNSNames: []string{hostname},
 	}
 
 	csrDER, err := x509.CreateCertificateRequest(rand.Reader, template, privateKey)
@@ -62,11 +74,12 @@ func GenerateCSRFromKey(hostname string, keyPEM []byte) (csrPEM []byte, err erro
 		return nil, fmt.Errorf("parse private key: %w", err)
 	}
 
+	// No SANs — see GenerateCSR for the rationale. Renewal CSRs
+	// follow the same shape as initial-enrolment CSRs.
 	template := &x509.CertificateRequest{
 		Subject: pkix.Name{
 			CommonName: hostname,
 		},
-		DNSNames: []string{hostname},
 	}
 
 	csrDER, err := x509.CreateCertificateRequest(rand.Reader, template, privateKey)
