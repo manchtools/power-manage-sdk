@@ -368,8 +368,17 @@ func TestRemoveBuilder_Multiple(t *testing.T) {
 	}
 }
 
-func TestRemoveBuilder_PurgeWithNonApt(t *testing.T) {
-	// Purge with non-Apt manager should fall back to Remove
+func TestRemoveBuilder_PurgeUsesPurgerInterface(t *testing.T) {
+	// The builder now dispatches `.Purge()` via the Purger
+	// interface, not a concrete `*Apt` type assertion. MockManager
+	// implements Purger (has a Purge method), so its Purge hook
+	// must be the one that fires.
+	//
+	// This replaces the old TestRemoveBuilder_PurgeWithNonApt
+	// which asserted the *Apt type assertion would fail and the
+	// builder would fall back to Remove. That shape used to hide
+	// the SDK audit regression where a validation-wrapped manager
+	// silently lost its purge semantics.
 	mock := NewMockManager()
 	pm := NewPackageManager(mock)
 
@@ -378,9 +387,11 @@ func TestRemoveBuilder_PurgeWithNonApt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// Should call Remove since mock is not *Apt
-	if len(mock.RemoveCalls) != 1 {
-		t.Fatalf("expected 1 Remove call for non-Apt purge, got %d", len(mock.RemoveCalls))
+	if len(mock.PurgeCalls) != 1 {
+		t.Fatalf("expected 1 Purge call via Purger interface, got %d", len(mock.PurgeCalls))
+	}
+	if len(mock.RemoveCalls) != 0 {
+		t.Errorf("Remove should NOT fire when the manager implements Purger; got %d calls", len(mock.RemoveCalls))
 	}
 }
 
