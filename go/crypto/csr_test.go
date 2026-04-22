@@ -33,8 +33,23 @@ func TestGenerateCSR(t *testing.T) {
 		t.Fatalf("CSR CN = %q, want test-host.example.com", csr.Subject.CommonName)
 	}
 
-	if len(csr.DNSNames) != 1 || csr.DNSNames[0] != "test-host.example.com" {
-		t.Fatalf("CSR DNSNames = %v, want [test-host.example.com]", csr.DNSNames)
+	// The CSR MUST NOT carry any SANs — the Control Server's CA
+	// refuses to sign CSRs that include DNSNames, IPAddresses,
+	// EmailAddresses, or URIs. Agent certs are client certs
+	// identified by the device ID the CA writes into the issued
+	// cert, not by anything the agent self-asserts in the CSR.
+	// See internal/ca/ca.go on the server side.
+	if len(csr.DNSNames) != 0 {
+		t.Fatalf("CSR DNSNames = %v, want empty (server rejects CSRs with SANs)", csr.DNSNames)
+	}
+	if len(csr.IPAddresses) != 0 {
+		t.Fatalf("CSR IPAddresses = %v, want empty", csr.IPAddresses)
+	}
+	if len(csr.EmailAddresses) != 0 {
+		t.Fatalf("CSR EmailAddresses = %v, want empty", csr.EmailAddresses)
+	}
+	if len(csr.URIs) != 0 {
+		t.Fatalf("CSR URIs = %v, want empty", csr.URIs)
 	}
 
 	// Verify signature on CSR
