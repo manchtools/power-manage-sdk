@@ -62,3 +62,4 @@ export const ErrActionNotCompliance = 'action_not_compliance';
 export const ErrQueryResultNotFound = 'query_result_not_found';
 export const ErrTerminalLinuxUsernameNotSet = 'terminal_linux_username_not_set';
 export const ErrTerminalNotConfigured = 'terminal_not_configured';
+export const ErrGatewayNotRegistered = 'gateway_not_registered';
