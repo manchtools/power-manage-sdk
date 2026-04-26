@@ -529,6 +529,13 @@ message CreateTokenRequest {
   // @gotags: validate:"omitempty,min=0"
   int32 max_uses = 3;  // 0 = unlimited (for reusable tokens)
   google.protobuf.Timestamp expires_at = 4;  // optional
+  // Optional. When set to a user ID, devices enrolled through this
+  // token are auto-assigned to that user. When empty, the token is
+  // ownerless — no auto-assignment happens, suitable for bulk/imaging
+  // enrollment. The :self scope ignores this field and forces the
+  // creator as owner.
+  // @gotags: validate:"omitempty,ulid"
+  string owner_id = 5;
 }
 
 message CreateTokenResponse {
