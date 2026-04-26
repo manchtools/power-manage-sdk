@@ -600,7 +600,13 @@ export class ApiClient {
 	// Registration Tokens
 	// ============================================================================
 
-	async createToken(name: string, oneTime: boolean, maxUses: number = 0, expiresAt?: Date) {
+	async createToken(
+		name: string,
+		oneTime: boolean,
+		maxUses: number = 0,
+		expiresAt?: Date,
+		ownerId: string = ''
+	) {
 		const client = this.getClient();
 		const response = await client.createToken(
 			create(CreateTokenRequestSchema, {
@@ -609,7 +615,8 @@ export class ApiClient {
 				maxUses,
 				expiresAt: expiresAt
 					? { seconds: BigInt(Math.floor(expiresAt.getTime() / 1000)), nanos: 0 }
-					: undefined
+					: undefined,
+				ownerId
 			})
 		);
 		return response.token;
