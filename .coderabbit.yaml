@@ -27,4 +27,7 @@ knowledge_base:
     scope: auto
   linked_repositories:
     - repository: manchtools/power-manage-server
-    - repository: manchtools/power-manage-agent
+      instructions: >
+        Primary downstream consumer of SDK proto and client changes. Use this
+        repository to validate wire compatibility, enum semantics, and API
+        contract expectations for shared definitions.
