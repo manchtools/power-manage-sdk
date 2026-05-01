@@ -137,6 +137,7 @@ const (
 	AssignmentMode_ASSIGNMENT_MODE_REQUIRED  AssignmentMode = 0 // Mandatory: action will be applied
 	AssignmentMode_ASSIGNMENT_MODE_AVAILABLE AssignmentMode = 1 // Optional: user can select
 	AssignmentMode_ASSIGNMENT_MODE_EXCLUDED  AssignmentMode = 2 // Blocked: action won't be applied on this target
+	AssignmentMode_ASSIGNMENT_MODE_UNINSTALL AssignmentMode = 3 // Apply action but force desired_state to ABSENT
 )
 
 // Enum value maps for AssignmentMode.
@@ -145,11 +146,13 @@ var (
 		0: "ASSIGNMENT_MODE_REQUIRED",
 		1: "ASSIGNMENT_MODE_AVAILABLE",
 		2: "ASSIGNMENT_MODE_EXCLUDED",
+		3: "ASSIGNMENT_MODE_UNINSTALL",
 	}
 	AssignmentMode_value = map[string]int32{
 		"ASSIGNMENT_MODE_REQUIRED":  0,
 		"ASSIGNMENT_MODE_AVAILABLE": 1,
 		"ASSIGNMENT_MODE_EXCLUDED":  2,
+		"ASSIGNMENT_MODE_UNINSTALL": 3,
 	}
 )
 
@@ -471,11 +474,12 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x18EXECUTION_STATUS_TIMEOUT\x10\x06*C\n" +
 	"\fDesiredState\x12\x19\n" +
 	"\x15DESIRED_STATE_PRESENT\x10\x00\x12\x18\n" +
-	"\x14DESIRED_STATE_ABSENT\x10\x01*k\n" +
+	"\x14DESIRED_STATE_ABSENT\x10\x01*\x8a\x01\n" +
 	"\x0eAssignmentMode\x12\x1c\n" +
 	"\x18ASSIGNMENT_MODE_REQUIRED\x10\x00\x12\x1d\n" +
 	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1c\n" +
-	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02*\x9e\x01\n" +
+	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02\x12\x1d\n" +
+	"\x19ASSIGNMENT_MODE_UNINSTALL\x10\x03*\x9e\x01\n" +
 	"\x10ComplianceStatus\x12\x1d\n" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
