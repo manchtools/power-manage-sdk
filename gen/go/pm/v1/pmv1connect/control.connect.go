@@ -223,6 +223,9 @@ const (
 	// ControlServiceUpdateActionSetDescriptionProcedure is the fully-qualified name of the
 	// ControlService's UpdateActionSetDescription RPC.
 	ControlServiceUpdateActionSetDescriptionProcedure = "/pm.v1.ControlService/UpdateActionSetDescription"
+	// ControlServiceUpdateActionSetScheduleProcedure is the fully-qualified name of the
+	// ControlService's UpdateActionSetSchedule RPC.
+	ControlServiceUpdateActionSetScheduleProcedure = "/pm.v1.ControlService/UpdateActionSetSchedule"
 	// ControlServiceDeleteActionSetProcedure is the fully-qualified name of the ControlService's
 	// DeleteActionSet RPC.
 	ControlServiceDeleteActionSetProcedure = "/pm.v1.ControlService/DeleteActionSet"
@@ -250,6 +253,9 @@ const (
 	// ControlServiceUpdateDefinitionDescriptionProcedure is the fully-qualified name of the
 	// ControlService's UpdateDefinitionDescription RPC.
 	ControlServiceUpdateDefinitionDescriptionProcedure = "/pm.v1.ControlService/UpdateDefinitionDescription"
+	// ControlServiceUpdateDefinitionScheduleProcedure is the fully-qualified name of the
+	// ControlService's UpdateDefinitionSchedule RPC.
+	ControlServiceUpdateDefinitionScheduleProcedure = "/pm.v1.ControlService/UpdateDefinitionSchedule"
 	// ControlServiceDeleteDefinitionProcedure is the fully-qualified name of the ControlService's
 	// DeleteDefinition RPC.
 	ControlServiceDeleteDefinitionProcedure = "/pm.v1.ControlService/DeleteDefinition"
@@ -583,6 +589,7 @@ type ControlServiceClient interface {
 	ListActionSets(context.Context, *connect.Request[v1.ListActionSetsRequest]) (*connect.Response[v1.ListActionSetsResponse], error)
 	RenameActionSet(context.Context, *connect.Request[v1.RenameActionSetRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
 	UpdateActionSetDescription(context.Context, *connect.Request[v1.UpdateActionSetDescriptionRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
+	UpdateActionSetSchedule(context.Context, *connect.Request[v1.UpdateActionSetScheduleRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
 	DeleteActionSet(context.Context, *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error)
 	AddActionToSet(context.Context, *connect.Request[v1.AddActionToSetRequest]) (*connect.Response[v1.AddActionToSetResponse], error)
 	RemoveActionFromSet(context.Context, *connect.Request[v1.RemoveActionFromSetRequest]) (*connect.Response[v1.RemoveActionFromSetResponse], error)
@@ -593,6 +600,7 @@ type ControlServiceClient interface {
 	ListDefinitions(context.Context, *connect.Request[v1.ListDefinitionsRequest]) (*connect.Response[v1.ListDefinitionsResponse], error)
 	RenameDefinition(context.Context, *connect.Request[v1.RenameDefinitionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	UpdateDefinitionDescription(context.Context, *connect.Request[v1.UpdateDefinitionDescriptionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
+	UpdateDefinitionSchedule(context.Context, *connect.Request[v1.UpdateDefinitionScheduleRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	DeleteDefinition(context.Context, *connect.Request[v1.DeleteDefinitionRequest]) (*connect.Response[v1.DeleteDefinitionResponse], error)
 	AddActionSetToDefinition(context.Context, *connect.Request[v1.AddActionSetToDefinitionRequest]) (*connect.Response[v1.AddActionSetToDefinitionResponse], error)
 	RemoveActionSetFromDefinition(context.Context, *connect.Request[v1.RemoveActionSetFromDefinitionRequest]) (*connect.Response[v1.RemoveActionSetFromDefinitionResponse], error)
@@ -1098,6 +1106,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("UpdateActionSetDescription")),
 			connect.WithClientOptions(opts...),
 		),
+		updateActionSetSchedule: connect.NewClient[v1.UpdateActionSetScheduleRequest, v1.UpdateActionSetResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateActionSetScheduleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateActionSetSchedule")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteActionSet: connect.NewClient[v1.DeleteActionSetRequest, v1.DeleteActionSetResponse](
 			httpClient,
 			baseURL+ControlServiceDeleteActionSetProcedure,
@@ -1150,6 +1164,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUpdateDefinitionDescriptionProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UpdateDefinitionDescription")),
+			connect.WithClientOptions(opts...),
+		),
+		updateDefinitionSchedule: connect.NewClient[v1.UpdateDefinitionScheduleRequest, v1.UpdateDefinitionResponse](
+			httpClient,
+			baseURL+ControlServiceUpdateDefinitionScheduleProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("UpdateDefinitionSchedule")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteDefinition: connect.NewClient[v1.DeleteDefinitionRequest, v1.DeleteDefinitionResponse](
@@ -1732,6 +1752,7 @@ type controlServiceClient struct {
 	listActionSets                    *connect.Client[v1.ListActionSetsRequest, v1.ListActionSetsResponse]
 	renameActionSet                   *connect.Client[v1.RenameActionSetRequest, v1.UpdateActionSetResponse]
 	updateActionSetDescription        *connect.Client[v1.UpdateActionSetDescriptionRequest, v1.UpdateActionSetResponse]
+	updateActionSetSchedule           *connect.Client[v1.UpdateActionSetScheduleRequest, v1.UpdateActionSetResponse]
 	deleteActionSet                   *connect.Client[v1.DeleteActionSetRequest, v1.DeleteActionSetResponse]
 	addActionToSet                    *connect.Client[v1.AddActionToSetRequest, v1.AddActionToSetResponse]
 	removeActionFromSet               *connect.Client[v1.RemoveActionFromSetRequest, v1.RemoveActionFromSetResponse]
@@ -1741,6 +1762,7 @@ type controlServiceClient struct {
 	listDefinitions                   *connect.Client[v1.ListDefinitionsRequest, v1.ListDefinitionsResponse]
 	renameDefinition                  *connect.Client[v1.RenameDefinitionRequest, v1.UpdateDefinitionResponse]
 	updateDefinitionDescription       *connect.Client[v1.UpdateDefinitionDescriptionRequest, v1.UpdateDefinitionResponse]
+	updateDefinitionSchedule          *connect.Client[v1.UpdateDefinitionScheduleRequest, v1.UpdateDefinitionResponse]
 	deleteDefinition                  *connect.Client[v1.DeleteDefinitionRequest, v1.DeleteDefinitionResponse]
 	addActionSetToDefinition          *connect.Client[v1.AddActionSetToDefinitionRequest, v1.AddActionSetToDefinitionResponse]
 	removeActionSetFromDefinition     *connect.Client[v1.RemoveActionSetFromDefinitionRequest, v1.RemoveActionSetFromDefinitionResponse]
@@ -2153,6 +2175,11 @@ func (c *controlServiceClient) UpdateActionSetDescription(ctx context.Context, r
 	return c.updateActionSetDescription.CallUnary(ctx, req)
 }
 
+// UpdateActionSetSchedule calls pm.v1.ControlService.UpdateActionSetSchedule.
+func (c *controlServiceClient) UpdateActionSetSchedule(ctx context.Context, req *connect.Request[v1.UpdateActionSetScheduleRequest]) (*connect.Response[v1.UpdateActionSetResponse], error) {
+	return c.updateActionSetSchedule.CallUnary(ctx, req)
+}
+
 // DeleteActionSet calls pm.v1.ControlService.DeleteActionSet.
 func (c *controlServiceClient) DeleteActionSet(ctx context.Context, req *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error) {
 	return c.deleteActionSet.CallUnary(ctx, req)
@@ -2196,6 +2223,11 @@ func (c *controlServiceClient) RenameDefinition(ctx context.Context, req *connec
 // UpdateDefinitionDescription calls pm.v1.ControlService.UpdateDefinitionDescription.
 func (c *controlServiceClient) UpdateDefinitionDescription(ctx context.Context, req *connect.Request[v1.UpdateDefinitionDescriptionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error) {
 	return c.updateDefinitionDescription.CallUnary(ctx, req)
+}
+
+// UpdateDefinitionSchedule calls pm.v1.ControlService.UpdateDefinitionSchedule.
+func (c *controlServiceClient) UpdateDefinitionSchedule(ctx context.Context, req *connect.Request[v1.UpdateDefinitionScheduleRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error) {
+	return c.updateDefinitionSchedule.CallUnary(ctx, req)
 }
 
 // DeleteDefinition calls pm.v1.ControlService.DeleteDefinition.
@@ -2701,6 +2733,7 @@ type ControlServiceHandler interface {
 	ListActionSets(context.Context, *connect.Request[v1.ListActionSetsRequest]) (*connect.Response[v1.ListActionSetsResponse], error)
 	RenameActionSet(context.Context, *connect.Request[v1.RenameActionSetRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
 	UpdateActionSetDescription(context.Context, *connect.Request[v1.UpdateActionSetDescriptionRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
+	UpdateActionSetSchedule(context.Context, *connect.Request[v1.UpdateActionSetScheduleRequest]) (*connect.Response[v1.UpdateActionSetResponse], error)
 	DeleteActionSet(context.Context, *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error)
 	AddActionToSet(context.Context, *connect.Request[v1.AddActionToSetRequest]) (*connect.Response[v1.AddActionToSetResponse], error)
 	RemoveActionFromSet(context.Context, *connect.Request[v1.RemoveActionFromSetRequest]) (*connect.Response[v1.RemoveActionFromSetResponse], error)
@@ -2711,6 +2744,7 @@ type ControlServiceHandler interface {
 	ListDefinitions(context.Context, *connect.Request[v1.ListDefinitionsRequest]) (*connect.Response[v1.ListDefinitionsResponse], error)
 	RenameDefinition(context.Context, *connect.Request[v1.RenameDefinitionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	UpdateDefinitionDescription(context.Context, *connect.Request[v1.UpdateDefinitionDescriptionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
+	UpdateDefinitionSchedule(context.Context, *connect.Request[v1.UpdateDefinitionScheduleRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error)
 	DeleteDefinition(context.Context, *connect.Request[v1.DeleteDefinitionRequest]) (*connect.Response[v1.DeleteDefinitionResponse], error)
 	AddActionSetToDefinition(context.Context, *connect.Request[v1.AddActionSetToDefinitionRequest]) (*connect.Response[v1.AddActionSetToDefinitionResponse], error)
 	RemoveActionSetFromDefinition(context.Context, *connect.Request[v1.RemoveActionSetFromDefinitionRequest]) (*connect.Response[v1.RemoveActionSetFromDefinitionResponse], error)
@@ -3212,6 +3246,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("UpdateActionSetDescription")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceUpdateActionSetScheduleHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateActionSetScheduleProcedure,
+		svc.UpdateActionSetSchedule,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateActionSetSchedule")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceDeleteActionSetHandler := connect.NewUnaryHandler(
 		ControlServiceDeleteActionSetProcedure,
 		svc.DeleteActionSet,
@@ -3264,6 +3304,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUpdateDefinitionDescriptionProcedure,
 		svc.UpdateDefinitionDescription,
 		connect.WithSchema(controlServiceMethods.ByName("UpdateDefinitionDescription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceUpdateDefinitionScheduleHandler := connect.NewUnaryHandler(
+		ControlServiceUpdateDefinitionScheduleProcedure,
+		svc.UpdateDefinitionSchedule,
+		connect.WithSchema(controlServiceMethods.ByName("UpdateDefinitionSchedule")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceDeleteDefinitionHandler := connect.NewUnaryHandler(
@@ -3908,6 +3954,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRenameActionSetHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateActionSetDescriptionProcedure:
 			controlServiceUpdateActionSetDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateActionSetScheduleProcedure:
+			controlServiceUpdateActionSetScheduleHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteActionSetProcedure:
 			controlServiceDeleteActionSetHandler.ServeHTTP(w, r)
 		case ControlServiceAddActionToSetProcedure:
@@ -3926,6 +3974,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRenameDefinitionHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateDefinitionDescriptionProcedure:
 			controlServiceUpdateDefinitionDescriptionHandler.ServeHTTP(w, r)
+		case ControlServiceUpdateDefinitionScheduleProcedure:
+			controlServiceUpdateDefinitionScheduleHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDefinitionProcedure:
 			controlServiceDeleteDefinitionHandler.ServeHTTP(w, r)
 		case ControlServiceAddActionSetToDefinitionProcedure:
@@ -4365,6 +4415,10 @@ func (UnimplementedControlServiceHandler) UpdateActionSetDescription(context.Con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateActionSetDescription is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) UpdateActionSetSchedule(context.Context, *connect.Request[v1.UpdateActionSetScheduleRequest]) (*connect.Response[v1.UpdateActionSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateActionSetSchedule is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) DeleteActionSet(context.Context, *connect.Request[v1.DeleteActionSetRequest]) (*connect.Response[v1.DeleteActionSetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteActionSet is not implemented"))
 }
@@ -4399,6 +4453,10 @@ func (UnimplementedControlServiceHandler) RenameDefinition(context.Context, *con
 
 func (UnimplementedControlServiceHandler) UpdateDefinitionDescription(context.Context, *connect.Request[v1.UpdateDefinitionDescriptionRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateDefinitionDescription is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) UpdateDefinitionSchedule(context.Context, *connect.Request[v1.UpdateDefinitionScheduleRequest]) (*connect.Response[v1.UpdateDefinitionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.UpdateDefinitionSchedule is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) DeleteDefinition(context.Context, *connect.Request[v1.DeleteDefinitionRequest]) (*connect.Response[v1.DeleteDefinitionResponse], error) {
