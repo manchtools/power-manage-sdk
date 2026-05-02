@@ -818,6 +818,10 @@ message CreateActionSetRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  // Schedule that triggers every member action when fired. Required:
+  // member actions never fire on their own when assigned via this set.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 3;
 }
 
 message CreateActionSetResponse {
@@ -860,6 +864,14 @@ message UpdateActionSetDescriptionRequest {
   string id = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+}
+
+message UpdateActionSetScheduleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // Replacement schedule for the set. Required.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 2;
 }
 
 message UpdateActionSetResponse {
@@ -943,6 +955,10 @@ message CreateDefinitionRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  // Schedule that triggers every action in every member set when fired.
+  // Required: members never fire on their own when assigned via this definition.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 3;
 }
 
 message CreateDefinitionResponse {
@@ -984,6 +1000,14 @@ message UpdateDefinitionDescriptionRequest {
   string id = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+}
+
+message UpdateDefinitionScheduleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // Replacement schedule for the definition. Required.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 2;
 }
 
 message UpdateDefinitionResponse {
@@ -2511,6 +2535,7 @@ service ControlService {
   rpc ListActionSets(ListActionSetsRequest) returns (ListActionSetsResponse);
   rpc RenameActionSet(RenameActionSetRequest) returns (UpdateActionSetResponse);
   rpc UpdateActionSetDescription(UpdateActionSetDescriptionRequest) returns (UpdateActionSetResponse);
+  rpc UpdateActionSetSchedule(UpdateActionSetScheduleRequest) returns (UpdateActionSetResponse);
   rpc DeleteActionSet(DeleteActionSetRequest) returns (DeleteActionSetResponse);
   rpc AddActionToSet(AddActionToSetRequest) returns (AddActionToSetResponse);
   rpc RemoveActionFromSet(RemoveActionFromSetRequest) returns (RemoveActionFromSetResponse);
@@ -2522,6 +2547,7 @@ service ControlService {
   rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse);
   rpc RenameDefinition(RenameDefinitionRequest) returns (UpdateDefinitionResponse);
   rpc UpdateDefinitionDescription(UpdateDefinitionDescriptionRequest) returns (UpdateDefinitionResponse);
+  rpc UpdateDefinitionSchedule(UpdateDefinitionScheduleRequest) returns (UpdateDefinitionResponse);
   rpc DeleteDefinition(DeleteDefinitionRequest) returns (DeleteDefinitionResponse);
   rpc AddActionSetToDefinition(AddActionSetToDefinitionRequest) returns (AddActionSetToDefinitionResponse);
   rpc RemoveActionSetFromDefinition(RemoveActionSetFromDefinitionRequest) returns (RemoveActionSetFromDefinitionResponse);
