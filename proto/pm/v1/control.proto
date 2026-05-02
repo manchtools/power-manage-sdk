@@ -797,11 +797,19 @@ message ActionSet {
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
   google.protobuf.Timestamp updated_at = 7;
+  // Schedule that triggers every member action when fired. Required.
+  // The set's schedule overrides each member action's own schedule —
+  // member actions never fire on their own when assigned via this set.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 8;
 }
 
 message ActionSetMember {
   // @gotags: validate:"required,ulid"
   string action_id = 1;
+  // Position of this action within the set's execution order. When the
+  // set's schedule fires, members are executed in ascending sort_order.
+  // Stable tiebreak by action_id for ties.
   // @gotags: validate:"omitempty,gte=0"
   int32 sort_order = 2;
   string action_name = 3;
@@ -813,6 +821,10 @@ message CreateActionSetRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  // Schedule that triggers every member action when fired. Required:
+  // member actions never fire on their own when assigned via this set.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 3;
 }
 
 message CreateActionSetResponse {
@@ -855,6 +867,14 @@ message UpdateActionSetDescriptionRequest {
   string id = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+}
+
+message UpdateActionSetScheduleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // Replacement schedule for the set. Required.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 2;
 }
 
 message UpdateActionSetResponse {
@@ -917,11 +937,21 @@ message Definition {
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
   google.protobuf.Timestamp updated_at = 7;
+  // Schedule that triggers every action in every member set when fired. Required.
+  // The definition's schedule overrides each member set's schedule and each
+  // member action's own schedule — they never fire on their own when assigned
+  // via this definition.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 8;
 }
 
 message DefinitionMember {
   // @gotags: validate:"required,ulid"
   string action_set_id = 1;
+  // Position of this set within the definition's execution order. When the
+  // definition's schedule fires, sets are walked in ascending sort_order
+  // and each set's actions execute in their own ascending sort_order.
+  // Stable tiebreak by action_set_id for ties.
   // @gotags: validate:"omitempty,gte=0"
   int32 sort_order = 2;
   string action_set_name = 3;
@@ -932,6 +962,10 @@ message CreateDefinitionRequest {
   string name = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+  // Schedule that triggers every action in every member set when fired.
+  // Required: members never fire on their own when assigned via this definition.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 3;
 }
 
 message CreateDefinitionResponse {
@@ -973,6 +1007,14 @@ message UpdateDefinitionDescriptionRequest {
   string id = 1;
   // @gotags: validate:"omitempty,max=1024"
   string description = 2;
+}
+
+message UpdateDefinitionScheduleRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // Replacement schedule for the definition. Required.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 2;
 }
 
 message UpdateDefinitionResponse {
@@ -2500,6 +2542,7 @@ service ControlService {
   rpc ListActionSets(ListActionSetsRequest) returns (ListActionSetsResponse);
   rpc RenameActionSet(RenameActionSetRequest) returns (UpdateActionSetResponse);
   rpc UpdateActionSetDescription(UpdateActionSetDescriptionRequest) returns (UpdateActionSetResponse);
+  rpc UpdateActionSetSchedule(UpdateActionSetScheduleRequest) returns (UpdateActionSetResponse);
   rpc DeleteActionSet(DeleteActionSetRequest) returns (DeleteActionSetResponse);
   rpc AddActionToSet(AddActionToSetRequest) returns (AddActionToSetResponse);
   rpc RemoveActionFromSet(RemoveActionFromSetRequest) returns (RemoveActionFromSetResponse);
@@ -2511,6 +2554,7 @@ service ControlService {
   rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse);
   rpc RenameDefinition(RenameDefinitionRequest) returns (UpdateDefinitionResponse);
   rpc UpdateDefinitionDescription(UpdateDefinitionDescriptionRequest) returns (UpdateDefinitionResponse);
+  rpc UpdateDefinitionSchedule(UpdateDefinitionScheduleRequest) returns (UpdateDefinitionResponse);
   rpc DeleteDefinition(DeleteDefinitionRequest) returns (DeleteDefinitionResponse);
   rpc AddActionSetToDefinition(AddActionSetToDefinitionRequest) returns (AddActionSetToDefinitionResponse);
   rpc RemoveActionSetFromDefinition(RemoveActionSetFromDefinitionRequest) returns (RemoveActionSetFromDefinitionResponse);

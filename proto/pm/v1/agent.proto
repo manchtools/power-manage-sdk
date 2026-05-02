@@ -380,14 +380,59 @@ message SyncActionsRequest {
   DeviceId device_id = 1;
 }
 
+// ActionGroup represents a set or definition's worth of actions that share a
+// single schedule. When the schedule fires, every member action executes in
+// the order given. The schedule overrides each member action's own schedule
+// field — that field is meaningful only for actions delivered via
+// SyncActionsResponse.standalone_actions.
+//
+// The same action_id may appear at multiple positions within one group (e.g.
+// the same action being a member of two sets that compose the same
+// definition); idempotent execution absorbs the redundancy. Across groups,
+// duplicates are also expected — each group runs independently when its
+// schedule fires.
+message ActionGroup {
+  // Diagnostic label identifying the source of this group, e.g.
+  // "definition:<ulid>" or "action_set:<ulid>". For logs and UI only;
+  // the agent does not interpret the contents.
+  string source_label = 1;
+
+  // Schedule that triggers this group. When fired, every member action runs
+  // in order through the existing executor.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 2;
+
+  // Member actions in execution order. Each Action's own `schedule` field is
+  // ignored — only the group's schedule above applies. The `desired_state`
+  // and other fields on each Action are honored as the server resolved them.
+  // @gotags: validate:"min=1,dive"
+  repeated Action actions = 3;
+}
+
 message SyncActionsResponse {
-  // All actions currently assigned to this device
-  // The agent should replace its local action store with this list
-  repeated Action actions = 1;
+  // The "actions" field (number 1) used to carry every assigned action as a
+  // flat list. It is replaced by the split below: standalone_actions for
+  // independently-scheduled actions and grouped_actions for set/definition-
+  // bound actions that share a single schedule and a defined execution order.
+  reserved 1;
+  reserved "actions";
+
   // Effective sync interval in minutes for this device
   // Agent should use this for the next sync interval
   // 0 means use default (30 minutes)
   int32 sync_interval_minutes = 2;
+
+  // Actions assigned directly to this device (or its groups) at the action
+  // layer — i.e. not absorbed by a reached set or definition. Each action
+  // fires on its own schedule, independent of every other action.
+  // The agent should replace its local standalone-action store with this list.
+  repeated Action standalone_actions = 3;
+
+  // Action sets / definitions that reach this device, expressed as groups
+  // sharing a single schedule each. Each group's actions run in declared
+  // order when the group's schedule fires.
+  // The agent should replace its local action-group store with this list.
+  repeated ActionGroup grouped_actions = 4;
 }
 
 // ============================================================================

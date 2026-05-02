@@ -8,7 +8,7 @@ import type { Duration } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_duration } from "@bufbuild/protobuf/wkt";
 import type { DeviceId } from "./common_pb";
 import { file_pm_v1_common } from "./common_pb";
-import type { Action, ActionResult, LpsPasswordComplexity } from "./actions_pb";
+import type { Action, ActionResult, ActionSchedule, LpsPasswordComplexity } from "./actions_pb";
 import { file_pm_v1_actions } from "./actions_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/agent.proto.
  */
 export const file_pm_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChFwbS92MS9hZ2VudC5wcm90bxIFcG0udjEipQUKDEFnZW50TWVzc2FnZRIKCgJpZBgBIAEoCRIdCgVoZWxsbxgKIAEoCzIMLnBtLnYxLkhlbGxvSAASJQoJaGVhcnRiZWF0GAsgASgLMhAucG0udjEuSGVhcnRiZWF0SAASLAoNYWN0aW9uX3Jlc3VsdBgUIAEoCzITLnBtLnYxLkFjdGlvblJlc3VsdEgAEioKDG91dHB1dF9jaHVuaxgVIAEoCzISLnBtLnYxLk91dHB1dENodW5rSAASLAoMcXVlcnlfcmVzdWx0GB4gASgLMhQucG0udjEuT1NRdWVyeVJlc3VsdEgAEisKCWludmVudG9yeRgfIAEoCzIWLnBtLnYxLkRldmljZUludmVudG9yeUgAEi4KDnNlY3VyaXR5X2FsZXJ0GCggASgLMhQucG0udjEuU2VjdXJpdHlBbGVydEgAEjAKDGdldF9sdWtzX2tleRgyIAEoCzIYLnBtLnYxLkdldEx1a3NLZXlSZXF1ZXN0SAASNAoOc3RvcmVfbHVrc19rZXkYMyABKAsyGi5wbS52MS5TdG9yZUx1a3NLZXlSZXF1ZXN0SAASSQodcmV2b2tlX2x1a3NfZGV2aWNlX2tleV9yZXN1bHQYNCABKAsyIC5wbS52MS5SZXZva2VMdWtzRGV2aWNlS2V5UmVzdWx0SAASMQoQbG9nX3F1ZXJ5X3Jlc3VsdBg8IAEoCzIVLnBtLnYxLkxvZ1F1ZXJ5UmVzdWx0SAASMAoPdGVybWluYWxfb3V0cHV0GEYgASgLMhUucG0udjEuVGVybWluYWxPdXRwdXRIABI7ChV0ZXJtaW5hbF9zdGF0ZV9jaGFuZ2UYRyABKAsyGi5wbS52MS5UZXJtaW5hbFN0YXRlQ2hhbmdlSABCCQoHcGF5bG9hZCJsCgtPdXRwdXRDaHVuaxIUCgxleGVjdXRpb25faWQYASABKAkSJwoGc3RyZWFtGAIgASgOMhcucG0udjEuT3V0cHV0U3RyZWFtVHlwZRIMCgRkYXRhGAMgASgMEhAKCHNlcXVlbmNlGAQgASgDInYKBUhlbGxvEiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkEhUKDWFnZW50X3ZlcnNpb24YAiABKAkSEAoIaG9zdG5hbWUYAyABKAkSEgoKYXV0aF90b2tlbhgEIAEoCRIMCgRhcmNoGAUgASgJInkKCUhlYXJ0YmVhdBIpCgZ1cHRpbWUYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SEwoLY3B1X3BlcmNlbnQYAiABKAISFgoObWVtb3J5X3BlcmNlbnQYAyABKAISFAoMZGlza19wZXJjZW50GAQgASgCIqwBCg1TZWN1cml0eUFsZXJ0EiYKBHR5cGUYASABKA4yGC5wbS52MS5TZWN1cml0eUFsZXJ0VHlwZRIPCgdtZXNzYWdlGAIgASgJEjIKB2RldGFpbHMYAyADKAsyIS5wbS52MS5TZWN1cml0eUFsZXJ0LkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASL2BAoNU2VydmVyTWVzc2FnZRIKCgJpZBgBIAEoCRIhCgd3ZWxjb21lGAogASgLMg4ucG0udjEuV2VsY29tZUgAEicKBmFjdGlvbhgUIAEoCzIVLnBtLnYxLkFjdGlvbkRpc3BhdGNoSAASHwoFcXVlcnkYHiABKAsyDi5wbS52MS5PU1F1ZXJ5SAASNAoRcmVxdWVzdF9pbnZlbnRvcnkYHyABKAsyFy5wbS52MS5SZXF1ZXN0SW52ZW50b3J5SAASHQoFZXJyb3IYKCABKAsyDC5wbS52MS5FcnJvckgAEjEKDGdldF9sdWtzX2tleRgyIAEoCzIZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZUgAEjUKDnN0b3JlX2x1a3Nfa2V5GDMgASgLMhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2VIABI8ChZyZXZva2VfbHVrc19kZXZpY2Vfa2V5GDQgASgLMhoucG0udjEuUmV2b2tlTHVrc0RldmljZUtleUgAEiQKCWxvZ19xdWVyeRg8IAEoCzIPLnBtLnYxLkxvZ1F1ZXJ5SAASLgoOdGVybWluYWxfc3RhcnQYRiABKAsyFC5wbS52MS5UZXJtaW5hbFN0YXJ0SAASLgoOdGVybWluYWxfaW5wdXQYRyABKAsyFC5wbS52MS5UZXJtaW5hbElucHV0SAASMAoPdGVybWluYWxfcmVzaXplGEggASgLMhUucG0udjEuVGVybWluYWxSZXNpemVIABIsCg10ZXJtaW5hbF9zdG9wGEkgASgLMhMucG0udjEuVGVybWluYWxTdG9wSABCCQoHcGF5bG9hZCK3AQoHV2VsY29tZRIWCg5zZXJ2ZXJfdmVyc2lvbhgBIAEoCRI1ChJoZWFydGJlYXRfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SGAoQZGV2aWNlX2xvZ2luX3VybBgDIAEoCUoECAQQBUoECAUQBkoECAYQB1IUbGF0ZXN0X2FnZW50X3ZlcnNpb25SCnVwZGF0ZV91cmxSD3VwZGF0ZV9jaGVja3N1bSIvCg5BY3Rpb25EaXNwYXRjaBIdCgZhY3Rpb24YASABKAsyDS5wbS52MS5BY3Rpb24iJgoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIoMBCgdPU1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBXRhYmxlGAIgASgJEg8KB2NvbHVtbnMYAyADKAkSJgoFd2hlcmUYBCADKAsyFy5wbS52MS5PU1F1ZXJ5Q29uZGl0aW9uEg0KBWxpbWl0GAUgASgFEg8KB3Jhd19zcWwYBiABKAkiTwoQT1NRdWVyeUNvbmRpdGlvbhIOCgZjb2x1bW4YASABKAkSHAoCb3AYAiABKA4yEC5wbS52MS5PU1F1ZXJ5T3ASDQoFdmFsdWUYAyABKAkiYgoNT1NRdWVyeVJlc3VsdBIQCghxdWVyeV9pZBgBIAEoCRIPCgdzdWNjZXNzGAIgASgIEg0KBWVycm9yGAMgASgJEh8KBHJvd3MYBCADKAsyES5wbS52MS5PU1F1ZXJ5Um93ImQKCk9TUXVlcnlSb3cSKQoEZGF0YRgBIAMoCzIbLnBtLnYxLk9TUXVlcnlSb3cuRGF0YUVudHJ5GisKCURhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKD0RldmljZUludmVudG9yeRIlCgZ0YWJsZXMYASADKAsyFS5wbS52MS5JbnZlbnRvcnlUYWJsZSJFCg5JbnZlbnRvcnlUYWJsZRISCgp0YWJsZV9uYW1lGAEgASgJEh8KBHJvd3MYAiADKAsyES5wbS52MS5PU1F1ZXJ5Um93IhIKEFJlcXVlc3RJbnZlbnRvcnkiJgoRR2V0THVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJIigKEkdldEx1a3NLZXlSZXNwb25zZRISCgpwYXNzcGhyYXNlGAEgASgJImoKE1N0b3JlTHVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJEhMKC2RldmljZV9wYXRoGAIgASgJEhIKCnBhc3NwaHJhc2UYAyABKAkSFwoPcm90YXRpb25fcmVhc29uGAQgASgJIicKFFN0b3JlTHVrc0tleVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgiKAoTUmV2b2tlTHVrc0RldmljZUtleRIRCglhY3Rpb25faWQYASABKAkiTgoZUmV2b2tlTHVrc0RldmljZUtleVJlc3VsdBIRCglhY3Rpb25faWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCSI8ChhWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJIokBChlWYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgptaW5fbGVuZ3RoGAMgASgFEjAKCmNvbXBsZXhpdHkYBCABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkiOAoSU3luY0FjdGlvbnNSZXF1ZXN0EiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkIlQKE1N5bmNBY3Rpb25zUmVzcG9uc2USHgoHYWN0aW9ucxgBIAMoCzINLnBtLnYxLkFjdGlvbhIdChVzeW5jX2ludGVydmFsX21pbnV0ZXMYAiABKAUiqQEKCExvZ1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBWxpbmVzGAIgASgFEgwKBHVuaXQYAyABKAkSDQoFc2luY2UYBCABKAkSDQoFdW50aWwYBSABKAkSEAoIcHJpb3JpdHkYBiABKAkSDAoEZ3JlcBgHIAEoCRIOCgZrZXJuZWwYCCABKAgSIAoGc291cmNlGAkgASgOMhAucG0udjEuTG9nU291cmNlIlAKDkxvZ1F1ZXJ5UmVzdWx0EhAKCHF1ZXJ5X2lkGAEgASgJEg8KB3N1Y2Nlc3MYAiABKAgSDQoFZXJyb3IYAyABKAkSDAoEbG9ncxgEIAEoCSJRCg1UZXJtaW5hbFN0YXJ0EhIKCnNlc3Npb25faWQYASABKAkSEAoIdHR5X3VzZXIYAiABKAkSDAoEY29scxgDIAEoDRIMCgRyb3dzGAQgASgNIjEKDVRlcm1pbmFsSW5wdXQSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRkYXRhGAIgASgMIkAKDlRlcm1pbmFsUmVzaXplEhIKCnNlc3Npb25faWQYASABKAkSDAoEY29scxgCIAEoDRIMCgRyb3dzGAMgASgNIjIKDFRlcm1pbmFsU3RvcBISCgpzZXNzaW9uX2lkGAEgASgJEg4KBnJlYXNvbhgCIAEoCSIyCg5UZXJtaW5hbE91dHB1dBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGRhdGEYAiABKAwidwoTVGVybWluYWxTdGF0ZUNoYW5nZRISCgpzZXNzaW9uX2lkGAEgASgJEioKBXN0YXRlGAIgASgOMhsucG0udjEuVGVybWluYWxTZXNzaW9uU3RhdGUSEQoJZXhpdF9jb2RlGAMgASgFEg0KBWVycm9yGAQgASgJKnQKEE91dHB1dFN0cmVhbVR5cGUSIgoeT1VUUFVUX1NUUkVBTV9UWVBFX1VOU1BFQ0lGSUVEEAASHQoZT1VUUFVUX1NUUkVBTV9UWVBFX1NURE9VVBABEh0KGU9VVFBVVF9TVFJFQU1fVFlQRV9TVERFUlIQAirIAQoRU2VjdXJpdHlBbGVydFR5cGUSIwofU0VDVVJJVFlfQUxFUlRfVFlQRV9VTlNQRUNJRklFRBAAEjMKL1NFQ1VSSVRZX0FMRVJUX1RZUEVfU0VSVkVSX1JFQVNTSUdOTUVOVF9BVFRFTVBUEAESLAooU0VDVVJJVFlfQUxFUlRfVFlQRV9DUkVERU5USUFMX1RBTVBFUklORxACEisKJ1NFQ1VSSVRZX0FMRVJUX1RZUEVfSU5WQUxJRF9DRVJUSUZJQ0FURRADKswBCglPU1F1ZXJ5T3ASGwoXT1NfUVVFUllfT1BfVU5TUEVDSUZJRUQQABISCg5PU19RVUVSWV9PUF9FURABEhIKDk9TX1FVRVJZX09QX05FEAISEgoOT1NfUVVFUllfT1BfR1QQAxISCg5PU19RVUVSWV9PUF9MVBAEEhIKDk9TX1FVRVJZX09QX0dFEAUSEgoOT1NfUVVFUllfT1BfTEUQBhIUChBPU19RVUVSWV9PUF9MSUtFEAcSFAoQT1NfUVVFUllfT1BfR0xPQhAIKjsKCUxvZ1NvdXJjZRIXChNMT0dfU09VUkNFX0pPVVJOQUxEEAASFQoRTE9HX1NPVVJDRV9TWVNMT0cQASqnAQoUVGVybWluYWxTZXNzaW9uU3RhdGUSJgoiVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9VTlNQRUNJRklFRBAAEiIKHlRFUk1JTkFMX1NFU1NJT05fU1RBVEVfU1RBUlRFRBABEiEKHVRFUk1JTkFMX1NFU1NJT05fU1RBVEVfRVhJVEVEEAISIAocVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9FUlJPUhADMuUBCgxBZ2VudFNlcnZpY2USNwoGU3RyZWFtEhMucG0udjEuQWdlbnRNZXNzYWdlGhQucG0udjEuU2VydmVyTWVzc2FnZSgBMAESRAoLU3luY0FjdGlvbnMSGS5wbS52MS5TeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlElYKEVZhbGlkYXRlTHVrc1Rva2VuEh8ucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0GiAucG0udjEuVmFsaWRhdGVMdWtzVG9rZW5SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_duration, file_pm_v1_common, file_pm_v1_actions]);
+  fileDesc("ChFwbS92MS9hZ2VudC5wcm90bxIFcG0udjEipQUKDEFnZW50TWVzc2FnZRIKCgJpZBgBIAEoCRIdCgVoZWxsbxgKIAEoCzIMLnBtLnYxLkhlbGxvSAASJQoJaGVhcnRiZWF0GAsgASgLMhAucG0udjEuSGVhcnRiZWF0SAASLAoNYWN0aW9uX3Jlc3VsdBgUIAEoCzITLnBtLnYxLkFjdGlvblJlc3VsdEgAEioKDG91dHB1dF9jaHVuaxgVIAEoCzISLnBtLnYxLk91dHB1dENodW5rSAASLAoMcXVlcnlfcmVzdWx0GB4gASgLMhQucG0udjEuT1NRdWVyeVJlc3VsdEgAEisKCWludmVudG9yeRgfIAEoCzIWLnBtLnYxLkRldmljZUludmVudG9yeUgAEi4KDnNlY3VyaXR5X2FsZXJ0GCggASgLMhQucG0udjEuU2VjdXJpdHlBbGVydEgAEjAKDGdldF9sdWtzX2tleRgyIAEoCzIYLnBtLnYxLkdldEx1a3NLZXlSZXF1ZXN0SAASNAoOc3RvcmVfbHVrc19rZXkYMyABKAsyGi5wbS52MS5TdG9yZUx1a3NLZXlSZXF1ZXN0SAASSQodcmV2b2tlX2x1a3NfZGV2aWNlX2tleV9yZXN1bHQYNCABKAsyIC5wbS52MS5SZXZva2VMdWtzRGV2aWNlS2V5UmVzdWx0SAASMQoQbG9nX3F1ZXJ5X3Jlc3VsdBg8IAEoCzIVLnBtLnYxLkxvZ1F1ZXJ5UmVzdWx0SAASMAoPdGVybWluYWxfb3V0cHV0GEYgASgLMhUucG0udjEuVGVybWluYWxPdXRwdXRIABI7ChV0ZXJtaW5hbF9zdGF0ZV9jaGFuZ2UYRyABKAsyGi5wbS52MS5UZXJtaW5hbFN0YXRlQ2hhbmdlSABCCQoHcGF5bG9hZCJsCgtPdXRwdXRDaHVuaxIUCgxleGVjdXRpb25faWQYASABKAkSJwoGc3RyZWFtGAIgASgOMhcucG0udjEuT3V0cHV0U3RyZWFtVHlwZRIMCgRkYXRhGAMgASgMEhAKCHNlcXVlbmNlGAQgASgDInYKBUhlbGxvEiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkEhUKDWFnZW50X3ZlcnNpb24YAiABKAkSEAoIaG9zdG5hbWUYAyABKAkSEgoKYXV0aF90b2tlbhgEIAEoCRIMCgRhcmNoGAUgASgJInkKCUhlYXJ0YmVhdBIpCgZ1cHRpbWUYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SEwoLY3B1X3BlcmNlbnQYAiABKAISFgoObWVtb3J5X3BlcmNlbnQYAyABKAISFAoMZGlza19wZXJjZW50GAQgASgCIqwBCg1TZWN1cml0eUFsZXJ0EiYKBHR5cGUYASABKA4yGC5wbS52MS5TZWN1cml0eUFsZXJ0VHlwZRIPCgdtZXNzYWdlGAIgASgJEjIKB2RldGFpbHMYAyADKAsyIS5wbS52MS5TZWN1cml0eUFsZXJ0LkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASL2BAoNU2VydmVyTWVzc2FnZRIKCgJpZBgBIAEoCRIhCgd3ZWxjb21lGAogASgLMg4ucG0udjEuV2VsY29tZUgAEicKBmFjdGlvbhgUIAEoCzIVLnBtLnYxLkFjdGlvbkRpc3BhdGNoSAASHwoFcXVlcnkYHiABKAsyDi5wbS52MS5PU1F1ZXJ5SAASNAoRcmVxdWVzdF9pbnZlbnRvcnkYHyABKAsyFy5wbS52MS5SZXF1ZXN0SW52ZW50b3J5SAASHQoFZXJyb3IYKCABKAsyDC5wbS52MS5FcnJvckgAEjEKDGdldF9sdWtzX2tleRgyIAEoCzIZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZUgAEjUKDnN0b3JlX2x1a3Nfa2V5GDMgASgLMhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2VIABI8ChZyZXZva2VfbHVrc19kZXZpY2Vfa2V5GDQgASgLMhoucG0udjEuUmV2b2tlTHVrc0RldmljZUtleUgAEiQKCWxvZ19xdWVyeRg8IAEoCzIPLnBtLnYxLkxvZ1F1ZXJ5SAASLgoOdGVybWluYWxfc3RhcnQYRiABKAsyFC5wbS52MS5UZXJtaW5hbFN0YXJ0SAASLgoOdGVybWluYWxfaW5wdXQYRyABKAsyFC5wbS52MS5UZXJtaW5hbElucHV0SAASMAoPdGVybWluYWxfcmVzaXplGEggASgLMhUucG0udjEuVGVybWluYWxSZXNpemVIABIsCg10ZXJtaW5hbF9zdG9wGEkgASgLMhMucG0udjEuVGVybWluYWxTdG9wSABCCQoHcGF5bG9hZCK3AQoHV2VsY29tZRIWCg5zZXJ2ZXJfdmVyc2lvbhgBIAEoCRI1ChJoZWFydGJlYXRfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SGAoQZGV2aWNlX2xvZ2luX3VybBgDIAEoCUoECAQQBUoECAUQBkoECAYQB1IUbGF0ZXN0X2FnZW50X3ZlcnNpb25SCnVwZGF0ZV91cmxSD3VwZGF0ZV9jaGVja3N1bSIvCg5BY3Rpb25EaXNwYXRjaBIdCgZhY3Rpb24YASABKAsyDS5wbS52MS5BY3Rpb24iJgoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIoMBCgdPU1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBXRhYmxlGAIgASgJEg8KB2NvbHVtbnMYAyADKAkSJgoFd2hlcmUYBCADKAsyFy5wbS52MS5PU1F1ZXJ5Q29uZGl0aW9uEg0KBWxpbWl0GAUgASgFEg8KB3Jhd19zcWwYBiABKAkiTwoQT1NRdWVyeUNvbmRpdGlvbhIOCgZjb2x1bW4YASABKAkSHAoCb3AYAiABKA4yEC5wbS52MS5PU1F1ZXJ5T3ASDQoFdmFsdWUYAyABKAkiYgoNT1NRdWVyeVJlc3VsdBIQCghxdWVyeV9pZBgBIAEoCRIPCgdzdWNjZXNzGAIgASgIEg0KBWVycm9yGAMgASgJEh8KBHJvd3MYBCADKAsyES5wbS52MS5PU1F1ZXJ5Um93ImQKCk9TUXVlcnlSb3cSKQoEZGF0YRgBIAMoCzIbLnBtLnYxLk9TUXVlcnlSb3cuRGF0YUVudHJ5GisKCURhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKD0RldmljZUludmVudG9yeRIlCgZ0YWJsZXMYASADKAsyFS5wbS52MS5JbnZlbnRvcnlUYWJsZSJFCg5JbnZlbnRvcnlUYWJsZRISCgp0YWJsZV9uYW1lGAEgASgJEh8KBHJvd3MYAiADKAsyES5wbS52MS5PU1F1ZXJ5Um93IhIKEFJlcXVlc3RJbnZlbnRvcnkiJgoRR2V0THVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJIigKEkdldEx1a3NLZXlSZXNwb25zZRISCgpwYXNzcGhyYXNlGAEgASgJImoKE1N0b3JlTHVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJEhMKC2RldmljZV9wYXRoGAIgASgJEhIKCnBhc3NwaHJhc2UYAyABKAkSFwoPcm90YXRpb25fcmVhc29uGAQgASgJIicKFFN0b3JlTHVrc0tleVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgiKAoTUmV2b2tlTHVrc0RldmljZUtleRIRCglhY3Rpb25faWQYASABKAkiTgoZUmV2b2tlTHVrc0RldmljZUtleVJlc3VsdBIRCglhY3Rpb25faWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCSI8ChhWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJIokBChlWYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgptaW5fbGVuZ3RoGAMgASgFEjAKCmNvbXBsZXhpdHkYBCABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkiOAoSU3luY0FjdGlvbnNSZXF1ZXN0EiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkImwKC0FjdGlvbkdyb3VwEhQKDHNvdXJjZV9sYWJlbBgBIAEoCRInCghzY2hlZHVsZRgCIAEoCzIVLnBtLnYxLkFjdGlvblNjaGVkdWxlEh4KB2FjdGlvbnMYAyADKAsyDS5wbS52MS5BY3Rpb24imwEKE1N5bmNBY3Rpb25zUmVzcG9uc2USHQoVc3luY19pbnRlcnZhbF9taW51dGVzGAIgASgFEikKEnN0YW5kYWxvbmVfYWN0aW9ucxgDIAMoCzINLnBtLnYxLkFjdGlvbhIrCg9ncm91cGVkX2FjdGlvbnMYBCADKAsyEi5wbS52MS5BY3Rpb25Hcm91cEoECAEQAlIHYWN0aW9ucyKpAQoITG9nUXVlcnkSEAoIcXVlcnlfaWQYASABKAkSDQoFbGluZXMYAiABKAUSDAoEdW5pdBgDIAEoCRINCgVzaW5jZRgEIAEoCRINCgV1bnRpbBgFIAEoCRIQCghwcmlvcml0eRgGIAEoCRIMCgRncmVwGAcgASgJEg4KBmtlcm5lbBgIIAEoCBIgCgZzb3VyY2UYCSABKA4yEC5wbS52MS5Mb2dTb3VyY2UiUAoOTG9nUXVlcnlSZXN1bHQSEAoIcXVlcnlfaWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCRIMCgRsb2dzGAQgASgJIlEKDVRlcm1pbmFsU3RhcnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRIQCgh0dHlfdXNlchgCIAEoCRIMCgRjb2xzGAMgASgNEgwKBHJvd3MYBCABKA0iMQoNVGVybWluYWxJbnB1dBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGRhdGEYAiABKAwiQAoOVGVybWluYWxSZXNpemUSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRjb2xzGAIgASgNEgwKBHJvd3MYAyABKA0iMgoMVGVybWluYWxTdG9wEhIKCnNlc3Npb25faWQYASABKAkSDgoGcmVhc29uGAIgASgJIjIKDlRlcm1pbmFsT3V0cHV0EhIKCnNlc3Npb25faWQYASABKAkSDAoEZGF0YRgCIAEoDCJ3ChNUZXJtaW5hbFN0YXRlQ2hhbmdlEhIKCnNlc3Npb25faWQYASABKAkSKgoFc3RhdGUYAiABKA4yGy5wbS52MS5UZXJtaW5hbFNlc3Npb25TdGF0ZRIRCglleGl0X2NvZGUYAyABKAUSDQoFZXJyb3IYBCABKAkqdAoQT3V0cHV0U3RyZWFtVHlwZRIiCh5PVVRQVVRfU1RSRUFNX1RZUEVfVU5TUEVDSUZJRUQQABIdChlPVVRQVVRfU1RSRUFNX1RZUEVfU1RET1VUEAESHQoZT1VUUFVUX1NUUkVBTV9UWVBFX1NUREVSUhACKsgBChFTZWN1cml0eUFsZXJ0VHlwZRIjCh9TRUNVUklUWV9BTEVSVF9UWVBFX1VOU1BFQ0lGSUVEEAASMwovU0VDVVJJVFlfQUxFUlRfVFlQRV9TRVJWRVJfUkVBU1NJR05NRU5UX0FUVEVNUFQQARIsCihTRUNVUklUWV9BTEVSVF9UWVBFX0NSRURFTlRJQUxfVEFNUEVSSU5HEAISKwonU0VDVVJJVFlfQUxFUlRfVFlQRV9JTlZBTElEX0NFUlRJRklDQVRFEAMqzAEKCU9TUXVlcnlPcBIbChdPU19RVUVSWV9PUF9VTlNQRUNJRklFRBAAEhIKDk9TX1FVRVJZX09QX0VREAESEgoOT1NfUVVFUllfT1BfTkUQAhISCg5PU19RVUVSWV9PUF9HVBADEhIKDk9TX1FVRVJZX09QX0xUEAQSEgoOT1NfUVVFUllfT1BfR0UQBRISCg5PU19RVUVSWV9PUF9MRRAGEhQKEE9TX1FVRVJZX09QX0xJS0UQBxIUChBPU19RVUVSWV9PUF9HTE9CEAgqOwoJTG9nU291cmNlEhcKE0xPR19TT1VSQ0VfSk9VUk5BTEQQABIVChFMT0dfU09VUkNFX1NZU0xPRxABKqcBChRUZXJtaW5hbFNlc3Npb25TdGF0ZRImCiJURVJNSU5BTF9TRVNTSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9TVEFSVEVEEAESIQodVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9FWElURUQQAhIgChxURVJNSU5BTF9TRVNTSU9OX1NUQVRFX0VSUk9SEAMy5QEKDEFnZW50U2VydmljZRI3CgZTdHJlYW0SEy5wbS52MS5BZ2VudE1lc3NhZ2UaFC5wbS52MS5TZXJ2ZXJNZXNzYWdlKAEwARJECgtTeW5jQWN0aW9ucxIZLnBtLnYxLlN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USVgoRVmFsaWRhdGVMdWtzVG9rZW4SHy5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QaIC5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_duration, file_pm_v1_common, file_pm_v1_actions]);
 
 /**
  * @generated from message pm.v1.AgentMessage
@@ -971,17 +971,61 @@ export const SyncActionsRequestSchema: GenMessage<SyncActionsRequest> = /*@__PUR
   messageDesc(file_pm_v1_agent, 24);
 
 /**
+ * ActionGroup represents a set or definition's worth of actions that share a
+ * single schedule. When the schedule fires, every member action executes in
+ * the order given. The schedule overrides each member action's own schedule
+ * field — that field is meaningful only for actions delivered via
+ * SyncActionsResponse.standalone_actions.
+ *
+ * The same action_id may appear at multiple positions within one group (e.g.
+ * the same action being a member of two sets that compose the same
+ * definition); idempotent execution absorbs the redundancy. Across groups,
+ * duplicates are also expected — each group runs independently when its
+ * schedule fires.
+ *
+ * @generated from message pm.v1.ActionGroup
+ */
+export type ActionGroup = Message<"pm.v1.ActionGroup"> & {
+  /**
+   * Diagnostic label identifying the source of this group, e.g.
+   * "definition:<ulid>" or "action_set:<ulid>". For logs and UI only;
+   * the agent does not interpret the contents.
+   *
+   * @generated from field: string source_label = 1;
+   */
+  sourceLabel: string;
+
+  /**
+   * Schedule that triggers this group. When fired, every member action runs
+   * in order through the existing executor.
+   * @gotags: validate:"required"
+   *
+   * @generated from field: pm.v1.ActionSchedule schedule = 2;
+   */
+  schedule?: ActionSchedule;
+
+  /**
+   * Member actions in execution order. Each Action's own `schedule` field is
+   * ignored — only the group's schedule above applies. The `desired_state`
+   * and other fields on each Action are honored as the server resolved them.
+   * @gotags: validate:"min=1,dive"
+   *
+   * @generated from field: repeated pm.v1.Action actions = 3;
+   */
+  actions: Action[];
+};
+
+/**
+ * Describes the message pm.v1.ActionGroup.
+ * Use `create(ActionGroupSchema)` to create a new message.
+ */
+export const ActionGroupSchema: GenMessage<ActionGroup> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 25);
+
+/**
  * @generated from message pm.v1.SyncActionsResponse
  */
 export type SyncActionsResponse = Message<"pm.v1.SyncActionsResponse"> & {
-  /**
-   * All actions currently assigned to this device
-   * The agent should replace its local action store with this list
-   *
-   * @generated from field: repeated pm.v1.Action actions = 1;
-   */
-  actions: Action[];
-
   /**
    * Effective sync interval in minutes for this device
    * Agent should use this for the next sync interval
@@ -990,6 +1034,26 @@ export type SyncActionsResponse = Message<"pm.v1.SyncActionsResponse"> & {
    * @generated from field: int32 sync_interval_minutes = 2;
    */
   syncIntervalMinutes: number;
+
+  /**
+   * Actions assigned directly to this device (or its groups) at the action
+   * layer — i.e. not absorbed by a reached set or definition. Each action
+   * fires on its own schedule, independent of every other action.
+   * The agent should replace its local standalone-action store with this list.
+   *
+   * @generated from field: repeated pm.v1.Action standalone_actions = 3;
+   */
+  standaloneActions: Action[];
+
+  /**
+   * Action sets / definitions that reach this device, expressed as groups
+   * sharing a single schedule each. Each group's actions run in declared
+   * order when the group's schedule fires.
+   * The agent should replace its local action-group store with this list.
+   *
+   * @generated from field: repeated pm.v1.ActionGroup grouped_actions = 4;
+   */
+  groupedActions: ActionGroup[];
 };
 
 /**
@@ -997,7 +1061,7 @@ export type SyncActionsResponse = Message<"pm.v1.SyncActionsResponse"> & {
  * Use `create(SyncActionsResponseSchema)` to create a new message.
  */
 export const SyncActionsResponseSchema: GenMessage<SyncActionsResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 25);
+  messageDesc(file_pm_v1_agent, 26);
 
 /**
  * Server -> Agent: request system log output
@@ -1074,7 +1138,7 @@ export type LogQuery = Message<"pm.v1.LogQuery"> & {
  * Use `create(LogQuerySchema)` to create a new message.
  */
 export const LogQuerySchema: GenMessage<LogQuery> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 26);
+  messageDesc(file_pm_v1_agent, 27);
 
 /**
  * Agent -> Server: journalctl output result
@@ -1114,7 +1178,7 @@ export type LogQueryResult = Message<"pm.v1.LogQueryResult"> & {
  * Use `create(LogQueryResultSchema)` to create a new message.
  */
 export const LogQueryResultSchema: GenMessage<LogQueryResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 27);
+  messageDesc(file_pm_v1_agent, 28);
 
 /**
  * Server -> Agent: open a PTY session as the given TTY user.
@@ -1161,7 +1225,7 @@ export type TerminalStart = Message<"pm.v1.TerminalStart"> & {
  * Use `create(TerminalStartSchema)` to create a new message.
  */
 export const TerminalStartSchema: GenMessage<TerminalStart> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 28);
+  messageDesc(file_pm_v1_agent, 29);
 
 /**
  * Server -> Agent: stdin data for an active session.
@@ -1189,7 +1253,7 @@ export type TerminalInput = Message<"pm.v1.TerminalInput"> & {
  * Use `create(TerminalInputSchema)` to create a new message.
  */
 export const TerminalInputSchema: GenMessage<TerminalInput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 29);
+  messageDesc(file_pm_v1_agent, 30);
 
 /**
  * Server -> Agent: window resize.
@@ -1225,7 +1289,7 @@ export type TerminalResize = Message<"pm.v1.TerminalResize"> & {
  * Use `create(TerminalResizeSchema)` to create a new message.
  */
 export const TerminalResizeSchema: GenMessage<TerminalResize> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 30);
+  messageDesc(file_pm_v1_agent, 31);
 
 /**
  * Server -> Agent: terminate an active session.
@@ -1259,7 +1323,7 @@ export type TerminalStop = Message<"pm.v1.TerminalStop"> & {
  * Use `create(TerminalStopSchema)` to create a new message.
  */
 export const TerminalStopSchema: GenMessage<TerminalStop> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 31);
+  messageDesc(file_pm_v1_agent, 32);
 
 /**
  * Agent -> Server: stdout/stderr data from the PTY.
@@ -1287,7 +1351,7 @@ export type TerminalOutput = Message<"pm.v1.TerminalOutput"> & {
  * Use `create(TerminalOutputSchema)` to create a new message.
  */
 export const TerminalOutputSchema: GenMessage<TerminalOutput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 32);
+  messageDesc(file_pm_v1_agent, 33);
 
 /**
  * Agent -> Server: session state transition.
@@ -1334,7 +1398,7 @@ export type TerminalStateChange = Message<"pm.v1.TerminalStateChange"> & {
  * Use `create(TerminalStateChangeSchema)` to create a new message.
  */
 export const TerminalStateChangeSchema: GenMessage<TerminalStateChange> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 33);
+  messageDesc(file_pm_v1_agent, 34);
 
 /**
  * Output stream type for stdout/stderr differentiation

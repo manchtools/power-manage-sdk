@@ -1119,8 +1119,13 @@ func (c *Client) ValidateLuksToken(ctx context.Context, token string) (*Validate
 
 // SyncActionsResult contains the result of a sync actions call.
 type SyncActionsResult struct {
-	// Actions is the list of actions currently assigned to this device
-	Actions []*pm.Action
+	// StandaloneActions are actions assigned at the action layer (not absorbed
+	// by a reached set or definition). Each fires on its own schedule.
+	StandaloneActions []*pm.Action
+	// GroupedActions are sets/definitions reaching this device, expressed as
+	// groups that share a single schedule. Members run in declared order when
+	// the group's schedule fires.
+	GroupedActions []*pm.ActionGroup
 	// SyncIntervalMinutes is the effective sync interval for this device.
 	// 0 means use the default (30 minutes).
 	SyncIntervalMinutes int32
@@ -1149,7 +1154,8 @@ func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
 	}
 
 	return &SyncActionsResult{
-		Actions:             resp.Msg.Actions,
+		StandaloneActions:   resp.Msg.StandaloneActions,
+		GroupedActions:      resp.Msg.GroupedActions,
 		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
 	}, nil
 }
