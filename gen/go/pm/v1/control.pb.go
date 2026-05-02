@@ -6499,6 +6499,9 @@ type ActionSetMember struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	// Position of this action within the set's execution order. When the
+	// set's schedule fires, members are executed in ascending sort_order.
+	// Stable tiebreak by action_id for ties.
 	// @gotags: validate:"omitempty,gte=0"
 	SortOrder     int32      `protobuf:"varint,2,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty" validate:"omitempty,gte=0"`
 	ActionName    string     `protobuf:"bytes,3,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`
@@ -7602,6 +7605,10 @@ type DefinitionMember struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	ActionSetId string `protobuf:"bytes,1,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"required,ulid"`
+	// Position of this set within the definition's execution order. When the
+	// definition's schedule fires, sets are walked in ascending sort_order
+	// and each set's actions execute in their own ascending sort_order.
+	// Stable tiebreak by action_set_id for ties.
 	// @gotags: validate:"omitempty,gte=0"
 	SortOrder     int32  `protobuf:"varint,2,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty" validate:"omitempty,gte=0"`
 	ActionSetName string `protobuf:"bytes,3,opt,name=action_set_name,json=actionSetName,proto3" json:"action_set_name,omitempty"`
