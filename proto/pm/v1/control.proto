@@ -797,6 +797,11 @@ message ActionSet {
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
   google.protobuf.Timestamp updated_at = 7;
+  // Schedule that triggers every member action when fired. Required.
+  // The set's schedule overrides each member action's own schedule —
+  // member actions never fire on their own when assigned via this set.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 8;
 }
 
 message ActionSetMember {
@@ -917,6 +922,12 @@ message Definition {
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
   google.protobuf.Timestamp updated_at = 7;
+  // Schedule that triggers every action in every member set when fired. Required.
+  // The definition's schedule overrides each member set's schedule and each
+  // member action's own schedule — they never fire on their own when assigned
+  // via this definition.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 8;
 }
 
 message DefinitionMember {
