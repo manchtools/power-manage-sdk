@@ -3130,6 +3130,9 @@ export type ActionSetMember = Message<"pm.v1.ActionSetMember"> & {
   actionId: string;
 
   /**
+   * Position of this action within the set's execution order. When the
+   * set's schedule fires, members are executed in ascending sort_order.
+   * Stable tiebreak by action_id for ties.
    * @gotags: validate:"omitempty,gte=0"
    *
    * @generated from field: int32 sort_order = 2;
@@ -3646,6 +3649,10 @@ export type DefinitionMember = Message<"pm.v1.DefinitionMember"> & {
   actionSetId: string;
 
   /**
+   * Position of this set within the definition's execution order. When the
+   * definition's schedule fires, sets are walked in ascending sort_order
+   * and each set's actions execute in their own ascending sort_order.
+   * Stable tiebreak by action_set_id for ties.
    * @gotags: validate:"omitempty,gte=0"
    *
    * @generated from field: int32 sort_order = 2;

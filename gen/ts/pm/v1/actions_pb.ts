@@ -49,7 +49,12 @@ export type Action = Message<"pm.v1.Action"> & {
   timeoutSeconds: number;
 
   /**
-   * Scheduling configuration for autonomous agent execution
+   * Scheduling configuration for autonomous agent execution.
+   * Authoritative ONLY when this Action is delivered as a member of
+   * SyncActionsResponse.standalone_actions. When delivered inside an
+   * ActionGroup (i.e. via SyncActionsResponse.grouped_actions), this
+   * field is ignored — the group's schedule fires the action and every
+   * sibling in declared order.
    * @gotags: validate:"omitempty"
    *
    * @generated from field: pm.v1.ActionSchedule schedule = 5;

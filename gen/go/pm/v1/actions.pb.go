@@ -806,7 +806,12 @@ type Action struct {
 	DesiredState DesiredState `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0,lte=3600"
 	TimeoutSeconds int32 `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty" validate:"omitempty,gte=0,lte=3600"`
-	// Scheduling configuration for autonomous agent execution
+	// Scheduling configuration for autonomous agent execution.
+	// Authoritative ONLY when this Action is delivered as a member of
+	// SyncActionsResponse.standalone_actions. When delivered inside an
+	// ActionGroup (i.e. via SyncActionsResponse.grouped_actions), this
+	// field is ignored — the group's schedule fires the action and every
+	// sibling in declared order.
 	// @gotags: validate:"omitempty"
 	Schedule *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty"`
 	// ECDSA signature over canonical action payload (signed by CA key).

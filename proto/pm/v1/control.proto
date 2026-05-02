@@ -807,6 +807,9 @@ message ActionSet {
 message ActionSetMember {
   // @gotags: validate:"required,ulid"
   string action_id = 1;
+  // Position of this action within the set's execution order. When the
+  // set's schedule fires, members are executed in ascending sort_order.
+  // Stable tiebreak by action_id for ties.
   // @gotags: validate:"omitempty,gte=0"
   int32 sort_order = 2;
   string action_name = 3;
@@ -945,6 +948,10 @@ message Definition {
 message DefinitionMember {
   // @gotags: validate:"required,ulid"
   string action_set_id = 1;
+  // Position of this set within the definition's execution order. When the
+  // definition's schedule fires, sets are walked in ascending sort_order
+  // and each set's actions execute in their own ascending sort_order.
+  // Stable tiebreak by action_set_id for ties.
   // @gotags: validate:"omitempty,gte=0"
   int32 sort_order = 2;
   string action_set_name = 3;
