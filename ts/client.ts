@@ -54,6 +54,7 @@ import {
 	ListActionSetsRequestSchema,
 	RenameActionSetRequestSchema,
 	UpdateActionSetDescriptionRequestSchema,
+	UpdateActionSetScheduleRequestSchema,
 	DeleteActionSetRequestSchema,
 	AddActionToSetRequestSchema,
 	RemoveActionFromSetRequestSchema,
@@ -64,6 +65,7 @@ import {
 	ListDefinitionsRequestSchema,
 	RenameDefinitionRequestSchema,
 	UpdateDefinitionDescriptionRequestSchema,
+	UpdateDefinitionScheduleRequestSchema,
 	DeleteDefinitionRequestSchema,
 	AddActionSetToDefinitionRequestSchema,
 	RemoveActionSetFromDefinitionRequestSchema,
@@ -205,6 +207,8 @@ import {
 	type ActionExecution,
 	type AuditEvent,
 	type CreateActionRequest,
+	type CreateActionSetRequest,
+	type CreateDefinitionRequest,
 	type UpdateActionParamsRequest,
 	type Role,
 	type PermissionInfo,
@@ -225,7 +229,7 @@ import {
 	type StartTerminalResponse,
 	type TerminalSessionInfo
 } from '../gen/ts/pm/v1/control_pb';
-import type { ActionType, Action } from '../gen/ts/pm/v1/actions_pb';
+import type { ActionType, Action, ActionSchedule } from '../gen/ts/pm/v1/actions_pb';
 import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
@@ -714,10 +718,10 @@ export class ApiClient {
 	// Action Sets (collection of actions)
 	// ============================================================================
 
-	async createActionSet(name: string, description: string = '') {
+	async createActionSet(data: Omit<CreateActionSetRequest, '$typeName'>) {
 		const client = this.getClient();
 		const response = await client.createActionSet(
-			create(CreateActionSetRequestSchema, { name, description })
+			create(CreateActionSetRequestSchema, data)
 		);
 		return response.set;
 	}
@@ -746,6 +750,14 @@ export class ApiClient {
 		const client = this.getClient();
 		const response = await client.updateActionSetDescription(
 			create(UpdateActionSetDescriptionRequestSchema, { id, description })
+		);
+		return response.set;
+	}
+
+	async updateActionSetSchedule(id: string, schedule: ActionSchedule) {
+		const client = this.getClient();
+		const response = await client.updateActionSetSchedule(
+			create(UpdateActionSetScheduleRequestSchema, { id, schedule })
 		);
 		return response.set;
 	}
@@ -783,10 +795,10 @@ export class ApiClient {
 	// Definitions (collection of action sets)
 	// ============================================================================
 
-	async createDefinition(name: string, description: string = '') {
+	async createDefinition(data: Omit<CreateDefinitionRequest, '$typeName'>) {
 		const client = this.getClient();
 		const response = await client.createDefinition(
-			create(CreateDefinitionRequestSchema, { name, description })
+			create(CreateDefinitionRequestSchema, data)
 		);
 		return response.definition;
 	}
@@ -815,6 +827,14 @@ export class ApiClient {
 		const client = this.getClient();
 		const response = await client.updateDefinitionDescription(
 			create(UpdateDefinitionDescriptionRequestSchema, { id, description })
+		);
+		return response.definition;
+	}
+
+	async updateDefinitionSchedule(id: string, schedule: ActionSchedule) {
+		const client = this.getClient();
+		const response = await client.updateDefinitionSchedule(
+			create(UpdateDefinitionScheduleRequestSchema, { id, schedule })
 		);
 		return response.definition;
 	}
