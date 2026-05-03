@@ -1388,6 +1388,12 @@ message ActionExecution {
   bool compliant = 16;  // Detection script result: true if compliant
   CommandOutput detection_output = 17;  // Detection script output
   string action_name = 18;  // Resolved from actions_projection (empty for inline actions)
+  // Set when status is SCHEDULED (or was, before dispatch fired). The
+  // UTC timestamp at which the deferred dispatch is configured to
+  // fire. Populated by ControlService.ScheduleOneShotDispatch / the
+  // deferred path of DispatchAction. See
+  // manchtools/power-manage-server#57.
+  google.protobuf.Timestamp scheduled_for = 19;
 }
 
 message DispatchActionRequest {
