@@ -1072,12 +1072,18 @@ export class ApiClient {
 		return response.execution;
 	}
 
-	async dispatchInlineAction(deviceId: string, action: Action) {
+	async dispatchInlineAction(
+		deviceId: string,
+		action: Action,
+		options?: { runAt?: Date; respectMaintenanceWindow?: boolean }
+	) {
 		const client = this.getClient();
 		const response = await client.dispatchAction(
 			create(DispatchActionRequestSchema, {
 				deviceId,
-				actionSource: { case: 'inlineAction', value: action }
+				actionSource: { case: 'inlineAction', value: action },
+				runAt: options?.runAt ? timestampFromDate(options.runAt) : undefined,
+				respectMaintenanceWindow: options?.respectMaintenanceWindow ?? false
 			})
 		);
 		return response.execution;
