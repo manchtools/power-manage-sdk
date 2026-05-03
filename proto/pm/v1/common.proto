@@ -67,6 +67,33 @@ enum ComplianceStatus {
   COMPLIANCE_STATUS_IN_GRACE_PERIOD = 3;
 }
 
+// MaintenanceWindow gates action dispatch by device-local wall-clock
+// time. A window is a positive allowlist: when the schedule is empty
+// the window is "always allowed" — the feature is opt-in and existing
+// groups carry an empty window with zero behavioural change.
+//
+// Multiple entries combine as OR. The agent evaluates against
+// time.Now().Local() at dispatch time so "02:00 local" means 02:00
+// wherever the device runs; the server never tries to interpret the
+// device's timezone. See manchtools/power-manage-server#58.
+message MaintenanceWindow {
+  // @gotags: validate:"omitempty,dive"
+  repeated MaintenanceWindowEntry schedule = 1;
+}
+
+// One entry in a MaintenanceWindow: a set of weekdays and a single
+// allowed clock range. `allow` uses 24-hour HH:MM-HH:MM in local time
+// (e.g. "22:00-06:00"). Crossing midnight is supported: when the
+// range's start is greater than its end the window continues into the
+// next day. `days` lists the weekdays the entry applies to using the
+// lowercase three-letter abbreviations mon|tue|wed|thu|fri|sat|sun.
+message MaintenanceWindowEntry {
+  // @gotags: validate:"required,min=1,max=7,dive,oneof=mon tue wed thu fri sat sun"
+  repeated string days = 1;
+  // @gotags: validate:"required,min=11,max=11"
+  string allow = 2;
+}
+
 // Output from command execution
 message CommandOutput {
   // @gotags: validate:"omitempty"

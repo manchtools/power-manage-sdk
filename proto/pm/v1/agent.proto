@@ -433,6 +433,15 @@ message SyncActionsResponse {
   // order when the group's schedule fires.
   // The agent should replace its local action-group store with this list.
   repeated ActionGroup grouped_actions = 4;
+
+  // Resolved maintenance window. Server-computed union across every
+  // group the device belongs to (its own device groups plus any user
+  // groups reaching it through an assignment). Empty schedule = no
+  // gating; the agent dispatches non-instant actions any time. Empty
+  // is also the response when no groups carry a window. The agent
+  // evaluates this against time.Now().Local() at dispatch time. See
+  // manchtools/power-manage-server#58.
+  MaintenanceWindow maintenance_window = 5;
 }
 
 // ============================================================================

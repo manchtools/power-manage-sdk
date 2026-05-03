@@ -397,6 +397,120 @@ func (x *ErrorDetail) GetRequestId() string {
 	return ""
 }
 
+// MaintenanceWindow gates action dispatch by device-local wall-clock
+// time. A window is a positive allowlist: when the schedule is empty
+// the window is "always allowed" — the feature is opt-in and existing
+// groups carry an empty window with zero behavioural change.
+//
+// Multiple entries combine as OR. The agent evaluates against
+// time.Now().Local() at dispatch time so "02:00 local" means 02:00
+// wherever the device runs; the server never tries to interpret the
+// device's timezone. See manchtools/power-manage-server#58.
+type MaintenanceWindow struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"omitempty,dive"
+	Schedule      []*MaintenanceWindowEntry `protobuf:"bytes,1,rep,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty,dive"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MaintenanceWindow) Reset() {
+	*x = MaintenanceWindow{}
+	mi := &file_pm_v1_common_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MaintenanceWindow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MaintenanceWindow) ProtoMessage() {}
+
+func (x *MaintenanceWindow) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_common_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MaintenanceWindow.ProtoReflect.Descriptor instead.
+func (*MaintenanceWindow) Descriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *MaintenanceWindow) GetSchedule() []*MaintenanceWindowEntry {
+	if x != nil {
+		return x.Schedule
+	}
+	return nil
+}
+
+// One entry in a MaintenanceWindow: a set of weekdays and a single
+// allowed clock range. `allow` uses 24-hour HH:MM-HH:MM in local time
+// (e.g. "22:00-06:00"). Crossing midnight is supported: when the
+// range's start is greater than its end the window continues into the
+// next day. `days` lists the weekdays the entry applies to using the
+// lowercase three-letter abbreviations mon|tue|wed|thu|fri|sat|sun.
+type MaintenanceWindowEntry struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,min=1,max=7,dive,oneof=mon tue wed thu fri sat sun"
+	Days []string `protobuf:"bytes,1,rep,name=days,proto3" json:"days,omitempty" validate:"required,min=1,max=7,dive,oneof=mon tue wed thu fri sat sun"`
+	// @gotags: validate:"required,min=11,max=11"
+	Allow         string `protobuf:"bytes,2,opt,name=allow,proto3" json:"allow,omitempty" validate:"required,min=11,max=11"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MaintenanceWindowEntry) Reset() {
+	*x = MaintenanceWindowEntry{}
+	mi := &file_pm_v1_common_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MaintenanceWindowEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MaintenanceWindowEntry) ProtoMessage() {}
+
+func (x *MaintenanceWindowEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_common_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MaintenanceWindowEntry.ProtoReflect.Descriptor instead.
+func (*MaintenanceWindowEntry) Descriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *MaintenanceWindowEntry) GetDays() []string {
+	if x != nil {
+		return x.Days
+	}
+	return nil
+}
+
+func (x *MaintenanceWindowEntry) GetAllow() string {
+	if x != nil {
+		return x.Allow
+	}
+	return ""
+}
+
 // Output from command execution
 type CommandOutput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -412,7 +526,7 @@ type CommandOutput struct {
 
 func (x *CommandOutput) Reset() {
 	*x = CommandOutput{}
-	mi := &file_pm_v1_common_proto_msgTypes[3]
+	mi := &file_pm_v1_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -424,7 +538,7 @@ func (x *CommandOutput) String() string {
 func (*CommandOutput) ProtoMessage() {}
 
 func (x *CommandOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_common_proto_msgTypes[3]
+	mi := &file_pm_v1_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -437,7 +551,7 @@ func (x *CommandOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandOutput.ProtoReflect.Descriptor instead.
 func (*CommandOutput) Descriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CommandOutput) GetExitCode() int32 {
@@ -473,7 +587,12 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\vErrorDetail\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tR\trequestId\"\\\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"N\n" +
+	"\x11MaintenanceWindow\x129\n" +
+	"\bschedule\x18\x01 \x03(\v2\x1d.pm.v1.MaintenanceWindowEntryR\bschedule\"B\n" +
+	"\x16MaintenanceWindowEntry\x12\x12\n" +
+	"\x04days\x18\x01 \x03(\tR\x04days\x12\x14\n" +
+	"\x05allow\x18\x02 \x01(\tR\x05allow\"\\\n" +
 	"\rCommandOutput\x12\x1b\n" +
 	"\texit_code\x18\x01 \x01(\x05R\bexitCode\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\tR\x06stdout\x12\x16\n" +
@@ -515,23 +634,26 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
-	(ExecutionStatus)(0),  // 0: pm.v1.ExecutionStatus
-	(DesiredState)(0),     // 1: pm.v1.DesiredState
-	(AssignmentMode)(0),   // 2: pm.v1.AssignmentMode
-	(ComplianceStatus)(0), // 3: pm.v1.ComplianceStatus
-	(*ActionId)(nil),      // 4: pm.v1.ActionId
-	(*DeviceId)(nil),      // 5: pm.v1.DeviceId
-	(*ErrorDetail)(nil),   // 6: pm.v1.ErrorDetail
-	(*CommandOutput)(nil), // 7: pm.v1.CommandOutput
+	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
+	(DesiredState)(0),              // 1: pm.v1.DesiredState
+	(AssignmentMode)(0),            // 2: pm.v1.AssignmentMode
+	(ComplianceStatus)(0),          // 3: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 4: pm.v1.ActionId
+	(*DeviceId)(nil),               // 5: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 6: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 7: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 8: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 9: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	8, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_common_proto_init() }
@@ -545,7 +667,7 @@ func file_pm_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
