@@ -5,6 +5,7 @@
 import { createClient, Code, ConnectError } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { create } from '@bufbuild/protobuf';
+import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 
 import {
 	ControlService,
@@ -101,6 +102,7 @@ import {
 	DispatchDefinitionRequestSchema,
 	DispatchToGroupRequestSchema,
 	DispatchInstantActionRequestSchema,
+	CancelExecutionRequestSchema,
 	GetExecutionRequestSchema,
 	ListExecutionsRequestSchema,
 	// Audit Log
@@ -1053,23 +1055,35 @@ export class ApiClient {
 	// Action Dispatch & Execution
 	// ============================================================================
 
-	async dispatchAction(deviceId: string, actionId: string) {
+	async dispatchAction(
+		deviceId: string,
+		actionId: string,
+		options?: { runAt?: Date; respectMaintenanceWindow?: boolean }
+	) {
 		const client = this.getClient();
 		const response = await client.dispatchAction(
 			create(DispatchActionRequestSchema, {
 				deviceId,
-				actionSource: { case: 'actionId', value: actionId }
+				actionSource: { case: 'actionId', value: actionId },
+				runAt: options?.runAt ? timestampFromDate(options.runAt) : undefined,
+				respectMaintenanceWindow: options?.respectMaintenanceWindow ?? false
 			})
 		);
 		return response.execution;
 	}
 
-	async dispatchInlineAction(deviceId: string, action: Action) {
+	async dispatchInlineAction(
+		deviceId: string,
+		action: Action,
+		options?: { runAt?: Date; respectMaintenanceWindow?: boolean }
+	) {
 		const client = this.getClient();
 		const response = await client.dispatchAction(
 			create(DispatchActionRequestSchema, {
 				deviceId,
-				actionSource: { case: 'inlineAction', value: action }
+				actionSource: { case: 'inlineAction', value: action },
+				runAt: options?.runAt ? timestampFromDate(options.runAt) : undefined,
+				respectMaintenanceWindow: options?.respectMaintenanceWindow ?? false
 			})
 		);
 		return response.execution;
@@ -1121,10 +1135,32 @@ export class ApiClient {
 		return response.executions;
 	}
 
-	async dispatchInstantAction(deviceId: string, instantAction: ActionType) {
+	async dispatchInstantAction(
+		deviceId: string,
+		instantAction: ActionType,
+		options?: { runAt?: Date; respectMaintenanceWindow?: boolean }
+	) {
 		const client = this.getClient();
 		const response = await client.dispatchInstantAction(
-			create(DispatchInstantActionRequestSchema, { deviceId, instantAction })
+			create(DispatchInstantActionRequestSchema, {
+				deviceId,
+				instantAction,
+				runAt: options?.runAt ? timestampFromDate(options.runAt) : undefined,
+				respectMaintenanceWindow: options?.respectMaintenanceWindow ?? false
+			})
+		);
+		return response.execution;
+	}
+
+	// CancelExecution prunes a scheduled or pending dispatch before it
+	// fires. Idempotent and best-effort — once an execution leaves the
+	// SCHEDULED / PENDING window the cancel is a no-op and the returned
+	// execution reflects whatever terminal state it reached on its own.
+	// See manchtools/power-manage-server#57.
+	async cancelExecution(executionId: string) {
+		const client = this.getClient();
+		const response = await client.cancelExecution(
+			create(CancelExecutionRequestSchema, { executionId })
 		);
 		return response.execution;
 	}

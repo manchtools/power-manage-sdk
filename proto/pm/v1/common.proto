@@ -25,6 +25,16 @@ enum ExecutionStatus {
   EXECUTION_STATUS_FAILED = 4;
   EXECUTION_STATUS_SKIPPED = 5;
   EXECUTION_STATUS_TIMEOUT = 6;
+  // Queued for delayed dispatch via ControlService.ScheduleOneShotDispatch.
+  // Transitions to PENDING / RUNNING when the deferred Asynq task fires
+  // at run_at, then onward to a terminal status the same way as any
+  // other execution.
+  EXECUTION_STATUS_SCHEDULED = 7;
+  // Operator cancelled the scheduled dispatch via
+  // ControlService.CancelOneShotDispatch before it fired. Cancellation
+  // is a no-op past the moment of dispatch — once status leaves
+  // SCHEDULED, the execution runs to completion as normal.
+  EXECUTION_STATUS_CANCELLED = 8;
 }
 
 // Desired state for stateful actions
