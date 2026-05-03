@@ -39,6 +39,23 @@ func TestValidate(t *testing.T) {
 			true,
 		},
 		{
+			// Mixed-case tokens are rejected by Validate so they cannot
+			// silently round-trip through the projector and then never
+			// match at runtime. Callers must lowercase before calling.
+			"uppercase day rejected",
+			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+				{Days: []string{"MON"}, Allow: "09:00-17:00"},
+			}},
+			true,
+		},
+		{
+			"mixed-case day rejected",
+			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+				{Days: []string{"Mon"}, Allow: "09:00-17:00"},
+			}},
+			true,
+		},
+		{
 			"duplicate day",
 			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
 				{Days: []string{"mon", "mon"}, Allow: "09:00-17:00"},

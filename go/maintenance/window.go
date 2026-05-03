@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	pmv1 "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
@@ -211,11 +210,16 @@ func parseClock(s string) (int, error) {
 	return h*60 + m, nil
 }
 
+// isWeekdayToken accepts only the canonical lowercase tokens the
+// projector and entryListsDay agree on. ToLower'ing here would
+// validate "MON" but then `entryListsDay` would silently never match
+// it at runtime — fail-fast at validation time keeps the two sites
+// honest. Callers that want case-insensitive input must canonicalize
+// before calling Validate.
 func isWeekdayToken(d string) bool {
 	if len(d) != 3 {
 		return false
 	}
-	d = strings.ToLower(d)
 	for _, t := range weekdayTokens {
 		if d == t {
 			return true
