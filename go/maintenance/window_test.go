@@ -117,6 +117,10 @@ func TestIsAllowedSameDay(t *testing.T) {
 	if !maintenance.IsAllowed(w, mondayNoon) {
 		t.Fatalf("want allowed at Mon noon")
 	}
+	mondayStart := time.Date(2026, time.May, 4, 9, 0, 0, 0, time.UTC)
+	if !maintenance.IsAllowed(w, mondayStart) {
+		t.Fatalf("want allowed at Mon 09:00 (start is inclusive)")
+	}
 	mondayEarly := time.Date(2026, time.May, 4, 8, 59, 0, 0, time.UTC)
 	if maintenance.IsAllowed(w, mondayEarly) {
 		t.Fatalf("want denied at Mon 08:59 (one minute before window)")
@@ -135,6 +139,12 @@ func TestIsAllowedCrossesMidnight(t *testing.T) {
 	w := &pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
 		{Days: []string{"mon", "tue", "wed", "thu", "fri"}, Allow: "22:00-06:00"},
 	}}
+	// Monday 22:00 — exactly the window start. Inclusive boundary
+	// proves the agent fires on the very first second of the window
+	// rather than waiting one minute before becoming due.
+	if !maintenance.IsAllowed(w, time.Date(2026, time.May, 4, 22, 0, 0, 0, time.UTC)) {
+		t.Fatalf("want allowed at Mon 22:00 (cross-midnight start is inclusive)")
+	}
 	// Monday 23:00 — covered by the Mon entry's pre-midnight half.
 	if !maintenance.IsAllowed(w, time.Date(2026, time.May, 4, 23, 0, 0, 0, time.UTC)) {
 		t.Fatalf("want allowed at Mon 23:00")
