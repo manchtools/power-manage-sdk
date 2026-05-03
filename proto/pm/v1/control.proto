@@ -1399,6 +1399,23 @@ message DispatchActionRequest {
     string action_id = 2;  // Reference to ManagedAction
     Action inline_action = 3;
   }
+  // When set, defer the dispatch until this UTC timestamp instead of
+  // running it immediately. The execution record is created up front
+  // with status SCHEDULED so the operator can see the pending dispatch
+  // in the execution-history UI before it fires; on run_at the
+  // deferred Asynq task hits the standard dispatch path and the
+  // execution transitions through PENDING / RUNNING / SUCCESS the
+  // same as any immediate dispatch. Cancelable via CancelExecution
+  // until the dispatch fires. Must be in the future at scheduling
+  // time. See manchtools/power-manage-server#57.
+  google.protobuf.Timestamp run_at = 4;
+  // When true, the dispatched action still respects the device's
+  // maintenance window if the device has one configured. The default
+  // (false) bypasses the window so admins can override an active
+  // freeze. Reserved for the maintenance-window feature
+  // (manchtools/power-manage-server#58); the server stores the flag
+  // for replay correctness even before #58 ships.
+  bool respect_maintenance_window = 5;
 }
 
 message DispatchActionResponse {
@@ -1508,9 +1525,33 @@ message DispatchInstantActionRequest {
   string device_id = 1;
   // @gotags: validate:"required,ne=0"
   ActionType instant_action = 2;
+  // Same semantics as DispatchActionRequest.run_at: when set, defer
+  // the instant action's dispatch until this UTC timestamp.
+  google.protobuf.Timestamp run_at = 3;
+  // Same semantics as DispatchActionRequest.respect_maintenance_window.
+  // For instant actions the default (false) is the operator-friendly
+  // choice — REBOOT-now should not be silently held by a freeze.
+  bool respect_maintenance_window = 4;
 }
 
 message DispatchInstantActionResponse {
+  ActionExecution execution = 1;
+}
+
+// CancelExecution prunes a scheduled or pending dispatch before it
+// fires. Idempotent and best-effort: once an execution leaves the
+// SCHEDULED / PENDING window the cancel is a documented no-op and the
+// returned execution reflects whatever terminal state it reached on
+// its own. See manchtools/power-manage-server#57.
+message CancelExecutionRequest {
+  // @gotags: validate:"required,ulid"
+  string execution_id = 1;
+}
+
+message CancelExecutionResponse {
+  // The execution after the cancel attempt. Status will be CANCELLED
+  // when the dispatch was still pending; otherwise the execution
+  // reflects whatever state it had reached on its own.
   ActionExecution execution = 1;
 }
 
@@ -2594,6 +2635,7 @@ service ControlService {
   rpc DispatchDefinition(DispatchDefinitionRequest) returns (DispatchDefinitionResponse);
   rpc DispatchToGroup(DispatchToGroupRequest) returns (DispatchToGroupResponse);
   rpc DispatchInstantAction(DispatchInstantActionRequest) returns (DispatchInstantActionResponse);
+  rpc CancelExecution(CancelExecutionRequest) returns (CancelExecutionResponse);
   rpc GetExecution(GetExecutionRequest) returns (GetExecutionResponse);
   rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse);
 
