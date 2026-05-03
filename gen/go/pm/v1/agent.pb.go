@@ -2319,8 +2319,16 @@ type SyncActionsResponse struct {
 	// order when the group's schedule fires.
 	// The agent should replace its local action-group store with this list.
 	GroupedActions []*ActionGroup `protobuf:"bytes,4,rep,name=grouped_actions,json=groupedActions,proto3" json:"grouped_actions,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Resolved maintenance window. Server-computed union across every
+	// group the device belongs to (its own device groups plus any user
+	// groups reaching it through an assignment). Empty schedule = no
+	// gating; the agent dispatches non-instant actions any time. Empty
+	// is also the response when no groups carry a window. The agent
+	// evaluates this against time.Now().Local() at dispatch time. See
+	// manchtools/power-manage-server#58.
+	MaintenanceWindow *MaintenanceWindow `protobuf:"bytes,5,opt,name=maintenance_window,json=maintenanceWindow,proto3" json:"maintenance_window,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *SyncActionsResponse) Reset() {
@@ -2370,6 +2378,13 @@ func (x *SyncActionsResponse) GetStandaloneActions() []*Action {
 func (x *SyncActionsResponse) GetGroupedActions() []*ActionGroup {
 	if x != nil {
 		return x.GroupedActions
+	}
+	return nil
+}
+
+func (x *SyncActionsResponse) GetMaintenanceWindow() *MaintenanceWindow {
+	if x != nil {
+		return x.MaintenanceWindow
 	}
 	return nil
 }
@@ -3101,11 +3116,12 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\vActionGroup\x12!\n" +
 	"\fsource_label\x18\x01 \x01(\tR\vsourceLabel\x121\n" +
 	"\bschedule\x18\x02 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12'\n" +
-	"\aactions\x18\x03 \x03(\v2\r.pm.v1.ActionR\aactions\"\xd3\x01\n" +
+	"\aactions\x18\x03 \x03(\v2\r.pm.v1.ActionR\aactions\"\x9c\x02\n" +
 	"\x13SyncActionsResponse\x122\n" +
 	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\x12<\n" +
 	"\x12standalone_actions\x18\x03 \x03(\v2\r.pm.v1.ActionR\x11standaloneActions\x12;\n" +
-	"\x0fgrouped_actions\x18\x04 \x03(\v2\x12.pm.v1.ActionGroupR\x0egroupedActionsJ\x04\b\x01\x10\x02R\aactions\"\xed\x01\n" +
+	"\x0fgrouped_actions\x18\x04 \x03(\v2\x12.pm.v1.ActionGroupR\x0egroupedActions\x12G\n" +
+	"\x12maintenance_window\x18\x05 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindowJ\x04\b\x01\x10\x02R\aactions\"\xed\x01\n" +
 	"\bLogQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
@@ -3245,6 +3261,7 @@ var file_pm_v1_agent_proto_goTypes = []any{
 	(*Action)(nil),                    // 45: pm.v1.Action
 	(LpsPasswordComplexity)(0),        // 46: pm.v1.LpsPasswordComplexity
 	(*ActionSchedule)(nil),            // 47: pm.v1.ActionSchedule
+	(*MaintenanceWindow)(nil),         // 48: pm.v1.MaintenanceWindow
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	7,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
@@ -3292,19 +3309,20 @@ var file_pm_v1_agent_proto_depIdxs = []int32{
 	45, // 42: pm.v1.ActionGroup.actions:type_name -> pm.v1.Action
 	45, // 43: pm.v1.SyncActionsResponse.standalone_actions:type_name -> pm.v1.Action
 	30, // 44: pm.v1.SyncActionsResponse.grouped_actions:type_name -> pm.v1.ActionGroup
-	3,  // 45: pm.v1.LogQuery.source:type_name -> pm.v1.LogSource
-	4,  // 46: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
-	5,  // 47: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	29, // 48: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	27, // 49: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	10, // 50: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	31, // 51: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	28, // 52: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	50, // [50:53] is the sub-list for method output_type
-	47, // [47:50] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	48, // 45: pm.v1.SyncActionsResponse.maintenance_window:type_name -> pm.v1.MaintenanceWindow
+	3,  // 46: pm.v1.LogQuery.source:type_name -> pm.v1.LogSource
+	4,  // 47: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
+	5,  // 48: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	29, // 49: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	27, // 50: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	10, // 51: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	31, // 52: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	28, // 53: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	51, // [51:54] is the sub-list for method output_type
+	48, // [48:51] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }

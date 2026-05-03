@@ -85,6 +85,8 @@ import {
 	ValidateDynamicQueryRequestSchema,
 	EvaluateDynamicGroupRequestSchema,
 	SetDeviceGroupSyncIntervalRequestSchema,
+	SetDeviceGroupMaintenanceWindowRequestSchema,
+	SetUserGroupMaintenanceWindowRequestSchema,
 	// Assignments
 	CreateAssignmentRequestSchema,
 	DeleteAssignmentRequestSchema,
@@ -232,7 +234,7 @@ import {
 	type TerminalSessionInfo
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType, Action, ActionSchedule } from '../gen/ts/pm/v1/actions_pb';
-import { type ExecutionStatus, ErrorDetailSchema } from '../gen/ts/pm/v1/common_pb';
+import { type ExecutionStatus, ErrorDetailSchema, type MaintenanceWindow } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
 export interface ClientOptions {
@@ -968,6 +970,17 @@ export class ApiClient {
 		return response.group;
 	}
 
+	async setDeviceGroupMaintenanceWindow(
+		id: string,
+		maintenanceWindow: MaintenanceWindow | undefined
+	) {
+		const client = this.getClient();
+		const response = await client.setDeviceGroupMaintenanceWindow(
+			create(SetDeviceGroupMaintenanceWindowRequestSchema, { id, maintenanceWindow })
+		);
+		return response.group;
+	}
+
 	// ============================================================================
 	// Assignments
 	// ============================================================================
@@ -1535,6 +1548,17 @@ export class ApiClient {
 		return client.evaluateDynamicUserGroup(
 			create(EvaluateDynamicUserGroupRequestSchema, { id })
 		);
+	}
+
+	async setUserGroupMaintenanceWindow(
+		id: string,
+		maintenanceWindow: MaintenanceWindow | undefined
+	) {
+		const client = this.getClient();
+		const response = await client.setUserGroupMaintenanceWindow(
+			create(SetUserGroupMaintenanceWindowRequestSchema, { id, maintenanceWindow })
+		);
+		return response.group;
 	}
 
 	// ============================================================================

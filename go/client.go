@@ -1129,6 +1129,13 @@ type SyncActionsResult struct {
 	// SyncIntervalMinutes is the effective sync interval for this device.
 	// 0 means use the default (30 minutes).
 	SyncIntervalMinutes int32
+	// MaintenanceWindow is the server-resolved union of every reaching
+	// group's window (device groups + user groups assigned to the
+	// device). nil means "no constraint" — the agent dispatches at any
+	// time. The agent evaluates this against time.Now().Local() before
+	// firing scheduler-driven dispatches; pushed actions (REBOOT,
+	// SYNC, ad-hoc) bypass the gate. See manchtools/power-manage-server#58.
+	MaintenanceWindow *pm.MaintenanceWindow
 }
 
 // SyncActions fetches all actions currently assigned to this device from the server.
@@ -1157,5 +1164,6 @@ func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
 		StandaloneActions:   resp.Msg.StandaloneActions,
 		GroupedActions:      resp.Msg.GroupedActions,
 		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
+		MaintenanceWindow:   resp.Msg.MaintenanceWindow,
 	}, nil
 }

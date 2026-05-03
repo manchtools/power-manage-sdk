@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/common.proto.
  */
 export const file_pm_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJCCg1Db21tYW5kT3V0cHV0EhEKCWV4aXRfY29kZRgBIAEoBRIOCgZzdGRvdXQYAiABKAkSDgoGc3RkZXJyGAMgASgJKqYCCg9FeGVjdXRpb25TdGF0dXMSIAocRVhFQ1VUSU9OX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGEVYRUNVVElPTl9TVEFUVVNfUEVORElORxABEhwKGEVYRUNVVElPTl9TVEFUVVNfUlVOTklORxACEhwKGEVYRUNVVElPTl9TVEFUVVNfU1VDQ0VTUxADEhsKF0VYRUNVVElPTl9TVEFUVVNfRkFJTEVEEAQSHAoYRVhFQ1VUSU9OX1NUQVRVU19TS0lQUEVEEAUSHAoYRVhFQ1VUSU9OX1NUQVRVU19USU1FT1VUEAYSHgoaRVhFQ1VUSU9OX1NUQVRVU19TQ0hFRFVMRUQQBxIeChpFWEVDVVRJT05fU1RBVFVTX0NBTkNFTExFRBAIKkMKDERlc2lyZWRTdGF0ZRIZChVERVNJUkVEX1NUQVRFX1BSRVNFTlQQABIYChRERVNJUkVEX1NUQVRFX0FCU0VOVBABKooBCg5Bc3NpZ25tZW50TW9kZRIcChhBU1NJR05NRU5UX01PREVfUkVRVUlSRUQQABIdChlBU1NJR05NRU5UX01PREVfQVZBSUxBQkxFEAESHAoYQVNTSUdOTUVOVF9NT0RFX0VYQ0xVREVEEAISHQoZQVNTSUdOTUVOVF9NT0RFX1VOSU5TVEFMTBADKp4BChBDb21wbGlhbmNlU3RhdHVzEh0KGUNPTVBMSUFOQ0VfU1RBVFVTX1VOS05PV04QABIfChtDT01QTElBTkNFX1NUQVRVU19DT01QTElBTlQQARIjCh9DT01QTElBTkNFX1NUQVRVU19OT05fQ09NUExJQU5UEAISJQohQ09NUExJQU5DRV9TVEFUVVNfSU5fR1JBQ0VfUEVSSU9EEANCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw");
+  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJEChFNYWludGVuYW5jZVdpbmRvdxIvCghzY2hlZHVsZRgBIAMoCzIdLnBtLnYxLk1haW50ZW5hbmNlV2luZG93RW50cnkiNQoWTWFpbnRlbmFuY2VXaW5kb3dFbnRyeRIMCgRkYXlzGAEgAygJEg0KBWFsbG93GAIgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkqpgIKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBhIeChpFWEVDVVRJT05fU1RBVFVTX1NDSEVEVUxFRBAHEh4KGkVYRUNVVElPTl9TVEFUVVNfQ0FOQ0VMTEVEEAgqQwoMRGVzaXJlZFN0YXRlEhkKFURFU0lSRURfU1RBVEVfUFJFU0VOVBAAEhgKFERFU0lSRURfU1RBVEVfQUJTRU5UEAEqigEKDkFzc2lnbm1lbnRNb2RlEhwKGEFTU0lHTk1FTlRfTU9ERV9SRVFVSVJFRBAAEh0KGUFTU0lHTk1FTlRfTU9ERV9BVkFJTEFCTEUQARIcChhBU1NJR05NRU5UX01PREVfRVhDTFVERUQQAhIdChlBU1NJR05NRU5UX01PREVfVU5JTlNUQUxMEAMqngEKEENvbXBsaWFuY2VTdGF0dXMSHQoZQ09NUExJQU5DRV9TVEFUVVNfVU5LTk9XThAAEh8KG0NPTVBMSUFOQ0VfU1RBVFVTX0NPTVBMSUFOVBABEiMKH0NPTVBMSUFOQ0VfU1RBVFVTX05PTl9DT01QTElBTlQQAhIlCiFDT01QTElBTkNFX1NUQVRVU19JTl9HUkFDRV9QRVJJT0QQA0I6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z");
 
 /**
  * Unique identifier for an action instance
@@ -83,6 +83,68 @@ export const ErrorDetailSchema: GenMessage<ErrorDetail> = /*@__PURE__*/
   messageDesc(file_pm_v1_common, 2);
 
 /**
+ * MaintenanceWindow gates action dispatch by device-local wall-clock
+ * time. A window is a positive allowlist: when the schedule is empty
+ * the window is "always allowed" — the feature is opt-in and existing
+ * groups carry an empty window with zero behavioural change.
+ *
+ * Multiple entries combine as OR. The agent evaluates against
+ * time.Now().Local() at dispatch time so "02:00 local" means 02:00
+ * wherever the device runs; the server never tries to interpret the
+ * device's timezone. See manchtools/power-manage-server#58.
+ *
+ * @generated from message pm.v1.MaintenanceWindow
+ */
+export type MaintenanceWindow = Message<"pm.v1.MaintenanceWindow"> & {
+  /**
+   * @gotags: validate:"omitempty,dive"
+   *
+   * @generated from field: repeated pm.v1.MaintenanceWindowEntry schedule = 1;
+   */
+  schedule: MaintenanceWindowEntry[];
+};
+
+/**
+ * Describes the message pm.v1.MaintenanceWindow.
+ * Use `create(MaintenanceWindowSchema)` to create a new message.
+ */
+export const MaintenanceWindowSchema: GenMessage<MaintenanceWindow> = /*@__PURE__*/
+  messageDesc(file_pm_v1_common, 3);
+
+/**
+ * One entry in a MaintenanceWindow: a set of weekdays and a single
+ * allowed clock range. `allow` uses 24-hour HH:MM-HH:MM in local time
+ * (e.g. "22:00-06:00"). Crossing midnight is supported: when the
+ * range's start is greater than its end the window continues into the
+ * next day. `days` lists the weekdays the entry applies to using the
+ * lowercase three-letter abbreviations mon|tue|wed|thu|fri|sat|sun.
+ *
+ * @generated from message pm.v1.MaintenanceWindowEntry
+ */
+export type MaintenanceWindowEntry = Message<"pm.v1.MaintenanceWindowEntry"> & {
+  /**
+   * @gotags: validate:"required,min=1,max=7,dive,oneof=mon tue wed thu fri sat sun"
+   *
+   * @generated from field: repeated string days = 1;
+   */
+  days: string[];
+
+  /**
+   * @gotags: validate:"required,min=11,max=11"
+   *
+   * @generated from field: string allow = 2;
+   */
+  allow: string;
+};
+
+/**
+ * Describes the message pm.v1.MaintenanceWindowEntry.
+ * Use `create(MaintenanceWindowEntrySchema)` to create a new message.
+ */
+export const MaintenanceWindowEntrySchema: GenMessage<MaintenanceWindowEntry> = /*@__PURE__*/
+  messageDesc(file_pm_v1_common, 4);
+
+/**
  * Output from command execution
  *
  * @generated from message pm.v1.CommandOutput
@@ -115,7 +177,7 @@ export type CommandOutput = Message<"pm.v1.CommandOutput"> & {
  * Use `create(CommandOutputSchema)` to create a new message.
  */
 export const CommandOutputSchema: GenMessage<CommandOutput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_common, 3);
+  messageDesc(file_pm_v1_common, 5);
 
 /**
  * Execution status for any action
