@@ -307,6 +307,9 @@ const (
 	// ControlServiceSetDeviceGroupSyncIntervalProcedure is the fully-qualified name of the
 	// ControlService's SetDeviceGroupSyncInterval RPC.
 	ControlServiceSetDeviceGroupSyncIntervalProcedure = "/pm.v1.ControlService/SetDeviceGroupSyncInterval"
+	// ControlServiceSetDeviceGroupMaintenanceWindowProcedure is the fully-qualified name of the
+	// ControlService's SetDeviceGroupMaintenanceWindow RPC.
+	ControlServiceSetDeviceGroupMaintenanceWindowProcedure = "/pm.v1.ControlService/SetDeviceGroupMaintenanceWindow"
 	// ControlServiceCreateAssignmentProcedure is the fully-qualified name of the ControlService's
 	// CreateAssignment RPC.
 	ControlServiceCreateAssignmentProcedure = "/pm.v1.ControlService/CreateAssignment"
@@ -453,6 +456,9 @@ const (
 	// ControlServiceEvaluateDynamicUserGroupProcedure is the fully-qualified name of the
 	// ControlService's EvaluateDynamicUserGroup RPC.
 	ControlServiceEvaluateDynamicUserGroupProcedure = "/pm.v1.ControlService/EvaluateDynamicUserGroup"
+	// ControlServiceSetUserGroupMaintenanceWindowProcedure is the fully-qualified name of the
+	// ControlService's SetUserGroupMaintenanceWindow RPC.
+	ControlServiceSetUserGroupMaintenanceWindowProcedure = "/pm.v1.ControlService/SetUserGroupMaintenanceWindow"
 	// ControlServiceGetDeviceComplianceProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceCompliance RPC.
 	ControlServiceGetDeviceComplianceProcedure = "/pm.v1.ControlService/GetDeviceCompliance"
@@ -622,6 +628,7 @@ type ControlServiceClient interface {
 	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -681,6 +688,7 @@ type ControlServiceClient interface {
 	UpdateUserGroupQuery(context.Context, *connect.Request[v1.UpdateUserGroupQueryRequest]) (*connect.Response[v1.UpdateUserGroupQueryResponse], error)
 	ValidateUserGroupQuery(context.Context, *connect.Request[v1.ValidateUserGroupQueryRequest]) (*connect.Response[v1.ValidateUserGroupQueryResponse], error)
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
+	SetUserGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
 	// Device Compliance
 	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
 	// Compliance Policies
@@ -1278,6 +1286,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupSyncInterval")),
 			connect.WithClientOptions(opts...),
 		),
+		setDeviceGroupMaintenanceWindow: connect.NewClient[v1.SetDeviceGroupMaintenanceWindowRequest, v1.UpdateDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceSetDeviceGroupMaintenanceWindowProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupMaintenanceWindow")),
+			connect.WithClientOptions(opts...),
+		),
 		createAssignment: connect.NewClient[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse](
 			httpClient,
 			baseURL+ControlServiceCreateAssignmentProcedure,
@@ -1572,6 +1586,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicUserGroup")),
 			connect.WithClientOptions(opts...),
 		),
+		setUserGroupMaintenanceWindow: connect.NewClient[v1.SetUserGroupMaintenanceWindowRequest, v1.UpdateUserGroupResponse](
+			httpClient,
+			baseURL+ControlServiceSetUserGroupMaintenanceWindowProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetUserGroupMaintenanceWindow")),
+			connect.WithClientOptions(opts...),
+		),
 		getDeviceCompliance: connect.NewClient[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse](
 			httpClient,
 			baseURL+ControlServiceGetDeviceComplianceProcedure,
@@ -1790,6 +1810,7 @@ type controlServiceClient struct {
 	validateDynamicQuery              *connect.Client[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse]
 	evaluateDynamicGroup              *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
 	setDeviceGroupSyncInterval        *connect.Client[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse]
+	setDeviceGroupMaintenanceWindow   *connect.Client[v1.SetDeviceGroupMaintenanceWindowRequest, v1.UpdateDeviceGroupResponse]
 	createAssignment                  *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
 	deleteAssignment                  *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
 	listAssignments                   *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
@@ -1839,6 +1860,7 @@ type controlServiceClient struct {
 	updateUserGroupQuery              *connect.Client[v1.UpdateUserGroupQueryRequest, v1.UpdateUserGroupQueryResponse]
 	validateUserGroupQuery            *connect.Client[v1.ValidateUserGroupQueryRequest, v1.ValidateUserGroupQueryResponse]
 	evaluateDynamicUserGroup          *connect.Client[v1.EvaluateDynamicUserGroupRequest, v1.EvaluateDynamicUserGroupResponse]
+	setUserGroupMaintenanceWindow     *connect.Client[v1.SetUserGroupMaintenanceWindowRequest, v1.UpdateUserGroupResponse]
 	getDeviceCompliance               *connect.Client[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse]
 	createCompliancePolicy            *connect.Client[v1.CreateCompliancePolicyRequest, v1.CreateCompliancePolicyResponse]
 	getCompliancePolicy               *connect.Client[v1.GetCompliancePolicyRequest, v1.GetCompliancePolicyResponse]
@@ -2326,6 +2348,11 @@ func (c *controlServiceClient) SetDeviceGroupSyncInterval(ctx context.Context, r
 	return c.setDeviceGroupSyncInterval.CallUnary(ctx, req)
 }
 
+// SetDeviceGroupMaintenanceWindow calls pm.v1.ControlService.SetDeviceGroupMaintenanceWindow.
+func (c *controlServiceClient) SetDeviceGroupMaintenanceWindow(ctx context.Context, req *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return c.setDeviceGroupMaintenanceWindow.CallUnary(ctx, req)
+}
+
 // CreateAssignment calls pm.v1.ControlService.CreateAssignment.
 func (c *controlServiceClient) CreateAssignment(ctx context.Context, req *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
 	return c.createAssignment.CallUnary(ctx, req)
@@ -2571,6 +2598,11 @@ func (c *controlServiceClient) EvaluateDynamicUserGroup(ctx context.Context, req
 	return c.evaluateDynamicUserGroup.CallUnary(ctx, req)
 }
 
+// SetUserGroupMaintenanceWindow calls pm.v1.ControlService.SetUserGroupMaintenanceWindow.
+func (c *controlServiceClient) SetUserGroupMaintenanceWindow(ctx context.Context, req *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
+	return c.setUserGroupMaintenanceWindow.CallUnary(ctx, req)
+}
+
 // GetDeviceCompliance calls pm.v1.ControlService.GetDeviceCompliance.
 func (c *controlServiceClient) GetDeviceCompliance(ctx context.Context, req *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {
 	return c.getDeviceCompliance.CallUnary(ctx, req)
@@ -2779,6 +2811,7 @@ type ControlServiceHandler interface {
 	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -2838,6 +2871,7 @@ type ControlServiceHandler interface {
 	UpdateUserGroupQuery(context.Context, *connect.Request[v1.UpdateUserGroupQueryRequest]) (*connect.Response[v1.UpdateUserGroupQueryResponse], error)
 	ValidateUserGroupQuery(context.Context, *connect.Request[v1.ValidateUserGroupQueryRequest]) (*connect.Response[v1.ValidateUserGroupQueryResponse], error)
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
+	SetUserGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
 	// Device Compliance
 	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
 	// Compliance Policies
@@ -3431,6 +3465,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupSyncInterval")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceSetDeviceGroupMaintenanceWindowHandler := connect.NewUnaryHandler(
+		ControlServiceSetDeviceGroupMaintenanceWindowProcedure,
+		svc.SetDeviceGroupMaintenanceWindow,
+		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupMaintenanceWindow")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceCreateAssignmentHandler := connect.NewUnaryHandler(
 		ControlServiceCreateAssignmentProcedure,
 		svc.CreateAssignment,
@@ -3723,6 +3763,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceEvaluateDynamicUserGroupProcedure,
 		svc.EvaluateDynamicUserGroup,
 		connect.WithSchema(controlServiceMethods.ByName("EvaluateDynamicUserGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSetUserGroupMaintenanceWindowHandler := connect.NewUnaryHandler(
+		ControlServiceSetUserGroupMaintenanceWindowProcedure,
+		svc.SetUserGroupMaintenanceWindow,
+		connect.WithSchema(controlServiceMethods.ByName("SetUserGroupMaintenanceWindow")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceGetDeviceComplianceHandler := connect.NewUnaryHandler(
@@ -4033,6 +4079,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceEvaluateDynamicGroupHandler.ServeHTTP(w, r)
 		case ControlServiceSetDeviceGroupSyncIntervalProcedure:
 			controlServiceSetDeviceGroupSyncIntervalHandler.ServeHTTP(w, r)
+		case ControlServiceSetDeviceGroupMaintenanceWindowProcedure:
+			controlServiceSetDeviceGroupMaintenanceWindowHandler.ServeHTTP(w, r)
 		case ControlServiceCreateAssignmentProcedure:
 			controlServiceCreateAssignmentHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteAssignmentProcedure:
@@ -4131,6 +4179,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceValidateUserGroupQueryHandler.ServeHTTP(w, r)
 		case ControlServiceEvaluateDynamicUserGroupProcedure:
 			controlServiceEvaluateDynamicUserGroupHandler.ServeHTTP(w, r)
+		case ControlServiceSetUserGroupMaintenanceWindowProcedure:
+			controlServiceSetUserGroupMaintenanceWindowHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceComplianceProcedure:
 			controlServiceGetDeviceComplianceHandler.ServeHTTP(w, r)
 		case ControlServiceCreateCompliancePolicyProcedure:
@@ -4552,6 +4602,10 @@ func (UnimplementedControlServiceHandler) SetDeviceGroupSyncInterval(context.Con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupSyncInterval is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupMaintenanceWindow is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateAssignment is not implemented"))
 }
@@ -4746,6 +4800,10 @@ func (UnimplementedControlServiceHandler) ValidateUserGroupQuery(context.Context
 
 func (UnimplementedControlServiceHandler) EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.EvaluateDynamicUserGroup is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetUserGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserGroupMaintenanceWindow is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {

@@ -1081,6 +1081,13 @@ message DeviceGroup {
   // Sync interval in minutes for devices in this group (0 = use device/default)
   // Takes precedence over device-level setting
   int32 sync_interval_minutes = 9;
+  // Per-group maintenance window. Empty means "no constraint": members
+  // may receive dispatches at any time. When non-empty the agent gates
+  // non-instant action dispatch by the device-local-time union across
+  // every group the device belongs to (device groups + user groups
+  // reaching it via assignments). See
+  // manchtools/power-manage-server#58.
+  MaintenanceWindow maintenance_window = 10;
 }
 
 message CreateDeviceGroupRequest {
@@ -1231,6 +1238,18 @@ message SetDeviceGroupSyncIntervalRequest {
   string id = 1;
   // @gotags: validate:"gte=0,lte=1440"
   int32 sync_interval_minutes = 2;  // 0 = use device/default, max 24 hours
+}
+
+// Replace the device group's maintenance window. Pass an empty
+// MaintenanceWindow (or omit the schedule) to clear it — that drops
+// the group's contribution to the device-side union, leaving the
+// device unconstrained by this group. The server stores the window
+// as JSONB on the projection.
+message SetDeviceGroupMaintenanceWindowRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty"
+  MaintenanceWindow maintenance_window = 2;
 }
 
 // ============================================================================
@@ -1886,6 +1905,14 @@ message UserGroup {
   bool is_dynamic = 7;
   string dynamic_query = 8;
   bool is_scim_managed = 9;
+  // Per-group maintenance window. Same semantics as
+  // DeviceGroup.maintenance_window: when a user group reaches a device
+  // through an assignment, that device gates dispatches by the union of
+  // every reaching group's window (the device's own groups plus any
+  // user groups reaching it). Empty means "no constraint" for this
+  // group's contribution to the union. See
+  // manchtools/power-manage-server#58.
+  MaintenanceWindow maintenance_window = 10;
 }
 
 message UserGroupMember {
@@ -2032,6 +2059,17 @@ message EvaluateDynamicUserGroupResponse {
   UserGroup group = 1;
   int32 users_added = 2;
   int32 users_removed = 3;
+}
+
+// Replace the user group's maintenance window. Same semantics as
+// SetDeviceGroupMaintenanceWindowRequest. The window contributes to a
+// device-side union for every device the user group reaches via an
+// assignment. Empty schedule = clear.
+message SetUserGroupMaintenanceWindowRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty"
+  MaintenanceWindow maintenance_window = 2;
 }
 
 // ============================================================================
@@ -2621,6 +2659,7 @@ service ControlService {
   rpc ValidateDynamicQuery(ValidateDynamicQueryRequest) returns (ValidateDynamicQueryResponse);
   rpc EvaluateDynamicGroup(EvaluateDynamicGroupRequest) returns (EvaluateDynamicGroupResponse);
   rpc SetDeviceGroupSyncInterval(SetDeviceGroupSyncIntervalRequest) returns (UpdateDeviceGroupResponse);
+  rpc SetDeviceGroupMaintenanceWindow(SetDeviceGroupMaintenanceWindowRequest) returns (UpdateDeviceGroupResponse);
 
   // Assignments
   rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse);
@@ -2690,6 +2729,7 @@ service ControlService {
   rpc UpdateUserGroupQuery(UpdateUserGroupQueryRequest) returns (UpdateUserGroupQueryResponse);
   rpc ValidateUserGroupQuery(ValidateUserGroupQueryRequest) returns (ValidateUserGroupQueryResponse);
   rpc EvaluateDynamicUserGroup(EvaluateDynamicUserGroupRequest) returns (EvaluateDynamicUserGroupResponse);
+  rpc SetUserGroupMaintenanceWindow(SetUserGroupMaintenanceWindowRequest) returns (UpdateUserGroupResponse);
 
   // Device Compliance
   rpc GetDeviceCompliance(GetDeviceComplianceRequest) returns (GetDeviceComplianceResponse);
