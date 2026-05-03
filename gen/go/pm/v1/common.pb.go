@@ -32,6 +32,16 @@ const (
 	ExecutionStatus_EXECUTION_STATUS_FAILED      ExecutionStatus = 4
 	ExecutionStatus_EXECUTION_STATUS_SKIPPED     ExecutionStatus = 5
 	ExecutionStatus_EXECUTION_STATUS_TIMEOUT     ExecutionStatus = 6
+	// Queued for delayed dispatch via ControlService.ScheduleOneShotDispatch.
+	// Transitions to PENDING / RUNNING when the deferred Asynq task fires
+	// at run_at, then onward to a terminal status the same way as any
+	// other execution.
+	ExecutionStatus_EXECUTION_STATUS_SCHEDULED ExecutionStatus = 7
+	// Operator cancelled the scheduled dispatch via
+	// ControlService.CancelOneShotDispatch before it fired. Cancellation
+	// is a no-op past the moment of dispatch — once status leaves
+	// SCHEDULED, the execution runs to completion as normal.
+	ExecutionStatus_EXECUTION_STATUS_CANCELLED ExecutionStatus = 8
 )
 
 // Enum value maps for ExecutionStatus.
@@ -44,6 +54,8 @@ var (
 		4: "EXECUTION_STATUS_FAILED",
 		5: "EXECUTION_STATUS_SKIPPED",
 		6: "EXECUTION_STATUS_TIMEOUT",
+		7: "EXECUTION_STATUS_SCHEDULED",
+		8: "EXECUTION_STATUS_CANCELLED",
 	}
 	ExecutionStatus_value = map[string]int32{
 		"EXECUTION_STATUS_UNSPECIFIED": 0,
@@ -53,6 +65,8 @@ var (
 		"EXECUTION_STATUS_FAILED":      4,
 		"EXECUTION_STATUS_SKIPPED":     5,
 		"EXECUTION_STATUS_TIMEOUT":     6,
+		"EXECUTION_STATUS_SCHEDULED":   7,
+		"EXECUTION_STATUS_CANCELLED":   8,
 	}
 )
 
@@ -463,7 +477,7 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\rCommandOutput\x12\x1b\n" +
 	"\texit_code\x18\x01 \x01(\x05R\bexitCode\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\tR\x06stdout\x12\x16\n" +
-	"\x06stderr\x18\x03 \x01(\tR\x06stderr*\xe6\x01\n" +
+	"\x06stderr\x18\x03 \x01(\tR\x06stderr*\xa6\x02\n" +
 	"\x0fExecutionStatus\x12 \n" +
 	"\x1cEXECUTION_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18EXECUTION_STATUS_PENDING\x10\x01\x12\x1c\n" +
@@ -471,7 +485,9 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x18EXECUTION_STATUS_SUCCESS\x10\x03\x12\x1b\n" +
 	"\x17EXECUTION_STATUS_FAILED\x10\x04\x12\x1c\n" +
 	"\x18EXECUTION_STATUS_SKIPPED\x10\x05\x12\x1c\n" +
-	"\x18EXECUTION_STATUS_TIMEOUT\x10\x06*C\n" +
+	"\x18EXECUTION_STATUS_TIMEOUT\x10\x06\x12\x1e\n" +
+	"\x1aEXECUTION_STATUS_SCHEDULED\x10\a\x12\x1e\n" +
+	"\x1aEXECUTION_STATUS_CANCELLED\x10\b*C\n" +
 	"\fDesiredState\x12\x19\n" +
 	"\x15DESIRED_STATE_PRESENT\x10\x00\x12\x18\n" +
 	"\x14DESIRED_STATE_ABSENT\x10\x01*\x8a\x01\n" +

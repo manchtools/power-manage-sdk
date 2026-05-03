@@ -349,6 +349,9 @@ const (
 	// ControlServiceDispatchInstantActionProcedure is the fully-qualified name of the ControlService's
 	// DispatchInstantAction RPC.
 	ControlServiceDispatchInstantActionProcedure = "/pm.v1.ControlService/DispatchInstantAction"
+	// ControlServiceCancelExecutionProcedure is the fully-qualified name of the ControlService's
+	// CancelExecution RPC.
+	ControlServiceCancelExecutionProcedure = "/pm.v1.ControlService/CancelExecution"
 	// ControlServiceGetExecutionProcedure is the fully-qualified name of the ControlService's
 	// GetExecution RPC.
 	ControlServiceGetExecutionProcedure = "/pm.v1.ControlService/GetExecution"
@@ -636,6 +639,7 @@ type ControlServiceClient interface {
 	DispatchDefinition(context.Context, *connect.Request[v1.DispatchDefinitionRequest]) (*connect.Response[v1.DispatchDefinitionResponse], error)
 	DispatchToGroup(context.Context, *connect.Request[v1.DispatchToGroupRequest]) (*connect.Response[v1.DispatchToGroupResponse], error)
 	DispatchInstantAction(context.Context, *connect.Request[v1.DispatchInstantActionRequest]) (*connect.Response[v1.DispatchInstantActionResponse], error)
+	CancelExecution(context.Context, *connect.Request[v1.CancelExecutionRequest]) (*connect.Response[v1.CancelExecutionResponse], error)
 	GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error)
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
@@ -1358,6 +1362,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("DispatchInstantAction")),
 			connect.WithClientOptions(opts...),
 		),
+		cancelExecution: connect.NewClient[v1.CancelExecutionRequest, v1.CancelExecutionResponse](
+			httpClient,
+			baseURL+ControlServiceCancelExecutionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("CancelExecution")),
+			connect.WithClientOptions(opts...),
+		),
 		getExecution: connect.NewClient[v1.GetExecutionRequest, v1.GetExecutionResponse](
 			httpClient,
 			baseURL+ControlServiceGetExecutionProcedure,
@@ -1794,6 +1804,7 @@ type controlServiceClient struct {
 	dispatchDefinition                *connect.Client[v1.DispatchDefinitionRequest, v1.DispatchDefinitionResponse]
 	dispatchToGroup                   *connect.Client[v1.DispatchToGroupRequest, v1.DispatchToGroupResponse]
 	dispatchInstantAction             *connect.Client[v1.DispatchInstantActionRequest, v1.DispatchInstantActionResponse]
+	cancelExecution                   *connect.Client[v1.CancelExecutionRequest, v1.CancelExecutionResponse]
 	getExecution                      *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
 	listExecutions                    *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
 	listAuditEvents                   *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
@@ -2385,6 +2396,11 @@ func (c *controlServiceClient) DispatchInstantAction(ctx context.Context, req *c
 	return c.dispatchInstantAction.CallUnary(ctx, req)
 }
 
+// CancelExecution calls pm.v1.ControlService.CancelExecution.
+func (c *controlServiceClient) CancelExecution(ctx context.Context, req *connect.Request[v1.CancelExecutionRequest]) (*connect.Response[v1.CancelExecutionResponse], error) {
+	return c.cancelExecution.CallUnary(ctx, req)
+}
+
 // GetExecution calls pm.v1.ControlService.GetExecution.
 func (c *controlServiceClient) GetExecution(ctx context.Context, req *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error) {
 	return c.getExecution.CallUnary(ctx, req)
@@ -2780,6 +2796,7 @@ type ControlServiceHandler interface {
 	DispatchDefinition(context.Context, *connect.Request[v1.DispatchDefinitionRequest]) (*connect.Response[v1.DispatchDefinitionResponse], error)
 	DispatchToGroup(context.Context, *connect.Request[v1.DispatchToGroupRequest]) (*connect.Response[v1.DispatchToGroupResponse], error)
 	DispatchInstantAction(context.Context, *connect.Request[v1.DispatchInstantActionRequest]) (*connect.Response[v1.DispatchInstantActionResponse], error)
+	CancelExecution(context.Context, *connect.Request[v1.CancelExecutionRequest]) (*connect.Response[v1.CancelExecutionResponse], error)
 	GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error)
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
@@ -3498,6 +3515,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("DispatchInstantAction")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceCancelExecutionHandler := connect.NewUnaryHandler(
+		ControlServiceCancelExecutionProcedure,
+		svc.CancelExecution,
+		connect.WithSchema(controlServiceMethods.ByName("CancelExecution")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceGetExecutionHandler := connect.NewUnaryHandler(
 		ControlServiceGetExecutionProcedure,
 		svc.GetExecution,
@@ -4038,6 +4061,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceDispatchToGroupHandler.ServeHTTP(w, r)
 		case ControlServiceDispatchInstantActionProcedure:
 			controlServiceDispatchInstantActionHandler.ServeHTTP(w, r)
+		case ControlServiceCancelExecutionProcedure:
+			controlServiceCancelExecutionHandler.ServeHTTP(w, r)
 		case ControlServiceGetExecutionProcedure:
 			controlServiceGetExecutionHandler.ServeHTTP(w, r)
 		case ControlServiceListExecutionsProcedure:
@@ -4581,6 +4606,10 @@ func (UnimplementedControlServiceHandler) DispatchToGroup(context.Context, *conn
 
 func (UnimplementedControlServiceHandler) DispatchInstantAction(context.Context, *connect.Request[v1.DispatchInstantActionRequest]) (*connect.Response[v1.DispatchInstantActionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DispatchInstantAction is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) CancelExecution(context.Context, *connect.Request[v1.CancelExecutionRequest]) (*connect.Response[v1.CancelExecutionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CancelExecution is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetExecution(context.Context, *connect.Request[v1.GetExecutionRequest]) (*connect.Response[v1.GetExecutionResponse], error) {
