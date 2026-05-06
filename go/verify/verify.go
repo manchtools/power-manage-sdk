@@ -1,11 +1,25 @@
 // Package verify provides action signature verification and signing.
 //
-// Actions are signed by the control server and verified by agents using the
-// CA certificate's public key. The canonical payload format is:
+// The control server signs actions with its CA private key
+// (ActionSigner). Agents verify those signatures against the
+// matching CA certificate's public key (ActionVerifier). The two
+// sides exchange the signature over an SHA-256 hash of the
+// canonical payload:
 //
-//	"actionID:actionType:base64(paramsJSON)"
+//	canonical = sprintf("%s:%d:%s", actionID, actionType,
+//	                    base64.StdEncoding.EncodeToString(paramsJSON))
 //
-// Both ECDSA and RSA keys are supported.
+// `actionType` is the protobuf enum's integer value (rendered with
+// %d), so signing and verifying must agree on the enum encoding —
+// renaming an enum entry in the proto without coordinating server
+// and agent rollouts will not break verification, but renumbering
+// it will.
+//
+// Supported key algorithms: ECDSA (verified via ecdsa.VerifyASN1,
+// signed via ecdsa.SignASN1) and RSA (PKCS#1 v1.5 with SHA-256).
+// Other key types — including Ed25519 — are explicitly rejected so
+// a key-type drift between server and agent surfaces as a clear
+// error instead of a silent signature mismatch.
 package verify
 
 import (

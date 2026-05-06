@@ -251,6 +251,16 @@ export interface ClientOptions {
 export class ApiClient {
 	private opts: ClientOptions;
 
+	// Cached transport. createConnectTransport allocates a fetch
+	// wrapper + interceptor chain on every call; before this cache,
+	// every RPC built one from scratch even though the
+	// authentication interceptor closes over `this.opts` and never
+	// changes shape. Keyed by the resolved baseUrl so a runtime
+	// server-URL switch (multi-tenant, environment swap) rebuilds
+	// transparently.
+	private cachedTransport: ReturnType<typeof createConnectTransport> | null = null;
+	private cachedTransportUrl: string | null = null;
+
 	constructor(opts: ClientOptions) {
 		this.opts = opts;
 	}
@@ -260,8 +270,11 @@ export class ApiClient {
 		if (!serverUrl) {
 			throw new Error('Server URL not configured');
 		}
+		if (this.cachedTransport && this.cachedTransportUrl === serverUrl) {
+			return this.cachedTransport;
+		}
 
-		return createConnectTransport({
+		const transport = createConnectTransport({
 			baseUrl: serverUrl,
 			interceptors: [
 				(next) => async (req) => {
@@ -291,21 +304,33 @@ export class ApiClient {
 				}
 			]
 		});
+		this.cachedTransport = transport;
+		this.cachedTransportUrl = serverUrl;
+		return transport;
 	}
 
 	private getClient() {
 		return createClient(ControlService, this.getTransport());
 	}
 
+	// Auth-only transport (no token interceptor — login itself
+	// produces the token). Cached on the same key as the primary
+	// transport since the URL is the only meaningful input.
+	private cachedAuthTransport: ReturnType<typeof createConnectTransport> | null = null;
+	private cachedAuthTransportUrl: string | null = null;
+
 	private getAuthTransport() {
 		const serverUrl = this.opts.getServerUrl();
 		if (!serverUrl) {
 			throw new Error('Server URL not configured');
 		}
-
-		return createConnectTransport({
-			baseUrl: serverUrl
-		});
+		if (this.cachedAuthTransport && this.cachedAuthTransportUrl === serverUrl) {
+			return this.cachedAuthTransport;
+		}
+		const transport = createConnectTransport({ baseUrl: serverUrl });
+		this.cachedAuthTransport = transport;
+		this.cachedAuthTransportUrl = serverUrl;
+		return transport;
 	}
 
 	private getAuthClient() {

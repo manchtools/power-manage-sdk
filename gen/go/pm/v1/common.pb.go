@@ -346,9 +346,17 @@ func (x *DeviceId) GetValue() string {
 type ErrorDetail struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Machine-readable error code (e.g., "user_not_found", "email_already_exists").
-	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// Capped at 128 chars — every existing code uses snake_case names well
+	// under that, and the bound prevents a misbehaving caller (or a future
+	// codepath that constructs the detail from user-supplied input) from
+	// pushing arbitrarily long payloads into client-side error toasts.
+	// @gotags: validate:"max=128"
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty" validate:"max=128"`
 	// Server-generated request ID for correlating errors with server logs.
-	RequestId     string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// ULIDs are 26 chars; bound at 64 to leave headroom for prefixes
+	// without inviting unbounded growth.
+	// @gotags: validate:"max=64"
+	RequestId     string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty" validate:"max=64"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
