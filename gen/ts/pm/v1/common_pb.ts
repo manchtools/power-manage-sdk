@@ -62,6 +62,11 @@ export const DeviceIdSchema: GenMessage<DeviceId> = /*@__PURE__*/
 export type ErrorDetail = Message<"pm.v1.ErrorDetail"> & {
   /**
    * Machine-readable error code (e.g., "user_not_found", "email_already_exists").
+   * Capped at 128 chars — every existing code uses snake_case names well
+   * under that, and the bound prevents a misbehaving caller (or a future
+   * codepath that constructs the detail from user-supplied input) from
+   * pushing arbitrarily long payloads into client-side error toasts.
+   * @gotags: validate:"max=128"
    *
    * @generated from field: string code = 1;
    */
@@ -69,6 +74,9 @@ export type ErrorDetail = Message<"pm.v1.ErrorDetail"> & {
 
   /**
    * Server-generated request ID for correlating errors with server logs.
+   * ULIDs are 26 chars; bound at 64 to leave headroom for prefixes
+   * without inviting unbounded growth.
+   * @gotags: validate:"max=64"
    *
    * @generated from field: string request_id = 2;
    */
