@@ -1833,7 +1833,7 @@ export class ApiClient {
 export function getErrorCode(error: unknown): string | undefined {
 	if (error instanceof ConnectError) {
 		const details = error.findDetails(ErrorDetailSchema);
-		if (details.length > 0) {
+		if (details.length > 0 && details[0].code) {
 			return details[0].code;
 		}
 	}
