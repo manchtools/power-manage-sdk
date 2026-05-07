@@ -27,12 +27,12 @@ const (
 // runs once at startup).
 var backend atomic.Int32
 
-// SetPrivilegeBackend selects which escalation tool Privileged and
-// PrivilegedWithStdin use. Call this once at startup from the agent's
-// main() based on configuration. Valid values are PrivilegeBackendSudo
-// (default) and PrivilegeBackendDoas; unknown values are ignored so
-// callers don't accidentally silence the dispatch by passing 0 from a
-// zero-valued proto enum.
+// SetPrivilegeBackend selects which escalation tool Privileged,
+// PrivilegedWithStdin, and PrivilegedStreaming use. Call this once
+// at startup from the agent's main() based on configuration. Valid
+// values are PrivilegeBackendSudo (default) and PrivilegeBackendDoas;
+// unknown values are ignored so callers don't accidentally silence
+// the dispatch by passing 0 from a zero-valued proto enum.
 func SetPrivilegeBackend(b PrivilegeBackend) {
 	switch b {
 	case PrivilegeBackendSudo, PrivilegeBackendDoas:
