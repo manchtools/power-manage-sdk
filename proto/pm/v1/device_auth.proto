@@ -30,7 +30,8 @@ message EnrollRequest {
   string server_url = 1;   // Control server URL
   // @gotags: validate:"required"
   string token = 2;        // Registration token from web UI
-  bool skip_verify = 3;    // Skip TLS verification (development only)
+  reserved 3;              // was bool skip_verify; removed in 2026.05 (TLS bypass is not supported)
+  reserved "skip_verify";
 }
 
 message EnrollResponse {

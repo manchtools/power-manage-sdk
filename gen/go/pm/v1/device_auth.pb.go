@@ -26,8 +26,7 @@ type EnrollRequest struct {
 	// @gotags: validate:"required,url"
 	ServerUrl string `protobuf:"bytes,1,opt,name=server_url,json=serverUrl,proto3" json:"server_url,omitempty" validate:"required,url"` // Control server URL
 	// @gotags: validate:"required"
-	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required"`                              // Registration token from web UI
-	SkipVerify    bool   `protobuf:"varint,3,opt,name=skip_verify,json=skipVerify,proto3" json:"skip_verify,omitempty"` // Skip TLS verification (development only)
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required"` // Registration token from web UI
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -74,13 +73,6 @@ func (x *EnrollRequest) GetToken() string {
 		return x.Token
 	}
 	return ""
-}
-
-func (x *EnrollRequest) GetSkipVerify() bool {
-	if x != nil {
-		return x.SkipVerify
-	}
-	return false
 }
 
 type EnrollResponse struct {
@@ -235,13 +227,11 @@ var File_pm_v1_device_auth_proto protoreflect.FileDescriptor
 
 const file_pm_v1_device_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x17pm/v1/device_auth.proto\x12\x05pm.v1\"e\n" +
+	"\x17pm/v1/device_auth.proto\x12\x05pm.v1\"W\n" +
 	"\rEnrollRequest\x12\x1d\n" +
 	"\n" +
 	"server_url\x18\x01 \x01(\tR\tserverUrl\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1f\n" +
-	"\vskip_verify\x18\x03 \x01(\bR\n" +
-	"skipVerify\"]\n" +
+	"\x05token\x18\x02 \x01(\tR\x05tokenJ\x04\b\x03\x10\x04R\vskip_verify\"]\n" +
 	"\x0eEnrollResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x14\n" +

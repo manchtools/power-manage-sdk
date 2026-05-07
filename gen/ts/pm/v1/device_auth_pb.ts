@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/device_auth.proto.
  */
 export const file_pm_v1_device_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChdwbS92MS9kZXZpY2VfYXV0aC5wcm90bxIFcG0udjEiRwoNRW5yb2xsUmVxdWVzdBISCgpzZXJ2ZXJfdXJsGAEgASgJEg0KBXRva2VuGAIgASgJEhMKC3NraXBfdmVyaWZ5GAMgASgIIkMKDkVucm9sbFJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgSEQoJZGV2aWNlX2lkGAIgASgJEg0KBWVycm9yGAMgASgJIhwKGkdldEVucm9sbG1lbnRTdGF0dXNSZXF1ZXN0IkIKG0dldEVucm9sbG1lbnRTdGF0dXNSZXNwb25zZRIQCghlbnJvbGxlZBgBIAEoCBIRCglkZXZpY2VfaWQYAiABKAkyqAEKEURldmljZUF1dGhTZXJ2aWNlEjUKBkVucm9sbBIULnBtLnYxLkVucm9sbFJlcXVlc3QaFS5wbS52MS5FbnJvbGxSZXNwb25zZRJcChNHZXRFbnJvbGxtZW50U3RhdHVzEiEucG0udjEuR2V0RW5yb2xsbWVudFN0YXR1c1JlcXVlc3QaIi5wbS52MS5HZXRFbnJvbGxtZW50U3RhdHVzUmVzcG9uc2VCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw");
+  fileDesc("ChdwbS92MS9kZXZpY2VfYXV0aC5wcm90bxIFcG0udjEiRQoNRW5yb2xsUmVxdWVzdBISCgpzZXJ2ZXJfdXJsGAEgASgJEg0KBXRva2VuGAIgASgJSgQIAxAEUgtza2lwX3ZlcmlmeSJDCg5FbnJvbGxSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEhEKCWRldmljZV9pZBgCIAEoCRINCgVlcnJvchgDIAEoCSIcChpHZXRFbnJvbGxtZW50U3RhdHVzUmVxdWVzdCJCChtHZXRFbnJvbGxtZW50U3RhdHVzUmVzcG9uc2USEAoIZW5yb2xsZWQYASABKAgSEQoJZGV2aWNlX2lkGAIgASgJMqgBChFEZXZpY2VBdXRoU2VydmljZRI1CgZFbnJvbGwSFC5wbS52MS5FbnJvbGxSZXF1ZXN0GhUucG0udjEuRW5yb2xsUmVzcG9uc2USXAoTR2V0RW5yb2xsbWVudFN0YXR1cxIhLnBtLnYxLkdldEVucm9sbG1lbnRTdGF0dXNSZXF1ZXN0GiIucG0udjEuR2V0RW5yb2xsbWVudFN0YXR1c1Jlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM");
 
 /**
  * @generated from message pm.v1.EnrollRequest
@@ -33,13 +33,6 @@ export type EnrollRequest = Message<"pm.v1.EnrollRequest"> & {
    * @generated from field: string token = 2;
    */
   token: string;
-
-  /**
-   * Skip TLS verification (development only)
-   *
-   * @generated from field: bool skip_verify = 3;
-   */
-  skipVerify: boolean;
 };
 
 /**
