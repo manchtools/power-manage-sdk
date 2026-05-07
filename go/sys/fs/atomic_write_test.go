@@ -1,3 +1,9 @@
+//go:build unix
+
+// Mirrors the build tag on atomic_write.go — the test references
+// AtomicWriteFile directly, so it would fail to compile on
+// non-Unix targets.
+
 package fs
 
 import (
@@ -77,7 +83,10 @@ func TestAtomicWriteFile_WriteFailsNoLeftover(t *testing.T) {
 	if err := AtomicWriteFile(missing, []byte("x"), 0600); err == nil {
 		t.Fatal("expected error writing into nonexistent directory")
 	}
-	entries, _ := os.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("readdir %s: %v", dir, err)
+	}
 	for _, e := range entries {
 		t.Errorf("unexpected artifact in %s: %s", dir, e.Name())
 	}

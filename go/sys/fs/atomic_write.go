@@ -1,3 +1,12 @@
+//go:build unix
+
+// Atomicity here depends on POSIX rename(2) (same-filesystem rename
+// is atomic) and on the ability to fsync a directory file
+// descriptor. Neither holds on Windows, where this function would
+// still execute but lose the contract callers depend on. Restrict
+// it to Unix targets so misuse fails at build time rather than
+// silently producing non-atomic writes.
+
 package fs
 
 import (
