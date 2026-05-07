@@ -11163,7 +11163,7 @@ type ActionExecution struct {
 	// UTC timestamp at which the deferred dispatch is configured to
 	// fire. Populated when a Dispatch* request supplies the run_at
 	// field — DispatchActionRequest, DispatchInstantActionRequest,
-	// and friends — so the server can defer the Asynq task until the
+	// and friends — so the server can defer the dispatch until the
 	// operator-chosen time.
 	ScheduledFor  *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=scheduled_for,json=scheduledFor,proto3" json:"scheduled_for,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11348,11 +11348,10 @@ type DispatchActionRequest struct {
 	// running it immediately. The execution record is created up front
 	// with status SCHEDULED so the operator can see the pending dispatch
 	// in the execution-history UI before it fires; on run_at the
-	// deferred Asynq task hits the standard dispatch path and the
-	// execution transitions through PENDING / RUNNING / SUCCESS the
-	// same as any immediate dispatch. Cancelable via CancelExecution
-	// until the dispatch fires. Must be in the future at scheduling
-	// time. See manchtools/power-manage-server#57.
+	// deferred dispatch hits the standard path and the execution
+	// transitions through PENDING / RUNNING / SUCCESS the same as any
+	// immediate dispatch. Cancelable via CancelExecution until the
+	// dispatch fires. Must be in the future at scheduling time.
 	RunAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=run_at,json=runAt,proto3" json:"run_at,omitempty"`
 	// When true, the dispatched action still respects the device's
 	// maintenance window if the device has one configured. The default

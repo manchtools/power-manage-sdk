@@ -5443,7 +5443,7 @@ export type ActionExecution = Message<"pm.v1.ActionExecution"> & {
    * UTC timestamp at which the deferred dispatch is configured to
    * fire. Populated when a Dispatch* request supplies the run_at
    * field — DispatchActionRequest, DispatchInstantActionRequest,
-   * and friends — so the server can defer the Asynq task until the
+   * and friends — so the server can defer the dispatch until the
    * operator-chosen time.
    *
    * @generated from field: google.protobuf.Timestamp scheduled_for = 19;
@@ -5497,11 +5497,10 @@ export type DispatchActionRequest = Message<"pm.v1.DispatchActionRequest"> & {
    * running it immediately. The execution record is created up front
    * with status SCHEDULED so the operator can see the pending dispatch
    * in the execution-history UI before it fires; on run_at the
-   * deferred Asynq task hits the standard dispatch path and the
-   * execution transitions through PENDING / RUNNING / SUCCESS the
-   * same as any immediate dispatch. Cancelable via CancelExecution
-   * until the dispatch fires. Must be in the future at scheduling
-   * time. See manchtools/power-manage-server#57.
+   * deferred dispatch hits the standard path and the execution
+   * transitions through PENDING / RUNNING / SUCCESS the same as any
+   * immediate dispatch. Cancelable via CancelExecution until the
+   * dispatch fires. Must be in the future at scheduling time.
    *
    * @generated from field: google.protobuf.Timestamp run_at = 4;
    */

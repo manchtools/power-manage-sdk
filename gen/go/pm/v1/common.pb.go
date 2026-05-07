@@ -33,10 +33,10 @@ const (
 	ExecutionStatus_EXECUTION_STATUS_SKIPPED     ExecutionStatus = 5
 	ExecutionStatus_EXECUTION_STATUS_TIMEOUT     ExecutionStatus = 6
 	// Queued for delayed dispatch — the Dispatch* request carried a
-	// run_at timestamp, so the server enqueued the Asynq task at that
-	// future time. Transitions to PENDING / RUNNING when the deferred
-	// task fires, then onward to a terminal status the same way as
-	// any other execution.
+	// run_at timestamp, so the server deferred the dispatch until
+	// that future time. Transitions to PENDING / RUNNING when the
+	// deferred task fires, then onward to a terminal status the same
+	// way as any other execution.
 	ExecutionStatus_EXECUTION_STATUS_SCHEDULED ExecutionStatus = 7
 	// Operator cancelled the dispatch via
 	// ControlService.CancelExecution. CancelExecution acts only
