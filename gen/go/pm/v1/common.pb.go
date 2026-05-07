@@ -38,10 +38,12 @@ const (
 	// task fires, then onward to a terminal status the same way as
 	// any other execution.
 	ExecutionStatus_EXECUTION_STATUS_SCHEDULED ExecutionStatus = 7
-	// Operator cancelled the scheduled dispatch via
-	// ControlService.CancelExecution before it fired. Cancellation is
-	// a no-op past the moment of dispatch — once status leaves
-	// SCHEDULED, the execution runs to completion as normal.
+	// Operator cancelled the dispatch via
+	// ControlService.CancelExecution. CancelExecution acts only
+	// while the execution is still in SCHEDULED or PENDING — once
+	// the agent has picked it up (RUNNING) or it has reached a
+	// terminal status, the cancel is a no-op and the row keeps its
+	// observed outcome.
 	ExecutionStatus_EXECUTION_STATUS_CANCELLED ExecutionStatus = 8
 )
 
