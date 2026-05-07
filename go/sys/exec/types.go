@@ -14,8 +14,22 @@ type Result struct {
 	Stderr   string
 }
 
+// Stream identifiers passed to OutputCallback. The values must
+// stay numerically stable across SDK releases: callers checking
+// `streamType == StreamStdout` are expected to keep working
+// without recompilation. Use these constants instead of the
+// literal 1/2 magic numbers.
+const (
+	// StreamStdout is the streamType passed to OutputCallback for
+	// stdout lines.
+	StreamStdout = 1
+	// StreamStderr is the streamType passed to OutputCallback for
+	// stderr lines.
+	StreamStderr = 2
+)
+
 // OutputCallback is called for each line of output during streaming execution.
-// streamType: 1 = stdout, 2 = stderr.
+// streamType: StreamStdout or StreamStderr.
 // line: the output line (with newline).
 // seq: sequence number for ordering.
 type OutputCallback func(streamType int, line string, seq int64)

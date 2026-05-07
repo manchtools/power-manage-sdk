@@ -105,6 +105,50 @@ func TestPrivilegedResolvesPath(t *testing.T) {
 	}
 }
 
+func TestPrivilegedStreaming(t *testing.T) {
+	// Run a privileged command that emits multiple lines and verify
+	// the streaming callback observes them. `sh` is in the
+	// integration sudoers (see test/Dockerfile.integration). We
+	// assert against the per-line callback output (the streaming
+	// contract) plus an ExitCode == 0 success check rather than
+	// matching the buffered Result.Stdout exactly — that string
+	// matching turned out brittle in practice (line endings,
+	// trailing newlines).
+	ctx := context.Background()
+	var lines []string
+	result, err := exec.PrivilegedStreaming(ctx, "sh", []string{"-c", "printf 'line1\\nline2\\nline3\\n'"}, nil, "", func(streamType int, line string, _ int64) {
+		if streamType == exec.StreamStdout {
+			lines = append(lines, strings.TrimRight(line, "\n"))
+		}
+	})
+	if err != nil {
+		t.Fatalf("PrivilegedStreaming failed: %v", err)
+	}
+	if result.ExitCode != 0 {
+		t.Errorf("expected exit code 0, got %d (stderr=%q)", result.ExitCode, result.Stderr)
+	}
+	want := []string{"line1", "line2", "line3"}
+	if len(lines) != len(want) {
+		t.Fatalf("expected %d streamed stdout lines, got %d (%v)", len(want), len(lines), lines)
+	}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Errorf("streamed line %d: got %q, want %q", i, lines[i], w)
+		}
+	}
+}
+
+func TestPrivilegedStreamingCommandNotFound(t *testing.T) {
+	ctx := context.Background()
+	_, err := exec.PrivilegedStreaming(ctx, "nonexistent-command-12345", nil, nil, "", nil)
+	if err == nil {
+		t.Fatal("expected error for nonexistent command")
+	}
+	if !strings.Contains(err.Error(), "command not found") {
+		t.Errorf("expected 'command not found' error, got %v", err)
+	}
+}
+
 func TestPrivilegedCommandNotFound(t *testing.T) {
 	ctx := context.Background()
 	_, err := exec.Privileged(ctx, "nonexistent-command-12345")

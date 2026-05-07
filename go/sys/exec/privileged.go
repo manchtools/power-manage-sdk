@@ -27,12 +27,12 @@ const (
 // runs once at startup).
 var backend atomic.Int32
 
-// SetPrivilegeBackend selects which escalation tool Privileged and
-// PrivilegedWithStdin use. Call this once at startup from the agent's
-// main() based on configuration. Valid values are PrivilegeBackendSudo
-// (default) and PrivilegeBackendDoas; unknown values are ignored so
-// callers don't accidentally silence the dispatch by passing 0 from a
-// zero-valued proto enum.
+// SetPrivilegeBackend selects which escalation tool Privileged,
+// PrivilegedWithStdin, and PrivilegedStreaming use. Call this once
+// at startup from the agent's main() based on configuration. Valid
+// values are PrivilegeBackendSudo (default) and PrivilegeBackendDoas;
+// unknown values are ignored so callers don't accidentally silence
+// the dispatch by passing 0 from a zero-valued proto enum.
 func SetPrivilegeBackend(b PrivilegeBackend) {
 	switch b {
 	case PrivilegeBackendSudo, PrivilegeBackendDoas:
@@ -85,4 +85,28 @@ func PrivilegedWithStdin(ctx context.Context, stdin io.Reader, name string, args
 	}
 	wrapped := append([]string{"-n", absPath}, args...)
 	return RunWithStdin(ctx, stdin, tool, wrapped...)
+}
+
+// PrivilegedStreaming is the streaming variant of Privileged. Same
+// privilege wrapping as Privileged (absolute-path resolution, `-n`
+// flag, backend-installed check) but dispatches through
+// RunStreaming so callers can observe stdout/stderr lines as they
+// arrive via the OutputCallback.
+//
+// Used by agent action types that produce long-running output
+// (shell scripts under sudo, package-manager streaming) where
+// buffering the entire output before returning would delay the
+// operator's view of progress and could push large results past
+// MaxOutputBytes.
+func PrivilegedStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
+	absPath, err := exec.LookPath(name)
+	if err != nil {
+		return nil, fmt.Errorf("command not found: %s", name)
+	}
+	tool := privilegeTool()
+	if _, err := exec.LookPath(tool); err != nil {
+		return nil, fmt.Errorf("privilege backend not installed: %s", tool)
+	}
+	wrapped := append([]string{"-n", absPath}, args...)
+	return RunStreaming(ctx, tool, wrapped, envVars, dir, callback)
 }
