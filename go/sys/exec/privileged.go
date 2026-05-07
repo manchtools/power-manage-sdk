@@ -86,3 +86,27 @@ func PrivilegedWithStdin(ctx context.Context, stdin io.Reader, name string, args
 	wrapped := append([]string{"-n", absPath}, args...)
 	return RunWithStdin(ctx, stdin, tool, wrapped...)
 }
+
+// PrivilegedStreaming is the streaming variant of Privileged. Same
+// privilege wrapping as Privileged (absolute-path resolution, `-n`
+// flag, backend-installed check) but dispatches through
+// RunStreaming so callers can observe stdout/stderr lines as they
+// arrive via the OutputCallback.
+//
+// Used by agent action types that produce long-running output
+// (shell scripts under sudo, package-manager streaming) where
+// buffering the entire output before returning would delay the
+// operator's view of progress and could push large results past
+// MaxOutputBytes.
+func PrivilegedStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
+	absPath, err := exec.LookPath(name)
+	if err != nil {
+		return nil, fmt.Errorf("command not found: %s", name)
+	}
+	tool := privilegeTool()
+	if _, err := exec.LookPath(tool); err != nil {
+		return nil, fmt.Errorf("privilege backend not installed: %s", tool)
+	}
+	wrapped := append([]string{"-n", absPath}, args...)
+	return RunStreaming(ctx, tool, wrapped, envVars, dir, callback)
+}

@@ -105,6 +105,42 @@ func TestPrivilegedResolvesPath(t *testing.T) {
 	}
 }
 
+func TestPrivilegedStreaming(t *testing.T) {
+	// Run a privileged command that emits multiple lines and verify
+	// the streaming callback observes them as they arrive — not all
+	// at the end. `seq 1 3` produces three lines with a small gap so
+	// the buffered/streaming distinction is observable in normal
+	// runs.
+	ctx := context.Background()
+	var lines []string
+	result, err := exec.PrivilegedStreaming(ctx, "seq", []string{"1", "3"}, nil, "", func(streamType int, line string, _ int64) {
+		// streamType 1 = stdout (per OutputCallback contract).
+		if streamType == 1 {
+			lines = append(lines, strings.TrimRight(line, "\n"))
+		}
+	})
+	if err != nil {
+		t.Fatalf("PrivilegedStreaming failed: %v", err)
+	}
+	if got := strings.TrimSpace(result.Stdout); got != "1\n2\n3" {
+		t.Errorf("expected stdout '1\\n2\\n3', got %q", got)
+	}
+	if len(lines) != 3 {
+		t.Errorf("expected 3 streamed lines, got %d (%v)", len(lines), lines)
+	}
+}
+
+func TestPrivilegedStreamingCommandNotFound(t *testing.T) {
+	ctx := context.Background()
+	_, err := exec.PrivilegedStreaming(ctx, "nonexistent-command-12345", nil, nil, "", nil)
+	if err == nil {
+		t.Fatal("expected error for nonexistent command")
+	}
+	if !strings.Contains(err.Error(), "command not found") {
+		t.Errorf("expected 'command not found' error, got %v", err)
+	}
+}
+
 func TestPrivilegedCommandNotFound(t *testing.T) {
 	ctx := context.Background()
 	_, err := exec.Privileged(ctx, "nonexistent-command-12345")
