@@ -218,16 +218,6 @@ func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption,
 	}}, nil
 }
 
-// WithInsecureSkipVerify disables TLS certificate verification.
-// WARNING: Only use this for development/testing!
-func WithInsecureSkipVerify() ClientOption {
-	return &funcOption{func(c *Client, httpClient **http.Client) {
-		*httpClient = newHTTPClientWithTLS(&tls.Config{
-			InsecureSkipVerify: true,
-		})
-	}}
-}
-
 // newHTTPClientWithTLS creates an HTTP client with HTTP/2 support enabled.
 // A bare http.Transport with a custom TLSClientConfig disables Go's automatic
 // HTTP/2 negotiation, so we explicitly configure it via http2.ConfigureTransport.
