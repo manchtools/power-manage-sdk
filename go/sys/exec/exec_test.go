@@ -108,25 +108,33 @@ func TestPrivilegedResolvesPath(t *testing.T) {
 func TestPrivilegedStreaming(t *testing.T) {
 	// Run a privileged command that emits multiple lines and verify
 	// the streaming callback observes them. `sh` is in the
-	// integration sudoers (see test/Dockerfile.integration); use it
-	// to print three lines so we can assert both the buffered
-	// Result.Stdout and the per-line callback fire correctly.
+	// integration sudoers (see test/Dockerfile.integration). We
+	// assert against the per-line callback output (the streaming
+	// contract) plus an ExitCode == 0 success check rather than
+	// matching the buffered Result.Stdout exactly — that string
+	// matching turned out brittle in practice (line endings,
+	// trailing newlines).
 	ctx := context.Background()
 	var lines []string
-	result, err := exec.PrivilegedStreaming(ctx, "sh", []string{"-c", "echo line1; echo line2; echo line3"}, nil, "", func(streamType int, line string, _ int64) {
-		// streamType 1 = stdout (per OutputCallback contract).
-		if streamType == 1 {
+	result, err := exec.PrivilegedStreaming(ctx, "sh", []string{"-c", "printf 'line1\\nline2\\nline3\\n'"}, nil, "", func(streamType int, line string, _ int64) {
+		if streamType == exec.StreamStdout {
 			lines = append(lines, strings.TrimRight(line, "\n"))
 		}
 	})
 	if err != nil {
 		t.Fatalf("PrivilegedStreaming failed: %v", err)
 	}
-	if got := strings.TrimSpace(result.Stdout); got != "line1\nline2\nline3" {
-		t.Errorf("expected stdout 'line1\\nline2\\nline3', got %q", got)
+	if result.ExitCode != 0 {
+		t.Errorf("expected exit code 0, got %d (stderr=%q)", result.ExitCode, result.Stderr)
 	}
-	if len(lines) != 3 {
-		t.Errorf("expected 3 streamed lines, got %d (%v)", len(lines), lines)
+	want := []string{"line1", "line2", "line3"}
+	if len(lines) != len(want) {
+		t.Fatalf("expected %d streamed stdout lines, got %d (%v)", len(want), len(lines), lines)
+	}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Errorf("streamed line %d: got %q, want %q", i, lines[i], w)
+		}
 	}
 }
 

@@ -61,7 +61,7 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 							stderrBuf.WriteString(line + "\n")
 						}
 						if callback != nil {
-							callback(2, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
+							callback(StreamStderr, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
 						}
 					}
 					return
@@ -71,7 +71,7 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 					stdoutBuf.WriteString(line + "\n")
 				}
 				if callback != nil {
-					callback(1, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
+					callback(StreamStdout, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
 				}
 			case line, ok := <-c.Stderr:
 				if !ok {
@@ -81,7 +81,7 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 							stdoutBuf.WriteString(line + "\n")
 						}
 						if callback != nil {
-							callback(1, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
+							callback(StreamStdout, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
 						}
 					}
 					return
@@ -91,7 +91,7 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 					stderrBuf.WriteString(line + "\n")
 				}
 				if callback != nil {
-					callback(2, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
+					callback(StreamStderr, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
 				}
 			case <-ctx.Done():
 				c.Stop()
