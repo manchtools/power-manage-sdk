@@ -11161,9 +11161,10 @@ type ActionExecution struct {
 	ActionName      string                 `protobuf:"bytes,18,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`                                // Resolved from actions_projection (empty for inline actions)
 	// Set when status is SCHEDULED (or was, before dispatch fired). The
 	// UTC timestamp at which the deferred dispatch is configured to
-	// fire. Populated by ControlService.ScheduleOneShotDispatch / the
-	// deferred path of DispatchAction. See
-	// manchtools/power-manage-server#57.
+	// fire. Populated when a Dispatch* request supplies the run_at
+	// field — DispatchActionRequest, DispatchInstantActionRequest,
+	// and friends — so the server can defer the Asynq task until the
+	// operator-chosen time.
 	ScheduledFor  *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=scheduled_for,json=scheduledFor,proto3" json:"scheduled_for,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

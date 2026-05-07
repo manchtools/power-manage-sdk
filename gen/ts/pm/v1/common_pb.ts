@@ -229,10 +229,11 @@ export enum ExecutionStatus {
   TIMEOUT = 6,
 
   /**
-   * Queued for delayed dispatch via ControlService.ScheduleOneShotDispatch.
-   * Transitions to PENDING / RUNNING when the deferred Asynq task fires
-   * at run_at, then onward to a terminal status the same way as any
-   * other execution.
+   * Queued for delayed dispatch — the Dispatch* request carried a
+   * run_at timestamp, so the server enqueued the Asynq task at that
+   * future time. Transitions to PENDING / RUNNING when the deferred
+   * task fires, then onward to a terminal status the same way as
+   * any other execution.
    *
    * @generated from enum value: EXECUTION_STATUS_SCHEDULED = 7;
    */
@@ -240,8 +241,8 @@ export enum ExecutionStatus {
 
   /**
    * Operator cancelled the scheduled dispatch via
-   * ControlService.CancelOneShotDispatch before it fired. Cancellation
-   * is a no-op past the moment of dispatch — once status leaves
+   * ControlService.CancelExecution before it fired. Cancellation is
+   * a no-op past the moment of dispatch — once status leaves
    * SCHEDULED, the execution runs to completion as normal.
    *
    * @generated from enum value: EXECUTION_STATUS_CANCELLED = 8;
