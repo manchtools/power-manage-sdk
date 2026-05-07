@@ -11349,9 +11349,11 @@ type DispatchActionRequest struct {
 	// with status SCHEDULED so the operator can see the pending dispatch
 	// in the execution-history UI before it fires; on run_at the
 	// deferred dispatch hits the standard path and the execution
-	// transitions through PENDING / RUNNING / SUCCESS the same as any
-	// immediate dispatch. Cancelable via CancelExecution until the
-	// dispatch fires. Must be in the future at scheduling time.
+	// transitions through PENDING / RUNNING and then onward to a
+	// terminal status (SUCCESS, FAILED, TIMEOUT, SKIPPED, or
+	// CANCELLED) the same as any immediate dispatch. Cancelable via
+	// CancelExecution until the dispatch fires. Must be in the future
+	// at scheduling time.
 	RunAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=run_at,json=runAt,proto3" json:"run_at,omitempty"`
 	// When true, the dispatched action still respects the device's
 	// maintenance window if the device has one configured. The default
