@@ -271,8 +271,11 @@ type LpsPasswordRotation struct {
 	RotatedAt string `protobuf:"bytes,3,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
 	// Why this rotation happened. INITIAL on the first time the LPS
 	// action ran for the user (no prior managed password to retain);
-	// SCHEDULED for any subsequent policy-driven rotation. Stored on the
-	// event as the lowercase string form.
+	// SCHEDULED for any subsequent policy-driven rotation; AUTH_GRACE
+	// when a user authenticates during the post-rotation grace window
+	// (LPS-only path that signals "rotate now to limit the leaked-
+	// password window" — never emitted from LUKS). Stored on the event
+	// as the lowercase string form.
 	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

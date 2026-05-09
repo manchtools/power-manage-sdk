@@ -100,8 +100,11 @@ message LpsPasswordRotation {
   string rotated_at = 3;
   // Why this rotation happened. INITIAL on the first time the LPS
   // action ran for the user (no prior managed password to retain);
-  // SCHEDULED for any subsequent policy-driven rotation. Stored on the
-  // event as the lowercase string form.
+  // SCHEDULED for any subsequent policy-driven rotation; AUTH_GRACE
+  // when a user authenticates during the post-rotation grace window
+  // (LPS-only path that signals "rotate now to limit the leaked-
+  // password window" — never emitted from LUKS). Stored on the event
+  // as the lowercase string form.
   RotationReason reason = 4;
 }
 

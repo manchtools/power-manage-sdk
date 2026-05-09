@@ -165,8 +165,11 @@ export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
   /**
    * Why this rotation happened. INITIAL on the first time the LPS
    * action ran for the user (no prior managed password to retain);
-   * SCHEDULED for any subsequent policy-driven rotation. Stored on the
-   * event as the lowercase string form.
+   * SCHEDULED for any subsequent policy-driven rotation; AUTH_GRACE
+   * when a user authenticates during the post-rotation grace window
+   * (LPS-only path that signals "rotate now to limit the leaked-
+   * password window" — never emitted from LUKS). Stored on the event
+   * as the lowercase string form.
    *
    * @generated from field: pm.v1.RotationReason reason = 4;
    */
