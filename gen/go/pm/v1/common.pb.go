@@ -503,6 +503,69 @@ func (IdentityProviderType) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
+// RotationReason classifies why a credential rotation happened. The
+// agent emits INITIAL (first time the action ran on the device, no
+// previous credential to retain), SCHEDULED (interval-based policy
+// rotation), and AUTH_GRACE (LPS only — user authenticated since the
+// last rotation and the grace period has now elapsed). Same wire /
+// event-store split as the other PR-A/B enums: the proto carries the
+// typed enum, the JSONB event payload and projection columns keep the
+// lowercase string form ("initial" / "scheduled" / "auth_grace") for
+// backward replay; conversion happens at the RPC boundary. Used by
+// LUKS passphrase rotations (INITIAL / SCHEDULED only — LUKS does not
+// run the auth-grace path) and LPS password rotations.
+type RotationReason int32
+
+const (
+	RotationReason_ROTATION_REASON_UNSPECIFIED RotationReason = 0
+	RotationReason_ROTATION_REASON_INITIAL     RotationReason = 1
+	RotationReason_ROTATION_REASON_SCHEDULED   RotationReason = 2
+	RotationReason_ROTATION_REASON_AUTH_GRACE  RotationReason = 3
+)
+
+// Enum value maps for RotationReason.
+var (
+	RotationReason_name = map[int32]string{
+		0: "ROTATION_REASON_UNSPECIFIED",
+		1: "ROTATION_REASON_INITIAL",
+		2: "ROTATION_REASON_SCHEDULED",
+		3: "ROTATION_REASON_AUTH_GRACE",
+	}
+	RotationReason_value = map[string]int32{
+		"ROTATION_REASON_UNSPECIFIED": 0,
+		"ROTATION_REASON_INITIAL":     1,
+		"ROTATION_REASON_SCHEDULED":   2,
+		"ROTATION_REASON_AUTH_GRACE":  3,
+	}
+)
+
+func (x RotationReason) Enum() *RotationReason {
+	p := new(RotationReason)
+	*p = x
+	return p
+}
+
+func (x RotationReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RotationReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[8].Descriptor()
+}
+
+func (RotationReason) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[8]
+}
+
+func (x RotationReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RotationReason.Descriptor instead.
+func (RotationReason) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
+}
+
 // Compliance status for a device based on detection scripts
 type ComplianceStatus int32
 
@@ -540,11 +603,11 @@ func (x ComplianceStatus) String() string {
 }
 
 func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[8].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
 }
 
 func (ComplianceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[8]
+	return &file_pm_v1_common_proto_enumTypes[9]
 }
 
 func (x ComplianceStatus) Number() protoreflect.EnumNumber {
@@ -553,7 +616,7 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
 }
 
 // Unique identifier for an action instance
@@ -960,7 +1023,12 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"*_\n" +
 	"\x14IdentityProviderType\x12&\n" +
 	"\"IDENTITY_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
-	"\x1bIDENTITY_PROVIDER_TYPE_OIDC\x10\x01*\x9e\x01\n" +
+	"\x1bIDENTITY_PROVIDER_TYPE_OIDC\x10\x01*\x8d\x01\n" +
+	"\x0eRotationReason\x12\x1f\n" +
+	"\x1bROTATION_REASON_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17ROTATION_REASON_INITIAL\x10\x01\x12\x1d\n" +
+	"\x19ROTATION_REASON_SCHEDULED\x10\x02\x12\x1e\n" +
+	"\x1aROTATION_REASON_AUTH_GRACE\x10\x03*\x9e\x01\n" +
 	"\x10ComplianceStatus\x12\x1d\n" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
@@ -979,7 +1047,7 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
@@ -990,16 +1058,17 @@ var file_pm_v1_common_proto_goTypes = []any{
 	(DeviceStatus)(0),              // 5: pm.v1.DeviceStatus
 	(SearchScope)(0),               // 6: pm.v1.SearchScope
 	(IdentityProviderType)(0),      // 7: pm.v1.IdentityProviderType
-	(ComplianceStatus)(0),          // 8: pm.v1.ComplianceStatus
-	(*ActionId)(nil),               // 9: pm.v1.ActionId
-	(*DeviceId)(nil),               // 10: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 11: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 12: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 13: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 14: pm.v1.CommandOutput
+	(RotationReason)(0),            // 8: pm.v1.RotationReason
+	(ComplianceStatus)(0),          // 9: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 10: pm.v1.ActionId
+	(*DeviceId)(nil),               // 11: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 12: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 13: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 14: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 15: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	13, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	14, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
 	1,  // [1:1] is the sub-list for method output_type
 	1,  // [1:1] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
@@ -1017,7 +1086,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      9,
+			NumEnums:      10,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,

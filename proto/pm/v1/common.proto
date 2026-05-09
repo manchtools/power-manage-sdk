@@ -120,6 +120,24 @@ enum IdentityProviderType {
   IDENTITY_PROVIDER_TYPE_OIDC = 1;
 }
 
+// RotationReason classifies why a credential rotation happened. The
+// agent emits INITIAL (first time the action ran on the device, no
+// previous credential to retain), SCHEDULED (interval-based policy
+// rotation), and AUTH_GRACE (LPS only — user authenticated since the
+// last rotation and the grace period has now elapsed). Same wire /
+// event-store split as the other PR-A/B enums: the proto carries the
+// typed enum, the JSONB event payload and projection columns keep the
+// lowercase string form ("initial" / "scheduled" / "auth_grace") for
+// backward replay; conversion happens at the RPC boundary. Used by
+// LUKS passphrase rotations (INITIAL / SCHEDULED only — LUKS does not
+// run the auth-grace path) and LPS password rotations.
+enum RotationReason {
+  ROTATION_REASON_UNSPECIFIED = 0;
+  ROTATION_REASON_INITIAL = 1;
+  ROTATION_REASON_SCHEDULED = 2;
+  ROTATION_REASON_AUTH_GRACE = 3;
+}
+
 // Structured error detail attached to Connect-RPC errors.
 message ErrorDetail {
   // Machine-readable error code (e.g., "user_not_found", "email_already_exists").

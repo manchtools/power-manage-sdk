@@ -176,12 +176,15 @@ func (x *InternalGetLuksKeyRequest) GetActionId() string {
 
 // InternalStoreLuksKeyRequest includes device_id (from mTLS) and key data.
 type InternalStoreLuksKeyRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId       string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	ActionId       string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	DevicePath     string                 `protobuf:"bytes,3,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty"`
-	Passphrase     string                 `protobuf:"bytes,4,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
-	RotationReason string                 `protobuf:"bytes,5,opt,name=rotation_reason,json=rotationReason,proto3" json:"rotation_reason,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId   string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	ActionId   string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	DevicePath string                 `protobuf:"bytes,3,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty"`
+	Passphrase string                 `protobuf:"bytes,4,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
+	// Why this rotation happened. INITIAL on the first rotation for the
+	// (device, action) pair; SCHEDULED for any subsequent policy-driven
+	// rotation. Stored on the event as the lowercase string form.
+	RotationReason RotationReason `protobuf:"varint,5,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -244,20 +247,36 @@ func (x *InternalStoreLuksKeyRequest) GetPassphrase() string {
 	return ""
 }
 
-func (x *InternalStoreLuksKeyRequest) GetRotationReason() string {
+func (x *InternalStoreLuksKeyRequest) GetRotationReason() RotationReason {
 	if x != nil {
 		return x.RotationReason
 	}
-	return ""
+	return RotationReason_ROTATION_REASON_UNSPECIFIED
 }
 
-// LpsPasswordRotation represents a single password rotation entry.
+// LpsPasswordRotation represents a single password rotation entry the
+// agent gathered during an LPS execution. The gateway receives one of
+// these per rotated local user and proxies the batch to control for
+// encryption + persistence.
 type LpsPasswordRotation struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	RotatedAt     string                 `protobuf:"bytes,3,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
-	Reason        string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Local Linux username whose password was rotated.
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// Plaintext rotated password. Encrypted at rest by control before the
+	// event is appended; never stored or logged in cleartext.
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	// RFC 3339 timestamp the agent observed the rotation. The control
+	// server keeps the agent's clock here rather than re-stamping at
+	// receipt so the timeline reflects the device's reality.
+	RotatedAt string `protobuf:"bytes,3,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
+	// Why this rotation happened. INITIAL on the first time the LPS
+	// action ran for the user (no prior managed password to retain);
+	// SCHEDULED for any subsequent policy-driven rotation; AUTH_GRACE
+	// when a user authenticates during the post-rotation grace window
+	// (LPS-only path that signals "rotate now to limit the leaked-
+	// password window" — never emitted from LUKS). Stored on the event
+	// as the lowercase string form.
+	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -313,11 +332,11 @@ func (x *LpsPasswordRotation) GetRotatedAt() string {
 	return ""
 }
 
-func (x *LpsPasswordRotation) GetReason() string {
+func (x *LpsPasswordRotation) GetReason() RotationReason {
 	if x != nil {
 		return x.Reason
 	}
-	return ""
+	return RotationReason_ROTATION_REASON_UNSPECIFIED
 }
 
 // InternalStoreLpsPasswordsRequest sends LPS password rotations to control
@@ -934,7 +953,7 @@ var File_pm_v1_internal_proto protoreflect.FileDescriptor
 
 const file_pm_v1_internal_proto_rawDesc = "" +
 	"\n" +
-	"\x14pm/v1/internal.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11pm/v1/agent.proto\"9\n" +
+	"\x14pm/v1/internal.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11pm/v1/agent.proto\x1a\x12pm/v1/common.proto\"9\n" +
 	"\x1aInternalSyncActionsRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"U\n" +
 	" InternalValidateLuksTokenRequest\x12\x1b\n" +
@@ -942,7 +961,7 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\x05token\x18\x02 \x01(\tR\x05token\"U\n" +
 	"\x19InternalGetLuksKeyRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
-	"\taction_id\x18\x02 \x01(\tR\bactionId\"\xc1\x01\n" +
+	"\taction_id\x18\x02 \x01(\tR\bactionId\"\xd8\x01\n" +
 	"\x1bInternalStoreLuksKeyRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1f\n" +
@@ -950,14 +969,14 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"devicePath\x12\x1e\n" +
 	"\n" +
 	"passphrase\x18\x04 \x01(\tR\n" +
-	"passphrase\x12'\n" +
-	"\x0frotation_reason\x18\x05 \x01(\tR\x0erotationReason\"\x84\x01\n" +
+	"passphrase\x12>\n" +
+	"\x0frotation_reason\x18\x05 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"\x9b\x01\n" +
 	"\x13LpsPasswordRotation\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1d\n" +
 	"\n" +
-	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\"\x96\x01\n" +
+	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x12-\n" +
+	"\x06reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x06reason\"\x96\x01\n" +
 	" InternalStoreLpsPasswordsRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x128\n" +
@@ -1036,40 +1055,43 @@ var file_pm_v1_internal_proto_goTypes = []any{
 	(*ListGatewayTerminalSessionsResponse)(nil),     // 13: pm.v1.ListGatewayTerminalSessionsResponse
 	(*TerminateGatewayTerminalSessionRequest)(nil),  // 14: pm.v1.TerminateGatewayTerminalSessionRequest
 	(*TerminateGatewayTerminalSessionResponse)(nil), // 15: pm.v1.TerminateGatewayTerminalSessionResponse
-	(*timestamppb.Timestamp)(nil),                   // 16: google.protobuf.Timestamp
-	(*SyncActionsResponse)(nil),                     // 17: pm.v1.SyncActionsResponse
-	(*ValidateLuksTokenResponse)(nil),               // 18: pm.v1.ValidateLuksTokenResponse
-	(*GetLuksKeyResponse)(nil),                      // 19: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyResponse)(nil),                    // 20: pm.v1.StoreLuksKeyResponse
+	(RotationReason)(0),                             // 16: pm.v1.RotationReason
+	(*timestamppb.Timestamp)(nil),                   // 17: google.protobuf.Timestamp
+	(*SyncActionsResponse)(nil),                     // 18: pm.v1.SyncActionsResponse
+	(*ValidateLuksTokenResponse)(nil),               // 19: pm.v1.ValidateLuksTokenResponse
+	(*GetLuksKeyResponse)(nil),                      // 20: pm.v1.GetLuksKeyResponse
+	(*StoreLuksKeyResponse)(nil),                    // 21: pm.v1.StoreLuksKeyResponse
 }
 var file_pm_v1_internal_proto_depIdxs = []int32{
-	4,  // 0: pm.v1.InternalStoreLpsPasswordsRequest.rotations:type_name -> pm.v1.LpsPasswordRotation
-	16, // 1: pm.v1.GatewayTerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
-	16, // 2: pm.v1.GatewayTerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
-	11, // 3: pm.v1.ListGatewayTerminalSessionsResponse.sessions:type_name -> pm.v1.GatewayTerminalSessionInfo
-	9,  // 4: pm.v1.InternalService.VerifyDevice:input_type -> pm.v1.VerifyDeviceRequest
-	0,  // 5: pm.v1.InternalService.ProxySyncActions:input_type -> pm.v1.InternalSyncActionsRequest
-	1,  // 6: pm.v1.InternalService.ProxyValidateLuksToken:input_type -> pm.v1.InternalValidateLuksTokenRequest
-	2,  // 7: pm.v1.InternalService.ProxyGetLuksKey:input_type -> pm.v1.InternalGetLuksKeyRequest
-	3,  // 8: pm.v1.InternalService.ProxyStoreLuksKey:input_type -> pm.v1.InternalStoreLuksKeyRequest
-	5,  // 9: pm.v1.InternalService.ProxyStoreLpsPasswords:input_type -> pm.v1.InternalStoreLpsPasswordsRequest
-	7,  // 10: pm.v1.InternalService.ProxyValidateTerminalToken:input_type -> pm.v1.InternalValidateTerminalTokenRequest
-	12, // 11: pm.v1.GatewayService.ListGatewayTerminalSessions:input_type -> pm.v1.ListGatewayTerminalSessionsRequest
-	14, // 12: pm.v1.GatewayService.TerminateGatewayTerminalSession:input_type -> pm.v1.TerminateGatewayTerminalSessionRequest
-	10, // 13: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
-	17, // 14: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
-	18, // 15: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	19, // 16: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
-	20, // 17: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
-	6,  // 18: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
-	8,  // 19: pm.v1.InternalService.ProxyValidateTerminalToken:output_type -> pm.v1.InternalValidateTerminalTokenResponse
-	13, // 20: pm.v1.GatewayService.ListGatewayTerminalSessions:output_type -> pm.v1.ListGatewayTerminalSessionsResponse
-	15, // 21: pm.v1.GatewayService.TerminateGatewayTerminalSession:output_type -> pm.v1.TerminateGatewayTerminalSessionResponse
-	13, // [13:22] is the sub-list for method output_type
-	4,  // [4:13] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	16, // 0: pm.v1.InternalStoreLuksKeyRequest.rotation_reason:type_name -> pm.v1.RotationReason
+	16, // 1: pm.v1.LpsPasswordRotation.reason:type_name -> pm.v1.RotationReason
+	4,  // 2: pm.v1.InternalStoreLpsPasswordsRequest.rotations:type_name -> pm.v1.LpsPasswordRotation
+	17, // 3: pm.v1.GatewayTerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
+	17, // 4: pm.v1.GatewayTerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
+	11, // 5: pm.v1.ListGatewayTerminalSessionsResponse.sessions:type_name -> pm.v1.GatewayTerminalSessionInfo
+	9,  // 6: pm.v1.InternalService.VerifyDevice:input_type -> pm.v1.VerifyDeviceRequest
+	0,  // 7: pm.v1.InternalService.ProxySyncActions:input_type -> pm.v1.InternalSyncActionsRequest
+	1,  // 8: pm.v1.InternalService.ProxyValidateLuksToken:input_type -> pm.v1.InternalValidateLuksTokenRequest
+	2,  // 9: pm.v1.InternalService.ProxyGetLuksKey:input_type -> pm.v1.InternalGetLuksKeyRequest
+	3,  // 10: pm.v1.InternalService.ProxyStoreLuksKey:input_type -> pm.v1.InternalStoreLuksKeyRequest
+	5,  // 11: pm.v1.InternalService.ProxyStoreLpsPasswords:input_type -> pm.v1.InternalStoreLpsPasswordsRequest
+	7,  // 12: pm.v1.InternalService.ProxyValidateTerminalToken:input_type -> pm.v1.InternalValidateTerminalTokenRequest
+	12, // 13: pm.v1.GatewayService.ListGatewayTerminalSessions:input_type -> pm.v1.ListGatewayTerminalSessionsRequest
+	14, // 14: pm.v1.GatewayService.TerminateGatewayTerminalSession:input_type -> pm.v1.TerminateGatewayTerminalSessionRequest
+	10, // 15: pm.v1.InternalService.VerifyDevice:output_type -> pm.v1.VerifyDeviceResponse
+	18, // 16: pm.v1.InternalService.ProxySyncActions:output_type -> pm.v1.SyncActionsResponse
+	19, // 17: pm.v1.InternalService.ProxyValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	20, // 18: pm.v1.InternalService.ProxyGetLuksKey:output_type -> pm.v1.GetLuksKeyResponse
+	21, // 19: pm.v1.InternalService.ProxyStoreLuksKey:output_type -> pm.v1.StoreLuksKeyResponse
+	6,  // 20: pm.v1.InternalService.ProxyStoreLpsPasswords:output_type -> pm.v1.InternalStoreLpsPasswordsResponse
+	8,  // 21: pm.v1.InternalService.ProxyValidateTerminalToken:output_type -> pm.v1.InternalValidateTerminalTokenResponse
+	13, // 22: pm.v1.GatewayService.ListGatewayTerminalSessions:output_type -> pm.v1.ListGatewayTerminalSessionsResponse
+	15, // 23: pm.v1.GatewayService.TerminateGatewayTerminalSession:output_type -> pm.v1.TerminateGatewayTerminalSessionResponse
+	15, // [15:24] is the sub-list for method output_type
+	6,  // [6:15] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_internal_proto_init() }
@@ -1078,6 +1100,7 @@ func file_pm_v1_internal_proto_init() {
 		return
 	}
 	file_pm_v1_agent_proto_init()
+	file_pm_v1_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
