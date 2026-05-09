@@ -1354,7 +1354,7 @@ message ListAvailableActionsRequest {
 }
 
 message AvailableItem {
-  string source_type = 1;
+  AssignmentSourceType source_type = 1;
   string source_id = 2;
   string source_name = 3;
   string source_description = 4;
