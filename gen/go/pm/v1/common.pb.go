@@ -200,6 +200,126 @@ func (AssignmentMode) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+// AssignmentSourceType identifies what kind of policy artefact an
+// Assignment links to a target. The wire enum replaces the legacy
+// stringly-typed `source_type` field (action / action_set /
+// definition / compliance_policy). The event-store payload still
+// keeps the lowercase string form for backward replay; conversion
+// happens at the RPC boundary.
+type AssignmentSourceType int32
+
+const (
+	AssignmentSourceType_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED       AssignmentSourceType = 0
+	AssignmentSourceType_ASSIGNMENT_SOURCE_TYPE_ACTION            AssignmentSourceType = 1
+	AssignmentSourceType_ASSIGNMENT_SOURCE_TYPE_ACTION_SET        AssignmentSourceType = 2
+	AssignmentSourceType_ASSIGNMENT_SOURCE_TYPE_DEFINITION        AssignmentSourceType = 3
+	AssignmentSourceType_ASSIGNMENT_SOURCE_TYPE_COMPLIANCE_POLICY AssignmentSourceType = 4
+)
+
+// Enum value maps for AssignmentSourceType.
+var (
+	AssignmentSourceType_name = map[int32]string{
+		0: "ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED",
+		1: "ASSIGNMENT_SOURCE_TYPE_ACTION",
+		2: "ASSIGNMENT_SOURCE_TYPE_ACTION_SET",
+		3: "ASSIGNMENT_SOURCE_TYPE_DEFINITION",
+		4: "ASSIGNMENT_SOURCE_TYPE_COMPLIANCE_POLICY",
+	}
+	AssignmentSourceType_value = map[string]int32{
+		"ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED":       0,
+		"ASSIGNMENT_SOURCE_TYPE_ACTION":            1,
+		"ASSIGNMENT_SOURCE_TYPE_ACTION_SET":        2,
+		"ASSIGNMENT_SOURCE_TYPE_DEFINITION":        3,
+		"ASSIGNMENT_SOURCE_TYPE_COMPLIANCE_POLICY": 4,
+	}
+)
+
+func (x AssignmentSourceType) Enum() *AssignmentSourceType {
+	p := new(AssignmentSourceType)
+	*p = x
+	return p
+}
+
+func (x AssignmentSourceType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AssignmentSourceType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (AssignmentSourceType) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[3]
+}
+
+func (x AssignmentSourceType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AssignmentSourceType.Descriptor instead.
+func (AssignmentSourceType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+// AssignmentTargetType identifies what kind of subject an Assignment
+// applies to. Same wire/event-store split as AssignmentSourceType:
+// the proto uses the enum, the JSONB event payload keeps the legacy
+// lowercase string (device / device_group / user / user_group).
+type AssignmentTargetType int32
+
+const (
+	AssignmentTargetType_ASSIGNMENT_TARGET_TYPE_UNSPECIFIED  AssignmentTargetType = 0
+	AssignmentTargetType_ASSIGNMENT_TARGET_TYPE_DEVICE       AssignmentTargetType = 1
+	AssignmentTargetType_ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP AssignmentTargetType = 2
+	AssignmentTargetType_ASSIGNMENT_TARGET_TYPE_USER         AssignmentTargetType = 3
+	AssignmentTargetType_ASSIGNMENT_TARGET_TYPE_USER_GROUP   AssignmentTargetType = 4
+)
+
+// Enum value maps for AssignmentTargetType.
+var (
+	AssignmentTargetType_name = map[int32]string{
+		0: "ASSIGNMENT_TARGET_TYPE_UNSPECIFIED",
+		1: "ASSIGNMENT_TARGET_TYPE_DEVICE",
+		2: "ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP",
+		3: "ASSIGNMENT_TARGET_TYPE_USER",
+		4: "ASSIGNMENT_TARGET_TYPE_USER_GROUP",
+	}
+	AssignmentTargetType_value = map[string]int32{
+		"ASSIGNMENT_TARGET_TYPE_UNSPECIFIED":  0,
+		"ASSIGNMENT_TARGET_TYPE_DEVICE":       1,
+		"ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP": 2,
+		"ASSIGNMENT_TARGET_TYPE_USER":         3,
+		"ASSIGNMENT_TARGET_TYPE_USER_GROUP":   4,
+	}
+)
+
+func (x AssignmentTargetType) Enum() *AssignmentTargetType {
+	p := new(AssignmentTargetType)
+	*p = x
+	return p
+}
+
+func (x AssignmentTargetType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AssignmentTargetType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[4].Descriptor()
+}
+
+func (AssignmentTargetType) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[4]
+}
+
+func (x AssignmentTargetType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AssignmentTargetType.Descriptor instead.
+func (AssignmentTargetType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
 // Compliance status for a device based on detection scripts
 type ComplianceStatus int32
 
@@ -237,11 +357,11 @@ func (x ComplianceStatus) String() string {
 }
 
 func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[3].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[5].Descriptor()
 }
 
 func (ComplianceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[3]
+	return &file_pm_v1_common_proto_enumTypes[5]
 }
 
 func (x ComplianceStatus) Number() protoreflect.EnumNumber {
@@ -250,7 +370,7 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 // Unique identifier for an action instance
@@ -625,7 +745,19 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x18ASSIGNMENT_MODE_REQUIRED\x10\x00\x12\x1d\n" +
 	"\x19ASSIGNMENT_MODE_AVAILABLE\x10\x01\x12\x1c\n" +
 	"\x18ASSIGNMENT_MODE_EXCLUDED\x10\x02\x12\x1d\n" +
-	"\x19ASSIGNMENT_MODE_UNINSTALL\x10\x03*\x9e\x01\n" +
+	"\x19ASSIGNMENT_MODE_UNINSTALL\x10\x03*\xdd\x01\n" +
+	"\x14AssignmentSourceType\x12&\n" +
+	"\"ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dASSIGNMENT_SOURCE_TYPE_ACTION\x10\x01\x12%\n" +
+	"!ASSIGNMENT_SOURCE_TYPE_ACTION_SET\x10\x02\x12%\n" +
+	"!ASSIGNMENT_SOURCE_TYPE_DEFINITION\x10\x03\x12,\n" +
+	"(ASSIGNMENT_SOURCE_TYPE_COMPLIANCE_POLICY\x10\x04*\xd2\x01\n" +
+	"\x14AssignmentTargetType\x12&\n" +
+	"\"ASSIGNMENT_TARGET_TYPE_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dASSIGNMENT_TARGET_TYPE_DEVICE\x10\x01\x12'\n" +
+	"#ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP\x10\x02\x12\x1f\n" +
+	"\x1bASSIGNMENT_TARGET_TYPE_USER\x10\x03\x12%\n" +
+	"!ASSIGNMENT_TARGET_TYPE_USER_GROUP\x10\x04*\x9e\x01\n" +
 	"\x10ComplianceStatus\x12\x1d\n" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
@@ -644,27 +776,29 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
 	(DesiredState)(0),              // 1: pm.v1.DesiredState
 	(AssignmentMode)(0),            // 2: pm.v1.AssignmentMode
-	(ComplianceStatus)(0),          // 3: pm.v1.ComplianceStatus
-	(*ActionId)(nil),               // 4: pm.v1.ActionId
-	(*DeviceId)(nil),               // 5: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 6: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 7: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 8: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 9: pm.v1.CommandOutput
+	(AssignmentSourceType)(0),      // 3: pm.v1.AssignmentSourceType
+	(AssignmentTargetType)(0),      // 4: pm.v1.AssignmentTargetType
+	(ComplianceStatus)(0),          // 5: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 6: pm.v1.ActionId
+	(*DeviceId)(nil),               // 7: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 8: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 9: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 10: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 11: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	8, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	10, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	1,  // [1:1] is the sub-list for method output_type
+	1,  // [1:1] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_common_proto_init() }
@@ -677,7 +811,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      6,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,

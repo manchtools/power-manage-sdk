@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/common.proto.
  */
 export const file_pm_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJEChFNYWludGVuYW5jZVdpbmRvdxIvCghzY2hlZHVsZRgBIAMoCzIdLnBtLnYxLk1haW50ZW5hbmNlV2luZG93RW50cnkiNQoWTWFpbnRlbmFuY2VXaW5kb3dFbnRyeRIMCgRkYXlzGAEgAygJEg0KBWFsbG93GAIgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkqpgIKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBhIeChpFWEVDVVRJT05fU1RBVFVTX1NDSEVEVUxFRBAHEh4KGkVYRUNVVElPTl9TVEFUVVNfQ0FOQ0VMTEVEEAgqQwoMRGVzaXJlZFN0YXRlEhkKFURFU0lSRURfU1RBVEVfUFJFU0VOVBAAEhgKFERFU0lSRURfU1RBVEVfQUJTRU5UEAEqigEKDkFzc2lnbm1lbnRNb2RlEhwKGEFTU0lHTk1FTlRfTU9ERV9SRVFVSVJFRBAAEh0KGUFTU0lHTk1FTlRfTU9ERV9BVkFJTEFCTEUQARIcChhBU1NJR05NRU5UX01PREVfRVhDTFVERUQQAhIdChlBU1NJR05NRU5UX01PREVfVU5JTlNUQUxMEAMqngEKEENvbXBsaWFuY2VTdGF0dXMSHQoZQ09NUExJQU5DRV9TVEFUVVNfVU5LTk9XThAAEh8KG0NPTVBMSUFOQ0VfU1RBVFVTX0NPTVBMSUFOVBABEiMKH0NPTVBMSUFOQ0VfU1RBVFVTX05PTl9DT01QTElBTlQQAhIlCiFDT01QTElBTkNFX1NUQVRVU19JTl9HUkFDRV9QRVJJT0QQA0I6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z");
+  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJEChFNYWludGVuYW5jZVdpbmRvdxIvCghzY2hlZHVsZRgBIAMoCzIdLnBtLnYxLk1haW50ZW5hbmNlV2luZG93RW50cnkiNQoWTWFpbnRlbmFuY2VXaW5kb3dFbnRyeRIMCgRkYXlzGAEgAygJEg0KBWFsbG93GAIgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkqpgIKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBhIeChpFWEVDVVRJT05fU1RBVFVTX1NDSEVEVUxFRBAHEh4KGkVYRUNVVElPTl9TVEFUVVNfQ0FOQ0VMTEVEEAgqQwoMRGVzaXJlZFN0YXRlEhkKFURFU0lSRURfU1RBVEVfUFJFU0VOVBAAEhgKFERFU0lSRURfU1RBVEVfQUJTRU5UEAEqigEKDkFzc2lnbm1lbnRNb2RlEhwKGEFTU0lHTk1FTlRfTU9ERV9SRVFVSVJFRBAAEh0KGUFTU0lHTk1FTlRfTU9ERV9BVkFJTEFCTEUQARIcChhBU1NJR05NRU5UX01PREVfRVhDTFVERUQQAhIdChlBU1NJR05NRU5UX01PREVfVU5JTlNUQUxMEAMq3QEKFEFzc2lnbm1lbnRTb3VyY2VUeXBlEiYKIkFTU0lHTk1FTlRfU09VUkNFX1RZUEVfVU5TUEVDSUZJRUQQABIhCh1BU1NJR05NRU5UX1NPVVJDRV9UWVBFX0FDVElPThABEiUKIUFTU0lHTk1FTlRfU09VUkNFX1RZUEVfQUNUSU9OX1NFVBACEiUKIUFTU0lHTk1FTlRfU09VUkNFX1RZUEVfREVGSU5JVElPThADEiwKKEFTU0lHTk1FTlRfU09VUkNFX1RZUEVfQ09NUExJQU5DRV9QT0xJQ1kQBCrSAQoUQXNzaWdubWVudFRhcmdldFR5cGUSJgoiQVNTSUdOTUVOVF9UQVJHRVRfVFlQRV9VTlNQRUNJRklFRBAAEiEKHUFTU0lHTk1FTlRfVEFSR0VUX1RZUEVfREVWSUNFEAESJwojQVNTSUdOTUVOVF9UQVJHRVRfVFlQRV9ERVZJQ0VfR1JPVVAQAhIfChtBU1NJR05NRU5UX1RBUkdFVF9UWVBFX1VTRVIQAxIlCiFBU1NJR05NRU5UX1RBUkdFVF9UWVBFX1VTRVJfR1JPVVAQBCqeAQoQQ29tcGxpYW5jZVN0YXR1cxIdChlDT01QTElBTkNFX1NUQVRVU19VTktOT1dOEAASHwobQ09NUExJQU5DRV9TVEFUVVNfQ09NUExJQU5UEAESIwofQ09NUExJQU5DRV9TVEFUVVNfTk9OX0NPTVBMSUFOVBACEiUKIUNPTVBMSUFOQ0VfU1RBVFVTX0lOX0dSQUNFX1BFUklPRBADQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM");
 
 /**
  * Unique identifier for an action instance
@@ -327,6 +327,90 @@ export const AssignmentModeSchema: GenEnum<AssignmentMode> = /*@__PURE__*/
   enumDesc(file_pm_v1_common, 2);
 
 /**
+ * AssignmentSourceType identifies what kind of policy artefact an
+ * Assignment links to a target. The wire enum replaces the legacy
+ * stringly-typed `source_type` field (action / action_set /
+ * definition / compliance_policy). The event-store payload still
+ * keeps the lowercase string form for backward replay; conversion
+ * happens at the RPC boundary.
+ *
+ * @generated from enum pm.v1.AssignmentSourceType
+ */
+export enum AssignmentSourceType {
+  /**
+   * @generated from enum value: ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_SOURCE_TYPE_ACTION = 1;
+   */
+  ACTION = 1,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_SOURCE_TYPE_ACTION_SET = 2;
+   */
+  ACTION_SET = 2,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_SOURCE_TYPE_DEFINITION = 3;
+   */
+  DEFINITION = 3,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_SOURCE_TYPE_COMPLIANCE_POLICY = 4;
+   */
+  COMPLIANCE_POLICY = 4,
+}
+
+/**
+ * Describes the enum pm.v1.AssignmentSourceType.
+ */
+export const AssignmentSourceTypeSchema: GenEnum<AssignmentSourceType> = /*@__PURE__*/
+  enumDesc(file_pm_v1_common, 3);
+
+/**
+ * AssignmentTargetType identifies what kind of subject an Assignment
+ * applies to. Same wire/event-store split as AssignmentSourceType:
+ * the proto uses the enum, the JSONB event payload keeps the legacy
+ * lowercase string (device / device_group / user / user_group).
+ *
+ * @generated from enum pm.v1.AssignmentTargetType
+ */
+export enum AssignmentTargetType {
+  /**
+   * @generated from enum value: ASSIGNMENT_TARGET_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_TARGET_TYPE_DEVICE = 1;
+   */
+  DEVICE = 1,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP = 2;
+   */
+  DEVICE_GROUP = 2,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_TARGET_TYPE_USER = 3;
+   */
+  USER = 3,
+
+  /**
+   * @generated from enum value: ASSIGNMENT_TARGET_TYPE_USER_GROUP = 4;
+   */
+  USER_GROUP = 4,
+}
+
+/**
+ * Describes the enum pm.v1.AssignmentTargetType.
+ */
+export const AssignmentTargetTypeSchema: GenEnum<AssignmentTargetType> = /*@__PURE__*/
+  enumDesc(file_pm_v1_common, 4);
+
+/**
  * Compliance status for a device based on detection scripts
  *
  * @generated from enum pm.v1.ComplianceStatus
@@ -357,5 +441,5 @@ export enum ComplianceStatus {
  * Describes the enum pm.v1.ComplianceStatus.
  */
 export const ComplianceStatusSchema: GenEnum<ComplianceStatus> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 3);
+  enumDesc(file_pm_v1_common, 5);
 

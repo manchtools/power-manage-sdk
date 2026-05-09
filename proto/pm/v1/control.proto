@@ -1257,29 +1257,43 @@ message SetDeviceGroupMaintenanceWindowRequest {
 // ============================================================================
 
 message Assignment {
+  // Field numbers 2 and 4 used to be `string source_type` / `string
+  // target_type`; reserved here so the wire-tag numbers can never
+  // be re-bound with a different type. The names stay (now backed
+  // by the typed AssignmentSourceType / AssignmentTargetType enums
+  // at fresh field numbers 11 / 12) so JSON / generated Go field
+  // names are unchanged.
+  reserved 2, 4;
+
   string id = 1;
-  string source_type = 2;  // "definition", "action_set", or "action"
   string source_id = 3;
-  string target_type = 4;  // "device" or "device_group"
   string target_id = 5;
   google.protobuf.Timestamp created_at = 6;
   string created_by = 7;
   AssignmentMode mode = 8;
   string source_name = 9;
   string target_name = 10;
+  AssignmentSourceType source_type = 11;
+  AssignmentTargetType target_type = 12;
 }
 
 message CreateAssignmentRequest {
-  // @gotags: validate:"required,oneof=definition action_set action compliance_policy"
-  string source_type = 1;
+  // Field numbers 1 and 3 used to be `string source_type` / `string
+  // target_type`; reserved so the wire-tag numbers can never be
+  // re-bound with a different type. The field names live on at the
+  // new tag numbers 6 / 7, now typed via the enum.
+  reserved 1, 3;
+
   // @gotags: validate:"required,ulid"
   string source_id = 2;
-  // @gotags: validate:"required,oneof=device device_group user user_group"
-  string target_type = 3;
   // @gotags: validate:"required,ulid"
   string target_id = 4;
   // @gotags: validate:"omitempty"
   AssignmentMode mode = 5;  // Defaults to REQUIRED (0)
+  // @gotags: validate:"required,gte=1,lte=4"
+  AssignmentSourceType source_type = 6;
+  // @gotags: validate:"required,gte=1,lte=4"
+  AssignmentTargetType target_type = 7;
 }
 
 message CreateAssignmentResponse {
@@ -1294,18 +1308,28 @@ message DeleteAssignmentRequest {
 message DeleteAssignmentResponse {}
 
 message ListAssignmentsRequest {
-  // @gotags: validate:"omitempty,oneof=definition action_set action compliance_policy"
-  string source_type = 1;
+  // Field numbers 1 and 3 used to be `string source_type` / `string
+  // target_type`; reserved so the wire-tag numbers can never be
+  // re-bound with a different type. The field names live on at the
+  // new tag numbers 7 / 8, now typed via the enum.
+  reserved 1, 3;
+
   // @gotags: validate:"omitempty,ulid"
   string source_id = 2;
-  // @gotags: validate:"omitempty,oneof=device device_group user user_group"
-  string target_type = 3;
   // @gotags: validate:"omitempty,ulid"
   string target_id = 4;
   // @gotags: validate:"omitempty,gte=0,lte=100"
   int32 page_size = 5;
   // @gotags: validate:"omitempty"
   string page_token = 6;
+  // UNSPECIFIED (0) means "all source types"; non-zero filters to
+  // that single source type.
+  // @gotags: validate:"omitempty,gte=0,lte=4"
+  AssignmentSourceType source_type = 7;
+  // UNSPECIFIED (0) means "all target types"; non-zero filters to
+  // that single target type.
+  // @gotags: validate:"omitempty,gte=0,lte=4"
+  AssignmentTargetType target_type = 8;
 }
 
 message ListAssignmentsResponse {
@@ -1319,22 +1343,32 @@ message ListAssignmentsResponse {
 // ============================================================================
 
 message UserSelection {
+  // Field number 3 used to be `string source_type`; reserved so the
+  // wire-tag number can never be re-bound with a different type.
+  // The field name lives on at tag number 7, now typed via the enum.
+  reserved 3;
+
   string id = 1;
   string device_id = 2;
-  string source_type = 3;   // "action", "action_set", "definition"
   string source_id = 4;
   bool selected = 5;        // true=user wants it (present), false=user rejected (absent)
   google.protobuf.Timestamp updated_at = 6;
+  AssignmentSourceType source_type = 7;
 }
 
 message SetUserSelectionRequest {
+  // Field number 2 used to be `string source_type`; reserved so the
+  // wire-tag number can never be re-bound with a different type.
+  // The field name lives on at tag number 5, now typed via the enum.
+  reserved 2;
+
   // @gotags: validate:"required,ulid"
   string device_id = 1;
-  // @gotags: validate:"required,oneof=definition action_set action compliance_policy"
-  string source_type = 2;
   // @gotags: validate:"required,ulid"
   string source_id = 3;
   bool selected = 4;
+  // @gotags: validate:"required,gte=1,lte=4"
+  AssignmentSourceType source_type = 5;
 }
 
 message SetUserSelectionResponse {
