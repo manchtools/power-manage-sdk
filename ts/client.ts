@@ -234,8 +234,34 @@ import {
 	type TerminalSessionInfo
 } from '../gen/ts/pm/v1/control_pb';
 import type { ActionType, Action, ActionSchedule } from '../gen/ts/pm/v1/actions_pb';
-import { type ExecutionStatus, ErrorDetailSchema, type MaintenanceWindow } from '../gen/ts/pm/v1/common_pb';
+import {
+	type ExecutionStatus,
+	ErrorDetailSchema,
+	type MaintenanceWindow,
+	AssignmentSourceType,
+	AssignmentTargetType
+} from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
+
+// Translate the legacy lowercase source-type string used by
+// AvailableItem (and any other non-yet-migrated wire field) into
+// the AssignmentSourceType enum. Returns UNSPECIFIED for unknown
+// inputs so the caller surfaces a benign "unknown source" rather
+// than crashing on a stale row.
+export function assignmentSourceTypeFromString(s: string): AssignmentSourceType {
+	switch (s) {
+		case 'action':
+			return AssignmentSourceType.ACTION;
+		case 'action_set':
+			return AssignmentSourceType.ACTION_SET;
+		case 'definition':
+			return AssignmentSourceType.DEFINITION;
+		case 'compliance_policy':
+			return AssignmentSourceType.COMPLIANCE_POLICY;
+		default:
+			return AssignmentSourceType.UNSPECIFIED;
+	}
+}
 
 export interface ClientOptions {
 	getServerUrl: () => string;
@@ -1011,9 +1037,9 @@ export class ApiClient {
 	// ============================================================================
 
 	async createAssignment(
-		sourceType: 'action' | 'action_set' | 'definition' | 'compliance_policy',
+		sourceType: AssignmentSourceType,
 		sourceId: string,
-		targetType: 'device' | 'device_group' | 'user' | 'user_group',
+		targetType: AssignmentTargetType,
 		targetId: string,
 		mode: number = 0
 	) {
@@ -1025,9 +1051,9 @@ export class ApiClient {
 	}
 
 	async batchCreateAssignments(
-		sourceType: 'action' | 'action_set' | 'definition' | 'compliance_policy',
+		sourceType: AssignmentSourceType,
 		sourceId: string,
-		targets: Array<{ targetType: 'device' | 'device_group' | 'user' | 'user_group'; targetId: string }>,
+		targets: Array<{ targetType: AssignmentTargetType; targetId: string }>,
 		mode: number = 0
 	) {
 		return Promise.all(
@@ -1045,9 +1071,9 @@ export class ApiClient {
 	async listAssignments(
 		pageSize: number = 50,
 		pageToken: string = '',
-		sourceType: string = '',
+		sourceType: AssignmentSourceType = AssignmentSourceType.UNSPECIFIED,
 		sourceId: string = '',
-		targetType: string = '',
+		targetType: AssignmentTargetType = AssignmentTargetType.UNSPECIFIED,
 		targetId: string = ''
 	) {
 		const client = this.getClient();
@@ -1082,7 +1108,7 @@ export class ApiClient {
 		return response.items;
 	}
 
-	async setUserSelection(deviceId: string, sourceType: string, sourceId: string, selected: boolean) {
+	async setUserSelection(deviceId: string, sourceType: AssignmentSourceType, sourceId: string, selected: boolean) {
 		const client = this.getClient();
 		return client.setUserSelection(
 			create(SetUserSelectionRequestSchema, { deviceId, sourceType, sourceId, selected })

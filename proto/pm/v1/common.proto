@@ -54,6 +54,32 @@ enum AssignmentMode {
   ASSIGNMENT_MODE_UNINSTALL = 3; // Apply action but force desired_state to ABSENT
 }
 
+// AssignmentSourceType identifies what kind of policy artefact an
+// Assignment links to a target. The wire enum replaces the legacy
+// stringly-typed `source_type` field (action / action_set /
+// definition / compliance_policy). The event-store payload still
+// keeps the lowercase string form for backward replay; conversion
+// happens at the RPC boundary.
+enum AssignmentSourceType {
+  ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0;
+  ASSIGNMENT_SOURCE_TYPE_ACTION = 1;
+  ASSIGNMENT_SOURCE_TYPE_ACTION_SET = 2;
+  ASSIGNMENT_SOURCE_TYPE_DEFINITION = 3;
+  ASSIGNMENT_SOURCE_TYPE_COMPLIANCE_POLICY = 4;
+}
+
+// AssignmentTargetType identifies what kind of subject an Assignment
+// applies to. Same wire/event-store split as AssignmentSourceType:
+// the proto uses the enum, the JSONB event payload keeps the legacy
+// lowercase string (device / device_group / user / user_group).
+enum AssignmentTargetType {
+  ASSIGNMENT_TARGET_TYPE_UNSPECIFIED = 0;
+  ASSIGNMENT_TARGET_TYPE_DEVICE = 1;
+  ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP = 2;
+  ASSIGNMENT_TARGET_TYPE_USER = 3;
+  ASSIGNMENT_TARGET_TYPE_USER_GROUP = 4;
+}
+
 // Structured error detail attached to Connect-RPC errors.
 message ErrorDetail {
   // Machine-readable error code (e.g., "user_not_found", "email_already_exists").
