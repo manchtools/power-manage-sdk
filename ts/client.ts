@@ -239,7 +239,10 @@ import {
 	ErrorDetailSchema,
 	type MaintenanceWindow,
 	AssignmentSourceType,
-	AssignmentTargetType
+	AssignmentTargetType,
+	DeviceStatus,
+	IdentityProviderType,
+	SearchScope
 } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
@@ -586,7 +589,7 @@ export class ApiClient {
 	async listDevices(
 		pageSize: number = 50,
 		pageToken: string = '',
-		statusFilter: string = '',
+		statusFilter: DeviceStatus = DeviceStatus.UNSPECIFIED,
 		labelFilter: Record<string, string> = {},
 		myDevicesOnly: boolean = false
 	) {
@@ -1655,7 +1658,7 @@ export class ApiClient {
 	async createIdentityProvider(data: {
 		name: string;
 		slug: string;
-		providerType: string;
+		providerType: IdentityProviderType;
 		clientId: string;
 		clientSecret: string;
 		issuerUrl: string;
@@ -1756,7 +1759,7 @@ export class ApiClient {
 	// Search
 	async search(
 		query: string,
-		scope: string = '',
+		scope: SearchScope = SearchScope.UNSPECIFIED,
 		pageSize: number = 50,
 		pageToken: string = '',
 		dateFilters?: Array<{ field: string; start: bigint; end: bigint }>,

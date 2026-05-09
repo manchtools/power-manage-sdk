@@ -1524,17 +1524,21 @@ export type WifiParams = Message<"pm.v1.WifiParams"> & {
 
   /**
    * Connection settings
+   * Connect to this network automatically when in range.
    *
    * @generated from field: bool auto_connect = 8;
    */
   autoConnect: boolean;
 
   /**
+   * Network does not broadcast its SSID (probe-scan required).
+   *
    * @generated from field: bool hidden = 9;
    */
   hidden: boolean;
 
   /**
+   * Selection priority when multiple known networks are visible (higher wins).
    * @gotags: validate:"omitempty,gte=-1,lte=999"
    *
    * @generated from field: int32 priority = 10;

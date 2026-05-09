@@ -768,8 +768,11 @@ message WifiParams {
   string identity = 7;        // EAP identity (e.g., user@corp.com)
 
   // Connection settings
+  // Connect to this network automatically when in range.
   bool auto_connect = 8;
+  // Network does not broadcast its SSID (probe-scan required).
   bool hidden = 9;
+  // Selection priority when multiple known networks are visible (higher wins).
   // @gotags: validate:"omitempty,gte=-1,lte=999"
   int32 priority = 10;
 

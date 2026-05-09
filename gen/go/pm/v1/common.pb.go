@@ -320,6 +320,189 @@ func (AssignmentTargetType) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
+// DeviceStatus replaces the legacy stringly-typed Device.status /
+// ListDevicesRequest.status_filter ("online" / "offline"). The status
+// is computed by the server from the device's last_seen_at timestamp,
+// so it is wire-only — there is no event payload or DB column to
+// translate. UNSPECIFIED on the request means "no status filter".
+type DeviceStatus int32
+
+const (
+	DeviceStatus_DEVICE_STATUS_UNSPECIFIED DeviceStatus = 0
+	DeviceStatus_DEVICE_STATUS_ONLINE      DeviceStatus = 1
+	DeviceStatus_DEVICE_STATUS_OFFLINE     DeviceStatus = 2
+)
+
+// Enum value maps for DeviceStatus.
+var (
+	DeviceStatus_name = map[int32]string{
+		0: "DEVICE_STATUS_UNSPECIFIED",
+		1: "DEVICE_STATUS_ONLINE",
+		2: "DEVICE_STATUS_OFFLINE",
+	}
+	DeviceStatus_value = map[string]int32{
+		"DEVICE_STATUS_UNSPECIFIED": 0,
+		"DEVICE_STATUS_ONLINE":      1,
+		"DEVICE_STATUS_OFFLINE":     2,
+	}
+)
+
+func (x DeviceStatus) Enum() *DeviceStatus {
+	p := new(DeviceStatus)
+	*p = x
+	return p
+}
+
+func (x DeviceStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DeviceStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[5].Descriptor()
+}
+
+func (DeviceStatus) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[5]
+}
+
+func (x DeviceStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DeviceStatus.Descriptor instead.
+func (DeviceStatus) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
+// SearchScope identifies which search index a SearchRequest targets,
+// and which index a SearchResult came from. Replaces the legacy
+// stringly-typed scope field. UNSPECIFIED on the request means "all
+// scopes" — previously expressed by an empty string.
+type SearchScope int32
+
+const (
+	SearchScope_SEARCH_SCOPE_UNSPECIFIED         SearchScope = 0
+	SearchScope_SEARCH_SCOPE_ACTIONS             SearchScope = 1
+	SearchScope_SEARCH_SCOPE_ACTION_SETS         SearchScope = 2
+	SearchScope_SEARCH_SCOPE_DEFINITIONS         SearchScope = 3
+	SearchScope_SEARCH_SCOPE_COMPLIANCE_POLICIES SearchScope = 4
+	SearchScope_SEARCH_SCOPE_DEVICES             SearchScope = 5
+	SearchScope_SEARCH_SCOPE_USERS               SearchScope = 6
+	SearchScope_SEARCH_SCOPE_DEVICE_GROUPS       SearchScope = 7
+	SearchScope_SEARCH_SCOPE_USER_GROUPS         SearchScope = 8
+	SearchScope_SEARCH_SCOPE_EXECUTIONS          SearchScope = 9
+	SearchScope_SEARCH_SCOPE_AUDIT_EVENTS        SearchScope = 10
+)
+
+// Enum value maps for SearchScope.
+var (
+	SearchScope_name = map[int32]string{
+		0:  "SEARCH_SCOPE_UNSPECIFIED",
+		1:  "SEARCH_SCOPE_ACTIONS",
+		2:  "SEARCH_SCOPE_ACTION_SETS",
+		3:  "SEARCH_SCOPE_DEFINITIONS",
+		4:  "SEARCH_SCOPE_COMPLIANCE_POLICIES",
+		5:  "SEARCH_SCOPE_DEVICES",
+		6:  "SEARCH_SCOPE_USERS",
+		7:  "SEARCH_SCOPE_DEVICE_GROUPS",
+		8:  "SEARCH_SCOPE_USER_GROUPS",
+		9:  "SEARCH_SCOPE_EXECUTIONS",
+		10: "SEARCH_SCOPE_AUDIT_EVENTS",
+	}
+	SearchScope_value = map[string]int32{
+		"SEARCH_SCOPE_UNSPECIFIED":         0,
+		"SEARCH_SCOPE_ACTIONS":             1,
+		"SEARCH_SCOPE_ACTION_SETS":         2,
+		"SEARCH_SCOPE_DEFINITIONS":         3,
+		"SEARCH_SCOPE_COMPLIANCE_POLICIES": 4,
+		"SEARCH_SCOPE_DEVICES":             5,
+		"SEARCH_SCOPE_USERS":               6,
+		"SEARCH_SCOPE_DEVICE_GROUPS":       7,
+		"SEARCH_SCOPE_USER_GROUPS":         8,
+		"SEARCH_SCOPE_EXECUTIONS":          9,
+		"SEARCH_SCOPE_AUDIT_EVENTS":        10,
+	}
+)
+
+func (x SearchScope) Enum() *SearchScope {
+	p := new(SearchScope)
+	*p = x
+	return p
+}
+
+func (x SearchScope) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SearchScope) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[6].Descriptor()
+}
+
+func (SearchScope) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[6]
+}
+
+func (x SearchScope) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SearchScope.Descriptor instead.
+func (SearchScope) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
+// IdentityProviderType identifies the auth protocol an
+// IdentityProvider speaks. Today only OIDC ships, but the enum is
+// forward-looking — SAML2, LDAP, etc. can be added without another
+// stringly-typed migration. Like AssignmentSourceType, the event
+// payload and DB column keep the lowercase string form for backward
+// replay; conversion happens at the RPC boundary.
+type IdentityProviderType int32
+
+const (
+	IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED IdentityProviderType = 0
+	IdentityProviderType_IDENTITY_PROVIDER_TYPE_OIDC        IdentityProviderType = 1
+)
+
+// Enum value maps for IdentityProviderType.
+var (
+	IdentityProviderType_name = map[int32]string{
+		0: "IDENTITY_PROVIDER_TYPE_UNSPECIFIED",
+		1: "IDENTITY_PROVIDER_TYPE_OIDC",
+	}
+	IdentityProviderType_value = map[string]int32{
+		"IDENTITY_PROVIDER_TYPE_UNSPECIFIED": 0,
+		"IDENTITY_PROVIDER_TYPE_OIDC":        1,
+	}
+)
+
+func (x IdentityProviderType) Enum() *IdentityProviderType {
+	p := new(IdentityProviderType)
+	*p = x
+	return p
+}
+
+func (x IdentityProviderType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (IdentityProviderType) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[7].Descriptor()
+}
+
+func (IdentityProviderType) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[7]
+}
+
+func (x IdentityProviderType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use IdentityProviderType.Descriptor instead.
+func (IdentityProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{7}
+}
+
 // Compliance status for a device based on detection scripts
 type ComplianceStatus int32
 
@@ -357,11 +540,11 @@ func (x ComplianceStatus) String() string {
 }
 
 func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[5].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[8].Descriptor()
 }
 
 func (ComplianceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[5]
+	return &file_pm_v1_common_proto_enumTypes[8]
 }
 
 func (x ComplianceStatus) Number() protoreflect.EnumNumber {
@@ -370,7 +553,7 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
 // Unique identifier for an action instance
@@ -757,7 +940,27 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x1dASSIGNMENT_TARGET_TYPE_DEVICE\x10\x01\x12'\n" +
 	"#ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP\x10\x02\x12\x1f\n" +
 	"\x1bASSIGNMENT_TARGET_TYPE_USER\x10\x03\x12%\n" +
-	"!ASSIGNMENT_TARGET_TYPE_USER_GROUP\x10\x04*\x9e\x01\n" +
+	"!ASSIGNMENT_TARGET_TYPE_USER_GROUP\x10\x04*b\n" +
+	"\fDeviceStatus\x12\x1d\n" +
+	"\x19DEVICE_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14DEVICE_STATUS_ONLINE\x10\x01\x12\x19\n" +
+	"\x15DEVICE_STATUS_OFFLINE\x10\x02*\xd3\x02\n" +
+	"\vSearchScope\x12\x1c\n" +
+	"\x18SEARCH_SCOPE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14SEARCH_SCOPE_ACTIONS\x10\x01\x12\x1c\n" +
+	"\x18SEARCH_SCOPE_ACTION_SETS\x10\x02\x12\x1c\n" +
+	"\x18SEARCH_SCOPE_DEFINITIONS\x10\x03\x12$\n" +
+	" SEARCH_SCOPE_COMPLIANCE_POLICIES\x10\x04\x12\x18\n" +
+	"\x14SEARCH_SCOPE_DEVICES\x10\x05\x12\x16\n" +
+	"\x12SEARCH_SCOPE_USERS\x10\x06\x12\x1e\n" +
+	"\x1aSEARCH_SCOPE_DEVICE_GROUPS\x10\a\x12\x1c\n" +
+	"\x18SEARCH_SCOPE_USER_GROUPS\x10\b\x12\x1b\n" +
+	"\x17SEARCH_SCOPE_EXECUTIONS\x10\t\x12\x1d\n" +
+	"\x19SEARCH_SCOPE_AUDIT_EVENTS\x10\n" +
+	"*_\n" +
+	"\x14IdentityProviderType\x12&\n" +
+	"\"IDENTITY_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bIDENTITY_PROVIDER_TYPE_OIDC\x10\x01*\x9e\x01\n" +
 	"\x10ComplianceStatus\x12\x1d\n" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
@@ -776,7 +979,7 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
@@ -784,16 +987,19 @@ var file_pm_v1_common_proto_goTypes = []any{
 	(AssignmentMode)(0),            // 2: pm.v1.AssignmentMode
 	(AssignmentSourceType)(0),      // 3: pm.v1.AssignmentSourceType
 	(AssignmentTargetType)(0),      // 4: pm.v1.AssignmentTargetType
-	(ComplianceStatus)(0),          // 5: pm.v1.ComplianceStatus
-	(*ActionId)(nil),               // 6: pm.v1.ActionId
-	(*DeviceId)(nil),               // 7: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 8: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 9: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 10: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 11: pm.v1.CommandOutput
+	(DeviceStatus)(0),              // 5: pm.v1.DeviceStatus
+	(SearchScope)(0),               // 6: pm.v1.SearchScope
+	(IdentityProviderType)(0),      // 7: pm.v1.IdentityProviderType
+	(ComplianceStatus)(0),          // 8: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 9: pm.v1.ActionId
+	(*DeviceId)(nil),               // 10: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 11: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 12: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 13: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 14: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	10, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	13, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
 	1,  // [1:1] is the sub-list for method output_type
 	1,  // [1:1] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
@@ -811,7 +1017,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      9,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
