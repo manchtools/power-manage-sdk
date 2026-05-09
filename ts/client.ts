@@ -246,26 +246,6 @@ import {
 } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
-// Translate the legacy lowercase source-type string used by
-// AvailableItem (and any other non-yet-migrated wire field) into
-// the AssignmentSourceType enum. Returns UNSPECIFIED for unknown
-// inputs so the caller surfaces a benign "unknown source" rather
-// than crashing on a stale row.
-export function assignmentSourceTypeFromString(s: string): AssignmentSourceType {
-	switch (s) {
-		case 'action':
-			return AssignmentSourceType.ACTION;
-		case 'action_set':
-			return AssignmentSourceType.ACTION_SET;
-		case 'definition':
-			return AssignmentSourceType.DEFINITION;
-		case 'compliance_policy':
-			return AssignmentSourceType.COMPLIANCE_POLICY;
-		default:
-			return AssignmentSourceType.UNSPECIFIED;
-	}
-}
-
 export interface ClientOptions {
 	getServerUrl: () => string;
 	getAccessToken: () => string | null;
