@@ -3210,8 +3210,11 @@ type WifiParams struct {
 	// @gotags: validate:"omitempty,max=254"
 	Identity string `protobuf:"bytes,7,opt,name=identity,proto3" json:"identity,omitempty" validate:"omitempty,max=254"` // EAP identity (e.g., user@corp.com)
 	// Connection settings
+	// Connect to this network automatically when in range.
 	AutoConnect bool `protobuf:"varint,8,opt,name=auto_connect,json=autoConnect,proto3" json:"auto_connect,omitempty"`
-	Hidden      bool `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
+	// Network does not broadcast its SSID (probe-scan required).
+	Hidden bool `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
+	// Selection priority when multiple known networks are visible (higher wins).
 	// @gotags: validate:"omitempty,gte=-1,lte=999"
 	Priority int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
 	// WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.

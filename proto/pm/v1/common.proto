@@ -80,6 +80,46 @@ enum AssignmentTargetType {
   ASSIGNMENT_TARGET_TYPE_USER_GROUP = 4;
 }
 
+// DeviceStatus replaces the legacy stringly-typed Device.status /
+// ListDevicesRequest.status_filter ("online" / "offline"). The status
+// is computed by the server from the device's last_seen_at timestamp,
+// so it is wire-only — there is no event payload or DB column to
+// translate. UNSPECIFIED on the request means "no status filter".
+enum DeviceStatus {
+  DEVICE_STATUS_UNSPECIFIED = 0;
+  DEVICE_STATUS_ONLINE = 1;
+  DEVICE_STATUS_OFFLINE = 2;
+}
+
+// SearchScope identifies which search index a SearchRequest targets,
+// and which index a SearchResult came from. Replaces the legacy
+// stringly-typed scope field. UNSPECIFIED on the request means "all
+// scopes" — previously expressed by an empty string.
+enum SearchScope {
+  SEARCH_SCOPE_UNSPECIFIED = 0;
+  SEARCH_SCOPE_ACTIONS = 1;
+  SEARCH_SCOPE_ACTION_SETS = 2;
+  SEARCH_SCOPE_DEFINITIONS = 3;
+  SEARCH_SCOPE_COMPLIANCE_POLICIES = 4;
+  SEARCH_SCOPE_DEVICES = 5;
+  SEARCH_SCOPE_USERS = 6;
+  SEARCH_SCOPE_DEVICE_GROUPS = 7;
+  SEARCH_SCOPE_USER_GROUPS = 8;
+  SEARCH_SCOPE_EXECUTIONS = 9;
+  SEARCH_SCOPE_AUDIT_EVENTS = 10;
+}
+
+// IdentityProviderType identifies the auth protocol an
+// IdentityProvider speaks. Today only OIDC ships, but the enum is
+// forward-looking — SAML2, LDAP, etc. can be added without another
+// stringly-typed migration. Like AssignmentSourceType, the event
+// payload and DB column keep the lowercase string form for backward
+// replay; conversion happens at the RPC boundary.
+enum IdentityProviderType {
+  IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0;
+  IDENTITY_PROVIDER_TYPE_OIDC = 1;
+}
+
 // Structured error detail attached to Connect-RPC errors.
 message ErrorDetail {
   // Machine-readable error code (e.g., "user_not_found", "email_already_exists").
