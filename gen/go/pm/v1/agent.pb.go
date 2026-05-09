@@ -1833,9 +1833,15 @@ type StoreLuksKeyRequest struct {
 	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,startswith=/"`
 	// @gotags: validate:"required,min=1"
 	Passphrase string `protobuf:"bytes,3,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1"`
-	// Rotation reason: "initial" or "scheduled"
-	// @gotags: validate:"required,oneof=initial scheduled"
-	RotationReason string `protobuf:"bytes,4,opt,name=rotation_reason,json=rotationReason,proto3" json:"rotation_reason,omitempty" validate:"required,oneof=initial scheduled"`
+	// Why this rotation happened. INITIAL on the first time the action
+	// runs on a device (no previous passphrase to retain); SCHEDULED for
+	// any subsequent policy-driven rotation. LUKS does not use
+	// AUTH_GRACE — that reason is reserved for LPS, where a user
+	// authenticated during the grace period. Validated against the
+	// enum at the boundary; the event payload keeps the lowercase
+	// string form ("initial" / "scheduled") for backward replay.
+	// @gotags: validate:"required,oneof=1 2"
+	RotationReason RotationReason `protobuf:"varint,4,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty" validate:"required,oneof=1 2"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1891,11 +1897,11 @@ func (x *StoreLuksKeyRequest) GetPassphrase() string {
 	return ""
 }
 
-func (x *StoreLuksKeyRequest) GetRotationReason() string {
+func (x *StoreLuksKeyRequest) GetRotationReason() RotationReason {
 	if x != nil {
 		return x.RotationReason
 	}
-	return ""
+	return RotationReason_ROTATION_REASON_UNSPECIFIED
 }
 
 type StoreLuksKeyResponse struct {
@@ -3082,15 +3088,15 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x12GetLuksKeyResponse\x12\x1e\n" +
 	"\n" +
 	"passphrase\x18\x01 \x01(\tR\n" +
-	"passphrase\"\x9c\x01\n" +
+	"passphrase\"\xb3\x01\n" +
 	"\x13StoreLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x02 \x01(\tR\n" +
 	"devicePath\x12\x1e\n" +
 	"\n" +
 	"passphrase\x18\x03 \x01(\tR\n" +
-	"passphrase\x12'\n" +
-	"\x0frotation_reason\x18\x04 \x01(\tR\x0erotationReason\"0\n" +
+	"passphrase\x12>\n" +
+	"\x0frotation_reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"0\n" +
 	"\x14StoreLuksKeyResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"2\n" +
 	"\x13RevokeLuksDeviceKey\x12\x1b\n" +
@@ -3259,9 +3265,10 @@ var file_pm_v1_agent_proto_goTypes = []any{
 	(*DeviceId)(nil),                  // 43: pm.v1.DeviceId
 	(*durationpb.Duration)(nil),       // 44: google.protobuf.Duration
 	(*Action)(nil),                    // 45: pm.v1.Action
-	(LpsPasswordComplexity)(0),        // 46: pm.v1.LpsPasswordComplexity
-	(*ActionSchedule)(nil),            // 47: pm.v1.ActionSchedule
-	(*MaintenanceWindow)(nil),         // 48: pm.v1.MaintenanceWindow
+	(RotationReason)(0),               // 46: pm.v1.RotationReason
+	(LpsPasswordComplexity)(0),        // 47: pm.v1.LpsPasswordComplexity
+	(*ActionSchedule)(nil),            // 48: pm.v1.ActionSchedule
+	(*MaintenanceWindow)(nil),         // 49: pm.v1.MaintenanceWindow
 }
 var file_pm_v1_agent_proto_depIdxs = []int32{
 	7,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
@@ -3303,26 +3310,27 @@ var file_pm_v1_agent_proto_depIdxs = []int32{
 	41, // 36: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
 	19, // 37: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
 	17, // 38: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
-	46, // 39: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	43, // 40: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	47, // 41: pm.v1.ActionGroup.schedule:type_name -> pm.v1.ActionSchedule
-	45, // 42: pm.v1.ActionGroup.actions:type_name -> pm.v1.Action
-	45, // 43: pm.v1.SyncActionsResponse.standalone_actions:type_name -> pm.v1.Action
-	30, // 44: pm.v1.SyncActionsResponse.grouped_actions:type_name -> pm.v1.ActionGroup
-	48, // 45: pm.v1.SyncActionsResponse.maintenance_window:type_name -> pm.v1.MaintenanceWindow
-	3,  // 46: pm.v1.LogQuery.source:type_name -> pm.v1.LogSource
-	4,  // 47: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
-	5,  // 48: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	29, // 49: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	27, // 50: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	10, // 51: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	31, // 52: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	28, // 53: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	51, // [51:54] is the sub-list for method output_type
-	48, // [48:51] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	46, // 39: pm.v1.StoreLuksKeyRequest.rotation_reason:type_name -> pm.v1.RotationReason
+	47, // 40: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	43, // 41: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
+	48, // 42: pm.v1.ActionGroup.schedule:type_name -> pm.v1.ActionSchedule
+	45, // 43: pm.v1.ActionGroup.actions:type_name -> pm.v1.Action
+	45, // 44: pm.v1.SyncActionsResponse.standalone_actions:type_name -> pm.v1.Action
+	30, // 45: pm.v1.SyncActionsResponse.grouped_actions:type_name -> pm.v1.ActionGroup
+	49, // 46: pm.v1.SyncActionsResponse.maintenance_window:type_name -> pm.v1.MaintenanceWindow
+	3,  // 47: pm.v1.LogQuery.source:type_name -> pm.v1.LogSource
+	4,  // 48: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
+	5,  // 49: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
+	29, // 50: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
+	27, // 51: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
+	10, // 52: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
+	31, // 53: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
+	28, // 54: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
+	52, // [52:55] is the sub-list for method output_type
+	49, // [49:52] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_agent_proto_init() }

@@ -325,9 +325,15 @@ message StoreLuksKeyRequest {
   string device_path = 2;
   // @gotags: validate:"required,min=1"
   string passphrase = 3;
-  // Rotation reason: "initial" or "scheduled"
-  // @gotags: validate:"required,oneof=initial scheduled"
-  string rotation_reason = 4;
+  // Why this rotation happened. INITIAL on the first time the action
+  // runs on a device (no previous passphrase to retain); SCHEDULED for
+  // any subsequent policy-driven rotation. LUKS does not use
+  // AUTH_GRACE — that reason is reserved for LPS, where a user
+  // authenticated during the grace period. Validated against the
+  // enum at the boundary; the event payload keeps the lowercase
+  // string form ("initial" / "scheduled") for backward replay.
+  // @gotags: validate:"required,oneof=1 2"
+  RotationReason rotation_reason = 4;
 }
 
 message StoreLuksKeyResponse {

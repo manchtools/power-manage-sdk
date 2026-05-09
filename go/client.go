@@ -602,7 +602,7 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 }
 
 // StoreLuksKey sends a StoreLuksKeyRequest on the stream and waits for the server confirmation.
-func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphrase, reason string) error {
+func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphrase string, reason pm.RotationReason) error {
 	id := NewULID()
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
