@@ -50,9 +50,11 @@ func TestParseLoginctlListSessions(t *testing.T) {
 	}
 }
 
-// `loginctl show-session <id> -p Type -p Name -p User --value` emits one
-// value per requested property, in order. We only treat x11 / wayland /
-// mir as graphical — every other type (tty, unspecified, …) is dropped.
+// `loginctl show-session <id> -p Type -p Name -p User` emits Key=Value
+// lines in D-Bus dictionary order (NOT the order of the -p flags), so
+// the parser keys by name. Test fixtures use Type/Name/User in mixed
+// orders to lock that in. We only treat x11 / wayland / mir as
+// graphical — every other type (tty, unspecified, …) is dropped.
 func TestParseLoginctlShowSession(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -64,40 +66,40 @@ func TestParseLoginctlShowSession(t *testing.T) {
 		{
 			name:      "wayland session",
 			sessionID: "c1",
-			stdout:    "wayland\nalice\n1000",
+			stdout:    "Type=wayland\nName=alice\nUser=1000",
 			wantOK:    true,
 			want:      session{id: "c1", user: "alice", uid: 1000, typ: "wayland"},
 		},
 		{
-			name:      "x11 session",
+			name:      "x11 session with reversed property order",
 			sessionID: "c2",
-			stdout:    "x11\nbob\n1001",
+			stdout:    "User=1001\nName=bob\nType=x11",
 			wantOK:    true,
 			want:      session{id: "c2", user: "bob", uid: 1001, typ: "x11"},
 		},
 		{
 			name:      "mir session",
 			sessionID: "c3",
-			stdout:    "mir\ncarol\n1002",
+			stdout:    "Type=mir\nName=carol\nUser=1002",
 			wantOK:    true,
 			want:      session{id: "c3", user: "carol", uid: 1002, typ: "mir"},
 		},
 		{
 			name:      "tty session is rejected",
 			sessionID: "c4",
-			stdout:    "tty\ndave\n1003",
+			stdout:    "Type=tty\nName=dave\nUser=1003",
 			wantOK:    false,
 		},
 		{
-			name:      "unspecified type is rejected",
+			name:      "empty type is rejected",
 			sessionID: "c5",
-			stdout:    "\nerin\n1004",
+			stdout:    "Type=\nName=erin\nUser=1004",
 			wantOK:    false,
 		},
 		{
-			name:      "too few lines",
+			name:      "missing User property is rejected",
 			sessionID: "c6",
-			stdout:    "wayland\nfrank",
+			stdout:    "Type=wayland\nName=frank",
 			wantOK:    false,
 		},
 		{
@@ -108,13 +110,13 @@ func TestParseLoginctlShowSession(t *testing.T) {
 			// finding on PR #57.
 			name:      "garbage uid is rejected as an invalid session",
 			sessionID: "c7",
-			stdout:    "x11\ngrace\nnotanint",
+			stdout:    "Type=x11\nName=grace\nUser=notanint",
 			wantOK:    false,
 		},
 		{
-			name:      "trims surrounding whitespace",
+			name:      "trims surrounding whitespace per line",
 			sessionID: "c8",
-			stdout:    "  wayland \n  henry  \n  1005  ",
+			stdout:    "  Type=wayland \n  Name=henry  \n  User=1005  ",
 			wantOK:    true,
 			want:      session{id: "c8", user: "henry", uid: 1005, typ: "wayland"},
 		},

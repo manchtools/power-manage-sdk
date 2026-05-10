@@ -116,8 +116,8 @@ func TestPrivilegedStreaming(t *testing.T) {
 	// trailing newlines).
 	ctx := context.Background()
 	var lines []string
-	result, err := exec.PrivilegedStreaming(ctx, "sh", []string{"-c", "printf 'line1\\nline2\\nline3\\n'"}, nil, "", func(streamType int, line string, _ int64) {
-		if streamType == int(exec.StreamStdout) {
+	result, err := exec.PrivilegedStreaming(ctx, "sh", []string{"-c", "printf 'line1\\nline2\\nline3\\n'"}, nil, "", func(streamType exec.StreamType, line string, _ int64) {
+		if streamType == exec.StreamStdout {
 			lines = append(lines, strings.TrimRight(line, "\n"))
 		}
 	})
@@ -164,7 +164,7 @@ func TestRunStreaming(t *testing.T) {
 	ctx := context.Background()
 	var lineCount int64
 
-	result, err := exec.RunStreaming(ctx, "seq", []string{"1", "100"}, nil, "", func(streamType int, line string, seq int64) {
+	result, err := exec.RunStreaming(ctx, "seq", []string{"1", "100"}, nil, "", func(streamType exec.StreamType, line string, seq int64) {
 		atomic.AddInt64(&lineCount, 1)
 	})
 	if err != nil {

@@ -88,9 +88,13 @@ func listGraphicalSessions(ctx context.Context) []session {
 
 	var sessions []session
 	for _, sessionID := range parseLoginctlListSessions(result.Stdout) {
-		// Query session type and user details
+		// Query session type and user details. Without --value loginctl
+		// prints Key=Value lines so we can parse by name — D-Bus
+		// emission order isn't documented as stable, so positional
+		// parsing would silently misassign fields when the order
+		// shifts across systemd versions.
 		info, err := exec.Privileged(ctx, "loginctl", "show-session", sessionID,
-			"-p", "Type", "-p", "Name", "-p", "User", "--value")
+			"-p", "Type", "-p", "Name", "-p", "User")
 		if err != nil || info.ExitCode != 0 {
 			continue
 		}
@@ -122,20 +126,29 @@ func parseLoginctlListSessions(stdout string) []string {
 }
 
 // parseLoginctlShowSession parses `loginctl show-session <id> -p Type
-// -p Name -p User --value` output into a session struct. The output
-// is three newline-separated values in the order Type, Name, User
-// (loginctl emits properties in the order requested via -p). Returns
-// (session, false) if the line count is wrong or the type is not a
-// graphical session.
+// -p Name -p User` output into a session struct. loginctl emits
+// Key=Value lines in D-Bus dictionary order, NOT the order of the -p
+// flags, so we parse by name instead of relying on positional output.
+// Returns (session, false) when any of Type / Name / User is missing,
+// when User isn't a numeric uid, when Name is empty, or when Type
+// isn't a graphical session (x11 / wayland / mir).
 func parseLoginctlShowSession(sessionID, stdout string) (session, bool) {
-	lines := strings.Split(strings.TrimSpace(stdout), "\n")
-	if len(lines) < 3 {
+	props := map[string]string{}
+	for _, line := range strings.Split(stdout, "\n") {
+		k, v, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if !ok {
+			continue
+		}
+		props[strings.TrimSpace(k)] = strings.TrimSpace(v)
+	}
+	typ := props["Type"]
+	user := props["Name"]
+	uidStr, hasUID := props["User"]
+	if !hasUID || user == "" {
 		return session{}, false
 	}
-	typ := strings.TrimSpace(lines[0])
-	user := strings.TrimSpace(lines[1])
-	uid, err := strconv.Atoi(strings.TrimSpace(lines[2]))
-	if err != nil || user == "" {
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
 		return session{}, false
 	}
 	if typ != "x11" && typ != "wayland" && typ != "mir" {

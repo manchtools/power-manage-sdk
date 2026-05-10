@@ -16,15 +16,9 @@ type Result struct {
 }
 
 // StreamType identifies which standard stream a line of streaming
-// output came from. Values are numerically stable across SDK releases
-// — callers checking `streamType == StreamStdout` are expected to keep
-// working without recompilation — and the named type lets the compiler
-// reject a stray `int` literal where the contract is "stdout or stderr".
-//
-// OutputCallback's signature still accepts an `int` for backward source
-// compatibility with callers that wrote `func(streamType int, ...)`.
-// New code should write `func(streamType StreamType, ...)` and rely on
-// the implicit conversion at the call site.
+// output came from. The named type lets the compiler reject a stray
+// `int` literal where the contract is "stdout or stderr". Numeric
+// values are stable across SDK releases.
 type StreamType int
 
 const (
@@ -36,8 +30,10 @@ const (
 	StreamStderr StreamType = 2
 )
 
-// OutputCallback is called for each line of output during streaming execution.
-// streamType: StreamStdout or StreamStderr.
-// line: the output line (with newline).
-// seq: sequence number for ordering.
-type OutputCallback func(streamType int, line string, seq int64)
+// OutputCallback is called for each line of output during streaming
+// execution. streamType is the typed StreamType (Go's type system
+// rejects implicit int↔StreamType conversion, so taking int here would
+// mean every comparison needed an explicit cast). line is the output
+// line including its trailing newline. seq is a stream-local
+// monotonic ordering counter.
+type OutputCallback func(streamType StreamType, line string, seq int64)

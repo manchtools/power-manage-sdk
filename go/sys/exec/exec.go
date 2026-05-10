@@ -79,14 +79,14 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 				stdoutBuf.WriteString(line + "\n")
 			}
 			if callback != nil {
-				callback(int(StreamStdout), line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
+				callback(StreamStdout, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
 			}
 		} else {
 			if atomic.AddInt64(&stderrBytes, lineBytes) <= int64(MaxOutputBytes) {
 				stderrBuf.WriteString(line + "\n")
 			}
 			if callback != nil {
-				callback(int(StreamStderr), line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
+				callback(StreamStderr, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
 			}
 		}
 	}

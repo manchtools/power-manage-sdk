@@ -119,19 +119,14 @@ func TestStatus(t *testing.T) {
 	}
 }
 
-func TestStatusUnknown(t *testing.T) {
-	status, err := service.Status("pm-nonexistent-12345.service")
-	if err != nil {
-		t.Fatalf("Status failed: %v", err)
-	}
-	if status.Enabled {
-		t.Error("unknown unit should not be enabled")
-	}
-	if status.Active {
-		t.Error("unknown unit should not be active")
-	}
-	if status.Masked {
-		t.Error("unknown unit should not be masked")
+func TestStatusMissingUnit(t *testing.T) {
+	// systemctl is-enabled on a non-existent unit prints "not-found"
+	// and exits 4. Status now surfaces that as an error so callers
+	// can distinguish "unit doesn't exist" from "unit exists but is
+	// disabled" — collapsing both into a zero-value UnitStatus drove
+	// callers into the wrong remediation path. CR finding on PR #57.
+	if _, err := service.Status("pm-nonexistent-12345.service"); err == nil {
+		t.Fatal("expected Status on missing unit to return an error, got nil")
 	}
 }
 
@@ -217,6 +212,17 @@ func TestIsActive(t *testing.T) {
 func TestIsMasked(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
+
+	// Write the unit first — IsMasked on a non-existent unit now
+	// returns an error (per CR fix on PR #57), so the
+	// "should not be masked initially" precondition needs the unit
+	// to actually exist before the first probe.
+	if err := service.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
+		t.Fatalf("WriteUnit failed: %v", err)
+	}
+	if err := service.DaemonReload(ctx); err != nil {
+		t.Fatalf("DaemonReload failed: %v", err)
+	}
 
 	if masked, err := service.IsMasked(testUnitName); err != nil {
 		t.Fatalf("IsMasked failed: %v", err)
