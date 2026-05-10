@@ -87,6 +87,14 @@ import {
 	SetDeviceGroupSyncIntervalRequestSchema,
 	SetDeviceGroupMaintenanceWindowRequestSchema,
 	SetUserGroupMaintenanceWindowRequestSchema,
+	// Group-scoped variables (manchtools/power-manage-server#59)
+	SetDeviceGroupVariableRequestSchema,
+	DeleteDeviceGroupVariableRequestSchema,
+	GetDeviceGroupVariablesRequestSchema,
+	SetUserGroupVariableRequestSchema,
+	DeleteUserGroupVariableRequestSchema,
+	GetUserGroupVariablesRequestSchema,
+	ListAvailableVariablesRequestSchema,
 	// Assignments
 	CreateAssignmentRequestSchema,
 	DeleteAssignmentRequestSchema,
@@ -238,6 +246,7 @@ import {
 	type ExecutionStatus,
 	ErrorDetailSchema,
 	type MaintenanceWindow,
+	type Variable,
 	AssignmentSourceType,
 	AssignmentTargetType,
 	DeviceStatus,
@@ -1617,6 +1626,70 @@ export class ApiClient {
 			create(SetUserGroupMaintenanceWindowRequestSchema, { id, maintenanceWindow })
 		);
 		return response.group;
+	}
+
+	// ============================================================================
+	// Group-scoped Variables (manchtools/power-manage-server#59)
+	// ============================================================================
+	//
+	// Variables are an array attached to a device-group / user-group
+	// projection row; full-replace by name on Set, idempotent on
+	// Delete. Secret variables flow through the same Variable shape
+	// but the value comes back as `***REDACTED***` from Get; the
+	// renderer materialises plaintext server-side at action dispatch.
+
+	async setDeviceGroupVariable(deviceGroupId: string, variable: Variable) {
+		const client = this.getClient();
+		const response = await client.setDeviceGroupVariable(
+			create(SetDeviceGroupVariableRequestSchema, { deviceGroupId, variable })
+		);
+		return response.variable;
+	}
+
+	async deleteDeviceGroupVariable(deviceGroupId: string, name: string) {
+		const client = this.getClient();
+		await client.deleteDeviceGroupVariable(
+			create(DeleteDeviceGroupVariableRequestSchema, { deviceGroupId, name })
+		);
+	}
+
+	async getDeviceGroupVariables(deviceGroupId: string) {
+		const client = this.getClient();
+		const response = await client.getDeviceGroupVariables(
+			create(GetDeviceGroupVariablesRequestSchema, { deviceGroupId })
+		);
+		return response.variables;
+	}
+
+	async setUserGroupVariable(userGroupId: string, variable: Variable) {
+		const client = this.getClient();
+		const response = await client.setUserGroupVariable(
+			create(SetUserGroupVariableRequestSchema, { userGroupId, variable })
+		);
+		return response.variable;
+	}
+
+	async deleteUserGroupVariable(userGroupId: string, name: string) {
+		const client = this.getClient();
+		await client.deleteUserGroupVariable(
+			create(DeleteUserGroupVariableRequestSchema, { userGroupId, name })
+		);
+	}
+
+	async getUserGroupVariables(userGroupId: string) {
+		const client = this.getClient();
+		const response = await client.getUserGroupVariables(
+			create(GetUserGroupVariablesRequestSchema, { userGroupId })
+		);
+		return response.variables;
+	}
+
+	async listAvailableVariables(deviceId: string) {
+		const client = this.getClient();
+		const response = await client.listAvailableVariables(
+			create(ListAvailableVariablesRequestSchema, { deviceId })
+		);
+		return response.variables;
 	}
 
 	// ============================================================================
