@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 
 	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )

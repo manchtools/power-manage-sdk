@@ -3,7 +3,6 @@ package pkg
 import (
 	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 )
 
