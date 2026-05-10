@@ -237,15 +237,16 @@ func TestIsMasked(t *testing.T) {
 		t.Error("unit should be masked after Mask")
 	}
 
-	// Unmask it
+	// Unmask it. After Unmask the /dev/null symlink is removed so
+	// the unit no longer exists at all — IsMasked then returns the
+	// strict "not found" error per the runSystemctlQuery whitelist
+	// (the symmetric counterpart to the initial probe at the top of
+	// the test). That error IS the "no longer masked" signal here.
 	if err := service.Unmask(ctx, testUnitName); err != nil {
 		t.Fatalf("Unmask failed: %v", err)
 	}
-
-	if masked, err := service.IsMasked(testUnitName); err != nil {
-		t.Fatalf("IsMasked failed: %v", err)
-	} else if masked {
-		t.Error("unit should not be masked after Unmask")
+	if _, err := service.IsMasked(testUnitName); err == nil {
+		t.Fatal("expected IsMasked to error after Unmask removed the unit symlink")
 	}
 }
 
