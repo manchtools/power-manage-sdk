@@ -1,4 +1,16 @@
 // Package network provides NetworkManager WiFi connection management via nmcli.
+//
+// Status: SDK-resident, single-consumer today (the agent's WiFi action
+// executor). Lives in the SDK because the planned server-side WiFi
+// profile validator (control server checking that a profile a UI is
+// about to dispatch will parse on the agent) needs the same encoder.
+// Until that consumer materialises, the second-consumer rule
+// (CLAUDE.md) is provisionally waived. F027 in TECH_DEBT_AUDIT.md.
+//
+// The package name and the WifiBackend type prefix anticipate non-WiFi
+// network operations landing in the same package later (DNS overrides,
+// route management) — keep the WifiBackend prefix on the type even as
+// SetBackend / CurrentBackend lose their Wifi prefix per F017.
 package network
 
 import (
@@ -7,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
@@ -43,10 +56,15 @@ type WiFiProfile struct {
 
 // IsAvailable returns true if the CLI for the active WifiBackend is
 // installed and reachable. Defaults to nmcli (NetworkManager).
+//
+// The probe runs under a 5s timeout so a hung nmcli (e.g. while
+// NetworkManager is wedged) cannot pin the calling goroutine. F023.
 func IsAvailable() bool {
-	switch CurrentWifiBackend() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	switch CurrentBackend() {
 	case WifiBackendNetworkManager:
-		return sysexec.Check("nmcli", "--version")
+		return sysexec.CheckCtx(ctx, "nmcli", "--version")
 	default:
 		// No concrete implementation for the other backends yet — report
 		// unavailable so callers fall through to "wifi not supported"

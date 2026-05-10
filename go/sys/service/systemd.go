@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
@@ -19,18 +20,18 @@ import (
 //
 // Three design choices worth calling out:
 //
-//   * Leading '.' is rejected. Unit names starting with a dot aren't
+//   - Leading '.' is rejected. Unit names starting with a dot aren't
 //     valid systemd names and would look like hidden filesystem
 //     entries; rejecting them here prevents any path-traversal-style
 //     confusion downstream.
 //
-//   * Leading '-' IS allowed. systemd has legitimate unit names that
+//   - Leading '-' IS allowed. systemd has legitimate unit names that
 //     start with '-' (e.g. "-.mount", the root mount for '/'). Flag
 //     injection at the argv level is prevented by always passing
 //     unitName after an explicit "--" end-of-options separator in
 //     every systemctl call in this file (defence in depth).
 //
-//   * `\xHH` hex-escape sequences are permitted so names produced by
+//   - `\xHH` hex-escape sequences are permitted so names produced by
 //     systemd-escape(1) for paths or reserved characters flow through
 //     validation unchanged (systemd.unit(5), "STRING ESCAPING FOR
 //     INCLUSION IN UNIT NAMES").
@@ -39,10 +40,20 @@ import (
 // auto-generated .device units for hardware.
 var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@_:-]|\\x[0-9A-Fa-f]{2})(?:[a-zA-Z0-9@._:-]|\\x[0-9A-Fa-f]{2})*\.(service|socket|device|timer|mount|automount|swap|target|path|slice|scope)$`)
 
+// systemctlQueryTimeout caps every is-enabled/is-active query so a
+// hung unit (D-Bus stall, dependency loop, kernel oops) cannot pin
+// the calling goroutine indefinitely. systemctl normally returns in
+// well under a second; 30s leaves headroom for slow boot phases
+// while still bounding worst-case wait. F023 in TECH_DEBT_AUDIT.md.
+const systemctlQueryTimeout = 30 * time.Second
+
 func statusSystemd(unitName string) UnitStatus {
 	status := UnitStatus{}
 
-	out, _, err := exec.QueryOutput("systemctl", "is-enabled", "--", unitName)
+	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
+	defer cancel()
+
+	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-enabled", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
@@ -67,7 +78,9 @@ func statusSystemd(unitName string) UnitStatus {
 		status.Masked = true
 	}
 
-	out, _, err = exec.QueryOutput("systemctl", "is-active", "--", unitName)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), systemctlQueryTimeout)
+	defer cancel2()
+	out, _, err = exec.QueryOutputCtx(ctx2, "systemctl", "is-active", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
 	}
@@ -77,7 +90,9 @@ func statusSystemd(unitName string) UnitStatus {
 }
 
 func isEnabledSystemd(unitName string) bool {
-	out, _, err := exec.QueryOutput("systemctl", "is-enabled", "--", unitName)
+	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
+	defer cancel()
+	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-enabled", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
@@ -91,7 +106,9 @@ func isEnabledSystemd(unitName string) bool {
 }
 
 func isMaskedSystemd(unitName string) bool {
-	out, _, err := exec.QueryOutput("systemctl", "is-enabled", "--", unitName)
+	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
+	defer cancel()
+	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-enabled", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
 	}
@@ -102,7 +119,9 @@ func isMaskedSystemd(unitName string) bool {
 }
 
 func isActiveSystemd(unitName string) bool {
-	out, _, err := exec.QueryOutput("systemctl", "is-active", "--", unitName)
+	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
+	defer cancel()
+	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-active", "--", unitName)
 	if err != nil {
 		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
 	}

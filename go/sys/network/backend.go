@@ -31,20 +31,35 @@ var ErrWifiBackendNotSupported = errors.New("wifi backend not supported")
 
 var wifiBackend atomic.Int32
 
-// SetWifiBackend selects the active backend. Call once at startup.
+// SetBackend selects the active backend. Call once at startup.
 // Unknown values are ignored so a zero-valued proto enum can never
 // silently regress an explicitly-set backend.
-func SetWifiBackend(b WifiBackend) {
+//
+// Naming: docs/backend-pattern.md prescribes plain SetBackend /
+// CurrentBackend; the SetWifiBackend / CurrentWifiBackend spellings
+// are retained as deprecated aliases so existing callers keep
+// compiling. New code should use SetBackend / CurrentBackend.
+func SetBackend(b WifiBackend) {
 	switch b {
 	case WifiBackendNetworkManager, WifiBackendConnman, WifiBackendWpaSupplicant, WifiBackendIwd:
 		wifiBackend.Store(int32(b))
 	}
 }
 
-// CurrentWifiBackend returns the active backend.
-func CurrentWifiBackend() WifiBackend {
+// CurrentBackend returns the active backend.
+func CurrentBackend() WifiBackend {
 	return WifiBackend(wifiBackend.Load())
 }
+
+// SetWifiBackend is a deprecated alias for SetBackend.
+//
+// Deprecated: use SetBackend instead.
+func SetWifiBackend(b WifiBackend) { SetBackend(b) }
+
+// CurrentWifiBackend is a deprecated alias for CurrentBackend.
+//
+// Deprecated: use CurrentBackend instead.
+func CurrentWifiBackend() WifiBackend { return CurrentBackend() }
 
 // String renders the backend as its canonical tool name.
 func (b WifiBackend) String() string {
@@ -63,11 +78,11 @@ func (b WifiBackend) String() string {
 }
 
 // requireWifiBackend returns ErrWifiBackendNotSupported when
-// CurrentWifiBackend doesn't match the expected implementation.
+// CurrentBackend doesn't match the expected implementation.
 // Used by the NetworkManager-specific code in wifi.go to refuse
 // running against a selection it can't service.
 func requireWifiBackend(want WifiBackend, op string) error {
-	got := CurrentWifiBackend()
+	got := CurrentBackend()
 	if got != want {
 		return fmt.Errorf("%w: %s requires backend %s, active backend is %s",
 			ErrWifiBackendNotSupported, op, want, got)

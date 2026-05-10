@@ -191,8 +191,8 @@ func TestBuildDesiredSettings(t *testing.T) {
 
 	checks := map[string]string{
 		"wifi.ssid":                       "MyNet",
-		"wifi-sec.key-mgmt":              "wpa-psk",
-		"wifi-sec.psk":                   "secret",
+		"wifi-sec.key-mgmt":               "wpa-psk",
+		"wifi-sec.psk":                    "secret",
 		"connection.autoconnect":          "yes",
 		"connection.autoconnect-priority": "3",
 		"wifi.hidden":                     "no",
@@ -246,8 +246,8 @@ func TestIsSubdirOf(t *testing.T) {
 	}{
 		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi/abc", true},
 		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi/abc/def", true},
-		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi", false},  // base itself
-		{"/var/lib/power-manage/wifi", "/tmp/evil", false},                   // outside
+		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi", false},      // base itself
+		{"/var/lib/power-manage/wifi", "/tmp/evil", false},                       // outside
 		{"/var/lib/power-manage/wifi", "/var/lib/power-manage/wifi/../x", false}, // traversal
 		{"/var/lib/power-manage/wifi", "/", false},
 	}
