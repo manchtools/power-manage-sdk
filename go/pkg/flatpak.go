@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Flatpak implements the Manager interface for Flatpak applications.
@@ -575,36 +574,9 @@ func (f *Flatpak) ListRemotes() ([]string, error) {
 }
 
 func (f *Flatpak) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if f.useSudo {
-		sudoArgs := append([]string{"-n", "flatpak"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "flatpak", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, f.useSudo, "flatpak", args, env)
 }
 
 func parseFlatpakSearchLine(line string) *SearchResult {

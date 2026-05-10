@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // validPacmanPkgName restricts package names to safe characters,
@@ -513,67 +512,13 @@ func (p *Pacman) updateIgnorePkg(confContent string, ignoredPkgs []string) (*Com
 }
 
 func (p *Pacman) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if p.useSudo {
-		sudoArgs := append([]string{"-n", "pacman"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "pacman", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, p.useSudo, "pacman", args, env)
 }
 
 func (p *Pacman) runWithStdin(cmd, arg, stdin string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if p.useSudo {
-		c = exec.CommandContext(p.ctx, "sudo", "-n", cmd, arg)
-	} else {
-		c = exec.CommandContext(p.ctx, cmd, arg)
-	}
-
-	c.Stdin = strings.NewReader(stdin)
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	return runPMWithStdin(p.ctx, p.useSudo, stdin, cmd, arg)
 }
 
 func parsePacmanValue(line string) string {

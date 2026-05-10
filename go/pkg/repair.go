@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+
+	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // Repair attempts to fix common package manager issues.
@@ -194,11 +196,14 @@ func removeStaleLock(ctx context.Context, path string) error {
 		return ctxErr
 	}
 
-	// No process has the file open — lock is stale. Remove it.
+	// No process has the file open — lock is stale. Remove it via the
+	// configured privilege backend (sudo or doas) so the doas-only path
+	// works too — bare `sudo` was the previous shape and silently failed
+	// on doas hosts. CONTRIBUTING.md:71 requires the privilege wrapper.
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := exec.CommandContext(ctx, "sudo", "-n", "rm", "-f", path).Run(); err != nil {
+	if _, err := pmexec.Privileged(ctx, "rm", "-f", path); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return ctxErr
 		}

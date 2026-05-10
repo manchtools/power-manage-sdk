@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Zypper implements the Manager interface for openSUSE/SLES-based systems.
@@ -462,36 +461,9 @@ func (z *Zypper) getPinnedSet() (map[string]bool, error) {
 }
 
 func (z *Zypper) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if z.useSudo {
-		sudoArgs := append([]string{"-n", "zypper"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "zypper", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, z.useSudo, "zypper", args, env)
 }
 
 func parseZypperValue(line string) string {

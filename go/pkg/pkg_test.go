@@ -13,40 +13,40 @@ type MockManager struct {
 	mu sync.Mutex
 
 	// Configurable return values
-	InfoReturn          struct{ Name, Version string }
-	InfoError           error
-	InstallReturn       *CommandResult
-	InstallError        error
-	InstallVersionReturn *CommandResult
-	InstallVersionError error
-	RemoveReturn        *CommandResult
-	RemoveError         error
-	UpdateReturn        *CommandResult
-	UpdateError         error
-	UpgradeReturn       *CommandResult
-	UpgradeError        error
-	SearchReturn        []SearchResult
-	SearchError         error
-	ListReturn          []Package
-	ListError           error
-	ListUpgradableReturn []PackageUpdate
-	ListUpgradableError error
-	ShowReturn          *Package
-	ShowError           error
-	ListVersionsReturn  *VersionInfo
-	ListVersionsError   error
-	IsInstalledReturn   bool
-	IsInstalledError    error
+	InfoReturn                struct{ Name, Version string }
+	InfoError                 error
+	InstallReturn             *CommandResult
+	InstallError              error
+	InstallVersionReturn      *CommandResult
+	InstallVersionError       error
+	RemoveReturn              *CommandResult
+	RemoveError               error
+	UpdateReturn              *CommandResult
+	UpdateError               error
+	UpgradeReturn             *CommandResult
+	UpgradeError              error
+	SearchReturn              []SearchResult
+	SearchError               error
+	ListReturn                []Package
+	ListError                 error
+	ListUpgradableReturn      []PackageUpdate
+	ListUpgradableError       error
+	ShowReturn                *Package
+	ShowError                 error
+	ListVersionsReturn        *VersionInfo
+	ListVersionsError         error
+	IsInstalledReturn         bool
+	IsInstalledError          error
 	GetInstalledVersionReturn string
 	GetInstalledVersionError  error
-	PinReturn           *CommandResult
-	PinError            error
-	UnpinReturn         *CommandResult
-	UnpinError          error
-	ListPinnedReturn    []Package
-	ListPinnedError     error
-	IsPinnedReturn      bool
-	IsPinnedError       error
+	PinReturn                 *CommandResult
+	PinError                  error
+	UnpinReturn               *CommandResult
+	UnpinError                error
+	ListPinnedReturn          []Package
+	ListPinnedError           error
+	IsPinnedReturn            bool
+	IsPinnedError             error
 
 	// Call tracking
 	InstallCalls        [][]string
@@ -54,13 +54,13 @@ type MockManager struct {
 		Name string
 		Opts InstallOptions
 	}
-	RemoveCalls   [][]string
-	UpgradeCalls  [][]string
-	SearchCalls   []string
-	ShowCalls     []string
-	PinCalls      [][]string
-	UnpinCalls    [][]string
-	PurgeCalls    [][]string
+	RemoveCalls  [][]string
+	UpgradeCalls [][]string
+	SearchCalls  []string
+	ShowCalls    []string
+	PinCalls     [][]string
+	UnpinCalls   [][]string
+	PurgeCalls   [][]string
 }
 
 // Ensure MockManager implements Manager interface
@@ -798,7 +798,7 @@ func TestNew_Integration(t *testing.T) {
 	}
 
 	if pm == nil {
-		t.Error("expected non-nil PackageManager")
+		t.Fatal("expected non-nil PackageManager")
 	}
 	if pm.Manager == nil {
 		t.Error("expected non-nil embedded Manager")

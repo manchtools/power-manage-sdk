@@ -3,11 +3,21 @@ package pkg
 import (
 	"context"
 	"errors"
-	"os"
+	"os/exec"
 )
 
 // ErrNoPackageManager is returned when no supported package manager is found.
 var ErrNoPackageManager = errors.New("no supported package manager found")
+
+// hasBinary reports whether name resolves through PATH. Switched from
+// the previous os.Stat("/usr/bin/<tool>") shape so detection works on
+// distributions that install package-manager tools elsewhere — NixOS
+// (/run/current-system/sw/bin), Alpine BusyBox layouts, /usr/local/bin
+// installs, and Home Manager profiles.
+func hasBinary(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
+}
 
 // Detect returns the appropriate package manager for the current
 // system. The returned Manager has package-name validation applied
@@ -24,22 +34,22 @@ func Detect() (Manager, error) {
 // context. See Detect for the validation-wrapping contract.
 func DetectWithContext(ctx context.Context) (Manager, error) {
 	// Check for apt (Debian/Ubuntu)
-	if _, err := os.Stat("/usr/bin/apt-get"); err == nil {
+	if hasBinary("apt-get") {
 		return WithValidation(NewAptWithContext(ctx)), nil
 	}
 
 	// Check for dnf (Fedora/RHEL 8+)
-	if _, err := os.Stat("/usr/bin/dnf"); err == nil {
+	if hasBinary("dnf") {
 		return WithValidation(NewDnfWithContext(ctx)), nil
 	}
 
 	// Check for pacman (Arch Linux)
-	if _, err := os.Stat("/usr/bin/pacman"); err == nil {
+	if hasBinary("pacman") {
 		return WithValidation(NewPacmanWithContext(ctx)), nil
 	}
 
 	// Check for zypper (openSUSE/SLES)
-	if _, err := os.Stat("/usr/bin/zypper"); err == nil {
+	if hasBinary("zypper") {
 		return WithValidation(NewZypperWithContext(ctx)), nil
 	}
 
@@ -47,31 +57,16 @@ func DetectWithContext(ctx context.Context) (Manager, error) {
 }
 
 // IsApt returns true if apt is available.
-func IsApt() bool {
-	_, err := os.Stat("/usr/bin/apt-get")
-	return err == nil
-}
+func IsApt() bool { return hasBinary("apt-get") }
 
 // IsDnf returns true if dnf is available.
-func IsDnf() bool {
-	_, err := os.Stat("/usr/bin/dnf")
-	return err == nil
-}
+func IsDnf() bool { return hasBinary("dnf") }
 
 // IsPacman returns true if pacman is available.
-func IsPacman() bool {
-	_, err := os.Stat("/usr/bin/pacman")
-	return err == nil
-}
+func IsPacman() bool { return hasBinary("pacman") }
 
 // IsZypper returns true if zypper is available.
-func IsZypper() bool {
-	_, err := os.Stat("/usr/bin/zypper")
-	return err == nil
-}
+func IsZypper() bool { return hasBinary("zypper") }
 
 // IsFlatpak returns true if flatpak is available.
-func IsFlatpak() bool {
-	_, err := os.Stat("/usr/bin/flatpak")
-	return err == nil
-}
+func IsFlatpak() bool { return hasBinary("flatpak") }

@@ -17,15 +17,15 @@ func TestValidatePackageName_Accepts(t *testing.T) {
 		"libstdc++6",
 		"firefox-esr",
 		"linux-image-amd64",
-		"libc6:i386",          // apt multiarch
-		"libc6:amd64",         // apt multiarch
-		"python3.11",          // dnf
-		"base-devel",          // pacman
-		"org.videolan.VLC",    // flatpak reverse-DNS
+		"libc6:i386",       // apt multiarch
+		"libc6:amd64",      // apt multiarch
+		"python3.11",       // dnf
+		"base-devel",       // pacman
+		"org.videolan.VLC", // flatpak reverse-DNS
 		"org.videolan.VLC/x86_64/stable",
 		"runtime/org.freedesktop.Platform/x86_64/23.08",
 		"foo-1.2.3",
-		"_notquite",           // starts alphanum... actually "_" is not alphanum. Skip.
+		"_notquite", // starts alphanum... actually "_" is not alphanum. Skip.
 	}
 	for _, name := range cases {
 		if name == "_notquite" {
@@ -49,18 +49,18 @@ func TestValidatePackageName_RejectsOptionInjection(t *testing.T) {
 		"-y",
 		"--force",
 		"=evil",
-		" nginx",              // leading whitespace
-		"nginx ",              // trailing whitespace — we refuse via character class
-		"foo bar",             // embedded space — argv confusion
-		"pkg;rm -rf /",        // shell metachar
+		" nginx",       // leading whitespace
+		"nginx ",       // trailing whitespace — we refuse via character class
+		"foo bar",      // embedded space — argv confusion
+		"pkg;rm -rf /", // shell metachar
 		"pkg|cat",
 		"pkg&whoami",
 		"`reboot`",
 		"$(reboot)",
 		"pkg\nmalicious",
 		"pkg\x00",
-		"pkg=1.2.3",           // apt name=version goes via InstallOptions.Version
-		"pkg*",                // glob
+		"pkg=1.2.3", // apt name=version goes via InstallOptions.Version
+		"pkg*",      // glob
 		"pkg?",
 		"pkg>out",
 		"pkg<in",

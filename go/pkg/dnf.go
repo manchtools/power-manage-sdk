@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // nevraVersionRe matches the first dash followed by a digit in an NEVRA string,
@@ -438,37 +437,9 @@ func (d *Dnf) getPinnedSet() (map[string]bool, error) {
 }
 
 func (d *Dnf) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if d.useSudo {
-		// Prepend sudo -n (non-interactive) to avoid password prompts
-		sudoArgs := append([]string{"-n", "dnf"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "dnf", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, d.useSudo, "dnf", args, env)
 }
 
 func parseValue(line string) string {
