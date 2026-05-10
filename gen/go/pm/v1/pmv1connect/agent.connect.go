@@ -51,7 +51,7 @@ type AgentServiceClient interface {
 	// Returns all actions currently assigned to the device for local storage
 	SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
 	// Validate a one-time LUKS token and return action details + complexity requirements
-	// Used by the CLI subcommand (power-manage-agent luks set-passphrase --token XXX)
+	// Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
 	ValidateLuksToken(context.Context, *connect.Request[v1.ValidateLuksTokenRequest]) (*connect.Response[v1.ValidateLuksTokenResponse], error)
 }
 
@@ -117,7 +117,7 @@ type AgentServiceHandler interface {
 	// Returns all actions currently assigned to the device for local storage
 	SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
 	// Validate a one-time LUKS token and return action details + complexity requirements
-	// Used by the CLI subcommand (power-manage-agent luks set-passphrase --token XXX)
+	// Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
 	ValidateLuksToken(context.Context, *connect.Request[v1.ValidateLuksTokenRequest]) (*connect.Response[v1.ValidateLuksTokenResponse], error)
 }
 

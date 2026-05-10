@@ -486,7 +486,10 @@ message UnassignDeviceResponse {
 
 message DeviceAssignee {
   string id = 1;        // User or group ID
-  string type = 2;      // "user" or "user_group"
+  // Subset of AssignmentTargetType: only USER and USER_GROUP are valid
+  // values for a device assignee. The projection writer rejects DEVICE
+  // and DEVICE_GROUP at write-time.
+  AssignmentTargetType type = 2;
   string name = 3;      // User email or group name
 }
 
@@ -1593,6 +1596,14 @@ message CancelExecutionResponse {
 // Audit Log
 // ============================================================================
 
+// AuditEvent mirrors a row from the event store. The event_type,
+// stream_type, and actor_type fields are intentionally string-typed
+// (open set): the event store tracks dozens of event types across
+// every aggregate, and new events can be added without coordinating a
+// proto enum bump. The web UI populates filter dropdowns from the
+// distinct values returned by ListAuditEvents rather than a typed
+// enum. See manchtools/power-manage-sdk TECH_DEBT_AUDIT.md F013 for
+// rationale.
 message AuditEvent {
   string id = 1;
   string event_type = 2;
@@ -1636,7 +1647,7 @@ message LpsPassword {
   string username = 5;
   string password = 6;
   google.protobuf.Timestamp rotated_at = 7;
-  string rotation_reason = 8;
+  RotationReason rotation_reason = 8;
 }
 
 message GetDeviceLpsPasswordsRequest {
@@ -1664,9 +1675,8 @@ message LuksKey {
   string device_path = 5;
   string passphrase = 6;
   google.protobuf.Timestamp rotated_at = 7;
-  string rotation_reason = 8;
-  // Revocation status: "" (none), "dispatched", "success", "failed"
-  string revocation_status = 9;
+  RotationReason rotation_reason = 8;
+  LuksRevocationStatus revocation_status = 9;
   // Error message if revocation failed
   string revocation_error = 10;
   // Timestamp of last revocation event
@@ -1695,9 +1705,9 @@ message CreateLuksTokenRequest {
 message CreateLuksTokenResponse {
   // One-time UUID token
   string token = 1;
-  // URI for opening terminal: power-manage://luks/set-passphrase?token=XXX
+  // URI for opening terminal: power-manage://luks/set-passphrase?token=<token-value>
   string uri = 2;
-  // CLI command: power-manage-agent luks set-passphrase --token XXX
+  // CLI command: power-manage-agent luks set-passphrase --token <token-value>
   string cli_command = 3;
 }
 
