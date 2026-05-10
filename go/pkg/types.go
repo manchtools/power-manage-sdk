@@ -12,7 +12,7 @@ type Package struct {
 	Status       string // installed, available, upgradable, pinned
 	Size         int64  // installed size in bytes
 	Repository   string
-	Pinned       bool   // whether the package is pinned (hold)
+	Pinned       bool // whether the package is pinned (hold)
 }
 
 // PackageUpdate represents an available update for a package.

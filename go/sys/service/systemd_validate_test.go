@@ -10,16 +10,16 @@ import "testing"
 //
 // The rules (see the comment on validSystemdUnitName):
 //
-//   * Leading '-' is ALLOWED. systemd has real unit names that start
+//   - Leading '-' is ALLOWED. systemd has real unit names that start
 //     with '-' (e.g. "-.mount", the root mount). Flag-injection at
 //     the argv level is prevented by the "--" separator on every
 //     systemctl call, not by the regex.
-//   * Leading '.' is REJECTED. Dot-prefixed names aren't valid
+//   - Leading '.' is REJECTED. Dot-prefixed names aren't valid
 //     systemd unit names and would look like hidden files.
-//   * `\xHH` hex-escape sequences are ACCEPTED at any position so
+//   - `\xHH` hex-escape sequences are ACCEPTED at any position so
 //     names produced by systemd-escape(1) for paths or reserved
 //     characters survive validation.
-//   * Suffixes cover every unit type systemd recognises, including
+//   - Suffixes cover every unit type systemd recognises, including
 //     the auto-generated .device units for hardware.
 func TestValidateUnitNameSystemd(t *testing.T) {
 	cases := []struct {

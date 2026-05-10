@@ -15,14 +15,14 @@ import (
 // of our "invalid username" error.
 func TestPrivilegedFunctions_RejectMaliciousUsername(t *testing.T) {
 	badNames := []string{
-		"-o",            // would become a useradd flag
-		"--help",        // systemctl/groupadd flag
-		"",              // empty
-		"RootUser",      // uppercase — violates convention
-		"alice\nroot",   // newline — chpasswd stdin injection
-		"alice:root",    // colon — chpasswd field separator
+		"-o",          // would become a useradd flag
+		"--help",      // systemctl/groupadd flag
+		"",            // empty
+		"RootUser",    // uppercase — violates convention
+		"alice\nroot", // newline — chpasswd stdin injection
+		"alice:root",  // colon — chpasswd field separator
 		"user with spaces",
-		"alice/..",      // path traversal characters
+		"alice/..", // path traversal characters
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -52,10 +52,10 @@ func TestPrivilegedFunctions_RejectMaliciousUsername(t *testing.T) {
 				t.Errorf("ExpirePassword(%q): want validation error, got %v", name, err)
 			}
 
-			if err := GroupCreate(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid group name") {
+			if _, err := GroupCreate(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid group name") {
 				t.Errorf("GroupCreate(%q): want group-name validation error, got %v", name, err)
 			}
-			if err := GroupDelete(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid group name") {
+			if _, err := GroupDelete(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid group name") {
 				t.Errorf("GroupDelete(%q): want group-name validation error, got %v", name, err)
 			}
 		})
@@ -86,16 +86,16 @@ func TestGroupMembership_RejectsMaliciousNames(t *testing.T) {
 
 	// Either argument being malicious must cause rejection before
 	// exec.Privileged is called.
-	if err := GroupAddUser(ctx, "-o", "wheel"); err == nil || !strings.Contains(err.Error(), "invalid username") {
+	if _, err := GroupAddUser(ctx, "-o", "wheel"); err == nil || !strings.Contains(err.Error(), "invalid username") {
 		t.Errorf("GroupAddUser(bad user): got %v", err)
 	}
-	if err := GroupAddUser(ctx, "alice", "-o"); err == nil || !strings.Contains(err.Error(), "invalid group name") {
+	if _, err := GroupAddUser(ctx, "alice", "-o"); err == nil || !strings.Contains(err.Error(), "invalid group name") {
 		t.Errorf("GroupAddUser(bad group): got %v", err)
 	}
-	if err := GroupRemoveUser(ctx, "-o", "wheel"); err == nil || !strings.Contains(err.Error(), "invalid username") {
+	if _, err := GroupRemoveUser(ctx, "-o", "wheel"); err == nil || !strings.Contains(err.Error(), "invalid username") {
 		t.Errorf("GroupRemoveUser(bad user): got %v", err)
 	}
-	if err := GroupRemoveUser(ctx, "alice", "-o"); err == nil || !strings.Contains(err.Error(), "invalid group name") {
+	if _, err := GroupRemoveUser(ctx, "alice", "-o"); err == nil || !strings.Contains(err.Error(), "invalid group name") {
 		t.Errorf("GroupRemoveUser(bad group): got %v", err)
 	}
 }

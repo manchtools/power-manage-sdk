@@ -1,8 +1,10 @@
 // Package user provides user and group management utilities for Linux systems.
 //
-// User operations (Create, Delete, Modify, Lock, etc.) use sudo for privilege
-// escalation. Query operations (Get, Exists, PrimaryGroup) run as the current
-// user where possible, falling back to sudo for restricted data like shadow.
+// User operations (Create, Delete, Modify, Lock, etc.) escalate through the
+// configured privilege backend (sudo or doas — see exec.SetPrivilegeBackend).
+// Query operations (Get, Exists, PrimaryGroup) run as the current user where
+// possible, falling back to the privilege backend for restricted data like
+// the shadow file.
 package user
 
 import (
@@ -11,10 +13,18 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
+
+// queryTimeout caps the context-less query helpers (Get / Exists /
+// PrimaryGroup / SupplementaryGroups) so a hung getent / id call —
+// e.g. a stalled NSS module — cannot pin the calling goroutine
+// indefinitely. Local NSS lookups normally return in milliseconds;
+// 10s leaves headroom for slow LDAP / SSSD backends. F023.
+const queryTimeout = 10 * time.Second
 
 // Info holds the current state of a user account.
 type Info struct {
@@ -33,10 +43,13 @@ type Info struct {
 
 // Get retrieves the current state of a user from the system.
 func Get(username string) (*Info, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+
 	// Get passwd entry: username:x:uid:gid:comment:home:shell
-	out, err := exec.Query("getent", "passwd", username)
+	out, err := exec.QueryCtx(ctx, "getent", "passwd", username)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, fmt.Errorf("lookup passwd entry for %q: %w", username, err)
 	}
 
 	fields := strings.Split(strings.TrimSpace(out), ":")
@@ -58,7 +71,7 @@ func Get(username string) (*Info, error) {
 	// Resolve the primary group name from the GID we already have, so we
 	// don't have to shell out to `id -gn` in addition to `id -Gn`.
 	var primary string
-	if out, err := exec.Query("getent", "group", strconv.Itoa(gid)); err == nil {
+	if out, err := exec.QueryCtx(ctx, "getent", "group", strconv.Itoa(gid)); err == nil {
 		// getent group format: name:passwd:gid:members
 		if idx := strings.IndexByte(out, ':'); idx > 0 {
 			primary = out[:idx]
@@ -66,7 +79,7 @@ func Get(username string) (*Info, error) {
 	}
 
 	// Get supplementary groups (filter out the primary group).
-	if allGroups, err := exec.Query("id", "-Gn", username); err == nil {
+	if allGroups, err := exec.QueryCtx(ctx, "id", "-Gn", username); err == nil {
 		for _, g := range strings.Fields(strings.TrimSpace(allGroups)) {
 			if g != primary {
 				info.Groups = append(info.Groups, g)
@@ -75,10 +88,12 @@ func Get(username string) (*Info, error) {
 	}
 
 	// Check if account is locked (password field starts with ! or *).
-	// Uses sudo because the shadow file is root-only; if sudo -n is not
-	// authorized for this caller, leave Locked=false rather than guessing.
-	if shadowOut, exit, err := exec.QueryOutput("sudo", "-n", "getent", "shadow", username); err == nil && exit == 0 && shadowOut != "" {
-		shadowFields := strings.Split(shadowOut, ":")
+	// The shadow file is root-only — escalate via the configured
+	// privilege backend (sudo or doas, see exec.SetPrivilegeBackend).
+	// If escalation is not authorized for this caller, the Privileged
+	// call returns an error and we leave Locked=false rather than guessing.
+	if shadowRes, err := exec.Privileged(ctx, "getent", "shadow", username); err == nil && shadowRes != nil && shadowRes.ExitCode == 0 && shadowRes.Stdout != "" {
+		shadowFields := strings.Split(strings.TrimSpace(shadowRes.Stdout), ":")
 		if len(shadowFields) >= 2 {
 			passField := shadowFields[1]
 			info.Locked = strings.HasPrefix(passField, "!") || strings.HasPrefix(passField, "*")
@@ -90,7 +105,9 @@ func Get(username string) (*Info, error) {
 
 // Exists checks if a user exists on the system.
 func Exists(username string) bool {
-	return exec.Check("id", username)
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	return exec.CheckCtx(ctx, "id", username)
 }
 
 // IsValidName checks if a username is valid and safe.
@@ -194,7 +211,9 @@ func Unlock(ctx context.Context, username string) (*exec.Result, error) {
 
 // PrimaryGroup returns the primary group name for a user.
 func PrimaryGroup(username string) (string, error) {
-	out, err := exec.Query("id", "-gn", username)
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	out, err := exec.QueryCtx(ctx, "id", "-gn", username)
 	if err != nil {
 		return "", err
 	}
@@ -204,7 +223,9 @@ func PrimaryGroup(username string) (string, error) {
 // SupplementaryGroups returns the supplementary groups for a user
 // (excluding the primary group).
 func SupplementaryGroups(username string) ([]string, error) {
-	out, err := exec.Query("id", "-Gn", username)
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	out, err := exec.QueryCtx(ctx, "id", "-Gn", username)
 	if err != nil {
 		return nil, err
 	}
@@ -257,15 +278,14 @@ func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) 
 // User Permission Operations
 // =============================================================================
 
-// ChownRecursive changes ownership of a path and all its contents.
-// Returns nil result with nil error when owner+group are both empty (no-op).
-// The "--" end-of-options separator is passed so an ownership or path
-// value that happens to start with "-" cannot be misread as a flag by
-// chown.
+// ChownRecursive is a thin compatibility alias that forwards to
+// fs.SetOwnershipRecursive. The implementation moved out of sys/user
+// because it operates on any path, not on a user account; sys/fs is
+// the natural home for ownership ops alongside SetOwnership. Kept
+// here so existing agent call sites keep compiling. F018 in the SDK
+// tech-debt audit.
+//
+// Deprecated: use fs.SetOwnershipRecursive.
 func ChownRecursive(ctx context.Context, path, owner, group string) (*exec.Result, error) {
-	ownership := fs.Ownership(owner, group)
-	if ownership == "" {
-		return nil, nil
-	}
-	return exec.Privileged(ctx, "chown", "-R", "--", ownership, path)
+	return fs.SetOwnershipRecursive(ctx, path, owner, group)
 }

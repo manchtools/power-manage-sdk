@@ -10,7 +10,7 @@ sdk/
 │   ├── common.proto         Base types, enums, error codes
 │   ├── actions.proto        Action types, parameters, scheduling
 │   ├── agent.proto          Bidirectional streaming (Agent ↔ Gateway)
-│   ├── control.proto        Control API (136 RPCs)
+│   ├── control.proto        Control API (164 RPCs)
 │   ├── device_auth.proto    Agent enrollment via local unix socket
 │   └── internal.proto       Gateway-to-control proxy for credential operations
 │
@@ -42,7 +42,7 @@ sdk/
 │   │   ├── reboot/            Reboot scheduling
 │   │   ├── terminal/          PTY session management
 │   │   └── user/              User & group management, password generation
-│   ├── validate/            Input validation (paths, env vars, usernames)
+│   ├── validate/            Input validation (struct tag validator + ULID rule)
 │   └── verify/              Action payload signature verification
 │
 ├── ts/                      TypeScript SDK (framework-agnostic browser utilities)
@@ -69,8 +69,8 @@ Six proto files define the entire API surface:
 |------|---------|
 | `common.proto` | ULID identifiers, execution status, assignment modes, error detail codes |
 | `actions.proto` | Action types (package, update, repository, app_image, deb, rpm, flatpak, shell, service, file, directory, user, group, ssh, sshd, admin_policy, lps, encryption, wifi, agent_update), parameters, scheduling. Several capability areas are modelled with a backend enum so the same action type can target multiple implementations (e.g. `AdminPolicyParams.backend = sudo|doas`, `ServiceParams.backend = systemd|openrc|…`). See [docs/backend-pattern.md](docs/backend-pattern.md). |
-| `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries. Hello includes `arch` for platform detection. Welcome includes auto-update fields (`latest_agent_version`, `update_url`, `update_checksum`). |
-| `control.proto` | `ControlService` — 136 RPCs for users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, server settings (including `auto_update_agents`), and more |
+| `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries. Hello includes `arch` for platform detection. |
+| `control.proto` | `ControlService` — full RPC surface (~164 methods) covering users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, server settings, and more |
 | `device_auth.proto` | `DeviceAuthService` — agent enrollment via local unix socket |
 | `internal.proto` | `InternalService` — gateway-to-control proxy for credential-bearing operations (LUKS keys, LPS passwords) and agent auto-update info |
 
@@ -120,22 +120,22 @@ See the [package manager README](go/pkg/README.md) for the full API.
 
 ### System Management Libraries
 
-`go/sys/` provides opinionated Linux system management utilities. All privileged operations run through `sudo`, so the calling process does not need to be root.
+`go/sys/` provides opinionated Linux system management utilities. All privileged operations run through the configured privilege backend (sudo or doas, see `exec.SetPrivilegeBackend`), so the calling process does not need to be root.
 
 #### `sys/exec` — Command Execution
 
 ```go
 import "github.com/manchtools/power-manage/sdk/go/sys/exec"
 
-result, err := exec.Run(ctx, "ls", "-la")          // basic command
-result, err := exec.Sudo(ctx, "systemctl", "restart", "nginx")  // with sudo
-stdout, err := exec.Query("hostname")               // quick query
-ok := exec.Check("which", "nginx")                  // boolean check
+result, err := exec.Run(ctx, "ls", "-la")                               // basic command
+result, err := exec.Privileged(ctx, "systemctl", "restart", "nginx")     // through sudo/doas
+stdout, err := exec.Query("hostname")                                    // quick query
+ok := exec.Check("which", "nginx")                                       // boolean check
 ```
 
 Key features:
 - Streaming output via `RunStreaming` with per-line callbacks
-- Automatic path resolution for sudo commands
+- Automatic path resolution for the privileged commands
 - Output truncation at 1 MiB to prevent memory issues
 
 #### `sys/fs` — Filesystem Operations
@@ -149,7 +149,7 @@ exists := fs.FileExists(ctx, "/etc/motd")
 err := fs.MkdirWithPermissions(ctx, "/opt/app", "0755", "app", "app", true)
 ```
 
-All operations use sudo for privilege escalation. `WriteFileAtomic` writes to a temp file and renames for crash safety.
+All operations escalate via the configured privilege backend (sudo or doas). `WriteFileAtomic` uses a write-then-rename sequence so concurrent readers see either the old or new file, never a half-written one. For fsync-level durability + an unguessable temp suffix, use `AtomicWriteFile` in `atomic_write.go`.
 
 #### `sys/user` — User & Group Management
 
@@ -173,25 +173,29 @@ oq := osquery.New()                                // lazy-init, detects install
 rows, err := oq.Query(ctx, "os_version", nil, 0)   // query a table
 ```
 
-#### `sys/luks` — LUKS Disk Encryption
+#### `sys/encryption` — Disk Encryption
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/luks"
+import "github.com/manchtools/power-manage/sdk/go/sys/encryption"
 
-device, err := luks.DetectPrimaryVolume()           // auto-detect LUKS volume
-err := luks.AddKey(ctx, device, existingKey, newKey, slot)
+err := encryption.AddKey(ctx, devicePath, existingKey, newKey)
+err := encryption.AddKeyToSlot(ctx, devicePath, slot, existingKey, newKey)
 ```
 
-#### `sys/systemd` — Systemd Unit Management
+`encryption` exposes a pluggable Backend (LUKS today; geli/cgd planned). Call `encryption.SetBackend(encryption.BackendLUKS)` once at startup.
+
+#### `sys/service` — Service Manager
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/systemd"
+import "github.com/manchtools/power-manage/sdk/go/sys/service"
 
-status := systemd.Status("nginx.service")    // {Enabled, Active, Masked, Static}
-err := systemd.EnableNow(ctx, "nginx.service")
-err := systemd.WriteUnit(ctx, "myapp.service", unitContent)
-err := systemd.DaemonReload(ctx)
+status, err := service.Status("nginx.service")  // {Enabled, Active, Masked, Static}
+err := service.EnableNow(ctx, "nginx.service")
+err := service.WriteUnit(ctx, "myapp.service", unitContent)
+err := service.DaemonReload(ctx)
 ```
+
+`service` selects between systemd / openrc / runit / s6 via `service.SetServiceBackend(...)`.
 
 ### Action Signature Verification
 
@@ -207,15 +211,17 @@ err := verifier.Verify(action)                 // verify action signature
 
 ### Input Validation
 
-`go/validate/` provides security-focused input validation:
+`go/validate/` wraps the [go-playground/validator](https://github.com/go-playground/validator) library with the project's custom rules (today: a `ulid` tag for ULID identifiers). RPC handlers and other server code use it via:
 
 ```go
 import "github.com/manchtools/power-manage/sdk/go/validate"
 
-err := validate.Path("/etc/nginx/nginx.conf")    // path traversal prevention
-err := validate.Username("deploy")                // username safety
-err := validate.EnvVars(envMap)                   // environment variable blocklist
+v := validate.NewValidator()                       // returns a *validator.Validate with rules registered
+msg, ok := validate.Struct(v, request)             // returns a formatted error message
+text := validate.FormatFieldError(fieldErr)        // single-field formatter
 ```
+
+Field rules are declared via `validate:"..."` struct tags injected into the generated proto types (`@gotags: validate:"required,ulid"` etc.).
 
 ### Running SDK Tests
 
@@ -233,7 +239,7 @@ The `ts/` directory contains framework-agnostic browser utilities used by the we
 
 | File | Purpose |
 |------|---------|
-| `client.ts` | Connect-RPC client wrapping all 136 ControlService RPCs |
+| `client.ts` | Connect-RPC client wrapping the full ControlService surface (~164 RPCs) |
 | `auth.ts` | JWT token management with persistent auth storage ("keep me signed in") |
 | `errors.ts` | Error code extraction from `ConnectError` details (`getErrorCode()`) |
 | `action-types.ts` | Action type constants, display names, and icon mappings |

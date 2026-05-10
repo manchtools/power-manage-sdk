@@ -45,26 +45,41 @@ type UnitStatus struct {
 
 var backend atomic.Int32
 
-// SetServiceBackend selects the active backend. Call this once at
+// SetBackend selects the active backend. Call this once at
 // startup from agent code. Unknown values are ignored so a zero-valued
 // proto enum can never regress an explicitly-set backend.
-func SetServiceBackend(b ServiceBackend) {
+//
+// Naming: docs/backend-pattern.md prescribes plain SetBackend /
+// CurrentBackend; the SetServiceBackend / CurrentServiceBackend
+// spellings are retained as deprecated aliases so existing callers
+// keep compiling. New code should use SetBackend / CurrentBackend.
+func SetBackend(b ServiceBackend) {
 	switch b {
 	case ServiceBackendSystemd, ServiceBackendOpenRC, ServiceBackendRunit, ServiceBackendS6:
 		backend.Store(int32(b))
 	}
 }
 
-// CurrentServiceBackend returns the active backend. Useful for agent
-// code that needs to render backend-specific paths or log output.
-func CurrentServiceBackend() ServiceBackend {
+// CurrentBackend returns the active backend. Useful for agent code
+// that needs to render backend-specific paths or log output.
+func CurrentBackend() ServiceBackend {
 	return ServiceBackend(backend.Load())
 }
+
+// SetServiceBackend is a deprecated alias for SetBackend.
+//
+// Deprecated: use SetBackend instead.
+func SetServiceBackend(b ServiceBackend) { SetBackend(b) }
+
+// CurrentServiceBackend is a deprecated alias for CurrentBackend.
+//
+// Deprecated: use CurrentBackend instead.
+func CurrentServiceBackend() ServiceBackend { return CurrentBackend() }
 
 // unsupported returns a descriptive error for any backend without a
 // concrete implementation for the given operation.
 func unsupported(op string) error {
-	return fmt.Errorf("%w: %s on backend %s", ErrBackendNotSupported, op, CurrentServiceBackend())
+	return fmt.Errorf("%w: %s on backend %s", ErrBackendNotSupported, op, CurrentBackend())
 }
 
 // String renders the backend as its canonical CLI name.
@@ -91,12 +106,12 @@ func (b ServiceBackend) String() string {
 // ErrBackendNotSupported if the active backend has no implementation,
 // or a validation error if the unit name is not well-formed.
 func Status(unitName string) (UnitStatus, error) {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return UnitStatus{}, err
 		}
-		return statusSystemd(unitName), nil
+		return statusSystemd(unitName)
 	default:
 		return UnitStatus{}, unsupported("Status")
 	}
@@ -108,12 +123,12 @@ func Status(unitName string) (UnitStatus, error) {
 // implementation, or a validation error if the unit name is not
 // well-formed.
 func IsEnabled(unitName string) (bool, error) {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return false, err
 		}
-		return isEnabledSystemd(unitName), nil
+		return isEnabledSystemd(unitName)
 	default:
 		return false, unsupported("IsEnabled")
 	}
@@ -124,12 +139,12 @@ func IsEnabled(unitName string) (bool, error) {
 // callers can distinguish "not masked" from "backend cannot tell",
 // or a validation error if the unit name is not well-formed.
 func IsMasked(unitName string) (bool, error) {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return false, err
 		}
-		return isMaskedSystemd(unitName), nil
+		return isMaskedSystemd(unitName)
 	default:
 		return false, unsupported("IsMasked")
 	}
@@ -140,12 +155,12 @@ func IsMasked(unitName string) (bool, error) {
 // implementation, or a validation error if the unit name is not
 // well-formed.
 func IsActive(unitName string) (bool, error) {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return false, err
 		}
-		return isActiveSystemd(unitName), nil
+		return isActiveSystemd(unitName)
 	default:
 		return false, unsupported("IsActive")
 	}
@@ -153,7 +168,7 @@ func IsActive(unitName string) (bool, error) {
 
 // DaemonReload reloads the service manager's on-disk configuration.
 func DaemonReload(ctx context.Context) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return daemonReloadSystemd(ctx)
 	default:
@@ -163,7 +178,7 @@ func DaemonReload(ctx context.Context) error {
 
 // Enable enables a unit (persistent across reboots).
 func Enable(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return enableSystemd(ctx, unitName)
 	default:
@@ -173,7 +188,7 @@ func Enable(ctx context.Context, unitName string) error {
 
 // Disable disables a unit.
 func Disable(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return disableSystemd(ctx, unitName)
 	default:
@@ -183,7 +198,7 @@ func Disable(ctx context.Context, unitName string) error {
 
 // Start starts a unit.
 func Start(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return startSystemd(ctx, unitName)
 	default:
@@ -193,7 +208,7 @@ func Start(ctx context.Context, unitName string) error {
 
 // Stop stops a unit.
 func Stop(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return stopSystemd(ctx, unitName)
 	default:
@@ -203,7 +218,7 @@ func Stop(ctx context.Context, unitName string) error {
 
 // Restart restarts a unit.
 func Restart(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return restartSystemd(ctx, unitName)
 	default:
@@ -215,7 +230,7 @@ func Restart(ctx context.Context, unitName string) error {
 // Not all backends support masking; those that don't return
 // ErrBackendNotSupported.
 func Mask(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return maskSystemd(ctx, unitName)
 	default:
@@ -225,7 +240,7 @@ func Mask(ctx context.Context, unitName string) error {
 
 // Unmask unmasks a unit.
 func Unmask(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return unmaskSystemd(ctx, unitName)
 	default:
@@ -235,7 +250,7 @@ func Unmask(ctx context.Context, unitName string) error {
 
 // EnableNow enables and starts a unit.
 func EnableNow(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return enableNowSystemd(ctx, unitName)
 	default:
@@ -245,7 +260,7 @@ func EnableNow(ctx context.Context, unitName string) error {
 
 // DisableNow disables and stops a unit.
 func DisableNow(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return disableNowSystemd(ctx, unitName)
 	default:
@@ -257,7 +272,7 @@ func DisableNow(ctx context.Context, unitName string) error {
 // naming rules (e.g., systemd requires a type suffix). Returns an
 // error describing the violation.
 func ValidateUnitName(unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return validateUnitNameSystemd(unitName)
 	default:
@@ -269,7 +284,7 @@ func ValidateUnitName(unitName string) error {
 // location (/etc/systemd/system for systemd, /etc/init.d for openrc, etc.).
 // content is passed through verbatim.
 func WriteUnit(ctx context.Context, unitName, content string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return writeUnitSystemd(ctx, unitName, content)
 	default:
@@ -282,7 +297,7 @@ func WriteUnit(ctx context.Context, unitName, content string) error {
 // or if the backend has no implementation; the filesystem removal
 // itself remains best-effort.
 func RemoveUnit(ctx context.Context, unitName string) error {
-	switch CurrentServiceBackend() {
+	switch CurrentBackend() {
 	case ServiceBackendSystemd:
 		return removeUnitSystemd(ctx, unitName)
 	default:

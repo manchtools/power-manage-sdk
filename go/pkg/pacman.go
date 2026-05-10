@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // validPacmanPkgName restricts package names to safe characters,
@@ -44,7 +43,7 @@ func (p *Pacman) WithSudo(useSudo bool) *Pacman {
 
 // Info returns pacman version information.
 func (p *Pacman) Info() (name, version string, err error) {
-	out, err := exec.CommandContext(p.ctx, "pacman", "--version").Output()
+	out, err := readCmd(p.ctx, "pacman", "--version").Output()
 	if err != nil {
 		return "", "", err
 	}
@@ -133,7 +132,7 @@ func (p *Pacman) Upgrade(packages ...string) (*CommandResult, error) {
 
 // Search searches for packages.
 func (p *Pacman) Search(query string) ([]SearchResult, error) {
-	out, err := exec.CommandContext(p.ctx, "pacman", "-Ss", query).Output()
+	out, err := readCmd(p.ctx, "pacman", "-Ss", query).Output()
 	if err != nil {
 		// pacman returns exit code 1 if no results
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
@@ -180,7 +179,7 @@ func (p *Pacman) Search(query string) ([]SearchResult, error) {
 // List lists installed packages.
 func (p *Pacman) List() ([]Package, error) {
 	// -Q: query installed, -i: info format
-	out, err := exec.CommandContext(p.ctx, "pacman", "-Q").Output()
+	out, err := readCmd(p.ctx, "pacman", "-Q").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +207,7 @@ func (p *Pacman) List() ([]Package, error) {
 // ListUpgradable lists packages with available upgrades.
 func (p *Pacman) ListUpgradable() ([]PackageUpdate, error) {
 	// -Qu: query upgradable
-	out, err := exec.CommandContext(p.ctx, "pacman", "-Qu").Output()
+	out, err := readCmd(p.ctx, "pacman", "-Qu").Output()
 	if err != nil {
 		// Exit code 1 means no updates available
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
@@ -249,11 +248,11 @@ func (p *Pacman) Show(name string) (*Package, error) {
 	var err error
 	var status string
 
-	out, err = exec.CommandContext(p.ctx, "pacman", "-Qi", name).Output()
+	out, err = readCmd(p.ctx, "pacman", "-Qi", name).Output()
 	if err == nil {
 		status = "installed"
 	} else {
-		out, err = exec.CommandContext(p.ctx, "pacman", "-Si", name).Output()
+		out, err = readCmd(p.ctx, "pacman", "-Si", name).Output()
 		if err != nil {
 			return nil, err
 		}
@@ -297,7 +296,7 @@ func (p *Pacman) ListVersions(name string) (*VersionInfo, error) {
 	}
 
 	// Get version from sync database
-	out, err := exec.CommandContext(p.ctx, "pacman", "-Si", name).Output()
+	out, err := readCmd(p.ctx, "pacman", "-Si", name).Output()
 	if err != nil {
 		return info, nil
 	}
@@ -329,13 +328,13 @@ func (p *Pacman) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (p *Pacman) IsInstalled(name string) (bool, error) {
-	err := exec.CommandContext(p.ctx, "pacman", "-Q", name).Run()
+	err := readCmd(p.ctx, "pacman", "-Q", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (p *Pacman) GetInstalledVersion(name string) (string, error) {
-	out, err := exec.CommandContext(p.ctx, "pacman", "-Q", name).Output()
+	out, err := readCmd(p.ctx, "pacman", "-Q", name).Output()
 	if err != nil {
 		return "", err
 	}
@@ -361,7 +360,7 @@ func (p *Pacman) Pin(packages ...string) (*CommandResult, error) {
 	}
 
 	// Read current pacman.conf
-	confContent, err := exec.CommandContext(p.ctx, "cat", "/etc/pacman.conf").Output()
+	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
@@ -387,7 +386,7 @@ func (p *Pacman) Unpin(packages ...string) (*CommandResult, error) {
 	}
 
 	// Read current pacman.conf
-	confContent, err := exec.CommandContext(p.ctx, "cat", "/etc/pacman.conf").Output()
+	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
@@ -409,7 +408,7 @@ func (p *Pacman) Unpin(packages ...string) (*CommandResult, error) {
 
 // ListPinned lists all pinned (IgnorePkg) packages.
 func (p *Pacman) ListPinned() ([]Package, error) {
-	confContent, err := exec.CommandContext(p.ctx, "cat", "/etc/pacman.conf").Output()
+	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +430,7 @@ func (p *Pacman) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (in IgnorePkg).
 func (p *Pacman) IsPinned(name string) (bool, error) {
-	confContent, err := exec.CommandContext(p.ctx, "cat", "/etc/pacman.conf").Output()
+	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
 	if err != nil {
 		return false, err
 	}
@@ -440,7 +439,7 @@ func (p *Pacman) IsPinned(name string) (bool, error) {
 }
 
 func (p *Pacman) getPinnedSet() (map[string]bool, error) {
-	confContent, err := exec.CommandContext(p.ctx, "cat", "/etc/pacman.conf").Output()
+	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -513,67 +512,13 @@ func (p *Pacman) updateIgnorePkg(confContent string, ignoredPkgs []string) (*Com
 }
 
 func (p *Pacman) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if p.useSudo {
-		sudoArgs := append([]string{"-n", "pacman"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "pacman", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, p.useSudo, "pacman", args, env)
 }
 
 func (p *Pacman) runWithStdin(cmd, arg, stdin string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if p.useSudo {
-		c = exec.CommandContext(p.ctx, "sudo", "-n", cmd, arg)
-	} else {
-		c = exec.CommandContext(p.ctx, cmd, arg)
-	}
-
-	c.Stdin = strings.NewReader(stdin)
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	return runPMWithStdin(p.ctx, p.useSudo, stdin, cmd, arg)
 }
 
 func parsePacmanValue(line string) string {

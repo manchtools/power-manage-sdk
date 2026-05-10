@@ -4,14 +4,22 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
+// findmntTimeout caps the context-less IsReadOnly call so a hung
+// findmnt (e.g. on an NFS mount with a stalled server) cannot pin
+// the calling goroutine indefinitely. F023.
+const findmntTimeout = 10 * time.Second
+
 // IsReadOnly checks if the filesystem at path is mounted read-only
 // by examining mount options via findmnt.
 func IsReadOnly(path string) (bool, error) {
-	out, err := exec.Query("findmnt", "-n", "-o", "OPTIONS", "--target", path)
+	ctx, cancel := context.WithTimeout(context.Background(), findmntTimeout)
+	defer cancel()
+	out, err := exec.QueryCtx(ctx, "findmnt", "-n", "-o", "OPTIONS", "--target", path)
 	if err != nil {
 		return false, err
 	}

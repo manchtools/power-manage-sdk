@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
+
+	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // Repair attempts to fix common package manager issues.
@@ -104,7 +105,7 @@ func (d *Dnf) Repair(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	c := exec.CommandContext(ctx, "rpm", "--verifydb")
+	c := readCmd(ctx, "rpm", "--verifydb")
 	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	if out, err := c.CombinedOutput(); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -187,18 +188,29 @@ func removeStaleLock(ctx context.Context, path string) error {
 	}
 
 	// Check if any process has this specific file open.
-	// fuser exits 0 if processes are using the file, 1 if not.
-	if err := exec.CommandContext(ctx, "fuser", path).Run(); err == nil {
+	// fuser exits 0 if processes are using the file, 1 if not, and
+	// other non-zero codes for probe failures (binary missing,
+	// permission denied, signal). Treat anything other than the
+	// canonical "no process holds it" exit (1) as inconclusive — we
+	// must not delete the lock based on a failed probe.
+	cmd := readCmd(ctx, "fuser", path)
+	if err := cmd.Run(); err == nil {
 		return nil // file is actively in use
 	} else if ctxErr := ctx.Err(); ctxErr != nil {
 		return ctxErr
+	} else if cmd.ProcessState == nil || cmd.ProcessState.ExitCode() != 1 {
+		slog.Warn("fuser probe failed; skipping stale lock removal", "path", path, "error", err)
+		return nil
 	}
 
-	// No process has the file open — lock is stale. Remove it.
+	// No process has the file open — lock is stale. Remove it via the
+	// configured privilege backend (sudo or doas) so the doas-only path
+	// works too — bare `sudo` was the previous shape and silently failed
+	// on doas hosts. CONTRIBUTING.md:71 requires the privilege wrapper.
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := exec.CommandContext(ctx, "sudo", "-n", "rm", "-f", path).Run(); err != nil {
+	if _, err := pmexec.Privileged(ctx, "rm", "-f", path); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return ctxErr
 		}

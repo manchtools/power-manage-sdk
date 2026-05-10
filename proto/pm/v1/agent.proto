@@ -21,7 +21,7 @@ service AgentService {
   rpc SyncActions(SyncActionsRequest) returns (SyncActionsResponse);
 
   // Validate a one-time LUKS token and return action details + complexity requirements
-  // Used by the CLI subcommand (power-manage-agent luks set-passphrase --token XXX)
+  // Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
   rpc ValidateLuksToken(ValidateLuksTokenRequest) returns (ValidateLuksTokenResponse);
 }
 

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"os/exec"
 	"strings"
 )
 
@@ -22,7 +21,7 @@ func (a *Apt) HasUpdates(ctx context.Context, securityOnly bool) bool {
 	// the origin/label of each upgradable package.
 	_ = securityOnly
 
-	c := exec.CommandContext(ctx, cmd, args...)
+	c := readCmd(ctx, cmd, args...)
 	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	out, err := c.Output()
 	if err != nil {
@@ -45,7 +44,7 @@ func (d *Dnf) HasUpdates(ctx context.Context, securityOnly bool) bool {
 		args = append(args, "--security")
 	}
 
-	c := exec.CommandContext(ctx, "dnf", args...)
+	c := readCmd(ctx, "dnf", args...)
 	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	err := c.Run()
 	if err != nil {
@@ -58,7 +57,7 @@ func (d *Dnf) HasUpdates(ctx context.Context, securityOnly bool) bool {
 
 // HasUpdates for Pacman: runs `pacman -Qu`. Exit code 0 with output means updates available.
 func (p *Pacman) HasUpdates(ctx context.Context, _ bool) bool {
-	out, err := exec.CommandContext(ctx, "pacman", "-Qu").Output()
+	out, err := readCmd(ctx, "pacman", "-Qu").Output()
 	if err != nil {
 		return false
 	}
@@ -72,7 +71,7 @@ func (z *Zypper) HasUpdates(ctx context.Context, securityOnly bool) bool {
 		args = append(args, "--type", "patch", "--category", "security")
 	}
 
-	c := exec.CommandContext(ctx, "zypper", args...)
+	c := readCmd(ctx, "zypper", args...)
 	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	var stdout bytes.Buffer
 	c.Stdout = &stdout
@@ -104,7 +103,7 @@ func (f *Flatpak) HasUpdates(ctx context.Context, _ bool) bool {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(ctx, "flatpak", args...).Output()
+	out, err := readCmd(ctx, "flatpak", args...).Output()
 	if err != nil {
 		return false
 	}

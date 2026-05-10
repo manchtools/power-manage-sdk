@@ -87,40 +87,79 @@ func listGraphicalSessions(ctx context.Context) []session {
 	}
 
 	var sessions []session
-	for _, line := range strings.Split(strings.TrimSpace(result.Stdout), "\n") {
+	for _, sessionID := range parseLoginctlListSessions(result.Stdout) {
+		// Query session type and user details. Without --value loginctl
+		// prints Key=Value lines so we can parse by name — D-Bus
+		// emission order isn't documented as stable, so positional
+		// parsing would silently misassign fields when the order
+		// shifts across systemd versions.
+		info, err := exec.Privileged(ctx, "loginctl", "show-session", sessionID,
+			"-p", "Type", "-p", "Name", "-p", "User")
+		if err != nil || info.ExitCode != 0 {
+			continue
+		}
+		s, ok := parseLoginctlShowSession(sessionID, info.Stdout)
+		if !ok {
+			continue
+		}
+		sessions = append(sessions, s)
+	}
+
+	return sessions
+}
+
+// parseLoginctlListSessions extracts session IDs from `loginctl
+// list-sessions --no-legend` output. The first whitespace-separated
+// field is the session ID; lines with fewer than three fields are
+// skipped (matches the prior in-line behaviour). Pure-function shape
+// so it can be tested without shelling out (F026 in TECH_DEBT_AUDIT.md).
+func parseLoginctlListSessions(stdout string) []string {
+	var ids []string
+	for _, line := range strings.Split(strings.TrimSpace(stdout), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 3 {
 			continue
 		}
-		sessionID := fields[0]
-
-		// Query session type and user details
-		info, err := exec.Privileged(ctx, "loginctl", "show-session", sessionID,
-			"-p", "Type", "-p", "Name", "-p", "User", "--value")
-		if err != nil || info.ExitCode != 0 {
-			continue
-		}
-
-		lines := strings.Split(strings.TrimSpace(info.Stdout), "\n")
-		if len(lines) < 3 {
-			continue
-		}
-
-		typ := strings.TrimSpace(lines[0])
-		user := strings.TrimSpace(lines[1])
-		uid, _ := strconv.Atoi(strings.TrimSpace(lines[2]))
-
-		if typ == "x11" || typ == "wayland" || typ == "mir" {
-			sessions = append(sessions, session{
-				id:   sessionID,
-				user: user,
-				uid:  uid,
-				typ:  typ,
-			})
-		}
+		ids = append(ids, fields[0])
 	}
+	return ids
+}
 
-	return sessions
+// parseLoginctlShowSession parses `loginctl show-session <id> -p Type
+// -p Name -p User` output into a session struct. loginctl emits
+// Key=Value lines in D-Bus dictionary order, NOT the order of the -p
+// flags, so we parse by name instead of relying on positional output.
+// Returns (session, false) when any of Type / Name / User is missing,
+// when User isn't a numeric uid, when Name is empty, or when Type
+// isn't a graphical session (x11 / wayland / mir).
+func parseLoginctlShowSession(sessionID, stdout string) (session, bool) {
+	props := map[string]string{}
+	for _, line := range strings.Split(stdout, "\n") {
+		k, v, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if !ok {
+			continue
+		}
+		props[strings.TrimSpace(k)] = strings.TrimSpace(v)
+	}
+	typ := props["Type"]
+	user := props["Name"]
+	uidStr, hasUID := props["User"]
+	if !hasUID || user == "" {
+		return session{}, false
+	}
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
+		return session{}, false
+	}
+	if typ != "x11" && typ != "wayland" && typ != "mir" {
+		return session{}, false
+	}
+	return session{
+		id:   sessionID,
+		user: user,
+		uid:  uid,
+		typ:  typ,
+	}, true
 }
 
 // sendDesktopNotification sends a freedesktop notification to a single graphical session.

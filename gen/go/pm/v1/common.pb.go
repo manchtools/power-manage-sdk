@@ -566,6 +566,70 @@ func (RotationReason) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
+// LuksRevocationStatus tracks the lifecycle of a LUKS passphrase
+// revocation. NONE is the wire-default for keys that have not been
+// revoked. Once an admin triggers revocation the projection moves the
+// key through DISPATCHED (task enqueued) and then SUCCESS or FAILED
+// based on the agent's response. Same wire / event-store split as the
+// other PR-D enums: the proto carries the typed enum, the projection
+// column keeps the lowercase string form ("" / "dispatched" /
+// "success" / "failed") for backward replay; conversion happens at
+// the RPC boundary.
+type LuksRevocationStatus int32
+
+const (
+	LuksRevocationStatus_LUKS_REVOCATION_STATUS_UNSPECIFIED LuksRevocationStatus = 0
+	LuksRevocationStatus_LUKS_REVOCATION_STATUS_NONE        LuksRevocationStatus = 1
+	LuksRevocationStatus_LUKS_REVOCATION_STATUS_DISPATCHED  LuksRevocationStatus = 2
+	LuksRevocationStatus_LUKS_REVOCATION_STATUS_SUCCESS     LuksRevocationStatus = 3
+	LuksRevocationStatus_LUKS_REVOCATION_STATUS_FAILED      LuksRevocationStatus = 4
+)
+
+// Enum value maps for LuksRevocationStatus.
+var (
+	LuksRevocationStatus_name = map[int32]string{
+		0: "LUKS_REVOCATION_STATUS_UNSPECIFIED",
+		1: "LUKS_REVOCATION_STATUS_NONE",
+		2: "LUKS_REVOCATION_STATUS_DISPATCHED",
+		3: "LUKS_REVOCATION_STATUS_SUCCESS",
+		4: "LUKS_REVOCATION_STATUS_FAILED",
+	}
+	LuksRevocationStatus_value = map[string]int32{
+		"LUKS_REVOCATION_STATUS_UNSPECIFIED": 0,
+		"LUKS_REVOCATION_STATUS_NONE":        1,
+		"LUKS_REVOCATION_STATUS_DISPATCHED":  2,
+		"LUKS_REVOCATION_STATUS_SUCCESS":     3,
+		"LUKS_REVOCATION_STATUS_FAILED":      4,
+	}
+)
+
+func (x LuksRevocationStatus) Enum() *LuksRevocationStatus {
+	p := new(LuksRevocationStatus)
+	*p = x
+	return p
+}
+
+func (x LuksRevocationStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LuksRevocationStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
+}
+
+func (LuksRevocationStatus) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[9]
+}
+
+func (x LuksRevocationStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LuksRevocationStatus.Descriptor instead.
+func (LuksRevocationStatus) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
+}
+
 // Compliance status for a device based on detection scripts
 type ComplianceStatus int32
 
@@ -603,11 +667,11 @@ func (x ComplianceStatus) String() string {
 }
 
 func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[10].Descriptor()
 }
 
 func (ComplianceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[9]
+	return &file_pm_v1_common_proto_enumTypes[10]
 }
 
 func (x ComplianceStatus) Number() protoreflect.EnumNumber {
@@ -616,7 +680,7 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
 // Unique identifier for an action instance
@@ -1028,7 +1092,13 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x1bROTATION_REASON_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ROTATION_REASON_INITIAL\x10\x01\x12\x1d\n" +
 	"\x19ROTATION_REASON_SCHEDULED\x10\x02\x12\x1e\n" +
-	"\x1aROTATION_REASON_AUTH_GRACE\x10\x03*\x9e\x01\n" +
+	"\x1aROTATION_REASON_AUTH_GRACE\x10\x03*\xcd\x01\n" +
+	"\x14LuksRevocationStatus\x12&\n" +
+	"\"LUKS_REVOCATION_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bLUKS_REVOCATION_STATUS_NONE\x10\x01\x12%\n" +
+	"!LUKS_REVOCATION_STATUS_DISPATCHED\x10\x02\x12\"\n" +
+	"\x1eLUKS_REVOCATION_STATUS_SUCCESS\x10\x03\x12!\n" +
+	"\x1dLUKS_REVOCATION_STATUS_FAILED\x10\x04*\x9e\x01\n" +
 	"\x10ComplianceStatus\x12\x1d\n" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
@@ -1047,7 +1117,7 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
@@ -1059,16 +1129,17 @@ var file_pm_v1_common_proto_goTypes = []any{
 	(SearchScope)(0),               // 6: pm.v1.SearchScope
 	(IdentityProviderType)(0),      // 7: pm.v1.IdentityProviderType
 	(RotationReason)(0),            // 8: pm.v1.RotationReason
-	(ComplianceStatus)(0),          // 9: pm.v1.ComplianceStatus
-	(*ActionId)(nil),               // 10: pm.v1.ActionId
-	(*DeviceId)(nil),               // 11: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 12: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 13: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 14: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 15: pm.v1.CommandOutput
+	(LuksRevocationStatus)(0),      // 9: pm.v1.LuksRevocationStatus
+	(ComplianceStatus)(0),          // 10: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 11: pm.v1.ActionId
+	(*DeviceId)(nil),               // 12: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 13: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 14: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 15: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 16: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	14, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	15, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
 	1,  // [1:1] is the sub-list for method output_type
 	1,  // [1:1] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
@@ -1086,7 +1157,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      10,
+			NumEnums:      11,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,

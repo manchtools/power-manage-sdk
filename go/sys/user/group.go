@@ -15,13 +15,17 @@ import (
 
 // GroupExists checks if a group exists on the system.
 func GroupExists(name string) bool {
-	return exec.Check("getent", "group", name)
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	return exec.CheckCtx(ctx, "getent", "group", name)
 }
 
 // GroupMembers returns the members of a group.
 // Returns nil if the group doesn't exist or has no members.
 func GroupMembers(name string) []string {
-	out, err := exec.Query("getent", "group", name)
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	out, err := exec.QueryCtx(ctx, "getent", "group", name)
 	if err != nil {
 		return nil
 	}
@@ -79,31 +83,38 @@ func GroupMembersMatch(groupName string, desiredUsers []string) bool {
 // Rejects names that would become flags or contain control characters —
 // the same IsValidName rules apply because groupadd/usermod parse argv
 // identically to useradd.
-func GroupCreate(ctx context.Context, name string, args ...string) error {
+//
+// Returns the command result so callers can surface groupadd's stderr
+// — symmetric with the user.Create / user.Modify / user.Delete shape
+// (F038 in the SDK tech-debt audit).
+func GroupCreate(ctx context.Context, name string, args ...string) (*exec.Result, error) {
 	if err := validateName("group name", name); err != nil {
-		return err
+		return nil, err
 	}
 	// slices.Clone avoids aliasing the caller's backing array — a
 	// bare `append(args, name)` would write into the caller's slice
 	// whenever it has spare capacity.
 	fullArgs := append(slices.Clone(args), name)
-	_, err := exec.Privileged(ctx, "groupadd", fullArgs...)
-	return err
+	return exec.Privileged(ctx, "groupadd", fullArgs...)
 }
 
-// GroupDelete deletes a group.
-func GroupDelete(ctx context.Context, name string) error {
+// GroupDelete deletes a group. See GroupCreate for the result-return
+// rationale.
+func GroupDelete(ctx context.Context, name string) (*exec.Result, error) {
 	if err := validateName("group name", name); err != nil {
-		return err
+		return nil, err
 	}
-	_, err := exec.Privileged(ctx, "groupdel", name)
-	return err
+	return exec.Privileged(ctx, "groupdel", name)
 }
 
 // GroupEnsureExists creates a group if it doesn't already exist.
-func GroupEnsureExists(ctx context.Context, name string) error {
+// Returns (nil, nil) when the group already exists (no command run).
+func GroupEnsureExists(ctx context.Context, name string) (*exec.Result, error) {
+	if err := validateName("group name", name); err != nil {
+		return nil, err
+	}
 	if GroupExists(name) {
-		return nil
+		return nil, nil
 	}
 	return GroupCreate(ctx, name)
 }
@@ -112,26 +123,26 @@ func GroupEnsureExists(ctx context.Context, name string) error {
 // Group Membership Operations
 // =============================================================================
 
-// GroupAddUser adds a user to a supplementary group.
-func GroupAddUser(ctx context.Context, username, groupName string) error {
+// GroupAddUser adds a user to a supplementary group. See GroupCreate
+// for the result-return rationale.
+func GroupAddUser(ctx context.Context, username, groupName string) (*exec.Result, error) {
 	if err := validateName("username", username); err != nil {
-		return err
+		return nil, err
 	}
 	if err := validateName("group name", groupName); err != nil {
-		return err
+		return nil, err
 	}
-	_, err := exec.Privileged(ctx, "usermod", "-aG", groupName, username)
-	return err
+	return exec.Privileged(ctx, "usermod", "-aG", groupName, username)
 }
 
-// GroupRemoveUser removes a user from a supplementary group.
-func GroupRemoveUser(ctx context.Context, username, groupName string) error {
+// GroupRemoveUser removes a user from a supplementary group. See
+// GroupCreate for the result-return rationale.
+func GroupRemoveUser(ctx context.Context, username, groupName string) (*exec.Result, error) {
 	if err := validateName("username", username); err != nil {
-		return err
+		return nil, err
 	}
 	if err := validateName("group name", groupName); err != nil {
-		return err
+		return nil, err
 	}
-	_, err := exec.Privileged(ctx, "gpasswd", "-d", username, groupName)
-	return err
+	return exec.Privileged(ctx, "gpasswd", "-d", username, groupName)
 }

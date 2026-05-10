@@ -10,6 +10,40 @@ permissions:
   contents: read
 
 jobs:
+  static-checks:
+    name: Static Checks (gofmt, vet, staticcheck, govulncheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt
+        run: |
+          dirty=$(gofmt -l ./go)
+          if [ -n "$dirty" ]; then
+            echo "The following files are not gofmt-clean:"
+            echo "$dirty"
+            echo "---- diff ----"
+            gofmt -d ./go
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
   test-unit:
     name: Unit Tests
     runs-on: ubuntu-latest

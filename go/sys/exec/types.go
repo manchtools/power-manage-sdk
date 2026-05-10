@@ -1,7 +1,8 @@
 // Package exec provides command execution utilities for Linux system management.
 //
 // It wraps the go-cmd library to provide buffered and streaming command execution
-// with sudo support, context cancellation, and output truncation.
+// with privilege-escalation support (sudo or doas, selectable via
+// SetPrivilegeBackend), context cancellation, and output truncation.
 package exec
 
 // MaxOutputBytes is the maximum number of bytes captured per output stream.
@@ -14,22 +15,25 @@ type Result struct {
 	Stderr   string
 }
 
-// Stream identifiers passed to OutputCallback. The values must
-// stay numerically stable across SDK releases: callers checking
-// `streamType == StreamStdout` are expected to keep working
-// without recompilation. Use these constants instead of the
-// literal 1/2 magic numbers.
+// StreamType identifies which standard stream a line of streaming
+// output came from. The named type lets the compiler reject a stray
+// `int` literal where the contract is "stdout or stderr". Numeric
+// values are stable across SDK releases.
+type StreamType int
+
 const (
 	// StreamStdout is the streamType passed to OutputCallback for
 	// stdout lines.
-	StreamStdout = 1
+	StreamStdout StreamType = 1
 	// StreamStderr is the streamType passed to OutputCallback for
 	// stderr lines.
-	StreamStderr = 2
+	StreamStderr StreamType = 2
 )
 
-// OutputCallback is called for each line of output during streaming execution.
-// streamType: StreamStdout or StreamStderr.
-// line: the output line (with newline).
-// seq: sequence number for ordering.
-type OutputCallback func(streamType int, line string, seq int64)
+// OutputCallback is called for each line of output during streaming
+// execution. streamType is the typed StreamType (Go's type system
+// rejects implicit int↔StreamType conversion, so taking int here would
+// mean every comparison needed an explicit cast). line is the output
+// line including its trailing newline. seq is a stream-local
+// monotonic ordering counter.
+type OutputCallback func(streamType StreamType, line string, seq int64)

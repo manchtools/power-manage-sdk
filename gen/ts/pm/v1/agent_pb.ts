@@ -1641,7 +1641,7 @@ export const AgentService: GenService<{
   },
   /**
    * Validate a one-time LUKS token and return action details + complexity requirements
-   * Used by the CLI subcommand (power-manage-agent luks set-passphrase --token XXX)
+   * Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
    *
    * @generated from rpc pm.v1.AgentService.ValidateLuksToken
    */

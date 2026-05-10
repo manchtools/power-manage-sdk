@@ -9,9 +9,14 @@ import (
 )
 
 // NewValidator creates a validator instance with custom rules (ULID) registered.
+// It panics if a custom validation rule cannot be registered; the only documented
+// failure mode is an invalid tag name or nil function, both of which would be a
+// programmer error caught at first run rather than a runtime condition.
 func NewValidator() *validator.Validate {
 	v := validator.New()
-	v.RegisterValidation("ulid", validateULID)
+	if err := v.RegisterValidation("ulid", validateULID); err != nil {
+		panic(fmt.Sprintf("validate: registering ulid validation failed: %v", err))
+	}
 	return v
 }
 

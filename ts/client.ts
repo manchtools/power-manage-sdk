@@ -318,8 +318,22 @@ export class ApiClient {
 		return transport;
 	}
 
+	// Cached typed client. createClient generates a proxy over the
+	// transport for every method on ControlService — re-running it on
+	// every RPC call (~160 sites) is wasted work. Re-cache only when
+	// the underlying transport reference changes (URL change, token
+	// refresh swap, etc.).
+	private cachedClient: ReturnType<typeof createClient<typeof ControlService>> | null = null;
+	private cachedClientTransport: ReturnType<typeof createConnectTransport> | null = null;
+
 	private getClient() {
-		return createClient(ControlService, this.getTransport());
+		const transport = this.getTransport();
+		if (this.cachedClient && this.cachedClientTransport === transport) {
+			return this.cachedClient;
+		}
+		this.cachedClient = createClient(ControlService, transport);
+		this.cachedClientTransport = transport;
+		return this.cachedClient;
 	}
 
 	// Auth-only transport (no token interceptor — login itself
@@ -342,8 +356,18 @@ export class ApiClient {
 		return transport;
 	}
 
+	// Cached typed auth client (same rationale as cachedClient above).
+	private cachedAuthClient: ReturnType<typeof createClient<typeof ControlService>> | null = null;
+	private cachedAuthClientTransport: ReturnType<typeof createConnectTransport> | null = null;
+
 	private getAuthClient() {
-		return createClient(ControlService, this.getAuthTransport());
+		const transport = this.getAuthTransport();
+		if (this.cachedAuthClient && this.cachedAuthClientTransport === transport) {
+			return this.cachedAuthClient;
+		}
+		this.cachedAuthClient = createClient(ControlService, transport);
+		this.cachedAuthClientTransport = transport;
+		return this.cachedAuthClient;
 	}
 
 	// ============================================================================

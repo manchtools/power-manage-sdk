@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Flatpak implements the Manager interface for Flatpak applications.
@@ -42,7 +41,7 @@ func (f *Flatpak) WithSudo(useSudo bool) *Flatpak {
 
 // Info returns flatpak version information.
 func (f *Flatpak) Info() (name, version string, err error) {
-	out, err := exec.CommandContext(f.ctx, "flatpak", "--version").Output()
+	out, err := readCmd(f.ctx, "flatpak", "--version").Output()
 	if err != nil {
 		return "", "", err
 	}
@@ -137,7 +136,7 @@ func (f *Flatpak) Upgrade(packages ...string) (*CommandResult, error) {
 
 // Search searches for packages in configured remotes.
 func (f *Flatpak) Search(query string) ([]SearchResult, error) {
-	out, err := exec.CommandContext(f.ctx, "flatpak", "search", query).Output()
+	out, err := readCmd(f.ctx, "flatpak", "search", query).Output()
 	if err != nil {
 		// flatpak search returns exit code 1 if no results
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
@@ -180,7 +179,7 @@ func (f *Flatpak) List() ([]Package, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +225,7 @@ func (f *Flatpak) ListUpgradable() ([]PackageUpdate, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +267,7 @@ func (f *Flatpak) Show(name string) (*Package, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		// Try searching in remotes if not installed
 		return f.showFromRemote(name)
@@ -301,7 +300,7 @@ func (f *Flatpak) Show(name string) (*Package, error) {
 }
 
 func (f *Flatpak) showFromRemote(name string) (*Package, error) {
-	out, err := exec.CommandContext(f.ctx, "flatpak", "remote-info", "flathub", name).Output()
+	out, err := readCmd(f.ctx, "flatpak", "remote-info", "flathub", name).Output()
 	if err != nil {
 		return nil, fmt.Errorf("package not found: %s", name)
 	}
@@ -336,7 +335,7 @@ func (f *Flatpak) ListVersions(name string) (*VersionInfo, error) {
 	}
 
 	// Get available version from remote
-	out, err := exec.CommandContext(f.ctx, "flatpak", "remote-info", "flathub", name).Output()
+	out, err := readCmd(f.ctx, "flatpak", "remote-info", "flathub", name).Output()
 	if err != nil {
 		return info, nil
 	}
@@ -365,7 +364,7 @@ func (f *Flatpak) IsInstalled(name string) (bool, error) {
 	} else {
 		args = append(args, "--user")
 	}
-	err := exec.CommandContext(f.ctx, "flatpak", args...).Run()
+	err := readCmd(f.ctx, "flatpak", args...).Run()
 	return err == nil, nil
 }
 
@@ -377,7 +376,7 @@ func (f *Flatpak) GetInstalledVersion(name string) (string, error) {
 	} else {
 		args = append(args, "--user")
 	}
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return "", err
 	}
@@ -457,7 +456,7 @@ func (f *Flatpak) ListPinned() ([]Package, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +488,7 @@ func (f *Flatpak) IsPinned(name string) (bool, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return false, nil
 	}
@@ -511,7 +510,7 @@ func (f *Flatpak) getPinnedSet() (map[string]bool, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return nil, nil
 	}
@@ -558,7 +557,7 @@ func (f *Flatpak) ListRemotes() ([]string, error) {
 		args = append(args, "--user")
 	}
 
-	out, err := exec.CommandContext(f.ctx, "flatpak", args...).Output()
+	out, err := readCmd(f.ctx, "flatpak", args...).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -575,36 +574,9 @@ func (f *Flatpak) ListRemotes() ([]string, error) {
 }
 
 func (f *Flatpak) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if f.useSudo {
-		sudoArgs := append([]string{"-n", "flatpak"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "flatpak", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, f.useSudo, "flatpak", args, env)
 }
 
 func parseFlatpakSearchLine(line string) *SearchResult {

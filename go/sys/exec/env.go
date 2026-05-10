@@ -27,9 +27,9 @@ var BlockedEnvVars = map[string]bool{
 	// Interpreter library injection
 	"NODE_OPTIONS": true,
 	"PYTHONPATH":   true,
-	"PERL5OPT":    true,
-	"PERL5LIB":    true,
-	"RUBYLIB":     true,
+	"PERL5OPT":     true,
+	"PERL5LIB":     true,
+	"RUBYLIB":      true,
 	// Shell/path manipulation
 	"PATH":       true,
 	"IFS":        true,

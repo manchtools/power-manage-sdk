@@ -221,11 +221,16 @@ func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption,
 // newHTTPClientWithTLS creates an HTTP client with HTTP/2 support enabled.
 // A bare http.Transport with a custom TLSClientConfig disables Go's automatic
 // HTTP/2 negotiation, so we explicitly configure it via http2.ConfigureTransport.
+// If the HTTP/2 configuration fails the transport silently falls back to HTTP/1.1,
+// which breaks Connect bidirectional streaming — log it loudly so the operator can
+// see why the agent is unable to reach the gateway.
 func newHTTPClientWithTLS(tlsConfig *tls.Config) *http.Client {
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
 	}
-	http2.ConfigureTransport(transport)
+	if err := http2.ConfigureTransport(transport); err != nil {
+		slog.Default().Warn("failed to configure HTTP/2 transport; falling back to HTTP/1.1 (bidirectional streaming will not work)", "error", err)
+	}
 	return &http.Client{Transport: transport}
 }
 
@@ -674,6 +679,15 @@ func (c *Client) unregisterPending(id string) {
 
 // deliverPending delivers a server message to a waiting request by ID.
 // Returns true if the message was delivered (ID matched a pending request).
+//
+// The send is non-blocking: pending channels are buffered with capacity
+// 1 (registerPending) and the request flow only reads once. If a second
+// response arrives for the same ID — for example, the server retried a
+// dispatch and the first reply was already consumed — there is no
+// receiver and the second message would block the dispatcher loop
+// forever. We log the drop so duplicates are visible in agent logs but
+// keep the receive loop moving rather than stalling on a defunct
+// request channel.
 func (c *Client) deliverPending(msg *pm.ServerMessage) bool {
 	c.pendingMu.Lock()
 	ch, ok := c.pendingRequests[msg.Id]
@@ -682,6 +696,7 @@ func (c *Client) deliverPending(msg *pm.ServerMessage) bool {
 		select {
 		case ch <- msg:
 		default:
+			c.logger.Warn("deliverPending: dropping duplicate response", "id", msg.Id)
 		}
 	}
 	return ok
@@ -808,11 +823,34 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 	// Inventory: send on connect + every 24 hours
 	if invHandler, ok := handler.(InventoryHandler); ok {
 		go func() {
+			// sendWithRetry sends inventory with up to 3 attempts at
+			// 1s/3s/9s backoff. The 24-hour ticker means a single
+			// transient send failure (network blip on connect) would
+			// otherwise stall inventory for a full day. F035.
+			sendWithRetry := func(inv *pm.DeviceInventory) {
+				const maxAttempts = 3
+				delay := time.Second
+				for attempt := 1; attempt <= maxAttempts; attempt++ {
+					err := c.SendInventory(heartbeatCtx, inv)
+					if err == nil {
+						return
+					}
+					if attempt == maxAttempts || heartbeatCtx.Err() != nil {
+						c.logger.Warn("failed to send inventory", "error", err, "attempts", attempt)
+						return
+					}
+					select {
+					case <-heartbeatCtx.Done():
+						return
+					case <-time.After(delay):
+					}
+					delay *= 3
+				}
+			}
+
 			// Initial inventory on connect
 			if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
-				if err := c.SendInventory(heartbeatCtx, inv); err != nil {
-						c.logger.Warn("failed to send inventory", "error", err)
-					}
+				sendWithRetry(inv)
 			}
 
 			ticker := time.NewTicker(24 * time.Hour)
@@ -824,9 +862,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 					return
 				case <-ticker.C:
 					if inv := invHandler.CollectInventory(heartbeatCtx); inv != nil {
-						if err := c.SendInventory(heartbeatCtx, inv); err != nil {
-						c.logger.Warn("failed to send inventory", "error", err)
-					}
+						sendWithRetry(inv)
 					}
 				}
 			}

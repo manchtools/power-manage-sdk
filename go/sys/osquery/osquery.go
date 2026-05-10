@@ -56,15 +56,27 @@ func IsInstalled() bool {
 	return findOsqueryBinary() != ""
 }
 
+// lookPath is the resolution function used by findOsqueryBinary.
+// It defaults to exec.LookPath and is overridable from tests so the
+// binary-discovery logic can be exercised without depending on what
+// is installed on the test host (F026 in TECH_DEBT_AUDIT.md).
+var lookPath = exec.LookPath
+
 // findOsqueryBinary searches for the osqueryi binary.
+//
+// Resolution order: explicit absolute paths in osqueryPaths first
+// (matches the "use the system package's location if available"
+// expectation on Fedora/RHEL/Debian), then PATH lookup for the bare
+// "osqueryi" name (covers Homebrew/Linuxbrew, Nix, Snap, manual
+// installs).
 func findOsqueryBinary() string {
 	for _, path := range osqueryPaths {
-		if _, err := exec.LookPath(path); err == nil {
+		if _, err := lookPath(path); err == nil {
 			return path
 		}
 	}
 	// Also check PATH
-	if path, err := exec.LookPath("osqueryi"); err == nil {
+	if path, err := lookPath("osqueryi"); err == nil {
 		return path
 	}
 	return ""

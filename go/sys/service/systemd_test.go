@@ -119,19 +119,14 @@ func TestStatus(t *testing.T) {
 	}
 }
 
-func TestStatusUnknown(t *testing.T) {
-	status, err := service.Status("pm-nonexistent-12345.service")
-	if err != nil {
-		t.Fatalf("Status failed: %v", err)
-	}
-	if status.Enabled {
-		t.Error("unknown unit should not be enabled")
-	}
-	if status.Active {
-		t.Error("unknown unit should not be active")
-	}
-	if status.Masked {
-		t.Error("unknown unit should not be masked")
+func TestStatusMissingUnit(t *testing.T) {
+	// systemctl is-enabled on a non-existent unit prints "not-found"
+	// and exits 4. Status now surfaces that as an error so callers
+	// can distinguish "unit doesn't exist" from "unit exists but is
+	// disabled" — collapsing both into a zero-value UnitStatus drove
+	// callers into the wrong remediation path. CR finding on PR #57.
+	if _, err := service.Status("pm-nonexistent-12345.service"); err == nil {
+		t.Fatal("expected Status on missing unit to return an error, got nil")
 	}
 }
 
@@ -218,10 +213,14 @@ func TestIsMasked(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	if masked, err := service.IsMasked(testUnitName); err != nil {
-		t.Fatalf("IsMasked failed: %v", err)
-	} else if masked {
-		t.Error("unit should not be masked initially")
+	// Initial probe: the unit doesn't exist yet, so IsMasked returns
+	// the strict "unit not found" error (per CR fix on PR #57). Mask
+	// is what then materialises the unit on disk as a /dev/null
+	// symlink — writing the unit first would make Mask fail with
+	// "Cannot mask, a regular file exists at <path>" because mask
+	// refuses to clobber a real file.
+	if _, err := service.IsMasked(testUnitName); err == nil {
+		t.Fatal("expected IsMasked on nonexistent unit to return an error before Mask creates it")
 	}
 
 	// Mask the unit (no file at this path, so mask creates a symlink to /dev/null).
@@ -238,15 +237,16 @@ func TestIsMasked(t *testing.T) {
 		t.Error("unit should be masked after Mask")
 	}
 
-	// Unmask it
+	// Unmask it. After Unmask the /dev/null symlink is removed so
+	// the unit no longer exists at all — IsMasked then returns the
+	// strict "not found" error per the runSystemctlQuery whitelist
+	// (the symmetric counterpart to the initial probe at the top of
+	// the test). That error IS the "no longer masked" signal here.
 	if err := service.Unmask(ctx, testUnitName); err != nil {
 		t.Fatalf("Unmask failed: %v", err)
 	}
-
-	if masked, err := service.IsMasked(testUnitName); err != nil {
-		t.Fatalf("IsMasked failed: %v", err)
-	} else if masked {
-		t.Error("unit should not be masked after Unmask")
+	if _, err := service.IsMasked(testUnitName); err == nil {
+		t.Fatal("expected IsMasked to error after Unmask removed the unit symlink")
 	}
 }
 

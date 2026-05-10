@@ -234,6 +234,11 @@ func writeKeyFile(key string) (string, error) {
 // cleanupKeyFile overwrites a key file with zeros and removes it.
 // Uses O_WRONLY|O_NOFOLLOW to avoid TOCTOU symlink attacks — if the path
 // has been replaced with a symlink, the open will fail and we skip overwriting.
+//
+// A failed zero-overwrite (ENOSPC, EIO, etc.) is logged at WARN — the unlink
+// still happens on a best-effort basis so the file does not linger on disk,
+// but the operator should know the passphrase bytes may have survived in the
+// underlying block device until reuse.
 func cleanupKeyFile(path string) {
 	if path == "" {
 		return
@@ -242,14 +247,22 @@ func cleanupKeyFile(path string) {
 	f, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		// File already removed or is a symlink — just try to remove.
-		os.Remove(path)
+		if rmErr := os.Remove(path); rmErr != nil && !os.IsNotExist(rmErr) {
+			slog.Warn("luks: removing unscrubbed key file failed", "path", path, "error", rmErr)
+		}
 		return
 	}
 	// Get size from the open fd (no TOCTOU race).
 	if info, err := f.Stat(); err == nil && info.Size() > 0 {
 		zeros := make([]byte, info.Size())
-		_, _ = f.WriteAt(zeros, 0)
+		if _, werr := f.WriteAt(zeros, 0); werr != nil {
+			slog.Warn("luks: scrubbing key file before unlink failed; passphrase bytes may persist on disk", "path", path, "error", werr)
+		}
 	}
-	f.Close()
-	os.Remove(path)
+	if cerr := f.Close(); cerr != nil {
+		slog.Warn("luks: closing key file failed", "path", path, "error", cerr)
+	}
+	if rmErr := os.Remove(path); rmErr != nil && !os.IsNotExist(rmErr) {
+		slog.Warn("luks: removing key file failed", "path", path, "error", rmErr)
+	}
 }

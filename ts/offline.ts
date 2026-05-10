@@ -44,6 +44,40 @@ export type DraftType =
 	| 'device-label'
 	| 'dispatch-action';
 
+/**
+ * DraftPayloadMap is intentionally empty so frontend code can declare
+ * narrowed per-type shapes via TypeScript module augmentation:
+ *
+ *   declare module '@manchtools/power-manage-sdk/ts/offline' {
+ *     interface DraftPayloadMap {
+ *       'create-user': { email: string; displayName: string };
+ *     }
+ *   }
+ *
+ * Declaration merging cannot *narrow* a property that is already
+ * declared on an interface (e.g. `unknown` cannot be replaced with a
+ * struct), so the defaults live on a separate `BuiltinDraftPayloadMap`
+ * type that the lookup falls back to. After augmentation
+ * `store.getDraft('create-user')` returns the augmented shape;
+ * un-augmented keys still resolve to `unknown`. F031 in
+ * TECH_DEBT_AUDIT.md.
+ */
+export interface DraftPayloadMap {}
+
+type BuiltinDraftPayloadMap = {
+	'create-token': unknown;
+	'create-definition': unknown;
+	'create-user': unknown;
+	'device-label': unknown;
+	'dispatch-action': unknown;
+};
+
+type DraftPayload<T extends DraftType> = T extends keyof DraftPayloadMap
+	? DraftPayloadMap[T]
+	: T extends keyof BuiltinDraftPayloadMap
+		? BuiltinDraftPayloadMap[T]
+		: unknown;
+
 export class OfflineStore {
 	private drafts: Map<string, unknown> = new Map();
 	private loaded = false;
@@ -86,9 +120,9 @@ export class OfflineStore {
 		return this.loaded;
 	}
 
-	getDraft<T>(type: DraftType, id: string = 'default'): T | undefined {
+	getDraft<T extends DraftType>(type: T, id: string = 'default'): DraftPayload<T> | undefined {
 		const key = `${type}:${id}`;
-		return this.drafts.get(key) as T | undefined;
+		return this.drafts.get(key) as DraftPayload<T> | undefined;
 	}
 
 	hasDraft(type: DraftType, id: string = 'default'): boolean {
@@ -96,9 +130,17 @@ export class OfflineStore {
 		return this.drafts.has(key);
 	}
 
-	async saveDraft<T>(type: DraftType, data: T, id: string = 'default'): Promise<void> {
+	async saveDraft<T extends DraftType>(
+		type: T,
+		data: DraftPayload<T>,
+		id: string = 'default'
+	): Promise<void> {
 		const key = `${type}:${id}`;
 
+		// Persist to IndexedDB FIRST. Only update the in-memory map after a
+		// successful write — otherwise the UI would advertise "saved" while
+		// the next page load loses the data. The error is rethrown so the
+		// caller can surface it.
 		try {
 			const db = await getDB();
 			await db.put('drafts', {
@@ -109,6 +151,7 @@ export class OfflineStore {
 			});
 		} catch (error) {
 			console.error('Failed to save draft:', error);
+			throw error;
 		}
 
 		const newMap = new Map(this.drafts);
@@ -120,11 +163,13 @@ export class OfflineStore {
 	async clearDraft(type: DraftType, id: string = 'default'): Promise<void> {
 		const key = `${type}:${id}`;
 
+		// Same ordering rule as saveDraft — persist before mutating in-memory.
 		try {
 			const db = await getDB();
 			await db.delete('drafts', key);
 		} catch (error) {
 			console.error('Failed to clear draft:', error);
+			throw error;
 		}
 
 		const newMap = new Map(this.drafts);
@@ -139,18 +184,19 @@ export class OfflineStore {
 			await db.clear('drafts');
 		} catch (error) {
 			console.error('Failed to clear all drafts:', error);
+			throw error;
 		}
 
 		this.drafts = new Map();
 		this.notify();
 	}
 
-	getDraftsOfType(type: DraftType): Map<string, unknown> {
-		const result = new Map<string, unknown>();
+	getDraftsOfType<T extends DraftType>(type: T): Map<string, DraftPayload<T>> {
+		const result = new Map<string, DraftPayload<T>>();
 		for (const [key, value] of this.drafts.entries()) {
 			if (key.startsWith(`${type}:`)) {
 				const id = key.slice(type.length + 1);
-				result.set(id, value);
+				result.set(id, value as DraftPayload<T>);
 			}
 		}
 		return result;

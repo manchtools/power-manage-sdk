@@ -50,8 +50,6 @@ export function getActionTypeEnum(type: string): ActionType {
 			return ActionType.WIFI;
 		case 'AGENT_UPDATE':
 			return ActionType.AGENT_UPDATE;
-		case 'COMPLIANCE_CHECK':
-			return ActionType.SHELL;
 		default:
 			return ActionType.UNSPECIFIED;
 	}

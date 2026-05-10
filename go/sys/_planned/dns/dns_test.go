@@ -7,7 +7,11 @@ import (
 )
 
 func TestBackend_DefaultIsResolved(t *testing.T) {
-	SetBackend(BackendResolved)
+	prev := CurrentBackend()
+	t.Cleanup(func() { SetBackend(prev) })
+	// BackendResolved is the zero-value default; assert without
+	// touching the global so the test actually verifies the default
+	// rather than the setter/getter round-trip.
 	if got := CurrentBackend(); got != BackendResolved {
 		t.Errorf("default = %v, want %v", got, BackendResolved)
 	}

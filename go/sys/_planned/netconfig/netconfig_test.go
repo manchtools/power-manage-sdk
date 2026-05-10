@@ -7,7 +7,11 @@ import (
 )
 
 func TestBackend_DefaultIsNetworkManager(t *testing.T) {
-	SetBackend(BackendNetworkManager)
+	prev := CurrentBackend()
+	t.Cleanup(func() { SetBackend(prev) })
+	// BackendNetworkManager is the zero-value default; assert
+	// without touching the global so the test actually verifies the
+	// default rather than the setter/getter round-trip.
 	if got := CurrentBackend(); got != BackendNetworkManager {
 		t.Errorf("default = %v, want %v", got, BackendNetworkManager)
 	}

@@ -1,4 +1,4 @@
-FROM golang:1.25-bookworm
+FROM golang:1.26-bookworm
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -22,7 +22,7 @@ WORKDIR /workspace
 COPY sdk/ ./sdk/
 
 # Create a minimal go.work for the SDK
-RUN printf 'go 1.25\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN printf 'go 1.25.10\n\nuse (\n\t./sdk\n)\n' > go.work
 
 # Pre-download dependencies
 RUN cd sdk && go mod download

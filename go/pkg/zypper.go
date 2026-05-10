@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Zypper implements the Manager interface for openSUSE/SLES-based systems.
@@ -40,7 +39,7 @@ func (z *Zypper) WithSudo(useSudo bool) *Zypper {
 
 // Info returns zypper version information.
 func (z *Zypper) Info() (name, version string, err error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--version").Output()
+	out, err := readCmd(z.ctx, "zypper", "--version").Output()
 	if err != nil {
 		return "", "", err
 	}
@@ -116,7 +115,7 @@ func (z *Zypper) DistUpgrade() (*CommandResult, error) {
 
 // Search searches for packages.
 func (z *Zypper) Search(query string) ([]SearchResult, error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "search", query).Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "search", query).Output()
 	if err != nil {
 		// zypper returns 104 if no matches found
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 104 {
@@ -165,7 +164,7 @@ func (z *Zypper) Search(query string) ([]SearchResult, error) {
 // List lists installed packages.
 func (z *Zypper) List() ([]Package, error) {
 	// Use rpm query for installed packages
-	out, err := exec.CommandContext(z.ctx, "rpm", "-qa", "--queryformat", "%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{SIZE}\t%{SUMMARY}\n").Output()
+	out, err := readCmd(z.ctx, "rpm", "-qa", "--queryformat", "%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{SIZE}\t%{SUMMARY}\n").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +198,7 @@ func (z *Zypper) List() ([]Package, error) {
 
 // ListUpgradable lists packages with available upgrades.
 func (z *Zypper) ListUpgradable() ([]PackageUpdate, error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "list-updates").Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "list-updates").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +250,7 @@ func (z *Zypper) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (z *Zypper) Show(name string) (*Package, error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "info", name).Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "info", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +295,7 @@ func (z *Zypper) Show(name string) (*Package, error) {
 // ListVersions lists all available versions of a package.
 func (z *Zypper) ListVersions(name string) (*VersionInfo, error) {
 	// Use --match-exact to get exact package name matches
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "search", "-s", "--match-exact", name).Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "search", "-s", "--match-exact", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -353,13 +352,13 @@ func (z *Zypper) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (z *Zypper) IsInstalled(name string) (bool, error) {
-	err := exec.CommandContext(z.ctx, "rpm", "-q", name).Run()
+	err := readCmd(z.ctx, "rpm", "-q", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (z *Zypper) GetInstalledVersion(name string) (string, error) {
-	out, err := exec.CommandContext(z.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
+	out, err := readCmd(z.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
 	if err != nil {
 		return "", err
 	}
@@ -386,7 +385,7 @@ func (z *Zypper) Unpin(packages ...string) (*CommandResult, error) {
 
 // ListPinned lists all pinned (locked) packages.
 func (z *Zypper) ListPinned() ([]Package, error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "locks").Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "locks").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +425,7 @@ func (z *Zypper) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (locked).
 func (z *Zypper) IsPinned(name string) (bool, error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "locks").Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "locks").Output()
 	if err != nil {
 		return false, nil
 	}
@@ -443,7 +442,7 @@ func (z *Zypper) IsPinned(name string) (bool, error) {
 }
 
 func (z *Zypper) getPinnedSet() (map[string]bool, error) {
-	out, err := exec.CommandContext(z.ctx, "zypper", "--non-interactive", "locks").Output()
+	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "locks").Output()
 	if err != nil {
 		return nil, nil
 	}
@@ -462,36 +461,9 @@ func (z *Zypper) getPinnedSet() (map[string]bool, error) {
 }
 
 func (z *Zypper) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	start := time.Now()
-
-	var c *exec.Cmd
-	if z.useSudo {
-		sudoArgs := append([]string{"-n", "zypper"}, args...)
-		c = exec.CommandContext(ctx, "sudo", sudoArgs...)
-	} else {
-		c = exec.CommandContext(ctx, "zypper", args...)
-	}
-
 	// Force English locale for reliable output parsing.
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-
-	err := c.Run()
-	result := &CommandResult{
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Duration: time.Since(start),
-	}
-
-	if c.ProcessState != nil {
-		result.ExitCode = c.ProcessState.ExitCode()
-	}
-	result.Success = err == nil
-
-	return result, err
+	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return runPM(ctx, z.useSudo, "zypper", args, env)
 }
 
 func parseZypperValue(line string) string {

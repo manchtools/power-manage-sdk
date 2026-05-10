@@ -39,11 +39,11 @@ func (f *fakeManager) Unpin(names ...string) (*CommandResult, error) {
 	f.pinCalled = true
 	return &CommandResult{Success: true}, nil
 }
-func (f *fakeManager) Show(string) (*Package, error)                   { return nil, errors.New("x") }
-func (f *fakeManager) ListVersions(string) (*VersionInfo, error)       { return nil, errors.New("x") }
-func (f *fakeManager) IsInstalled(string) (bool, error)                { return true, nil }
-func (f *fakeManager) GetInstalledVersion(string) (string, error)      { return "1.0", nil }
-func (f *fakeManager) IsPinned(string) (bool, error)                   { return false, nil }
+func (f *fakeManager) Show(string) (*Package, error)              { return nil, errors.New("x") }
+func (f *fakeManager) ListVersions(string) (*VersionInfo, error)  { return nil, errors.New("x") }
+func (f *fakeManager) IsInstalled(string) (bool, error)           { return true, nil }
+func (f *fakeManager) GetInstalledVersion(string) (string, error) { return "1.0", nil }
+func (f *fakeManager) IsPinned(string) (bool, error)              { return false, nil }
 
 // TestValidatingManager_BlocksInjection asserts that every entry
 // point that accepts a package name refuses option-injection shapes

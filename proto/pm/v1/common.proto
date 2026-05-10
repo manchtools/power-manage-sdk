@@ -138,6 +138,23 @@ enum RotationReason {
   ROTATION_REASON_AUTH_GRACE = 3;
 }
 
+// LuksRevocationStatus tracks the lifecycle of a LUKS passphrase
+// revocation. NONE is the wire-default for keys that have not been
+// revoked. Once an admin triggers revocation the projection moves the
+// key through DISPATCHED (task enqueued) and then SUCCESS or FAILED
+// based on the agent's response. Same wire / event-store split as the
+// other PR-D enums: the proto carries the typed enum, the projection
+// column keeps the lowercase string form ("" / "dispatched" /
+// "success" / "failed") for backward replay; conversion happens at
+// the RPC boundary.
+enum LuksRevocationStatus {
+  LUKS_REVOCATION_STATUS_UNSPECIFIED = 0;
+  LUKS_REVOCATION_STATUS_NONE = 1;
+  LUKS_REVOCATION_STATUS_DISPATCHED = 2;
+  LUKS_REVOCATION_STATUS_SUCCESS = 3;
+  LUKS_REVOCATION_STATUS_FAILED = 4;
+}
+
 // Structured error detail attached to Connect-RPC errors.
 message ErrorDetail {
   // Machine-readable error code (e.g., "user_not_found", "email_already_exists").

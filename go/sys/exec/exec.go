@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"sync/atomic"
 
@@ -23,6 +24,24 @@ func RunInDir(ctx context.Context, dir, name string, args ...string) (*Result, e
 // RunWithStdin executes a command with stdin input.
 func RunWithStdin(ctx context.Context, stdin io.Reader, name string, args ...string) (*Result, error) {
 	return runWithOptions(ctx, name, args, stdin, "")
+}
+
+// RunWithCLocale runs a command with LC_ALL=C and LANG=C forced into
+// the environment. Use this whenever the agent parses tool output
+// that is not stable across locales — `last`, `getent`, `df`, `stat`,
+// etc. emit translated date/error strings under a non-English LANG,
+// which silently break English-only string parsers.
+//
+// PATH is preserved from the calling process so binary lookup keeps
+// working; everything else from the caller's environment is dropped
+// to keep the run reproducible. SDK helper for agent finding F025
+// (LC_ALL=C for `last(1)` parsing).
+func RunWithCLocale(ctx context.Context, name string, args ...string) (*Result, error) {
+	env := []string{"LC_ALL=C", "LANG=C"}
+	if path := os.Getenv("PATH"); path != "" {
+		env = append(env, "PATH="+path)
+	}
+	return RunStreaming(ctx, name, args, env, "", nil)
 }
 
 // RunStreaming executes a command with real-time output streaming.
@@ -47,6 +66,40 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 	var stdoutBuf, stderrBuf strings.Builder
 	var stdoutBytes, stderrBytes int64
 
+	// recordLine appends to the buffer (capped at MaxOutputBytes) and
+	// fires the callback with a per-stream monotonic sequence number.
+	// Extracted from the two near-identical select branches below
+	// (F029 in TECH_DEBT_AUDIT.md). Pre-extraction the streaming
+	// goroutine had eight call sites with identical bodies; the only
+	// per-call variation is which stream the line came from.
+	recordLine := func(stream StreamType, line string) {
+		lineBytes := int64(len(line) + 1)
+		if stream == StreamStdout {
+			if atomic.AddInt64(&stdoutBytes, lineBytes) <= int64(MaxOutputBytes) {
+				stdoutBuf.WriteString(line + "\n")
+			}
+			if callback != nil {
+				callback(StreamStdout, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
+			}
+		} else {
+			if atomic.AddInt64(&stderrBytes, lineBytes) <= int64(MaxOutputBytes) {
+				stderrBuf.WriteString(line + "\n")
+			}
+			if callback != nil {
+				callback(StreamStderr, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
+			}
+		}
+	}
+
+	// drainRemaining drains a still-open channel after its sibling
+	// closed. This is the "stdout closed first, stderr still pumping"
+	// (or the symmetric stderr-first) cleanup phase.
+	drainRemaining := func(ch <-chan string, stream StreamType) {
+		for line := range ch {
+			recordLine(stream, line)
+		}
+	}
+
 	done := make(chan struct{})
 
 	go func() {
@@ -55,44 +108,16 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 			select {
 			case line, ok := <-c.Stdout:
 				if !ok {
-					for line := range c.Stderr {
-						lineBytes := int64(len(line) + 1)
-						if atomic.AddInt64(&stderrBytes, lineBytes) <= int64(MaxOutputBytes) {
-							stderrBuf.WriteString(line + "\n")
-						}
-						if callback != nil {
-							callback(StreamStderr, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
-						}
-					}
+					drainRemaining(c.Stderr, StreamStderr)
 					return
 				}
-				lineBytes := int64(len(line) + 1)
-				if atomic.AddInt64(&stdoutBytes, lineBytes) <= int64(MaxOutputBytes) {
-					stdoutBuf.WriteString(line + "\n")
-				}
-				if callback != nil {
-					callback(StreamStdout, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
-				}
+				recordLine(StreamStdout, line)
 			case line, ok := <-c.Stderr:
 				if !ok {
-					for line := range c.Stdout {
-						lineBytes := int64(len(line) + 1)
-						if atomic.AddInt64(&stdoutBytes, lineBytes) <= int64(MaxOutputBytes) {
-							stdoutBuf.WriteString(line + "\n")
-						}
-						if callback != nil {
-							callback(StreamStdout, line+"\n", atomic.AddInt64(&stdoutSeq, 1)-1)
-						}
-					}
+					drainRemaining(c.Stdout, StreamStdout)
 					return
 				}
-				lineBytes := int64(len(line) + 1)
-				if atomic.AddInt64(&stderrBytes, lineBytes) <= int64(MaxOutputBytes) {
-					stderrBuf.WriteString(line + "\n")
-				}
-				if callback != nil {
-					callback(StreamStderr, line+"\n", atomic.AddInt64(&stderrSeq, 1)-1)
-				}
+				recordLine(StreamStderr, line)
 			case <-ctx.Done():
 				c.Stop()
 				return

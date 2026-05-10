@@ -1,7 +1,8 @@
 // Package fs provides privileged filesystem operations for Linux system management.
 //
-// All write, ownership, and permission operations use sudo for privilege
-// escalation. Read operations also use sudo to access files in restricted
+// All write, ownership, and permission operations escalate through the
+// configured privilege backend (sudo or doas — see exec.SetPrivilegeBackend).
+// Read operations also escalate via the backend to access files in restricted
 // directories (e.g. /etc/sudoers.d on Fedora is mode 0750).
 package fs
 
@@ -10,9 +11,15 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
+
+// statQueryTimeout caps the context-less GetOwnership call so a hung
+// stat (e.g. against an NFS server that has gone away) cannot pin
+// the calling goroutine indefinitely. F023.
+const statQueryTimeout = 10 * time.Second
 
 // =============================================================================
 // Ownership Utilities
@@ -38,7 +45,9 @@ func Ownership(owner, group string) string {
 // GetOwnership retrieves the current owner:group of a file using stat.
 // Returns empty strings if the file doesn't exist or can't be read.
 func GetOwnership(path string) (owner, group string) {
-	out, err := exec.Query("stat", "-c", "%U:%G", path)
+	ctx, cancel := context.WithTimeout(context.Background(), statQueryTimeout)
+	defer cancel()
+	out, err := exec.QueryCtx(ctx, "stat", "-c", "%U:%G", "--", path)
 	if err != nil {
 		return "", ""
 	}
@@ -56,14 +65,14 @@ func GetOwnership(path string) (owner, group string) {
 // File Write Operations
 // =============================================================================
 
-// WriteFile writes content to a file using sudo tee.
+// WriteFile writes content to a file via the privilege backend (tee).
 // This is the basic building block for privileged file writes.
 func WriteFile(ctx context.Context, path, content string) error {
 	_, err := exec.PrivilegedWithStdin(ctx, strings.NewReader(content), "tee", path)
 	return err
 }
 
-// SetMode sets the file mode (permissions) using sudo chmod.
+// SetMode sets the file mode (permissions) via the privilege backend (chmod).
 // mode should be an octal string like "0644".
 // Does nothing if mode is empty.
 func SetMode(ctx context.Context, path, mode string) error {
@@ -74,7 +83,25 @@ func SetMode(ctx context.Context, path, mode string) error {
 	return err
 }
 
-// SetOwnership sets the file owner and group using sudo chown.
+// SetOwnershipRecursive changes ownership of a path and all its
+// contents via the privilege backend (chown -R). Returns (nil, nil)
+// when both owner and group are empty (no-op). The "--" end-of-
+// options separator is passed so an ownership or path value that
+// happens to start with "-" cannot be misread as a chown flag.
+//
+// This used to live in sys/user as ChownRecursive; the SDK tech-debt
+// audit (F018) moved it here because it operates on any path, not on
+// a user account. The user.ChownRecursive function is now a thin
+// deprecated alias that forwards here.
+func SetOwnershipRecursive(ctx context.Context, path, owner, group string) (*exec.Result, error) {
+	ownership := Ownership(owner, group)
+	if ownership == "" {
+		return nil, nil
+	}
+	return exec.Privileged(ctx, "chown", "-R", "--", ownership, path)
+}
+
+// SetOwnership sets the file owner and group via the privilege backend (chown).
 // Either owner or group can be empty, but not both.
 // Does nothing if both are empty.
 func SetOwnership(ctx context.Context, path, owner, group string) error {
@@ -102,9 +129,18 @@ func SetPermissions(ctx context.Context, path, mode, owner, group string) error 
 	return nil
 }
 
-// WriteFileAtomic writes content to a file atomically with the specified
-// permissions. It writes to a temp file first, sets permissions, then moves
-// it into place. This prevents TOCTOU race conditions.
+// WriteFileAtomic writes content to a file with the specified permissions
+// using a write-then-rename sequence: it tees content to a predictable temp
+// path (path + ".pm-tmp"), chmod/chowns it, then mvs it into place.
+//
+// The mv-into-place at the end is what gives concurrent readers a consistent
+// view (they see either the old file or the new one, never a half-written
+// one). It does NOT guarantee fsync-level durability — the temp file is not
+// fsynced before the rename, and the parent directory is not fsynced after.
+// The temp path is also predictable, so this is not a defense against an
+// attacker who can create files in the target directory; for that, use
+// AtomicWriteFile in atomic_write.go (which uses os.CreateTemp with a
+// random suffix and proper fsync sequencing).
 func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group string) error {
 	tmpPath := path + ".pm-tmp"
 
@@ -133,7 +169,7 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 // File Read Operations
 // =============================================================================
 
-// ReadFile reads a file's contents using sudo cat.
+// ReadFile reads a file's contents via the privilege backend (cat).
 // Returns the content with trailing newline preserved (matching what's on disk).
 // If the file doesn't exist, returns an empty string and nil error.
 func ReadFile(ctx context.Context, path string) (string, error) {
@@ -153,7 +189,7 @@ func ReadFile(ctx context.Context, path string) (string, error) {
 	return result.Stdout, nil
 }
 
-// FileExists checks whether a path exists using sudo test -e.
+// FileExists checks whether a path exists via the privilege backend (test -e).
 // This is needed for paths in directories not readable by the current user
 // (e.g. /etc/sudoers.d is mode 0750 on Fedora/RHEL).
 func FileExists(ctx context.Context, path string) bool {
@@ -165,13 +201,13 @@ func FileExists(ctx context.Context, path string) bool {
 // File Delete Operations
 // =============================================================================
 
-// Remove removes a file using sudo rm -f.
+// Remove removes a file via the privilege backend (rm -f).
 // This is a best-effort operation that doesn't return errors.
 func Remove(ctx context.Context, path string) {
 	_, _ = exec.Privileged(ctx, "rm", "-f", path)
 }
 
-// RemoveStrict removes a file using sudo rm -f and returns any error.
+// RemoveStrict removes a file via the privilege backend (rm -f) and returns any error.
 func RemoveStrict(ctx context.Context, path string) error {
 	_, err := exec.Privileged(ctx, "rm", "-f", path)
 	return err
@@ -181,7 +217,7 @@ func RemoveStrict(ctx context.Context, path string) error {
 // Directory Operations
 // =============================================================================
 
-// Mkdir creates a directory using sudo mkdir.
+// Mkdir creates a directory via the privilege backend (mkdir).
 // If recursive is true, parent directories are created as needed (-p flag).
 func Mkdir(ctx context.Context, path string, recursive bool) error {
 	args := []string{}
@@ -207,24 +243,24 @@ func MkdirWithPermissions(ctx context.Context, path, mode, owner, group string, 
 
 // dangerousPaths are paths that must never be removed.
 var dangerousPaths = map[string]bool{
-	"/":     true,
-	"/boot": true,
-	"/dev":  true,
-	"/etc":  true,
-	"/proc": true,
-	"/run":  true,
-	"/sys":  true,
-	"/usr":  true,
-	"/var":  true,
-	"/bin":  true,
-	"/sbin": true,
-	"/lib":  true,
+	"/":      true,
+	"/boot":  true,
+	"/dev":   true,
+	"/etc":   true,
+	"/proc":  true,
+	"/run":   true,
+	"/sys":   true,
+	"/usr":   true,
+	"/var":   true,
+	"/bin":   true,
+	"/sbin":  true,
+	"/lib":   true,
 	"/lib64": true,
-	"/home": true,
-	"/root": true,
+	"/home":  true,
+	"/root":  true,
 }
 
-// RemoveDir removes a directory and its contents using sudo rm -rf.
+// RemoveDir removes a directory and its contents via the privilege backend (rm -rf).
 // It validates the path to prevent accidental removal of critical system directories.
 func RemoveDir(ctx context.Context, path string) error {
 	clean := filepath.Clean(path)
@@ -242,7 +278,7 @@ func RemoveDir(ctx context.Context, path string) error {
 // Copy Operations
 // =============================================================================
 
-// CopyFile copies a file from src to dst using sudo cp.
+// CopyFile copies a file from src to dst via the privilege backend (cp).
 func CopyFile(ctx context.Context, src, dst string) error {
 	_, err := exec.Privileged(ctx, "cp", src, dst)
 	return err
