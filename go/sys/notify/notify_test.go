@@ -101,11 +101,15 @@ func TestParseLoginctlShowSession(t *testing.T) {
 			wantOK:    false,
 		},
 		{
-			name:      "garbage uid degrades to 0 but type still wins",
+			// Malformed UID is now treated as an invalid session
+			// because uid=0 (the silent Atoi fallback) would build
+			// /run/user/0/bus and either misroute the notification
+			// to root's session or get suppressed entirely. CR
+			// finding on PR #57.
+			name:      "garbage uid is rejected as an invalid session",
 			sessionID: "c7",
 			stdout:    "x11\ngrace\nnotanint",
-			wantOK:    true,
-			want:      session{id: "c7", user: "grace", uid: 0, typ: "x11"},
+			wantOK:    false,
 		},
 		{
 			name:      "trims surrounding whitespace",

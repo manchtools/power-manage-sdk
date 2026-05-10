@@ -47,21 +47,62 @@ var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@_:-]|\\x[0-9A-Fa-f
 // while still bounding worst-case wait. F023 in TECH_DEBT_AUDIT.md.
 const systemctlQueryTimeout = 30 * time.Second
 
+// validSystemctlOutputs whitelists the answers each verb is allowed to
+// print. Anything else (most importantly "not-found" with exit 4 from
+// is-enabled when the unit file is missing) is treated as a query
+// failure so callers can distinguish "definitely disabled" from "the
+// unit doesn't exist at all".
+//
+// The lists are taken straight from systemctl(1) — they cover every
+// state the man page documents for the corresponding verb.
+var validSystemctlOutputs = map[string]map[string]struct{}{
+	"is-enabled": {
+		"enabled":         {},
+		"enabled-runtime": {},
+		"linked":          {},
+		"linked-runtime":  {},
+		"alias":           {},
+		"masked":          {},
+		"masked-runtime":  {},
+		"static":          {},
+		"indirect":        {},
+		"disabled":        {},
+		"generated":       {},
+		"transient":       {},
+	},
+	"is-active": {
+		"active":       {},
+		"reloading":    {},
+		"inactive":     {},
+		"failed":       {},
+		"activating":   {},
+		"deactivating": {},
+	},
+}
+
 // systemctl returns non-zero exit codes for several "the unit is in
 // state X" answers (is-enabled prints "disabled" and exits 1; is-active
 // prints "inactive" and exits 3). Those are not query failures — the
 // query succeeded and the answer is "no". A real query failure (D-Bus
-// stall, dbus.service down, the timeout firing) leaves the output blank.
-// Treat the "the answer is in stdout, the exit code just signals it"
-// case as success and only surface an error when stdout is empty.
+// stall, dbus.service down, the timeout firing, the unit file missing)
+// either leaves stdout blank or prints something not in
+// validSystemctlOutputs. In both cases, surface an error so callers
+// don't collapse "couldn't tell" into "definitely disabled / inactive".
 func runSystemctlQuery(unitName, verb string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
 	defer cancel()
 	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", verb, "--", unitName)
 	trimmed := strings.TrimSpace(out)
-	if err != nil && trimmed == "" {
-		slog.Debug("systemctl query failed", "unit", unitName, "verb", verb, "error", err)
-		return "", fmt.Errorf("systemctl %s %s: %w", verb, unitName, err)
+	allowed, known := validSystemctlOutputs[verb]
+	if !known {
+		return "", fmt.Errorf("systemctl %s %s: unsupported verb (no output whitelist)", verb, unitName)
+	}
+	if _, ok := allowed[trimmed]; !ok {
+		slog.Debug("systemctl query returned unrecognised state", "unit", unitName, "verb", verb, "output", trimmed, "error", err)
+		if err != nil {
+			return "", fmt.Errorf("systemctl %s %s: %w", verb, unitName, err)
+		}
+		return "", fmt.Errorf("systemctl %s %s: unrecognised output %q", verb, unitName, trimmed)
 	}
 	return trimmed, nil
 }

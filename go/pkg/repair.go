@@ -188,11 +188,19 @@ func removeStaleLock(ctx context.Context, path string) error {
 	}
 
 	// Check if any process has this specific file open.
-	// fuser exits 0 if processes are using the file, 1 if not.
-	if err := readCmd(ctx, "fuser", path).Run(); err == nil {
+	// fuser exits 0 if processes are using the file, 1 if not, and
+	// other non-zero codes for probe failures (binary missing,
+	// permission denied, signal). Treat anything other than the
+	// canonical "no process holds it" exit (1) as inconclusive — we
+	// must not delete the lock based on a failed probe.
+	cmd := readCmd(ctx, "fuser", path)
+	if err := cmd.Run(); err == nil {
 		return nil // file is actively in use
 	} else if ctxErr := ctx.Err(); ctxErr != nil {
 		return ctxErr
+	} else if cmd.ProcessState == nil || cmd.ProcessState.ExitCode() != 1 {
+		slog.Warn("fuser probe failed; skipping stale lock removal", "path", path, "error", err)
+		return nil
 	}
 
 	// No process has the file open — lock is stale. Remove it via the
