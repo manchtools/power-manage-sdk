@@ -31,15 +31,19 @@ function isPersistent(): boolean {
 function loadAuth(): StoredAuth {
 	if (typeof window === 'undefined') return { ...emptyAuth };
 
-	// Check localStorage first (persistent / "keep me signed in"), then sessionStorage
-	const persistent = localStorage.getItem(AUTH_KEY);
-	if (persistent) {
-		try { return superjson.parse<StoredAuth>(persistent); } catch { /* ignore corrupt data */ }
+	// Honor the persist toggle when choosing read order. If the user
+	// disabled "keep me signed in" we should not silently rehydrate from
+	// localStorage on the next page load — that was the previous behavior
+	// (F020 in the SDK tech-debt audit).
+	const persistent = isPersistent();
+	const primary = persistent ? localStorage.getItem(AUTH_KEY) : sessionStorage.getItem(AUTH_KEY);
+	if (primary) {
+		try { return superjson.parse<StoredAuth>(primary); } catch { /* ignore corrupt data */ }
 	}
 
-	const session = sessionStorage.getItem(AUTH_KEY);
-	if (session) {
-		try { return superjson.parse<StoredAuth>(session); } catch { /* ignore corrupt data */ }
+	const fallback = persistent ? sessionStorage.getItem(AUTH_KEY) : localStorage.getItem(AUTH_KEY);
+	if (fallback) {
+		try { return superjson.parse<StoredAuth>(fallback); } catch { /* ignore corrupt data */ }
 	}
 
 	return { ...emptyAuth };
@@ -104,6 +108,9 @@ export class AuthStore {
 			localStorage.setItem(PERSIST_KEY, 'true');
 		} else {
 			localStorage.removeItem(PERSIST_KEY);
+			// Drop any previously-persisted token so the next page load
+			// does not silently rehydrate from localStorage. F020.
+			localStorage.removeItem(AUTH_KEY);
 		}
 	}
 
@@ -123,8 +130,25 @@ export class AuthStore {
 		return this.state.user !== null && this.state.accessToken !== null && !this.isExpired();
 	}
 
+	/**
+	 * True if the user has the bootstrap admin role assigned (directly or
+	 * via group inheritance). The previous implementation proxied the
+	 * `CreateRole` permission, which any custom role could carry without
+	 * being the admin — F019 in the SDK tech-debt audit. We now check the
+	 * stable admin role ID (`00000000000000000000000001`, defined in
+	 * server/internal/auth/reconcile.go AdminRoleID).
+	 */
 	get isAdmin() {
-		return this.hasPermission('CreateRole');
+		const adminRoleID = '00000000000000000000000001';
+		const directRoles = this.state.user?.roles ?? [];
+		for (const role of directRoles) {
+			if (role.id === adminRoleID) return true;
+		}
+		const inherited = this.state.user?.inheritedRoles ?? [];
+		for (const ir of inherited) {
+			if (ir.roleId === adminRoleID) return true;
+		}
+		return false;
 	}
 
 	hasPermission(permission: string) {
