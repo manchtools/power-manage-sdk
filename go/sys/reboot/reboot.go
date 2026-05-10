@@ -1,4 +1,10 @@
 // Package reboot provides system reboot detection and scheduling utilities.
+//
+// Status: SDK-resident, single-consumer today (the agent's reboot-required
+// + scheduled-reboot pipeline). Sits in the SDK because the planned
+// server-side maintenance-window simulator needs the same "next reboot
+// window" math; until that surfaces the second-consumer rule
+// (CLAUDE.md) is provisionally waived. F027 in TECH_DEBT_AUDIT.md.
 package reboot
 
 import (

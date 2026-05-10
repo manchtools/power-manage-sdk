@@ -87,40 +87,63 @@ func listGraphicalSessions(ctx context.Context) []session {
 	}
 
 	var sessions []session
-	for _, line := range strings.Split(strings.TrimSpace(result.Stdout), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 3 {
-			continue
-		}
-		sessionID := fields[0]
-
+	for _, sessionID := range parseLoginctlListSessions(result.Stdout) {
 		// Query session type and user details
 		info, err := exec.Privileged(ctx, "loginctl", "show-session", sessionID,
 			"-p", "Type", "-p", "Name", "-p", "User", "--value")
 		if err != nil || info.ExitCode != 0 {
 			continue
 		}
-
-		lines := strings.Split(strings.TrimSpace(info.Stdout), "\n")
-		if len(lines) < 3 {
+		s, ok := parseLoginctlShowSession(sessionID, info.Stdout)
+		if !ok {
 			continue
 		}
-
-		typ := strings.TrimSpace(lines[0])
-		user := strings.TrimSpace(lines[1])
-		uid, _ := strconv.Atoi(strings.TrimSpace(lines[2]))
-
-		if typ == "x11" || typ == "wayland" || typ == "mir" {
-			sessions = append(sessions, session{
-				id:   sessionID,
-				user: user,
-				uid:  uid,
-				typ:  typ,
-			})
-		}
+		sessions = append(sessions, s)
 	}
 
 	return sessions
+}
+
+// parseLoginctlListSessions extracts session IDs from `loginctl
+// list-sessions --no-legend` output. The first whitespace-separated
+// field is the session ID; lines with fewer than three fields are
+// skipped (matches the prior in-line behaviour). Pure-function shape
+// so it can be tested without shelling out (F026 in TECH_DEBT_AUDIT.md).
+func parseLoginctlListSessions(stdout string) []string {
+	var ids []string
+	for _, line := range strings.Split(strings.TrimSpace(stdout), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		ids = append(ids, fields[0])
+	}
+	return ids
+}
+
+// parseLoginctlShowSession parses `loginctl show-session <id> -p Type
+// -p Name -p User --value` output into a session struct. The output
+// is three newline-separated values in the order Type, Name, User
+// (loginctl emits properties in the order requested via -p). Returns
+// (session, false) if the line count is wrong or the type is not a
+// graphical session.
+func parseLoginctlShowSession(sessionID, stdout string) (session, bool) {
+	lines := strings.Split(strings.TrimSpace(stdout), "\n")
+	if len(lines) < 3 {
+		return session{}, false
+	}
+	typ := strings.TrimSpace(lines[0])
+	user := strings.TrimSpace(lines[1])
+	uid, _ := strconv.Atoi(strings.TrimSpace(lines[2]))
+	if typ != "x11" && typ != "wayland" && typ != "mir" {
+		return session{}, false
+	}
+	return session{
+		id:   sessionID,
+		user: user,
+		uid:  uid,
+		typ:  typ,
+	}, true
 }
 
 // sendDesktopNotification sends a freedesktop notification to a single graphical session.

@@ -3,6 +3,14 @@
 // Package inventory provides lightweight system inventory collection using
 // standard Linux interfaces (/proc, /etc, standard tools) without requiring
 // osquery.
+//
+// Status: SDK-resident, single-consumer today (the agent's connect-time
+// inventory snapshot). The package lives in the SDK rather than under
+// agent/internal/sys because the planned server-side compliance preview
+// (control server emitting "what would my next inventory look like?"
+// for a registered device) needs the same parsers. Until that consumer
+// materialises, the second-consumer rule (CLAUDE.md) is provisionally
+// waived. F027 in TECH_DEBT_AUDIT.md.
 package inventory
 
 import (
