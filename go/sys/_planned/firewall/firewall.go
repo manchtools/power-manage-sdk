@@ -38,7 +38,7 @@ var ErrBackendNotSupported = errors.New("firewall backend not supported")
 var backend atomic.Int32
 
 // SetBackend selects the active backend. Call once at startup. Unknown
-// values are ignored so a zero-valued proto enum cannot silently
+// values are ignored so a zero-valued Backend enum cannot silently
 // regress an explicitly-set backend.
 func SetBackend(b Backend) {
 	switch b {
