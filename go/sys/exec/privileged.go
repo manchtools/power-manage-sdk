@@ -11,7 +11,10 @@ import (
 // PrivilegeBackend selects which privilege-escalation tool Privileged
 // and PrivilegedWithStdin dispatch through. The SDK defaults to the
 // sudo backend; agents running on doas-only hosts call
-// SetPrivilegeBackend(PrivilegeBackendDoas) once at startup.
+// SetPrivilegeBackend(PrivilegeBackendDoas) once at startup, and
+// agents running as root (post sudoers-removal architecture) call
+// SetPrivilegeBackend(PrivilegeBackendRoot) so the dispatch becomes
+// a direct exec instead of a sudo/doas wrap.
 type PrivilegeBackend int
 
 const (
@@ -19,6 +22,13 @@ const (
 	PrivilegeBackendSudo PrivilegeBackend = 0
 	// PrivilegeBackendDoas wraps commands with `doas -n`.
 	PrivilegeBackendDoas PrivilegeBackend = 1
+	// PrivilegeBackendRoot runs commands directly with no escalation
+	// wrapper. Use when the agent process is already root — sudo's
+	// "root needs to be in sudoers" check varies by distro (opensuse
+	// rejects it by default), and rolling our own no-op pass-through
+	// avoids both that quirk and the cost of forking sudo just to
+	// re-exec the same binary.
+	PrivilegeBackendRoot PrivilegeBackend = 2
 )
 
 // backend stores the active PrivilegeBackend as an int32. Access is
@@ -30,12 +40,13 @@ var backend atomic.Int32
 // SetPrivilegeBackend selects which escalation tool Privileged,
 // PrivilegedWithStdin, and PrivilegedStreaming use. Call this once
 // at startup from the agent's main() based on configuration. Valid
-// values are PrivilegeBackendSudo (default) and PrivilegeBackendDoas;
-// unknown values are ignored so callers don't accidentally silence
-// the dispatch by passing 0 from a zero-valued proto enum.
+// values are PrivilegeBackendSudo (default), PrivilegeBackendDoas,
+// and PrivilegeBackendRoot; unknown values are ignored so callers
+// don't accidentally silence the dispatch by passing 0 from a
+// zero-valued proto enum.
 func SetPrivilegeBackend(b PrivilegeBackend) {
 	switch b {
-	case PrivilegeBackendSudo, PrivilegeBackendDoas:
+	case PrivilegeBackendSudo, PrivilegeBackendDoas, PrivilegeBackendRoot:
 		backend.Store(int32(b))
 	}
 }
@@ -48,24 +59,35 @@ func CurrentPrivilegeBackend() PrivilegeBackend {
 }
 
 // privilegeTool returns the CLI name for the active backend.
+// Returns the empty string for PrivilegeBackendRoot, which signals
+// the dispatchers to skip the wrapper entirely.
 func privilegeTool() string {
-	if CurrentPrivilegeBackend() == PrivilegeBackendDoas {
+	switch CurrentPrivilegeBackend() {
+	case PrivilegeBackendDoas:
 		return "doas"
+	case PrivilegeBackendRoot:
+		return ""
+	default:
+		return "sudo"
 	}
-	return "sudo"
 }
 
 // Privileged runs name with args under the configured privilege backend
-// (sudo by default, doas when SetPrivilegeBackend has been called). The
-// command is resolved to an absolute path so it matches sudoers/doas.conf
-// rules. The backend is invoked with `-n` to fail immediately rather
-// than prompting — agents never get a terminal to enter a password.
+// (sudo by default, doas when SetPrivilegeBackend has been called, or
+// directly with no wrapper when the backend is root). The command is
+// resolved to an absolute path so it matches sudoers/doas.conf rules.
+// The backend is invoked with `-n` to fail immediately rather than
+// prompting — agents never get a terminal to enter a password.
 func Privileged(ctx context.Context, name string, args ...string) (*Result, error) {
 	absPath, err := exec.LookPath(name)
 	if err != nil {
 		return nil, fmt.Errorf("command not found: %s", name)
 	}
 	tool := privilegeTool()
+	if tool == "" {
+		// Root backend — direct exec, no wrapper.
+		return Run(ctx, absPath, args...)
+	}
 	if _, err := exec.LookPath(tool); err != nil {
 		return nil, fmt.Errorf("privilege backend not installed: %s", tool)
 	}
@@ -80,6 +102,9 @@ func PrivilegedWithStdin(ctx context.Context, stdin io.Reader, name string, args
 		return nil, fmt.Errorf("command not found: %s", name)
 	}
 	tool := privilegeTool()
+	if tool == "" {
+		return RunWithStdin(ctx, stdin, absPath, args...)
+	}
 	if _, err := exec.LookPath(tool); err != nil {
 		return nil, fmt.Errorf("privilege backend not installed: %s", tool)
 	}
@@ -104,6 +129,9 @@ func PrivilegedStreaming(ctx context.Context, name string, args []string, envVar
 		return nil, fmt.Errorf("command not found: %s", name)
 	}
 	tool := privilegeTool()
+	if tool == "" {
+		return RunStreaming(ctx, absPath, args, envVars, dir, callback)
+	}
 	if _, err := exec.LookPath(tool); err != nil {
 		return nil, fmt.Errorf("privilege backend not installed: %s", tool)
 	}
