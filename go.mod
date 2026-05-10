@@ -2,6 +2,8 @@ module github.com/manchtools/power-manage/sdk
 
 go 1.25.0
 
+toolchain go1.26.2
+
 require (
 	connectrpc.com/connect v1.18.1
 	github.com/oklog/ulid/v2 v2.1.0
