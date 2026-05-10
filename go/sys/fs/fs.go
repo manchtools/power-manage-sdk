@@ -47,7 +47,7 @@ func Ownership(owner, group string) string {
 func GetOwnership(path string) (owner, group string) {
 	ctx, cancel := context.WithTimeout(context.Background(), statQueryTimeout)
 	defer cancel()
-	out, err := exec.QueryCtx(ctx, "stat", "-c", "%U:%G", path)
+	out, err := exec.QueryCtx(ctx, "stat", "-c", "%U:%G", "--", path)
 	if err != nil {
 		return "", ""
 	}

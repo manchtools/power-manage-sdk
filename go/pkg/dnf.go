@@ -54,7 +54,7 @@ func (d *Dnf) WithSudo(useSudo bool) *Dnf {
 
 // Info returns dnf version information.
 func (d *Dnf) Info() (name, version string, err error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "--version").Output()
+	out, err := readCmd(d.ctx, "dnf", "--version").Output()
 	if err != nil {
 		return "", "", err
 	}
@@ -129,7 +129,7 @@ func (d *Dnf) Upgrade(packages ...string) (*CommandResult, error) {
 
 // Search searches for packages.
 func (d *Dnf) Search(query string) ([]SearchResult, error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "search", "-q", query).Output()
+	out, err := readCmd(d.ctx, "dnf", "search", "-q", query).Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			return nil, nil
@@ -160,7 +160,7 @@ func (d *Dnf) Search(query string) ([]SearchResult, error) {
 
 // List lists installed packages.
 func (d *Dnf) List() ([]Package, error) {
-	out, err := exec.CommandContext(d.ctx, "rpm", "-qa", "--queryformat", "%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{SIZE}\t%{SUMMARY}\n").Output()
+	out, err := readCmd(d.ctx, "rpm", "-qa", "--queryformat", "%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{SIZE}\t%{SUMMARY}\n").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (d *Dnf) List() ([]Package, error) {
 
 // ListUpgradable lists packages with available upgrades.
 func (d *Dnf) ListUpgradable() ([]PackageUpdate, error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "check-update", "-q").Output()
+	out, err := readCmd(d.ctx, "dnf", "check-update", "-q").Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() != 100 {
 			return nil, err
@@ -234,7 +234,7 @@ func (d *Dnf) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (d *Dnf) Show(name string) (*Package, error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "info", "-q", name).Output()
+	out, err := readCmd(d.ctx, "dnf", "info", "-q", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func (d *Dnf) Show(name string) (*Package, error) {
 
 // ListVersions lists all available versions of a package.
 func (d *Dnf) ListVersions(name string) (*VersionInfo, error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "list", "--showduplicates", "-q", name).Output()
+	out, err := readCmd(d.ctx, "dnf", "list", "--showduplicates", "-q", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -320,13 +320,13 @@ func (d *Dnf) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (d *Dnf) IsInstalled(name string) (bool, error) {
-	err := exec.CommandContext(d.ctx, "rpm", "-q", name).Run()
+	err := readCmd(d.ctx, "rpm", "-q", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (d *Dnf) GetInstalledVersion(name string) (string, error) {
-	out, err := exec.CommandContext(d.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
+	out, err := readCmd(d.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
 	if err != nil {
 		return "", err
 	}
@@ -336,7 +336,7 @@ func (d *Dnf) GetInstalledVersion(name string) (string, error) {
 // ensureVersionLock installs the versionlock plugin if not already installed.
 func (d *Dnf) ensureVersionLock() error {
 	// Check if versionlock command works
-	err := exec.CommandContext(d.ctx, "dnf", "versionlock", "--help").Run()
+	err := readCmd(d.ctx, "dnf", "versionlock", "--help").Run()
 	if err == nil {
 		return nil // plugin already installed
 	}
@@ -378,7 +378,7 @@ func (d *Dnf) ListPinned() ([]Package, error) {
 	if err := d.ensureVersionLock(); err != nil {
 		return nil, err
 	}
-	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
+	out, err := readCmd(d.ctx, "dnf", "versionlock", "list", "-q").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +404,7 @@ func (d *Dnf) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (versionlocked).
 func (d *Dnf) IsPinned(name string) (bool, error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
+	out, err := readCmd(d.ctx, "dnf", "versionlock", "list", "-q").Output()
 	if err != nil {
 		return false, nil // versionlock plugin might not be installed
 	}
@@ -419,7 +419,7 @@ func (d *Dnf) IsPinned(name string) (bool, error) {
 }
 
 func (d *Dnf) getPinnedSet() (map[string]bool, error) {
-	out, err := exec.CommandContext(d.ctx, "dnf", "versionlock", "list", "-q").Output()
+	out, err := readCmd(d.ctx, "dnf", "versionlock", "list", "-q").Output()
 	if err != nil {
 		return nil, nil
 	}

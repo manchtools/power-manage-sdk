@@ -106,7 +106,7 @@ func (d *Dnf) Repair(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	c := exec.CommandContext(ctx, "rpm", "--verifydb")
+	c := readCmd(ctx, "rpm", "--verifydb")
 	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
 	if out, err := c.CombinedOutput(); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -190,7 +190,7 @@ func removeStaleLock(ctx context.Context, path string) error {
 
 	// Check if any process has this specific file open.
 	// fuser exits 0 if processes are using the file, 1 if not.
-	if err := exec.CommandContext(ctx, "fuser", path).Run(); err == nil {
+	if err := readCmd(ctx, "fuser", path).Run(); err == nil {
 		return nil // file is actively in use
 	} else if ctxErr := ctx.Err(); ctxErr != nil {
 		return ctxErr

@@ -49,7 +49,7 @@ func Get(username string) (*Info, error) {
 	// Get passwd entry: username:x:uid:gid:comment:home:shell
 	out, err := exec.QueryCtx(ctx, "getent", "passwd", username)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, fmt.Errorf("lookup passwd entry for %q: %w", username, err)
 	}
 
 	fields := strings.Split(strings.TrimSpace(out), ":")

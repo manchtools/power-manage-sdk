@@ -18,11 +18,31 @@ package pkg
 import (
 	"context"
 	"io"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
+
+// readCmd builds an *exec.Cmd for a read-side package-manager query
+// (Info / Search / List / Show / version checks / status probes) with
+// LANG=C and LC_ALL=C forced so the output parser sees the stable
+// English form regardless of the host locale.
+//
+// The privileged write paths (Install / Remove / Update) go through
+// runPM, which already injects the env via PrivilegedStreaming. The
+// read paths historically used os/exec directly and would misparse
+// localized output (e.g. "Beschreibung:" instead of "Description:")
+// on non-English hosts. Use this helper for every read-side shell-out
+// from the package backends; the cmd returned is wired to the same
+// context the caller provides so timeout / cancel propagate.
+func readCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
+	c := exec.CommandContext(ctx, name, args...)
+	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
+	return c
+}
 
 // runPM executes a package-manager command and returns a CommandResult.
 // When useSudo is true the command runs through the configured privilege

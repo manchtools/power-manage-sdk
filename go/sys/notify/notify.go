@@ -134,7 +134,10 @@ func parseLoginctlShowSession(sessionID, stdout string) (session, bool) {
 	}
 	typ := strings.TrimSpace(lines[0])
 	user := strings.TrimSpace(lines[1])
-	uid, _ := strconv.Atoi(strings.TrimSpace(lines[2]))
+	uid, err := strconv.Atoi(strings.TrimSpace(lines[2]))
+	if err != nil || user == "" {
+		return session{}, false
+	}
 	if typ != "x11" && typ != "wayland" && typ != "mir" {
 		return session{}, false
 	}

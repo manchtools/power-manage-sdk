@@ -42,7 +42,7 @@ func (a *Apt) WithSudo(useSudo bool) *Apt {
 
 // Info returns apt version information.
 func (a *Apt) Info() (name, version string, err error) {
-	out, err := exec.CommandContext(a.ctx, "apt", "--version").Output()
+	out, err := readCmd(a.ctx, "apt", "--version").Output()
 	if err != nil {
 		return "", "", err
 	}
@@ -158,7 +158,7 @@ func (a *Apt) Search(query string) ([]SearchResult, error) {
 		args = []string{"search", query}
 	}
 
-	out, err := exec.CommandContext(a.ctx, cmd, args...).Output()
+	out, err := readCmd(a.ctx, cmd, args...).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (a *Apt) Search(query string) ([]SearchResult, error) {
 
 // List lists installed packages.
 func (a *Apt) List() ([]Package, error) {
-	out, err := exec.CommandContext(a.ctx, "dpkg-query", "-W", "-f=${Package}\t${Version}\t${Architecture}\t${Status}\t${Installed-Size}\t${Description}\n").Output()
+	out, err := readCmd(a.ctx, "dpkg-query", "-W", "-f=${Package}\t${Version}\t${Architecture}\t${Status}\t${Installed-Size}\t${Description}\n").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (a *Apt) List() ([]Package, error) {
 
 // ListUpgradable lists packages with available upgrades.
 func (a *Apt) ListUpgradable() ([]PackageUpdate, error) {
-	out, err := exec.CommandContext(a.ctx, "apt", "list", "--upgradable").Output()
+	out, err := readCmd(a.ctx, "apt", "list", "--upgradable").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (a *Apt) Show(name string) (*Package, error) {
 		cmd = "apt-cache"
 	}
 
-	out, err := exec.CommandContext(a.ctx, cmd, "show", name).Output()
+	out, err := readCmd(a.ctx, cmd, "show", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func (a *Apt) Show(name string) (*Package, error) {
 
 // ListVersions lists all available versions of a package.
 func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
-	out, err := exec.CommandContext(a.ctx, "apt-cache", "madison", name).Output()
+	out, err := readCmd(a.ctx, "apt-cache", "madison", name).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -334,13 +334,13 @@ func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (a *Apt) IsInstalled(name string) (bool, error) {
-	err := exec.CommandContext(a.ctx, "dpkg", "-s", name).Run()
+	err := readCmd(a.ctx, "dpkg", "-s", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (a *Apt) GetInstalledVersion(name string) (string, error) {
-	out, err := exec.CommandContext(a.ctx, "dpkg-query", "-W", "-f=${Version}", name).Output()
+	out, err := readCmd(a.ctx, "dpkg-query", "-W", "-f=${Version}", name).Output()
 	if err != nil {
 		return "", err
 	}
@@ -367,7 +367,7 @@ func (a *Apt) Unpin(packages ...string) (*CommandResult, error) {
 
 // ListPinned lists all pinned (held) packages.
 func (a *Apt) ListPinned() ([]Package, error) {
-	out, err := exec.CommandContext(a.ctx, "apt-mark", "showhold").Output()
+	out, err := readCmd(a.ctx, "apt-mark", "showhold").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +392,7 @@ func (a *Apt) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (held).
 func (a *Apt) IsPinned(name string) (bool, error) {
-	out, err := exec.CommandContext(a.ctx, "apt-mark", "showhold", name).Output()
+	out, err := readCmd(a.ctx, "apt-mark", "showhold", name).Output()
 	if err != nil {
 		return false, err
 	}
@@ -400,7 +400,7 @@ func (a *Apt) IsPinned(name string) (bool, error) {
 }
 
 func (a *Apt) getPinnedSet() (map[string]bool, error) {
-	out, err := exec.CommandContext(a.ctx, "apt-mark", "showhold").Output()
+	out, err := readCmd(a.ctx, "apt-mark", "showhold").Output()
 	if err != nil {
 		return nil, err
 	}

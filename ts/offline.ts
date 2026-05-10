@@ -45,13 +45,8 @@ export type DraftType =
 	| 'dispatch-action';
 
 /**
- * DefaultDraftPayloadMap is the open contract between OfflineStore and
- * its callers: every DraftType maps to a payload shape. The default is
- * `unknown` for every type to preserve the previous "the draft-shape
- * is the caller's job" behaviour.
- *
- * Frontend code can narrow the per-type shape by augmenting this map
- * via TypeScript module augmentation:
+ * DraftPayloadMap is intentionally empty so frontend code can declare
+ * narrowed per-type shapes via TypeScript module augmentation:
  *
  *   declare module '@manchtools/power-manage-sdk/ts/offline' {
  *     interface DraftPayloadMap {
@@ -59,20 +54,29 @@ export type DraftType =
  *     }
  *   }
  *
- * After augmentation `store.getDraft('create-user')` returns the
- * concrete shape instead of `unknown`. F031 in TECH_DEBT_AUDIT.md.
+ * Declaration merging cannot *narrow* a property that is already
+ * declared on an interface (e.g. `unknown` cannot be replaced with a
+ * struct), so the defaults live on a separate `BuiltinDraftPayloadMap`
+ * type that the lookup falls back to. After augmentation
+ * `store.getDraft('create-user')` returns the augmented shape;
+ * un-augmented keys still resolve to `unknown`. F031 in
+ * TECH_DEBT_AUDIT.md.
  */
-export interface DraftPayloadMap {
+export interface DraftPayloadMap {}
+
+type BuiltinDraftPayloadMap = {
 	'create-token': unknown;
 	'create-definition': unknown;
 	'create-user': unknown;
 	'device-label': unknown;
 	'dispatch-action': unknown;
-}
+};
 
 type DraftPayload<T extends DraftType> = T extends keyof DraftPayloadMap
 	? DraftPayloadMap[T]
-	: unknown;
+	: T extends keyof BuiltinDraftPayloadMap
+		? BuiltinDraftPayloadMap[T]
+		: unknown;
 
 export class OfflineStore {
 	private drafts: Map<string, unknown> = new Map();

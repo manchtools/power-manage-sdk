@@ -47,17 +47,32 @@ var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@_:-]|\\x[0-9A-Fa-f
 // while still bounding worst-case wait. F023 in TECH_DEBT_AUDIT.md.
 const systemctlQueryTimeout = 30 * time.Second
 
-func statusSystemd(unitName string) UnitStatus {
-	status := UnitStatus{}
-
+// systemctl returns non-zero exit codes for several "the unit is in
+// state X" answers (is-enabled prints "disabled" and exits 1; is-active
+// prints "inactive" and exits 3). Those are not query failures — the
+// query succeeded and the answer is "no". A real query failure (D-Bus
+// stall, dbus.service down, the timeout firing) leaves the output blank.
+// Treat the "the answer is in stdout, the exit code just signals it"
+// case as success and only surface an error when stdout is empty.
+func runSystemctlQuery(unitName, verb string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
 	defer cancel()
-
-	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-enabled", "--", unitName)
-	if err != nil {
-		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
+	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", verb, "--", unitName)
+	trimmed := strings.TrimSpace(out)
+	if err != nil && trimmed == "" {
+		slog.Debug("systemctl query failed", "unit", unitName, "verb", verb, "error", err)
+		return "", fmt.Errorf("systemctl %s %s: %w", verb, unitName, err)
 	}
-	enabledStatus := strings.TrimSpace(out)
+	return trimmed, nil
+}
+
+func statusSystemd(unitName string) (UnitStatus, error) {
+	status := UnitStatus{}
+
+	enabledStatus, err := runSystemctlQuery(unitName, "is-enabled")
+	if err != nil {
+		return UnitStatus{}, err
+	}
 
 	// systemctl distinguishes explicitly-enabled units ("enabled",
 	// "enabled-runtime") from units that happen to start at boot via
@@ -78,54 +93,44 @@ func statusSystemd(unitName string) UnitStatus {
 		status.Masked = true
 	}
 
-	ctx2, cancel2 := context.WithTimeout(context.Background(), systemctlQueryTimeout)
-	defer cancel2()
-	out, _, err = exec.QueryOutputCtx(ctx2, "systemctl", "is-active", "--", unitName)
+	activeStatus, err := runSystemctlQuery(unitName, "is-active")
 	if err != nil {
-		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
+		return UnitStatus{}, err
 	}
-	status.Active = strings.TrimSpace(out) == "active"
+	status.Active = activeStatus == "active"
 
-	return status
+	return status, nil
 }
 
-func isEnabledSystemd(unitName string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
-	defer cancel()
-	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-enabled", "--", unitName)
+func isEnabledSystemd(unitName string) (bool, error) {
+	trimmed, err := runSystemctlQuery(unitName, "is-enabled")
 	if err != nil {
-		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
+		return false, err
 	}
 	// Only "enabled" and "enabled-runtime" count as explicitly enabled.
 	// Static / indirect / generated units boot via dependencies but
 	// cannot be toggled with systemctl enable/disable, so reporting
 	// them as enabled here would mislead callers that use this result
 	// to decide whether to call Enable().
-	trimmed := strings.TrimSpace(out)
-	return trimmed == "enabled" || trimmed == "enabled-runtime"
+	return trimmed == "enabled" || trimmed == "enabled-runtime", nil
 }
 
-func isMaskedSystemd(unitName string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
-	defer cancel()
-	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-enabled", "--", unitName)
+func isMaskedSystemd(unitName string) (bool, error) {
+	trimmed, err := runSystemctlQuery(unitName, "is-enabled")
 	if err != nil {
-		slog.Debug("systemctl is-enabled failed", "unit", unitName, "error", err)
+		return false, err
 	}
 	// "masked-runtime" is `systemctl mask --runtime`'s session-only
 	// variant — still masked from the caller's perspective.
-	trimmed := strings.TrimSpace(out)
-	return trimmed == "masked" || trimmed == "masked-runtime"
+	return trimmed == "masked" || trimmed == "masked-runtime", nil
 }
 
-func isActiveSystemd(unitName string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
-	defer cancel()
-	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", "is-active", "--", unitName)
+func isActiveSystemd(unitName string) (bool, error) {
+	trimmed, err := runSystemctlQuery(unitName, "is-active")
 	if err != nil {
-		slog.Debug("systemctl is-active failed", "unit", unitName, "error", err)
+		return false, err
 	}
-	return strings.TrimSpace(out) == "active"
+	return trimmed == "active", nil
 }
 
 func daemonReloadSystemd(ctx context.Context) error {

@@ -111,7 +111,7 @@ func Status(unitName string) (UnitStatus, error) {
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return UnitStatus{}, err
 		}
-		return statusSystemd(unitName), nil
+		return statusSystemd(unitName)
 	default:
 		return UnitStatus{}, unsupported("Status")
 	}
@@ -128,7 +128,7 @@ func IsEnabled(unitName string) (bool, error) {
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return false, err
 		}
-		return isEnabledSystemd(unitName), nil
+		return isEnabledSystemd(unitName)
 	default:
 		return false, unsupported("IsEnabled")
 	}
@@ -144,7 +144,7 @@ func IsMasked(unitName string) (bool, error) {
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return false, err
 		}
-		return isMaskedSystemd(unitName), nil
+		return isMaskedSystemd(unitName)
 	default:
 		return false, unsupported("IsMasked")
 	}
@@ -160,7 +160,7 @@ func IsActive(unitName string) (bool, error) {
 		if err := validateUnitNameSystemd(unitName); err != nil {
 			return false, err
 		}
-		return isActiveSystemd(unitName), nil
+		return isActiveSystemd(unitName)
 	default:
 		return false, unsupported("IsActive")
 	}
