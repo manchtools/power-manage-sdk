@@ -20,7 +20,7 @@ import (
 // Subject.SerialNumber, not by anything the agent puts in the CSR.
 // The Control Server's CA rejects any CSR with SANs:
 //
-//     internal/ca/ca.go: "CSR must not request subject alternative names"
+//	internal/ca/ca.go: "CSR must not request subject alternative names"
 //
 // so including a DNS SAN here fails registration immediately. The
 // hostname is still put in the CSR's CN for operator debuggability
