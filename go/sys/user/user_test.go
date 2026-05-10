@@ -322,10 +322,10 @@ func TestSupplementaryGroups(t *testing.T) {
 	createTestUser(t, name)
 
 	// Create a test group and add user to it
-	if _, err = user.GroupCreate(ctx, groupName); err != nil {
+	if _, err := user.GroupCreate(ctx, groupName); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
-	if _, err = user.GroupAddUser(ctx, name, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, name, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
 

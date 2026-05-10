@@ -117,7 +117,7 @@ func TestPrivilegedStreaming(t *testing.T) {
 	ctx := context.Background()
 	var lines []string
 	result, err := exec.PrivilegedStreaming(ctx, "sh", []string{"-c", "printf 'line1\\nline2\\nline3\\n'"}, nil, "", func(streamType int, line string, _ int64) {
-		if streamType == exec.StreamStdout {
+		if streamType == int(exec.StreamStdout) {
 			lines = append(lines, strings.TrimRight(line, "\n"))
 		}
 	})

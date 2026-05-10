@@ -110,6 +110,9 @@ func GroupDelete(ctx context.Context, name string) (*exec.Result, error) {
 // GroupEnsureExists creates a group if it doesn't already exist.
 // Returns (nil, nil) when the group already exists (no command run).
 func GroupEnsureExists(ctx context.Context, name string) (*exec.Result, error) {
+	if err := validateName("group name", name); err != nil {
+		return nil, err
+	}
 	if GroupExists(name) {
 		return nil, nil
 	}

@@ -25,7 +25,7 @@ func TestGroupCreate(t *testing.T) {
 	name := testGroupName("cr")
 	defer cleanupGroup(t, name)
 
-	_, err = user.GroupCreate(ctx, name)
+	_, err := user.GroupCreate(ctx, name)
 	if err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
@@ -39,11 +39,11 @@ func TestGroupDelete(t *testing.T) {
 	ctx := context.Background()
 	name := testGroupName("dl")
 
-	if _, err = user.GroupCreate(ctx, name); err != nil {
+	if _, err := user.GroupCreate(ctx, name); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
 
-	_, err = user.GroupDelete(ctx, name)
+	_, err := user.GroupDelete(ctx, name)
 	if err != nil {
 		t.Fatalf("GroupDelete failed: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestGroupDelete(t *testing.T) {
 
 func TestGroupDeleteNonexistent(t *testing.T) {
 	ctx := context.Background()
-	_, err = user.GroupDelete(ctx, "pm-nonexistent-group-12345")
+	_, err := user.GroupDelete(ctx, "pm-nonexistent-group-12345")
 	if err == nil {
 		t.Fatal("expected error deleting non-existent group")
 	}
@@ -77,12 +77,12 @@ func TestGroupMembers(t *testing.T) {
 	defer cleanupGroup(t, groupName)
 	defer cleanupUser(t, userName)
 
-	if _, err = user.GroupCreate(ctx, groupName); err != nil {
+	if _, err := user.GroupCreate(ctx, groupName); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
 	createTestUser(t, userName)
 
-	if _, err = user.GroupAddUser(ctx, userName, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, userName, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
 
@@ -106,12 +106,12 @@ func TestGroupAddUser(t *testing.T) {
 	defer cleanupGroup(t, groupName)
 	defer cleanupUser(t, userName)
 
-	if _, err = user.GroupCreate(ctx, groupName); err != nil {
+	if _, err := user.GroupCreate(ctx, groupName); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
 	createTestUser(t, userName)
 
-	if _, err = user.GroupAddUser(ctx, userName, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, userName, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
 
@@ -127,16 +127,16 @@ func TestGroupRemoveUser(t *testing.T) {
 	defer cleanupGroup(t, groupName)
 	defer cleanupUser(t, userName)
 
-	if _, err = user.GroupCreate(ctx, groupName); err != nil {
+	if _, err := user.GroupCreate(ctx, groupName); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
 	createTestUser(t, userName)
 
-	if _, err = user.GroupAddUser(ctx, userName, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, userName, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
 
-	if _, err = user.GroupRemoveUser(ctx, userName, groupName); err != nil {
+	if _, err := user.GroupRemoveUser(ctx, userName, groupName); err != nil {
 		t.Fatalf("GroupRemoveUser failed: %v", err)
 	}
 
@@ -151,7 +151,7 @@ func TestGroupEnsureExists(t *testing.T) {
 	defer cleanupGroup(t, name)
 
 	// Should create
-	_, err = user.GroupEnsureExists(ctx, name)
+	_, err := user.GroupEnsureExists(ctx, name)
 	if err != nil {
 		t.Fatalf("GroupEnsureExists (create) failed: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestGroupHasUser(t *testing.T) {
 	defer cleanupGroup(t, groupName)
 	defer cleanupUser(t, userName)
 
-	if _, err = user.GroupCreate(ctx, groupName); err != nil {
+	if _, err := user.GroupCreate(ctx, groupName); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
 	createTestUser(t, userName)
@@ -182,7 +182,7 @@ func TestGroupHasUser(t *testing.T) {
 		t.Error("user should not be in group initially")
 	}
 
-	if _, err = user.GroupAddUser(ctx, userName, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, userName, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
 
@@ -200,7 +200,7 @@ func TestGroupMembersMatch(t *testing.T) {
 	defer cleanupUser(t, user1)
 	defer cleanupUser(t, user2)
 
-	if _, err = user.GroupCreate(ctx, groupName); err != nil {
+	if _, err := user.GroupCreate(ctx, groupName); err != nil {
 		t.Fatalf("GroupCreate failed: %v", err)
 	}
 	createTestUser(t, user1)
@@ -212,10 +212,10 @@ func TestGroupMembersMatch(t *testing.T) {
 	}
 
 	// Add users
-	if _, err = user.GroupAddUser(ctx, user1, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, user1, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
-	if _, err = user.GroupAddUser(ctx, user2, groupName); err != nil {
+	if _, err := user.GroupAddUser(ctx, user2, groupName); err != nil {
 		t.Fatalf("GroupAddUser failed: %v", err)
 	}
 
