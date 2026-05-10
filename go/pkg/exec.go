@@ -17,6 +17,7 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -49,6 +50,16 @@ func readCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
 // backend (sudo or doas, see exec.SetPrivilegeBackend). Both paths share
 // the same env / output capture / exit code recording so callers see a
 // uniform CommandResult regardless of escalation.
+//
+// Non-zero exit codes are surfaced as errors (and CommandResult.Success
+// is false) even when the underlying go-cmd library reports a clean
+// status. The pre-runPM shape used os/exec.Cmd.Run, which returned an
+// *exec.ExitError on non-zero exit; the go-cmd library does not, so
+// without this synthesised error the agent would treat
+// `apt install <nonexistent-package>` (exits 100) as a successful
+// install. PR #57 of the cleanup release shipped that regression;
+// callers (Apt.Install / Dnf.Install / etc.) check err and Success to
+// decide between EXECUTION_STATUS_SUCCESS and EXECUTION_STATUS_FAILED.
 func runPM(ctx context.Context, useSudo bool, name string, args []string, envVars []string) (*CommandResult, error) {
 	start := time.Now()
 
@@ -68,13 +79,17 @@ func runPM(ctx context.Context, useSudo bool, name string, args []string, envVar
 		result.Stderr = res.Stderr
 		result.ExitCode = res.ExitCode
 	}
+	if err == nil && result.ExitCode != 0 {
+		err = fmt.Errorf("%s exited with status %d", name, result.ExitCode)
+	}
 	result.Success = err == nil
 	return result, err
 }
 
 // runPMWithStdin is the stdin-bearing companion of runPM. It dispatches
 // through PrivilegedWithStdin / RunWithStdin instead of the streaming
-// variants (which do not accept stdin).
+// variants (which do not accept stdin). Non-zero exit codes are
+// surfaced as errors for the same reason as runPM.
 func runPMWithStdin(ctx context.Context, useSudo bool, stdin string, name string, args ...string) (*CommandResult, error) {
 	start := time.Now()
 	var reader io.Reader
@@ -97,6 +112,9 @@ func runPMWithStdin(ctx context.Context, useSudo bool, stdin string, name string
 		result.Stdout = res.Stdout
 		result.Stderr = res.Stderr
 		result.ExitCode = res.ExitCode
+	}
+	if err == nil && result.ExitCode != 0 {
+		err = fmt.Errorf("%s exited with status %d", name, result.ExitCode)
 	}
 	result.Success = err == nil
 	return result, err
