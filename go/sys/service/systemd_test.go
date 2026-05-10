@@ -213,21 +213,14 @@ func TestIsMasked(t *testing.T) {
 	ctx := context.Background()
 	defer cleanupUnit(t)
 
-	// Write the unit first — IsMasked on a non-existent unit now
-	// returns an error (per CR fix on PR #57), so the
-	// "should not be masked initially" precondition needs the unit
-	// to actually exist before the first probe.
-	if err := service.WriteUnit(ctx, testUnitName, testUnitContent); err != nil {
-		t.Fatalf("WriteUnit failed: %v", err)
-	}
-	if err := service.DaemonReload(ctx); err != nil {
-		t.Fatalf("DaemonReload failed: %v", err)
-	}
-
-	if masked, err := service.IsMasked(testUnitName); err != nil {
-		t.Fatalf("IsMasked failed: %v", err)
-	} else if masked {
-		t.Error("unit should not be masked initially")
+	// Initial probe: the unit doesn't exist yet, so IsMasked returns
+	// the strict "unit not found" error (per CR fix on PR #57). Mask
+	// is what then materialises the unit on disk as a /dev/null
+	// symlink — writing the unit first would make Mask fail with
+	// "Cannot mask, a regular file exists at <path>" because mask
+	// refuses to clobber a real file.
+	if _, err := service.IsMasked(testUnitName); err == nil {
+		t.Fatal("expected IsMasked on nonexistent unit to return an error before Mask creates it")
 	}
 
 	// Mask the unit (no file at this path, so mask creates a symlink to /dev/null).
