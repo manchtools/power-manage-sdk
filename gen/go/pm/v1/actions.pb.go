@@ -2473,6 +2473,17 @@ func (x *ZypperRepository) GetDisabled() bool {
 
 // UserParams configures user account management.
 // Supports creating, updating, deactivating, and removing user accounts.
+//
+// Templateable-fields delegation note: `username`, `ssh_authorized_keys`,
+// `home_dir`, `shell`, `comment`, and `primary_group` carry
+// (templateable) = true. Operators with `Set*Variable` write permission
+// on a referenced group can therefore influence which user this action
+// targets and what credentials/shell it ends up with. This is by
+// design — the whole point of group variables is per-group divergence —
+// but it means the variable-write permission MUST be scoped to operators
+// trusted with user-management equivalence. The 10 RBAC permissions
+// split (#59) gives the secret subset its own gate so credential
+// rotation is more restricted than routine config tweaks.
 type UserParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Username (required)
