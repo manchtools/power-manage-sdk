@@ -10441,17 +10441,21 @@ func (x *AvailableVariable) GetDefinedInGroupIds() []string {
 	return nil
 }
 
-// ListAvailableVariables returns the union of variables resolvable for
-// a given target — typically a device whose action is being authored.
-// Resolution order matches the renderer (device labels are not
-// included here because they're per-device, not per-group; the picker
-// suggests group-scoped variables only).
+// ListAvailableVariables returns the union of variables defined on
+// the named groups. Variables are exclusively a group concept —
+// device labels DO NOT participate in resolution — so the picker
+// queries by groups directly. Operators editing on a single group's
+// variables tab pass that one group's id; operators authoring an
+// action that targets multiple groups pass the full target set.
+//
+// At least one of device_group_ids / user_group_ids MUST be provided
+// (the validator rejects an empty request — there's nothing to list).
 type ListAvailableVariablesRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,ulid"
-	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	DeviceGroupIds []string               `protobuf:"bytes,1,rep,name=device_group_ids,json=deviceGroupIds,proto3" json:"device_group_ids,omitempty"`
+	UserGroupIds   []string               `protobuf:"bytes,2,rep,name=user_group_ids,json=userGroupIds,proto3" json:"user_group_ids,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ListAvailableVariablesRequest) Reset() {
@@ -10484,11 +10488,18 @@ func (*ListAvailableVariablesRequest) Descriptor() ([]byte, []int) {
 	return file_pm_v1_control_proto_rawDescGZIP(), []int{167}
 }
 
-func (x *ListAvailableVariablesRequest) GetDeviceId() string {
+func (x *ListAvailableVariablesRequest) GetDeviceGroupIds() []string {
 	if x != nil {
-		return x.DeviceId
+		return x.DeviceGroupIds
 	}
-	return ""
+	return nil
+}
+
+func (x *ListAvailableVariablesRequest) GetUserGroupIds() []string {
+	if x != nil {
+		return x.UserGroupIds
+	}
+	return nil
 }
 
 type ListAvailableVariablesResponse struct {
@@ -22561,9 +22572,10 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12'\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x13.pm.v1.VariableTypeR\x04type\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12/\n" +
-	"\x14defined_in_group_ids\x18\x04 \x03(\tR\x11definedInGroupIds\"<\n" +
-	"\x1dListAvailableVariablesRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"X\n" +
+	"\x14defined_in_group_ids\x18\x04 \x03(\tR\x11definedInGroupIds\"o\n" +
+	"\x1dListAvailableVariablesRequest\x12(\n" +
+	"\x10device_group_ids\x18\x01 \x03(\tR\x0edeviceGroupIds\x12$\n" +
+	"\x0euser_group_ids\x18\x02 \x03(\tR\fuserGroupIds\"X\n" +
 	"\x1eListAvailableVariablesResponse\x126\n" +
 	"\tvariables\x18\x01 \x03(\v2\x18.pm.v1.AvailableVariableR\tvariables\"\x99\x03\n" +
 	"\n" +

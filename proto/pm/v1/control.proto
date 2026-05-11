@@ -1317,14 +1317,18 @@ message AvailableVariable {
   repeated string defined_in_group_ids = 4;
 }
 
-// ListAvailableVariables returns the union of variables resolvable for
-// a given target — typically a device whose action is being authored.
-// Resolution order matches the renderer (device labels are not
-// included here because they're per-device, not per-group; the picker
-// suggests group-scoped variables only).
+// ListAvailableVariables returns the union of variables defined on
+// the named groups. Variables are exclusively a group concept —
+// device labels DO NOT participate in resolution — so the picker
+// queries by groups directly. Operators editing on a single group's
+// variables tab pass that one group's id; operators authoring an
+// action that targets multiple groups pass the full target set.
+//
+// At least one of device_group_ids / user_group_ids MUST be provided
+// (the validator rejects an empty request — there's nothing to list).
 message ListAvailableVariablesRequest {
-  // @gotags: validate:"required,ulid"
-  string device_id = 1;
+  repeated string device_group_ids = 1;
+  repeated string user_group_ids = 2;
 }
 
 message ListAvailableVariablesResponse {

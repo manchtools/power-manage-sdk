@@ -1684,10 +1684,16 @@ export class ApiClient {
 		return response.variables;
 	}
 
-	async listAvailableVariables(deviceId: string) {
+	async listAvailableVariables(opts: {
+		deviceGroupIds?: string[];
+		userGroupIds?: string[];
+	}) {
 		const client = this.getClient();
 		const response = await client.listAvailableVariables(
-			create(ListAvailableVariablesRequestSchema, { deviceId })
+			create(ListAvailableVariablesRequestSchema, {
+				deviceGroupIds: opts.deviceGroupIds ?? [],
+				userGroupIds: opts.userGroupIds ?? [],
+			})
 		);
 		return response.variables;
 	}
