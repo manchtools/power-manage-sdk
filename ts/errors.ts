@@ -27,6 +27,7 @@ export const ErrIdentityLinkNotFound = 'identity_link_not_found';
 export const ErrTokenNotFound = 'token_not_found';
 export const ErrExecutionNotFound = 'execution_not_found';
 export const ErrAssignmentNotFound = 'assignment_not_found';
+export const ErrLuksKeyNotFound = 'luks_key_not_found';
 export const ErrEmailAlreadyExists = 'email_already_exists';
 export const ErrUserGroupNameExists = 'user_group_name_exists';
 export const ErrDeviceGroupNameExists = 'device_group_name_exists';
