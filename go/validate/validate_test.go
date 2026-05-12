@@ -79,14 +79,23 @@ func TestStruct_EmptyULID(t *testing.T) {
 }
 
 func TestToSnakeCase(t *testing.T) {
+	// Acronym handling pinned by manchtools/power-manage-server#140 —
+	// the previous shape split contiguous uppercase letters one at a
+	// time (`ServerURL` → `server_u_r_l`), which leaked nonsense into
+	// operator-facing validation error messages. New rule: `_` is
+	// inserted before an uppercase letter only at word boundaries
+	// (lowercase→upper or end-of-acronym), so acronyms ride together.
 	tests := []struct {
 		input string
 		want  string
 	}{
-		{"ServerURL", "server_u_r_l"},
+		{"ServerURL", "server_url"},
 		{"Name", "name"},
 		{"FirstName", "first_name"},
-		{"ID", "i_d"},
+		{"ID", "id"},
+		{"UserID", "user_id"},
+		{"HTTPStatusCode", "http_status_code"},
+		{"IDOnly", "id_only"},
 		{"", ""},
 		{"lowercase", "lowercase"},
 	}

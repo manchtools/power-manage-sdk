@@ -87,14 +87,44 @@ func FormatFieldError(e validator.FieldError) string {
 }
 
 // ToSnakeCase converts a PascalCase or camelCase string to snake_case.
+// Handles acronyms correctly: `UserID` → `user_id`, `HTTPStatusCode` →
+// `http_status_code`. The previous shape walked uppercase letters one
+// at a time, producing `user_i_d` / `h_t_t_p_status_code` — neither
+// of those matches any Go-stdlib convention and the result leaks into
+// validation error messages users see (#140).
+//
+// Rule: insert `_` before an uppercase letter at position i > 0 when
+// either of the following transitions holds:
+//  1. previous char is lowercase  → leaving a word, entering an acronym
+//     or a new word: `userID` → `user_ID`, `myValue` → `my_Value`
+//  2. previous char is uppercase AND next char is lowercase
+//     → end of acronym, start of a new
+//     word: `HTTPStatus` → `HTTP_Status`, `userID` keeps `ID` together
+//     because `D` has no lowercase next.
+//
+// Both rules then lowercase the uppercase letter. Digits + non-ASCII
+// runes pass through unchanged (they don't trigger transitions).
 func ToSnakeCase(s string) string {
+	runes := []rune(s)
 	var result strings.Builder
-	for i, r := range s {
-		if i > 0 && r >= 'A' && r <= 'Z' {
-			result.WriteByte('_')
+	result.Grow(len(s) + 4) // small headroom for inserted underscores
+	for i, r := range runes {
+		isUpper := r >= 'A' && r <= 'Z'
+		if i > 0 && isUpper {
+			prev := runes[i-1]
+			prevLower := prev >= 'a' && prev <= 'z'
+			nextLower := false
+			if i+1 < len(runes) {
+				next := runes[i+1]
+				nextLower = next >= 'a' && next <= 'z'
+			}
+			prevUpper := prev >= 'A' && prev <= 'Z'
+			if prevLower || (prevUpper && nextLower) {
+				result.WriteByte('_')
+			}
 		}
-		if r >= 'A' && r <= 'Z' {
-			result.WriteRune(r + 32) // Convert to lowercase
+		if isUpper {
+			result.WriteRune(r + 32) // ASCII-shift to lowercase
 		} else {
 			result.WriteRune(r)
 		}
