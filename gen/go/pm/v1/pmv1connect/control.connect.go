@@ -310,18 +310,6 @@ const (
 	// ControlServiceSetDeviceGroupMaintenanceWindowProcedure is the fully-qualified name of the
 	// ControlService's SetDeviceGroupMaintenanceWindow RPC.
 	ControlServiceSetDeviceGroupMaintenanceWindowProcedure = "/pm.v1.ControlService/SetDeviceGroupMaintenanceWindow"
-	// ControlServiceSetDeviceGroupVariableProcedure is the fully-qualified name of the ControlService's
-	// SetDeviceGroupVariable RPC.
-	ControlServiceSetDeviceGroupVariableProcedure = "/pm.v1.ControlService/SetDeviceGroupVariable"
-	// ControlServiceDeleteDeviceGroupVariableProcedure is the fully-qualified name of the
-	// ControlService's DeleteDeviceGroupVariable RPC.
-	ControlServiceDeleteDeviceGroupVariableProcedure = "/pm.v1.ControlService/DeleteDeviceGroupVariable"
-	// ControlServiceGetDeviceGroupVariablesProcedure is the fully-qualified name of the
-	// ControlService's GetDeviceGroupVariables RPC.
-	ControlServiceGetDeviceGroupVariablesProcedure = "/pm.v1.ControlService/GetDeviceGroupVariables"
-	// ControlServiceListAvailableVariablesProcedure is the fully-qualified name of the ControlService's
-	// ListAvailableVariables RPC.
-	ControlServiceListAvailableVariablesProcedure = "/pm.v1.ControlService/ListAvailableVariables"
 	// ControlServiceCreateAssignmentProcedure is the fully-qualified name of the ControlService's
 	// CreateAssignment RPC.
 	ControlServiceCreateAssignmentProcedure = "/pm.v1.ControlService/CreateAssignment"
@@ -471,15 +459,6 @@ const (
 	// ControlServiceSetUserGroupMaintenanceWindowProcedure is the fully-qualified name of the
 	// ControlService's SetUserGroupMaintenanceWindow RPC.
 	ControlServiceSetUserGroupMaintenanceWindowProcedure = "/pm.v1.ControlService/SetUserGroupMaintenanceWindow"
-	// ControlServiceSetUserGroupVariableProcedure is the fully-qualified name of the ControlService's
-	// SetUserGroupVariable RPC.
-	ControlServiceSetUserGroupVariableProcedure = "/pm.v1.ControlService/SetUserGroupVariable"
-	// ControlServiceDeleteUserGroupVariableProcedure is the fully-qualified name of the
-	// ControlService's DeleteUserGroupVariable RPC.
-	ControlServiceDeleteUserGroupVariableProcedure = "/pm.v1.ControlService/DeleteUserGroupVariable"
-	// ControlServiceGetUserGroupVariablesProcedure is the fully-qualified name of the ControlService's
-	// GetUserGroupVariables RPC.
-	ControlServiceGetUserGroupVariablesProcedure = "/pm.v1.ControlService/GetUserGroupVariables"
 	// ControlServiceGetDeviceComplianceProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceCompliance RPC.
 	ControlServiceGetDeviceComplianceProcedure = "/pm.v1.ControlService/GetDeviceCompliance"
@@ -650,11 +629,6 @@ type ControlServiceClient interface {
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
-	// Device-group variables (#59 group-based variables design).
-	SetDeviceGroupVariable(context.Context, *connect.Request[v1.SetDeviceGroupVariableRequest]) (*connect.Response[v1.SetDeviceGroupVariableResponse], error)
-	DeleteDeviceGroupVariable(context.Context, *connect.Request[v1.DeleteDeviceGroupVariableRequest]) (*connect.Response[v1.DeleteDeviceGroupVariableResponse], error)
-	GetDeviceGroupVariables(context.Context, *connect.Request[v1.GetDeviceGroupVariablesRequest]) (*connect.Response[v1.GetDeviceGroupVariablesResponse], error)
-	ListAvailableVariables(context.Context, *connect.Request[v1.ListAvailableVariablesRequest]) (*connect.Response[v1.ListAvailableVariablesResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -715,10 +689,6 @@ type ControlServiceClient interface {
 	ValidateUserGroupQuery(context.Context, *connect.Request[v1.ValidateUserGroupQueryRequest]) (*connect.Response[v1.ValidateUserGroupQueryResponse], error)
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
 	SetUserGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
-	// User-group variables (#59 group-based variables design).
-	SetUserGroupVariable(context.Context, *connect.Request[v1.SetUserGroupVariableRequest]) (*connect.Response[v1.SetUserGroupVariableResponse], error)
-	DeleteUserGroupVariable(context.Context, *connect.Request[v1.DeleteUserGroupVariableRequest]) (*connect.Response[v1.DeleteUserGroupVariableResponse], error)
-	GetUserGroupVariables(context.Context, *connect.Request[v1.GetUserGroupVariablesRequest]) (*connect.Response[v1.GetUserGroupVariablesResponse], error)
 	// Device Compliance
 	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
 	// Compliance Policies
@@ -1322,30 +1292,6 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupMaintenanceWindow")),
 			connect.WithClientOptions(opts...),
 		),
-		setDeviceGroupVariable: connect.NewClient[v1.SetDeviceGroupVariableRequest, v1.SetDeviceGroupVariableResponse](
-			httpClient,
-			baseURL+ControlServiceSetDeviceGroupVariableProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupVariable")),
-			connect.WithClientOptions(opts...),
-		),
-		deleteDeviceGroupVariable: connect.NewClient[v1.DeleteDeviceGroupVariableRequest, v1.DeleteDeviceGroupVariableResponse](
-			httpClient,
-			baseURL+ControlServiceDeleteDeviceGroupVariableProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("DeleteDeviceGroupVariable")),
-			connect.WithClientOptions(opts...),
-		),
-		getDeviceGroupVariables: connect.NewClient[v1.GetDeviceGroupVariablesRequest, v1.GetDeviceGroupVariablesResponse](
-			httpClient,
-			baseURL+ControlServiceGetDeviceGroupVariablesProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("GetDeviceGroupVariables")),
-			connect.WithClientOptions(opts...),
-		),
-		listAvailableVariables: connect.NewClient[v1.ListAvailableVariablesRequest, v1.ListAvailableVariablesResponse](
-			httpClient,
-			baseURL+ControlServiceListAvailableVariablesProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("ListAvailableVariables")),
-			connect.WithClientOptions(opts...),
-		),
 		createAssignment: connect.NewClient[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse](
 			httpClient,
 			baseURL+ControlServiceCreateAssignmentProcedure,
@@ -1646,24 +1592,6 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("SetUserGroupMaintenanceWindow")),
 			connect.WithClientOptions(opts...),
 		),
-		setUserGroupVariable: connect.NewClient[v1.SetUserGroupVariableRequest, v1.SetUserGroupVariableResponse](
-			httpClient,
-			baseURL+ControlServiceSetUserGroupVariableProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("SetUserGroupVariable")),
-			connect.WithClientOptions(opts...),
-		),
-		deleteUserGroupVariable: connect.NewClient[v1.DeleteUserGroupVariableRequest, v1.DeleteUserGroupVariableResponse](
-			httpClient,
-			baseURL+ControlServiceDeleteUserGroupVariableProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("DeleteUserGroupVariable")),
-			connect.WithClientOptions(opts...),
-		),
-		getUserGroupVariables: connect.NewClient[v1.GetUserGroupVariablesRequest, v1.GetUserGroupVariablesResponse](
-			httpClient,
-			baseURL+ControlServiceGetUserGroupVariablesProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("GetUserGroupVariables")),
-			connect.WithClientOptions(opts...),
-		),
 		getDeviceCompliance: connect.NewClient[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse](
 			httpClient,
 			baseURL+ControlServiceGetDeviceComplianceProcedure,
@@ -1883,10 +1811,6 @@ type controlServiceClient struct {
 	evaluateDynamicGroup              *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
 	setDeviceGroupSyncInterval        *connect.Client[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse]
 	setDeviceGroupMaintenanceWindow   *connect.Client[v1.SetDeviceGroupMaintenanceWindowRequest, v1.UpdateDeviceGroupResponse]
-	setDeviceGroupVariable            *connect.Client[v1.SetDeviceGroupVariableRequest, v1.SetDeviceGroupVariableResponse]
-	deleteDeviceGroupVariable         *connect.Client[v1.DeleteDeviceGroupVariableRequest, v1.DeleteDeviceGroupVariableResponse]
-	getDeviceGroupVariables           *connect.Client[v1.GetDeviceGroupVariablesRequest, v1.GetDeviceGroupVariablesResponse]
-	listAvailableVariables            *connect.Client[v1.ListAvailableVariablesRequest, v1.ListAvailableVariablesResponse]
 	createAssignment                  *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
 	deleteAssignment                  *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
 	listAssignments                   *connect.Client[v1.ListAssignmentsRequest, v1.ListAssignmentsResponse]
@@ -1937,9 +1861,6 @@ type controlServiceClient struct {
 	validateUserGroupQuery            *connect.Client[v1.ValidateUserGroupQueryRequest, v1.ValidateUserGroupQueryResponse]
 	evaluateDynamicUserGroup          *connect.Client[v1.EvaluateDynamicUserGroupRequest, v1.EvaluateDynamicUserGroupResponse]
 	setUserGroupMaintenanceWindow     *connect.Client[v1.SetUserGroupMaintenanceWindowRequest, v1.UpdateUserGroupResponse]
-	setUserGroupVariable              *connect.Client[v1.SetUserGroupVariableRequest, v1.SetUserGroupVariableResponse]
-	deleteUserGroupVariable           *connect.Client[v1.DeleteUserGroupVariableRequest, v1.DeleteUserGroupVariableResponse]
-	getUserGroupVariables             *connect.Client[v1.GetUserGroupVariablesRequest, v1.GetUserGroupVariablesResponse]
 	getDeviceCompliance               *connect.Client[v1.GetDeviceComplianceRequest, v1.GetDeviceComplianceResponse]
 	createCompliancePolicy            *connect.Client[v1.CreateCompliancePolicyRequest, v1.CreateCompliancePolicyResponse]
 	getCompliancePolicy               *connect.Client[v1.GetCompliancePolicyRequest, v1.GetCompliancePolicyResponse]
@@ -2432,26 +2353,6 @@ func (c *controlServiceClient) SetDeviceGroupMaintenanceWindow(ctx context.Conte
 	return c.setDeviceGroupMaintenanceWindow.CallUnary(ctx, req)
 }
 
-// SetDeviceGroupVariable calls pm.v1.ControlService.SetDeviceGroupVariable.
-func (c *controlServiceClient) SetDeviceGroupVariable(ctx context.Context, req *connect.Request[v1.SetDeviceGroupVariableRequest]) (*connect.Response[v1.SetDeviceGroupVariableResponse], error) {
-	return c.setDeviceGroupVariable.CallUnary(ctx, req)
-}
-
-// DeleteDeviceGroupVariable calls pm.v1.ControlService.DeleteDeviceGroupVariable.
-func (c *controlServiceClient) DeleteDeviceGroupVariable(ctx context.Context, req *connect.Request[v1.DeleteDeviceGroupVariableRequest]) (*connect.Response[v1.DeleteDeviceGroupVariableResponse], error) {
-	return c.deleteDeviceGroupVariable.CallUnary(ctx, req)
-}
-
-// GetDeviceGroupVariables calls pm.v1.ControlService.GetDeviceGroupVariables.
-func (c *controlServiceClient) GetDeviceGroupVariables(ctx context.Context, req *connect.Request[v1.GetDeviceGroupVariablesRequest]) (*connect.Response[v1.GetDeviceGroupVariablesResponse], error) {
-	return c.getDeviceGroupVariables.CallUnary(ctx, req)
-}
-
-// ListAvailableVariables calls pm.v1.ControlService.ListAvailableVariables.
-func (c *controlServiceClient) ListAvailableVariables(ctx context.Context, req *connect.Request[v1.ListAvailableVariablesRequest]) (*connect.Response[v1.ListAvailableVariablesResponse], error) {
-	return c.listAvailableVariables.CallUnary(ctx, req)
-}
-
 // CreateAssignment calls pm.v1.ControlService.CreateAssignment.
 func (c *controlServiceClient) CreateAssignment(ctx context.Context, req *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
 	return c.createAssignment.CallUnary(ctx, req)
@@ -2702,21 +2603,6 @@ func (c *controlServiceClient) SetUserGroupMaintenanceWindow(ctx context.Context
 	return c.setUserGroupMaintenanceWindow.CallUnary(ctx, req)
 }
 
-// SetUserGroupVariable calls pm.v1.ControlService.SetUserGroupVariable.
-func (c *controlServiceClient) SetUserGroupVariable(ctx context.Context, req *connect.Request[v1.SetUserGroupVariableRequest]) (*connect.Response[v1.SetUserGroupVariableResponse], error) {
-	return c.setUserGroupVariable.CallUnary(ctx, req)
-}
-
-// DeleteUserGroupVariable calls pm.v1.ControlService.DeleteUserGroupVariable.
-func (c *controlServiceClient) DeleteUserGroupVariable(ctx context.Context, req *connect.Request[v1.DeleteUserGroupVariableRequest]) (*connect.Response[v1.DeleteUserGroupVariableResponse], error) {
-	return c.deleteUserGroupVariable.CallUnary(ctx, req)
-}
-
-// GetUserGroupVariables calls pm.v1.ControlService.GetUserGroupVariables.
-func (c *controlServiceClient) GetUserGroupVariables(ctx context.Context, req *connect.Request[v1.GetUserGroupVariablesRequest]) (*connect.Response[v1.GetUserGroupVariablesResponse], error) {
-	return c.getUserGroupVariables.CallUnary(ctx, req)
-}
-
 // GetDeviceCompliance calls pm.v1.ControlService.GetDeviceCompliance.
 func (c *controlServiceClient) GetDeviceCompliance(ctx context.Context, req *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {
 	return c.getDeviceCompliance.CallUnary(ctx, req)
@@ -2926,11 +2812,6 @@ type ControlServiceHandler interface {
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
-	// Device-group variables (#59 group-based variables design).
-	SetDeviceGroupVariable(context.Context, *connect.Request[v1.SetDeviceGroupVariableRequest]) (*connect.Response[v1.SetDeviceGroupVariableResponse], error)
-	DeleteDeviceGroupVariable(context.Context, *connect.Request[v1.DeleteDeviceGroupVariableRequest]) (*connect.Response[v1.DeleteDeviceGroupVariableResponse], error)
-	GetDeviceGroupVariables(context.Context, *connect.Request[v1.GetDeviceGroupVariablesRequest]) (*connect.Response[v1.GetDeviceGroupVariablesResponse], error)
-	ListAvailableVariables(context.Context, *connect.Request[v1.ListAvailableVariablesRequest]) (*connect.Response[v1.ListAvailableVariablesResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
 	DeleteAssignment(context.Context, *connect.Request[v1.DeleteAssignmentRequest]) (*connect.Response[v1.DeleteAssignmentResponse], error)
@@ -2991,10 +2872,6 @@ type ControlServiceHandler interface {
 	ValidateUserGroupQuery(context.Context, *connect.Request[v1.ValidateUserGroupQueryRequest]) (*connect.Response[v1.ValidateUserGroupQueryResponse], error)
 	EvaluateDynamicUserGroup(context.Context, *connect.Request[v1.EvaluateDynamicUserGroupRequest]) (*connect.Response[v1.EvaluateDynamicUserGroupResponse], error)
 	SetUserGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error)
-	// User-group variables (#59 group-based variables design).
-	SetUserGroupVariable(context.Context, *connect.Request[v1.SetUserGroupVariableRequest]) (*connect.Response[v1.SetUserGroupVariableResponse], error)
-	DeleteUserGroupVariable(context.Context, *connect.Request[v1.DeleteUserGroupVariableRequest]) (*connect.Response[v1.DeleteUserGroupVariableResponse], error)
-	GetUserGroupVariables(context.Context, *connect.Request[v1.GetUserGroupVariablesRequest]) (*connect.Response[v1.GetUserGroupVariablesResponse], error)
 	// Device Compliance
 	GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error)
 	// Compliance Policies
@@ -3594,30 +3471,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupMaintenanceWindow")),
 		connect.WithHandlerOptions(opts...),
 	)
-	controlServiceSetDeviceGroupVariableHandler := connect.NewUnaryHandler(
-		ControlServiceSetDeviceGroupVariableProcedure,
-		svc.SetDeviceGroupVariable,
-		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupVariable")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceDeleteDeviceGroupVariableHandler := connect.NewUnaryHandler(
-		ControlServiceDeleteDeviceGroupVariableProcedure,
-		svc.DeleteDeviceGroupVariable,
-		connect.WithSchema(controlServiceMethods.ByName("DeleteDeviceGroupVariable")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceGetDeviceGroupVariablesHandler := connect.NewUnaryHandler(
-		ControlServiceGetDeviceGroupVariablesProcedure,
-		svc.GetDeviceGroupVariables,
-		connect.WithSchema(controlServiceMethods.ByName("GetDeviceGroupVariables")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceListAvailableVariablesHandler := connect.NewUnaryHandler(
-		ControlServiceListAvailableVariablesProcedure,
-		svc.ListAvailableVariables,
-		connect.WithSchema(controlServiceMethods.ByName("ListAvailableVariables")),
-		connect.WithHandlerOptions(opts...),
-	)
 	controlServiceCreateAssignmentHandler := connect.NewUnaryHandler(
 		ControlServiceCreateAssignmentProcedure,
 		svc.CreateAssignment,
@@ -3916,24 +3769,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceSetUserGroupMaintenanceWindowProcedure,
 		svc.SetUserGroupMaintenanceWindow,
 		connect.WithSchema(controlServiceMethods.ByName("SetUserGroupMaintenanceWindow")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceSetUserGroupVariableHandler := connect.NewUnaryHandler(
-		ControlServiceSetUserGroupVariableProcedure,
-		svc.SetUserGroupVariable,
-		connect.WithSchema(controlServiceMethods.ByName("SetUserGroupVariable")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceDeleteUserGroupVariableHandler := connect.NewUnaryHandler(
-		ControlServiceDeleteUserGroupVariableProcedure,
-		svc.DeleteUserGroupVariable,
-		connect.WithSchema(controlServiceMethods.ByName("DeleteUserGroupVariable")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceGetUserGroupVariablesHandler := connect.NewUnaryHandler(
-		ControlServiceGetUserGroupVariablesProcedure,
-		svc.GetUserGroupVariables,
-		connect.WithSchema(controlServiceMethods.ByName("GetUserGroupVariables")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceGetDeviceComplianceHandler := connect.NewUnaryHandler(
@@ -4246,14 +4081,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceSetDeviceGroupSyncIntervalHandler.ServeHTTP(w, r)
 		case ControlServiceSetDeviceGroupMaintenanceWindowProcedure:
 			controlServiceSetDeviceGroupMaintenanceWindowHandler.ServeHTTP(w, r)
-		case ControlServiceSetDeviceGroupVariableProcedure:
-			controlServiceSetDeviceGroupVariableHandler.ServeHTTP(w, r)
-		case ControlServiceDeleteDeviceGroupVariableProcedure:
-			controlServiceDeleteDeviceGroupVariableHandler.ServeHTTP(w, r)
-		case ControlServiceGetDeviceGroupVariablesProcedure:
-			controlServiceGetDeviceGroupVariablesHandler.ServeHTTP(w, r)
-		case ControlServiceListAvailableVariablesProcedure:
-			controlServiceListAvailableVariablesHandler.ServeHTTP(w, r)
 		case ControlServiceCreateAssignmentProcedure:
 			controlServiceCreateAssignmentHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteAssignmentProcedure:
@@ -4354,12 +4181,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceEvaluateDynamicUserGroupHandler.ServeHTTP(w, r)
 		case ControlServiceSetUserGroupMaintenanceWindowProcedure:
 			controlServiceSetUserGroupMaintenanceWindowHandler.ServeHTTP(w, r)
-		case ControlServiceSetUserGroupVariableProcedure:
-			controlServiceSetUserGroupVariableHandler.ServeHTTP(w, r)
-		case ControlServiceDeleteUserGroupVariableProcedure:
-			controlServiceDeleteUserGroupVariableHandler.ServeHTTP(w, r)
-		case ControlServiceGetUserGroupVariablesProcedure:
-			controlServiceGetUserGroupVariablesHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceComplianceProcedure:
 			controlServiceGetDeviceComplianceHandler.ServeHTTP(w, r)
 		case ControlServiceCreateCompliancePolicyProcedure:
@@ -4785,22 +4606,6 @@ func (UnimplementedControlServiceHandler) SetDeviceGroupMaintenanceWindow(contex
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupMaintenanceWindow is not implemented"))
 }
 
-func (UnimplementedControlServiceHandler) SetDeviceGroupVariable(context.Context, *connect.Request[v1.SetDeviceGroupVariableRequest]) (*connect.Response[v1.SetDeviceGroupVariableResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupVariable is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) DeleteDeviceGroupVariable(context.Context, *connect.Request[v1.DeleteDeviceGroupVariableRequest]) (*connect.Response[v1.DeleteDeviceGroupVariableResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteDeviceGroupVariable is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) GetDeviceGroupVariables(context.Context, *connect.Request[v1.GetDeviceGroupVariablesRequest]) (*connect.Response[v1.GetDeviceGroupVariablesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetDeviceGroupVariables is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) ListAvailableVariables(context.Context, *connect.Request[v1.ListAvailableVariablesRequest]) (*connect.Response[v1.ListAvailableVariablesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAvailableVariables is not implemented"))
-}
-
 func (UnimplementedControlServiceHandler) CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.CreateAssignment is not implemented"))
 }
@@ -4999,18 +4804,6 @@ func (UnimplementedControlServiceHandler) EvaluateDynamicUserGroup(context.Conte
 
 func (UnimplementedControlServiceHandler) SetUserGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetUserGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateUserGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserGroupMaintenanceWindow is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) SetUserGroupVariable(context.Context, *connect.Request[v1.SetUserGroupVariableRequest]) (*connect.Response[v1.SetUserGroupVariableResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetUserGroupVariable is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) DeleteUserGroupVariable(context.Context, *connect.Request[v1.DeleteUserGroupVariableRequest]) (*connect.Response[v1.DeleteUserGroupVariableResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteUserGroupVariable is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) GetUserGroupVariables(context.Context, *connect.Request[v1.GetUserGroupVariablesRequest]) (*connect.Response[v1.GetUserGroupVariablesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetUserGroupVariables is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetDeviceCompliance(context.Context, *connect.Request[v1.GetDeviceComplianceRequest]) (*connect.Response[v1.GetDeviceComplianceResponse], error) {

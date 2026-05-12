@@ -683,78 +683,6 @@ func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
-// VariableType classifies a group-scoped variable's value so the server
-// can apply a per-type SET-time validator and the web UI can render the
-// right input control. Each type's validator runs at SetGroupVariable
-// AND again at render time after substitution into the destination
-// action field — defence in depth. SECRET-typed values are stored
-// AES-GCM encrypted via internal/crypto and never returned in plaintext
-// from GetGroupVariables (rendered to "***REDACTED***" instead).
-// See manchtools/power-manage-server#59 for the design.
-type VariableType int32
-
-const (
-	VariableType_VARIABLE_TYPE_UNSPECIFIED VariableType = 0
-	VariableType_VARIABLE_TYPE_STRING      VariableType = 1 // printable ASCII, len ≤ 1024, no control chars
-	VariableType_VARIABLE_TYPE_INT         VariableType = 2 // int64; optional min/max via int_min/int_max
-	VariableType_VARIABLE_TYPE_BOOL        VariableType = 3 // strict "true" / "false"
-	VariableType_VARIABLE_TYPE_HOSTNAME    VariableType = 4 // RFC 1123 label
-	VariableType_VARIABLE_TYPE_PATH        VariableType = 5 // absolute path, no ".." segments, no shell metacharacters
-	VariableType_VARIABLE_TYPE_CHOICE      VariableType = 6 // value must be ∈ choice_values
-	VariableType_VARIABLE_TYPE_SECRET      VariableType = 7 // encrypted at rest; ***REDACTED*** on read
-)
-
-// Enum value maps for VariableType.
-var (
-	VariableType_name = map[int32]string{
-		0: "VARIABLE_TYPE_UNSPECIFIED",
-		1: "VARIABLE_TYPE_STRING",
-		2: "VARIABLE_TYPE_INT",
-		3: "VARIABLE_TYPE_BOOL",
-		4: "VARIABLE_TYPE_HOSTNAME",
-		5: "VARIABLE_TYPE_PATH",
-		6: "VARIABLE_TYPE_CHOICE",
-		7: "VARIABLE_TYPE_SECRET",
-	}
-	VariableType_value = map[string]int32{
-		"VARIABLE_TYPE_UNSPECIFIED": 0,
-		"VARIABLE_TYPE_STRING":      1,
-		"VARIABLE_TYPE_INT":         2,
-		"VARIABLE_TYPE_BOOL":        3,
-		"VARIABLE_TYPE_HOSTNAME":    4,
-		"VARIABLE_TYPE_PATH":        5,
-		"VARIABLE_TYPE_CHOICE":      6,
-		"VARIABLE_TYPE_SECRET":      7,
-	}
-)
-
-func (x VariableType) Enum() *VariableType {
-	p := new(VariableType)
-	*p = x
-	return p
-}
-
-func (x VariableType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (VariableType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[11].Descriptor()
-}
-
-func (VariableType) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[11]
-}
-
-func (x VariableType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use VariableType.Descriptor instead.
-func (VariableType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{11}
-}
-
 // Unique identifier for an action instance
 type ActionId struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1088,120 +1016,6 @@ func (x *CommandOutput) GetStderr() string {
 	return ""
 }
 
-// Variable is a single group-scoped named value. The wire shape is
-// shared by SetGroupVariable, GetGroupVariables, and the JSONB column
-// on device_groups / user_groups. The per-type metadata fields
-// (int_min / int_max / choice_values) are only meaningful for the
-// matching VariableType — server validation rejects values that set
-// metadata for the wrong type.
-//
-// Name grammar: ^[a-z][a-z0-9_]*$ — lowercase only. Enforced at
-// SetGroupVariable time so two admins typing the same logical name in
-// different cases ("nginx_port" vs "Nginx_Port") cannot create ghost
-// duplicates. nginx_port and nginxport remain structurally distinct
-// (the underscore is meaningful).
-type Variable struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,max=64"
-	Name string       `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,max=64"`
-	Type VariableType `protobuf:"varint,2,opt,name=type,proto3,enum=pm.v1.VariableType" json:"type,omitempty"`
-	// For VARIABLE_TYPE_SECRET this is the plaintext on Set, omitted /
-	// "***REDACTED***" on Get. For every other type it is the literal
-	// string value (the per-type validator parses the int / bool / etc).
-	// @gotags: validate:"omitempty,max=4096"
-	Value string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty" validate:"omitempty,max=4096"`
-	// @gotags: validate:"omitempty,max=512"
-	Description string `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=512"`
-	// INT-only: optional inclusive min / max bounds applied at SET time.
-	// Both zero means "no bound."
-	IntMin int64 `protobuf:"varint,5,opt,name=int_min,json=intMin,proto3" json:"int_min,omitempty"`
-	IntMax int64 `protobuf:"varint,6,opt,name=int_max,json=intMax,proto3" json:"int_max,omitempty"`
-	// CHOICE-only: allowed values. SET rejects a value not present here.
-	// @gotags: validate:"omitempty,dive,max=256"
-	ChoiceValues  []string `protobuf:"bytes,7,rep,name=choice_values,json=choiceValues,proto3" json:"choice_values,omitempty" validate:"omitempty,dive,max=256"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Variable) Reset() {
-	*x = Variable{}
-	mi := &file_pm_v1_common_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Variable) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Variable) ProtoMessage() {}
-
-func (x *Variable) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_common_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Variable.ProtoReflect.Descriptor instead.
-func (*Variable) Descriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *Variable) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Variable) GetType() VariableType {
-	if x != nil {
-		return x.Type
-	}
-	return VariableType_VARIABLE_TYPE_UNSPECIFIED
-}
-
-func (x *Variable) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
-func (x *Variable) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *Variable) GetIntMin() int64 {
-	if x != nil {
-		return x.IntMin
-	}
-	return 0
-}
-
-func (x *Variable) GetIntMax() int64 {
-	if x != nil {
-		return x.IntMax
-	}
-	return 0
-}
-
-func (x *Variable) GetChoiceValues() []string {
-	if x != nil {
-		return x.ChoiceValues
-	}
-	return nil
-}
-
 var File_pm_v1_common_proto protoreflect.FileDescriptor
 
 const file_pm_v1_common_proto_rawDesc = "" +
@@ -1223,15 +1037,7 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\rCommandOutput\x12\x1b\n" +
 	"\texit_code\x18\x01 \x01(\x05R\bexitCode\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\tR\x06stdout\x12\x16\n" +
-	"\x06stderr\x18\x03 \x01(\tR\x06stderr\"\xd6\x01\n" +
-	"\bVariable\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12'\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x13.pm.v1.VariableTypeR\x04type\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x17\n" +
-	"\aint_min\x18\x05 \x01(\x03R\x06intMin\x12\x17\n" +
-	"\aint_max\x18\x06 \x01(\x03R\x06intMax\x12#\n" +
-	"\rchoice_values\x18\a \x03(\tR\fchoiceValues*\xa6\x02\n" +
+	"\x06stderr\x18\x03 \x01(\tR\x06stderr*\xa6\x02\n" +
 	"\x0fExecutionStatus\x12 \n" +
 	"\x1cEXECUTION_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18EXECUTION_STATUS_PENDING\x10\x01\x12\x1c\n" +
@@ -1297,16 +1103,7 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
 	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02\x12%\n" +
-	"!COMPLIANCE_STATUS_IN_GRACE_PERIOD\x10\x03*\xde\x01\n" +
-	"\fVariableType\x12\x1d\n" +
-	"\x19VARIABLE_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
-	"\x14VARIABLE_TYPE_STRING\x10\x01\x12\x15\n" +
-	"\x11VARIABLE_TYPE_INT\x10\x02\x12\x16\n" +
-	"\x12VARIABLE_TYPE_BOOL\x10\x03\x12\x1a\n" +
-	"\x16VARIABLE_TYPE_HOSTNAME\x10\x04\x12\x16\n" +
-	"\x12VARIABLE_TYPE_PATH\x10\x05\x12\x18\n" +
-	"\x14VARIABLE_TYPE_CHOICE\x10\x06\x12\x18\n" +
-	"\x14VARIABLE_TYPE_SECRET\x10\aB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"!COMPLIANCE_STATUS_IN_GRACE_PERIOD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_common_proto_rawDescOnce sync.Once
@@ -1320,8 +1117,8 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 12)
-var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
+var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
 	(DesiredState)(0),              // 1: pm.v1.DesiredState
@@ -1334,23 +1131,20 @@ var file_pm_v1_common_proto_goTypes = []any{
 	(RotationReason)(0),            // 8: pm.v1.RotationReason
 	(LuksRevocationStatus)(0),      // 9: pm.v1.LuksRevocationStatus
 	(ComplianceStatus)(0),          // 10: pm.v1.ComplianceStatus
-	(VariableType)(0),              // 11: pm.v1.VariableType
-	(*ActionId)(nil),               // 12: pm.v1.ActionId
-	(*DeviceId)(nil),               // 13: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 14: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 15: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 16: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 17: pm.v1.CommandOutput
-	(*Variable)(nil),               // 18: pm.v1.Variable
+	(*ActionId)(nil),               // 11: pm.v1.ActionId
+	(*DeviceId)(nil),               // 12: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 13: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 14: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 15: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 16: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	16, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
-	11, // 1: pm.v1.Variable.type:type_name -> pm.v1.VariableType
-	2,  // [2:2] is the sub-list for method output_type
-	2,  // [2:2] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	15, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	1,  // [1:1] is the sub-list for method output_type
+	1,  // [1:1] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_common_proto_init() }
@@ -1363,8 +1157,8 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      12,
-			NumMessages:   7,
+			NumEnums:      11,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
