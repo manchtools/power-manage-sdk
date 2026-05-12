@@ -1,4 +1,4 @@
-.PHONY: generate generate-go generate-ts clean install-tools
+.PHONY: generate generate-go generate-ts gofmt-gen clean install-tools
 
 # Proto source directory
 PROTO_DIR := proto
@@ -10,7 +10,15 @@ install-tools:
 	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
 	go install github.com/favadi/protoc-go-inject-tag@latest
 
-generate: generate-go inject-tags generate-ts
+generate: generate-go inject-tags gofmt-gen generate-ts
+
+# protoc-go-inject-tag rewrites struct tags but does NOT re-run gofmt
+# afterwards, so its output can leave the generated .pb.go files with
+# multi-field struct alignment that gofmt -l flags. Run gofmt -w over
+# the gen directory once at the end of the Go pipeline to keep the
+# committed gen files clean against `gofmt -l ./...`.
+gofmt-gen:
+	gofmt -w $(GEN_DIR)/go
 
 generate-go:
 	@mkdir -p $(GEN_DIR)/go/pm/v1
