@@ -4,30 +4,8 @@ package pm.v1;
 
 option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
-import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "pm/v1/common.proto";
-
-// ============================================================================
-// Templateable field option
-// ============================================================================
-
-// templateable marks an action-param field whose value is rendered through
-// the server-side `{{ var.NAME }}` substitution pipeline before the action
-// is dispatched. Fields without this annotation pass through verbatim. The
-// renderer walks an Action proto via protoreflect and only touches fields
-// where templateable is true.
-//
-// The trust model lives at the SET-time RBAC gate (per-permission write
-// access on the variable being substituted) — there is no context-aware
-// shell-quoting at render time. See manchtools/power-manage-server#59
-// (group-based variables design).
-//
-// Field number 50000 sits in the user-defined range
-// (50000-99999 for internal use per Google's policy).
-extend google.protobuf.FieldOptions {
-  bool templateable = 50000;
-}
 
 // ============================================================================
 // Action Types
@@ -169,9 +147,9 @@ message PackageParams {
   // Generic package name (used if manager-specific names not provided)
   // If set, this name is used for all package managers.
   // @gotags: validate:"omitempty,max=255"
-  string name = 1 [(templateable) = true];
+  string name = 1;
   // @gotags: validate:"omitempty,max=128"
-  string version = 2 [(templateable) = true];
+  string version = 2;
   // @gotags: validate:"omitempty"
   bool allow_downgrade = 3;
   // @gotags: validate:"omitempty"
@@ -180,39 +158,39 @@ message PackageParams {
   // Manager-specific package names (override generic name)
   // If a manager-specific name is empty, that manager will be skipped.
   // @gotags: validate:"omitempty,max=255"
-  string apt_name = 5 [(templateable) = true];    // Debian/Ubuntu (apt/apt-get)
+  string apt_name = 5;    // Debian/Ubuntu (apt/apt-get)
   // @gotags: validate:"omitempty,max=255"
-  string dnf_name = 6 [(templateable) = true];    // Fedora/RHEL (dnf/yum)
+  string dnf_name = 6;    // Fedora/RHEL (dnf/yum)
   // @gotags: validate:"omitempty,max=255"
-  string pacman_name = 7 [(templateable) = true]; // Arch Linux (pacman)
+  string pacman_name = 7; // Arch Linux (pacman)
   // @gotags: validate:"omitempty,max=255"
-  string zypper_name = 8 [(templateable) = true]; // openSUSE (zypper)
+  string zypper_name = 8; // openSUSE (zypper)
 }
 
 message AppInstallParams {
   // @gotags: validate:"required,url"
-  string url = 1 [(templateable) = true];
+  string url = 1;
   // @gotags: validate:"omitempty,len=64,hexadecimal"
-  string checksum_sha256 = 2 [(templateable) = true];
+  string checksum_sha256 = 2;
   // @gotags: validate:"omitempty,startswith=/"
-  string install_path = 3 [(templateable) = true];
+  string install_path = 3;
 }
 
 message ShellParams {
   // Execution/remediation script (runs when detection_script is absent or exits non-zero)
   // @gotags: validate:"omitempty,max=1048576"
-  string script = 1 [(templateable) = true];
+  string script = 1;
   // @gotags: validate:"omitempty,max=255"
   string interpreter = 2;
   // @gotags: validate:"omitempty"
   bool run_as_root = 3;
   // @gotags: validate:"omitempty,startswith=/"
-  string working_directory = 4 [(templateable) = true];
+  string working_directory = 4;
   // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=4096"
   map<string, string> environment = 5;
   // Detection script: exit 0 = compliant (skip execution), non-zero = needs remediation
   // @gotags: validate:"omitempty,max=1048576"
-  string detection_script = 6 [(templateable) = true];
+  string detection_script = 6;
   // When true, only the detection script runs (no remediation) and results are tracked as compliance checks
   // @gotags: validate:"omitempty"
   bool is_compliance = 7;
@@ -268,13 +246,13 @@ enum NetworkConfigBackend {
 // OPENRC: /etc/init.d/<unit_name>; etc.).
 message ServiceParams {
   // @gotags: validate:"required,min=1,max=255"
-  string unit_name = 1 [(templateable) = true];
+  string unit_name = 1;
   // @gotags: validate:"omitempty"
   ServiceUnitState desired_state = 2;
   // @gotags: validate:"omitempty"
   bool enable = 3;
   // @gotags: validate:"omitempty,max=65536"
-  string unit_content = 4 [(templateable) = true];
+  string unit_content = 4;
   // Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
   // compatibility with devices that don't explicitly set it.
   // @gotags: validate:"omitempty"
@@ -290,15 +268,15 @@ enum ServiceUnitState {
 
 message FileParams {
   // @gotags: validate:"required,startswith=/"
-  string path = 1 [(templateable) = true];
+  string path = 1;
   // @gotags: validate:"omitempty,max=10485760"
-  string content = 2 [(templateable) = true];
+  string content = 2;
   // @gotags: validate:"omitempty,max=32"
-  string owner = 3 [(templateable) = true];
+  string owner = 3;
   // @gotags: validate:"omitempty,max=32"
-  string group = 4 [(templateable) = true];
+  string group = 4;
   // @gotags: validate:"omitempty,max=4"
-  string mode = 5 [(templateable) = true];
+  string mode = 5;
 
   // Managed block mode: if true, manages a content block within the file.
   // PRESENT: appends content if not already present in file.
@@ -313,13 +291,13 @@ message FileParams {
 message DirectoryParams {
   // Directory path (must be absolute)
   // @gotags: validate:"required,startswith=/"
-  string path = 1 [(templateable) = true];
+  string path = 1;
   // @gotags: validate:"omitempty,max=32"
-  string owner = 2 [(templateable) = true];
+  string owner = 2;
   // @gotags: validate:"omitempty,max=32"
-  string group = 3 [(templateable) = true];
+  string group = 3;
   // @gotags: validate:"omitempty,max=4"
-  string mode = 4 [(templateable) = true];
+  string mode = 4;
   // Whether to create parent directories (like mkdir -p)
   // Default: true
   // @gotags: validate:"omitempty"
@@ -342,11 +320,11 @@ message UpdateParams {
 message FlatpakParams {
   // Application ID (e.g., "org.mozilla.firefox", "com.spotify.Client")
   // @gotags: validate:"required,min=1,max=255"
-  string app_id = 1 [(templateable) = true];
+  string app_id = 1;
 
   // Remote/repository name (default: "flathub")
   // @gotags: validate:"omitempty,max=64"
-  string remote = 2 [(templateable) = true];
+  string remote = 2;
 
   // Whether to install system-wide (true) or user-only (false)
   // Default: true (system-wide)
@@ -363,7 +341,7 @@ message FlatpakParams {
 message RepositoryParams {
   // Repository name/identifier (used for file naming)
   // @gotags: validate:"required,min=1,max=64,alphanum"
-  string name = 1 [(templateable) = true];
+  string name = 1;
 
   // APT repository configuration (Debian/Ubuntu)
   // @gotags: validate:"omitempty"
@@ -386,11 +364,11 @@ message RepositoryParams {
 message AptRepository {
   // Repository URL (e.g., "https://packages.example.com/apt")
   // @gotags: validate:"required_without=Disabled,omitempty,url"
-  string url = 1 [(templateable) = true];
+  string url = 1;
 
   // Distribution codename (e.g., "jammy", "bookworm")
   // @gotags: validate:"omitempty,max=64"
-  string distribution = 2 [(templateable) = true];
+  string distribution = 2;
 
   // Components (e.g., "main", "contrib", "non-free")
   // @gotags: validate:"omitempty,dive,max=64"
@@ -398,7 +376,7 @@ message AptRepository {
 
   // GPG key URL for repository signing
   // @gotags: validate:"omitempty,url"
-  string gpg_key_url = 4 [(templateable) = true];
+  string gpg_key_url = 4;
 
   // GPG key content (ASCII-armored, alternative to gpg_key_url)
   // @gotags: validate:"omitempty,max=65536"
@@ -421,7 +399,7 @@ message AptRepository {
 message DnfRepository {
   // Base URL for the repository (supports DNF variables like $releasever and $basearch)
   // @gotags: validate:"required_without=Disabled,omitempty"
-  string baseurl = 1 [(templateable) = true];
+  string baseurl = 1;
 
   // Repository description
   // @gotags: validate:"omitempty,max=255"
@@ -437,7 +415,7 @@ message DnfRepository {
 
   // GPG key URL
   // @gotags: validate:"omitempty,url"
-  string gpgkey = 5 [(templateable) = true];
+  string gpgkey = 5;
 
   // Module hotfixes (for modular content)
   // @gotags: validate:"omitempty"
@@ -452,7 +430,7 @@ message DnfRepository {
 message PacmanRepository {
   // Server URL (supports pacman variables like $repo and $arch)
   // @gotags: validate:"required_without=Disabled,omitempty"
-  string server = 1 [(templateable) = true];
+  string server = 1;
 
   // SigLevel (e.g., "Optional TrustAll", "Required DatabaseOptional")
   // @gotags: validate:"omitempty,max=128"
@@ -467,7 +445,7 @@ message PacmanRepository {
 message ZypperRepository {
   // Repository URL
   // @gotags: validate:"required_without=Disabled,omitempty,url"
-  string url = 1 [(templateable) = true];
+  string url = 1;
 
   // Repository description/alias
   // @gotags: validate:"omitempty,max=255"
@@ -487,7 +465,7 @@ message ZypperRepository {
 
   // GPG key URL
   // @gotags: validate:"omitempty,url"
-  string gpgkey = 6 [(templateable) = true];
+  string gpgkey = 6;
 
   // Repository type (e.g., "rpm-md", "yast2")
   // @gotags: validate:"omitempty,max=32"
@@ -500,21 +478,10 @@ message ZypperRepository {
 
 // UserParams configures user account management.
 // Supports creating, updating, deactivating, and removing user accounts.
-//
-// Templateable-fields delegation note: `username`, `ssh_authorized_keys`,
-// `home_dir`, `shell`, `comment`, and `primary_group` carry
-// (templateable) = true. Operators with `Set*Variable` write permission
-// on a referenced group can therefore influence which user this action
-// targets and what credentials/shell it ends up with. This is by
-// design — the whole point of group variables is per-group divergence —
-// but it means the variable-write permission MUST be scoped to operators
-// trusted with user-management equivalence. The 10 RBAC permissions
-// split (#59) gives the secret subset its own gate so credential
-// rotation is more restricted than routine config tweaks.
 message UserParams {
   // Username (required)
   // @gotags: validate:"required,min=1,max=32,alphanum"
-  string username = 1 [(templateable) = true];
+  string username = 1;
 
   // User ID (optional - system assigns if not specified)
   // @gotags: validate:"omitempty,gte=0,lte=65534"
@@ -526,19 +493,19 @@ message UserParams {
 
   // Home directory path (optional - defaults to /home/<username>)
   // @gotags: validate:"omitempty,startswith=/"
-  string home_dir = 4 [(templateable) = true];
+  string home_dir = 4;
 
   // Login shell (optional - defaults to /bin/bash)
   // @gotags: validate:"omitempty,startswith=/"
-  string shell = 5 [(templateable) = true];
+  string shell = 5;
 
   // SSH authorized keys to add to ~/.ssh/authorized_keys
   // @gotags: validate:"omitempty,dive,max=4096"
-  repeated string ssh_authorized_keys = 6 [(templateable) = true];
+  repeated string ssh_authorized_keys = 6;
 
   // GECOS field / user comment (full name, etc.)
   // @gotags: validate:"omitempty,max=255"
-  string comment = 7 [(templateable) = true];
+  string comment = 7;
 
   // Create as system user (UID < 1000, no home directory by default)
   // @gotags: validate:"omitempty"
@@ -554,7 +521,7 @@ message UserParams {
 
   // Primary group name (alternative to gid - creates group if needed)
   // @gotags: validate:"omitempty,max=32"
-  string primary_group = 11 [(templateable) = true];
+  string primary_group = 11;
 
   // Hide user from graphical login screens (GDM, SDDM, LightDM).
   // Sets SystemAccount=true in AccountsService. No effect on headless systems.
@@ -567,11 +534,11 @@ message UserParams {
 message GroupParams {
   // Group name (required)
   // @gotags: validate:"required,min=1,max=32"
-  string name = 1 [(templateable) = true];
+  string name = 1;
 
   // Members to add to the group
   // @gotags: validate:"omitempty,dive,min=1,max=32"
-  repeated string members = 2 [(templateable) = true];
+  repeated string members = 2;
 
   // Group ID (optional - system assigns if not specified)
   // @gotags: validate:"omitempty,gte=0,lte=65534"
@@ -597,7 +564,7 @@ message SshParams {
 
   // Users to add to the SSH access group (must be valid Linux usernames)
   // @gotags: validate:"omitempty,dive,min=1,max=32"
-  repeated string users = 3 [(templateable) = true];
+  repeated string users = 3;
 }
 
 // SshdDirective represents a single sshd_config key-value directive.
@@ -608,7 +575,7 @@ message SshdDirective {
 
   // Directive value (e.g., "no", "22")
   // @gotags: validate:"required,min=1,max=1024"
-  string value = 2 [(templateable) = true];
+  string value = 2;
 }
 
 // SshdParams configures the SSH daemon via sshd_config.d drop-in files.
@@ -660,14 +627,14 @@ message AdminPolicyParams {
 
   // Users to add to the admin group (must be valid Linux usernames)
   // @gotags: validate:"required,min=1,dive,min=1,max=32"
-  repeated string users = 2 [(templateable) = true];
+  repeated string users = 2;
 
   // Raw policy content (only used when access_level is CUSTOM). Must be
   // valid syntax for the chosen backend — sudoers grammar for SUDO and
   // doas.conf(5) grammar for DOAS. Use {group} as placeholder for the
   // auto-generated group name. Required when access_level is CUSTOM (3).
   // @gotags: validate:"required_if=AccessLevel 3,max=65536"
-  string custom_config = 3 [(templateable) = true];
+  string custom_config = 3;
 
   // Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
   // compatibility with devices that don't explicitly set it.
@@ -691,7 +658,7 @@ enum LpsPasswordComplexity {
 message LpsParams {
   // Target user accounts (must exist on device)
   // @gotags: validate:"required,min=1,dive,min=1,max=32"
-  repeated string usernames = 1 [(templateable) = true];
+  repeated string usernames = 1;
   // Password length (8-128)
   // @gotags: validate:"required,gte=8,lte=128"
   int32 password_length = 2;
@@ -735,7 +702,7 @@ enum EncryptionDeviceBoundKeyType {
 message EncryptionParams {
   // Pre-shared key for initial ownership (only needed for first run)
   // @gotags: validate:"required,min=1,max=256"
-  string preshared_key = 1 [(templateable) = true];
+  string preshared_key = 1;
   // Days between scheduled passphrase rotations (1-365)
   // @gotags: validate:"required,gte=1,lte=365"
   int32 rotation_interval_days = 2;
@@ -781,24 +748,24 @@ enum WifiBackend {
 message WifiParams {
   // Network name (SSID)
   // @gotags: validate:"required,min=1,max=255"
-  string ssid = 1 [(templateable) = true];
+  string ssid = 1;
   // Authentication type
   // @gotags: validate:"required,ne=0"
   WifiAuthType auth_type = 2;
 
   // PSK authentication (WPA2/WPA3 Personal)
   // @gotags: validate:"omitempty,max=63"
-  string psk = 3 [(templateable) = true];
+  string psk = 3;
 
   // EAP-TLS authentication (802.1X with client certificate)
   // @gotags: validate:"omitempty"
-  string ca_cert = 4 [(templateable) = true];         // CA certificate (PEM)
+  string ca_cert = 4;         // CA certificate (PEM)
   // @gotags: validate:"omitempty"
-  string client_cert = 5 [(templateable) = true];     // Client certificate (PEM)
+  string client_cert = 5;     // Client certificate (PEM)
   // @gotags: validate:"omitempty"
-  string client_key = 6 [(templateable) = true];      // Client private key (PEM)
+  string client_key = 6;      // Client private key (PEM)
   // @gotags: validate:"omitempty,max=254"
-  string identity = 7 [(templateable) = true];        // EAP identity (e.g., user@corp.com)
+  string identity = 7;        // EAP identity (e.g., user@corp.com)
 
   // Connection settings
   // Connect to this network automatically when in range.
@@ -851,11 +818,11 @@ message ActionResult {
 message AgentUpdateArch {
   // Direct download URL for the agent binary (HTTPS only)
   // @gotags: validate:"required,url,startswith=https://"
-  string binary_url = 1 [(templateable) = true];
+  string binary_url = 1;
 
   // URL to the SHA256 checksum file for the binary (HTTPS only)
   // @gotags: validate:"required,url,startswith=https://"
-  string checksum_url = 2 [(templateable) = true];
+  string checksum_url = 2;
 }
 
 // AgentUpdateParams configures agent self-update via direct binary download.

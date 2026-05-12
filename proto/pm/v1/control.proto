@@ -1258,83 +1258,6 @@ message SetDeviceGroupMaintenanceWindowRequest {
   MaintenanceWindow maintenance_window = 2;
 }
 
-// ----------------------------------------------------------------------------
-// Group variables (#59 design — see GROUP_VARIABLES doc on the design ticket).
-// Variables are group-scoped named values referenced by action params via
-// `{{ var.NAME }}` substitution. The same Variable shape is reused across
-// device-groups and user-groups; the request types differ only in the
-// group-id field name.
-// ----------------------------------------------------------------------------
-
-// SetDeviceGroupVariable creates or updates one variable on a device
-// group. Same-name overwrites the previous value (full-replace). The
-// per-type validator runs at SET time; on failure the response carries
-// a per-field diagnostic so the web UI can inline-validate.
-message SetDeviceGroupVariableRequest {
-  // @gotags: validate:"required,ulid"
-  string device_group_id = 1;
-  // @gotags: validate:"required"
-  Variable variable = 2;
-}
-
-message SetDeviceGroupVariableResponse {
-  Variable variable = 1;
-}
-
-message DeleteDeviceGroupVariableRequest {
-  // @gotags: validate:"required,ulid"
-  string device_group_id = 1;
-  // @gotags: validate:"required"
-  string name = 2;
-}
-
-message DeleteDeviceGroupVariableResponse {}
-
-// GetDeviceGroupVariables returns every variable defined on the group.
-// SECRET-typed variables have value="***REDACTED***"; the plaintext is
-// only ever materialised inside the renderer at action-dispatch time.
-message GetDeviceGroupVariablesRequest {
-  // @gotags: validate:"required,ulid"
-  string device_group_id = 1;
-}
-
-message GetDeviceGroupVariablesResponse {
-  repeated Variable variables = 1;
-}
-
-// AvailableVariable is the subset of Variable returned by
-// ListAvailableVariables for the web UI's autocomplete picker. Values
-// are intentionally omitted — we only need the name + type +
-// description to show the picker entry.
-message AvailableVariable {
-  string name = 1;
-  VariableType type = 2;
-  string description = 3;
-  // For UI grouping: which group(s) define this name. Helpful when the
-  // operator hovers over an autocomplete entry and wants to know
-  // whether they're picking up a device-group value or a user-group
-  // value.
-  repeated string defined_in_group_ids = 4;
-}
-
-// ListAvailableVariables returns the union of variables defined on
-// the named groups. Variables are exclusively a group concept —
-// device labels DO NOT participate in resolution — so the picker
-// queries by groups directly. Operators editing on a single group's
-// variables tab pass that one group's id; operators authoring an
-// action that targets multiple groups pass the full target set.
-//
-// At least one of device_group_ids / user_group_ids MUST be provided
-// (the validator rejects an empty request — there's nothing to list).
-message ListAvailableVariablesRequest {
-  repeated string device_group_ids = 1;
-  repeated string user_group_ids = 2;
-}
-
-message ListAvailableVariablesResponse {
-  repeated AvailableVariable variables = 1;
-}
-
 // ============================================================================
 // Assignments (Link actions/sets/definitions to devices/groups)
 // ============================================================================
@@ -2168,37 +2091,6 @@ message SetUserGroupMaintenanceWindowRequest {
   MaintenanceWindow maintenance_window = 2;
 }
 
-// User-group variant of SetDeviceGroupVariableRequest. Same Variable
-// shape; same SET-time validator behaviour.
-message SetUserGroupVariableRequest {
-  // @gotags: validate:"required,ulid"
-  string user_group_id = 1;
-  // @gotags: validate:"required"
-  Variable variable = 2;
-}
-
-message SetUserGroupVariableResponse {
-  Variable variable = 1;
-}
-
-message DeleteUserGroupVariableRequest {
-  // @gotags: validate:"required,ulid"
-  string user_group_id = 1;
-  // @gotags: validate:"required"
-  string name = 2;
-}
-
-message DeleteUserGroupVariableResponse {}
-
-message GetUserGroupVariablesRequest {
-  // @gotags: validate:"required,ulid"
-  string user_group_id = 1;
-}
-
-message GetUserGroupVariablesResponse {
-  repeated Variable variables = 1;
-}
-
 // ============================================================================
 // Identity Providers (OIDC SSO)
 // ============================================================================
@@ -2790,12 +2682,6 @@ service ControlService {
   rpc SetDeviceGroupSyncInterval(SetDeviceGroupSyncIntervalRequest) returns (UpdateDeviceGroupResponse);
   rpc SetDeviceGroupMaintenanceWindow(SetDeviceGroupMaintenanceWindowRequest) returns (UpdateDeviceGroupResponse);
 
-  // Device-group variables (#59 group-based variables design).
-  rpc SetDeviceGroupVariable(SetDeviceGroupVariableRequest) returns (SetDeviceGroupVariableResponse);
-  rpc DeleteDeviceGroupVariable(DeleteDeviceGroupVariableRequest) returns (DeleteDeviceGroupVariableResponse);
-  rpc GetDeviceGroupVariables(GetDeviceGroupVariablesRequest) returns (GetDeviceGroupVariablesResponse);
-  rpc ListAvailableVariables(ListAvailableVariablesRequest) returns (ListAvailableVariablesResponse);
-
   // Assignments
   rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse);
   rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse);
@@ -2865,11 +2751,6 @@ service ControlService {
   rpc ValidateUserGroupQuery(ValidateUserGroupQueryRequest) returns (ValidateUserGroupQueryResponse);
   rpc EvaluateDynamicUserGroup(EvaluateDynamicUserGroupRequest) returns (EvaluateDynamicUserGroupResponse);
   rpc SetUserGroupMaintenanceWindow(SetUserGroupMaintenanceWindowRequest) returns (UpdateUserGroupResponse);
-
-  // User-group variables (#59 group-based variables design).
-  rpc SetUserGroupVariable(SetUserGroupVariableRequest) returns (SetUserGroupVariableResponse);
-  rpc DeleteUserGroupVariable(DeleteUserGroupVariableRequest) returns (DeleteUserGroupVariableResponse);
-  rpc GetUserGroupVariables(GetUserGroupVariablesRequest) returns (GetUserGroupVariablesResponse);
 
   // Device Compliance
   rpc GetDeviceCompliance(GetDeviceComplianceRequest) returns (GetDeviceComplianceResponse);

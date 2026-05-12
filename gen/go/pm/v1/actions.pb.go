@@ -9,7 +9,6 @@ package pmv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -2473,17 +2472,6 @@ func (x *ZypperRepository) GetDisabled() bool {
 
 // UserParams configures user account management.
 // Supports creating, updating, deactivating, and removing user accounts.
-//
-// Templateable-fields delegation note: `username`, `ssh_authorized_keys`,
-// `home_dir`, `shell`, `comment`, and `primary_group` carry
-// (templateable) = true. Operators with `Set*Variable` write permission
-// on a referenced group can therefore influence which user this action
-// targets and what credentials/shell it ends up with. This is by
-// design — the whole point of group variables is per-group divergence —
-// but it means the variable-write permission MUST be scoped to operators
-// trusted with user-management equivalence. The 10 RBAC permissions
-// split (#59) gives the secret subset its own gate so credential
-// rotation is more restricted than routine config tweaks.
 type UserParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Username (required)
@@ -3585,28 +3573,11 @@ func (x *AgentUpdateParams) GetArm64() *AgentUpdateArch {
 	return nil
 }
 
-var file_pm_v1_actions_proto_extTypes = []protoimpl.ExtensionInfo{
-	{
-		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
-		ExtensionType: (*bool)(nil),
-		Field:         50000,
-		Name:          "pm.v1.templateable",
-		Tag:           "varint,50000,opt,name=templateable",
-		Filename:      "pm/v1/actions.proto",
-	},
-}
-
-// Extension fields to descriptorpb.FieldOptions.
-var (
-	// optional bool templateable = 50000;
-	E_Templateable = &file_pm_v1_actions_proto_extTypes[0]
-)
-
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9f\t\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9f\t\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
@@ -3643,170 +3614,170 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
 	"\x0einterval_hours\x18\x02 \x01(\x05R\rintervalHours\x12\"\n" +
 	"\rrun_on_assign\x18\x03 \x01(\bR\vrunOnAssign\x12*\n" +
-	"\x11skip_if_unchanged\x18\x04 \x01(\bR\x0fskipIfUnchanged\"\x94\x02\n" +
-	"\rPackageParams\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x04name\x12\x1e\n" +
-	"\aversion\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\aversion\x12'\n" +
+	"\x11skip_if_unchanged\x18\x04 \x01(\bR\x0fskipIfUnchanged\"\xf0\x01\n" +
+	"\rPackageParams\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12'\n" +
 	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12\x10\n" +
-	"\x03pin\x18\x04 \x01(\bR\x03pin\x12\x1f\n" +
-	"\bapt_name\x18\x05 \x01(\tB\x04\x80\xb5\x18\x01R\aaptName\x12\x1f\n" +
-	"\bdnf_name\x18\x06 \x01(\tB\x04\x80\xb5\x18\x01R\adnfName\x12%\n" +
-	"\vpacman_name\x18\a \x01(\tB\x04\x80\xb5\x18\x01R\n" +
-	"pacmanName\x12%\n" +
-	"\vzypper_name\x18\b \x01(\tB\x04\x80\xb5\x18\x01R\n" +
-	"zypperName\"\x82\x01\n" +
-	"\x10AppInstallParams\x12\x16\n" +
-	"\x03url\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x03url\x12-\n" +
-	"\x0fchecksum_sha256\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\x0echecksumSha256\x12'\n" +
-	"\finstall_path\x18\x03 \x01(\tB\x04\x80\xb5\x18\x01R\vinstallPath\"\xfd\x02\n" +
-	"\vShellParams\x12\x1c\n" +
-	"\x06script\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x06script\x12 \n" +
+	"\x03pin\x18\x04 \x01(\bR\x03pin\x12\x19\n" +
+	"\bapt_name\x18\x05 \x01(\tR\aaptName\x12\x19\n" +
+	"\bdnf_name\x18\x06 \x01(\tR\adnfName\x12\x1f\n" +
+	"\vpacman_name\x18\a \x01(\tR\n" +
+	"pacmanName\x12\x1f\n" +
+	"\vzypper_name\x18\b \x01(\tR\n" +
+	"zypperName\"p\n" +
+	"\x10AppInstallParams\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
+	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
+	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xeb\x02\n" +
+	"\vShellParams\x12\x16\n" +
+	"\x06script\x18\x01 \x01(\tR\x06script\x12 \n" +
 	"\vinterpreter\x18\x02 \x01(\tR\vinterpreter\x12\x1e\n" +
-	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x121\n" +
-	"\x11working_directory\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\x10workingDirectory\x12E\n" +
-	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x12/\n" +
-	"\x10detection_script\x18\x06 \x01(\tB\x04\x80\xb5\x18\x01R\x0fdetectionScript\x12#\n" +
+	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x12+\n" +
+	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12E\n" +
+	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x12)\n" +
+	"\x10detection_script\x18\x06 \x01(\tR\x0fdetectionScript\x12#\n" +
 	"\ris_compliance\x18\a \x01(\bR\fisCompliance\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe2\x01\n" +
-	"\rServiceParams\x12!\n" +
-	"\tunit_name\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\bunitName\x12<\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd6\x01\n" +
+	"\rServiceParams\x12\x1b\n" +
+	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12<\n" +
 	"\rdesired_state\x18\x02 \x01(\x0e2\x17.pm.v1.ServiceUnitStateR\fdesiredState\x12\x16\n" +
-	"\x06enable\x18\x03 \x01(\bR\x06enable\x12'\n" +
-	"\funit_content\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\vunitContent\x12/\n" +
-	"\abackend\x18\x05 \x01(\x0e2\x15.pm.v1.ServiceBackendR\abackend\"\xbd\x01\n" +
+	"\x06enable\x18\x03 \x01(\bR\x06enable\x12!\n" +
+	"\funit_content\x18\x04 \x01(\tR\vunitContent\x12/\n" +
+	"\abackend\x18\x05 \x01(\x0e2\x15.pm.v1.ServiceBackendR\abackend\"\x9f\x01\n" +
 	"\n" +
-	"FileParams\x12\x18\n" +
-	"\x04path\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x04path\x12\x1e\n" +
-	"\acontent\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\acontent\x12\x1a\n" +
-	"\x05owner\x18\x03 \x01(\tB\x04\x80\xb5\x18\x01R\x05owner\x12\x1a\n" +
-	"\x05group\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\x05group\x12\x18\n" +
-	"\x04mode\x18\x05 \x01(\tB\x04\x80\xb5\x18\x01R\x04mode\x12#\n" +
-	"\rmanaged_block\x18\x06 \x01(\bR\fmanagedBlock\"\x9b\x01\n" +
-	"\x0fDirectoryParams\x12\x18\n" +
-	"\x04path\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x04path\x12\x1a\n" +
-	"\x05owner\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\x05owner\x12\x1a\n" +
-	"\x05group\x18\x03 \x01(\tB\x04\x80\xb5\x18\x01R\x05group\x12\x18\n" +
-	"\x04mode\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\x04mode\x12\x1c\n" +
+	"FileParams\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x14\n" +
+	"\x05owner\x18\x03 \x01(\tR\x05owner\x12\x14\n" +
+	"\x05group\x18\x04 \x01(\tR\x05group\x12\x12\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\x12#\n" +
+	"\rmanaged_block\x18\x06 \x01(\bR\fmanagedBlock\"\x83\x01\n" +
+	"\x0fDirectoryParams\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
+	"\x05owner\x18\x02 \x01(\tR\x05owner\x12\x14\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\x12\x12\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode\x12\x1c\n" +
 	"\trecursive\x18\x05 \x01(\bR\trecursive\"\x81\x01\n" +
 	"\fUpdateParams\x12#\n" +
 	"\rsecurity_only\x18\x01 \x01(\bR\fsecurityOnly\x12\x1e\n" +
 	"\n" +
 	"autoremove\x18\x02 \x01(\bR\n" +
 	"autoremove\x12,\n" +
-	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"}\n" +
-	"\rFlatpakParams\x12\x1b\n" +
-	"\x06app_id\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x05appId\x12\x1c\n" +
-	"\x06remote\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\x06remote\x12\x1f\n" +
+	"\x12reboot_if_required\x18\x03 \x01(\bR\x10rebootIfRequired\"q\n" +
+	"\rFlatpakParams\x12\x15\n" +
+	"\x06app_id\x18\x01 \x01(\tR\x05appId\x12\x16\n" +
+	"\x06remote\x18\x02 \x01(\tR\x06remote\x12\x1f\n" +
 	"\vsystem_wide\x18\x03 \x01(\bR\n" +
 	"systemWide\x12\x10\n" +
-	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xde\x01\n" +
-	"\x10RepositoryParams\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x04name\x12&\n" +
+	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xd8\x01\n" +
+	"\x10RepositoryParams\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
 	"\x03apt\x18\x02 \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
 	"\x03dnf\x18\x03 \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
 	"\x06pacman\x18\x04 \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
-	"\x06zypper\x18\x05 \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xfa\x01\n" +
-	"\rAptRepository\x12\x16\n" +
-	"\x03url\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x03url\x12(\n" +
-	"\fdistribution\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\fdistribution\x12\x1e\n" +
+	"\x06zypper\x18\x05 \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
+	"\rAptRepository\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
+	"\fdistribution\x18\x02 \x01(\tR\fdistribution\x12\x1e\n" +
 	"\n" +
 	"components\x18\x03 \x03(\tR\n" +
-	"components\x12$\n" +
-	"\vgpg_key_url\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\tgpgKeyUrl\x12\x17\n" +
+	"components\x12\x1e\n" +
+	"\vgpg_key_url\x18\x04 \x01(\tR\tgpgKeyUrl\x12\x17\n" +
 	"\agpg_key\x18\x05 \x01(\tR\x06gpgKey\x12\x18\n" +
 	"\atrusted\x18\x06 \x01(\bR\atrusted\x12\x12\n" +
 	"\x04arch\x18\a \x01(\tR\x04arch\x12\x1a\n" +
-	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xea\x01\n" +
-	"\rDnfRepository\x12\x1e\n" +
-	"\abaseurl\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\abaseurl\x12 \n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xde\x01\n" +
+	"\rDnfRepository\x12\x18\n" +
+	"\abaseurl\x18\x01 \x01(\tR\abaseurl\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x18\n" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x12\x1a\n" +
-	"\bgpgcheck\x18\x04 \x01(\bR\bgpgcheck\x12\x1c\n" +
-	"\x06gpgkey\x18\x05 \x01(\tB\x04\x80\xb5\x18\x01R\x06gpgkey\x12'\n" +
+	"\bgpgcheck\x18\x04 \x01(\bR\bgpgcheck\x12\x16\n" +
+	"\x06gpgkey\x18\x05 \x01(\tR\x06gpgkey\x12'\n" +
 	"\x0fmodule_hotfixes\x18\x06 \x01(\bR\x0emoduleHotfixes\x12\x1a\n" +
-	"\bdisabled\x18\a \x01(\bR\bdisabled\"i\n" +
-	"\x10PacmanRepository\x12\x1c\n" +
-	"\x06server\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x06server\x12\x1b\n" +
+	"\bdisabled\x18\a \x01(\bR\bdisabled\"c\n" +
+	"\x10PacmanRepository\x12\x16\n" +
+	"\x06server\x18\x01 \x01(\tR\x06server\x12\x1b\n" +
 	"\tsig_level\x18\x02 \x01(\tR\bsigLevel\x12\x1a\n" +
-	"\bdisabled\x18\x03 \x01(\bR\bdisabled\"\xf2\x01\n" +
-	"\x10ZypperRepository\x12\x16\n" +
-	"\x03url\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x03url\x12 \n" +
+	"\bdisabled\x18\x03 \x01(\bR\bdisabled\"\xe6\x01\n" +
+	"\x10ZypperRepository\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x18\n" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x12 \n" +
 	"\vautorefresh\x18\x04 \x01(\bR\vautorefresh\x12\x1a\n" +
-	"\bgpgcheck\x18\x05 \x01(\bR\bgpgcheck\x12\x1c\n" +
-	"\x06gpgkey\x18\x06 \x01(\tB\x04\x80\xb5\x18\x01R\x06gpgkey\x12\x12\n" +
+	"\bgpgcheck\x18\x05 \x01(\bR\bgpgcheck\x12\x16\n" +
+	"\x06gpgkey\x18\x06 \x01(\tR\x06gpgkey\x12\x12\n" +
 	"\x04type\x18\a \x01(\tR\x04type\x12\x1a\n" +
-	"\bdisabled\x18\b \x01(\bR\bdisabled\"\x86\x03\n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xe2\x02\n" +
 	"\n" +
-	"UserParams\x12 \n" +
-	"\busername\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\busername\x12\x10\n" +
+	"UserParams\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x10\n" +
 	"\x03uid\x18\x02 \x01(\x05R\x03uid\x12\x10\n" +
-	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12\x1f\n" +
-	"\bhome_dir\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\ahomeDir\x12\x1a\n" +
-	"\x05shell\x18\x05 \x01(\tB\x04\x80\xb5\x18\x01R\x05shell\x124\n" +
-	"\x13ssh_authorized_keys\x18\x06 \x03(\tB\x04\x80\xb5\x18\x01R\x11sshAuthorizedKeys\x12\x1e\n" +
-	"\acomment\x18\a \x01(\tB\x04\x80\xb5\x18\x01R\acomment\x12\x1f\n" +
+	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12\x19\n" +
+	"\bhome_dir\x18\x04 \x01(\tR\ahomeDir\x12\x14\n" +
+	"\x05shell\x18\x05 \x01(\tR\x05shell\x12.\n" +
+	"\x13ssh_authorized_keys\x18\x06 \x03(\tR\x11sshAuthorizedKeys\x12\x18\n" +
+	"\acomment\x18\a \x01(\tR\acomment\x12\x1f\n" +
 	"\vsystem_user\x18\b \x01(\bR\n" +
 	"systemUser\x12\x1f\n" +
 	"\vcreate_home\x18\t \x01(\bR\n" +
 	"createHome\x12\x1a\n" +
 	"\bdisabled\x18\n" +
-	" \x01(\bR\bdisabled\x12)\n" +
-	"\rprimary_group\x18\v \x01(\tB\x04\x80\xb5\x18\x01R\fprimaryGroup\x12\x16\n" +
-	"\x06hidden\x18\f \x01(\bR\x06hidden\"|\n" +
-	"\vGroupParams\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x04name\x12\x1e\n" +
-	"\amembers\x18\x02 \x03(\tB\x04\x80\xb5\x18\x01R\amembers\x12\x10\n" +
+	" \x01(\bR\bdisabled\x12#\n" +
+	"\rprimary_group\x18\v \x01(\tR\fprimaryGroup\x12\x16\n" +
+	"\x06hidden\x18\f \x01(\bR\x06hidden\"p\n" +
+	"\vGroupParams\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\amembers\x18\x02 \x03(\tR\amembers\x12\x10\n" +
 	"\x03gid\x18\x03 \x01(\x05R\x03gid\x12!\n" +
-	"\fsystem_group\x18\x04 \x01(\bR\vsystemGroup\"q\n" +
+	"\fsystem_group\x18\x04 \x01(\bR\vsystemGroup\"k\n" +
 	"\tSshParams\x12!\n" +
 	"\fallow_pubkey\x18\x01 \x01(\bR\vallowPubkey\x12%\n" +
-	"\x0eallow_password\x18\x02 \x01(\bR\rallowPassword\x12\x1a\n" +
-	"\x05users\x18\x03 \x03(\tB\x04\x80\xb5\x18\x01R\x05users\"=\n" +
+	"\x0eallow_password\x18\x02 \x01(\bR\rallowPassword\x12\x14\n" +
+	"\x05users\x18\x03 \x03(\tR\x05users\"7\n" +
 	"\rSshdDirective\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1a\n" +
-	"\x05value\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\x05value\"^\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"^\n" +
 	"\n" +
 	"SshdParams\x12\x1a\n" +
 	"\bpriority\x18\x01 \x01(\rR\bpriority\x124\n" +
 	"\n" +
 	"directives\x18\x02 \x03(\v2\x14.pm.v1.SshdDirectiveR\n" +
-	"directives\"\xc9\x01\n" +
+	"directives\"\xbd\x01\n" +
 	"\x11AdminPolicyParams\x12:\n" +
-	"\faccess_level\x18\x01 \x01(\x0e2\x17.pm.v1.AdminAccessLevelR\vaccessLevel\x12\x1a\n" +
-	"\x05users\x18\x02 \x03(\tB\x04\x80\xb5\x18\x01R\x05users\x12)\n" +
-	"\rcustom_config\x18\x03 \x01(\tB\x04\x80\xb5\x18\x01R\fcustomConfig\x121\n" +
-	"\abackend\x18\x04 \x01(\x0e2\x17.pm.v1.PrivilegeBackendR\abackend\"\xfa\x01\n" +
-	"\tLpsParams\x12\"\n" +
-	"\tusernames\x18\x01 \x03(\tB\x04\x80\xb5\x18\x01R\tusernames\x12'\n" +
+	"\faccess_level\x18\x01 \x01(\x0e2\x17.pm.v1.AdminAccessLevelR\vaccessLevel\x12\x14\n" +
+	"\x05users\x18\x02 \x03(\tR\x05users\x12#\n" +
+	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\x121\n" +
+	"\abackend\x18\x04 \x01(\x0e2\x17.pm.v1.PrivilegeBackendR\abackend\"\xf4\x01\n" +
+	"\tLpsParams\x12\x1c\n" +
+	"\tusernames\x18\x01 \x03(\tR\tusernames\x12'\n" +
 	"\x0fpassword_length\x18\x02 \x01(\x05R\x0epasswordLength\x12<\n" +
 	"\n" +
 	"complexity\x18\x03 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
 	"complexity\x124\n" +
 	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
-	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xb5\x03\n" +
-	"\x10EncryptionParams\x12)\n" +
-	"\rpreshared_key\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\fpresharedKey\x124\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xaf\x03\n" +
+	"\x10EncryptionParams\x12#\n" +
+	"\rpreshared_key\x18\x01 \x01(\tR\fpresharedKey\x124\n" +
 	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
 	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12V\n" +
 	"\x15device_bound_key_type\x18\x04 \x01(\x0e2#.pm.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
 	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12Z\n" +
 	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\x122\n" +
-	"\abackend\x18\a \x01(\x0e2\x18.pm.v1.EncryptionBackendR\abackend\"\x82\x03\n" +
+	"\abackend\x18\a \x01(\x0e2\x18.pm.v1.EncryptionBackendR\abackend\"\xde\x02\n" +
 	"\n" +
-	"WifiParams\x12\x18\n" +
-	"\x04ssid\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\x04ssid\x120\n" +
-	"\tauth_type\x18\x02 \x01(\x0e2\x13.pm.v1.WifiAuthTypeR\bauthType\x12\x16\n" +
-	"\x03psk\x18\x03 \x01(\tB\x04\x80\xb5\x18\x01R\x03psk\x12\x1d\n" +
-	"\aca_cert\x18\x04 \x01(\tB\x04\x80\xb5\x18\x01R\x06caCert\x12%\n" +
-	"\vclient_cert\x18\x05 \x01(\tB\x04\x80\xb5\x18\x01R\n" +
-	"clientCert\x12#\n" +
+	"WifiParams\x12\x12\n" +
+	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x120\n" +
+	"\tauth_type\x18\x02 \x01(\x0e2\x13.pm.v1.WifiAuthTypeR\bauthType\x12\x10\n" +
+	"\x03psk\x18\x03 \x01(\tR\x03psk\x12\x17\n" +
+	"\aca_cert\x18\x04 \x01(\tR\x06caCert\x12\x1f\n" +
+	"\vclient_cert\x18\x05 \x01(\tR\n" +
+	"clientCert\x12\x1d\n" +
 	"\n" +
-	"client_key\x18\x06 \x01(\tB\x04\x80\xb5\x18\x01R\tclientKey\x12 \n" +
-	"\bidentity\x18\a \x01(\tB\x04\x80\xb5\x18\x01R\bidentity\x12!\n" +
+	"client_key\x18\x06 \x01(\tR\tclientKey\x12\x1a\n" +
+	"\bidentity\x18\a \x01(\tR\bidentity\x12!\n" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
 	"\bpriority\x18\n" +
@@ -3827,11 +3798,11 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
-	"\x0fAgentUpdateArch\x12#\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"S\n" +
+	"\x0fAgentUpdateArch\x12\x1d\n" +
 	"\n" +
-	"binary_url\x18\x01 \x01(\tB\x04\x80\xb5\x18\x01R\tbinaryUrl\x12'\n" +
-	"\fchecksum_url\x18\x02 \x01(\tB\x04\x80\xb5\x18\x01R\vchecksumUrl\"o\n" +
+	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
+	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\"o\n" +
 	"\x11AgentUpdateParams\x12,\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
 	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xea\x04\n" +
@@ -3917,8 +3888,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x1bWIFI_BACKEND_NETWORKMANAGER\x10\x00\x12\x18\n" +
 	"\x14WIFI_BACKEND_CONNMAN\x10\x01\x12\x1f\n" +
 	"\x1bWIFI_BACKEND_WPA_SUPPLICANT\x10\x02\x12\x14\n" +
-	"\x10WIFI_BACKEND_IWD\x10\x03:C\n" +
-	"\ftemplateable\x12\x1d.google.protobuf.FieldOptions\x18І\x03 \x01(\bR\ftemplateableB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x10WIFI_BACKEND_IWD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_actions_proto_rawDescOnce sync.Once
@@ -3982,7 +3952,6 @@ var file_pm_v1_actions_proto_goTypes = []any{
 	(ExecutionStatus)(0),              // 44: pm.v1.ExecutionStatus
 	(*CommandOutput)(nil),             // 45: pm.v1.CommandOutput
 	(*timestamppb.Timestamp)(nil),     // 46: google.protobuf.Timestamp
-	(*descriptorpb.FieldOptions)(nil), // 47: google.protobuf.FieldOptions
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
 	42, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
@@ -4031,11 +4000,10 @@ var file_pm_v1_actions_proto_depIdxs = []int32{
 	45, // 43: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
 	38, // 44: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
 	38, // 45: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
-	47, // 46: pm.v1.templateable:extendee -> google.protobuf.FieldOptions
-	47, // [47:47] is the sub-list for method output_type
-	47, // [47:47] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	46, // [46:47] is the sub-list for extension extendee
+	46, // [46:46] is the sub-list for method output_type
+	46, // [46:46] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
 	0,  // [0:46] is the sub-list for field type_name
 }
 
@@ -4072,14 +4040,13 @@ func file_pm_v1_actions_proto_init() {
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      13,
 			NumMessages:   29,
-			NumExtensions: 1,
+			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_pm_v1_actions_proto_goTypes,
 		DependencyIndexes: file_pm_v1_actions_proto_depIdxs,
 		EnumInfos:         file_pm_v1_actions_proto_enumTypes,
 		MessageInfos:      file_pm_v1_actions_proto_msgTypes,
-		ExtensionInfos:    file_pm_v1_actions_proto_extTypes,
 	}.Build()
 	File_pm_v1_actions_proto = out.File
 	file_pm_v1_actions_proto_goTypes = nil
