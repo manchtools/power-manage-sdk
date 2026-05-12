@@ -4114,8 +4114,8 @@ type CreateTokenRequest struct {
 	Name    string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=128"`
 	OneTime bool   `protobuf:"varint,2,opt,name=one_time,json=oneTime,proto3" json:"one_time,omitempty"`
 	// @gotags: validate:"omitempty,min=0"
-	MaxUses   int32                  `protobuf:"varint,3,opt,name=max_uses,json=maxUses,proto3" json:"max_uses,omitempty" validate:"omitempty,min=0"`      // 0 = unlimited (for reusable tokens)
-	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // optional
+	MaxUses   int32                  `protobuf:"varint,3,opt,name=max_uses,json=maxUses,proto3" json:"max_uses,omitempty" validate:"omitempty,min=0"` // 0 = unlimited (for reusable tokens)
+	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`                       // optional
 	// Optional. When set to a user ID, devices enrolled through this
 	// token are auto-assigned to that user. When empty, the token is
 	// ownerless — no auto-assignment happens, suitable for bulk/imaging
