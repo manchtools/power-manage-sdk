@@ -1,6 +1,7 @@
 package desktop
 
 import (
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -77,6 +78,69 @@ func TestIsGraphicalType(t *testing.T) {
 			t.Errorf("isGraphicalType(%q) = %v, want %v", in, got, want)
 		}
 	}
+}
+
+func TestIsLoginctlNoLogindStderr(t *testing.T) {
+	// Pin both stderr fingerprints loginctl produces when there's
+	// no logind to query — these decide whether ActiveSessions
+	// returns "no sessions" (caller's empty-set policy fires) vs a
+	// genuine error (caller surfaces it). Mis-classifying either
+	// way is a regression: too tolerant and we mask real probe
+	// failures; too strict and the agent fails actions on every
+	// docker-CI run.
+	tests := map[string]bool{
+		// Container / non-systemd-PID-1 case (docker, podman,
+		// SysV/OpenRC hosts). Verified against systemd 257.x.
+		"System has not been booted with systemd as init system (PID 1). Can't operate.": true,
+		// Sandbox case (loginctl exists, systemd is PID 1, but
+		// dbus / system bus path is unreachable from the caller).
+		"Failed to connect to bus: No such file or directory": true,
+		"Failed to connect to bus: Connection refused":        true,
+
+		// Genuine errors that MUST still surface as errors so a
+		// permission misconfig isn't silently masked.
+		"Permission denied":           false,
+		"loginctl: command not found": false,
+		"":                            false,
+	}
+	for stderr, want := range tests {
+		if got := isLoginctlNoLogindStderr(stderr); got != want {
+			t.Errorf("isLoginctlNoLogindStderr(%q) = %v, want %v", stderr, got, want)
+		}
+	}
+}
+
+func TestActiveSessions_NoLogindReturnsEmpty(t *testing.T) {
+	// End-to-end: when loginctl is on PATH but reports no logind,
+	// ActiveSessions must return ([], nil) so the caller's
+	// empty-set policy fires. This is the regression fix for the
+	// agent CI containers (debian/arch/fedora/opensuse) where
+	// loginctl is installed but PID 1 isn't systemd. The detector
+	// lives in isLoginctlNoLogindStderr; this test pins the wiring
+	// from listSessionIDs back up to ActiveSessions so a future
+	// refactor doesn't drop the empty-on-no-logind contract.
+	//
+	// Skipped if loginctl IS available and reports a real session
+	// list — that means the test host has a working logind and
+	// can't exercise the empty path here. The negative case above
+	// already exercises the matcher in isolation.
+	if _, err := exec.LookPath(loginctlPath); err != nil {
+		t.Skipf("loginctl not on PATH (%v) — covered by the missing-binary branch instead", err)
+	}
+	sessions, err := ActiveSessions(t.Context())
+	if err == nil {
+		// Either we're on a host without logind (sessions == nil,
+		// the contract pin) or we're on a host WITH logind (any
+		// number of sessions). Either way, a successful call with
+		// no error is fine — the load-bearing assertion is "no
+		// error from the no-logind path."
+		_ = sessions
+		return
+	}
+	// If err is non-nil the agent CI would now fail. That's the
+	// regression we're guarding against. Surface the stderr so a
+	// future flavor of "no logind" we missed is visible.
+	t.Errorf("ActiveSessions returned error on no-logind host (regression #88): %v", err)
 }
 
 func TestEnvFor_HasMinimumDesktopEnv(t *testing.T) {

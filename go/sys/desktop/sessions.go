@@ -106,16 +106,34 @@ func ActiveSessions(ctx context.Context) ([]Session, error) {
 // the bare session IDs from the first column. The --no-legend flag
 // suppresses the trailing "N sessions listed" line which would
 // otherwise leak into the parse loop on older systemd builds.
+//
+// Returns ([], nil) — not an error — when systemd-logind isn't
+// running on the host. Loginctl reports this in two distinct ways
+// depending on the underlying failure mode:
+//
+//   - "System has not been booted with systemd as init system (PID 1).
+//     Can't operate." — typical inside docker/podman containers, CI
+//     runners, and minimal Linux setups using SysV/OpenRC. The binary
+//     is on PATH but logind has nothing to connect to.
+//   - "Failed to connect to bus: ..." — loginctl is present and
+//     systemd is PID 1, but the user dbus / system bus path is
+//     unavailable (sandbox restrictions, namespace gaps).
+//
+// Either case is "no usable logind, no sessions to report" rather
+// than a true probe failure — the caller's empty-set policy
+// (skip-with-Warn for installs, no-op for uninstalls) gives the
+// right end-user behavior. Only loginctl errors that AREN'T one of
+// those two patterns get surfaced as an actual error so genuine
+// permission/IO faults still page operators.
 func listSessionIDs(ctx context.Context) ([]string, error) {
 	cmd := exec.CommandContext(ctx, loginctlPath, "list-sessions", "--no-legend")
 	stdout, err := cmd.Output()
 	if err != nil {
-		// `loginctl list-sessions` exits non-zero only on hard
-		// failures (logind not running, permission denied). An empty
-		// session table is exit 0 with no output — handled below by
-		// the field-split returning an empty slice.
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
+			if isLoginctlNoLogindStderr(string(exitErr.Stderr)) {
+				return nil, nil
+			}
 			return nil, fmt.Errorf("loginctl list-sessions failed: %w (stderr: %s)", err, string(exitErr.Stderr))
 		}
 		return nil, fmt.Errorf("loginctl list-sessions: %w", err)
@@ -236,6 +254,27 @@ func parseLoginctlProperties(s string) map[string]string {
 func isGraphicalType(t string) bool {
 	switch t {
 	case "x11", "wayland", "mir":
+		return true
+	default:
+		return false
+	}
+}
+
+// isLoginctlNoLogindStderr matches the two stderr fingerprints
+// loginctl produces when systemd-logind is not available to query —
+// distinct from genuine probe failures (permission denied, IO error)
+// which should still surface to the caller.
+//
+// Match on substrings rather than exact equality so the helper
+// survives a localised systemd build (rare on the agent's target
+// distros but cheap to be tolerant of) or a future systemd that
+// rewords the message slightly. The substrings chosen are stable
+// across every systemd version since v220 (2015) on Linux.
+func isLoginctlNoLogindStderr(stderr string) bool {
+	switch {
+	case strings.Contains(stderr, "has not been booted with systemd"):
+		return true
+	case strings.Contains(stderr, "Failed to connect to bus"):
 		return true
 	default:
 		return false
