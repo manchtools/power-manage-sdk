@@ -207,9 +207,9 @@ func (h *httpSource) Fetch(ctx context.Context, dest string) (Result, error) {
 	}, nil
 }
 
-// Wipe — stubbed for Slice 4; the shared implementation lands in Slice 6.
+// Wipe forwards to the shared wipeDest implementation.
 func (h *httpSource) Wipe(ctx context.Context, dest string) error {
-	return errors.New("remote: http Wipe unimplemented (slice 6)")
+	return wipeDest(ctx, dest)
 }
 
 // String returns a short, human-readable handle used in log lines and
