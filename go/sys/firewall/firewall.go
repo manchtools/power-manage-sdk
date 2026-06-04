@@ -146,6 +146,10 @@ func ApplyRule(ctx context.Context, rule Rule) error {
 	switch CurrentBackend() {
 	case BackendNftables:
 		return applyNftables(ctx, rule)
+	case BackendFirewalld:
+		return applyFirewalld(ctx, rule)
+	case BackendUFW:
+		return applyUFW(ctx, rule)
 	default:
 		return unsupported("ApplyRule")
 	}
@@ -162,6 +166,10 @@ func RemoveRule(ctx context.Context, name string) error {
 	switch CurrentBackend() {
 	case BackendNftables:
 		return removeNftables(ctx, name)
+	case BackendFirewalld:
+		return removeFirewalld(ctx, name)
+	case BackendUFW:
+		return removeUFW(ctx, name)
 	default:
 		return unsupported("RemoveRule")
 	}
@@ -179,6 +187,10 @@ func List(ctx context.Context) ([]Rule, error) {
 	switch CurrentBackend() {
 	case BackendNftables:
 		return listNftables(ctx)
+	case BackendFirewalld:
+		return listFirewalld(ctx)
+	case BackendUFW:
+		return listUFW(ctx)
 	default:
 		return nil, unsupported("List")
 	}
