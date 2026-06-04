@@ -134,10 +134,10 @@ func NewHTTP(cfg HTTPConfig) (Source, error) {
 //     lives outside the project-managed prefixes.
 func (h *httpSource) Fetch(ctx context.Context, dest string) (Result, error) {
 	if h.cfg.Extract {
-		// Slice 5 lands the archive branch; explicit error here is
-		// better than silently no-op when a 0.x release picks up an
-		// Extract config we haven't shipped yet.
-		return Result{}, errors.New("remote: http archive Fetch unimplemented (slice 5)")
+		if httpArchiveDispatch == nil {
+			return Result{}, errFetchArchiveUnimplemented
+		}
+		return httpArchiveDispatch(ctx, h, dest)
 	}
 	if err := validateDestination(dest); err != nil {
 		return Result{}, err
