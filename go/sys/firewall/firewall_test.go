@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -28,6 +29,91 @@ func TestApplyRule_ReturnsSentinel(t *testing.T) {
 	if err == nil || !errors.Is(err, ErrBackendNotSupported) {
 		t.Errorf("want ErrBackendNotSupported, got %v", err)
 	}
+}
+
+// TestList_DefaultBackendErrors — List is the inspection counterpart
+// to ApplyRule and dispatches the same way. The default-backend
+// behaviour must surface the same sentinel so callers can branch
+// uniformly.
+func TestList_DefaultBackendErrors(t *testing.T) {
+	t.Cleanup(func() { SetBackend(BackendNftables) })
+	SetBackend(BackendPF) // BSD pf — no impl yet
+	_, err := List(context.Background())
+	if !errors.Is(err, ErrBackendNotSupported) {
+		t.Fatalf("List on unimplemented backend = %v; want ErrBackendNotSupported", err)
+	}
+}
+
+// TestApplyRule_RejectsInvalidName — the rule name is the idempotency
+// key; backends round-trip it through their comment fields, so anything
+// that could break the backend's grammar (whitespace, quotes, shell
+// metas, control characters) must be rejected up front. Validation is
+// backend-independent so a rule that's accepted on nftables is also
+// accepted on firewalld.
+func TestApplyRule_RejectsInvalidName(t *testing.T) {
+	bad := []string{
+		"",             // empty
+		" ",            // whitespace only
+		"with space",   // embedded whitespace
+		"quote\"in",    // double quote
+		"tick'in",      // single quote
+		"newline\nin",  // control char
+		"semicolon;in", // shell-meta
+		"pipe|in",      // shell-meta
+		"backtick`in",  // shell-meta
+		"dollar$in",    // shell-meta
+		"way-too-long-" + strings.Repeat("x", 64),
+	}
+	for _, name := range bad {
+		t.Run("name="+truncate(name, 16), func(t *testing.T) {
+			err := ApplyRule(context.Background(), Rule{Name: name, Allow: true, Protocol: ProtocolTCP, Port: 22})
+			if !errors.Is(err, ErrInvalidRule) {
+				t.Fatalf("ApplyRule(name=%q) = %v; want ErrInvalidRule", name, err)
+			}
+		})
+	}
+}
+
+// TestApplyRule_AcceptsValidName — the allowed character class is
+// documented on Rule.Name; lock in a representative sample so the
+// regex doesn't get tightened by accident.
+func TestApplyRule_AcceptsValidName(t *testing.T) {
+	good := []string{
+		"ssh-in",
+		"allow-22",
+		"web_https",
+		"a", // single char ok
+		"with.dot",
+		"caps-OK",
+	}
+	for _, name := range good {
+		t.Run("name="+name, func(t *testing.T) {
+			err := ApplyRule(context.Background(), Rule{Name: name, Allow: true, Protocol: ProtocolTCP, Port: 22})
+			// The default backend still errors as ErrBackendNotSupported.
+			// What we're locking in here is "the name passed validation
+			// and we made it to the dispatch layer."
+			if errors.Is(err, ErrInvalidRule) {
+				t.Fatalf("ApplyRule(name=%q) rejected valid name: %v", name, err)
+			}
+		})
+	}
+}
+
+// TestRemoveRule_RejectsInvalidName — symmetric guard on the remove
+// path so a caller can't smuggle backend-grammar-breaking input through
+// the inverse op.
+func TestRemoveRule_RejectsInvalidName(t *testing.T) {
+	err := RemoveRule(context.Background(), "name with space")
+	if !errors.Is(err, ErrInvalidRule) {
+		t.Fatalf("RemoveRule(invalid) = %v; want ErrInvalidRule", err)
+	}
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
 }
 
 func TestBackendString(t *testing.T) {

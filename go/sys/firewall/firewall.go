@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"sync/atomic"
 )
 
@@ -34,6 +35,36 @@ const (
 // ErrBackendNotSupported is returned when a caller invokes an
 // operation on a backend that has no concrete implementation yet.
 var ErrBackendNotSupported = errors.New("firewall backend not supported")
+
+// ErrInvalidRule is returned by ApplyRule / RemoveRule when the Rule
+// fails backend-independent validation — most often a Name that
+// contains a character backends would have to escape in their native
+// grammar (whitespace, quotes, shell-metas, control characters) or
+// that is empty / over the length cap.
+//
+// Callers use errors.Is(err, ErrInvalidRule) to distinguish operator
+// error from backend-side failures.
+var ErrInvalidRule = errors.New("invalid firewall rule")
+
+// ruleNameRE constrains rule names to a safe ASCII subset so they can
+// be round-tripped through nft's comment field, firewalld's rich-rule
+// comment, and ufw's annotated rule format without needing per-backend
+// quoting. Letters, digits, dash, underscore, and dot. 1–63 chars
+// matches typical DNS-style labels operators are used to.
+var ruleNameRE = regexp.MustCompile(`^[A-Za-z0-9._-]{1,63}$`)
+
+// validateRuleName runs the backend-independent checks every entry
+// point shares. Kept as a helper so List can grow into "filter by
+// name" without duplicating the regex.
+func validateRuleName(name string) error {
+	if name == "" {
+		return fmt.Errorf("%w: name is empty", ErrInvalidRule)
+	}
+	if !ruleNameRE.MatchString(name) {
+		return fmt.Errorf("%w: name %q must match %s", ErrInvalidRule, name, ruleNameRE.String())
+	}
+	return nil
+}
 
 var backend atomic.Int32
 
@@ -87,8 +118,14 @@ const (
 // surface stays intentionally minimal — implementations translate
 // into the backend's native grammar (chains + priorities for nft,
 // zones for firewalld, numbered rules for ufw, etc.).
+//
+// Idempotency: Name is the key every backend uses to find a previously
+// installed rule. ApplyRule with an existing Name updates the rule in
+// place; RemoveRule with a missing Name is a no-op. Name must match
+// `^[A-Za-z0-9._-]{1,63}$` so backends can round-trip it through their
+// native comment / annotation field without per-backend escaping.
 type Rule struct {
-	Name     string   // Stable identifier so rules can be updated/removed idempotently
+	Name     string   // Stable identifier; matches ruleNameRE.
 	Allow    bool     // true = allow, false = deny
 	Protocol Protocol // tcp / udp / any
 	Port     int      // 0 = any
@@ -98,23 +135,51 @@ type Rule struct {
 }
 
 // ApplyRule installs or updates a rule. Identified by Rule.Name so
-// reapplying the same rule is idempotent.
+// reapplying the same rule is idempotent. Returns ErrInvalidRule for
+// names that fail validation (callers branch on this to distinguish
+// operator error from backend failure) and ErrBackendNotSupported when
+// the active backend has no impl.
 func ApplyRule(ctx context.Context, rule Rule) error {
+	if err := validateRuleName(rule.Name); err != nil {
+		return err
+	}
 	switch CurrentBackend() {
 	default:
 		return unsupported("ApplyRule")
 	}
 }
 
-// RemoveRule removes a rule by name. Missing rules are a no-op.
+// RemoveRule removes a rule by name. Missing rules are a no-op (the
+// post-condition "this rule is absent" already holds). Validates the
+// name with the same regex as ApplyRule so a caller can't smuggle
+// backend-grammar-breaking input through the inverse path.
 func RemoveRule(ctx context.Context, name string) error {
+	if err := validateRuleName(name); err != nil {
+		return err
+	}
 	switch CurrentBackend() {
 	default:
 		return unsupported("RemoveRule")
 	}
 }
 
-// Reload re-applies the active ruleset. Useful after bulk changes.
+// List returns every power-manage-managed rule the active backend
+// currently has installed. Rules outside the power-manage namespace
+// (system-installed nft tables, firewalld's default zones, etc.) are
+// not returned — the inspection surface stays scoped to what
+// power-manage actually owns, so callers don't accidentally mutate
+// system rules they didn't put there.
+//
+// Order is not guaranteed across calls; sort if you need stability.
+func List(ctx context.Context) ([]Rule, error) {
+	switch CurrentBackend() {
+	default:
+		return nil, unsupported("List")
+	}
+}
+
+// Reload re-applies the active ruleset. Useful after bulk changes
+// where callers want one atomic transaction rather than ApplyRule x N.
 func Reload(ctx context.Context) error {
 	switch CurrentBackend() {
 	default:
