@@ -216,3 +216,38 @@ creating a whole new pluggable capability area.
 - **Don't rename existing enum values after launch.** The enum numbers
   are wire-format; their names are API. Add a new value, deprecate the
   old one in comments, but don't rename.
+
+## When the atomic-backend pattern is wrong: per-call polymorphism
+
+The Pattern A surface above (atomic Backend selector with a process-wide
+default) fits the "this agent is running on one OS at a time" cases —
+package managers, init systems, encryption tools. There's exactly one
+right answer at any moment and the choice doesn't change per call.
+
+`sdk/go/sys/remote` deliberately departs from this pattern. Its `Source`
+interface (HTTP / Git / S3) is **per-call polymorphic**: the agent might
+fetch a tarball from HTTPS and a Git repo and an S3 prefix in the same
+cycle, driven by three different actions. There's no global "which
+source backend is active right now" question to answer at boot.
+
+So `sdk/go/sys/remote` mirrors `sdk/go/pkg` instead:
+
+- an exported `Source` interface,
+- one constructor per backend (`NewHTTP`, `NewGit`, `NewS3`) that
+  validates a backend-specific Config struct and returns a Source,
+- one file per backend (`http.go`, `git.go`, `s3.go`), the same way
+  `sdk/go/pkg` keeps `apt.go`, `dnf.go`, `pacman.go` separate.
+
+Inside the Git source, the **driver** (which version-control tool actually
+clones the repo) is pluggable via a thin sub-registry —
+`VersionControlBackend`. v1 ships go-git as `"go-git"`; future drivers
+register under their own names. Selection is still per-call (per
+`GitConfig.Driver`), not per-agent, so this part stays Pattern-A-shaped
+on the outside while exposing a Pattern-B-shaped knob to operators who
+want it.
+
+**Rule of thumb:** if the answer to "which backend?" is "whichever this
+machine has" (one per host, one per boot), use the atomic Backend
+selector. If the answer is "whatever the caller asked for in this
+config" (multiple backends concurrent, choice per call), use the
+interface-plus-constructor pattern.
