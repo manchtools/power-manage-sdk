@@ -144,6 +144,8 @@ func ApplyRule(ctx context.Context, rule Rule) error {
 		return err
 	}
 	switch CurrentBackend() {
+	case BackendNftables:
+		return applyNftables(ctx, rule)
 	default:
 		return unsupported("ApplyRule")
 	}
@@ -158,6 +160,8 @@ func RemoveRule(ctx context.Context, name string) error {
 		return err
 	}
 	switch CurrentBackend() {
+	case BackendNftables:
+		return removeNftables(ctx, name)
 	default:
 		return unsupported("RemoveRule")
 	}
@@ -173,6 +177,8 @@ func RemoveRule(ctx context.Context, name string) error {
 // Order is not guaranteed across calls; sort if you need stability.
 func List(ctx context.Context) ([]Rule, error) {
 	switch CurrentBackend() {
+	case BackendNftables:
+		return listNftables(ctx)
 	default:
 		return nil, unsupported("List")
 	}

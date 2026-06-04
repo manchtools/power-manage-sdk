@@ -24,6 +24,8 @@ func TestBackend_IgnoresUnknown(t *testing.T) {
 }
 
 func TestApplyRule_ReturnsSentinel(t *testing.T) {
+	t.Cleanup(func() { SetBackend(BackendNftables) })
+	SetBackend(BackendPF) // BSD pf — no impl in v1, exercises the sentinel path
 	ctx := context.Background()
 	err := ApplyRule(ctx, Rule{Name: "test", Allow: true, Protocol: ProtocolTCP, Port: 22})
 	if err == nil || !errors.Is(err, ErrBackendNotSupported) {
@@ -76,8 +78,13 @@ func TestApplyRule_RejectsInvalidName(t *testing.T) {
 
 // TestApplyRule_AcceptsValidName — the allowed character class is
 // documented on Rule.Name; lock in a representative sample so the
-// regex doesn't get tightened by accident.
+// regex doesn't get tightened by accident. Uses BackendPF so the
+// dispatch falls through to the sentinel path without trying to
+// shell out to a real firewall tool (the test verifies "name passed
+// validation," not "nft is available on this host").
 func TestApplyRule_AcceptsValidName(t *testing.T) {
+	t.Cleanup(func() { SetBackend(BackendNftables) })
+	SetBackend(BackendPF)
 	good := []string{
 		"ssh-in",
 		"allow-22",
@@ -89,9 +96,11 @@ func TestApplyRule_AcceptsValidName(t *testing.T) {
 	for _, name := range good {
 		t.Run("name="+name, func(t *testing.T) {
 			err := ApplyRule(context.Background(), Rule{Name: name, Allow: true, Protocol: ProtocolTCP, Port: 22})
-			// The default backend still errors as ErrBackendNotSupported.
-			// What we're locking in here is "the name passed validation
-			// and we made it to the dispatch layer."
+			// We're locking in "the name passed validation and reached
+			// the dispatch layer." On BackendPF the dispatch hits the
+			// default arm and returns ErrBackendNotSupported, which is
+			// fine — anything except ErrInvalidRule means the regex
+			// accepted the name.
 			if errors.Is(err, ErrInvalidRule) {
 				t.Fatalf("ApplyRule(name=%q) rejected valid name: %v", name, err)
 			}
