@@ -1,10 +1,6 @@
-// Package firewall is a forward-compat extension point for packet-
-// filter management. Backend selector is in place; implementations
-// land as features ship.
-//
-// See docs/backend-pattern.md for why every sys/* package that
-// abstracts over multiple implementations follows this same shape.
 package firewall
+
+// Package-level documentation lives in doc.go.
 
 import (
 	"context"
