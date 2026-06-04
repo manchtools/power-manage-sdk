@@ -3,7 +3,6 @@ package remote
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,7 +82,10 @@ func NewS3(cfg S3Config) (Source, error) {
 // sync lands in Slice 12.
 func (s *s3Source) Fetch(ctx context.Context, dest string) (Result, error) {
 	if strings.HasSuffix(s.cfg.Key, "/") {
-		return Result{}, errors.New("remote: S3 prefix sync unimplemented (slice 12)")
+		if s3PrefixDispatch == nil {
+			return Result{}, errPrefixSyncUnimplemented
+		}
+		return s3PrefixDispatch(ctx, s, dest)
 	}
 	if err := validateDestination(dest); err != nil {
 		return Result{}, err
