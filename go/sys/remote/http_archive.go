@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -377,41 +376,46 @@ func extractZipFile(tmpPath, staging string, maxBytes int64) (int, error) {
 // unsafe — the caller's intent was to escape.
 //
 // Rejects:
-//   - empty names and "."
-//   - absolute paths (lead "/" or, defense-in-depth, "\")
-//   - any path component equal to ".." (treats the archive as adversarial)
-//   - paths whose normalised join is not within staging (covers oddities
-//     like NUL bytes, double slashes, or platform separator quirks)
-//
-// Uses path (not filepath) for the entry-side normalisation so a tar
-// header `dir/file` resolves the same way regardless of the host OS.
+//   - empty names, "." and NUL bytes
+//   - any path filepath.IsLocal would refuse (absolute, .. escapes,
+//     reserved Windows names, separator quirks). IsLocal is the
+//     canonical Go sanitizer for "is this safe to filepath.Join under
+//     a trusted dir?", which means static analyzers (CodeQL,
+//     gosec) recognise this call as the point at which untrusted
+//     archive input becomes safe.
+//   - paths whose post-Localize join still lands outside staging
+//     (defense-in-depth against any future IsLocal regression).
 func safeJoinDest(staging, entry string) (string, error) {
 	if entry == "" || entry == "." {
 		return "", fmt.Errorf("%w: empty or '.' entry name", ErrUnsafeDestination)
 	}
-	if strings.HasPrefix(entry, "/") || strings.HasPrefix(entry, `\`) {
-		return "", fmt.Errorf("%w: absolute entry name %q", ErrUnsafeDestination, entry)
-	}
 	if strings.ContainsRune(entry, 0) {
 		return "", fmt.Errorf("%w: entry %q contains NUL", ErrUnsafeDestination, entry)
 	}
-	// Component-level traversal check on the raw, pre-normalisation
-	// form: any ".." segment means the archive intended to escape.
-	// Split on either separator so a Windows-style entry in a tar
-	// can't slip past on a Unix host.
-	for _, comp := range strings.FieldsFunc(entry, func(r rune) bool {
-		return r == '/' || r == '\\'
-	}) {
-		if comp == ".." {
-			return "", fmt.Errorf("%w: entry %q contains a traversal component", ErrUnsafeDestination, entry)
-		}
-	}
-
-	rel := strings.TrimLeft(path.Clean(entry), "/")
-	if rel == "" || rel == "." {
+	// Tar/zip directory entries can carry a trailing "/", which
+	// filepath.Localize would treat as a non-local path. Strip it
+	// first; the entry is still required to be non-empty after.
+	trimmed := strings.TrimRight(entry, "/\\")
+	if trimmed == "" || trimmed == "." {
 		return "", fmt.Errorf("%w: entry %q normalises to empty", ErrUnsafeDestination, entry)
 	}
-	full := filepath.Join(staging, filepath.FromSlash(rel))
+	// Normalise tar's forward-slash separators to the host's so
+	// IsLocal / Localize evaluate them correctly even on a Windows
+	// builder. (Not relevant to Linux deploys today, but the test
+	// harness can run anywhere.)
+	hostEntry := filepath.FromSlash(trimmed)
+	if !filepath.IsLocal(hostEntry) {
+		return "", fmt.Errorf("%w: entry %q is not a local path", ErrUnsafeDestination, entry)
+	}
+	localized, err := filepath.Localize(hostEntry)
+	if err != nil {
+		return "", fmt.Errorf("%w: entry %q: %v", ErrUnsafeDestination, entry, err)
+	}
+	full := filepath.Join(staging, localized)
+	// Belt-and-braces: confirm the joined path is still inside
+	// staging after Abs. IsLocal + Localize already guarantee this,
+	// but the check costs nothing and keeps a single source of truth
+	// for any future analyzer to recognise.
 	stagingAbs, err := filepath.Abs(staging)
 	if err != nil {
 		return "", fmt.Errorf("%w: staging abs: %v", ErrUnsafeDestination, err)
