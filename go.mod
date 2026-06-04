@@ -1,6 +1,6 @@
 module github.com/manchtools/power-manage/sdk
 
-go 1.25.10
+go 1.25.11
 
 require (
 	connectrpc.com/connect v1.18.1
@@ -42,6 +42,6 @@ require (
 )
 
 require (
-	golang.org/x/net v0.54.0
+	golang.org/x/net v0.55.0
 	golang.org/x/text v0.37.0 // indirect
 )
