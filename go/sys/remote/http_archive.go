@@ -403,7 +403,7 @@ func safeJoinDest(staging, entry string) (string, error) {
 		return r == '/' || r == '\\'
 	}) {
 		if comp == ".." {
-			return "", fmt.Errorf("%w: entry %q contains ..", ErrUnsafeDestination, entry)
+			return "", fmt.Errorf("%w: entry %q contains a traversal component", ErrUnsafeDestination, entry)
 		}
 	}
 

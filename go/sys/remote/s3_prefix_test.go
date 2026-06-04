@@ -18,15 +18,14 @@ import (
 // ListObjectsV2 endpoint (?list-type=2 over the bucket) and serves
 // per-object GETs for any key the list response advertises.
 type s3PrefixFixture struct {
-	srv      *httptest.Server
-	bucket   string
-	prefix   string
-	objects  []s3TestObject
-	listErr  int // non-zero → status code returned for list calls
-	getErr   int // non-zero → status code returned for GETs
-	lists    atomic.Int32
-	gets     atomic.Int32
-	listHash string // stable across calls if objects unchanged
+	srv     *httptest.Server
+	bucket  string
+	prefix  string
+	objects []s3TestObject
+	listErr int // non-zero → status code returned for list calls
+	getErr  int // non-zero → status code returned for GETs
+	lists   atomic.Int32
+	gets    atomic.Int32
 }
 
 type s3TestObject struct {

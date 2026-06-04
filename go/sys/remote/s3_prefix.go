@@ -287,7 +287,7 @@ func relPathForKey(prefix, key string) (string, error) {
 	}
 	for _, comp := range strings.Split(rel, "/") {
 		if comp == ".." {
-			return "", fmt.Errorf("%w: object key %q contains ..", ErrUnsafeDestination, key)
+			return "", fmt.Errorf("%w: object key %q contains a traversal component", ErrUnsafeDestination, key)
 		}
 	}
 	return rel, nil
