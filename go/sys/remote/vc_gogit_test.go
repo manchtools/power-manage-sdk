@@ -260,6 +260,39 @@ func TestGoGitBackend_Resolve_ReturnsUpstreamSha(t *testing.T) {
 	}
 }
 
+// TestGoGitBackend_TagRef_ChecksOutTag — cfg.Ref may be a tag, not
+// just a branch name. The clone path must reach the tag's commit
+// (regression test for the CodeRabbit critical: openOrClone used to
+// hard-code refs/heads/<ref> which failed for tags and SHAs).
+func TestGoGitBackend_TagRef_ChecksOutTag(t *testing.T) {
+	fix := newGoGitFixture(t)
+	sha := fix.commit("main", "x.txt", "tagged", "init")
+
+	// Lay down a lightweight tag pointing at the just-committed SHA.
+	tagRef := plumbing.NewHashReference(plumbing.NewTagReferenceName("v1.0.0"), plumbing.NewHash(sha))
+	if err := fix.repo.Storer.SetReference(tagRef); err != nil {
+		t.Fatalf("set tag ref: %v", err)
+	}
+
+	dest := filepath.Join(t.TempDir(), "co")
+	recordDestUnder(t, dest)
+	cfg := GitConfig{URL: fix.url(), Ref: "v1.0.0", Driver: "go-git"}
+	res, err := (goGitBackend{}).CloneOrSync(context.Background(), cfg, dest)
+	if err != nil {
+		t.Fatalf("CloneOrSync(tag): %v", err)
+	}
+	if res.Revision != sha {
+		t.Fatalf("Revision = %q; want %q", res.Revision, sha)
+	}
+	body, err := os.ReadFile(filepath.Join(dest, "x.txt"))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(body) != "tagged" {
+		t.Fatalf("file body = %q; want %q", body, "tagged")
+	}
+}
+
 // TestGoGitBackend_BadRef_ReturnsError — a ref that doesn't exist
 // upstream returns a non-nil error and leaves dest absent.
 func TestGoGitBackend_BadRef_ReturnsError(t *testing.T) {

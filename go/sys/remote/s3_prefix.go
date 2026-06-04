@@ -122,10 +122,21 @@ type s3Object struct {
 	Size int64
 }
 
+// maxPrefixObjects caps the total objects a single prefix-sync will
+// enumerate. Defeats accidental "mirror an entire petabyte bucket"
+// configurations that would otherwise let listObjects accumulate a
+// few million entries in memory before the Fetch even gets to its
+// first GET. 10 000 lines up with one AWS list page × ~10 — large
+// enough for any docs / configs / asset use case this primitive
+// targets, small enough to surface "you misconfigured the prefix"
+// clearly.
+const maxPrefixObjects = 10000
+
 // listObjects paginates ?list-type=2 until IsTruncated=false. Each
 // page contributes its Contents to the accumulated set, and the
 // NextContinuationToken from one page becomes the
-// ContinuationToken query of the next.
+// ContinuationToken query of the next. Exceeding maxPrefixObjects
+// surfaces as ErrInvalidConfig so the operator can narrow the prefix.
 func (s *s3Source) listObjects(ctx context.Context) ([]s3Object, error) {
 	endpoint, _ := url.Parse(s.objectURL) // already validated in NewS3
 	bucketURL := *endpoint
@@ -172,6 +183,9 @@ func (s *s3Source) listObjects(ctx context.Context) ([]s3Object, error) {
 		resp.Body.Close()
 		for _, e := range parsed.Contents {
 			all = append(all, s3Object{Key: e.Key, ETag: e.ETag, Size: e.Size})
+			if len(all) > maxPrefixObjects {
+				return nil, fmt.Errorf("%w: prefix %q under %s/%s contains more than %d objects; narrow the prefix or paginate the source", ErrInvalidConfig, s.cfg.Key, s.cfg.Endpoint, parts[0], maxPrefixObjects)
+			}
 		}
 		if !parsed.IsTruncated || parsed.NextContinuationToken == "" {
 			break

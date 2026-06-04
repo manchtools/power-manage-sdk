@@ -2,7 +2,6 @@ package remote
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -128,8 +127,3 @@ func validateGitURL(raw string) error {
 	}
 	return nil
 }
-
-// errGitFetchUnimplemented is the sentinel a stubbed VersionControlBackend
-// returns until Slice 10 fills in go-git. Tests in Slice 9 don't hit
-// Fetch, so this never surfaces in green-state runs.
-var errGitFetchUnimplemented = errors.New("remote: git Fetch unimplemented (slice 10)")

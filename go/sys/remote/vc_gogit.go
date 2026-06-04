@@ -31,35 +31,45 @@ func init() {
 
 // CloneOrSync brings the repo at cfg.URL to dest, checked out at the
 // configured ref. On a fresh dest it clones from scratch; on a
-// re-existing dest it fetches + worktree-checkout the new ref. The
-// Result.Revision is the commit SHA dest now points at; Result.Changed
-// reflects "did anything land in the working tree?" — true on the
-// first clone, true on a sync that advanced HEAD, false when the
-// previously checked-out commit already matches upstream.
+// re-existing dest it fetches the latest refs and checks out the
+// target.
+//
+// cfg.Ref can be a branch, tag, or full commit SHA. The clone path
+// deliberately does NOT pre-pin a ReferenceName: that would lock the
+// clone to refs/heads/<ref>, which fails for tags and SHAs. Instead
+// the clone fetches every ref (including tags), then resolveTargetHash
+// converts cfg.Ref to a plumbing.Hash post-clone — the only path that
+// handles all three ref shapes uniformly.
+//
+// Result.Revision is the commit SHA dest points at after the operation;
+// Result.Changed is true on the first clone and on any sync that
+// advanced HEAD, false when the previously checked-out commit already
+// matches upstream.
 func (goGitBackend) CloneOrSync(ctx context.Context, cfg GitConfig, dest string) (Result, error) {
 	repo, fresh, err := openOrClone(ctx, cfg, dest)
 	if err != nil {
 		return Result{}, err
 	}
 
-	// Snapshot HEAD before fetch so we can decide Changed afterwards.
-	// On a fresh clone HEAD already points at upstream — that's still
-	// "changed" from the operator's perspective (dest is newly
-	// populated); we set Changed=true unconditionally below in that
-	// case.
-	prevHead, headErr := repo.Head()
-
 	if !fresh {
-		if err := goGitFetch(ctx, repo, cfg.Ref); err != nil && !errors.Is(err, gogit.NoErrAlreadyUpToDate) {
+		if err := goGitFetch(ctx, repo); err != nil && !errors.Is(err, gogit.NoErrAlreadyUpToDate) {
 			return Result{}, fmt.Errorf("fetch %s: %w", cfg.URL, err)
 		}
 	}
 
 	target, err := resolveTargetHash(repo, cfg.Ref)
 	if err != nil {
+		// On a fresh clone, an unresolvable ref means the operator
+		// pointed us at a non-existent branch/tag/SHA. Nuke dest so
+		// the next cycle starts clean and doesn't leave a half-
+		// configured repo behind.
+		if fresh {
+			_ = os.RemoveAll(dest)
+		}
 		return Result{}, err
 	}
 
+	prevHead, headErr := repo.Head()
 	if !fresh && headErr == nil && prevHead.Hash() == target {
 		// Already at the right commit — Fetch may still have written
 		// pack files into .git, but the worktree is unchanged. Optional
@@ -74,40 +84,36 @@ func (goGitBackend) CloneOrSync(ctx context.Context, cfg GitConfig, dest string)
 		return Result{Changed: false, Revision: target.String()}, nil
 	}
 
-	if !fresh {
-		wt, err := repo.Worktree()
-		if err != nil {
-			return Result{}, fmt.Errorf("worktree: %w", err)
-		}
+	wt, err := repo.Worktree()
+	if err != nil {
+		return Result{}, fmt.Errorf("worktree: %w", err)
+	}
 
-		// go-git's Checkout(Force=true) and Reset(HardReset) both
-		// remove files that aren't in the target tree, including
-		// untracked ones. That conflicts with the Prune=false contract
-		// ("additive sync, preserve local additions"), so we snapshot
-		// untracked files first and restore them after the checkout.
-		// When Prune=true the snapshot is skipped — Clean would drop
-		// them on the next line anyway.
-		var snapshot []untrackedFile
-		if !cfg.Prune {
-			snapshot, _ = snapshotUntracked(dest, wt)
-		}
+	// go-git's Checkout(Force=true) removes files that aren't in the
+	// target tree, including untracked ones. That conflicts with the
+	// Prune=false contract ("additive sync, preserve local additions"),
+	// so we snapshot untracked files first and restore them after the
+	// checkout. Fresh clones have nothing to snapshot; Prune=true
+	// skips the snapshot — Clean drops them below anyway.
+	var snapshot []untrackedFile
+	if !fresh && !cfg.Prune {
+		snapshot, _ = snapshotUntracked(dest, wt)
+	}
 
-		if err := wt.Checkout(&gogit.CheckoutOptions{Hash: target, Force: true}); err != nil {
-			return Result{}, fmt.Errorf("checkout %s: %w", target, err)
+	if err := wt.Checkout(&gogit.CheckoutOptions{Hash: target, Force: true}); err != nil {
+		if fresh {
+			_ = os.RemoveAll(dest)
 		}
+		return Result{}, fmt.Errorf("checkout %s: %w", target, err)
+	}
 
-		if len(snapshot) > 0 {
-			if err := restoreUntracked(dest, snapshot); err != nil {
-				return Result{}, fmt.Errorf("restore untracked: %w", err)
-			}
+	if len(snapshot) > 0 {
+		if err := restoreUntracked(dest, snapshot); err != nil {
+			return Result{}, fmt.Errorf("restore untracked: %w", err)
 		}
 	}
 
 	if cfg.Prune {
-		wt, werr := repo.Worktree()
-		if werr != nil {
-			return Result{}, fmt.Errorf("worktree (prune): %w", werr)
-		}
 		if err := wt.Clean(&gogit.CleanOptions{Dir: true}); err != nil {
 			return Result{}, fmt.Errorf("clean: %w", err)
 		}
@@ -163,10 +169,13 @@ func openOrClone(ctx context.Context, cfg GitConfig, dest string) (*gogit.Reposi
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return nil, false, fmt.Errorf("mkdir parent of %s: %w", dest, err)
 	}
+	// Deliberately no ReferenceName / SingleBranch: those would lock
+	// the clone to refs/heads/<ref>, which fails for tag and SHA
+	// refs. Fetching everything (Tags: AllTags) makes
+	// resolveTargetHash robust regardless of cfg.Ref's shape.
 	opts := &gogit.CloneOptions{
 		URL:               cfg.URL,
-		ReferenceName:     plumbing.NewBranchReferenceName(cfg.Ref),
-		SingleBranch:      true,
+		Tags:              gogit.AllTags,
 		RecurseSubmodules: gogit.NoRecurseSubmodules,
 	}
 	if cfg.Submodules {
@@ -185,17 +194,19 @@ func openOrClone(ctx context.Context, cfg GitConfig, dest string) (*gogit.Reposi
 
 // goGitFetch fetches refs from origin into the existing repo's object
 // store. No checkout — that's the caller's responsibility once it
-// picks the target hash. The explicit RefSpec is required because a
-// `clone --single-branch` doesn't install a fetch refspec by default,
-// so the upstream branch's new commits don't get stored under any
-// local ref. Forcing the spec here lands them at
-// refs/remotes/origin/<ref>, which resolveTargetHash queries first.
-func goGitFetch(ctx context.Context, repo *gogit.Repository, ref string) error {
-	spec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/remotes/origin/%s", ref, ref))
+// picks the target hash. Two explicit RefSpecs cover both branches
+// and tags, since the clone path doesn't pre-pin ReferenceName
+// (necessary to accept tag/SHA refs uniformly); resolveTargetHash
+// looks under refs/remotes/origin/* and refs/tags/* afterwards.
+func goGitFetch(ctx context.Context, repo *gogit.Repository) error {
 	return repo.FetchContext(ctx, &gogit.FetchOptions{
 		RemoteName: "origin",
-		RefSpecs:   []config.RefSpec{spec},
-		Force:      true,
+		RefSpecs: []config.RefSpec{
+			"+refs/heads/*:refs/remotes/origin/*",
+			"+refs/tags/*:refs/tags/*",
+		},
+		Tags:  gogit.AllTags,
+		Force: true,
 	})
 }
 

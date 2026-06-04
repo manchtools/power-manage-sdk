@@ -84,11 +84,17 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 		}
 	}
 
-	body, etag, contentType, err := h.openArchiveBody(ctx, cachedRevision)
+	body, etag, contentType, notModified, err := h.openArchiveBody(ctx, cachedRevision)
 	if err != nil {
 		return Result{}, err
 	}
 	defer body.Close()
+	if notModified {
+		// Server confirmed the cache was current after we'd already
+		// committed to the GET path; treat it as a no-op rather than
+		// "extract empty archive".
+		return Result{Changed: false, Revision: cachedRevision}, nil
+	}
 
 	kind := detectArchiveKind(contentType, h.cfg.URL)
 	if kind == archiveTarXz {
@@ -108,7 +114,11 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 	}
 	defer os.Remove(tmp)
 
-	staging := dest + ".staging." + filepath.Base(tmp)[len("dl.tmp."):]
+	// Mine the random suffix tmpPathFor stamped into tmp so the staging
+	// dir gets a matching tail — keeps the two sibling artefacts visible
+	// as a pair when an extract is interrupted mid-flight.
+	stagingSuffix := stagingSuffixFromTmp(tmp)
+	staging := dest + ".staging." + stagingSuffix
 	if err := os.MkdirAll(staging, 0o755); err != nil {
 		return Result{}, fmt.Errorf("mkdir staging %s: %w", staging, err)
 	}
@@ -176,28 +186,31 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 }
 
 // openArchiveBody is openBody plus the response's Content-Type, which
-// the archive branch needs for kind detection.
-func (h *httpSource) openArchiveBody(ctx context.Context, etag string) (io.ReadCloser, string, string, error) {
+// the archive branch needs for kind detection. The notModified return
+// is true when the server answered 304 to a conditional GET — caller
+// short-circuits without extracting (an empty body fed to the
+// extractor would otherwise surface as a confusing gzip / zip error).
+func (h *httpSource) openArchiveBody(ctx context.Context, etag string) (io.ReadCloser, string, string, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.cfg.URL, nil)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("GET %s: %w", h.cfg.URL, err)
+		return nil, "", "", false, fmt.Errorf("GET %s: %w", h.cfg.URL, err)
 	}
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}
 	resp, err := h.client.Do(req)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("GET %s: %w", h.cfg.URL, err)
+		return nil, "", "", false, fmt.Errorf("GET %s: %w", h.cfg.URL, err)
 	}
 	if resp.StatusCode == http.StatusNotModified {
 		resp.Body.Close()
-		return io.NopCloser(strings.NewReader("")), resp.Header.Get("ETag"), resp.Header.Get("Content-Type"), nil
+		return io.NopCloser(strings.NewReader("")), resp.Header.Get("ETag"), resp.Header.Get("Content-Type"), true, nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()
-		return nil, "", "", fmt.Errorf("GET %s: status %d", h.cfg.URL, resp.StatusCode)
+		return nil, "", "", false, fmt.Errorf("GET %s: status %d", h.cfg.URL, resp.StatusCode)
 	}
-	return resp.Body, resp.Header.Get("ETag"), resp.Header.Get("Content-Type"), nil
+	return resp.Body, resp.Header.Get("ETag"), resp.Header.Get("Content-Type"), false, nil
 }
 
 // extractTarGzFile is the file-on-disk entry point that the staging
@@ -246,7 +259,7 @@ func extractTarGz(body io.Reader, staging string, maxBytes int64) (int, error) {
 		// can act as a redirect or escape. Only regular files and
 		// directories are accepted.
 		switch hdr.Typeflag {
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg: // TypeRegA is a deprecated alias for TypeReg since Go 1.11.
 			// fall through to write
 		case tar.TypeDir:
 			out, perr := safeJoinDest(staging, hdr.Name)
@@ -425,6 +438,19 @@ func init() {
 // branch. Initialised in this file's init so the single-file branch in
 // http.go can remain ignorant of archive types.
 var httpArchiveDispatch func(ctx context.Context, h *httpSource, dest string) (Result, error)
+
+// stagingSuffixFromTmp pulls the random hex tail tmpPathFor stamped
+// after ".tmp." out of a tmp path, so the staging dir can carry the
+// same suffix. Returns the basename verbatim when no ".tmp." marker is
+// present (defensive — keeps the malformation visible if streamToTmp's
+// naming convention ever changes).
+func stagingSuffixFromTmp(tmp string) string {
+	base := filepath.Base(tmp)
+	if idx := strings.LastIndex(base, ".tmp."); idx >= 0 {
+		return base[idx+len(".tmp."):]
+	}
+	return base
+}
 
 // errFetchArchiveUnimplemented is the sentinel http.go returns when
 // httpArchiveDispatch hasn't been wired up yet (a build-tag scenario
