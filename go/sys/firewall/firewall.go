@@ -150,8 +150,8 @@ type Rule struct {
 	Allow    bool     // true = allow, false = deny.
 	Protocol Protocol // tcp / udp / "" (any).
 	Port     int      // 0 = any.
-	Source   string   // CIDR or address; empty = any.
-	Dest     string   // CIDR or address; empty = any.
+	Source   string   // IPv4/IPv6 CIDR or address; empty = any.
+	Dest     string   // IPv4/IPv6 CIDR or address; empty = any.
 }
 
 // Manager owns a namespaced set of firewall rules. Two Managers with

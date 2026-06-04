@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"reflect"
 	"strings"
@@ -114,6 +115,78 @@ func TestNftBuildScript_ReplacesExistingHandle(t *testing.T) {
 	}
 	if !strings.Contains(got, `add rule inet fwtest_filter input tcp dport 22 accept comment "ssh-in"`) {
 		t.Fatalf("missing add-new-rule line:\n%s", got)
+	}
+}
+
+// TestNftBuildScript_WithIPv6Source — IPv6 source addresses must emit
+// `ip6 saddr` (not the IPv4-only `ip saddr`), because nft's inet family
+// is family-agnostic at the table level but every match expression is
+// family-specific. Without this, IPv6 rules silently never match.
+func TestNftBuildScript_WithIPv6Source(t *testing.T) {
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
+		ID:       "from-vpn6",
+		Allow:    true,
+		Protocol: ProtocolTCP,
+		Port:     443,
+		Source:   "2001:db8::/32",
+	}, 0)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(IPv6 source): %v", err)
+	}
+	want := `add rule inet fwtest_filter input ip6 saddr 2001:db8::/32 tcp dport 443 accept comment "from-vpn6"`
+	if !strings.Contains(got, want) {
+		t.Fatalf("missing IPv6 rule line:\n%s", got)
+	}
+}
+
+// TestNftBuildScript_WithIPv6BareAddress — bare IPv6 addresses (no
+// CIDR) also classify as IPv6. ParseIP needs to be tried as a fallback
+// to ParseCIDR.
+func TestNftBuildScript_WithIPv6BareAddress(t *testing.T) {
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
+		ID:     "from-localhost6",
+		Allow:  true,
+		Source: "::1",
+	}, 0)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(bare IPv6): %v", err)
+	}
+	if !strings.Contains(got, `ip6 saddr ::1`) {
+		t.Fatalf("missing ip6 saddr line:\n%s", got)
+	}
+}
+
+// TestNftBuildScript_RejectsMixedIPFamilies — a rule with an IPv4 source
+// and an IPv6 dest (or vice versa) could never match a real packet
+// because a packet is either v4 or v6. nft would accept the rule but
+// it would silently never fire; we'd rather surface the
+// nonsense up front.
+func TestNftBuildScript_RejectsMixedIPFamilies(t *testing.T) {
+	_, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
+		ID:     "mixed-fam",
+		Allow:  true,
+		Source: "10.0.0.0/8",
+		Dest:   "2001:db8::1",
+	}, 0)
+	if err == nil {
+		t.Fatalf("nftBuildApplyScriptStrict(mixed v4 source + v6 dest) = nil; want ErrInvalidRule")
+	}
+	if !errors.Is(err, ErrInvalidRule) {
+		t.Fatalf("err = %v; want ErrInvalidRule", err)
+	}
+}
+
+// TestNftBuildScript_RejectsInvalidSource — anything that isn't a
+// parseable IP or CIDR is an operator error; surface it as
+// ErrInvalidRule before nft sees nonsense.
+func TestNftBuildScript_RejectsInvalidSource(t *testing.T) {
+	_, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
+		ID:     "bad-src",
+		Allow:  true,
+		Source: "not-an-ip",
+	}, 0)
+	if !errors.Is(err, ErrInvalidRule) {
+		t.Fatalf("nftBuildApplyScriptStrict(garbage source) = %v; want ErrInvalidRule", err)
 	}
 }
 

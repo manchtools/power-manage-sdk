@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 
 	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
@@ -28,6 +29,26 @@ const (
 
 func nftTableName(namespace string) string {
 	return namespace + "_filter"
+}
+
+// nftAddressFamily classifies a Source/Dest value as the nft address-
+// family token it needs to be emitted under. Accepts both CIDR
+// ("10.0.0.0/8", "2001:db8::/32") and bare IP ("10.0.0.1", "::1");
+// returns ErrInvalidRule when the value parses as neither.
+func nftAddressFamily(addr string) (string, error) {
+	if ip, _, err := net.ParseCIDR(addr); err == nil {
+		if ip.To4() != nil {
+			return "ip", nil
+		}
+		return "ip6", nil
+	}
+	if ip := net.ParseIP(addr); ip != nil {
+		if ip.To4() != nil {
+			return "ip", nil
+		}
+		return "ip6", nil
+	}
+	return "", fmt.Errorf("%w: %q is not a valid IP address or CIDR", ErrInvalidRule, addr)
 }
 
 func applyNftables(ctx context.Context, namespace string, rule Rule) error {
@@ -138,11 +159,31 @@ func nftBuildApplyScriptStrict(namespace string, rule Rule, replaceHandle int64)
 	var parts []string
 	parts = append(parts, "add rule", nftFamily, table, nftChain)
 
+	// Source / Dest may be IPv4 or IPv6 (CIDR or bare address). nft's
+	// `inet` family carries both, but each match expression is family-
+	// specific: `ip saddr` only matches IPv4 packets, `ip6 saddr` only
+	// matches IPv6. Detect per side and emit the right token; if Source
+	// and Dest disagree the rule could never match a real packet, so
+	// reject it up front.
+	var srcFam, dstFam string
 	if rule.Source != "" {
-		parts = append(parts, "ip", "saddr", rule.Source)
+		fam, err := nftAddressFamily(rule.Source)
+		if err != nil {
+			return "", fmt.Errorf("source %q: %w", rule.Source, err)
+		}
+		srcFam = fam
+		parts = append(parts, fam, "saddr", rule.Source)
 	}
 	if rule.Dest != "" {
-		parts = append(parts, "ip", "daddr", rule.Dest)
+		fam, err := nftAddressFamily(rule.Dest)
+		if err != nil {
+			return "", fmt.Errorf("dest %q: %w", rule.Dest, err)
+		}
+		dstFam = fam
+		parts = append(parts, fam, "daddr", rule.Dest)
+	}
+	if srcFam != "" && dstFam != "" && srcFam != dstFam {
+		return "", fmt.Errorf("%w: source family %s differs from dest family %s; a rule that mixes IPv4 and IPv6 match expressions can never match a real packet", ErrInvalidRule, srcFam, dstFam)
 	}
 	if rule.Protocol == ProtocolTCP || rule.Protocol == ProtocolUDP {
 		parts = append(parts, string(rule.Protocol))
