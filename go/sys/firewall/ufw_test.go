@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const ufwTestNamespace = "fwtest"
+
 // skipIfNotUFWUsable — same shape as the firewalld / nftables variants.
 // CI runs root inside a container; dev hosts and macOS skip cleanly.
 func skipIfNotUFWUsable(t *testing.T) {
@@ -26,8 +28,8 @@ func skipIfNotUFWUsable(t *testing.T) {
 // TCP port" rule. Lock in the exact argv ufw receives so a refactor of
 // the builder can't silently drift the wire format.
 func TestUFWBuildAddArgs_SimplePortAllow(t *testing.T) {
-	got, err := ufwBuildAddArgs(Rule{
-		Name:     "ssh-in",
+	got, err := ufwBuildAddArgs(ufwTestNamespace, Rule{
+		ID:       "ssh-in",
 		Allow:    true,
 		Protocol: ProtocolTCP,
 		Port:     22,
@@ -35,15 +37,15 @@ func TestUFWBuildAddArgs_SimplePortAllow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ufwBuildAddArgs: %v", err)
 	}
-	want := []string{"allow", "22/tcp", "comment", "pm:ssh-in"}
+	want := []string{"allow", "22/tcp", "comment", "fwtest:ssh-in"}
 	assertArgsEqual(t, got, want)
 }
 
 // TestUFWBuildAddArgs_Deny — the deny verb. ufw exposes "deny" natively
 // (unlike firewalld v1), so the Rule.Allow=false path must round-trip.
 func TestUFWBuildAddArgs_Deny(t *testing.T) {
-	got, err := ufwBuildAddArgs(Rule{
-		Name:     "block-ssh",
+	got, err := ufwBuildAddArgs(ufwTestNamespace, Rule{
+		ID:       "block-ssh",
 		Allow:    false,
 		Protocol: ProtocolTCP,
 		Port:     22,
@@ -61,8 +63,8 @@ func TestUFWBuildAddArgs_Deny(t *testing.T) {
 // Sanity-check the shape so we don't accidentally emit the short form
 // (which ufw would silently broaden into an any-source rule).
 func TestUFWBuildAddArgs_SourceScope(t *testing.T) {
-	got, err := ufwBuildAddArgs(Rule{
-		Name:     "from-lan",
+	got, err := ufwBuildAddArgs(ufwTestNamespace, Rule{
+		ID:       "from-lan",
 		Allow:    true,
 		Protocol: ProtocolTCP,
 		Port:     22,
@@ -72,7 +74,7 @@ func TestUFWBuildAddArgs_SourceScope(t *testing.T) {
 		t.Fatalf("ufwBuildAddArgs: %v", err)
 	}
 	joined := strings.Join(got, " ")
-	for _, want := range []string{"from 10.0.0.0/8", "to any", "port 22", "proto tcp", "comment pm:from-lan"} {
+	for _, want := range []string{"from 10.0.0.0/8", "to any", "port 22", "proto tcp", "comment fwtest:from-lan"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("missing %q in args: %v", want, got)
 		}
@@ -82,8 +84,8 @@ func TestUFWBuildAddArgs_SourceScope(t *testing.T) {
 // TestUFWBuildAddArgs_DestScope — symmetric guard on the destination
 // path. ufw uses the same long form, just populates the "to" side.
 func TestUFWBuildAddArgs_DestScope(t *testing.T) {
-	got, err := ufwBuildAddArgs(Rule{
-		Name:     "to-host",
+	got, err := ufwBuildAddArgs(ufwTestNamespace, Rule{
+		ID:       "to-host",
 		Allow:    true,
 		Protocol: ProtocolTCP,
 		Port:     22,
@@ -103,8 +105,8 @@ func TestUFWBuildAddArgs_DestScope(t *testing.T) {
 // expand it into both tcp+udp implicitly, which silently widens the
 // rule. Better to surface ErrInvalidRule and let the caller decide.
 func TestUFWBuildAddArgs_RejectsPortWithoutProto(t *testing.T) {
-	_, err := ufwBuildAddArgs(Rule{
-		Name:     "ambiguous",
+	_, err := ufwBuildAddArgs(ufwTestNamespace, Rule{
+		ID:       "ambiguous",
 		Allow:    true,
 		Port:     22,
 		Protocol: ProtocolAny,
@@ -118,8 +120,8 @@ func TestUFWBuildAddArgs_RejectsPortWithoutProto(t *testing.T) {
 // is a no-op at the firewall level; rather than silently emit nothing
 // or apply an "allow everything from anywhere" rule, refuse early.
 func TestUFWBuildAddArgs_RejectsEmpty(t *testing.T) {
-	_, err := ufwBuildAddArgs(Rule{
-		Name:  "empty",
+	_, err := ufwBuildAddArgs(ufwTestNamespace, Rule{
+		ID:    "empty",
 		Allow: true,
 	})
 	if !errors.Is(err, ErrInvalidRule) {
@@ -127,77 +129,88 @@ func TestUFWBuildAddArgs_RejectsEmpty(t *testing.T) {
 	}
 }
 
-// TestUFWFindRuleNumber_ByName — `ufw status numbered` is the only way
+// TestUFWFindRuleNumber_ByID — `ufw status numbered` is the only way
 // to learn a rule's index for `ufw delete N`, and it's the only path
 // we have to "is this rule already there?". Lock in the parse against a
 // captured sample so a ufw version that adds columns can't silently
-// break idempotency.
-func TestUFWFindRuleNumber_ByName(t *testing.T) {
+// break idempotency. Also confirms that another namespace's rules
+// (`other:foo`) and unrelated comments (`cockpit-managed`) don't match.
+func TestUFWFindRuleNumber_ByID(t *testing.T) {
 	status := `Status: active
 
      To                         Action      From
      --                         ------      ----
-[ 1] 22/tcp                     ALLOW IN    Anywhere                   # pm:ssh-in
-[ 2] 53/udp                     ALLOW IN    Anywhere                   # pm:dns
-[ 3] 22/tcp                     DENY IN     10.0.0.0/8                 # pm:block-net
+[ 1] 22/tcp                     ALLOW IN    Anywhere                   # fwtest:ssh-in
+[ 2] 53/udp                     ALLOW IN    Anywhere                   # fwtest:dns
+[ 3] 22/tcp                     DENY IN     10.0.0.0/8                 # fwtest:block-net
 [ 4] 80/tcp                     ALLOW IN    Anywhere                   # cockpit-managed
+[ 5] 443/tcp                    ALLOW IN    Anywhere                   # other:web-https
 `
 	cases := map[string]int{
 		"ssh-in":    1,
 		"dns":       2,
 		"block-net": 3,
 	}
-	for name, wantNum := range cases {
-		gotNum, ok := ufwFindRuleNumber(status, name)
+	for id, wantNum := range cases {
+		gotNum, ok := ufwFindRuleNumber(status, ufwTestNamespace, id)
 		if !ok {
-			t.Errorf("ufwFindRuleNumber(%q) not found", name)
+			t.Errorf("ufwFindRuleNumber(%q) not found", id)
 			continue
 		}
 		if gotNum != wantNum {
-			t.Errorf("ufwFindRuleNumber(%q) = %d, want %d", name, gotNum, wantNum)
+			t.Errorf("ufwFindRuleNumber(%q) = %d, want %d", id, gotNum, wantNum)
 		}
 	}
-	// Names not in the table → not found.
-	if _, ok := ufwFindRuleNumber(status, "nonexistent"); ok {
+	// IDs not in the namespace → not found.
+	if _, ok := ufwFindRuleNumber(status, ufwTestNamespace, "nonexistent"); ok {
 		t.Errorf("ufwFindRuleNumber(nonexistent) reported found")
 	}
-	// System-managed rule (no pm: prefix) → not found by name.
-	if _, ok := ufwFindRuleNumber(status, "cockpit-managed"); ok {
-		t.Errorf("ufwFindRuleNumber should not match non-pm rules")
+	// Another namespace's id → not found by THIS namespace.
+	if _, ok := ufwFindRuleNumber(status, ufwTestNamespace, "web-https"); ok {
+		t.Errorf("ufwFindRuleNumber should not match other-namespace rules")
+	}
+	// System-managed rule (no namespace prefix) → not found.
+	if _, ok := ufwFindRuleNumber(status, ufwTestNamespace, "cockpit-managed"); ok {
+		t.Errorf("ufwFindRuleNumber should not match non-namespace rules")
 	}
 }
 
-// TestUFWParseStatus_PicksOutPMRules — List must return only pm-managed
-// rules. Cockpit, system services, and operator-added rules without a
-// pm: comment stay outside the inspection surface.
-func TestUFWParseStatus_PicksOutPMRules(t *testing.T) {
+// TestUFWParseStatus_PicksOutNamespacedRules — List must return only
+// rules in this Manager's namespace. Cockpit, system services,
+// and rules owned by a different Manager stay outside the inspection
+// surface.
+func TestUFWParseStatus_PicksOutNamespacedRules(t *testing.T) {
 	status := `Status: active
 
      To                         Action      From
      --                         ------      ----
-[ 1] 22/tcp                     ALLOW IN    Anywhere                   # pm:ssh-in
-[ 2] 53/udp                     ALLOW IN    Anywhere                   # pm:dns
+[ 1] 22/tcp                     ALLOW IN    Anywhere                   # fwtest:ssh-in
+[ 2] 53/udp                     ALLOW IN    Anywhere                   # fwtest:dns
 [ 3] 80/tcp                     ALLOW IN    Anywhere                   # cockpit-managed
-[ 4] 22/tcp                     DENY IN     10.0.0.0/8                 # pm:block-net
+[ 4] 22/tcp                     DENY IN     10.0.0.0/8                 # fwtest:block-net
+[ 5] 443/tcp                    ALLOW IN    Anywhere                   # other:web-https
 `
-	rules, err := ufwParseStatus(status)
+	rules, err := ufwParseStatus(status, ufwTestNamespace)
 	if err != nil {
 		t.Fatalf("ufwParseStatus: %v", err)
 	}
-	names := make(map[string]Rule)
+	ids := make(map[string]Rule)
 	for _, r := range rules {
-		names[r.Name] = r
+		ids[r.ID] = r
 	}
 	for _, want := range []string{"ssh-in", "dns", "block-net"} {
-		if _, ok := names[want]; !ok {
-			t.Errorf("missing pm rule %q in parsed output: %+v", want, rules)
+		if _, ok := ids[want]; !ok {
+			t.Errorf("missing in-namespace rule %q in parsed output: %+v", want, rules)
 		}
 	}
-	if _, ok := names["cockpit-managed"]; ok {
-		t.Errorf("non-pm rule leaked into List output")
+	if _, ok := ids["cockpit-managed"]; ok {
+		t.Errorf("non-namespace rule leaked into List output")
+	}
+	if _, ok := ids["web-https"]; ok {
+		t.Errorf("other-namespace rule leaked into List output")
 	}
 	// Spot-check the deny rule round-tripped Allow=false.
-	if r, ok := names["block-net"]; ok && r.Allow {
+	if r, ok := ids["block-net"]; ok && r.Allow {
 		t.Errorf("block-net round-tripped with Allow=true; want false")
 	}
 }
@@ -207,7 +220,7 @@ func TestUFWParseStatus_PicksOutPMRules(t *testing.T) {
 // rules. List on an inactive firewall should be an empty slice + nil
 // error, not a parse error.
 func TestUFWParseStatus_InactiveReturnsEmpty(t *testing.T) {
-	rules, err := ufwParseStatus("Status: inactive\n")
+	rules, err := ufwParseStatus("Status: inactive\n", ufwTestNamespace)
 	if err != nil {
 		t.Fatalf("ufwParseStatus(inactive): %v", err)
 	}
@@ -230,33 +243,33 @@ func assertArgsEqual(t *testing.T, got, want []string) {
 }
 
 // =============================================================================
-// Integration tests — gated by ufw binary + root. Each test cleans up its
-// own rules so subsequent runs start fresh.
+// Integration tests — gated by ufw binary + root. Each test cleans up
+// its own rules so subsequent runs start fresh.
 // =============================================================================
 
 func TestUFWIntegration_ApplyListRemoveCycle(t *testing.T) {
 	skipIfNotUFWUsable(t)
 	ctx := context.Background()
-	rule := Rule{Name: "pm-test-rule", Allow: true, Protocol: ProtocolTCP, Port: 12345}
-	t.Cleanup(func() { _ = removeUFW(ctx, rule.Name) })
+	rule := Rule{ID: "test-rule", Allow: true, Protocol: ProtocolTCP, Port: 12345}
+	t.Cleanup(func() { _ = removeUFW(ctx, ufwTestNamespace, rule.ID) })
 
-	if err := applyUFW(ctx, rule); err != nil {
+	if err := applyUFW(ctx, ufwTestNamespace, rule); err != nil {
 		t.Fatalf("applyUFW: %v", err)
 	}
-	rules, err := listUFW(ctx)
+	rules, err := listUFW(ctx, ufwTestNamespace)
 	if err != nil {
 		t.Fatalf("listUFW: %v", err)
 	}
 	found := false
 	for _, r := range rules {
-		if r.Name == rule.Name {
+		if r.ID == rule.ID {
 			found = true
 		}
 	}
 	if !found {
 		t.Fatalf("applied rule not visible in List: %+v", rules)
 	}
-	if err := removeUFW(ctx, rule.Name); err != nil {
+	if err := removeUFW(ctx, ufwTestNamespace, rule.ID); err != nil {
 		t.Fatalf("removeUFW: %v", err)
 	}
 }
@@ -264,18 +277,18 @@ func TestUFWIntegration_ApplyListRemoveCycle(t *testing.T) {
 func TestUFWIntegration_ApplyIsIdempotent(t *testing.T) {
 	skipIfNotUFWUsable(t)
 	ctx := context.Background()
-	rule := Rule{Name: "pm-idemp", Allow: true, Protocol: ProtocolTCP, Port: 12346}
-	t.Cleanup(func() { _ = removeUFW(ctx, rule.Name) })
+	rule := Rule{ID: "idemp", Allow: true, Protocol: ProtocolTCP, Port: 12346}
+	t.Cleanup(func() { _ = removeUFW(ctx, ufwTestNamespace, rule.ID) })
 
 	for i := 0; i < 3; i++ {
-		if err := applyUFW(ctx, rule); err != nil {
+		if err := applyUFW(ctx, ufwTestNamespace, rule); err != nil {
 			t.Fatalf("applyUFW #%d: %v", i, err)
 		}
 	}
-	rules, _ := listUFW(ctx)
+	rules, _ := listUFW(ctx, ufwTestNamespace)
 	count := 0
 	for _, r := range rules {
-		if r.Name == rule.Name {
+		if r.ID == rule.ID {
 			count++
 		}
 	}

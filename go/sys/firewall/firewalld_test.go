@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const firewalldTestNamespace = "fwtest"
+
 // skipIfNotFirewalldUsable mirrors skipIfNotNftablesUsable: skip the
 // test when firewall-cmd isn't present or we can't elevate. CI runs
 // these inside containers where root is available; dev machines and
@@ -26,8 +28,8 @@ func skipIfNotFirewalldUsable(t *testing.T) {
 // exact XML body the backend writes for a "open this TCP port" rule
 // so refactors don't silently change what firewalld parses.
 func TestFirewalldServiceXML_TCPPort(t *testing.T) {
-	got := firewalldServiceXML(Rule{
-		Name:     "ssh-in",
+	got := firewalldServiceXML(firewalldTestNamespace, Rule{
+		ID:       "ssh-in",
 		Allow:    true,
 		Protocol: ProtocolTCP,
 		Port:     22,
@@ -35,8 +37,8 @@ func TestFirewalldServiceXML_TCPPort(t *testing.T) {
 	want := strings.Join([]string{
 		`<?xml version="1.0" encoding="utf-8"?>`,
 		`<service>`,
-		`  <short>pm:ssh-in</short>`,
-		`  <description>power-manage managed rule</description>`,
+		`  <short>fwtest-ssh-in</short>`,
+		`  <description>fwtest managed rule</description>`,
 		`  <port port="22" protocol="tcp"/>`,
 		`</service>`,
 		``,
@@ -48,8 +50,8 @@ func TestFirewalldServiceXML_TCPPort(t *testing.T) {
 
 // TestFirewalldServiceXML_UDPPort — UDP toggle.
 func TestFirewalldServiceXML_UDPPort(t *testing.T) {
-	got := firewalldServiceXML(Rule{
-		Name:     "dns",
+	got := firewalldServiceXML(firewalldTestNamespace, Rule{
+		ID:       "dns",
 		Allow:    true,
 		Protocol: ProtocolUDP,
 		Port:     53,
@@ -72,27 +74,27 @@ func TestFirewalldRejectsUnsupportedRules(t *testing.T) {
 	}{
 		{
 			name: "deny",
-			rule: Rule{Name: "block", Allow: false, Protocol: ProtocolTCP, Port: 22},
+			rule: Rule{ID: "block", Allow: false, Protocol: ProtocolTCP, Port: 22},
 			hint: "deny",
 		},
 		{
 			name: "source-scope",
-			rule: Rule{Name: "from-net", Allow: true, Protocol: ProtocolTCP, Port: 22, Source: "10.0.0.0/8"},
+			rule: Rule{ID: "from-net", Allow: true, Protocol: ProtocolTCP, Port: 22, Source: "10.0.0.0/8"},
 			hint: "source",
 		},
 		{
 			name: "dest-scope",
-			rule: Rule{Name: "to-host", Allow: true, Protocol: ProtocolTCP, Port: 22, Dest: "192.168.1.1"},
+			rule: Rule{ID: "to-host", Allow: true, Protocol: ProtocolTCP, Port: 22, Dest: "192.168.1.1"},
 			hint: "destination",
 		},
 		{
 			name: "no-protocol",
-			rule: Rule{Name: "any", Allow: true, Port: 22},
+			rule: Rule{ID: "any", Allow: true, Port: 22},
 			hint: "protocol",
 		},
 		{
 			name: "any-protocol-explicit",
-			rule: Rule{Name: "any-explicit", Allow: true, Protocol: ProtocolAny, Port: 22},
+			rule: Rule{ID: "any-explicit", Allow: true, Protocol: ProtocolAny, Port: 22},
 			hint: "protocol",
 		},
 	}
@@ -109,13 +111,14 @@ func TestFirewalldRejectsUnsupportedRules(t *testing.T) {
 	}
 }
 
-// TestFirewalldParseListServices_FiltersPMPrefix — `firewall-cmd
-// --list-services` returns a space-separated list mixing system
-// services (ssh, dhcpv6-client, etc.) with our `pm-<name>` ones. List
-// must hand back only the pm-managed entries with the prefix stripped.
-func TestFirewalldParseListServices_FiltersPMPrefix(t *testing.T) {
-	input := "ssh dhcpv6-client cockpit pm-web-https pm-ssh-in mosh"
-	got := firewalldFilterPMServices(input)
+// TestFirewalldFilterNamespaceServices — `firewall-cmd --list-services`
+// returns a space-separated list mixing system services (ssh,
+// dhcpv6-client, etc.) with our `<namespace>-<id>` ones. List must
+// hand back only the namespace-managed entries with the prefix
+// stripped, and must NOT match services owned by a different namespace.
+func TestFirewalldFilterNamespaceServices(t *testing.T) {
+	input := "ssh dhcpv6-client cockpit fwtest-web-https other-myapp fwtest-ssh-in mosh"
+	got := firewalldFilterNamespaceServices(input, firewalldTestNamespace)
 	want := []string{"web-https", "ssh-in"}
 	if len(got) != len(want) {
 		t.Fatalf("got %v; want %v", got, want)
@@ -135,19 +138,19 @@ func TestFirewalldParseListServices_FiltersPMPrefix(t *testing.T) {
 func TestFirewalldIntegration_ApplyListRemoveCycle(t *testing.T) {
 	skipIfNotFirewalldUsable(t)
 	ctx := context.Background()
-	rule := Rule{Name: "pm-test-svc", Allow: true, Protocol: ProtocolTCP, Port: 12345}
-	t.Cleanup(func() { _ = removeFirewalld(ctx, rule.Name) })
+	rule := Rule{ID: "test-svc", Allow: true, Protocol: ProtocolTCP, Port: 12345}
+	t.Cleanup(func() { _ = removeFirewalld(ctx, firewalldTestNamespace, rule.ID) })
 
-	if err := applyFirewalld(ctx, rule); err != nil {
+	if err := applyFirewalld(ctx, firewalldTestNamespace, rule); err != nil {
 		t.Fatalf("applyFirewalld: %v", err)
 	}
-	rules, err := listFirewalld(ctx)
+	rules, err := listFirewalld(ctx, firewalldTestNamespace)
 	if err != nil {
 		t.Fatalf("listFirewalld: %v", err)
 	}
 	found := false
 	for _, r := range rules {
-		if r.Name == rule.Name {
+		if r.ID == rule.ID {
 			found = true
 		}
 	}
@@ -155,7 +158,7 @@ func TestFirewalldIntegration_ApplyListRemoveCycle(t *testing.T) {
 		t.Fatalf("applied rule not visible in List: %+v", rules)
 	}
 
-	if err := removeFirewalld(ctx, rule.Name); err != nil {
+	if err := removeFirewalld(ctx, firewalldTestNamespace, rule.ID); err != nil {
 		t.Fatalf("removeFirewalld: %v", err)
 	}
 }
@@ -163,18 +166,18 @@ func TestFirewalldIntegration_ApplyListRemoveCycle(t *testing.T) {
 func TestFirewalldIntegration_ApplyIsIdempotent(t *testing.T) {
 	skipIfNotFirewalldUsable(t)
 	ctx := context.Background()
-	rule := Rule{Name: "pm-idemp", Allow: true, Protocol: ProtocolTCP, Port: 12346}
-	t.Cleanup(func() { _ = removeFirewalld(ctx, rule.Name) })
+	rule := Rule{ID: "idemp", Allow: true, Protocol: ProtocolTCP, Port: 12346}
+	t.Cleanup(func() { _ = removeFirewalld(ctx, firewalldTestNamespace, rule.ID) })
 
 	for i := 0; i < 3; i++ {
-		if err := applyFirewalld(ctx, rule); err != nil {
+		if err := applyFirewalld(ctx, firewalldTestNamespace, rule); err != nil {
 			t.Fatalf("applyFirewalld #%d: %v", i, err)
 		}
 	}
-	rules, _ := listFirewalld(ctx)
+	rules, _ := listFirewalld(ctx, firewalldTestNamespace)
 	count := 0
 	for _, r := range rules {
-		if r.Name == rule.Name {
+		if r.ID == rule.ID {
 			count++
 		}
 	}

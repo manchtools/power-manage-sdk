@@ -17,8 +17,8 @@ import (
 // every Apply/Remove/List goes through the ufw CLI.
 //
 // Per-rule identity: ufw exposes a native `comment` flag on add. We
-// reuse the same "pm:<name>" convention nftables and firewalld already
-// use. `ufw status numbered` is the only programmatic path to a rule's
+// use the Manager's namespace as the prefix: "<namespace>:<id>".
+// `ufw status numbered` is the only programmatic path to a rule's
 // index (which `ufw delete N` needs), so the lookup goes through a
 // parser over that output.
 //
@@ -28,35 +28,35 @@ import (
 // nftables: a Port set without a concrete Protocol is rejected
 // (ufw would silently widen to tcp+udp).
 
-const (
-	ufwCommentPrefix = "pm:"
-)
-
 // ufwStatusRuleRE matches a single rule line in `ufw status numbered`
 // output. Captures the rule number, the action verb (with optional
-// IN/OUT direction), and the pm-suffixed comment. The middle columns
-// are deliberately non-greedy and absorbed by `.*` because the goal of
-// this regex is identity + verdict — Port/Protocol come from the To/From
-// columns and are parsed by ufwParseRuleColumns when ufwParseStatus
-// needs them for List.
-var ufwStatusRuleRE = regexp.MustCompile(`^\[\s*(\d+)\]\s+(\S+)\s+(ALLOW|DENY|REJECT|LIMIT)(?:\s+(?:IN|OUT))?\s+(.+?)\s*#\s*pm:(\S+)\s*$`)
+// IN/OUT direction), the destination column, the source column, and
+// the trailing comment. The middle columns are deliberately non-greedy
+// so we don't accidentally absorb the comment marker.
+var ufwStatusRuleRE = regexp.MustCompile(`^\[\s*(\d+)\]\s+(\S+)\s+(ALLOW|DENY|REJECT|LIMIT)(?:\s+(?:IN|OUT))?\s+(.+?)\s*#\s*(.+?)\s*$`)
 
-func applyUFW(ctx context.Context, rule Rule) error {
+// ufwCommentIdentity composes the comment string written by ApplyRule
+// for a given namespace + rule ID. Format `<namespace>:<id>`.
+func ufwCommentIdentity(namespace, id string) string {
+	return namespace + ":" + id
+}
+
+func applyUFW(ctx context.Context, namespace string, rule Rule) error {
 	if err := ufwValidateRule(rule); err != nil {
 		return err
 	}
-	// Best-effort find-and-delete the previous rule by name. We do this
+	// Best-effort find-and-delete the previous rule by id. We do this
 	// before the add so the final ruleset has exactly one rule per
-	// Name — re-adding without delete would let stale variants
+	// id — re-adding without delete would let stale variants
 	// accumulate.
 	if status, err := ufwStatusNumbered(ctx); err == nil {
-		if num, ok := ufwFindRuleNumber(status, rule.Name); ok {
+		if num, ok := ufwFindRuleNumber(status, namespace, rule.ID); ok {
 			if err := ufwDeleteByNumber(ctx, num); err != nil {
 				return fmt.Errorf("ufw delete existing rule %d: %w", num, err)
 			}
 		}
 	}
-	args, err := ufwBuildAddArgs(rule)
+	args, err := ufwBuildAddArgs(namespace, rule)
 	if err != nil {
 		return err
 	}
@@ -66,27 +66,27 @@ func applyUFW(ctx context.Context, rule Rule) error {
 	return nil
 }
 
-func removeUFW(ctx context.Context, name string) error {
+func removeUFW(ctx context.Context, namespace, id string) error {
 	status, err := ufwStatusNumbered(ctx)
 	if err != nil {
 		// No status (likely ufw inactive) → no rule to remove. Matches
 		// the idempotency contract: "this rule is absent" already holds.
 		return nil
 	}
-	num, ok := ufwFindRuleNumber(status, name)
+	num, ok := ufwFindRuleNumber(status, namespace, id)
 	if !ok {
 		return nil
 	}
 	return ufwDeleteByNumber(ctx, num)
 }
 
-func listUFW(ctx context.Context) ([]Rule, error) {
+func listUFW(ctx context.Context, namespace string) ([]Rule, error) {
 	status, err := ufwStatusNumbered(ctx)
 	if err != nil {
 		// ufw not active → no managed rules.
 		return nil, nil
 	}
-	return ufwParseStatus(status)
+	return ufwParseStatus(status, namespace)
 }
 
 // ufwStatusNumbered runs `ufw status numbered` and returns its stdout.
@@ -130,7 +130,7 @@ func ufwValidateRule(rule Rule) error {
 // moment Source or Dest enters the picture. The comment is always last
 // so a future ufw version that adds trailing positional args won't
 // silently swallow it.
-func ufwBuildAddArgs(rule Rule) ([]string, error) {
+func ufwBuildAddArgs(namespace string, rule Rule) ([]string, error) {
 	if err := ufwValidateRule(rule); err != nil {
 		return nil, err
 	}
@@ -169,21 +169,23 @@ func ufwBuildAddArgs(rule Rule) ([]string, error) {
 		args = append(args, "from", "any", "to", "any", "proto", string(rule.Protocol))
 	}
 
-	args = append(args, "comment", ufwCommentPrefix+rule.Name)
+	args = append(args, "comment", ufwCommentIdentity(namespace, rule.ID))
 	return args, nil
 }
 
 // ufwFindRuleNumber scans `ufw status numbered` output and returns the
-// rule index of the entry whose comment is "pm:<name>". ok=false when
-// no such rule exists. Used by both ApplyRule (to remove a stale
-// variant before re-adding) and RemoveRule (to find the target).
-func ufwFindRuleNumber(status, name string) (int, bool) {
+// rule index of the entry whose comment is "<namespace>:<id>".
+// ok=false when no such rule exists. Used by both ApplyRule (to remove
+// a stale variant before re-adding) and RemoveRule (to find the
+// target).
+func ufwFindRuleNumber(status, namespace, id string) (int, bool) {
+	target := ufwCommentIdentity(namespace, id)
 	for _, line := range strings.Split(status, "\n") {
 		m := ufwStatusRuleRE.FindStringSubmatch(strings.TrimRight(line, " \t"))
 		if m == nil {
 			continue
 		}
-		if m[5] == name {
+		if m[5] == target {
 			n, err := strconv.Atoi(m[1])
 			if err != nil {
 				continue
@@ -195,22 +197,27 @@ func ufwFindRuleNumber(status, name string) (int, bool) {
 }
 
 // ufwParseStatus walks `ufw status numbered` output and returns the
-// Rule struct for every pm-managed entry. Non-pm rules (the system's
-// own ssh, dhcpv6-client, anything the operator added without our
-// comment) are filtered out — same scope guarantee List makes on the
-// nftables and firewalld backends.
-func ufwParseStatus(status string) ([]Rule, error) {
+// Rule struct for every managed entry whose comment starts with
+// "<namespace>:". Non-namespace rules (the system's own ssh,
+// dhcpv6-client, rules added by a different Manager) are filtered out.
+func ufwParseStatus(status, namespace string) ([]Rule, error) {
 	if strings.Contains(status, "Status: inactive") {
 		return nil, nil
 	}
+	prefix := namespace + ":"
 	var rules []Rule
 	for _, line := range strings.Split(status, "\n") {
 		m := ufwStatusRuleRE.FindStringSubmatch(strings.TrimRight(line, " \t"))
 		if m == nil {
 			continue
 		}
+		comment := m[5]
+		id, ok := strings.CutPrefix(comment, prefix)
+		if !ok {
+			continue
+		}
 		rule := Rule{
-			Name:  m[5],
+			ID:    id,
 			Allow: m[3] == "ALLOW",
 		}
 		// `To` column (m[2]) carries the port/proto in the unscoped
@@ -232,7 +239,7 @@ func ufwParseStatus(status string) ([]Rule, error) {
 // `ufw status numbered` line. Common shapes: "22/tcp", "53/udp",
 // "Anywhere", or a host:port pair when the rule targets a specific
 // dest. Anything we can't parse cleanly is left as zero-values on the
-// Rule so List still returns the entry (its identity is the Name).
+// Rule so List still returns the entry (its identity is the ID).
 func ufwParseToColumn(col string, out *Rule) {
 	col = strings.TrimSpace(col)
 	if col == "Anywhere" || col == "Anywhere (v6)" {
