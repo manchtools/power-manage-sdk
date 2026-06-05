@@ -26,8 +26,6 @@ Currently parked here:
 
 - `dns/` — resolved.conf / NetworkManager / systemd-networkd DNS
   config. Awaiting a managed-resolver action type.
-- `firewall/` — nftables / firewalld / iptables abstraction.
-  Awaiting a managed-firewall-rule action type.
 - `netconfig/` — IP / route / interface configuration. Awaiting a
   managed-network action type.
 

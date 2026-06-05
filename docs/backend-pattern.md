@@ -192,7 +192,7 @@ creating a whole new pluggable capability area.
 | [`go/sys/service`](../go/sys/service/) | `SetServiceBackend` | `ServiceBackendSystemd` | OpenRC, runit, s6 (not yet implemented) |
 | [`go/sys/encryption`](../go/sys/encryption/) | `SetBackend` | `BackendLUKS` | GELI, CGD (not yet implemented) |
 | [`go/sys/network`](../go/sys/network/) | `SetWifiBackend` | `WifiBackendNetworkManager` | connman, wpa_supplicant, iwd (not yet implemented) |
-| [`go/sys/firewall`](../go/sys/firewall/) | `SetBackend` | `BackendNftables` | iptables, firewalld, ufw, pf (not yet implemented) |
+| [`go/sys/firewall`](../go/sys/firewall/) | `SetBackend` | `BackendNftables` | firewalld, ufw; iptables, pf (not yet implemented) |
 | [`go/sys/dns`](../go/sys/dns/) | `SetBackend` | `BackendResolved` | resolvconf, dnsmasq, NetworkManager (not yet implemented) |
 | [`go/sys/netconfig`](../go/sys/netconfig/) | `SetBackend` | `BackendNetworkManager` | systemd-networkd, netplan, dhcpcd, ifupdown (not yet implemented) |
 
