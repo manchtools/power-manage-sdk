@@ -85,11 +85,25 @@ func removeFirewalld(ctx context.Context, namespace, id string) error {
 		return err
 	}
 	svc := firewalldServiceName(namespace, id)
-	// Best-effort remove. firewall-cmd returns non-zero when the
-	// service isn't enabled — that's fine, our post-condition holds.
-	_, _ = sysexec.Privileged(ctx, "firewall-cmd",
-		"--permanent", "--zone="+zone, "--remove-service="+svc,
-	)
+
+	// List services first so we can tell "service isn't enabled
+	// (legitimate idempotency no-op)" apart from "firewall-cmd failed
+	// for a real reason (daemon down, permission denied, syntax
+	// error)". Just calling --remove-service and discarding errors
+	// would swallow real failures and return success while the rule
+	// is still enabled. String-matching the error message would work
+	// but is fragile across firewalld versions and locales.
+	enabled, err := firewalldServiceIsEnabled(ctx, zone, svc)
+	if err != nil {
+		return fmt.Errorf("firewall-cmd list-services: %w", err)
+	}
+	if enabled {
+		if _, err := sysexec.Privileged(ctx, "firewall-cmd",
+			"--permanent", "--zone="+zone, "--remove-service="+svc,
+		); err != nil {
+			return fmt.Errorf("firewall-cmd --remove-service: %w", err)
+		}
+	}
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
 	if err := sysfs.RemoveStrict(ctx, path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("remove %s: %w", path, err)
@@ -98,6 +112,25 @@ func removeFirewalld(ctx context.Context, namespace, id string) error {
 		return fmt.Errorf("firewall-cmd --reload: %w", err)
 	}
 	return nil
+}
+
+// firewalldServiceIsEnabled reports whether svc is currently in the
+// permanent service list for zone. Pre-check before --remove-service
+// so removeFirewalld can distinguish idempotency no-ops from real
+// failures without parsing error messages.
+func firewalldServiceIsEnabled(ctx context.Context, zone, svc string) (bool, error) {
+	res, err := sysexec.Privileged(ctx, "firewall-cmd",
+		"--permanent", "--zone="+zone, "--list-services",
+	)
+	if err != nil {
+		return false, err
+	}
+	for _, f := range strings.Fields(res.Stdout) {
+		if f == svc {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // listFirewalld returns every managed service enabled in the default
