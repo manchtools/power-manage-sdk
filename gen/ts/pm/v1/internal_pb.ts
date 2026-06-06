@@ -26,6 +26,8 @@ export const file_pm_v1_internal: GenFile = /*@__PURE__*/
  */
 export type InternalSyncActionsRequest = Message<"pm.v1.InternalSyncActionsRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
@@ -45,11 +47,15 @@ export const InternalSyncActionsRequestSchema: GenMessage<InternalSyncActionsReq
  */
 export type InternalValidateLuksTokenRequest = Message<"pm.v1.InternalValidateLuksTokenRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
 
   /**
+   * @gotags: validate:"required,min=1,max=256"
+   *
    * @generated from field: string token = 2;
    */
   token: string;
@@ -69,11 +75,15 @@ export const InternalValidateLuksTokenRequestSchema: GenMessage<InternalValidate
  */
 export type InternalGetLuksKeyRequest = Message<"pm.v1.InternalGetLuksKeyRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
 
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string action_id = 2;
    */
   actionId: string;
@@ -93,21 +103,29 @@ export const InternalGetLuksKeyRequestSchema: GenMessage<InternalGetLuksKeyReque
  */
 export type InternalStoreLuksKeyRequest = Message<"pm.v1.InternalStoreLuksKeyRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
 
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string action_id = 2;
    */
   actionId: string;
 
   /**
+   * @gotags: validate:"required,min=1,max=4096"
+   *
    * @generated from field: string device_path = 3;
    */
   devicePath: string;
 
   /**
+   * @gotags: validate:"required,min=1,max=1024"
+   *
    * @generated from field: string passphrase = 4;
    */
   passphrase: string;
@@ -116,6 +134,7 @@ export type InternalStoreLuksKeyRequest = Message<"pm.v1.InternalStoreLuksKeyReq
    * Why this rotation happened. INITIAL on the first rotation for the
    * (device, action) pair; SCHEDULED for any subsequent policy-driven
    * rotation. Stored on the event as the lowercase string form.
+   * @gotags: validate:"required"
    *
    * @generated from field: pm.v1.RotationReason rotation_reason = 5;
    */
@@ -140,6 +159,7 @@ export const InternalStoreLuksKeyRequestSchema: GenMessage<InternalStoreLuksKeyR
 export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
   /**
    * Local Linux username whose password was rotated.
+   * @gotags: validate:"required,min=1,max=64"
    *
    * @generated from field: string username = 1;
    */
@@ -148,6 +168,7 @@ export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
   /**
    * Plaintext rotated password. Encrypted at rest by control before the
    * event is appended; never stored or logged in cleartext.
+   * @gotags: validate:"required,min=1,max=4096"
    *
    * @generated from field: string password = 2;
    */
@@ -157,6 +178,7 @@ export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
    * RFC 3339 timestamp the agent observed the rotation. The control
    * server keeps the agent's clock here rather than re-stamping at
    * receipt so the timeline reflects the device's reality.
+   * @gotags: validate:"required,min=1,max=64"
    *
    * @generated from field: string rotated_at = 3;
    */
@@ -170,6 +192,7 @@ export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
    * (LPS-only path that signals "rotate now to limit the leaked-
    * password window" — never emitted from LUKS). Stored on the event
    * as the lowercase string form.
+   * @gotags: validate:"required"
    *
    * @generated from field: pm.v1.RotationReason reason = 4;
    */
@@ -191,16 +214,22 @@ export const LpsPasswordRotationSchema: GenMessage<LpsPasswordRotation> = /*@__P
  */
 export type InternalStoreLpsPasswordsRequest = Message<"pm.v1.InternalStoreLpsPasswordsRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
 
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string action_id = 2;
    */
   actionId: string;
 
   /**
+   * @gotags: validate:"required,min=1,dive"
+   *
    * @generated from field: repeated pm.v1.LpsPasswordRotation rotations = 3;
    */
   rotations: LpsPasswordRotation[];
@@ -326,6 +355,8 @@ export const InternalValidateTerminalTokenResponseSchema: GenMessage<InternalVal
  */
 export type VerifyDeviceRequest = Message<"pm.v1.VerifyDeviceRequest"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
@@ -362,12 +393,15 @@ export const VerifyDeviceResponseSchema: GenMessage<VerifyDeviceResponse> = /*@_
  */
 export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionInfo"> & {
   /**
+   * @gotags: validate:"required,ulid"
+   *
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
 
   /**
    * ID of the Power Manage user that opened the session.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string user_id = 2;
    */
@@ -376,6 +410,7 @@ export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionIn
   /**
    * Target device ID (the gateway already knows this from the active
    * agent connection).
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string device_id = 3;
    */
@@ -383,12 +418,15 @@ export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionIn
 
   /**
    * The dedicated TTY user the agent spawned the shell as.
+   * @gotags: validate:"required,min=1,max=64"
    *
    * @generated from field: string tty_user = 4;
    */
   ttyUser: string;
 
   /**
+   * @gotags: validate:"required"
+   *
    * @generated from field: google.protobuf.Timestamp started_at = 5;
    */
   startedAt?: Timestamp;
@@ -396,6 +434,7 @@ export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionIn
   /**
    * Last activity (any input or output traffic) — used by the gateway's
    * idle-timeout enforcement and surfaced in the admin view.
+   * @gotags: validate:"required"
    *
    * @generated from field: google.protobuf.Timestamp last_activity_at = 6;
    */
