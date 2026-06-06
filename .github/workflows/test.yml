@@ -97,10 +97,12 @@ jobs:
         run: npm ci || npm install
 
       - name: buf lint
-        run: npx buf lint
+        working-directory: proto
+        run: npx --prefix .. buf lint
 
       - name: buf format (drift)
-        run: npx buf format --diff --exit-code
+        working-directory: proto
+        run: npx --prefix .. buf format --diff --exit-code
 
   # Run `make generate` and assert nothing changed. Catches the
   # "edited a .proto but forgot to regenerate" footgun before it
@@ -123,10 +125,20 @@ jobs:
       - name: Install npm deps
         run: npm ci || npm install
 
-      - name: Install protoc
+      # Pin protoc — the generated `.pb.go` files carry a `// protoc
+      # vX.Y.Z` comment that flips every protoc release, so an
+      # unpinned apt-get install would surface false-positive drift
+      # against whatever version the contributor ran locally. Pinning
+      # in CI (and documenting the same version in CONTRIBUTING) keeps
+      # the comment stable across machines.
+      - name: Install protoc (pinned)
+        env:
+          PROTOC_VERSION: 30.2
         run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
+          curl -fsSL -o /tmp/protoc.zip \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+          sudo unzip -q -o /tmp/protoc.zip -d /usr/local
+          protoc --version
 
       - name: Install protoc plugins
         run: make install-tools
@@ -136,7 +148,14 @@ jobs:
 
       - name: Verify no drift
         run: |
-          if ! git diff --exit-code -- gen/; then
+          # Ignore the auto-generated `// protoc vX.Y.Z` comment in
+          # `.pb.go` files — the line flips with every protoc release
+          # and isn't semantic. The pinned protoc above keeps this
+          # filter conservative; the filter exists in case the pinned
+          # version is later bumped without a co-located gen commit.
+          if ! git diff --exit-code \
+               -I '^//\s*protoc\s+v[0-9]+\.[0-9]+\(\.[0-9]+\)\?' \
+               -- gen/; then
             echo ""
             echo "::error::generated code in gen/ drifted from proto sources."
             echo "Run 'make generate' locally and commit the result."

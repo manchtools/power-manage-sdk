@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package pm.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
-
 import "google/protobuf/timestamp.proto";
 import "pm/v1/common.proto";
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
 // ============================================================================
 // Action Types
@@ -15,50 +15,50 @@ enum ActionType {
   ACTION_TYPE_UNSPECIFIED = 0;
 
   // Package management (1-99)
-  ACTION_TYPE_PACKAGE = 1;      // Generic package (apt/dnf/pacman based on distro)
-  ACTION_TYPE_UPDATE = 2;       // System-wide package update (respects pinning)
-  ACTION_TYPE_REPOSITORY = 3;   // External repository configuration
+  ACTION_TYPE_PACKAGE = 1; // Generic package (apt/dnf/pacman based on distro)
+  ACTION_TYPE_UPDATE = 2; // System-wide package update (respects pinning)
+  ACTION_TYPE_REPOSITORY = 3; // External repository configuration
 
   // Application installation (100-199)
-  ACTION_TYPE_APP_IMAGE = 100;  // AppImage
-  ACTION_TYPE_DEB = 101;        // Direct .deb
-  ACTION_TYPE_RPM = 102;        // Direct .rpm
-  ACTION_TYPE_FLATPAK = 103;    // Flatpak application
+  ACTION_TYPE_APP_IMAGE = 100; // AppImage
+  ACTION_TYPE_DEB = 101; // Direct .deb
+  ACTION_TYPE_RPM = 102; // Direct .rpm
+  ACTION_TYPE_FLATPAK = 103; // Flatpak application
 
   // Scripts (200-299)
-  ACTION_TYPE_SHELL = 200;      // Shell script
+  ACTION_TYPE_SHELL = 200; // Shell script
   ACTION_TYPE_SCRIPT_RUN = 201; // One-off script execution (not scheduled)
 
   // Services (300-399)
-  ACTION_TYPE_SERVICE = 300;    // Service unit (systemd, openrc, runit, s6)
+  ACTION_TYPE_SERVICE = 300; // Service unit (systemd, openrc, runit, s6)
 
   // Files (400-499)
-  ACTION_TYPE_FILE = 400;       // File management
-  ACTION_TYPE_DIRECTORY = 401;  // Directory management
+  ACTION_TYPE_FILE = 400; // File management
+  ACTION_TYPE_DIRECTORY = 401; // Directory management
 
   // Instant actions (500-599) — agent-builtin, no parameters
-  ACTION_TYPE_REBOOT = 500;     // Reboot the device (5-minute delay)
-  ACTION_TYPE_SYNC = 501;       // Trigger immediate agent sync
+  ACTION_TYPE_REBOOT = 500; // Reboot the device (5-minute delay)
+  ACTION_TYPE_SYNC = 501; // Trigger immediate agent sync
 
   // System management (600-699)
-  ACTION_TYPE_USER = 600;       // User account management
-  ACTION_TYPE_GROUP = 601;      // Group membership management
+  ACTION_TYPE_USER = 600; // User account management
+  ACTION_TYPE_GROUP = 601; // Group membership management
 
   // SSH access management (700-799)
-  ACTION_TYPE_SSH = 700;        // SSH access configuration
-  ACTION_TYPE_SSHD = 701;       // SSH daemon configuration
+  ACTION_TYPE_SSH = 700; // SSH access configuration
+  ACTION_TYPE_SSHD = 701; // SSH daemon configuration
 
   // Privilege management (800-899)
-  ACTION_TYPE_ADMIN_POLICY = 800;       // Administrative privilege policy (sudoers or doas)
+  ACTION_TYPE_ADMIN_POLICY = 800; // Administrative privilege policy (sudoers or doas)
 
   // Password management (900-999)
-  ACTION_TYPE_LPS = 900;        // Local Password Solution
+  ACTION_TYPE_LPS = 900; // Local Password Solution
 
   // Encryption management (1000-1099)
-  ACTION_TYPE_ENCRYPTION = 1000;  // Disk encryption management (LUKS, GELI, etc.)
+  ACTION_TYPE_ENCRYPTION = 1000; // Disk encryption management (LUKS, GELI, etc.)
 
   // Network management (1100-1199)
-  ACTION_TYPE_WIFI = 1100;      // WiFi connection management
+  ACTION_TYPE_WIFI = 1100; // WiFi connection management
 
   // Agent management (1200-1299)
   ACTION_TYPE_AGENT_UPDATE = 1200; // Agent self-update
@@ -158,9 +158,9 @@ message PackageParams {
   // Manager-specific package names (override generic name)
   // If a manager-specific name is empty, that manager will be skipped.
   // @gotags: validate:"omitempty,max=255"
-  string apt_name = 5;    // Debian/Ubuntu (apt/apt-get)
+  string apt_name = 5; // Debian/Ubuntu (apt/apt-get)
   // @gotags: validate:"omitempty,max=255"
-  string dnf_name = 6;    // Fedora/RHEL (dnf/yum)
+  string dnf_name = 6; // Fedora/RHEL (dnf/yum)
   // @gotags: validate:"omitempty,max=255"
   string pacman_name = 7; // Arch Linux (pacman)
   // @gotags: validate:"omitempty,max=255"
@@ -202,7 +202,7 @@ message ShellParams {
 // second proto rename. Agents set their active backend via
 // sys/service.SetServiceBackend at startup.
 enum ServiceBackend {
-  SERVICE_BACKEND_SYSTEMD = 0;  // default
+  SERVICE_BACKEND_SYSTEMD = 0; // default
   SERVICE_BACKEND_OPENRC = 1;
   SERVICE_BACKEND_RUNIT = 2;
   SERVICE_BACKEND_S6 = 3;
@@ -212,20 +212,20 @@ enum ServiceBackend {
 // targets when a future ACTION_TYPE_FIREWALL lands. Defined here up
 // front so the wire format doesn't churn when the feature ships.
 enum FirewallBackend {
-  FIREWALL_BACKEND_NFTABLES = 0;   // default — Linux nftables (modern)
-  FIREWALL_BACKEND_IPTABLES = 1;   // Linux iptables (legacy)
-  FIREWALL_BACKEND_FIREWALLD = 2;  // Red Hat firewalld wrapper
-  FIREWALL_BACKEND_UFW = 3;        // Debian/Ubuntu ufw wrapper
-  FIREWALL_BACKEND_PF = 4;         // BSD pf
+  FIREWALL_BACKEND_NFTABLES = 0; // default — Linux nftables (modern)
+  FIREWALL_BACKEND_IPTABLES = 1; // Linux iptables (legacy)
+  FIREWALL_BACKEND_FIREWALLD = 2; // Red Hat firewalld wrapper
+  FIREWALL_BACKEND_UFW = 3; // Debian/Ubuntu ufw wrapper
+  FIREWALL_BACKEND_PF = 4; // BSD pf
 }
 
 // DnsBackend selects which resolver framework the agent targets when a
 // future ACTION_TYPE_DNS lands. Forward-compat only.
 enum DnsBackend {
-  DNS_BACKEND_RESOLVED = 0;         // default — systemd-resolved / resolvectl
-  DNS_BACKEND_RESOLVCONF = 1;       // plain /etc/resolv.conf (via resolvconf or direct)
-  DNS_BACKEND_DNSMASQ = 2;          // local dnsmasq
-  DNS_BACKEND_NETWORKMANAGER = 3;   // NetworkManager-managed DNS
+  DNS_BACKEND_RESOLVED = 0; // default — systemd-resolved / resolvectl
+  DNS_BACKEND_RESOLVCONF = 1; // plain /etc/resolv.conf (via resolvconf or direct)
+  DNS_BACKEND_DNSMASQ = 2; // local dnsmasq
+  DNS_BACKEND_NETWORKMANAGER = 3; // NetworkManager-managed DNS
 }
 
 // NetworkConfigBackend selects which tool manages interface IP,
@@ -233,11 +233,11 @@ enum DnsBackend {
 // _CONFIG lands. Distinct from WifiBackend — a device can use one
 // tool for connection profiles and another for IP config.
 enum NetworkConfigBackend {
-  NETWORK_CONFIG_BACKEND_NETWORKMANAGER = 0;   // default — nmcli
+  NETWORK_CONFIG_BACKEND_NETWORKMANAGER = 0; // default — nmcli
   NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD = 1; // /etc/systemd/network/*.network
-  NETWORK_CONFIG_BACKEND_NETPLAN = 2;          // /etc/netplan/*.yaml
-  NETWORK_CONFIG_BACKEND_DHCPCD = 3;           // /etc/dhcpcd.conf (Alpine, OpenBSD)
-  NETWORK_CONFIG_BACKEND_IFUPDOWN = 4;         // /etc/network/interfaces (classic Debian)
+  NETWORK_CONFIG_BACKEND_NETPLAN = 2; // /etc/netplan/*.yaml
+  NETWORK_CONFIG_BACKEND_DHCPCD = 3; // /etc/dhcpcd.conf (Alpine, OpenBSD)
+  NETWORK_CONFIG_BACKEND_IFUPDOWN = 4; // /etc/network/interfaces (classic Debian)
 }
 
 // ServiceParams configures a service unit. unit_content is the verbatim
@@ -308,11 +308,11 @@ message DirectoryParams {
 // Respects version pinning (apt-mark hold / dnf versionlock).
 message UpdateParams {
   // @gotags: validate:"omitempty"
-  bool security_only = 1;         // Only install security updates (if supported)
+  bool security_only = 1; // Only install security updates (if supported)
   // @gotags: validate:"omitempty"
-  bool autoremove = 2;            // Remove unused dependencies after update
+  bool autoremove = 2; // Remove unused dependencies after update
   // @gotags: validate:"omitempty"
-  bool reboot_if_required = 3;    // Reboot system if updates require it
+  bool reboot_if_required = 3; // Reboot system if updates require it
 }
 
 // FlatpakParams configures Flatpak application installation.
@@ -599,9 +599,9 @@ message SshdParams {
 // backend.
 enum AdminAccessLevel {
   ADMIN_ACCESS_LEVEL_UNSPECIFIED = 0;
-  ADMIN_ACCESS_LEVEL_FULL = 1;       // Unrestricted access (password required)
-  ADMIN_ACCESS_LEVEL_LIMITED = 2;    // System management commands only (password required)
-  ADMIN_ACCESS_LEVEL_CUSTOM = 3;     // Admin-defined raw policy
+  ADMIN_ACCESS_LEVEL_FULL = 1; // Unrestricted access (password required)
+  ADMIN_ACCESS_LEVEL_LIMITED = 2; // System management commands only (password required)
+  ADMIN_ACCESS_LEVEL_CUSTOM = 3; // Admin-defined raw policy
 }
 
 // PrivilegeBackend selects which privilege-escalation tool the agent
@@ -609,8 +609,8 @@ enum AdminAccessLevel {
 // The agent reads its configured backend at startup and passes it to
 // the SDK via exec.SetPrivilegeBackend.
 enum PrivilegeBackend {
-  PRIVILEGE_BACKEND_SUDO = 0;  // Default. Drops files into /etc/sudoers.d/.
-  PRIVILEGE_BACKEND_DOAS = 1;  // Drops files into /etc/doas.d/.
+  PRIVILEGE_BACKEND_SUDO = 0; // Default. Drops files into /etc/sudoers.d/.
+  PRIVILEGE_BACKEND_DOAS = 1; // Drops files into /etc/doas.d/.
 }
 
 // AdminPolicyParams configures privilege-delegation policies.
@@ -645,8 +645,8 @@ message AdminPolicyParams {
 // LpsPasswordComplexity defines the character set for generated passwords.
 enum LpsPasswordComplexity {
   LPS_PASSWORD_COMPLEXITY_UNSPECIFIED = 0;
-  LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC = 1;  // a-z, A-Z, 0-9
-  LPS_PASSWORD_COMPLEXITY_COMPLEX = 2;       // a-z, A-Z, 0-9, special characters
+  LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC = 1; // a-z, A-Z, 0-9
+  LPS_PASSWORD_COMPLEXITY_COMPLEX = 2; // a-z, A-Z, 0-9, special characters
 }
 
 // LpsParams configures Local Password Solution (LAPS-like) password management.
@@ -678,9 +678,9 @@ message LpsParams {
 // other slots exist so implementations for other platforms can land
 // later without another proto rename.
 enum EncryptionBackend {
-  ENCRYPTION_BACKEND_LUKS = 0;  // default — cryptsetup/LUKS2
-  ENCRYPTION_BACKEND_GELI = 1;  // FreeBSD GELI
-  ENCRYPTION_BACKEND_CGD = 2;   // NetBSD CGD
+  ENCRYPTION_BACKEND_LUKS = 0; // default — cryptsetup/LUKS2
+  ENCRYPTION_BACKEND_GELI = 1; // FreeBSD GELI
+  ENCRYPTION_BACKEND_CGD = 2; // NetBSD CGD
 }
 
 // EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
@@ -688,8 +688,8 @@ enum EncryptionBackend {
 // should treat non-NONE values as best-effort and report whichever
 // subset of modes they support.
 enum EncryptionDeviceBoundKeyType {
-  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE = 0;            // Managed passphrase only, no device-bound key
-  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM = 1;             // TPM2 auto-unlock at boot
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE = 0; // Managed passphrase only, no device-bound key
+  ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM = 1; // TPM2 auto-unlock at boot
   ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
 }
 
@@ -726,8 +726,8 @@ message EncryptionParams {
 // WiFi authentication type.
 enum WifiAuthType {
   WIFI_AUTH_TYPE_UNSPECIFIED = 0;
-  WIFI_AUTH_TYPE_PSK = 1;       // WPA2/WPA3 Personal (password)
-  WIFI_AUTH_TYPE_EAP_TLS = 2;   // 802.1X with client certificate
+  WIFI_AUTH_TYPE_PSK = 1; // WPA2/WPA3 Personal (password)
+  WIFI_AUTH_TYPE_EAP_TLS = 2; // 802.1X with client certificate
 }
 
 // WifiBackend selects which WiFi-management tool the agent targets.
@@ -735,10 +735,10 @@ enum WifiAuthType {
 // so implementations for connman- or wpa_supplicant-only systems can
 // land later without another proto rename.
 enum WifiBackend {
-  WIFI_BACKEND_NETWORKMANAGER = 0;  // default — nmcli
-  WIFI_BACKEND_CONNMAN = 1;         // connmanctl
-  WIFI_BACKEND_WPA_SUPPLICANT = 2;  // direct wpa_supplicant.conf management
-  WIFI_BACKEND_IWD = 3;             // iwctl (systemd / Arch / Alpine default on some installs)
+  WIFI_BACKEND_NETWORKMANAGER = 0; // default — nmcli
+  WIFI_BACKEND_CONNMAN = 1; // connmanctl
+  WIFI_BACKEND_WPA_SUPPLICANT = 2; // direct wpa_supplicant.conf management
+  WIFI_BACKEND_IWD = 3; // iwctl (systemd / Arch / Alpine default on some installs)
 }
 
 // WifiParams configures WiFi connection management.
@@ -759,13 +759,13 @@ message WifiParams {
 
   // EAP-TLS authentication (802.1X with client certificate)
   // @gotags: validate:"omitempty"
-  string ca_cert = 4;         // CA certificate (PEM)
+  string ca_cert = 4; // CA certificate (PEM)
   // @gotags: validate:"omitempty"
-  string client_cert = 5;     // Client certificate (PEM)
+  string client_cert = 5; // Client certificate (PEM)
   // @gotags: validate:"omitempty"
-  string client_key = 6;      // Client private key (PEM)
+  string client_key = 6; // Client private key (PEM)
   // @gotags: validate:"omitempty,max=254"
-  string identity = 7;        // EAP identity (e.g., user@corp.com)
+  string identity = 7; // EAP identity (e.g., user@corp.com)
 
   // Connection settings
   // Connect to this network automatically when in range.

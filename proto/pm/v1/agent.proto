@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package pm.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
-
 import "google/protobuf/duration.proto";
-import "pm/v1/common.proto";
 import "pm/v1/actions.proto";
+import "pm/v1/common.proto";
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
 // ============================================================================
 // Agent Service
@@ -461,8 +461,8 @@ message SyncActionsResponse {
 // supported on this device" error when asked for a source they can't
 // serve.
 enum LogSource {
-  LOG_SOURCE_JOURNALD = 0;  // default — journalctl
-  LOG_SOURCE_SYSLOG = 1;    // syslog files in /var/log (rsyslog, syslog-ng, busybox syslog)
+  LOG_SOURCE_JOURNALD = 0; // default — journalctl
+  LOG_SOURCE_SYSLOG = 1; // syslog files in /var/log (rsyslog, syslog-ng, busybox syslog)
 }
 
 // Server -> Agent: request system log output

@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package pm.v1;
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
-
 import "google/protobuf/timestamp.proto";
-import "pm/v1/common.proto";
 import "pm/v1/actions.proto";
 import "pm/v1/agent.proto";
+import "pm/v1/common.proto";
+
+option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
 
 // ============================================================================
 // Agent Registration (called by agent during first-time setup)
@@ -31,7 +31,7 @@ message RegisterResponse {
   DeviceId device_id = 1;
   // mTLS credentials issued by control server
   // @gotags: validate:"required"
-  bytes ca_cert = 2;       // CA certificate (PEM)
+  bytes ca_cert = 2; // CA certificate (PEM)
   // Signed device certificate (PEM) - private key stays on agent
   // @gotags: validate:"required"
   bytes certificate = 3;
@@ -296,7 +296,7 @@ message UpdateUserPasswordRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
   // @gotags: validate:"omitempty,min=8"
-  string current_password = 2;  // Required for self-update
+  string current_password = 2; // Required for self-update
   // @gotags: validate:"required,min=8"
   string new_password = 3;
 }
@@ -383,16 +383,16 @@ message Device {
   google.protobuf.Timestamp last_seen_at = 6;
   google.protobuf.Timestamp cert_expires_at = 7;
   map<string, string> labels = 8;
-  repeated string assigned_user_ids = 9;    // Users assigned to this device
-  repeated string assigned_group_ids = 10;  // User groups assigned to this device
+  repeated string assigned_user_ids = 9; // Users assigned to this device
+  repeated string assigned_group_ids = 10; // User groups assigned to this device
   // Sync interval in minutes (0 = use default of 30 minutes)
   // Agent will pull assigned actions at this interval
   int32 sync_interval_minutes = 11;
   // Compliance status based on detection scripts
   ComplianceStatus compliance_status = 12;
   google.protobuf.Timestamp compliance_checked_at = 13;
-  int32 compliance_total = 14;    // Total number of compliance checks
-  int32 compliance_passing = 15;  // Number of passing checks
+  int32 compliance_total = 14; // Total number of compliance checks
+  int32 compliance_passing = 15; // Number of passing checks
 }
 
 message ListDevicesRequest {
@@ -405,7 +405,7 @@ message ListDevicesRequest {
   // @gotags: validate:"omitempty,gte=0,lte=2"
   DeviceStatus status_filter = 3;
   map<string, string> label_filter = 4;
-  bool my_devices_only = 5;  // when true, only return devices assigned to the authenticated user
+  bool my_devices_only = 5; // when true, only return devices assigned to the authenticated user
 }
 
 message ListDevicesResponse {
@@ -485,12 +485,12 @@ message UnassignDeviceResponse {
 }
 
 message DeviceAssignee {
-  string id = 1;        // User or group ID
+  string id = 1; // User or group ID
   // Subset of AssignmentTargetType: only USER and USER_GROUP are valid
   // values for a device assignee. The projection writer rejects DEVICE
   // and DEVICE_GROUP at write-time.
   AssignmentTargetType type = 2;
-  string name = 3;      // User email or group name
+  string name = 3; // User email or group name
 }
 
 message ListDeviceAssigneesRequest {
@@ -507,7 +507,7 @@ message SetDeviceSyncIntervalRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
   // @gotags: validate:"gte=0,lte=1440"
-  int32 sync_interval_minutes = 2;  // 0 = use default (30 min), max 24 hours
+  int32 sync_interval_minutes = 2; // 0 = use default (30 min), max 24 hours
 }
 
 // ============================================================================
@@ -516,16 +516,16 @@ message SetDeviceSyncIntervalRequest {
 
 message RegistrationToken {
   string id = 1;
-  string value = 2;  // Only returned on creation
+  string value = 2; // Only returned on creation
   string name = 3;
   bool one_time = 4;
-  int32 max_uses = 5;  // 0 = unlimited
+  int32 max_uses = 5; // 0 = unlimited
   int32 current_uses = 6;
   google.protobuf.Timestamp expires_at = 7;
   google.protobuf.Timestamp created_at = 8;
   string created_by = 9;
   bool disabled = 10;
-  string owner_id = 11;  // User who owns this token (devices registered with it are assigned to them)
+  string owner_id = 11; // User who owns this token (devices registered with it are assigned to them)
 }
 
 message CreateTokenRequest {
@@ -533,8 +533,8 @@ message CreateTokenRequest {
   string name = 1;
   bool one_time = 2;
   // @gotags: validate:"omitempty,min=0"
-  int32 max_uses = 3;  // 0 = unlimited (for reusable tokens)
-  google.protobuf.Timestamp expires_at = 4;  // optional
+  int32 max_uses = 3; // 0 = unlimited (for reusable tokens)
+  google.protobuf.Timestamp expires_at = 4; // optional
   // Optional. When set to a user ID, devices enrolled through this
   // token are auto-assigned to that user. When empty, the token is
   // ownerless — no auto-assignment happens, suitable for bulk/imaging
@@ -1082,8 +1082,8 @@ message DeviceGroup {
   int32 member_count = 4;
   google.protobuf.Timestamp created_at = 5;
   string created_by = 6;
-  bool is_dynamic = 7;  // True if membership is determined by dynamic_query
-  string dynamic_query = 8;  // Query for dynamic membership (verbose syntax)
+  bool is_dynamic = 7; // True if membership is determined by dynamic_query
+  string dynamic_query = 8; // Query for dynamic membership (verbose syntax)
   // Sync interval in minutes for devices in this group (0 = use device/default)
   // Takes precedence over device-level setting
   int32 sync_interval_minutes = 9;
@@ -1104,7 +1104,7 @@ message CreateDeviceGroupRequest {
   // If true, membership is determined by dynamic_query instead of manual assignment
   bool is_dynamic = 3;
   // @gotags: validate:"omitempty,max=4096"
-  string dynamic_query = 4;  // Query for dynamic membership (see docs for syntax)
+  string dynamic_query = 4; // Query for dynamic membership (see docs for syntax)
 }
 
 message CreateDeviceGroupResponse {
@@ -1207,7 +1207,7 @@ message UpdateDeviceGroupQueryRequest {
   // If true, membership is determined by dynamic_query instead of manual assignment
   bool is_dynamic = 2;
   // @gotags: validate:"omitempty,max=4096"
-  string dynamic_query = 3;  // Query for dynamic membership (see docs for syntax)
+  string dynamic_query = 3; // Query for dynamic membership (see docs for syntax)
 }
 
 message UpdateDeviceGroupQueryResponse {
@@ -1222,8 +1222,8 @@ message ValidateDynamicQueryRequest {
 
 message ValidateDynamicQueryResponse {
   bool valid = 1;
-  string error = 2;  // Error message if not valid
-  int32 matching_device_count = 3;  // Number of devices that would match
+  string error = 2; // Error message if not valid
+  int32 matching_device_count = 3; // Number of devices that would match
 }
 
 // Trigger re-evaluation of a dynamic group
@@ -1243,7 +1243,7 @@ message SetDeviceGroupSyncIntervalRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
   // @gotags: validate:"gte=0,lte=1440"
-  int32 sync_interval_minutes = 2;  // 0 = use device/default, max 24 hours
+  int32 sync_interval_minutes = 2; // 0 = use device/default, max 24 hours
 }
 
 // Replace the device group's maintenance window. Pass an empty
@@ -1285,7 +1285,7 @@ message CreateAssignmentRequest {
   // @gotags: validate:"required,ulid"
   string target_id = 4;
   // @gotags: validate:"omitempty"
-  AssignmentMode mode = 5;  // Defaults to REQUIRED (0)
+  AssignmentMode mode = 5; // Defaults to REQUIRED (0)
 }
 
 message CreateAssignmentResponse {
@@ -1333,7 +1333,7 @@ message UserSelection {
   string device_id = 2;
   AssignmentSourceType source_type = 3;
   string source_id = 4;
-  bool selected = 5;        // true=user wants it (present), false=user rejected (absent)
+  bool selected = 5; // true=user wants it (present), false=user rejected (absent)
   google.protobuf.Timestamp updated_at = 6;
 }
 
@@ -1362,7 +1362,7 @@ message AvailableItem {
   string source_name = 3;
   string source_description = 4;
   bool selected = 5;
-  repeated ManagedAction actions = 6;  // preview of contained actions
+  repeated ManagedAction actions = 6; // preview of contained actions
 }
 
 message ListAvailableActionsResponse {
@@ -1401,22 +1401,22 @@ message GetUserAssignmentsResponse {
 message ActionExecution {
   string id = 1;
   string device_id = 2;
-  string action_id = 3;  // Reference to ManagedAction
+  string action_id = 3; // Reference to ManagedAction
   ActionType type = 4;
   ExecutionStatus status = 5;
   string error = 6;
-  CommandOutput output = 7;  // Final output (set on completion)
+  CommandOutput output = 7; // Final output (set on completion)
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp dispatched_at = 9;
   google.protobuf.Timestamp completed_at = 10;
   int64 duration_ms = 11;
   string created_by = 12;
-  CommandOutput live_output = 13;  // Streaming output received so far (useful when status is RUNNING)
-  DesiredState desired_state = 14;  // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
-  bool changed = 15;  // Whether the execution made changes to the system (false = state was already as desired)
-  bool compliant = 16;  // Detection script result: true if compliant
-  CommandOutput detection_output = 17;  // Detection script output
-  string action_name = 18;  // Resolved from actions_projection (empty for inline actions)
+  CommandOutput live_output = 13; // Streaming output received so far (useful when status is RUNNING)
+  DesiredState desired_state = 14; // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
+  bool changed = 15; // Whether the execution made changes to the system (false = state was already as desired)
+  bool compliant = 16; // Detection script result: true if compliant
+  CommandOutput detection_output = 17; // Detection script output
+  string action_name = 18; // Resolved from actions_projection (empty for inline actions)
   // Set when status is SCHEDULED (or was, before dispatch fired). The
   // UTC timestamp at which the deferred dispatch is configured to
   // fire. Populated when a Dispatch* request supplies the run_at
@@ -1432,7 +1432,7 @@ message DispatchActionRequest {
   // Either use an action or inline action
   oneof action_source {
     // @gotags: validate:"omitempty,ulid"
-    string action_id = 2;  // Reference to ManagedAction
+    string action_id = 2; // Reference to ManagedAction
     Action inline_action = 3;
   }
   // When set, defer the dispatch until this UTC timestamp instead of
@@ -1464,7 +1464,7 @@ message DispatchToMultipleRequest {
   repeated string device_ids = 1;
   oneof action_source {
     // @gotags: validate:"omitempty,ulid"
-    string action_id = 2;  // Reference to ManagedAction
+    string action_id = 2; // Reference to ManagedAction
     Action inline_action = 3;
   }
 }
@@ -1541,10 +1541,10 @@ message ListExecutionsRequest {
   // @gotags: validate:"omitempty"
   string page_token = 2;
   // @gotags: validate:"omitempty,ulid"
-  string device_id = 3;  // optional filter
+  string device_id = 3; // optional filter
   ExecutionStatus status_filter = 4;
-  ActionType type_filter = 5;  // optional action type filter
-  string search = 6;           // searches action name and device hostname
+  ActionType type_filter = 5; // optional action type filter
+  string search = 6; // searches action name and device hostname
 }
 
 message ListExecutionsResponse {
@@ -2113,11 +2113,11 @@ message IdentityProvider {
   string default_role_id = 14;
   bool disable_password_for_linked = 15;
   string group_claim = 16;
-  map<string, string> group_mapping = 17;  // external group name → user_group_id
+  map<string, string> group_mapping = 17; // external group name → user_group_id
   google.protobuf.Timestamp created_at = 18;
   google.protobuf.Timestamp updated_at = 19;
   bool scim_enabled = 20;
-  string scim_endpoint_url = 21;  // read-only, computed by server
+  string scim_endpoint_url = 21; // read-only, computed by server
 }
 
 message IdentityLink {
@@ -2292,7 +2292,7 @@ message EnableSCIMRequest {
 }
 
 message EnableSCIMResponse {
-  string token = 1;        // plaintext token, shown once
+  string token = 1; // plaintext token, shown once
   string endpoint_url = 2; // full SCIM endpoint URL
 }
 
@@ -2483,9 +2483,9 @@ message DevicePolicyRuleEvaluation {
 // ============================================================================
 
 message SearchDateFilter {
-  string field = 1;   // index field name: "created_at", "updated_at", "occurred_at"
-  int64 start = 2;    // unix epoch seconds, 0 = no lower bound
-  int64 end = 3;      // unix epoch seconds, 0 = no upper bound
+  string field = 1; // index field name: "created_at", "updated_at", "occurred_at"
+  int64 start = 2; // unix epoch seconds, 0 = no lower bound
+  int64 end = 3; // unix epoch seconds, 0 = no upper bound
 }
 
 message SearchRequest {

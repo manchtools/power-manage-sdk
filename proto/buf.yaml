@@ -1,0 +1,31 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  # The InternalService RPC methods follow our own naming convention
+  # (Proxy* prefixes for InternalService surfaces; Internal* prefixes
+  # for the wrapper messages). buf's STANDARD lint set wants the
+  # request/response type names to match the RPC name exactly, which
+  # conflicts with that intent. Suppress the two relevant rules on the
+  # affected file rather than rename every type in the codebase — the
+  # naming convention is documented at the top of internal.proto.
+  except:
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    # Several RPCs deliberately share a response type (e.g. multiple
+    # mutation paths that all return the updated entity). Renaming
+    # them per-RPC would force the server / agent / web to track 10+
+    # near-identical types per resource; the existing pattern is the
+    # documented choice for this codebase.
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    # Several enums (DesiredState, AssignmentMode, ComplianceStatus, …)
+    # use the meaningful first variant as zero rather than carrying an
+    # _UNSPECIFIED sentinel. This is established protocol surface in
+    # the codebase; flipping to _UNSPECIFIED would be a breaking wire-
+    # format change for every existing consumer of the affected enums.
+    - ENUM_ZERO_VALUE_SUFFIX
+breaking:
+  use:
+    - FILE
