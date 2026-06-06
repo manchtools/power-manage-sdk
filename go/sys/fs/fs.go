@@ -8,6 +8,7 @@ package fs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -20,6 +21,45 @@ import (
 // stat (e.g. against an NFS server that has gone away) cannot pin
 // the calling goroutine indefinitely. F023.
 const statQueryTimeout = 10 * time.Second
+
+// ErrInvalidPath is returned by ValidatePath when the supplied path
+// would be unsafe to pass as a positional argument to a privileged
+// command (empty, contains a NUL byte, or starts with `-` and would
+// be interpreted as an option flag).
+var ErrInvalidPath = errors.New("invalid filesystem path")
+
+// ValidatePath rejects paths that would be unsafe to pass through
+// `exec.Privileged` as positional arguments. The checks are
+// intentionally minimal — no symlink resolution, no allowlisting of
+// roots — so callers that need stricter semantics can layer them on
+// top.
+//
+//   - empty → ErrInvalidPath (a Privileged call with an empty argv
+//     entry collapses verb + path and accidentally runs `rm -f`
+//     against the cwd, etc.)
+//   - NUL byte → ErrInvalidPath (the system call interprets NUL as
+//     string termination; a NUL inside the path lets an attacker
+//     smuggle a different path past higher-level filters)
+//   - leading `-` → ErrInvalidPath (would be parsed as a flag by
+//     `rm`, `chmod`, `chown`, `mkdir`, etc. — even with a `--`
+//     end-of-options separator some tools still treat it as an
+//     option in edge versions)
+//
+// Audit finding #10 called out path inputs lacking consistent
+// validation across fs.go's exported surface; this is the central
+// chokepoint every privileged file op should call before exec.
+func ValidatePath(path string) error {
+	if path == "" {
+		return fmt.Errorf("%w: path is empty", ErrInvalidPath)
+	}
+	if strings.ContainsRune(path, 0) {
+		return fmt.Errorf("%w: path contains NUL byte", ErrInvalidPath)
+	}
+	if strings.HasPrefix(path, "-") {
+		return fmt.Errorf("%w: path %q begins with '-' (would be interpreted as an option flag)", ErrInvalidPath, path)
+	}
+	return nil
+}
 
 // =============================================================================
 // Ownership Utilities
@@ -68,7 +108,10 @@ func GetOwnership(path string) (owner, group string) {
 // WriteFile writes content to a file via the privilege backend (tee).
 // This is the basic building block for privileged file writes.
 func WriteFile(ctx context.Context, path, content string) error {
-	_, err := exec.PrivilegedWithStdin(ctx, strings.NewReader(content), "tee", path)
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	_, err := exec.PrivilegedWithStdin(ctx, strings.NewReader(content), "tee", "--", path)
 	return err
 }
 
@@ -79,7 +122,10 @@ func SetMode(ctx context.Context, path, mode string) error {
 	if mode == "" {
 		return nil
 	}
-	_, err := exec.Privileged(ctx, "chmod", mode, path)
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "chmod", mode, "--", path)
 	return err
 }
 
@@ -109,7 +155,10 @@ func SetOwnership(ctx context.Context, path, owner, group string) error {
 	if ownership == "" {
 		return nil
 	}
-	_, err := exec.Privileged(ctx, "chown", ownership, path)
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "chown", "--", ownership, path)
 	return err
 }
 
@@ -157,7 +206,7 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 	}
 
 	// Atomic move into place
-	if _, err := exec.Privileged(ctx, "mv", "-f", tmpPath, path); err != nil {
+	if _, err := exec.Privileged(ctx, "mv", "-f", "--", tmpPath, path); err != nil {
 		Remove(ctx, tmpPath) // cleanup
 		return fmt.Errorf("move file into place: %w", err)
 	}
@@ -173,7 +222,10 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 // Returns the content with trailing newline preserved (matching what's on disk).
 // If the file doesn't exist, returns an empty string and nil error.
 func ReadFile(ctx context.Context, path string) (string, error) {
-	result, err := exec.Privileged(ctx, "cat", path)
+	if err := ValidatePath(path); err != nil {
+		return "", err
+	}
+	result, err := exec.Privileged(ctx, "cat", "--", path)
 	if err != nil {
 		if result != nil && strings.Contains(result.Stderr, "No such file") {
 			return "", nil
@@ -203,13 +255,30 @@ func FileExists(ctx context.Context, path string) bool {
 
 // Remove removes a file via the privilege backend (rm -f).
 // This is a best-effort operation that doesn't return errors.
+//
+// Best-effort here means we don't surface errors back to the caller,
+// not that we skip safety: path validation runs and we silently bail
+// when ValidatePath rejects the input — matching the function's
+// existing fire-and-forget contract while still refusing to invoke
+// rm on a `-flag`-shaped path.
 func Remove(ctx context.Context, path string) {
-	_, _ = exec.Privileged(ctx, "rm", "-f", path)
+	if err := ValidatePath(path); err != nil {
+		return
+	}
+	_, _ = exec.Privileged(ctx, "rm", "-f", "--", path)
 }
 
 // RemoveStrict removes a file via the privilege backend (rm -f) and returns any error.
+//
+// The `--` end-of-options separator is mandatory here: without it, a
+// path that starts with `-` would be interpreted by `rm` as a flag.
+// ValidatePath also rejects leading-`-` inputs at the boundary, so
+// this is belt-and-braces.
 func RemoveStrict(ctx context.Context, path string) error {
-	_, err := exec.Privileged(ctx, "rm", "-f", path)
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "rm", "-f", "--", path)
 	return err
 }
 
@@ -220,11 +289,14 @@ func RemoveStrict(ctx context.Context, path string) error {
 // Mkdir creates a directory via the privilege backend (mkdir).
 // If recursive is true, parent directories are created as needed (-p flag).
 func Mkdir(ctx context.Context, path string, recursive bool) error {
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
 	args := []string{}
 	if recursive {
 		args = append(args, "-p")
 	}
-	args = append(args, path)
+	args = append(args, "--", path)
 	_, err := exec.Privileged(ctx, "mkdir", args...)
 	return err
 }
@@ -263,6 +335,9 @@ var dangerousPaths = map[string]bool{
 // RemoveDir removes a directory and its contents via the privilege backend (rm -rf).
 // It validates the path to prevent accidental removal of critical system directories.
 func RemoveDir(ctx context.Context, path string) error {
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
 	clean := filepath.Clean(path)
 	if !filepath.IsAbs(clean) {
 		return fmt.Errorf("path must be absolute: %s", path)
@@ -270,7 +345,7 @@ func RemoveDir(ctx context.Context, path string) error {
 	if dangerousPaths[clean] {
 		return fmt.Errorf("refusing to remove protected path: %s", clean)
 	}
-	_, err := exec.Privileged(ctx, "rm", "-rf", clean)
+	_, err := exec.Privileged(ctx, "rm", "-rf", "--", clean)
 	return err
 }
 
@@ -280,7 +355,13 @@ func RemoveDir(ctx context.Context, path string) error {
 
 // CopyFile copies a file from src to dst via the privilege backend (cp).
 func CopyFile(ctx context.Context, src, dst string) error {
-	_, err := exec.Privileged(ctx, "cp", src, dst)
+	if err := ValidatePath(src); err != nil {
+		return err
+	}
+	if err := ValidatePath(dst); err != nil {
+		return err
+	}
+	_, err := exec.Privileged(ctx, "cp", "--", src, dst)
 	return err
 }
 

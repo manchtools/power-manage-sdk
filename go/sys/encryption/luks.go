@@ -2,6 +2,7 @@ package encryption
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,6 +12,32 @@ import (
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
+
+// LUKS2 supports eight keyslots (0..7). LUKS1 supported the same
+// range. Both formats reject values outside this range at the
+// cryptsetup layer with an opaque error; rejecting at the SDK
+// boundary surfaces the operator-facing reason clearly.
+//
+// Per audit finding #10: "validate LUKS keyslot ranges before
+// invoking cryptsetup."
+const (
+	LuksMinKeySlot = 0
+	LuksMaxKeySlot = 7
+)
+
+// ErrInvalidKeySlot is returned when AddKeyToSlot / KillSlot get a
+// slot index outside [LuksMinKeySlot, LuksMaxKeySlot].
+var ErrInvalidKeySlot = errors.New("invalid LUKS keyslot")
+
+// validateKeySlot enforces the [0, 7] range the LUKS on-disk format
+// itself uses. Wrapped in a helper so the rejection wording is
+// identical at every call site.
+func validateKeySlot(slot int) error {
+	if slot < LuksMinKeySlot || slot > LuksMaxKeySlot {
+		return fmt.Errorf("%w: slot %d outside valid range %d..%d", ErrInvalidKeySlot, slot, LuksMinKeySlot, LuksMaxKeySlot)
+	}
+	return nil
+}
 
 // IsLuks checks if a device is a LUKS-encrypted volume.
 func IsLuks(ctx context.Context, devicePath string) (bool, error) {
@@ -56,6 +83,9 @@ func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey,
 	if err := requireBackend(BackendLUKS, "AddKeyToSlot"); err != nil {
 		return err
 	}
+	if err := validateKeySlot(slot); err != nil {
+		return err
+	}
 	existingFile, err := writeKeyFile(existingKey)
 	if err != nil {
 		return err
@@ -97,6 +127,9 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 // KillSlot removes a specific LUKS slot using an existing key for authentication.
 func KillSlot(ctx context.Context, devicePath string, slot int, existingKey string) error {
 	if err := requireBackend(BackendLUKS, "KillSlot"); err != nil {
+		return err
+	}
+	if err := validateKeySlot(slot); err != nil {
 		return err
 	}
 	keyFile, err := writeKeyFile(existingKey)
