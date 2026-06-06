@@ -1,6 +1,9 @@
 // Server configuration store with persistence.
 // Plain TypeScript — no framework dependencies.
 
+import { logger, describeError } from './logger.js';
+
+const log = logger.named('config');
 const CONFIG_KEY = 'power-manage-config';
 
 export interface ServerConfig {
@@ -15,7 +18,8 @@ function loadConfig(): ServerConfig {
 	if (stored) {
 		try {
 			return JSON.parse(stored);
-		} catch {
+		} catch (err) {
+			log.warn('failed to parse persisted server config; falling back to empty', describeError(err));
 			return { serverUrl: '' };
 		}
 	}

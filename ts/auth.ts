@@ -4,6 +4,9 @@
 
 import type { User } from '../gen/ts/pm/v1/control_pb';
 import superjson from 'superjson';
+import { logger, describeError } from './logger.js';
+
+const log = logger.named('auth');
 
 const AUTH_KEY = 'power-manage-auth';
 const PERSIST_KEY = 'power-manage-persist';
@@ -38,12 +41,18 @@ function loadAuth(): StoredAuth {
 	const persistent = isPersistent();
 	const primary = persistent ? localStorage.getItem(AUTH_KEY) : sessionStorage.getItem(AUTH_KEY);
 	if (primary) {
-		try { return superjson.parse<StoredAuth>(primary); } catch { /* ignore corrupt data */ }
+		try { return superjson.parse<StoredAuth>(primary); }
+		catch (err) {
+			log.warn('failed to parse primary stored auth blob; falling back to secondary storage', describeError(err));
+		}
 	}
 
 	const fallback = persistent ? sessionStorage.getItem(AUTH_KEY) : localStorage.getItem(AUTH_KEY);
 	if (fallback) {
-		try { return superjson.parse<StoredAuth>(fallback); } catch { /* ignore corrupt data */ }
+		try { return superjson.parse<StoredAuth>(fallback); }
+		catch (err) {
+			log.warn('failed to parse fallback stored auth blob; starting with empty auth', describeError(err));
+		}
 	}
 
 	return { ...emptyAuth };
@@ -227,7 +236,7 @@ export class AuthStore {
 				this.notify();
 			}
 		} catch (error) {
-			console.error('Token refresh failed:', error);
+			log.error('token refresh failed', describeError(error));
 		}
 	}
 
@@ -246,8 +255,13 @@ export class AuthStore {
 		if (this.state.user && this.logoutFn) {
 			try {
 				await this.logoutFn();
-			} catch {
-				// Ignore errors — we're logging out regardless
+			} catch (err) {
+				// Logout-side errors are non-fatal — we're terminating
+				// the session locally regardless. Log at debug so the
+				// telemetry trail exists for someone investigating
+				// "why didn't the server-side session get torn down?"
+				// without polluting normal-operation logs.
+				log.debug('server-side logout failed; local session cleared anyway', describeError(err));
 			}
 		}
 
