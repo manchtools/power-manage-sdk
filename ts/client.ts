@@ -1866,8 +1866,9 @@ export class ApiClient {
 export function getErrorCode(error: unknown): string | undefined {
 	if (error instanceof ConnectError) {
 		const details = error.findDetails(ErrorDetailSchema);
-		if (details.length > 0 && details[0].code) {
-			return details[0].code;
+		const first = details[0];
+		if (first && first.code) {
+			return first.code;
 		}
 	}
 	return undefined;
@@ -1880,8 +1881,9 @@ export function getErrorCode(error: unknown): string | undefined {
 export function getRequestId(error: unknown): string | undefined {
 	if (error instanceof ConnectError) {
 		const details = error.findDetails(ErrorDetailSchema);
-		if (details.length > 0 && details[0].requestId) {
-			return details[0].requestId;
+		const first = details[0];
+		if (first && first.requestId) {
+			return first.requestId;
 		}
 	}
 	return undefined;

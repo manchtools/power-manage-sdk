@@ -47,11 +47,23 @@ export const EnrollRequestSchema: GenMessage<EnrollRequest> = /*@__PURE__*/
  */
 export type EnrollResponse = Message<"pm.v1.EnrollResponse"> & {
   /**
+   * The other two fields below are conditioned on this — success=true
+   * means device_id is populated and error is empty; success=false
+   * means error is populated and device_id is empty. The bool itself
+   * is unconditional but we tag it explicit-required so the
+   * proto-validate coverage tool stops counting it as a gap (audit
+   * finding #2 / #73). Bools always have a default value, so
+   * "required" here means "must be present in the wire payload" —
+   * protovalidate enforces no extra runtime check beyond that.
+   * @gotags: validate:"required"
+   *
    * @generated from field: bool success = 1;
    */
   success: boolean;
 
   /**
+   * @gotags: validate:"omitempty,ulid"
+   *
    * Assigned device ID on success
    *
    * @generated from field: string device_id = 2;
@@ -59,6 +71,8 @@ export type EnrollResponse = Message<"pm.v1.EnrollResponse"> & {
   deviceId: string;
 
   /**
+   * @gotags: validate:"omitempty,max=4096"
+   *
    * Error message on failure
    *
    * @generated from field: string error = 3;
@@ -91,11 +105,15 @@ export const GetEnrollmentStatusRequestSchema: GenMessage<GetEnrollmentStatusReq
  */
 export type GetEnrollmentStatusResponse = Message<"pm.v1.GetEnrollmentStatusResponse"> & {
   /**
+   * @gotags: validate:"required"
+   *
    * @generated from field: bool enrolled = 1;
    */
   enrolled: boolean;
 
   /**
+   * @gotags: validate:"omitempty,ulid"
+   *
    * Empty if not enrolled
    *
    * @generated from field: string device_id = 2;

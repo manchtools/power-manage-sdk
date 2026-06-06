@@ -34,9 +34,36 @@ import (
 	"fmt"
 )
 
+// ActionSignatureDomain is the explicit domain tag prepended to every
+// canonical action payload before hashing. It exists so a signature
+// produced for an action can never be replayed against a different
+// signing surface that might one day share the CA key (terminal
+// session tokens, instant-action triggers from a different source,
+// etc.) — every such surface declares its own domain string and the
+// pre-image hashes are kept disjoint.
+//
+// The constant is exported so adjacent packages can reuse the value
+// when they build their own canonical payloads against the same key.
+const ActionSignatureDomain = "power-manage-action"
+
 // canonicalPayload builds the canonical string used for signing and verification.
+//
+// Format:
+//
+//	SHA-256( ActionSignatureDomain | actionID : actionType : base64(paramsJSON) )
+//
+// The domain prefix is the cross-surface separator described above.
+// The colon-separated triplet that follows is sensitive to all three
+// inputs — any single field changing flips the hash. See
+// TestCanonicalPayload_NoCrossInputCollision for the explicit non-
+// collision contract.
+//
+// No backward compatibility shim: the project has no stable release,
+// so the canonical format is iterated in place rather than versioned.
+// Server and agent must always be on matching SDK versions for
+// signature verification.
 func canonicalPayload(actionID string, actionType int32, paramsJSON []byte) []byte {
-	canonical := fmt.Sprintf("%s:%d:%s", actionID, actionType,
+	canonical := fmt.Sprintf("%s|%s:%d:%s", ActionSignatureDomain, actionID, actionType,
 		base64.StdEncoding.EncodeToString(paramsJSON))
 	hash := sha256.Sum256([]byte(canonical))
 	return hash[:]

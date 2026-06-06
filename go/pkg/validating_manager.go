@@ -69,6 +69,9 @@ func (v *validatingManager) InstallVersion(name string, opts InstallOptions) (*C
 	if err := ValidatePackageName(name); err != nil {
 		return nil, err
 	}
+	if err := ValidatePackageVersion(opts.Version); err != nil {
+		return nil, err
+	}
 	return v.Manager.InstallVersion(name, opts)
 }
 

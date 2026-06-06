@@ -21108,7 +21108,7 @@ var File_pm_v1_control_proto protoreflect.FileDescriptor
 
 const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/control.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\x1a\x11pm/v1/agent.proto\"z\n" +
+	"\x13pm/v1/control.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13pm/v1/actions.proto\x1a\x11pm/v1/agent.proto\x1a\x12pm/v1/common.proto\"z\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
@@ -23835,9 +23835,9 @@ func file_pm_v1_control_proto_init() {
 	if File_pm_v1_control_proto != nil {
 		return
 	}
-	file_pm_v1_common_proto_init()
 	file_pm_v1_actions_proto_init()
 	file_pm_v1_agent_proto_init()
+	file_pm_v1_common_proto_init()
 	file_pm_v1_control_proto_msgTypes[80].OneofWrappers = []any{
 		(*ManagedAction_Package)(nil),
 		(*ManagedAction_App)(nil),

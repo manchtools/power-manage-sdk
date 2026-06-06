@@ -2,6 +2,9 @@
 // Plain TypeScript — no framework dependencies.
 
 import { openDB, type IDBPDatabase } from 'idb';
+import { logger, describeError } from './logger.js';
+
+const log = logger.named('offline');
 
 const DB_NAME = 'power-manage-offline';
 const DB_VERSION = 1;
@@ -110,7 +113,7 @@ export class OfflineStore {
 			this.loaded = true;
 			this.notify();
 		} catch (error) {
-			console.error('Failed to load drafts:', error);
+			log.error('failed to load drafts', describeError(error));
 			this.loaded = true;
 			this.notify();
 		}
@@ -150,7 +153,7 @@ export class OfflineStore {
 				updatedAt: new Date()
 			});
 		} catch (error) {
-			console.error('Failed to save draft:', error);
+			log.error('failed to save draft', describeError(error));
 			throw error;
 		}
 
@@ -168,7 +171,7 @@ export class OfflineStore {
 			const db = await getDB();
 			await db.delete('drafts', key);
 		} catch (error) {
-			console.error('Failed to clear draft:', error);
+			log.error('failed to clear draft', describeError(error));
 			throw error;
 		}
 
@@ -183,7 +186,7 @@ export class OfflineStore {
 			const db = await getDB();
 			await db.clear('drafts');
 		} catch (error) {
-			console.error('Failed to clear all drafts:', error);
+			log.error('failed to clear all drafts', describeError(error));
 			throw error;
 		}
 

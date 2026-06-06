@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowJs": false,
+    "resolveJsonModule": true,
+    "types": ["node"]
+  },
+  "include": [
+    "ts/**/*.ts",
+    "gen/ts/**/*.ts",
+    "test/ts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "go",
+    "gen/go"
+  ]
+}

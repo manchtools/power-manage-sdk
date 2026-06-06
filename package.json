@@ -1,8 +1,20 @@
 {
   "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint:proto": "buf lint",
+    "format:proto": "buf format --diff --exit-code"
+  },
   "devDependencies": {
     "@bufbuild/buf": "^1.64.0",
-    "@bufbuild/protoc-gen-es": "^2.11.0"
+    "@bufbuild/protoc-gen-es": "^2.11.0",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",

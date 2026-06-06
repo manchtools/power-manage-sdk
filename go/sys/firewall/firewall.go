@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"sync/atomic"
 )
@@ -71,6 +72,75 @@ func validateRuleID(id string) error {
 	}
 	if !ruleIDRE.MatchString(id) {
 		return fmt.Errorf("%w: ID %q must match %s", ErrInvalidRule, id, ruleIDRE.String())
+	}
+	return nil
+}
+
+// validatePort enforces 0 ≤ port ≤ 65535. Port 0 is the "any port"
+// sentinel; any negative or out-of-range value is rejected here so
+// every backend gets the same reply (audit finding #12 called out
+// missing port-range validation as a backend-parity gap).
+func validatePort(port int) error {
+	if port < 0 || port > 65535 {
+		return fmt.Errorf("%w: port %d outside valid TCP/UDP range 0..65535", ErrInvalidRule, port)
+	}
+	return nil
+}
+
+// validateProtocol restricts Protocol to the SDK's three canonical
+// values. Anything else (a typo, a future protocol not yet wired)
+// is refused here so the backend dispatch only ever sees one of the
+// expected three.
+func validateProtocol(p Protocol) error {
+	switch p {
+	case ProtocolTCP, ProtocolUDP, ProtocolAny:
+		return nil
+	default:
+		return fmt.Errorf("%w: protocol %q must be one of %q / %q / %q (any)",
+			ErrInvalidRule, p, ProtocolTCP, ProtocolUDP, ProtocolAny)
+	}
+}
+
+// validateAddr accepts an empty string (the "any address" sentinel),
+// a bare IP literal (v4 or v6), or a CIDR. Anything else — including
+// hostnames, garbage, and shell-shape strings — is refused.
+func validateAddr(field, addr string) error {
+	if addr == "" {
+		return nil
+	}
+	if _, _, err := net.ParseCIDR(addr); err == nil {
+		return nil
+	}
+	if net.ParseIP(addr) != nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %s %q is not a valid IP address or CIDR", ErrInvalidRule, field, addr)
+}
+
+// validateRule runs every backend-independent invariant a Rule must
+// satisfy before dispatch. Called once at the top of ApplyRule so all
+// three backends inherit the same rejection contract — backend-parity
+// of inputs was the headline of audit finding #12.
+//
+// Backend-specific rejections (firewalld's "no source scopes in the v1
+// rich rule generator", nft's "port without protocol", etc.) layer on
+// top of this; they fire in the backend's own validator after this one
+// passes.
+func validateRule(rule Rule) error {
+	if err := validateRuleID(rule.ID); err != nil {
+		return err
+	}
+	if err := validatePort(rule.Port); err != nil {
+		return err
+	}
+	if err := validateProtocol(rule.Protocol); err != nil {
+		return err
+	}
+	if err := validateAddr("source", rule.Source); err != nil {
+		return err
+	}
+	if err := validateAddr("dest", rule.Dest); err != nil {
+		return err
 	}
 	return nil
 }
@@ -195,7 +265,7 @@ func (m *Manager) Namespace() string { return m.namespace }
 // that fail validation and ErrBackendNotSupported when the active
 // backend has no implementation.
 func (m *Manager) ApplyRule(ctx context.Context, rule Rule) error {
-	if err := validateRuleID(rule.ID); err != nil {
+	if err := validateRule(rule); err != nil {
 		return err
 	}
 	switch CurrentBackend() {

@@ -2982,7 +2982,7 @@ var File_pm_v1_agent_proto protoreflect.FileDescriptor
 
 const file_pm_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x12pm/v1/common.proto\x1a\x13pm/v1/actions.proto\"\xe7\x06\n" +
+	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x13pm/v1/actions.proto\x1a\x12pm/v1/common.proto\"\xe7\x06\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x05hello\x18\n" +
@@ -3338,8 +3338,8 @@ func file_pm_v1_agent_proto_init() {
 	if File_pm_v1_agent_proto != nil {
 		return
 	}
-	file_pm_v1_common_proto_init()
 	file_pm_v1_actions_proto_init()
+	file_pm_v1_common_proto_init()
 	file_pm_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
 		(*AgentMessage_Hello)(nil),
 		(*AgentMessage_Heartbeat)(nil),

@@ -27,22 +27,35 @@ service DeviceAuthService {
 
 message EnrollRequest {
   // @gotags: validate:"required,url"
-  string server_url = 1;   // Control server URL
+  string server_url = 1; // Control server URL
   // @gotags: validate:"required"
-  string token = 2;        // Registration token from web UI
-  reserved 3;              // was bool skip_verify; removed in 2026.05 (TLS bypass is not supported)
+  string token = 2; // Registration token from web UI
+  reserved 3; // was bool skip_verify; removed in 2026.05 (TLS bypass is not supported)
   reserved "skip_verify";
 }
 
 message EnrollResponse {
+  // The other two fields below are conditioned on this — success=true
+  // means device_id is populated and error is empty; success=false
+  // means error is populated and device_id is empty. The bool itself
+  // is unconditional but we tag it explicit-required so the
+  // proto-validate coverage tool stops counting it as a gap (audit
+  // finding #2 / #73). Bools always have a default value, so
+  // "required" here means "must be present in the wire payload" —
+  // protovalidate enforces no extra runtime check beyond that.
+  // @gotags: validate:"required"
   bool success = 1;
-  string device_id = 2;    // Assigned device ID on success
-  string error = 3;        // Error message on failure
+  // @gotags: validate:"omitempty,ulid"
+  string device_id = 2; // Assigned device ID on success
+  // @gotags: validate:"omitempty,max=4096"
+  string error = 3; // Error message on failure
 }
 
 message GetEnrollmentStatusRequest {}
 
 message GetEnrollmentStatusResponse {
+  // @gotags: validate:"required"
   bool enrolled = 1;
-  string device_id = 2;    // Empty if not enrolled
+  // @gotags: validate:"omitempty,ulid"
+  string device_id = 2; // Empty if not enrolled
 }

@@ -25,19 +25,43 @@ func TestBuildAddArgs_PSK(t *testing.T) {
 
 	args := BuildAddArgs(p)
 
+	// SECURITY contract: the PSK MUST NOT appear in nmcli argv. PSK
+	// provisioning goes through the keyfile-write path in
+	// wifi_keyfile.go so the secret never lands in /proc/<pid>/cmdline.
+	// The argv builder still carries the key-mgmt setting because that
+	// is not a secret; everything else (autoconnect, priority, hidden,
+	// SSID) is also fine on argv.
 	expected := []string{
 		"con", "add",
 		"con-name", "pm-wifi-abc123",
 		"type", "wifi",
 		"ssid", "CorpNet",
 		"wifi-sec.key-mgmt", "wpa-psk",
-		"wifi-sec.psk", "hunter2",
 		"connection.autoconnect", "yes",
 		"connection.autoconnect-priority", "10",
 		"wifi.hidden", "yes",
 	}
 
 	assertArgs(t, expected, args)
+}
+
+// TestBuildAddArgs_PSK_NeverLeaksPSKThroughArgv is a regression lock
+// for the audit finding (2026-06-06): "WiFi PSKs are placed in
+// process argv and tests assert that behavior." Any future refactor
+// that re-adds the PSK to argv must change this test deliberately.
+func TestBuildAddArgs_PSK_NeverLeaksPSKThroughArgv(t *testing.T) {
+	const psk = "hunter2-distinctive-marker"
+	args := BuildAddArgs(WiFiProfile{
+		Name:     "pm-wifi-leak-check",
+		SSID:     "CorpNet",
+		AuthType: WiFiAuthPSK,
+		PSK:      psk,
+	})
+	for i, a := range args {
+		if a == psk {
+			t.Fatalf("PSK leaked into nmcli argv at position %d: %v", i, args)
+		}
+	}
 }
 
 func TestBuildAddArgs_EAPTLS(t *testing.T) {
@@ -115,17 +139,35 @@ func TestBuildModifyArgs_PSK(t *testing.T) {
 
 	args := BuildModifyArgs(p)
 
+	// Same SECURITY contract as BuildAddArgs — the PSK must not
+	// appear here either. PSK updates go through the keyfile path.
 	expected := []string{
 		"con", "mod", "pm-wifi-abc123",
 		"wifi.ssid", "CorpNet",
 		"wifi-sec.key-mgmt", "wpa-psk",
-		"wifi-sec.psk", "newpass",
 		"connection.autoconnect", "yes",
 		"connection.autoconnect-priority", "5",
 		"wifi.hidden", "no",
 	}
 
 	assertArgs(t, expected, args)
+}
+
+// TestBuildModifyArgs_PSK_NeverLeaksPSKThroughArgv mirrors the
+// add-argv regression lock for the modify path.
+func TestBuildModifyArgs_PSK_NeverLeaksPSKThroughArgv(t *testing.T) {
+	const psk = "rotated-psk-distinctive-marker"
+	args := BuildModifyArgs(WiFiProfile{
+		Name:     "pm-wifi-leak-check",
+		SSID:     "CorpNet",
+		AuthType: WiFiAuthPSK,
+		PSK:      psk,
+	})
+	for i, a := range args {
+		if a == psk {
+			t.Fatalf("PSK leaked into nmcli modify argv at position %d: %v", i, args)
+		}
+	}
 }
 
 func TestBuildModifyArgs_EAPTLS(t *testing.T) {

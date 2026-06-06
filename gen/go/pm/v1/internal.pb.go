@@ -25,8 +25,9 @@ const (
 // InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
 // extracted from mTLS on the gateway side.
 type InternalSyncActionsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -70,9 +71,11 @@ func (x *InternalSyncActionsRequest) GetDeviceId() string {
 
 // InternalValidateLuksTokenRequest wraps ValidateLuksTokenRequest.
 type InternalValidateLuksTokenRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,min=1,max=256"
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,min=1,max=256"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -123,9 +126,11 @@ func (x *InternalValidateLuksTokenRequest) GetToken() string {
 
 // InternalGetLuksKeyRequest includes device_id (from mTLS) and action_id.
 type InternalGetLuksKeyRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	ActionId      string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	ActionId      string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -176,15 +181,20 @@ func (x *InternalGetLuksKeyRequest) GetActionId() string {
 
 // InternalStoreLuksKeyRequest includes device_id (from mTLS) and key data.
 type InternalStoreLuksKeyRequest struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId   string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	ActionId   string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	DevicePath string                 `protobuf:"bytes,3,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty"`
-	Passphrase string                 `protobuf:"bytes,4,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	ActionId string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,min=1,max=4096"
+	DevicePath string `protobuf:"bytes,3,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,min=1,max=4096"`
+	// @gotags: validate:"required,min=1,max=1024"
+	Passphrase string `protobuf:"bytes,4,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=1024"`
 	// Why this rotation happened. INITIAL on the first rotation for the
 	// (device, action) pair; SCHEDULED for any subsequent policy-driven
 	// rotation. Stored on the event as the lowercase string form.
-	RotationReason RotationReason `protobuf:"varint,5,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty"`
+	// @gotags: validate:"required"
+	RotationReason RotationReason `protobuf:"varint,5,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty" validate:"required"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -261,14 +271,17 @@ func (x *InternalStoreLuksKeyRequest) GetRotationReason() RotationReason {
 type LpsPasswordRotation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Local Linux username whose password was rotated.
-	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// @gotags: validate:"required,min=1,max=64"
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=64"`
 	// Plaintext rotated password. Encrypted at rest by control before the
 	// event is appended; never stored or logged in cleartext.
-	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	// @gotags: validate:"required,min=1,max=4096"
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=1,max=4096"`
 	// RFC 3339 timestamp the agent observed the rotation. The control
 	// server keeps the agent's clock here rather than re-stamping at
 	// receipt so the timeline reflects the device's reality.
-	RotatedAt string `protobuf:"bytes,3,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
+	// @gotags: validate:"required,min=1,max=64"
+	RotatedAt string `protobuf:"bytes,3,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty" validate:"required,min=1,max=64"`
 	// Why this rotation happened. INITIAL on the first time the LPS
 	// action ran for the user (no prior managed password to retain);
 	// SCHEDULED for any subsequent policy-driven rotation; AUTH_GRACE
@@ -276,7 +289,8 @@ type LpsPasswordRotation struct {
 	// (LPS-only path that signals "rotate now to limit the leaked-
 	// password window" — never emitted from LUKS). Stored on the event
 	// as the lowercase string form.
-	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty"`
+	// @gotags: validate:"required"
+	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -342,10 +356,13 @@ func (x *LpsPasswordRotation) GetReason() RotationReason {
 // InternalStoreLpsPasswordsRequest sends LPS password rotations to control
 // for encryption and storage. Transmitted over internal RPC, never via Valkey.
 type InternalStoreLpsPasswordsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	ActionId      string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	Rotations     []*LpsPasswordRotation `protobuf:"bytes,3,rep,name=rotations,proto3" json:"rotations,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	ActionId string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,min=1,dive"
+	Rotations     []*LpsPasswordRotation `protobuf:"bytes,3,rep,name=rotations,proto3" json:"rotations,omitempty" validate:"required,min=1,dive"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -592,8 +609,9 @@ func (x *InternalValidateTerminalTokenResponse) GetRows() uint32 {
 // VerifyDeviceRequest is sent by the gateway to verify a device before
 // allowing it to connect. Contains the device_id from the mTLS certificate.
 type VerifyDeviceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -676,19 +694,25 @@ func (*VerifyDeviceResponse) Descriptor() ([]byte, []int) {
 // snapshot. The control server enriches it with user/device metadata
 // from its own database before returning the merged result to clients.
 type GatewayTerminalSessionInfo struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
 	// ID of the Power Manage user that opened the session.
-	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
 	// Target device ID (the gateway already knows this from the active
 	// agent connection).
-	DeviceId string `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	DeviceId string `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// The dedicated TTY user the agent spawned the shell as.
-	TtyUser   string                 `protobuf:"bytes,4,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty"`
-	StartedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	// @gotags: validate:"required,min=1,max=64"
+	TtyUser string `protobuf:"bytes,4,opt,name=tty_user,json=ttyUser,proto3" json:"tty_user,omitempty" validate:"required,min=1,max=64"`
+	// @gotags: validate:"required"
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty" validate:"required"`
 	// Last activity (any input or output traffic) — used by the gateway's
 	// idle-timeout enforcement and surfaced in the admin view.
-	LastActivityAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
+	// @gotags: validate:"required"
+	LastActivityAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty" validate:"required"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }

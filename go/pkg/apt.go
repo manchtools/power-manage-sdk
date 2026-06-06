@@ -55,7 +55,15 @@ func (a *Apt) Info() (name, version string, err error) {
 
 // Install installs packages (latest version).
 // Uses --fix-broken to automatically resolve dependency issues.
+//
+// Names are validated against ValidatePackageNames before any command
+// runs so a direct NewApt() caller (which bypasses the
+// validatingManager wrapper used by New()) still gets shell-shape /
+// option-shape rejection — audit finding #7.
 func (a *Apt) Install(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -66,6 +74,12 @@ func (a *Apt) Install(packages ...string) (*CommandResult, error) {
 // InstallVersion installs a package with specific version options.
 // Uses --fix-broken to automatically resolve dependency issues.
 func (a *Apt) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
+	if err := ValidatePackageVersion(opts.Version); err != nil {
+		return nil, err
+	}
 	pkgSpec := name
 	if opts.Version != "" {
 		pkgSpec = fmt.Sprintf("%s=%s", name, opts.Version)
@@ -82,6 +96,9 @@ func (a *Apt) InstallVersion(name string, opts InstallOptions) (*CommandResult, 
 
 // Remove removes packages.
 func (a *Apt) Remove(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -91,6 +108,9 @@ func (a *Apt) Remove(packages ...string) (*CommandResult, error) {
 
 // Purge removes packages including configuration files.
 func (a *Apt) Purge(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -115,6 +135,9 @@ var dpkgConfOptions = []string{
 
 // Upgrade upgrades packages.
 func (a *Apt) Upgrade(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		args := append([]string{"upgrade", "-y"}, dpkgConfOptions...)
 		return a.run(a.ctx, "apt", args...)
@@ -247,6 +270,9 @@ func (a *Apt) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (a *Apt) Show(name string) (*Package, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	var cmd string
 	if a.hasApt() {
 		cmd = "apt"
@@ -295,6 +321,9 @@ func (a *Apt) Show(name string) (*Package, error) {
 
 // ListVersions lists all available versions of a package.
 func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	out, err := readCmd(a.ctx, "apt-cache", "madison", name).Output()
 	if err != nil {
 		return nil, err
@@ -334,12 +363,18 @@ func (a *Apt) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (a *Apt) IsInstalled(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	err := readCmd(a.ctx, "dpkg", "-s", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (a *Apt) GetInstalledVersion(name string) (string, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return "", err
+	}
 	out, err := readCmd(a.ctx, "dpkg-query", "-W", "-f=${Version}", name).Output()
 	if err != nil {
 		return "", err
@@ -349,6 +384,9 @@ func (a *Apt) GetInstalledVersion(name string) (string, error) {
 
 // Pin prevents a package from being upgraded (apt-mark hold).
 func (a *Apt) Pin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -358,6 +396,9 @@ func (a *Apt) Pin(packages ...string) (*CommandResult, error) {
 
 // Unpin allows a package to be upgraded again (apt-mark unhold).
 func (a *Apt) Unpin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -392,6 +433,9 @@ func (a *Apt) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (held).
 func (a *Apt) IsPinned(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	out, err := readCmd(a.ctx, "apt-mark", "showhold", name).Output()
 	if err != nil {
 		return false, err

@@ -37,16 +37,36 @@ func RunWithStdin(ctx context.Context, stdin io.Reader, name string, args ...str
 // to keep the run reproducible. SDK helper for agent finding F025
 // (LC_ALL=C for `last(1)` parsing).
 func RunWithCLocale(ctx context.Context, name string, args ...string) (*Result, error) {
-	env := []string{"LC_ALL=C", "LANG=C"}
-	if path := os.Getenv("PATH"); path != "" {
-		env = append(env, "PATH="+path)
-	}
-	return RunStreaming(ctx, name, args, env, "", nil)
+	// RunStreaming prepends a sanitized PATH= for us when envVars is
+	// non-empty, so we only need to pass the deterministic-locale
+	// pair. The previous explicit PATH+=os.Getenv("PATH") here would
+	// now be redundant (PATH is on the blocklist for user-supplied
+	// env, but the SDK-internal prepend is unaffected).
+	return RunStreaming(ctx, name, args, []string{"LC_ALL=C", "LANG=C"}, "", nil)
 }
 
 // RunStreaming executes a command with real-time output streaming.
 // The callback is called for each line of output as it's produced.
+//
+// SECURITY: every entry in envVars is validated against
+// IsAllowedEnvVar before the child is spawned. Names that hijack
+// process execution (LD_PRELOAD, PATH, BASH_ENV, GCONV_PATH,
+// LD_LIBRARY_PATH, NODE_OPTIONS, PYTHONPATH, …) are refused with
+// ErrBlockedEnvVar. Entries that aren't KEY=VALUE shaped are refused
+// with ErrInvalidEnvVar. This is the SDK boundary — every caller
+// (Privileged, PrivilegedStreaming, pkg/exec.runPM, …) inherits the
+// check, so the audit-finding-#8 enforcement lives in one place.
 func RunStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
+	for _, e := range envVars {
+		key, _, ok := strings.Cut(e, "=")
+		if !ok {
+			return nil, fmt.Errorf("%w: env entry must be KEY=VALUE, got %q", ErrInvalidEnvVar, e)
+		}
+		if !IsAllowedEnvVar(key) {
+			return nil, fmt.Errorf("%w: refusing to forward env var %q to child (hijack-prone names like LD_PRELOAD, PATH, BASH_ENV are refused at this boundary)", ErrBlockedEnvVar, key)
+		}
+	}
+
 	c := cmd.NewCmdOptions(cmd.Options{
 		Buffered:       false,
 		Streaming:      true,
@@ -57,7 +77,18 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 		c.Dir = dir
 	}
 	if len(envVars) > 0 {
-		c.Env = envVars
+		// Compose final env: sanitized PATH (from the agent's own
+		// environment, which the BlockedEnvVars check kept the caller
+		// from supplying) + the validated user vars. Callers who
+		// don't pass env vars keep the previous "inherit parent
+		// fully" semantics — that path is unchanged for backward
+		// compatibility.
+		finalEnv := make([]string, 0, len(envVars)+1)
+		if path := os.Getenv("PATH"); path != "" {
+			finalEnv = append(finalEnv, "PATH="+path)
+		}
+		finalEnv = append(finalEnv, envVars...)
+		c.Env = finalEnv
 	}
 
 	statusChan := c.Start()
