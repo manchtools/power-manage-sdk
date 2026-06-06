@@ -53,6 +53,9 @@ func (z *Zypper) Info() (name, version string, err error) {
 
 // Install installs packages (latest version).
 func (z *Zypper) Install(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -63,6 +66,12 @@ func (z *Zypper) Install(packages ...string) (*CommandResult, error) {
 
 // InstallVersion installs a package with specific version options.
 func (z *Zypper) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
+	if err := ValidatePackageVersion(opts.Version); err != nil {
+		return nil, err
+	}
 	pkgSpec := name
 	if opts.Version != "" {
 		// Zypper uses = for version specification
@@ -80,6 +89,9 @@ func (z *Zypper) InstallVersion(name string, opts InstallOptions) (*CommandResul
 
 // Remove removes packages.
 func (z *Zypper) Remove(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -89,6 +101,9 @@ func (z *Zypper) Remove(packages ...string) (*CommandResult, error) {
 
 // Purge removes packages (zypper doesn't distinguish purge from remove).
 func (z *Zypper) Purge(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	return z.Remove(packages...)
 }
 
@@ -99,6 +114,9 @@ func (z *Zypper) Update() (*CommandResult, error) {
 
 // Upgrade upgrades packages.
 func (z *Zypper) Upgrade(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		// Upgrade all packages
 		return z.run(z.ctx, "--non-interactive", "update")
@@ -250,6 +268,9 @@ func (z *Zypper) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (z *Zypper) Show(name string) (*Package, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "info", name).Output()
 	if err != nil {
 		return nil, err
@@ -294,6 +315,9 @@ func (z *Zypper) Show(name string) (*Package, error) {
 
 // ListVersions lists all available versions of a package.
 func (z *Zypper) ListVersions(name string) (*VersionInfo, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	// Use --match-exact to get exact package name matches
 	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "search", "-s", "--match-exact", name).Output()
 	if err != nil {
@@ -352,12 +376,18 @@ func (z *Zypper) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (z *Zypper) IsInstalled(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	err := readCmd(z.ctx, "rpm", "-q", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (z *Zypper) GetInstalledVersion(name string) (string, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return "", err
+	}
 	out, err := readCmd(z.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
 	if err != nil {
 		return "", err
@@ -367,6 +397,9 @@ func (z *Zypper) GetInstalledVersion(name string) (string, error) {
 
 // Pin prevents a package from being upgraded using package locks.
 func (z *Zypper) Pin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -376,6 +409,9 @@ func (z *Zypper) Pin(packages ...string) (*CommandResult, error) {
 
 // Unpin allows a package to be upgraded again by removing the lock.
 func (z *Zypper) Unpin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -425,6 +461,9 @@ func (z *Zypper) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (locked).
 func (z *Zypper) IsPinned(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	out, err := readCmd(z.ctx, "zypper", "--non-interactive", "locks").Output()
 	if err != nil {
 		return false, nil

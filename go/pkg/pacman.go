@@ -64,6 +64,9 @@ func (p *Pacman) Info() (name, version string, err error) {
 
 // Install installs packages (latest version).
 func (p *Pacman) Install(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -76,6 +79,12 @@ func (p *Pacman) Install(packages ...string) (*CommandResult, error) {
 // Note: Pacman doesn't natively support installing specific versions.
 // This requires the package to be available in the repos or using downgrade tools.
 func (p *Pacman) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
+	if err := ValidatePackageVersion(opts.Version); err != nil {
+		return nil, err
+	}
 	if opts.Version == "" {
 		return p.Install(name)
 	}
@@ -95,6 +104,9 @@ func (p *Pacman) InstallVersion(name string, opts InstallOptions) (*CommandResul
 
 // Remove removes packages.
 func (p *Pacman) Remove(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -105,6 +117,9 @@ func (p *Pacman) Remove(packages ...string) (*CommandResult, error) {
 
 // Purge removes packages including configuration files.
 func (p *Pacman) Purge(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -121,6 +136,9 @@ func (p *Pacman) Update() (*CommandResult, error) {
 
 // Upgrade upgrades packages.
 func (p *Pacman) Upgrade(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		// -Syu: sync, refresh, upgrade all
 		return p.run(p.ctx, "-Syu", "--noconfirm")
@@ -243,6 +261,9 @@ func (p *Pacman) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (p *Pacman) Show(name string) (*Package, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	// Try installed first (-Qi), then sync database (-Si)
 	var out []byte
 	var err error
@@ -288,6 +309,9 @@ func (p *Pacman) Show(name string) (*Package, error) {
 // ListVersions lists all available versions of a package.
 // Note: Pacman typically only keeps the latest version in repos.
 func (p *Pacman) ListVersions(name string) (*VersionInfo, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	info := &VersionInfo{Name: name}
 	if installed, err := p.GetInstalledVersion(name); err != nil {
 		slog.Debug("failed to get installed version", "package", name, "error", err)
@@ -328,12 +352,18 @@ func (p *Pacman) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (p *Pacman) IsInstalled(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	err := readCmd(p.ctx, "pacman", "-Q", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (p *Pacman) GetInstalledVersion(name string) (string, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return "", err
+	}
 	out, err := readCmd(p.ctx, "pacman", "-Q", name).Output()
 	if err != nil {
 		return "", err
@@ -348,6 +378,9 @@ func (p *Pacman) GetInstalledVersion(name string) (string, error) {
 // Pin prevents a package from being upgraded using IgnorePkg in pacman.conf.
 // Note: This modifies /etc/pacman.conf which requires root privileges.
 func (p *Pacman) Pin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -381,6 +414,9 @@ func (p *Pacman) Pin(packages ...string) (*CommandResult, error) {
 
 // Unpin allows a package to be upgraded again by removing from IgnorePkg.
 func (p *Pacman) Unpin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -430,6 +466,9 @@ func (p *Pacman) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (in IgnorePkg).
 func (p *Pacman) IsPinned(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
 	if err != nil {
 		return false, err

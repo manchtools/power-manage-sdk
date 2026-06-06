@@ -56,6 +56,9 @@ func (f *Flatpak) Info() (name, version string, err error) {
 // Install installs packages (latest version).
 // Package names should be in the format: remote/app-id or just app-id (uses flathub by default).
 func (f *Flatpak) Install(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -74,6 +77,12 @@ func (f *Flatpak) Install(packages ...string) (*CommandResult, error) {
 // Note: Flatpak doesn't support installing specific versions directly.
 // The version field is ignored; use commits or refs for version control.
 func (f *Flatpak) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
+	if err := ValidatePackageVersion(opts.Version); err != nil {
+		return nil, err
+	}
 	// Flatpak doesn't support version pinning in the traditional sense
 	// You would need to use specific commits, which is advanced usage
 	return f.Install(name)
@@ -81,6 +90,9 @@ func (f *Flatpak) InstallVersion(name string, opts InstallOptions) (*CommandResu
 
 // Remove removes packages.
 func (f *Flatpak) Remove(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -96,6 +108,9 @@ func (f *Flatpak) Remove(packages ...string) (*CommandResult, error) {
 
 // Purge removes packages and their data.
 func (f *Flatpak) Purge(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -122,6 +137,9 @@ func (f *Flatpak) Update() (*CommandResult, error) {
 
 // Upgrade upgrades packages.
 func (f *Flatpak) Upgrade(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	args := []string{"update", "-y", "--noninteractive"}
 	if f.useSudo {
 		args = append(args, "--system")
@@ -260,6 +278,9 @@ func (f *Flatpak) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a Flatpak application.
 func (f *Flatpak) Show(name string) (*Package, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	args := []string{"info", name}
 	if f.useSudo {
 		args = append(args, "--system")
@@ -327,6 +348,9 @@ func (f *Flatpak) showFromRemote(name string) (*Package, error) {
 // ListVersions lists available versions of a Flatpak application.
 // Note: Flatpak typically only has one version per branch in remotes.
 func (f *Flatpak) ListVersions(name string) (*VersionInfo, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	info := &VersionInfo{Name: name}
 	if installed, err := f.GetInstalledVersion(name); err != nil {
 		slog.Debug("failed to get installed version", "package", name, "error", err)
@@ -358,6 +382,9 @@ func (f *Flatpak) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a Flatpak application is installed.
 func (f *Flatpak) IsInstalled(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	args := []string{"info", name}
 	if f.useSudo {
 		args = append(args, "--system")
@@ -370,6 +397,9 @@ func (f *Flatpak) IsInstalled(name string) (bool, error) {
 
 // GetInstalledVersion returns the installed version of a Flatpak application.
 func (f *Flatpak) GetInstalledVersion(name string) (string, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return "", err
+	}
 	args := []string{"info", "--show-version", name}
 	if f.useSudo {
 		args = append(args, "--system")
@@ -385,6 +415,9 @@ func (f *Flatpak) GetInstalledVersion(name string) (string, error) {
 
 // Pin prevents a Flatpak application from being upgraded using mask.
 func (f *Flatpak) Pin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -417,6 +450,9 @@ func (f *Flatpak) Pin(packages ...string) (*CommandResult, error) {
 
 // Unpin allows a Flatpak application to be upgraded again by removing the mask.
 func (f *Flatpak) Unpin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -481,6 +517,9 @@ func (f *Flatpak) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a Flatpak application is masked (pinned).
 func (f *Flatpak) IsPinned(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	args := []string{"mask"}
 	if f.useSudo {
 		args = append(args, "--system")

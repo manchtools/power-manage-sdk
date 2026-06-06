@@ -67,6 +67,9 @@ func (d *Dnf) Info() (name, version string, err error) {
 
 // Install installs packages (latest version).
 func (d *Dnf) Install(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -76,6 +79,12 @@ func (d *Dnf) Install(packages ...string) (*CommandResult, error) {
 
 // InstallVersion installs a package with specific version options.
 func (d *Dnf) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
+	if err := ValidatePackageVersion(opts.Version); err != nil {
+		return nil, err
+	}
 	pkgSpec := name
 	if opts.Version != "" {
 		pkgSpec = fmt.Sprintf("%s-%s", name, opts.Version)
@@ -99,6 +108,9 @@ func (d *Dnf) InstallVersion(name string, opts InstallOptions) (*CommandResult, 
 
 // Remove removes packages.
 func (d *Dnf) Remove(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -120,6 +132,9 @@ func (d *Dnf) Update() (*CommandResult, error) {
 
 // Upgrade upgrades packages.
 func (d *Dnf) Upgrade(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return d.run(d.ctx, "upgrade", "-y")
 	}
@@ -234,6 +249,9 @@ func (d *Dnf) ListUpgradable() ([]PackageUpdate, error) {
 
 // Show returns detailed information about a package.
 func (d *Dnf) Show(name string) (*Package, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	out, err := readCmd(d.ctx, "dnf", "info", "-q", name).Output()
 	if err != nil {
 		return nil, err
@@ -276,6 +294,9 @@ func (d *Dnf) Show(name string) (*Package, error) {
 
 // ListVersions lists all available versions of a package.
 func (d *Dnf) ListVersions(name string) (*VersionInfo, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return nil, err
+	}
 	out, err := readCmd(d.ctx, "dnf", "list", "--showduplicates", "-q", name).Output()
 	if err != nil {
 		return nil, err
@@ -320,12 +341,18 @@ func (d *Dnf) ListVersions(name string) (*VersionInfo, error) {
 
 // IsInstalled checks if a package is installed.
 func (d *Dnf) IsInstalled(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	err := readCmd(d.ctx, "rpm", "-q", name).Run()
 	return err == nil, nil
 }
 
 // GetInstalledVersion returns the installed version of a package.
 func (d *Dnf) GetInstalledVersion(name string) (string, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return "", err
+	}
 	out, err := readCmd(d.ctx, "rpm", "-q", "--queryformat", "%{VERSION}-%{RELEASE}", name).Output()
 	if err != nil {
 		return "", err
@@ -349,6 +376,9 @@ func (d *Dnf) ensureVersionLock() error {
 // Pin prevents a package from being upgraded (dnf versionlock).
 // Automatically installs the versionlock plugin if not present.
 func (d *Dnf) Pin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -362,6 +392,9 @@ func (d *Dnf) Pin(packages ...string) (*CommandResult, error) {
 // Unpin allows a package to be upgraded again (dnf versionlock delete).
 // Automatically installs the versionlock plugin if not present.
 func (d *Dnf) Unpin(packages ...string) (*CommandResult, error) {
+	if err := ValidatePackageNames(packages); err != nil {
+		return nil, err
+	}
 	if len(packages) == 0 {
 		return &CommandResult{Success: true}, nil
 	}
@@ -404,6 +437,9 @@ func (d *Dnf) ListPinned() ([]Package, error) {
 
 // IsPinned checks if a package is pinned (versionlocked).
 func (d *Dnf) IsPinned(name string) (bool, error) {
+	if err := ValidatePackageName(name); err != nil {
+		return false, err
+	}
 	out, err := readCmd(d.ctx, "dnf", "versionlock", "list", "-q").Output()
 	if err != nil {
 		return false, nil // versionlock plugin might not be installed

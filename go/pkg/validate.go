@@ -59,3 +59,37 @@ func ValidatePackageNames(names []string) error {
 	}
 	return nil
 }
+
+// validPackageVersion guards InstallOptions.Version (and any other
+// "version" field that ends up on a package-manager argv). The
+// audit's finding #7 explicitly called out version fields alongside
+// names — without this, a caller could smuggle option-shaped or
+// shell-shaped input through Version even when Name was strict.
+//
+// The grammar covers the cross-distro version dialects we have to
+// support:
+//
+//   - Debian / Ubuntu: epoch:upstream-debian_revision, e.g.
+//     `1:2.4.6-1ubuntu0.10`.
+//   - RPM (dnf / zypper): EVR with `~` / `^` separators in modern
+//     Fedora pre-release semantics.
+//   - Arch: `1.2.3-1`, possibly with `:epoch` prefix.
+//
+// Empty is allowed: ValidatePackageVersion("") returns nil so the
+// "no specific version" path stays implicit. Length cap mirrors
+// validPackageName.
+var validPackageVersion = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._+:~^-]{0,127}$`)
+
+// ValidatePackageVersion checks a version string before it lands in
+// `<name>=<version>` (apt) or similar argv constructs. Empty version
+// is treated as "no version pinned" and accepted; any non-empty
+// version must match the cross-distro grammar in validPackageVersion.
+func ValidatePackageVersion(version string) error {
+	if version == "" {
+		return nil
+	}
+	if !validPackageVersion.MatchString(version) {
+		return fmt.Errorf("invalid package version %q: must start with [a-zA-Z0-9] and contain only [a-zA-Z0-9._+:~^-]", version)
+	}
+	return nil
+}
