@@ -117,7 +117,19 @@ func CreateOrUpdate(ctx context.Context, profile WiFiProfile) (bool, error) {
 
 // createConnection writes certs (if EAP-TLS) and creates a new connection.
 // Cleans up certs on failure since no connection exists to use them.
+//
+// PSK profiles take a separate path: the connection is provisioned by
+// writing a NetworkManager keyfile with mode 0600 and asking NM to
+// reload. Passing `wifi-sec.psk <password>` on the nmcli command line
+// would leak the password via /proc/<pid>/cmdline — see
+// wifi_keyfile.go for the full rationale.
 func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
+	if p.AuthType == WiFiAuthPSK {
+		if err := provisionPSKConnection(ctx, p); err != nil {
+			return false, fmt.Errorf("create PSK connection: %w", err)
+		}
+		return true, nil
+	}
 	if p.AuthType == WiFiAuthEAPTLS {
 		if err := writeCerts(p); err != nil {
 			return false, fmt.Errorf("write certificates: %w", err)
@@ -140,6 +152,20 @@ func createConnection(ctx context.Context, p WiFiProfile) (bool, error) {
 // the staged path so a partial read never causes the live cert dir to be
 // overwritten.
 func updateConnection(ctx context.Context, p WiFiProfile) (bool, error) {
+	// PSK profiles are managed exclusively via keyfile, never via
+	// `nmcli connection modify`. Because nmcli cannot read the
+	// current PSK back out (it's a secret), we always rewrite the
+	// keyfile on update and let NetworkManager reconcile. Any other
+	// drift detection here would have to assume the PSK is unchanged
+	// — that's the surprising failure mode operators hit when a
+	// rotation seems to vanish.
+	if p.AuthType == WiFiAuthPSK {
+		if err := provisionPSKConnection(ctx, p); err != nil {
+			return false, fmt.Errorf("update PSK connection: %w", err)
+		}
+		return true, nil
+	}
+
 	current, err := GetSettings(ctx, p.Name)
 	if err != nil {
 		// Can't read current settings — proceed with modify but skip drift
@@ -450,9 +476,14 @@ func BuildModifyArgs(p WiFiProfile) []string {
 func appendAuthArgs(args []string, p WiFiProfile) []string {
 	switch p.AuthType {
 	case WiFiAuthPSK:
+		// SECURITY: the PSK is intentionally omitted from the argv.
+		// Passing `wifi-sec.psk <pw>` here would put the password into
+		// /proc/<pid>/cmdline for anything in the PID namespace to
+		// read. PSK provisioning happens via writeKeyfile + reload
+		// instead — see createConnection / updateConnection. The
+		// key-mgmt setting is still safe to pass on argv.
 		args = append(args,
 			"wifi-sec.key-mgmt", "wpa-psk",
-			"wifi-sec.psk", p.PSK,
 		)
 	case WiFiAuthEAPTLS:
 		args = append(args,
