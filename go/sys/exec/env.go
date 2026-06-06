@@ -1,9 +1,21 @@
 package exec
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 )
+
+// ErrInvalidEnvVar is returned when an env entry passed to RunStreaming
+// is not in the canonical KEY=VALUE form. Surfaced as a programmer
+// error so the bad value isn't silently dropped before the child runs.
+var ErrInvalidEnvVar = errors.New("invalid env entry")
+
+// ErrBlockedEnvVar is returned when an env entry's KEY is on the
+// hijack-blocklist (LD_PRELOAD, PATH override, BASH_ENV, GCONV_PATH,
+// etc.). Catches CVE-class injections at the SDK boundary so every
+// RunStreaming caller doesn't have to remember the check.
+var ErrBlockedEnvVar = errors.New("env var blocked by hijack-prevention allowlist")
 
 // ValidEnvVarName matches safe environment variable names (letters, digits, underscore).
 var ValidEnvVarName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
