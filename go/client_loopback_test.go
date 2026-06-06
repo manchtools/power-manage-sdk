@@ -22,8 +22,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
@@ -105,17 +103,21 @@ func newAgentLoopback(t *testing.T) *agentLoopback {
 	mux := http.NewServeMux()
 	mux.Handle(path, h)
 
-	srv := httptest.NewUnstartedServer(h2c.NewHandler(mux, &http2.Server{}))
+	// Go 1.24+ replaced golang.org/x/net/http2/h2c with first-party
+	// unencrypted-HTTP/2 support on http.Server and http.Transport
+	// via http.Protocols.SetUnencryptedHTTP2 — both sides must opt in
+	// for connect-rpc's bidi stream to negotiate h2c.
+	proto := new(http.Protocols)
+	proto.SetUnencryptedHTTP2(true)
+
+	srv := httptest.NewUnstartedServer(mux)
+	srv.Config.Protocols = proto
 	srv.Start()
 	t.Cleanup(srv.Close)
 
 	hc := &http.Client{
-		Transport: &http2.Transport{
-			AllowHTTP: true,
-			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-				var d net.Dialer
-				return d.DialContext(ctx, network, addr)
-			},
+		Transport: &http.Transport{
+			Protocols: proto,
 		},
 	}
 
