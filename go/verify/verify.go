@@ -34,9 +34,59 @@ import (
 	"fmt"
 )
 
+// CanonicalDomainV1 is the implicit domain tag of the current action
+// canonical format. The signed message today is:
+//
+//	canonical = sprintf("%s:%d:%s", actionID, actionType, base64(paramsJSON))
+//
+// There is no explicit domain prefix on the wire — the implicit
+// "this is an action signed by the power-manage control server CA"
+// scope is what the CA key carries. That works because the CA key is
+// only used for one thing today.
+//
+// CanonicalDomainV1 captures the intent so future signing surfaces
+// can declare their own domains (e.g. CanonicalDomainTerminalV1) and
+// canonicalPayloadV2 can prepend the tag explicitly to prevent
+// cross-surface signature replay. See finding #11 of the 2026-06-06
+// audit and verify_test.go's TestCanonicalPayload_NoCrossInputCollision
+// for the current compatibility envelope and the test contract that
+// catches accidental collisions.
+const CanonicalDomainV1 = "power-manage-action-v1"
+
 // canonicalPayload builds the canonical string used for signing and verification.
+//
+// Format (v1, on-wire today):
+//
+//	SHA-256( sprintf("%s:%d:%s", actionID, actionType, base64(paramsJSON)) )
+//
+// The format is sensitive to all three inputs — any single field
+// changing flips the hash. See TestCanonicalPayload_NoCrossInputCollision
+// for the explicit non-collision contract.
+//
+// Domain separation: the implicit domain ("power-manage action signed
+// by the CA") is carried by the CA key, not by an in-payload tag.
+// If a second signing surface is ever introduced (e.g. terminal
+// session tokens signed with the same CA key), introduce a v2
+// canonical format that prepends an explicit domain string and route
+// both sides through the new function — keeping v1 in place for
+// during-rollout compatibility. canonicalPayloadV2 below is the
+// scaffolding for that change; today's signer / verifier still use
+// v1.
 func canonicalPayload(actionID string, actionType int32, paramsJSON []byte) []byte {
 	canonical := fmt.Sprintf("%s:%d:%s", actionID, actionType,
+		base64.StdEncoding.EncodeToString(paramsJSON))
+	hash := sha256.Sum256([]byte(canonical))
+	return hash[:]
+}
+
+// canonicalPayloadV2 is the domain-tagged successor canonical payload.
+// Not yet wired into Sign / Verify — present so the domain-separation
+// contract has a concrete reference and so we can add cross-domain
+// non-collision tests today. Switching the public surface to v2 needs
+// a coordinated agent + control rollout because verifiers on the old
+// SDK would reject a v2 signature.
+func canonicalPayloadV2(domain, actionID string, actionType int32, paramsJSON []byte) []byte {
+	canonical := fmt.Sprintf("%s|%s:%d:%s", domain, actionID, actionType,
 		base64.StdEncoding.EncodeToString(paramsJSON))
 	hash := sha256.Sum256([]byte(canonical))
 	return hash[:]
