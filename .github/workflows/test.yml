@@ -44,6 +44,139 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
+  # Go test sweep across every SDK package whose tests don't require
+  # systemd / privileged operations (those run in test-sys below). The
+  # job is split out from test-unit so the existing pkg-only job stays
+  # untouched while we add coverage for go/, go/verify/, go/crypto/,
+  # go/sys/{exec,fs,network,firewall,inventory,osquery,notify,...} —
+  # anything that compiles without an integration build tag.
+  test-go-all:
+    name: Go unit sweep (race, all SDK packages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: go test (excludes integration-tagged files)
+        run: go test -race -short ./...
+
+  # Proto-tag completeness checker. Reports every field across
+  # proto/pm/v1/ that lacks a validate: tag. Soft-fail today so the
+  # large historical backlog (~580 fields per the 2026-06-06 audit)
+  # doesn't block unrelated work; promote to hard-fail in a follow-up
+  # once the backlog is down to zero.
+  proto-validate-coverage:
+    name: Proto validate-tag coverage (soft-fail)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run completeness checker
+        run: go run ./test/protovalidatecoverage ./proto/pm/v1
+
+  proto-lint:
+    name: Proto lint + format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci || npm install
+
+      - name: buf lint
+        run: npx buf lint
+
+      - name: buf format (drift)
+        run: npx buf format --diff --exit-code
+
+  # Run `make generate` and assert nothing changed. Catches the
+  # "edited a .proto but forgot to regenerate" footgun before it
+  # lands in main.
+  proto-gen-drift:
+    name: Generated-code drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci || npm install
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Install protoc plugins
+        run: make install-tools
+
+      - name: make generate
+        run: make generate
+
+      - name: Verify no drift
+        run: |
+          if ! git diff --exit-code -- gen/; then
+            echo ""
+            echo "::error::generated code in gen/ drifted from proto sources."
+            echo "Run 'make generate' locally and commit the result."
+            exit 1
+          fi
+
+  ts-typecheck:
+    name: TypeScript typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci || npm install
+
+      - name: tsc --noEmit
+        run: npm run typecheck
+
+  ts-test:
+    name: TypeScript unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci || npm install
+
+      - name: Run tests
+        run: npm test
+
   test-unit:
     name: Unit Tests
     runs-on: ubuntu-latest
