@@ -615,12 +615,18 @@ message SshdParams {
 // The server renders FULL/LIMITED into the concrete policy file format
 // for the selected PrivilegeBackend (sudoers or doas); CUSTOM carries
 // raw admin-authored config that must be valid syntax for the chosen
-// backend.
+// backend. TERMINAL_ADMIN_LIMITED and TERMINAL_ADMIN_FULL are used by
+// the server's TerminalAdmin reconciler — they route the agent to two
+// passwordless templates designed for pm-tty-* accounts (which have
+// no password to prompt for). Operator-authored AdminPolicy actions
+// should continue to use FULL/LIMITED/CUSTOM.
 enum AdminAccessLevel {
   ADMIN_ACCESS_LEVEL_UNSPECIFIED = 0;
   ADMIN_ACCESS_LEVEL_FULL = 1; // Unrestricted access (password required)
   ADMIN_ACCESS_LEVEL_LIMITED = 2; // System management commands only (password required)
   ADMIN_ACCESS_LEVEL_CUSTOM = 3; // Admin-defined raw policy
+  ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_LIMITED = 4; // Passwordless LIMITED variant for pm-tty-* TerminalAdmin grants
+  ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_FULL = 5; // Passwordless FULL variant for pm-tty-* TerminalAdmin grants
 }
 
 // PrivilegeBackend selects which privilege-escalation tool the agent

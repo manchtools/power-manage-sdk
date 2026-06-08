@@ -431,14 +431,20 @@ func (ServiceUnitState) EnumDescriptor() ([]byte, []int) {
 // The server renders FULL/LIMITED into the concrete policy file format
 // for the selected PrivilegeBackend (sudoers or doas); CUSTOM carries
 // raw admin-authored config that must be valid syntax for the chosen
-// backend.
+// backend. TERMINAL_ADMIN_LIMITED and TERMINAL_ADMIN_FULL are used by
+// the server's TerminalAdmin reconciler — they route the agent to two
+// passwordless templates designed for pm-tty-* accounts (which have
+// no password to prompt for). Operator-authored AdminPolicy actions
+// should continue to use FULL/LIMITED/CUSTOM.
 type AdminAccessLevel int32
 
 const (
-	AdminAccessLevel_ADMIN_ACCESS_LEVEL_UNSPECIFIED AdminAccessLevel = 0
-	AdminAccessLevel_ADMIN_ACCESS_LEVEL_FULL        AdminAccessLevel = 1 // Unrestricted access (password required)
-	AdminAccessLevel_ADMIN_ACCESS_LEVEL_LIMITED     AdminAccessLevel = 2 // System management commands only (password required)
-	AdminAccessLevel_ADMIN_ACCESS_LEVEL_CUSTOM      AdminAccessLevel = 3 // Admin-defined raw policy
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_UNSPECIFIED            AdminAccessLevel = 0
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_FULL                   AdminAccessLevel = 1 // Unrestricted access (password required)
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_LIMITED                AdminAccessLevel = 2 // System management commands only (password required)
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_CUSTOM                 AdminAccessLevel = 3 // Admin-defined raw policy
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_LIMITED AdminAccessLevel = 4 // Passwordless LIMITED variant for pm-tty-* TerminalAdmin grants
+	AdminAccessLevel_ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_FULL    AdminAccessLevel = 5 // Passwordless FULL variant for pm-tty-* TerminalAdmin grants
 )
 
 // Enum value maps for AdminAccessLevel.
@@ -448,12 +454,16 @@ var (
 		1: "ADMIN_ACCESS_LEVEL_FULL",
 		2: "ADMIN_ACCESS_LEVEL_LIMITED",
 		3: "ADMIN_ACCESS_LEVEL_CUSTOM",
+		4: "ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_LIMITED",
+		5: "ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_FULL",
 	}
 	AdminAccessLevel_value = map[string]int32{
-		"ADMIN_ACCESS_LEVEL_UNSPECIFIED": 0,
-		"ADMIN_ACCESS_LEVEL_FULL":        1,
-		"ADMIN_ACCESS_LEVEL_LIMITED":     2,
-		"ADMIN_ACCESS_LEVEL_CUSTOM":      3,
+		"ADMIN_ACCESS_LEVEL_UNSPECIFIED":            0,
+		"ADMIN_ACCESS_LEVEL_FULL":                   1,
+		"ADMIN_ACCESS_LEVEL_LIMITED":                2,
+		"ADMIN_ACCESS_LEVEL_CUSTOM":                 3,
+		"ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_LIMITED": 4,
+		"ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_FULL":    5,
 	}
 )
 
@@ -3886,12 +3896,14 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x1eSERVICE_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSERVICE_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
 	"\x1aSERVICE_UNIT_STATE_STOPPED\x10\x02\x12 \n" +
-	"\x1cSERVICE_UNIT_STATE_RESTARTED\x10\x03*\x92\x01\n" +
+	"\x1cSERVICE_UNIT_STATE_RESTARTED\x10\x03*\xed\x01\n" +
 	"\x10AdminAccessLevel\x12\"\n" +
 	"\x1eADMIN_ACCESS_LEVEL_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ADMIN_ACCESS_LEVEL_FULL\x10\x01\x12\x1e\n" +
 	"\x1aADMIN_ACCESS_LEVEL_LIMITED\x10\x02\x12\x1d\n" +
-	"\x19ADMIN_ACCESS_LEVEL_CUSTOM\x10\x03*J\n" +
+	"\x19ADMIN_ACCESS_LEVEL_CUSTOM\x10\x03\x12-\n" +
+	")ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_LIMITED\x10\x04\x12*\n" +
+	"&ADMIN_ACCESS_LEVEL_TERMINAL_ADMIN_FULL\x10\x05*J\n" +
 	"\x10PrivilegeBackend\x12\x1a\n" +
 	"\x16PRIVILEGE_BACKEND_SUDO\x10\x00\x12\x1a\n" +
 	"\x16PRIVILEGE_BACKEND_DOAS\x10\x01*\x8f\x01\n" +
