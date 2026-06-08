@@ -50,9 +50,6 @@ type recordingAgentHandler struct {
 	received []*pm.AgentMessage
 
 	onStream func(ctx context.Context, stream *connect.BidiStream[pm.AgentMessage, pm.ServerMessage]) error
-
-	syncErr         error
-	validateLuksErr error
 }
 
 func (h *recordingAgentHandler) Stream(ctx context.Context, s *connect.BidiStream[pm.AgentMessage, pm.ServerMessage]) error {
@@ -82,16 +79,10 @@ func (h *recordingAgentHandler) snapshot() []*pm.AgentMessage {
 }
 
 func (h *recordingAgentHandler) SyncActions(ctx context.Context, req *connect.Request[pm.SyncActionsRequest]) (*connect.Response[pm.SyncActionsResponse], error) {
-	if h.syncErr != nil {
-		return nil, h.syncErr
-	}
 	return connect.NewResponse(&pm.SyncActionsResponse{}), nil
 }
 
 func (h *recordingAgentHandler) ValidateLuksToken(ctx context.Context, req *connect.Request[pm.ValidateLuksTokenRequest]) (*connect.Response[pm.ValidateLuksTokenResponse], error) {
-	if h.validateLuksErr != nil {
-		return nil, h.validateLuksErr
-	}
 	return connect.NewResponse(&pm.ValidateLuksTokenResponse{}), nil
 }
 
@@ -503,7 +494,14 @@ func TestRun_UnknownServerMessage_DoesNotTerminate(t *testing.T) {
 			return err
 		}
 		// Drain anything else the agent sends until the request side
-		// closes, then return.
+		// closes. Any Receive error here means the stream is done —
+		// EOF on a clean Close, context.Canceled on ctx.Cancel, or a
+		// connect-wrapped cancellation. The fake is intentionally
+		// agnostic about which: its only job is to keep the stream
+		// open while the test drives the client; the test's own
+		// assertions (welcomed.Load, ctx.Cancel) judge correctness.
+		// Returning nil here so an unexpected error doesn't tear down
+		// the server side and mask the test's real failure mode.
 		for {
 			if _, err := s.Receive(); err != nil {
 				return nil
