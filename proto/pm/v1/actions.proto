@@ -527,6 +527,25 @@ message UserParams {
   // Sets SystemAccount=true in AccountsService. No effect on headless systems.
   // @gotags: validate:"omitempty"
   bool hidden = 12;
+
+  // When true, the agent does NOT generate or set a temporary password
+  // for this account, nor report any lps.rotations metadata back to
+  // the server. The account is created with the shadow-locked default
+  // ('!'), so no PAM-protected login path (password, su) succeeds; a
+  // root setuid invocation (e.g. the agent's terminal session opener)
+  // still works because it bypasses PAM.
+  //
+  // Intended for system-managed nologin accounts that are only ever
+  // reached via setuid — pm-tty-* is the canonical case. Do NOT set
+  // this for general-purpose users: passwords are good to have for
+  // any account that might ever need a PAM-protected login path, and
+  // setting no_password here locks that path closed.
+  //
+  // This flag is deliberately explicit, not derived from
+  // Shell == "/usr/sbin/nologin": the password-good-to-have default
+  // should not be flipped by a heuristic on a related field.
+  // @gotags: validate:"omitempty"
+  bool no_password = 13;
 }
 
 // GroupParams configures Linux group management.

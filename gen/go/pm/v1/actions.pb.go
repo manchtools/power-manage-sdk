@@ -2510,7 +2510,25 @@ type UserParams struct {
 	// Hide user from graphical login screens (GDM, SDDM, LightDM).
 	// Sets SystemAccount=true in AccountsService. No effect on headless systems.
 	// @gotags: validate:"omitempty"
-	Hidden        bool `protobuf:"varint,12,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
+	Hidden bool `protobuf:"varint,12,opt,name=hidden,proto3" json:"hidden,omitempty" validate:"omitempty"`
+	// When true, the agent does NOT generate or set a temporary password
+	// for this account, nor report any lps.rotations metadata back to
+	// the server. The account is created with the shadow-locked default
+	// ('!'), so no PAM-protected login path (password, su) succeeds; a
+	// root setuid invocation (e.g. the agent's terminal session opener)
+	// still works because it bypasses PAM.
+	//
+	// Intended for system-managed nologin accounts that are only ever
+	// reached via setuid — pm-tty-* is the canonical case. Do NOT set
+	// this for general-purpose users: passwords are good to have for
+	// any account that might ever need a PAM-protected login path, and
+	// setting no_password here locks that path closed.
+	//
+	// This flag is deliberately explicit, not derived from
+	// Shell == "/usr/sbin/nologin": the password-good-to-have default
+	// should not be flipped by a heuristic on a related field.
+	// @gotags: validate:"omitempty"
+	NoPassword    bool `protobuf:"varint,13,opt,name=no_password,json=noPassword,proto3" json:"no_password,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2625,6 +2643,13 @@ func (x *UserParams) GetPrimaryGroup() string {
 func (x *UserParams) GetHidden() bool {
 	if x != nil {
 		return x.Hidden
+	}
+	return false
+}
+
+func (x *UserParams) GetNoPassword() bool {
+	if x != nil {
+		return x.NoPassword
 	}
 	return false
 }
@@ -3710,7 +3735,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\bgpgcheck\x18\x05 \x01(\bR\bgpgcheck\x12\x16\n" +
 	"\x06gpgkey\x18\x06 \x01(\tR\x06gpgkey\x12\x12\n" +
 	"\x04type\x18\a \x01(\tR\x04type\x12\x1a\n" +
-	"\bdisabled\x18\b \x01(\bR\bdisabled\"\xe2\x02\n" +
+	"\bdisabled\x18\b \x01(\bR\bdisabled\"\x83\x03\n" +
 	"\n" +
 	"UserParams\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x10\n" +
@@ -3727,7 +3752,9 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\bdisabled\x18\n" +
 	" \x01(\bR\bdisabled\x12#\n" +
 	"\rprimary_group\x18\v \x01(\tR\fprimaryGroup\x12\x16\n" +
-	"\x06hidden\x18\f \x01(\bR\x06hidden\"p\n" +
+	"\x06hidden\x18\f \x01(\bR\x06hidden\x12\x1f\n" +
+	"\vno_password\x18\r \x01(\bR\n" +
+	"noPassword\"p\n" +
 	"\vGroupParams\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12\x10\n" +
