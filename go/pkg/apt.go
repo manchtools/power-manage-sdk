@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -486,7 +485,13 @@ func (a *Apt) run(ctx context.Context, cmd string, args ...string) (*CommandResu
 
 	// Prevent debconf from trying interactive frontends when there is no terminal.
 	// Force English locale for reliable output parsing.
-	env := append(os.Environ(), "DEBIAN_FRONTEND=noninteractive", "LANG=C", "LC_ALL=C")
+	//
+	// Do NOT seed with os.Environ() — F-31 hardening in sys/exec.RunStreaming
+	// refuses caller-supplied PATH/LD_PRELOAD/BASH_ENV etc., which os.Environ()
+	// always carries. RunStreaming auto-injects its own sanitized PATH when
+	// envVars is non-empty, so the only entries the package backend has to
+	// ship are the locale + noninteractive bits.
+	env := []string{"DEBIAN_FRONTEND=noninteractive", "LANG=C", "LC_ALL=C"}
 
 	return runPM(ctx, a.useSudo, cmd, args, env)
 }
