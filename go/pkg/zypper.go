@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -501,7 +500,12 @@ func (z *Zypper) getPinnedSet() (map[string]bool, error) {
 
 func (z *Zypper) run(ctx context.Context, args ...string) (*CommandResult, error) {
 	// Force English locale for reliable output parsing.
-	env := append(os.Environ(), "LANG=C", "LC_ALL=C")
+	//
+	// Do NOT seed with os.Environ() — F-31 hardening in sys/exec.RunStreaming
+	// refuses caller-supplied PATH/LD_PRELOAD/BASH_ENV etc., which os.Environ()
+	// always carries. RunStreaming auto-injects its own sanitized PATH when
+	// envVars is non-empty.
+	env := []string{"LANG=C", "LC_ALL=C"}
 	return runPM(ctx, z.useSudo, "zypper", args, env)
 }
 
