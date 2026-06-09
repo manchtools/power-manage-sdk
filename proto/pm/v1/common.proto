@@ -80,6 +80,53 @@ enum AssignmentTargetType {
   ASSIGNMENT_TARGET_TYPE_USER_GROUP = 4;
 }
 
+// RoleGrantScopeKind names which kind of group anchors a scoped role
+// grant (manchtools/power-manage-server#7). Kinds are exclusive — a
+// grant is either device-group-scoped, user-group-scoped, or
+// unscoped/global (UNSPECIFIED). Permissions declare a single target
+// kind on their PermissionInfo; a grant whose scope_kind doesn't
+// match every permission in the role is rejected at the
+// role-assignment handler.
+//
+// Wire/projection split: the proto carries the enum on the wire;
+// the user_roles_projection / user_group_roles_projection rows
+// store the lowercase string form ("device_group" / "user_group") so
+// the SQL CHECK constraint reads naturally and existing event-replay
+// keeps working. Conversion happens at the projector boundary.
+enum RoleGrantScopeKind {
+  // UNSPECIFIED on a grant means the grant is unscoped/global —
+  // matches the historical NULL-scope grant shape and is
+  // backward-compatible with grants emitted before #7.
+  ROLE_GRANT_SCOPE_KIND_UNSPECIFIED = 0;
+  ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP = 1;
+  ROLE_GRANT_SCOPE_KIND_USER_GROUP = 2;
+}
+
+// PermissionTargetKind classifies the target kind a permission acts
+// on, which determines which RoleGrantScopeKind it accepts on a
+// scoped grant (manchtools/power-manage-server#7). Returned on
+// PermissionInfo by ListPermissions so the role-builder UI can
+// surface scopable permissions and gate the scope picker by kind.
+//
+// Fail-closed semantic: a permission that does not explicitly
+// declare a target kind is NOT scopable — granting it with any
+// scope_kind is rejected by the role-assignment handler. New
+// permissions added without an explicit kind silently land at the
+// safe default. Use DEVICE / USER ONLY when the permission's
+// authorization decision can be expressed as "scope-id matches a
+// group containing this device/user".
+enum PermissionTargetKind {
+  // UNSPECIFIED — not scopable. Org-tier permissions
+  // (CreateRole, server settings, IDP/SCIM, audit) and any
+  // permission whose authorization decision can't be expressed as
+  // a group-membership check stay at UNSPECIFIED.
+  PERMISSION_TARGET_KIND_UNSPECIFIED = 0;
+  // DEVICE — scopable with RoleGrantScopeKind=DEVICE_GROUP only.
+  PERMISSION_TARGET_KIND_DEVICE = 1;
+  // USER — scopable with RoleGrantScopeKind=USER_GROUP only.
+  PERMISSION_TARGET_KIND_USER = 2;
+}
+
 // DeviceStatus replaces the legacy stringly-typed Device.status /
 // ListDevicesRequest.status_filter ("online" / "offline"). The status
 // is computed by the server from the device's last_seen_at timestamp,

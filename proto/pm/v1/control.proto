@@ -242,6 +242,13 @@ message PermissionInfo {
   string key = 1;
   string group = 2;
   string description = 3;
+  // Classifies what kind of target this permission acts on, which
+  // determines whether (and how) it can be scoped on a role grant.
+  // UNSPECIFIED = not scopable (fail-closed default). DEVICE = takes
+  // RoleGrantScopeKind=DEVICE_GROUP. USER = takes USER_GROUP.
+  // Surfaced so the web role-builder can gate the scope picker.
+  // manchtools/power-manage-server#7.
+  PermissionTargetKind target_kind = 4;
 }
 
 message CreateUserRequest {
@@ -1891,6 +1898,18 @@ message AssignRoleToUserRequest {
   string role_id = 2;
   // @gotags: validate:"omitempty,dive,ulid"
   repeated string role_ids = 3;
+  // Optional grant scope. Paired-or-neither: both scope_kind and
+  // scope_id MUST be set together, or both absent. Absent =
+  // unscoped/global grant (backward-compatible with pre-#7 grants).
+  // Set = the grant's authorization extends only to members of the
+  // group identified by scope_id. scope_kind selects which group
+  // projection scope_id is read from. Every permission in the role
+  // must accept this scope_kind (PermissionInfo.target_kind must
+  // match), or the assignment is rejected. The actor must hold
+  // AssignRoleScope. See server #7.
+  RoleGrantScopeKind scope_kind = 4;
+  // @gotags: validate:"omitempty,ulid"
+  string scope_id = 5;
 }
 
 message AssignRoleToUserResponse {}
@@ -1900,6 +1919,16 @@ message RevokeRoleFromUserRequest {
   string user_id = 1;
   // @gotags: validate:"required,ulid"
   string role_id = 2;
+  // Optional grant scope identifying WHICH grant to revoke when the
+  // (user_id, role_id) pair has multiple grants at different
+  // scopes. Paired-or-neither with scope_id. Both absent = revoke
+  // the unscoped grant; both set = revoke that one specific scoped
+  // grant. The handler rejects "revoke unscoped" when only scoped
+  // grants exist (and vice versa) to surface ambiguity rather than
+  // silently no-op. server #7.
+  RoleGrantScopeKind scope_kind = 3;
+  // @gotags: validate:"omitempty,ulid"
+  string scope_id = 4;
 }
 
 message RevokeRoleFromUserResponse {}
@@ -2024,6 +2053,12 @@ message AssignRoleToUserGroupRequest {
   string role_id = 2;
   // @gotags: validate:"omitempty,dive,ulid"
   repeated string role_ids = 3;
+  // Optional grant scope. Same paired-or-neither semantics as
+  // AssignRoleToUserRequest.scope_*. Every member of the target
+  // user group inherits this scope through the grant. server #7.
+  RoleGrantScopeKind scope_kind = 4;
+  // @gotags: validate:"omitempty,ulid"
+  string scope_id = 5;
 }
 
 message AssignRoleToUserGroupResponse {}
@@ -2033,6 +2068,14 @@ message RevokeRoleFromUserGroupRequest {
   string group_id = 1;
   // @gotags: validate:"required,ulid"
   string role_id = 2;
+  // Optional grant scope identifying WHICH (user_group, role)
+  // grant to revoke when multiple scoped grants of the same role
+  // are attached to the same user group. Paired-or-neither with
+  // scope_id; same semantics as RevokeRoleFromUserRequest.
+  // server #7.
+  RoleGrantScopeKind scope_kind = 3;
+  // @gotags: validate:"omitempty,ulid"
+  string scope_id = 4;
 }
 
 message RevokeRoleFromUserGroupResponse {}
