@@ -28,6 +28,26 @@ func TestUserPath(t *testing.T) {
 	if localIdx == -1 || usrIdx == -1 || localIdx > usrIdx {
 		t.Errorf("~/.local/bin must precede /usr/bin, got %q", got)
 	}
+
+	// sbin dirs are intentionally INCLUDED (usr-merged distros put them
+	// on every user's default PATH) but ordered AFTER the bin dirs: a
+	// user binary of the same name must win and sbin resolution is a last
+	// resort. Pin both the inclusion and the ordering so a reorder or
+	// accidental drop is caught.
+	binIdx := slices.Index(dirs, "/bin")
+	for _, sbin := range []string{"/usr/local/sbin", "/usr/sbin", "/sbin"} {
+		sbinIdx := slices.Index(dirs, sbin)
+		if sbinIdx == -1 {
+			t.Errorf("UserPath must include %s (usr-merged default), got %q", sbin, got)
+			continue
+		}
+		if sbinIdx < usrIdx {
+			t.Errorf("%s must come after /usr/bin so bin dirs win, got %q", sbin, got)
+		}
+		if binIdx != -1 && sbinIdx < binIdx {
+			t.Errorf("%s must come after /bin, got %q", sbin, got)
+		}
+	}
 }
 
 // RunAsCommand must set the curated user PATH on the child env — the

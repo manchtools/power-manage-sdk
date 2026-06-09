@@ -6,13 +6,24 @@ import (
 )
 
 // AssertRealDir verifies that path is a real directory and not a
-// symlink (or any other non-directory). Callers use it as a pre-flight
-// guard before running a privileged, path-based chmod/chown on a
-// directory an untrusted user may control — the canonical case being
-// ~/.ssh, which is owned by the target user. Such a user can plant the
-// path as a symlink to an arbitrary location (e.g. /etc); a root-run
-// chmod/chown would then dereference it and act on the target, a TOCTOU
-// privilege escalation. Refusing a symlinked path removes that class.
+// symlink (or any other non-directory). It is a CHEAP PRE-FLIGHT
+// PREDICATE, not a TOCTOU-proof guard: it answers "is this a real dir
+// right now?" via a single Lstat. Because the answer is about the path
+// (not an open handle), any privileged operation a caller runs
+// afterwards re-resolves the path in a separate syscall — leaving a
+// check-then-use window in which a user who controls the directory (the
+// canonical case being ~/.ssh, owned by the target user) can swap it for
+// a symlink between this check and the operation. A path-based chmod/
+// chown would then dereference it and act on the target (e.g. /etc) — a
+// TOCTOU privilege escalation.
+//
+// To actually CLOSE that class, do not pair this with path-based
+// chmod/chown. Use OpenRealDir to obtain an O_NOFOLLOW directory handle
+// and apply ownership/mode through the fd (f.Chown/f.Chmod →
+// fchown(2)/fchmod(2)), so the operation acts on the inode that was
+// opened and a later path swap cannot redirect it. Keep AssertRealDir
+// for cheap, non-privileged checks (logging, early rejection) where the
+// re-resolution window is not a concern.
 //
 // It uses Lstat, so the symlink itself — not its target — is inspected.
 // It does not escalate privileges: a stat is read-only, and the agent
