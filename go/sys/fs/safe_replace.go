@@ -4,6 +4,7 @@ package fs
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -93,24 +94,57 @@ func SafeReplaceFile(path string, data []byte, perm os.FileMode, removeExisting 
 }
 
 // SafeBackupAndReplace is the binary-update shape of SafeReplaceFile:
-// it moves the existing file at path to backupPath (no-op if path
-// does not exist), then writes new content to path via SafeReplaceFile.
+// it COPIES the existing file at path to backupPath (no-op if path does
+// not exist), then writes new content to path via SafeReplaceFile.
 // Used by the agent's self-update path so a planted symlink at
-// "${BinaryPath}.bak" cannot redirect the backup mv to an attacker-
-// chosen target. SDK helper for agent finding F023.
+// "${BinaryPath}.bak" cannot redirect the backup to an attacker-chosen
+// target. SDK helper for agent finding F023.
+//
+// Crash-safety: the backup is a COPY, not a move, so `path` is never
+// left absent. SafeReplaceFile writes a temp file and atomically renames
+// it over `path` as the final step, so on ANY failure — backup error,
+// write error, fsync error, or a crash/power-loss at any point — `path`
+// still holds the original content. (A previous version renamed `path`
+// to the backup FIRST, so a failed write left no binary at `path` at
+// all — a fleet-wide brick risk during self-update.)
 //
 // removeExistingBackup mirrors removeExisting on SafeReplaceFile —
 // pass true if a previous failed update may have left a stale
 // backup that must be replaced.
 func SafeBackupAndReplace(path, backupPath string, newContent []byte, perm os.FileMode, removeExistingBackup bool) error {
-	if _, err := os.Lstat(path); err == nil {
-		// Use renameat2-with-NOREPLACE for the backup move when the
-		// caller does not want to clobber an existing backup.
-		if err := safeRename(path, backupPath, removeExistingBackup); err != nil {
-			return fmt.Errorf("backup current to %s: %w", backupPath, err)
+	// Open the current file with O_NOFOLLOW and read THROUGH the fd, so
+	// there is no lstat→read TOCTOU window in which the path could be
+	// swapped for a symlink: O_NOFOLLOW makes the open itself fail
+	// (ELOOP) on a symlink, and the subsequent Stat/Read operate on the
+	// already-open inode. The backup is then a fresh copy written via
+	// SafeReplaceFile, leaving `path` itself untouched.
+	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Nothing to back up; just write the new content.
+			return SafeReplaceFile(path, newContent, perm, true)
 		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("lstat %s: %w", path, err)
+		return fmt.Errorf("open current %s for backup: %w", path, err)
+	}
+	info, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return fmt.Errorf("stat current %s: %w", path, err)
+	}
+	if !info.Mode().IsRegular() {
+		_ = f.Close()
+		return fmt.Errorf("refusing to back up non-regular file %s", path)
+	}
+	current, err := io.ReadAll(f)
+	if err != nil {
+		_ = f.Close()
+		return fmt.Errorf("read current %s for backup: %w", path, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close current %s: %w", path, err)
+	}
+	if err := SafeReplaceFile(backupPath, current, perm, removeExistingBackup); err != nil {
+		return fmt.Errorf("backup current to %s: %w", backupPath, err)
 	}
 	return SafeReplaceFile(path, newContent, perm, true)
 }

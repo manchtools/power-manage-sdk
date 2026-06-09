@@ -57,16 +57,82 @@ func RunWithCLocale(ctx context.Context, name string, args ...string) (*Result, 
 // (Privileged, PrivilegedStreaming, pkg/exec.runPM, …) inherits the
 // check, so the audit-finding-#8 enforcement lives in one place.
 func RunStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
+	if err := validateEnvVars(envVars); err != nil {
+		return nil, err
+	}
+	// Backward-compatible env composition. When the caller supplies env
+	// vars we compose [sanitized parent PATH] + their vars; when they
+	// supply NONE we leave the child env nil so it inherits the parent
+	// environment fully — the long-standing contract every Run*/
+	// Privileged*/pkg caller relies on. (RunStreamingChildPath does NOT
+	// share this fall-through; see its doc.)
+	var finalEnv []string
+	if len(envVars) > 0 {
+		finalEnv = composeEnv(os.Getenv("PATH"), envVars)
+	}
+	return runStreamingWithEnv(ctx, name, args, finalEnv, dir, callback)
+}
+
+// RunStreamingChildPath is RunStreaming with an explicit, TRUSTED child
+// PATH. PATH is on the BlockedEnvVars list so an untrusted caller can't
+// smuggle it through envVars; this entry point lets a trusted caller
+// (e.g. the agent's per-user runuser fan-out, which must run with the
+// target user's PATH rather than root's) set the child PATH directly.
+//
+// SECURITY: unlike RunStreaming, the curated childPath is ALWAYS
+// authoritative — the child env is composed as [PATH=childPath] + envVars
+// even when envVars is EMPTY, and the parent environment is NEVER
+// inherited. This is deliberate: the whole reason a caller reaches for a
+// curated PATH is isolation, so an empty envVars must not silently fall
+// back to inheriting the agent's (root's) full environment — the exact
+// un-sandboxing the previous "childPath used only when envVars is
+// non-empty" shape allowed. A caller that genuinely wants full parent
+// inheritance must use RunStreaming, not this entry point.
+func RunStreamingChildPath(ctx context.Context, name string, args []string, envVars []string, childPath string, dir string, callback OutputCallback) (*Result, error) {
+	if err := validateEnvVars(envVars); err != nil {
+		return nil, err
+	}
+	// Always a non-nil (composed) env: the curated PATH replaces, never
+	// augments, the parent environment.
+	return runStreamingWithEnv(ctx, name, args, composeEnv(childPath, envVars), dir, callback)
+}
+
+// validateEnvVars enforces the SDK env boundary: every entry must be
+// KEY=VALUE and the key must not be on the BlockedEnvVars list (PATH,
+// LD_PRELOAD, BASH_ENV, GCONV_PATH, LD_LIBRARY_PATH, …). This is the one
+// place the audit-finding-#8 check lives; both streaming entry points run
+// it before composing the child env.
+func validateEnvVars(envVars []string) error {
 	for _, e := range envVars {
 		key, _, ok := strings.Cut(e, "=")
 		if !ok {
-			return nil, fmt.Errorf("%w: env entry must be KEY=VALUE, got %q", ErrInvalidEnvVar, e)
+			return fmt.Errorf("%w: env entry must be KEY=VALUE, got %q", ErrInvalidEnvVar, e)
 		}
 		if !IsAllowedEnvVar(key) {
-			return nil, fmt.Errorf("%w: refusing to forward env var %q to child (hijack-prone names like LD_PRELOAD, PATH, BASH_ENV are refused at this boundary)", ErrBlockedEnvVar, key)
+			return fmt.Errorf("%w: refusing to forward env var %q to child (hijack-prone names like LD_PRELOAD, PATH, BASH_ENV are refused at this boundary)", ErrBlockedEnvVar, key)
 		}
 	}
+	return nil
+}
 
+// composeEnv builds the child environment: a leading PATH=childPath (when
+// childPath is non-empty) followed by the caller's already-validated env
+// vars. PATH cannot appear in envVars (it is blocklisted), so the
+// leading entry is the only PATH the child sees. The returned slice is
+// always non-nil so callers can distinguish "isolated env" (this) from
+// "inherit parent fully" (a nil env passed to runStreamingWithEnv).
+func composeEnv(childPath string, envVars []string) []string {
+	env := make([]string, 0, len(envVars)+1)
+	if childPath != "" {
+		env = append(env, "PATH="+childPath)
+	}
+	return append(env, envVars...)
+}
+
+// runStreamingWithEnv runs the command with a fully-composed child env.
+// A nil env inherits the parent environment fully; a non-nil env (even an
+// empty one) replaces it.
+func runStreamingWithEnv(ctx context.Context, name string, args []string, env []string, dir string, callback OutputCallback) (*Result, error) {
 	c := cmd.NewCmdOptions(cmd.Options{
 		Buffered:       false,
 		Streaming:      true,
@@ -76,19 +142,8 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 	if dir != "" {
 		c.Dir = dir
 	}
-	if len(envVars) > 0 {
-		// Compose final env: sanitized PATH (from the agent's own
-		// environment, which the BlockedEnvVars check kept the caller
-		// from supplying) + the validated user vars. Callers who
-		// don't pass env vars keep the previous "inherit parent
-		// fully" semantics — that path is unchanged for backward
-		// compatibility.
-		finalEnv := make([]string, 0, len(envVars)+1)
-		if path := os.Getenv("PATH"); path != "" {
-			finalEnv = append(finalEnv, "PATH="+path)
-		}
-		finalEnv = append(finalEnv, envVars...)
-		c.Env = finalEnv
+	if env != nil {
+		c.Env = env
 	}
 
 	statusChan := c.Start()
