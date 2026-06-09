@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/common.proto.
  */
 export const file_pm_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJEChFNYWludGVuYW5jZVdpbmRvdxIvCghzY2hlZHVsZRgBIAMoCzIdLnBtLnYxLk1haW50ZW5hbmNlV2luZG93RW50cnkiNQoWTWFpbnRlbmFuY2VXaW5kb3dFbnRyeRIMCgRkYXlzGAEgAygJEg0KBWFsbG93GAIgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkqpgIKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBhIeChpFWEVDVVRJT05fU1RBVFVTX1NDSEVEVUxFRBAHEh4KGkVYRUNVVElPTl9TVEFUVVNfQ0FOQ0VMTEVEEAgqQwoMRGVzaXJlZFN0YXRlEhkKFURFU0lSRURfU1RBVEVfUFJFU0VOVBAAEhgKFERFU0lSRURfU1RBVEVfQUJTRU5UEAEqigEKDkFzc2lnbm1lbnRNb2RlEhwKGEFTU0lHTk1FTlRfTU9ERV9SRVFVSVJFRBAAEh0KGUFTU0lHTk1FTlRfTU9ERV9BVkFJTEFCTEUQARIcChhBU1NJR05NRU5UX01PREVfRVhDTFVERUQQAhIdChlBU1NJR05NRU5UX01PREVfVU5JTlNUQUxMEAMq3QEKFEFzc2lnbm1lbnRTb3VyY2VUeXBlEiYKIkFTU0lHTk1FTlRfU09VUkNFX1RZUEVfVU5TUEVDSUZJRUQQABIhCh1BU1NJR05NRU5UX1NPVVJDRV9UWVBFX0FDVElPThABEiUKIUFTU0lHTk1FTlRfU09VUkNFX1RZUEVfQUNUSU9OX1NFVBACEiUKIUFTU0lHTk1FTlRfU09VUkNFX1RZUEVfREVGSU5JVElPThADEiwKKEFTU0lHTk1FTlRfU09VUkNFX1RZUEVfQ09NUExJQU5DRV9QT0xJQ1kQBCrSAQoUQXNzaWdubWVudFRhcmdldFR5cGUSJgoiQVNTSUdOTUVOVF9UQVJHRVRfVFlQRV9VTlNQRUNJRklFRBAAEiEKHUFTU0lHTk1FTlRfVEFSR0VUX1RZUEVfREVWSUNFEAESJwojQVNTSUdOTUVOVF9UQVJHRVRfVFlQRV9ERVZJQ0VfR1JPVVAQAhIfChtBU1NJR05NRU5UX1RBUkdFVF9UWVBFX1VTRVIQAxIlCiFBU1NJR05NRU5UX1RBUkdFVF9UWVBFX1VTRVJfR1JPVVAQBCpiCgxEZXZpY2VTdGF0dXMSHQoZREVWSUNFX1NUQVRVU19VTlNQRUNJRklFRBAAEhgKFERFVklDRV9TVEFUVVNfT05MSU5FEAESGQoVREVWSUNFX1NUQVRVU19PRkZMSU5FEAIq0wIKC1NlYXJjaFNjb3BlEhwKGFNFQVJDSF9TQ09QRV9VTlNQRUNJRklFRBAAEhgKFFNFQVJDSF9TQ09QRV9BQ1RJT05TEAESHAoYU0VBUkNIX1NDT1BFX0FDVElPTl9TRVRTEAISHAoYU0VBUkNIX1NDT1BFX0RFRklOSVRJT05TEAMSJAogU0VBUkNIX1NDT1BFX0NPTVBMSUFOQ0VfUE9MSUNJRVMQBBIYChRTRUFSQ0hfU0NPUEVfREVWSUNFUxAFEhYKElNFQVJDSF9TQ09QRV9VU0VSUxAGEh4KGlNFQVJDSF9TQ09QRV9ERVZJQ0VfR1JPVVBTEAcSHAoYU0VBUkNIX1NDT1BFX1VTRVJfR1JPVVBTEAgSGwoXU0VBUkNIX1NDT1BFX0VYRUNVVElPTlMQCRIdChlTRUFSQ0hfU0NPUEVfQVVESVRfRVZFTlRTEAoqXwoUSWRlbnRpdHlQcm92aWRlclR5cGUSJgoiSURFTlRJVFlfUFJPVklERVJfVFlQRV9VTlNQRUNJRklFRBAAEh8KG0lERU5USVRZX1BST1ZJREVSX1RZUEVfT0lEQxABKo0BCg5Sb3RhdGlvblJlYXNvbhIfChtST1RBVElPTl9SRUFTT05fVU5TUEVDSUZJRUQQABIbChdST1RBVElPTl9SRUFTT05fSU5JVElBTBABEh0KGVJPVEFUSU9OX1JFQVNPTl9TQ0hFRFVMRUQQAhIeChpST1RBVElPTl9SRUFTT05fQVVUSF9HUkFDRRADKs0BChRMdWtzUmV2b2NhdGlvblN0YXR1cxImCiJMVUtTX1JFVk9DQVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHwobTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19OT05FEAESJQohTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19ESVNQQVRDSEVEEAISIgoeTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19TVUNDRVNTEAMSIQodTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19GQUlMRUQQBCqeAQoQQ29tcGxpYW5jZVN0YXR1cxIdChlDT01QTElBTkNFX1NUQVRVU19VTktOT1dOEAASHwobQ09NUExJQU5DRV9TVEFUVVNfQ09NUExJQU5UEAESIwofQ09NUExJQU5DRV9TVEFUVVNfTk9OX0NPTVBMSUFOVBACEiUKIUNPTVBMSUFOQ0VfU1RBVFVTX0lOX0dSQUNFX1BFUklPRBADQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM");
+  fileDesc("ChJwbS92MS9jb21tb24ucHJvdG8SBXBtLnYxIhkKCEFjdGlvbklkEg0KBXZhbHVlGAEgASgJIhkKCERldmljZUlkEg0KBXZhbHVlGAEgASgJIi8KC0Vycm9yRGV0YWlsEgwKBGNvZGUYASABKAkSEgoKcmVxdWVzdF9pZBgCIAEoCSJEChFNYWludGVuYW5jZVdpbmRvdxIvCghzY2hlZHVsZRgBIAMoCzIdLnBtLnYxLk1haW50ZW5hbmNlV2luZG93RW50cnkiNQoWTWFpbnRlbmFuY2VXaW5kb3dFbnRyeRIMCgRkYXlzGAEgAygJEg0KBWFsbG93GAIgASgJIkIKDUNvbW1hbmRPdXRwdXQSEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkqpgIKD0V4ZWN1dGlvblN0YXR1cxIgChxFWEVDVVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRVhFQ1VUSU9OX1NUQVRVU19QRU5ESU5HEAESHAoYRVhFQ1VUSU9OX1NUQVRVU19SVU5OSU5HEAISHAoYRVhFQ1VUSU9OX1NUQVRVU19TVUNDRVNTEAMSGwoXRVhFQ1VUSU9OX1NUQVRVU19GQUlMRUQQBBIcChhFWEVDVVRJT05fU1RBVFVTX1NLSVBQRUQQBRIcChhFWEVDVVRJT05fU1RBVFVTX1RJTUVPVVQQBhIeChpFWEVDVVRJT05fU1RBVFVTX1NDSEVEVUxFRBAHEh4KGkVYRUNVVElPTl9TVEFUVVNfQ0FOQ0VMTEVEEAgqQwoMRGVzaXJlZFN0YXRlEhkKFURFU0lSRURfU1RBVEVfUFJFU0VOVBAAEhgKFERFU0lSRURfU1RBVEVfQUJTRU5UEAEqigEKDkFzc2lnbm1lbnRNb2RlEhwKGEFTU0lHTk1FTlRfTU9ERV9SRVFVSVJFRBAAEh0KGUFTU0lHTk1FTlRfTU9ERV9BVkFJTEFCTEUQARIcChhBU1NJR05NRU5UX01PREVfRVhDTFVERUQQAhIdChlBU1NJR05NRU5UX01PREVfVU5JTlNUQUxMEAMq3QEKFEFzc2lnbm1lbnRTb3VyY2VUeXBlEiYKIkFTU0lHTk1FTlRfU09VUkNFX1RZUEVfVU5TUEVDSUZJRUQQABIhCh1BU1NJR05NRU5UX1NPVVJDRV9UWVBFX0FDVElPThABEiUKIUFTU0lHTk1FTlRfU09VUkNFX1RZUEVfQUNUSU9OX1NFVBACEiUKIUFTU0lHTk1FTlRfU09VUkNFX1RZUEVfREVGSU5JVElPThADEiwKKEFTU0lHTk1FTlRfU09VUkNFX1RZUEVfQ09NUExJQU5DRV9QT0xJQ1kQBCrSAQoUQXNzaWdubWVudFRhcmdldFR5cGUSJgoiQVNTSUdOTUVOVF9UQVJHRVRfVFlQRV9VTlNQRUNJRklFRBAAEiEKHUFTU0lHTk1FTlRfVEFSR0VUX1RZUEVfREVWSUNFEAESJwojQVNTSUdOTUVOVF9UQVJHRVRfVFlQRV9ERVZJQ0VfR1JPVVAQAhIfChtBU1NJR05NRU5UX1RBUkdFVF9UWVBFX1VTRVIQAxIlCiFBU1NJR05NRU5UX1RBUkdFVF9UWVBFX1VTRVJfR1JPVVAQBCqJAQoSUm9sZUdyYW50U2NvcGVLaW5kEiUKIVJPTEVfR1JBTlRfU0NPUEVfS0lORF9VTlNQRUNJRklFRBAAEiYKIlJPTEVfR1JBTlRfU0NPUEVfS0lORF9ERVZJQ0VfR1JPVVAQARIkCiBST0xFX0dSQU5UX1NDT1BFX0tJTkRfVVNFUl9HUk9VUBACKoIBChRQZXJtaXNzaW9uVGFyZ2V0S2luZBImCiJQRVJNSVNTSU9OX1RBUkdFVF9LSU5EX1VOU1BFQ0lGSUVEEAASIQodUEVSTUlTU0lPTl9UQVJHRVRfS0lORF9ERVZJQ0UQARIfChtQRVJNSVNTSU9OX1RBUkdFVF9LSU5EX1VTRVIQAipiCgxEZXZpY2VTdGF0dXMSHQoZREVWSUNFX1NUQVRVU19VTlNQRUNJRklFRBAAEhgKFERFVklDRV9TVEFUVVNfT05MSU5FEAESGQoVREVWSUNFX1NUQVRVU19PRkZMSU5FEAIq0wIKC1NlYXJjaFNjb3BlEhwKGFNFQVJDSF9TQ09QRV9VTlNQRUNJRklFRBAAEhgKFFNFQVJDSF9TQ09QRV9BQ1RJT05TEAESHAoYU0VBUkNIX1NDT1BFX0FDVElPTl9TRVRTEAISHAoYU0VBUkNIX1NDT1BFX0RFRklOSVRJT05TEAMSJAogU0VBUkNIX1NDT1BFX0NPTVBMSUFOQ0VfUE9MSUNJRVMQBBIYChRTRUFSQ0hfU0NPUEVfREVWSUNFUxAFEhYKElNFQVJDSF9TQ09QRV9VU0VSUxAGEh4KGlNFQVJDSF9TQ09QRV9ERVZJQ0VfR1JPVVBTEAcSHAoYU0VBUkNIX1NDT1BFX1VTRVJfR1JPVVBTEAgSGwoXU0VBUkNIX1NDT1BFX0VYRUNVVElPTlMQCRIdChlTRUFSQ0hfU0NPUEVfQVVESVRfRVZFTlRTEAoqXwoUSWRlbnRpdHlQcm92aWRlclR5cGUSJgoiSURFTlRJVFlfUFJPVklERVJfVFlQRV9VTlNQRUNJRklFRBAAEh8KG0lERU5USVRZX1BST1ZJREVSX1RZUEVfT0lEQxABKo0BCg5Sb3RhdGlvblJlYXNvbhIfChtST1RBVElPTl9SRUFTT05fVU5TUEVDSUZJRUQQABIbChdST1RBVElPTl9SRUFTT05fSU5JVElBTBABEh0KGVJPVEFUSU9OX1JFQVNPTl9TQ0hFRFVMRUQQAhIeChpST1RBVElPTl9SRUFTT05fQVVUSF9HUkFDRRADKs0BChRMdWtzUmV2b2NhdGlvblN0YXR1cxImCiJMVUtTX1JFVk9DQVRJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASHwobTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19OT05FEAESJQohTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19ESVNQQVRDSEVEEAISIgoeTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19TVUNDRVNTEAMSIQodTFVLU19SRVZPQ0FUSU9OX1NUQVRVU19GQUlMRUQQBCqeAQoQQ29tcGxpYW5jZVN0YXR1cxIdChlDT01QTElBTkNFX1NUQVRVU19VTktOT1dOEAASHwobQ09NUExJQU5DRV9TVEFUVVNfQ09NUExJQU5UEAESIwofQ09NUExJQU5DRV9TVEFUVVNfTk9OX0NPTVBMSUFOVBACEiUKIUNPTVBMSUFOQ0VfU1RBVFVTX0lOX0dSQUNFX1BFUklPRBADQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM");
 
 /**
  * Unique identifier for an action instance
@@ -411,6 +411,99 @@ export const AssignmentTargetTypeSchema: GenEnum<AssignmentTargetType> = /*@__PU
   enumDesc(file_pm_v1_common, 4);
 
 /**
+ * RoleGrantScopeKind names which kind of group anchors a scoped role
+ * grant (manchtools/power-manage-server#7). Kinds are exclusive — a
+ * grant is either device-group-scoped, user-group-scoped, or
+ * unscoped/global (UNSPECIFIED). Permissions declare a single target
+ * kind on their PermissionInfo; a grant whose scope_kind doesn't
+ * match every permission in the role is rejected at the
+ * role-assignment handler.
+ *
+ * Wire/projection split: the proto carries the enum on the wire;
+ * the user_roles_projection / user_group_roles_projection rows
+ * store the lowercase string form ("device_group" / "user_group") so
+ * the SQL CHECK constraint reads naturally and existing event-replay
+ * keeps working. Conversion happens at the projector boundary.
+ *
+ * @generated from enum pm.v1.RoleGrantScopeKind
+ */
+export enum RoleGrantScopeKind {
+  /**
+   * UNSPECIFIED on a grant means the grant is unscoped/global —
+   * matches the historical NULL-scope grant shape and is
+   * backward-compatible with grants emitted before #7.
+   *
+   * @generated from enum value: ROLE_GRANT_SCOPE_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP = 1;
+   */
+  DEVICE_GROUP = 1,
+
+  /**
+   * @generated from enum value: ROLE_GRANT_SCOPE_KIND_USER_GROUP = 2;
+   */
+  USER_GROUP = 2,
+}
+
+/**
+ * Describes the enum pm.v1.RoleGrantScopeKind.
+ */
+export const RoleGrantScopeKindSchema: GenEnum<RoleGrantScopeKind> = /*@__PURE__*/
+  enumDesc(file_pm_v1_common, 5);
+
+/**
+ * PermissionTargetKind classifies the target kind a permission acts
+ * on, which determines which RoleGrantScopeKind it accepts on a
+ * scoped grant (manchtools/power-manage-server#7). Returned on
+ * PermissionInfo by ListPermissions so the role-builder UI can
+ * surface scopable permissions and gate the scope picker by kind.
+ *
+ * Fail-closed semantic: a permission that does not explicitly
+ * declare a target kind is NOT scopable — granting it with any
+ * scope_kind is rejected by the role-assignment handler. New
+ * permissions added without an explicit kind silently land at the
+ * safe default. Use DEVICE / USER ONLY when the permission's
+ * authorization decision can be expressed as "scope-id matches a
+ * group containing this device/user".
+ *
+ * @generated from enum pm.v1.PermissionTargetKind
+ */
+export enum PermissionTargetKind {
+  /**
+   * UNSPECIFIED — not scopable. Org-tier permissions
+   * (CreateRole, server settings, IDP/SCIM, audit) and any
+   * permission whose authorization decision can't be expressed as
+   * a group-membership check stay at UNSPECIFIED.
+   *
+   * @generated from enum value: PERMISSION_TARGET_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * DEVICE — scopable with RoleGrantScopeKind=DEVICE_GROUP only.
+   *
+   * @generated from enum value: PERMISSION_TARGET_KIND_DEVICE = 1;
+   */
+  DEVICE = 1,
+
+  /**
+   * USER — scopable with RoleGrantScopeKind=USER_GROUP only.
+   *
+   * @generated from enum value: PERMISSION_TARGET_KIND_USER = 2;
+   */
+  USER = 2,
+}
+
+/**
+ * Describes the enum pm.v1.PermissionTargetKind.
+ */
+export const PermissionTargetKindSchema: GenEnum<PermissionTargetKind> = /*@__PURE__*/
+  enumDesc(file_pm_v1_common, 6);
+
+/**
  * DeviceStatus replaces the legacy stringly-typed Device.status /
  * ListDevicesRequest.status_filter ("online" / "offline"). The status
  * is computed by the server from the device's last_seen_at timestamp,
@@ -440,7 +533,7 @@ export enum DeviceStatus {
  * Describes the enum pm.v1.DeviceStatus.
  */
 export const DeviceStatusSchema: GenEnum<DeviceStatus> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 5);
+  enumDesc(file_pm_v1_common, 7);
 
 /**
  * SearchScope identifies which search index a SearchRequest targets,
@@ -511,7 +604,7 @@ export enum SearchScope {
  * Describes the enum pm.v1.SearchScope.
  */
 export const SearchScopeSchema: GenEnum<SearchScope> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 6);
+  enumDesc(file_pm_v1_common, 8);
 
 /**
  * IdentityProviderType identifies the auth protocol an
@@ -539,7 +632,7 @@ export enum IdentityProviderType {
  * Describes the enum pm.v1.IdentityProviderType.
  */
 export const IdentityProviderTypeSchema: GenEnum<IdentityProviderType> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 7);
+  enumDesc(file_pm_v1_common, 9);
 
 /**
  * RotationReason classifies why a credential rotation happened. The
@@ -582,7 +675,7 @@ export enum RotationReason {
  * Describes the enum pm.v1.RotationReason.
  */
 export const RotationReasonSchema: GenEnum<RotationReason> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 8);
+  enumDesc(file_pm_v1_common, 10);
 
 /**
  * LuksRevocationStatus tracks the lifecycle of a LUKS passphrase
@@ -628,7 +721,7 @@ export enum LuksRevocationStatus {
  * Describes the enum pm.v1.LuksRevocationStatus.
  */
 export const LuksRevocationStatusSchema: GenEnum<LuksRevocationStatus> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 9);
+  enumDesc(file_pm_v1_common, 11);
 
 /**
  * Compliance status for a device based on detection scripts
@@ -661,5 +754,5 @@ export enum ComplianceStatus {
  * Describes the enum pm.v1.ComplianceStatus.
  */
 export const ComplianceStatusSchema: GenEnum<ComplianceStatus> = /*@__PURE__*/
-  enumDesc(file_pm_v1_common, 10);
+  enumDesc(file_pm_v1_common, 12);
 

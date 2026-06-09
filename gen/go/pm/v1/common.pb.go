@@ -320,6 +320,139 @@ func (AssignmentTargetType) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
+// RoleGrantScopeKind names which kind of group anchors a scoped role
+// grant (manchtools/power-manage-server#7). Kinds are exclusive — a
+// grant is either device-group-scoped, user-group-scoped, or
+// unscoped/global (UNSPECIFIED). Permissions declare a single target
+// kind on their PermissionInfo; a grant whose scope_kind doesn't
+// match every permission in the role is rejected at the
+// role-assignment handler.
+//
+// Wire/projection split: the proto carries the enum on the wire;
+// the user_roles_projection / user_group_roles_projection rows
+// store the lowercase string form ("device_group" / "user_group") so
+// the SQL CHECK constraint reads naturally and existing event-replay
+// keeps working. Conversion happens at the projector boundary.
+type RoleGrantScopeKind int32
+
+const (
+	// UNSPECIFIED on a grant means the grant is unscoped/global —
+	// matches the historical NULL-scope grant shape and is
+	// backward-compatible with grants emitted before #7.
+	RoleGrantScopeKind_ROLE_GRANT_SCOPE_KIND_UNSPECIFIED  RoleGrantScopeKind = 0
+	RoleGrantScopeKind_ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP RoleGrantScopeKind = 1
+	RoleGrantScopeKind_ROLE_GRANT_SCOPE_KIND_USER_GROUP   RoleGrantScopeKind = 2
+)
+
+// Enum value maps for RoleGrantScopeKind.
+var (
+	RoleGrantScopeKind_name = map[int32]string{
+		0: "ROLE_GRANT_SCOPE_KIND_UNSPECIFIED",
+		1: "ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP",
+		2: "ROLE_GRANT_SCOPE_KIND_USER_GROUP",
+	}
+	RoleGrantScopeKind_value = map[string]int32{
+		"ROLE_GRANT_SCOPE_KIND_UNSPECIFIED":  0,
+		"ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP": 1,
+		"ROLE_GRANT_SCOPE_KIND_USER_GROUP":   2,
+	}
+)
+
+func (x RoleGrantScopeKind) Enum() *RoleGrantScopeKind {
+	p := new(RoleGrantScopeKind)
+	*p = x
+	return p
+}
+
+func (x RoleGrantScopeKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RoleGrantScopeKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[5].Descriptor()
+}
+
+func (RoleGrantScopeKind) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[5]
+}
+
+func (x RoleGrantScopeKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RoleGrantScopeKind.Descriptor instead.
+func (RoleGrantScopeKind) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
+// PermissionTargetKind classifies the target kind a permission acts
+// on, which determines which RoleGrantScopeKind it accepts on a
+// scoped grant (manchtools/power-manage-server#7). Returned on
+// PermissionInfo by ListPermissions so the role-builder UI can
+// surface scopable permissions and gate the scope picker by kind.
+//
+// Fail-closed semantic: a permission that does not explicitly
+// declare a target kind is NOT scopable — granting it with any
+// scope_kind is rejected by the role-assignment handler. New
+// permissions added without an explicit kind silently land at the
+// safe default. Use DEVICE / USER ONLY when the permission's
+// authorization decision can be expressed as "scope-id matches a
+// group containing this device/user".
+type PermissionTargetKind int32
+
+const (
+	// UNSPECIFIED — not scopable. Org-tier permissions
+	// (CreateRole, server settings, IDP/SCIM, audit) and any
+	// permission whose authorization decision can't be expressed as
+	// a group-membership check stay at UNSPECIFIED.
+	PermissionTargetKind_PERMISSION_TARGET_KIND_UNSPECIFIED PermissionTargetKind = 0
+	// DEVICE — scopable with RoleGrantScopeKind=DEVICE_GROUP only.
+	PermissionTargetKind_PERMISSION_TARGET_KIND_DEVICE PermissionTargetKind = 1
+	// USER — scopable with RoleGrantScopeKind=USER_GROUP only.
+	PermissionTargetKind_PERMISSION_TARGET_KIND_USER PermissionTargetKind = 2
+)
+
+// Enum value maps for PermissionTargetKind.
+var (
+	PermissionTargetKind_name = map[int32]string{
+		0: "PERMISSION_TARGET_KIND_UNSPECIFIED",
+		1: "PERMISSION_TARGET_KIND_DEVICE",
+		2: "PERMISSION_TARGET_KIND_USER",
+	}
+	PermissionTargetKind_value = map[string]int32{
+		"PERMISSION_TARGET_KIND_UNSPECIFIED": 0,
+		"PERMISSION_TARGET_KIND_DEVICE":      1,
+		"PERMISSION_TARGET_KIND_USER":        2,
+	}
+)
+
+func (x PermissionTargetKind) Enum() *PermissionTargetKind {
+	p := new(PermissionTargetKind)
+	*p = x
+	return p
+}
+
+func (x PermissionTargetKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PermissionTargetKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[6].Descriptor()
+}
+
+func (PermissionTargetKind) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[6]
+}
+
+func (x PermissionTargetKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PermissionTargetKind.Descriptor instead.
+func (PermissionTargetKind) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
 // DeviceStatus replaces the legacy stringly-typed Device.status /
 // ListDevicesRequest.status_filter ("online" / "offline"). The status
 // is computed by the server from the device's last_seen_at timestamp,
@@ -358,11 +491,11 @@ func (x DeviceStatus) String() string {
 }
 
 func (DeviceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[5].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[7].Descriptor()
 }
 
 func (DeviceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[5]
+	return &file_pm_v1_common_proto_enumTypes[7]
 }
 
 func (x DeviceStatus) Number() protoreflect.EnumNumber {
@@ -371,7 +504,7 @@ func (x DeviceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DeviceStatus.Descriptor instead.
 func (DeviceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 // SearchScope identifies which search index a SearchRequest targets,
@@ -435,11 +568,11 @@ func (x SearchScope) String() string {
 }
 
 func (SearchScope) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[6].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[8].Descriptor()
 }
 
 func (SearchScope) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[6]
+	return &file_pm_v1_common_proto_enumTypes[8]
 }
 
 func (x SearchScope) Number() protoreflect.EnumNumber {
@@ -448,7 +581,7 @@ func (x SearchScope) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SearchScope.Descriptor instead.
 func (SearchScope) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
 // IdentityProviderType identifies the auth protocol an
@@ -487,11 +620,11 @@ func (x IdentityProviderType) String() string {
 }
 
 func (IdentityProviderType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[7].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
 }
 
 func (IdentityProviderType) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[7]
+	return &file_pm_v1_common_proto_enumTypes[9]
 }
 
 func (x IdentityProviderType) Number() protoreflect.EnumNumber {
@@ -500,7 +633,7 @@ func (x IdentityProviderType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IdentityProviderType.Descriptor instead.
 func (IdentityProviderType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
 }
 
 // RotationReason classifies why a credential rotation happened. The
@@ -550,11 +683,11 @@ func (x RotationReason) String() string {
 }
 
 func (RotationReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[8].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[10].Descriptor()
 }
 
 func (RotationReason) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[8]
+	return &file_pm_v1_common_proto_enumTypes[10]
 }
 
 func (x RotationReason) Number() protoreflect.EnumNumber {
@@ -563,7 +696,7 @@ func (x RotationReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RotationReason.Descriptor instead.
 func (RotationReason) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
 // LuksRevocationStatus tracks the lifecycle of a LUKS passphrase
@@ -614,11 +747,11 @@ func (x LuksRevocationStatus) String() string {
 }
 
 func (LuksRevocationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[11].Descriptor()
 }
 
 func (LuksRevocationStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[9]
+	return &file_pm_v1_common_proto_enumTypes[11]
 }
 
 func (x LuksRevocationStatus) Number() protoreflect.EnumNumber {
@@ -627,7 +760,7 @@ func (x LuksRevocationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LuksRevocationStatus.Descriptor instead.
 func (LuksRevocationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{11}
 }
 
 // Compliance status for a device based on detection scripts
@@ -667,11 +800,11 @@ func (x ComplianceStatus) String() string {
 }
 
 func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[10].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[12].Descriptor()
 }
 
 func (ComplianceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[10]
+	return &file_pm_v1_common_proto_enumTypes[12]
 }
 
 func (x ComplianceStatus) Number() protoreflect.EnumNumber {
@@ -680,7 +813,7 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{12}
 }
 
 // Unique identifier for an action instance
@@ -1067,7 +1200,15 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x1dASSIGNMENT_TARGET_TYPE_DEVICE\x10\x01\x12'\n" +
 	"#ASSIGNMENT_TARGET_TYPE_DEVICE_GROUP\x10\x02\x12\x1f\n" +
 	"\x1bASSIGNMENT_TARGET_TYPE_USER\x10\x03\x12%\n" +
-	"!ASSIGNMENT_TARGET_TYPE_USER_GROUP\x10\x04*b\n" +
+	"!ASSIGNMENT_TARGET_TYPE_USER_GROUP\x10\x04*\x89\x01\n" +
+	"\x12RoleGrantScopeKind\x12%\n" +
+	"!ROLE_GRANT_SCOPE_KIND_UNSPECIFIED\x10\x00\x12&\n" +
+	"\"ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP\x10\x01\x12$\n" +
+	" ROLE_GRANT_SCOPE_KIND_USER_GROUP\x10\x02*\x82\x01\n" +
+	"\x14PermissionTargetKind\x12&\n" +
+	"\"PERMISSION_TARGET_KIND_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dPERMISSION_TARGET_KIND_DEVICE\x10\x01\x12\x1f\n" +
+	"\x1bPERMISSION_TARGET_KIND_USER\x10\x02*b\n" +
 	"\fDeviceStatus\x12\x1d\n" +
 	"\x19DEVICE_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14DEVICE_STATUS_ONLINE\x10\x01\x12\x19\n" +
@@ -1117,7 +1258,7 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
@@ -1125,21 +1266,23 @@ var file_pm_v1_common_proto_goTypes = []any{
 	(AssignmentMode)(0),            // 2: pm.v1.AssignmentMode
 	(AssignmentSourceType)(0),      // 3: pm.v1.AssignmentSourceType
 	(AssignmentTargetType)(0),      // 4: pm.v1.AssignmentTargetType
-	(DeviceStatus)(0),              // 5: pm.v1.DeviceStatus
-	(SearchScope)(0),               // 6: pm.v1.SearchScope
-	(IdentityProviderType)(0),      // 7: pm.v1.IdentityProviderType
-	(RotationReason)(0),            // 8: pm.v1.RotationReason
-	(LuksRevocationStatus)(0),      // 9: pm.v1.LuksRevocationStatus
-	(ComplianceStatus)(0),          // 10: pm.v1.ComplianceStatus
-	(*ActionId)(nil),               // 11: pm.v1.ActionId
-	(*DeviceId)(nil),               // 12: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 13: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 14: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 15: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 16: pm.v1.CommandOutput
+	(RoleGrantScopeKind)(0),        // 5: pm.v1.RoleGrantScopeKind
+	(PermissionTargetKind)(0),      // 6: pm.v1.PermissionTargetKind
+	(DeviceStatus)(0),              // 7: pm.v1.DeviceStatus
+	(SearchScope)(0),               // 8: pm.v1.SearchScope
+	(IdentityProviderType)(0),      // 9: pm.v1.IdentityProviderType
+	(RotationReason)(0),            // 10: pm.v1.RotationReason
+	(LuksRevocationStatus)(0),      // 11: pm.v1.LuksRevocationStatus
+	(ComplianceStatus)(0),          // 12: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 13: pm.v1.ActionId
+	(*DeviceId)(nil),               // 14: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 15: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 16: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 17: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 18: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	15, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	17, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
 	1,  // [1:1] is the sub-list for method output_type
 	1,  // [1:1] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
@@ -1157,7 +1300,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      11,
+			NumEnums:      13,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
