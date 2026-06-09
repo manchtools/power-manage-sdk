@@ -57,6 +57,18 @@ func RunWithCLocale(ctx context.Context, name string, args ...string) (*Result, 
 // (Privileged, PrivilegedStreaming, pkg/exec.runPM, …) inherits the
 // check, so the audit-finding-#8 enforcement lives in one place.
 func RunStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
+	// Default child PATH is the agent's own (sanitized) PATH.
+	return RunStreamingChildPath(ctx, name, args, envVars, os.Getenv("PATH"), dir, callback)
+}
+
+// RunStreamingChildPath is RunStreaming with an explicit, TRUSTED child
+// PATH. PATH is on the BlockedEnvVars list so an untrusted caller can't
+// smuggle it through envVars; this entry point lets a trusted caller
+// (e.g. the agent's per-user runuser fan-out, which must run with the
+// target user's PATH rather than root's) set the child PATH directly.
+// childPath is used only when envVars is non-empty, matching
+// RunStreaming's compose-env behavior.
+func RunStreamingChildPath(ctx context.Context, name string, args []string, envVars []string, childPath string, dir string, callback OutputCallback) (*Result, error) {
 	for _, e := range envVars {
 		key, _, ok := strings.Cut(e, "=")
 		if !ok {
@@ -84,8 +96,8 @@ func RunStreaming(ctx context.Context, name string, args []string, envVars []str
 		// fully" semantics — that path is unchanged for backward
 		// compatibility.
 		finalEnv := make([]string, 0, len(envVars)+1)
-		if path := os.Getenv("PATH"); path != "" {
-			finalEnv = append(finalEnv, "PATH="+path)
+		if childPath != "" {
+			finalEnv = append(finalEnv, "PATH="+childPath)
 		}
 		finalEnv = append(finalEnv, envVars...)
 		c.Env = finalEnv

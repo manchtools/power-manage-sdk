@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 // runuserPath pins the absolute path to runuser. Like loginctlPath,
@@ -18,10 +19,10 @@ const runuserPath = "/usr/sbin/runuser"
 // notification path, GNOME settings, etc. — find it without falling
 // back to a fresh autolaunched bus).
 //
-// PATH is not added here — callers append it themselves so they can
-// pick a curated value rather than inherit the agent's PATH (which
-// may include /usr/local/sbin and other privileged dirs the user
-// shouldn't reach via subshell expansion).
+// PATH is not added here — callers append it (via UserPath) so they can
+// pick a curated value rather than inherit the agent's PATH. RunAsCommand
+// does this for the non-streaming path; the streaming caller passes
+// UserPath(s) as the trusted child PATH to exec.RunStreamingChildPath.
 func EnvFor(s Session) []string {
 	return []string{
 		"HOME=" + s.Home,
@@ -30,6 +31,27 @@ func EnvFor(s Session) []string {
 		"XDG_RUNTIME_DIR=" + s.RuntimeDir,
 		"DBUS_SESSION_BUS_ADDRESS=unix:path=" + s.RuntimeDir + "/bus",
 	}
+}
+
+// UserPath returns the curated PATH a per-user command should run with.
+// It is built from the session — never from the agent's (root's) PATH —
+// so a user-scoped command does not inherit root-only entries, and the
+// user's own bin dirs come first so ~/.local/bin shadows a system binary
+// of the same name. sbin dirs are included because usr-merged distros
+// put them on every user's default PATH and a user running an sbin
+// binary does so unprivileged (their own UID); excluding them only
+// breaks command resolution without any privilege benefit.
+func UserPath(s Session) string {
+	return strings.Join([]string{
+		s.Home + "/.local/bin",
+		s.Home + "/bin",
+		"/usr/local/bin",
+		"/usr/bin",
+		"/bin",
+		"/usr/local/sbin",
+		"/usr/sbin",
+		"/sbin",
+	}, ":")
 }
 
 // RunAsCommand returns an *exec.Cmd that runs `name args...` as the
@@ -59,10 +81,14 @@ func RunAsCommand(ctx context.Context, s Session, extraEnv []string, name string
 	full := append([]string{"-u", s.Username, "--", name}, args...)
 	cmd := exec.CommandContext(ctx, runuserPath, full...)
 	// Replace inherited env wholesale — agent's env (LD_PRELOAD,
-	// LD_LIBRARY_PATH, etc.) must not leak into a user-scoped
-	// command. Caller's extraEnv is appended last so it wins on
-	// duplicate keys.
-	cmd.Env = append(EnvFor(s), extraEnv...)
+	// LD_LIBRARY_PATH, etc.) must not leak into a user-scoped command.
+	// Caller's extraEnv is merged on top, then the curated user PATH is
+	// applied LAST so it wins under exec's last-occurrence semantics: an
+	// action must not be able to override PATH (parity with the
+	// streaming path, which refuses a caller-supplied PATH outright).
+	env := append(EnvFor(s), extraEnv...)
+	env = append(env, "PATH="+UserPath(s))
+	cmd.Env = env
 	cmd.Dir = s.Home
 	return cmd, nil
 }

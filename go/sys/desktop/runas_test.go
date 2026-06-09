@@ -87,8 +87,11 @@ func TestRunAsCommand_EnvIsolatesAgentEnvironment(t *testing.T) {
 		"LOGNAME":                  "alice",
 		"XDG_RUNTIME_DIR":          "/run/user/1000",
 		"DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
-		"PATH":                     "/usr/bin:/bin",
-		"FLATPAK_USER_DIR":         "/foo",
+		// PATH is the curated UserPath regardless of the caller-supplied
+		// "PATH=/usr/bin:/bin" — an action must not override it. A
+		// non-PATH extraEnv (FLATPAK_USER_DIR) is still honored.
+		"PATH":             UserPath(s),
+		"FLATPAK_USER_DIR": "/foo",
 	}
 	for k, want := range must {
 		if got := envSet[k]; got != want {
