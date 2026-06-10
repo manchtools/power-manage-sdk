@@ -212,6 +212,13 @@ message User {
   bool ssh_allow_password = 21;
   bool user_provisioning_enabled = 22;
   repeated InheritedRole inherited_roles = 23;
+  // Per-grant view of the user's directly-assigned roles, carrying each
+  // grant's scope (#7). `roles` (field 6) remains the de-duplicated,
+  // scope-blind set for backward compatibility; `role_grants` is the
+  // authoritative source for scoped-grant display and revocation — a
+  // role granted both globally and scoped to a device group appears as
+  // two RoleGrant entries.
+  repeated RoleGrant role_grants = 24;
 }
 
 message InheritedRole {
@@ -236,6 +243,18 @@ message Role {
   repeated string permissions = 4;
   google.protobuf.Timestamp created_at = 5;
   bool is_system = 6;
+}
+
+// A single role grant on a user or user group, with its optional scope
+// (#7). scope_kind == UNSPECIFIED is an unscoped/global grant (scope_id
+// and scope_name empty). For a scoped grant, scope_id is the device- or
+// user-group id and scope_name is that group's resolved display name
+// (empty if the group was deleted).
+message RoleGrant {
+  Role role = 1;
+  RoleGrantScopeKind scope_kind = 2;
+  string scope_id = 3;
+  string scope_name = 4;
 }
 
 message PermissionInfo {
@@ -1961,6 +1980,10 @@ message UserGroup {
   // group's contribution to the union. See
   // manchtools/power-manage-server#58.
   MaintenanceWindow maintenance_window = 10;
+  // Per-grant view of the group's assigned roles with each grant's scope
+  // (#7); `roles` (field 5) stays the scope-blind set for backward
+  // compatibility. See User.role_grants.
+  repeated RoleGrant role_grants = 11;
 }
 
 message UserGroupMember {
