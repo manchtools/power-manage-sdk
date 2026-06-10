@@ -242,7 +242,8 @@ import {
 	AssignmentTargetType,
 	DeviceStatus,
 	IdentityProviderType,
-	SearchScope
+	SearchScope,
+	RoleGrantScopeKind
 } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
@@ -1493,17 +1494,27 @@ export class ApiClient {
 		await client.deleteRole(create(DeleteRoleRequestSchema, { id }));
 	}
 
-	async assignRoleToUser(userId: string, roleIds: string[]) {
+	async assignRoleToUser(
+		userId: string,
+		roleIds: string[],
+		scopeKind: RoleGrantScopeKind = RoleGrantScopeKind.UNSPECIFIED,
+		scopeId: string = ''
+	) {
 		const client = this.getClient();
 		await client.assignRoleToUser(
-			create(AssignRoleToUserRequestSchema, { userId, roleIds })
+			create(AssignRoleToUserRequestSchema, { userId, roleIds, scopeKind, scopeId })
 		);
 	}
 
-	async revokeRoleFromUser(userId: string, roleId: string) {
+	async revokeRoleFromUser(
+		userId: string,
+		roleId: string,
+		scopeKind: RoleGrantScopeKind = RoleGrantScopeKind.UNSPECIFIED,
+		scopeId: string = ''
+	) {
 		const client = this.getClient();
 		await client.revokeRoleFromUser(
-			create(RevokeRoleFromUserRequestSchema, { userId, roleId })
+			create(RevokeRoleFromUserRequestSchema, { userId, roleId, scopeKind, scopeId })
 		);
 	}
 
@@ -1565,17 +1576,27 @@ export class ApiClient {
 		);
 	}
 
-	async assignRoleToUserGroup(groupId: string, roleIds: string[]) {
+	async assignRoleToUserGroup(
+		groupId: string,
+		roleIds: string[],
+		scopeKind: RoleGrantScopeKind = RoleGrantScopeKind.UNSPECIFIED,
+		scopeId: string = ''
+	) {
 		const client = this.getClient();
 		await client.assignRoleToUserGroup(
-			create(AssignRoleToUserGroupRequestSchema, { groupId, roleIds })
+			create(AssignRoleToUserGroupRequestSchema, { groupId, roleIds, scopeKind, scopeId })
 		);
 	}
 
-	async revokeRoleFromUserGroup(groupId: string, roleId: string) {
+	async revokeRoleFromUserGroup(
+		groupId: string,
+		roleId: string,
+		scopeKind: RoleGrantScopeKind = RoleGrantScopeKind.UNSPECIFIED,
+		scopeId: string = ''
+	) {
 		const client = this.getClient();
 		await client.revokeRoleFromUserGroup(
-			create(RevokeRoleFromUserGroupRequestSchema, { groupId, roleId })
+			create(RevokeRoleFromUserGroupRequestSchema, { groupId, roleId, scopeKind, scopeId })
 		);
 	}
 
