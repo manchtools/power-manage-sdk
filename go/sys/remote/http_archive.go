@@ -289,7 +289,7 @@ func extractTarGz(body io.Reader, staging string, maxBytes int64) (int, error) {
 		if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 			return files, fmt.Errorf("mkdir %s: %w", filepath.Dir(out), err)
 		}
-		written, werr := writeTarEntry(out, tr, hdr.FileInfo().Mode().Perm())
+		written, werr := writeArchiveEntry(out, tr, hdr.FileInfo().Mode().Perm(), maxBytes-totalBytes)
 		if werr != nil {
 			return files, werr
 		}
@@ -302,15 +302,24 @@ func extractTarGz(body io.Reader, staging string, maxBytes int64) (int, error) {
 	return files, nil
 }
 
-func writeTarEntry(out string, r io.Reader, mode os.FileMode) (int64, error) {
+// writeArchiveEntry copies r into out, bounded by limit (the remaining size
+// budget). A tar header's declared size is attacker-controlled, so the
+// pre-extract check that uses hdr.Size is only advisory; the copy itself is
+// capped here with a LimitReader at limit+1 so a body that exceeds what the
+// header claimed is truncated and reported as an integrity failure rather
+// than streamed unbounded to disk. This matches the zip branch's bound.
+func writeArchiveEntry(out string, r io.Reader, mode os.FileMode, limit int64) (int64, error) {
 	f, err := os.OpenFile(out, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
 	if err != nil {
 		return 0, fmt.Errorf("open %s: %w", out, err)
 	}
 	defer f.Close()
-	n, err := io.Copy(f, r)
+	n, err := io.Copy(f, io.LimitReader(r, limit+1))
 	if err != nil {
 		return n, fmt.Errorf("copy %s: %w", out, err)
+	}
+	if n > limit {
+		return n, fmt.Errorf("%w: archive entry %s exceeds remaining budget of %d bytes", ErrIntegrity, out, limit)
 	}
 	return n, nil
 }
@@ -354,8 +363,7 @@ func extractZipFile(tmpPath, staging string, maxBytes int64) (int, error) {
 			rc.Close()
 			return files, fmt.Errorf("mkdir %s: %w", filepath.Dir(out), err)
 		}
-		limited := io.LimitReader(rc, maxBytes-totalBytes+1)
-		written, werr := writeTarEntry(out, limited, ze.FileInfo().Mode().Perm())
+		written, werr := writeArchiveEntry(out, rc, ze.FileInfo().Mode().Perm(), maxBytes-totalBytes)
 		rc.Close()
 		if werr != nil {
 			return files, werr

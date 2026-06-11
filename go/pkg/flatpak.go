@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // Flatpak implements the Manager interface for Flatpak applications.
@@ -564,26 +566,57 @@ func (f *Flatpak) getPinnedSet() (map[string]bool, error) {
 	return pinned, nil
 }
 
-// AddRemote adds a Flatpak remote repository.
+// AddRemote adds a Flatpak remote repository. The name and URL are
+// validated (ValidateRemoteName / ValidateRemoteURL) and placed behind a
+// "--" so neither can be reinterpreted as a remote-add flag such as
+// --gpg-import or --no-gpg-verify.
 func (f *Flatpak) AddRemote(name, url string) (*CommandResult, error) {
-	args := []string{"remote-add", "--if-not-exists", name, url}
-	if f.useSudo {
-		args = append(args, "--system")
-	} else {
-		args = append(args, "--user")
+	args, err := flatpakRemoteAddArgs(name, url, f.useSudo)
+	if err != nil {
+		return nil, err
 	}
 	return f.run(f.ctx, args...)
 }
 
 // RemoveRemote removes a Flatpak remote repository.
 func (f *Flatpak) RemoveRemote(name string) (*CommandResult, error) {
-	args := []string{"remote-delete", "--force", name}
-	if f.useSudo {
-		args = append(args, "--system")
-	} else {
-		args = append(args, "--user")
+	args, err := flatpakRemoteDeleteArgs(name, f.useSudo)
+	if err != nil {
+		return nil, err
 	}
 	return f.run(f.ctx, args...)
+}
+
+// flatpakScopeFlag selects the install scope: --system under privilege,
+// --user otherwise.
+func flatpakScopeFlag(useSudo bool) string {
+	if useSudo {
+		return "--system"
+	}
+	return "--user"
+}
+
+// flatpakRemoteAddArgs validates the remote name + URL and builds the
+// `flatpak remote-add` argv with the positionals behind a "--".
+func flatpakRemoteAddArgs(name, url string, useSudo bool) ([]string, error) {
+	if err := ValidateRemoteName(name); err != nil {
+		return nil, err
+	}
+	if err := ValidateRemoteURL(url); err != nil {
+		return nil, err
+	}
+	flags := []string{"remote-add", "--if-not-exists", flatpakScopeFlag(useSudo)}
+	return pmexec.SeparatePositionals(flags, name, url), nil
+}
+
+// flatpakRemoteDeleteArgs validates the remote name and builds the
+// `flatpak remote-delete` argv with the name behind a "--".
+func flatpakRemoteDeleteArgs(name string, useSudo bool) ([]string, error) {
+	if err := ValidateRemoteName(name); err != nil {
+		return nil, err
+	}
+	flags := []string{"remote-delete", "--force", flatpakScopeFlag(useSudo)}
+	return pmexec.SeparatePositionals(flags, name), nil
 }
 
 // ListRemotes lists configured Flatpak remotes.

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/keyfile"
 )
 
 // NetworkManager keyfile-based PSK provisioning.
@@ -52,41 +54,51 @@ func keyfilePath(name string) string {
 // the only mechanism we use to set the PSK on a connection — argv
 // never carries the secret. See appendAuthArgs for the matching
 // defensive omission on the argv side.
-func BuildPSKKeyfile(p WiFiProfile) []byte {
-	var b strings.Builder
+//
+// Every operator-supplied field (Name, SSID, PSK) is routed through the
+// keyfile.Builder, which refuses a value carrying a newline / CR / NUL.
+// That is what stops an SSID or PSK like "x\n[connection]\npermissions=…"
+// from injecting extra keys or sections into this root-owned, root-parsed
+// file. An injected field makes BuildPSKKeyfile return an error and a nil
+// body — never a partially-rendered keyfile. CreateOrUpdate rejects the
+// same input earlier via validateProfile; this is the defense-in-depth
+// layer for any caller that reaches BuildPSKKeyfile directly.
+func BuildPSKKeyfile(p WiFiProfile) ([]byte, error) {
+	kf := &keyfile.Builder{}
+	kf.Comment("Managed by power-manage-agent — do not edit by hand.")
 
-	b.WriteString("# Managed by power-manage-agent — do not edit by hand.\n")
-	b.WriteString("[connection]\n")
-	fmt.Fprintf(&b, "id=%s\n", p.Name)
-	b.WriteString("type=wifi\n")
+	kf.Section("connection")
+	kf.Set("id", p.Name)
+	kf.Set("type", "wifi")
 	if p.AutoConnect {
-		b.WriteString("autoconnect=true\n")
+		kf.Set("autoconnect", "true")
 	} else {
-		b.WriteString("autoconnect=false\n")
+		kf.Set("autoconnect", "false")
 	}
-	fmt.Fprintf(&b, "autoconnect-priority=%d\n", p.Priority)
-	b.WriteString("\n")
+	kf.Set("autoconnect-priority", strconv.Itoa(p.Priority))
 
-	b.WriteString("[wifi]\n")
-	fmt.Fprintf(&b, "ssid=%s\n", p.SSID)
-	b.WriteString("mode=infrastructure\n")
+	kf.Section("wifi")
+	kf.Set("ssid", p.SSID)
+	kf.Set("mode", "infrastructure")
 	if p.Hidden {
-		b.WriteString("hidden=true\n")
+		kf.Set("hidden", "true")
 	}
-	b.WriteString("\n")
 
-	b.WriteString("[wifi-security]\n")
-	b.WriteString("key-mgmt=wpa-psk\n")
-	fmt.Fprintf(&b, "psk=%s\n", p.PSK)
-	b.WriteString("\n")
+	kf.Section("wifi-security")
+	kf.Set("key-mgmt", "wpa-psk")
+	kf.Set("psk", p.PSK)
 
-	b.WriteString("[ipv4]\n")
-	b.WriteString("method=auto\n")
-	b.WriteString("\n")
-	b.WriteString("[ipv6]\n")
-	b.WriteString("method=auto\n")
+	kf.Section("ipv4")
+	kf.Set("method", "auto")
 
-	return []byte(b.String())
+	kf.Section("ipv6")
+	kf.Set("method", "auto")
+
+	body, err := kf.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("build PSK keyfile: %w", err)
+	}
+	return body, nil
 }
 
 // writeKeyfile atomically writes the given keyfile body to path with
@@ -163,7 +175,10 @@ func reloadKeyfiles(ctx context.Context) error {
 // reloads NetworkManager. The caller is expected to have already
 // validated the profile (validateProfile).
 func provisionPSKConnection(ctx context.Context, p WiFiProfile) error {
-	body := BuildPSKKeyfile(p)
+	body, err := BuildPSKKeyfile(p)
+	if err != nil {
+		return err
+	}
 	if err := writeKeyfile(keyfilePath(p.Name), body); err != nil {
 		return err
 	}

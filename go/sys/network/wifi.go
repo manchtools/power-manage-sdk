@@ -22,6 +22,7 @@ import (
 	"time"
 
 	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/keyfile"
 )
 
 // WiFiAuthType identifies the WiFi authentication method.
@@ -520,21 +521,42 @@ func appendCommonArgs(args []string, p WiFiProfile) []string {
 }
 
 // validateProfile checks required fields based on auth type.
+//
+// Beyond presence, every operator-supplied free-text field that reaches a
+// NetworkManager keyfile (Name, SSID, PSK) or nmcli argv (Identity) is
+// checked for line-breaking bytes (newline / CR / NUL) via
+// keyfile.ValidateValue. The keyfile is a root-owned, root-parsed,
+// line-oriented file, so a newline in one of these fields would inject
+// extra keys or sections (flip permissions, redirect DNS, disable
+// security). Rejecting here makes CreateOrUpdate fail closed before
+// anything is written; BuildPSKKeyfile re-checks as defense in depth.
 func validateProfile(p WiFiProfile) error {
 	if p.Name == "" {
 		return fmt.Errorf("connection name is required")
 	}
+	if err := keyfile.ValidateValue(p.Name); err != nil {
+		return fmt.Errorf("connection name: %w", err)
+	}
 	if p.SSID == "" {
 		return fmt.Errorf("SSID is required")
+	}
+	if err := keyfile.ValidateValue(p.SSID); err != nil {
+		return fmt.Errorf("SSID: %w", err)
 	}
 	switch p.AuthType {
 	case WiFiAuthPSK:
 		if p.PSK == "" {
 			return fmt.Errorf("PSK is required for WPA authentication")
 		}
+		if err := keyfile.ValidateValue(p.PSK); err != nil {
+			return fmt.Errorf("PSK: %w", err)
+		}
 	case WiFiAuthEAPTLS:
 		if p.Identity == "" {
 			return fmt.Errorf("identity is required for EAP-TLS authentication")
+		}
+		if err := keyfile.ValidateValue(p.Identity); err != nil {
+			return fmt.Errorf("identity: %w", err)
 		}
 		if p.CertDir == "" {
 			return fmt.Errorf("cert directory is required for EAP-TLS authentication")

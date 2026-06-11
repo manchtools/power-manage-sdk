@@ -45,6 +45,13 @@ type S3Config struct {
 	// fetches the field is currently a no-op; NewS3 accepts the
 	// combination so callers can flip between single and prefix modes
 	// without re-validating.
+	//
+	// SECURITY NOTE: unlike HTTPConfig, S3 prefix-sync has no per-object
+	// integrity field, so the "checksum required for a destructive sync"
+	// invariant the HTTP path enforces cannot be enforced here yet. When
+	// the Slice 12 prefix-sync prune lands, gate it behind an integrity
+	// mechanism (per-object ETag/sha256 manifest) before deleting local
+	// files a poisoned listing omitted.
 	Prune bool
 }
 
