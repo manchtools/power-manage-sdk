@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/internal.proto.
  */
 export const file_pm_v1_internal: GenFile = /*@__PURE__*/
-  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIkQKIEludGVybmFsVmFsaWRhdGVMdWtzVG9rZW5SZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJBChlJbnRlcm5hbEdldEx1a3NLZXlSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkinAEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSLgoPcm90YXRpb25fcmVhc29uGAUgASgOMhUucG0udjEuUm90YXRpb25SZWFzb24idAoTTHBzUGFzc3dvcmRSb3RhdGlvbhIQCgh1c2VybmFtZRgBIAEoCRIQCghwYXNzd29yZBgCIAEoCRISCgpyb3RhdGVkX2F0GAMgASgJEiUKBnJlYXNvbhgEIAEoDjIVLnBtLnYxLlJvdGF0aW9uUmVhc29uIncKIEludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkSLQoJcm90YXRpb25zGAMgAygLMhoucG0udjEuTHBzUGFzc3dvcmRSb3RhdGlvbiIjCiFJbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVzcG9uc2UiSQokSW50ZXJuYWxWYWxpZGF0ZVRlcm1pbmFsVG9rZW5SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDQoFdG9rZW4YAiABKAkieQolSW50ZXJuYWxWYWxpZGF0ZVRlcm1pbmFsVG9rZW5SZXNwb25zZRIPCgd1c2VyX2lkGAEgASgJEhEKCWRldmljZV9pZBgCIAEoCRIQCgh0dHlfdXNlchgDIAEoCRIMCgRjb2xzGAQgASgNEgwKBHJvd3MYBSABKA0iKAoTVmVyaWZ5RGV2aWNlUmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkiFgoUVmVyaWZ5RGV2aWNlUmVzcG9uc2UizAEKGkdhdGV3YXlUZXJtaW5hbFNlc3Npb25JbmZvEhIKCnNlc3Npb25faWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIRCglkZXZpY2VfaWQYAyABKAkSEAoIdHR5X3VzZXIYBCABKAkSLgoKc3RhcnRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQbGFzdF9hY3Rpdml0eV9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiJAoiTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVxdWVzdCJaCiNMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXNwb25zZRIzCghzZXNzaW9ucxgBIAMoCzIhLnBtLnYxLkdhdGV3YXlUZXJtaW5hbFNlc3Npb25JbmZvIkwKJlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDgoGcmVhc29uGAIgASgJIjgKJ1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZRINCgVmb3VuZBgBIAEoCDKeBQoPSW50ZXJuYWxTZXJ2aWNlEkcKDFZlcmlmeURldmljZRIaLnBtLnYxLlZlcmlmeURldmljZVJlcXVlc3QaGy5wbS52MS5WZXJpZnlEZXZpY2VSZXNwb25zZRJRChBQcm94eVN5bmNBY3Rpb25zEiEucG0udjEuSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlEmMKFlByb3h5VmFsaWRhdGVMdWtzVG9rZW4SJy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlTHVrc1Rva2VuUmVxdWVzdBogLnBtLnYxLlZhbGlkYXRlTHVrc1Rva2VuUmVzcG9uc2USTgoPUHJveHlHZXRMdWtzS2V5EiAucG0udjEuSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBoZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZRJUChFQcm94eVN0b3JlTHVrc0tleRIiLnBtLnYxLkludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBobLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlEmsKFlByb3h5U3RvcmVMcHNQYXNzd29yZHMSJy5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBooLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZRJ3ChpQcm94eVZhbGlkYXRlVGVybWluYWxUb2tlbhIrLnBtLnYxLkludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVxdWVzdBosLnBtLnYxLkludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVzcG9uc2UyiQIKDkdhdGV3YXlTZXJ2aWNlEnQKG0xpc3RHYXRld2F5VGVybWluYWxTZXNzaW9ucxIpLnBtLnYxLkxpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1JlcXVlc3QaKi5wbS52MS5MaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXNwb25zZRKAAQofVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbhItLnBtLnYxLlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXF1ZXN0Gi4ucG0udjEuVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_pm_v1_agent, file_pm_v1_common]);
+  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiQwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhIKCmdhdGV3YXlfaWQYAiABKAkiWAogSW50ZXJuYWxWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJEhIKCmdhdGV3YXlfaWQYAyABKAkiVQoZSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhIKCmdhdGV3YXlfaWQYAyABKAkisAEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhIKCnBhc3NwaHJhc2UYBCABKAkSLgoPcm90YXRpb25fcmVhc29uGAUgASgOMhUucG0udjEuUm90YXRpb25SZWFzb24SEgoKZ2F0ZXdheV9pZBgGIAEoCSJ0ChNMcHNQYXNzd29yZFJvdGF0aW9uEhAKCHVzZXJuYW1lGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJEhIKCnJvdGF0ZWRfYXQYAyABKAkSJQoGcmVhc29uGAQgASgOMhUucG0udjEuUm90YXRpb25SZWFzb24iiwEKIEludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkSLQoJcm90YXRpb25zGAMgAygLMhoucG0udjEuTHBzUGFzc3dvcmRSb3RhdGlvbhISCgpnYXRld2F5X2lkGAQgASgJIiMKIUludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZSJJCiRJbnRlcm5hbFZhbGlkYXRlVGVybWluYWxUb2tlblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRINCgV0b2tlbhgCIAEoCSJ5CiVJbnRlcm5hbFZhbGlkYXRlVGVybWluYWxUb2tlblJlc3BvbnNlEg8KB3VzZXJfaWQYASABKAkSEQoJZGV2aWNlX2lkGAIgASgJEhAKCHR0eV91c2VyGAMgASgJEgwKBGNvbHMYBCABKA0SDAoEcm93cxgFIAEoDSI8ChNWZXJpZnlEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRISCgpnYXRld2F5X2lkGAIgASgJIhYKFFZlcmlmeURldmljZVJlc3BvbnNlIswBChpHYXRld2F5VGVybWluYWxTZXNzaW9uSW5mbxISCgpzZXNzaW9uX2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkSEQoJZGV2aWNlX2lkGAMgASgJEhAKCHR0eV91c2VyGAQgASgJEi4KCnN0YXJ0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjQKEGxhc3RfYWN0aXZpdHlfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiQKIkxpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1JlcXVlc3QiWgojTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVzcG9uc2USMwoIc2Vzc2lvbnMYASADKAsyIS5wbS52MS5HYXRld2F5VGVybWluYWxTZXNzaW9uSW5mbyJMCiZUZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg4KBnJlYXNvbhgCIAEoCSI4CidUZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVzcG9uc2USDQoFZm91bmQYASABKAgyngUKD0ludGVybmFsU2VydmljZRJHCgxWZXJpZnlEZXZpY2USGi5wbS52MS5WZXJpZnlEZXZpY2VSZXF1ZXN0GhsucG0udjEuVmVyaWZ5RGV2aWNlUmVzcG9uc2USUQoQUHJveHlTeW5jQWN0aW9ucxIhLnBtLnYxLkludGVybmFsU3luY0FjdGlvbnNSZXF1ZXN0GhoucG0udjEuU3luY0FjdGlvbnNSZXNwb25zZRJjChZQcm94eVZhbGlkYXRlTHVrc1Rva2VuEicucG0udjEuSW50ZXJuYWxWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QaIC5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEk4KD1Byb3h5R2V0THVrc0tleRIgLnBtLnYxLkludGVybmFsR2V0THVrc0tleVJlcXVlc3QaGS5wbS52MS5HZXRMdWtzS2V5UmVzcG9uc2USVAoRUHJveHlTdG9yZUx1a3NLZXkSIi5wbS52MS5JbnRlcm5hbFN0b3JlTHVrc0tleVJlcXVlc3QaGy5wbS52MS5TdG9yZUx1a3NLZXlSZXNwb25zZRJrChZQcm94eVN0b3JlTHBzUGFzc3dvcmRzEicucG0udjEuSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QaKC5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVzcG9uc2USdwoaUHJveHlWYWxpZGF0ZVRlcm1pbmFsVG9rZW4SKy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlVGVybWluYWxUb2tlblJlcXVlc3QaLC5wbS52MS5JbnRlcm5hbFZhbGlkYXRlVGVybWluYWxUb2tlblJlc3BvbnNlMokCCg5HYXRld2F5U2VydmljZRJ0ChtMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnMSKS5wbS52MS5MaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0GioucG0udjEuTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVzcG9uc2USgAEKH1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb24SLS5wbS52MS5UZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVxdWVzdBouLnBtLnYxLlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_agent, file_pm_v1_common]);
 
 /**
  * InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
@@ -31,6 +31,19 @@ export type InternalSyncActionsRequest = Message<"pm.v1.InternalSyncActionsReque
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
+
+  /**
+   * gateway_id is the calling gateway's self-asserted identity, cross-checked
+   * by control against the authenticated device→gateway routing binding (the
+   * gateway peer cert is shared and carries no per-gateway identity). Optional
+   * on the wire: single-gateway deployments without a wired resolver bypass the
+   * binding; when a resolver is wired, control rejects an empty or mismatched
+   * gateway_id. See the server gateway↔control device-origin binding ADR.
+   * @gotags: validate:"omitempty,max=256"
+   *
+   * @generated from field: string gateway_id = 2;
+   */
+  gatewayId: string;
 };
 
 /**
@@ -59,6 +72,15 @@ export type InternalValidateLuksTokenRequest = Message<"pm.v1.InternalValidateLu
    * @generated from field: string token = 2;
    */
   token: string;
+
+  /**
+   * gateway_id cross-checked against the device→gateway binding (see
+   * InternalSyncActionsRequest.gateway_id).
+   * @gotags: validate:"omitempty,max=256"
+   *
+   * @generated from field: string gateway_id = 3;
+   */
+  gatewayId: string;
 };
 
 /**
@@ -87,6 +109,15 @@ export type InternalGetLuksKeyRequest = Message<"pm.v1.InternalGetLuksKeyRequest
    * @generated from field: string action_id = 2;
    */
   actionId: string;
+
+  /**
+   * gateway_id cross-checked against the device→gateway binding (see
+   * InternalSyncActionsRequest.gateway_id).
+   * @gotags: validate:"omitempty,max=256"
+   *
+   * @generated from field: string gateway_id = 3;
+   */
+  gatewayId: string;
 };
 
 /**
@@ -139,6 +170,15 @@ export type InternalStoreLuksKeyRequest = Message<"pm.v1.InternalStoreLuksKeyReq
    * @generated from field: pm.v1.RotationReason rotation_reason = 5;
    */
   rotationReason: RotationReason;
+
+  /**
+   * gateway_id cross-checked against the device→gateway binding (see
+   * InternalSyncActionsRequest.gateway_id).
+   * @gotags: validate:"omitempty,max=256"
+   *
+   * @generated from field: string gateway_id = 6;
+   */
+  gatewayId: string;
 };
 
 /**
@@ -233,6 +273,15 @@ export type InternalStoreLpsPasswordsRequest = Message<"pm.v1.InternalStoreLpsPa
    * @generated from field: repeated pm.v1.LpsPasswordRotation rotations = 3;
    */
   rotations: LpsPasswordRotation[];
+
+  /**
+   * gateway_id cross-checked against the device→gateway binding (see
+   * InternalSyncActionsRequest.gateway_id).
+   * @gotags: validate:"omitempty,max=256"
+   *
+   * @generated from field: string gateway_id = 4;
+   */
+  gatewayId: string;
 };
 
 /**
@@ -360,6 +409,15 @@ export type VerifyDeviceRequest = Message<"pm.v1.VerifyDeviceRequest"> & {
    * @generated from field: string device_id = 1;
    */
   deviceId: string;
+
+  /**
+   * gateway_id cross-checked against the device→gateway binding (see
+   * InternalSyncActionsRequest.gateway_id).
+   * @gotags: validate:"omitempty,max=256"
+   *
+   * @generated from field: string gateway_id = 2;
+   */
+  gatewayId: string;
 };
 
 /**

@@ -27,7 +27,15 @@ const (
 type InternalSyncActionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// gateway_id is the calling gateway's self-asserted identity, cross-checked
+	// by control against the authenticated device→gateway routing binding (the
+	// gateway peer cert is shared and carries no per-gateway identity). Optional
+	// on the wire: single-gateway deployments without a wired resolver bypass the
+	// binding; when a resolver is wired, control rejects an empty or mismatched
+	// gateway_id. See the server gateway↔control device-origin binding ADR.
+	// @gotags: validate:"omitempty,max=256"
+	GatewayId     string `protobuf:"bytes,2,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty" validate:"omitempty,max=256"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -69,13 +77,24 @@ func (x *InternalSyncActionsRequest) GetDeviceId() string {
 	return ""
 }
 
+func (x *InternalSyncActionsRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
 // InternalValidateLuksTokenRequest wraps ValidateLuksTokenRequest.
 type InternalValidateLuksTokenRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,min=1,max=256"
-	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,min=1,max=256"`
+	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,min=1,max=256"`
+	// gateway_id cross-checked against the device→gateway binding (see
+	// InternalSyncActionsRequest.gateway_id).
+	// @gotags: validate:"omitempty,max=256"
+	GatewayId     string `protobuf:"bytes,3,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty" validate:"omitempty,max=256"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -124,13 +143,24 @@ func (x *InternalValidateLuksTokenRequest) GetToken() string {
 	return ""
 }
 
+func (x *InternalValidateLuksTokenRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
 // InternalGetLuksKeyRequest includes device_id (from mTLS) and action_id.
 type InternalGetLuksKeyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,ulid"
-	ActionId      string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	ActionId string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	// gateway_id cross-checked against the device→gateway binding (see
+	// InternalSyncActionsRequest.gateway_id).
+	// @gotags: validate:"omitempty,max=256"
+	GatewayId     string `protobuf:"bytes,3,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty" validate:"omitempty,max=256"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,6 +209,13 @@ func (x *InternalGetLuksKeyRequest) GetActionId() string {
 	return ""
 }
 
+func (x *InternalGetLuksKeyRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
 // InternalStoreLuksKeyRequest includes device_id (from mTLS) and key data.
 type InternalStoreLuksKeyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -195,8 +232,12 @@ type InternalStoreLuksKeyRequest struct {
 	// rotation. Stored on the event as the lowercase string form.
 	// @gotags: validate:"required"
 	RotationReason RotationReason `protobuf:"varint,5,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty" validate:"required"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// gateway_id cross-checked against the device→gateway binding (see
+	// InternalSyncActionsRequest.gateway_id).
+	// @gotags: validate:"omitempty,max=256"
+	GatewayId     string `protobuf:"bytes,6,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty" validate:"omitempty,max=256"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InternalStoreLuksKeyRequest) Reset() {
@@ -262,6 +303,13 @@ func (x *InternalStoreLuksKeyRequest) GetRotationReason() RotationReason {
 		return x.RotationReason
 	}
 	return RotationReason_ROTATION_REASON_UNSPECIFIED
+}
+
+func (x *InternalStoreLuksKeyRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
 }
 
 // LpsPasswordRotation represents a single password rotation entry the
@@ -362,7 +410,11 @@ type InternalStoreLpsPasswordsRequest struct {
 	// @gotags: validate:"required,ulid"
 	ActionId string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,min=1,dive"
-	Rotations     []*LpsPasswordRotation `protobuf:"bytes,3,rep,name=rotations,proto3" json:"rotations,omitempty" validate:"required,min=1,dive"`
+	Rotations []*LpsPasswordRotation `protobuf:"bytes,3,rep,name=rotations,proto3" json:"rotations,omitempty" validate:"required,min=1,dive"`
+	// gateway_id cross-checked against the device→gateway binding (see
+	// InternalSyncActionsRequest.gateway_id).
+	// @gotags: validate:"omitempty,max=256"
+	GatewayId     string `protobuf:"bytes,4,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty" validate:"omitempty,max=256"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -416,6 +468,13 @@ func (x *InternalStoreLpsPasswordsRequest) GetRotations() []*LpsPasswordRotation
 		return x.Rotations
 	}
 	return nil
+}
+
+func (x *InternalStoreLpsPasswordsRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
 }
 
 type InternalStoreLpsPasswordsResponse struct {
@@ -611,7 +670,11 @@ func (x *InternalValidateTerminalTokenResponse) GetRows() uint32 {
 type VerifyDeviceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
+	// gateway_id cross-checked against the device→gateway binding (see
+	// InternalSyncActionsRequest.gateway_id).
+	// @gotags: validate:"omitempty,max=256"
+	GatewayId     string `protobuf:"bytes,2,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty" validate:"omitempty,max=256"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -649,6 +712,13 @@ func (*VerifyDeviceRequest) Descriptor() ([]byte, []int) {
 func (x *VerifyDeviceRequest) GetDeviceId() string {
 	if x != nil {
 		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *VerifyDeviceRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
 	}
 	return ""
 }
@@ -977,15 +1047,21 @@ var File_pm_v1_internal_proto protoreflect.FileDescriptor
 
 const file_pm_v1_internal_proto_rawDesc = "" +
 	"\n" +
-	"\x14pm/v1/internal.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11pm/v1/agent.proto\x1a\x12pm/v1/common.proto\"9\n" +
+	"\x14pm/v1/internal.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11pm/v1/agent.proto\x1a\x12pm/v1/common.proto\"X\n" +
 	"\x1aInternalSyncActionsRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"U\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x02 \x01(\tR\tgatewayId\"t\n" +
 	" InternalValidateLuksTokenRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"U\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x03 \x01(\tR\tgatewayId\"t\n" +
 	"\x19InternalGetLuksKeyRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
-	"\taction_id\x18\x02 \x01(\tR\bactionId\"\xd8\x01\n" +
+	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x03 \x01(\tR\tgatewayId\"\xf7\x01\n" +
 	"\x1bInternalStoreLuksKeyRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1f\n" +
@@ -994,17 +1070,21 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\n" +
 	"passphrase\x18\x04 \x01(\tR\n" +
 	"passphrase\x12>\n" +
-	"\x0frotation_reason\x18\x05 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"\x9b\x01\n" +
+	"\x0frotation_reason\x18\x05 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x06 \x01(\tR\tgatewayId\"\x9b\x01\n" +
 	"\x13LpsPasswordRotation\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1d\n" +
 	"\n" +
 	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x12-\n" +
-	"\x06reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x06reason\"\x96\x01\n" +
+	"\x06reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x06reason\"\xb5\x01\n" +
 	" InternalStoreLpsPasswordsRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x128\n" +
-	"\trotations\x18\x03 \x03(\v2\x1a.pm.v1.LpsPasswordRotationR\trotations\"#\n" +
+	"\trotations\x18\x03 \x03(\v2\x1a.pm.v1.LpsPasswordRotationR\trotations\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x04 \x01(\tR\tgatewayId\"#\n" +
 	"!InternalStoreLpsPasswordsResponse\"[\n" +
 	"$InternalValidateTerminalTokenRequest\x12\x1d\n" +
 	"\n" +
@@ -1015,9 +1095,11 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x19\n" +
 	"\btty_user\x18\x03 \x01(\tR\attyUser\x12\x12\n" +
 	"\x04cols\x18\x04 \x01(\rR\x04cols\x12\x12\n" +
-	"\x04rows\x18\x05 \x01(\rR\x04rows\"2\n" +
+	"\x04rows\x18\x05 \x01(\rR\x04rows\"Q\n" +
 	"\x13VerifyDeviceRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x02 \x01(\tR\tgatewayId\"\x16\n" +
 	"\x14VerifyDeviceResponse\"\x8d\x02\n" +
 	"\x1aGatewayTerminalSessionInfo\x12\x1d\n" +
 	"\n" +
