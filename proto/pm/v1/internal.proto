@@ -59,6 +59,14 @@ service InternalService {
 message InternalSyncActionsRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
+  // gateway_id is the calling gateway's self-asserted identity, cross-checked
+  // by control against the authenticated device→gateway routing binding (the
+  // gateway peer cert is shared and carries no per-gateway identity). Optional
+  // on the wire: single-gateway deployments without a wired resolver bypass the
+  // binding; when a resolver is wired, control rejects an empty or mismatched
+  // gateway_id. See the server gateway↔control device-origin binding ADR.
+  // @gotags: validate:"omitempty,max=256"
+  string gateway_id = 2;
 }
 
 // InternalValidateLuksTokenRequest wraps ValidateLuksTokenRequest.
@@ -67,6 +75,10 @@ message InternalValidateLuksTokenRequest {
   string device_id = 1;
   // @gotags: validate:"required,min=1,max=256"
   string token = 2;
+  // gateway_id cross-checked against the device→gateway binding (see
+  // InternalSyncActionsRequest.gateway_id).
+  // @gotags: validate:"omitempty,max=256"
+  string gateway_id = 3;
 }
 
 // InternalGetLuksKeyRequest includes device_id (from mTLS) and action_id.
@@ -75,6 +87,10 @@ message InternalGetLuksKeyRequest {
   string device_id = 1;
   // @gotags: validate:"required,ulid"
   string action_id = 2;
+  // gateway_id cross-checked against the device→gateway binding (see
+  // InternalSyncActionsRequest.gateway_id).
+  // @gotags: validate:"omitempty,max=256"
+  string gateway_id = 3;
 }
 
 // InternalStoreLuksKeyRequest includes device_id (from mTLS) and key data.
@@ -92,6 +108,10 @@ message InternalStoreLuksKeyRequest {
   // rotation. Stored on the event as the lowercase string form.
   // @gotags: validate:"required"
   RotationReason rotation_reason = 5;
+  // gateway_id cross-checked against the device→gateway binding (see
+  // InternalSyncActionsRequest.gateway_id).
+  // @gotags: validate:"omitempty,max=256"
+  string gateway_id = 6;
 }
 
 // LpsPasswordRotation represents a single password rotation entry the
@@ -131,6 +151,10 @@ message InternalStoreLpsPasswordsRequest {
   string action_id = 2;
   // @gotags: validate:"required,min=1,dive"
   repeated LpsPasswordRotation rotations = 3;
+  // gateway_id cross-checked against the device→gateway binding (see
+  // InternalSyncActionsRequest.gateway_id).
+  // @gotags: validate:"omitempty,max=256"
+  string gateway_id = 4;
 }
 
 message InternalStoreLpsPasswordsResponse {}
@@ -177,6 +201,10 @@ message InternalValidateTerminalTokenResponse {
 message VerifyDeviceRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
+  // gateway_id cross-checked against the device→gateway binding (see
+  // InternalSyncActionsRequest.gateway_id).
+  // @gotags: validate:"omitempty,max=256"
+  string gateway_id = 2;
 }
 
 // VerifyDeviceResponse indicates whether the device is valid for connection.
