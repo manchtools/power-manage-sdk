@@ -40,6 +40,23 @@ Proto definitions are in `proto/pm/v1/`. Generated Go code lives in `gen/`. Go l
 - Always handle errors -- never silently ignore them.
 - Proto files follow the Buf style guide.
 
+## Guardrails (architectural fitness functions)
+
+`go/archtest/` holds build-failing invariant tests that run in the normal
+`go test ./...` path:
+
+- **`TestSecretComparesAreConstantTime`** — the SDK is the action-signing and
+  encryption boundary (`go/verify`, `go/crypto`). Compare secrets/MACs/
+  tokens/signatures/fingerprints with `subtle.ConstantTimeCompare`/
+  `hmac.Equal`, never `==`/`bytes.Equal`.
+
+The clock guard (`TestNoUnabstractedTimeNow`) is intentionally **not** applied
+to the SDK: it has no time-*decision* logic — its `time.Now()` uses are
+external-command duration measurement and ULID seeding, where injecting a
+clock buys no testability. The guard ships a documented, no-stale-guarded
+allowlist for genuine exceptions; **prefer fixing the code over adding one**.
+Rationale: the server repo's `docs/adr/0002-architectural-fitness-functions.md`.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the AGPL-3.0 license.
