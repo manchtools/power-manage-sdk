@@ -555,7 +555,7 @@ func (h *welcomeRecordingHandler) OnWelcome(ctx context.Context, w *pm.Welcome) 
 	h.welcomed.Store(true)
 	return nil
 }
-func (h *welcomeRecordingHandler) OnAction(ctx context.Context, a *pm.Action) (*pm.ActionResult, error) {
+func (h *welcomeRecordingHandler) OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error) {
 	return nil, nil
 }
 func (h *welcomeRecordingHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {

@@ -88,11 +88,20 @@ message Action {
   // @gotags: validate:"omitempty"
   ActionSchedule schedule = 5;
 
-  // ECDSA signature over canonical action payload (signed by CA key).
-  // Used to verify actions were created by the control server.
+  // CA signature over `signed_envelope` (the deterministic wire bytes of
+  // a SignedActionEnvelope). The agent verifies this over `signed_envelope`
+  // and unmarshals THOSE bytes to execute — the executed action is the
+  // verified action.
   bytes signature = 6;
-  // Canonical JSON params used for signature verification.
-  bytes params_canonical = 7;
+
+  // Deterministic wire bytes of the device-bound SignedActionEnvelope this
+  // action executes. Carried on actions delivered via SyncActions (the
+  // offline-scheduler pull path) so the agent verifies and executes the
+  // same bytes it would on the push (ActionDispatch) path. Reuses field 7,
+  // freed by the params_canonical removal. The typed params/schedule fields
+  // below remain for the scheduler's display/ordering, but EXECUTION and
+  // all security-relevant decisions use the verified envelope.
+  bytes signed_envelope = 7;
 
   // Type-specific parameters
   oneof params {
@@ -114,6 +123,62 @@ message Action {
     EncryptionParams encryption = 23;
     WifiParams wifi = 24;
     AgentUpdateParams agent_update = 25;
+  }
+}
+
+// SignedActionEnvelope is the canonical, signed representation of an
+// executable action. The control server's CA signs the DETERMINISTIC
+// protobuf wire bytes of this message (proto.MarshalOptions{Deterministic:
+// true}); the agent verifies the signature over the received bytes and
+// unmarshals THOSE SAME bytes to execute. There is exactly one
+// representation: the executed message IS the verified message.
+//
+// Binding the full executed envelope closes the gap (sdk#82 / audit
+// F-C2 / SA-C1) where a compromised gateway or Valkey relay could rewrite
+// the executed action — flip desired_state PRESENT->ABSENT, swap params,
+// change the timeout/schedule, or retarget the device — under a signature
+// that covered only (id, type, params). Every field below is bound:
+//
+//   - target_device_id binds the action to one device (no cross-device
+//     replay of a captured envelope).
+//   - action_type binds the type (no lifting a signed envelope onto SYNC).
+//   - desired_state / timeout_seconds / schedule bind the execution
+//     semantics.
+//   - the params oneof binds exactly what runs.
+//
+// There is no signature field inside the envelope — the signature is over
+// the envelope's bytes and travels alongside them (see ActionDispatch).
+message SignedActionEnvelope {
+  // Execution id this envelope authorizes (the wire ActionId.value).
+  ActionId action_id = 1;
+  ActionType action_type = 2;
+  DesiredState desired_state = 3;
+  int32 timeout_seconds = 4;
+  ActionSchedule schedule = 5;
+  // The single device this envelope is authorized to run on.
+  string target_device_id = 6;
+
+  // Type-specific parameters — the same param message types as Action,
+  // re-declared here so the signed bytes carry exactly what executes.
+  oneof params {
+    PackageParams package = 7;
+    AppInstallParams app = 8;
+    ShellParams shell = 9;
+    ServiceParams service = 10;
+    FileParams file = 11;
+    UpdateParams update = 12;
+    RepositoryParams repository = 13;
+    FlatpakParams flatpak = 14;
+    DirectoryParams directory = 15;
+    UserParams user = 16;
+    SshParams ssh = 17;
+    SshdParams sshd = 18;
+    AdminPolicyParams admin_policy = 19;
+    LpsParams lps = 20;
+    GroupParams group = 21;
+    EncryptionParams encryption = 22;
+    WifiParams wifi = 23;
+    AgentUpdateParams agent_update = 24;
   }
 }
 

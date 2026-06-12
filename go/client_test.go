@@ -32,7 +32,7 @@ type fakeTerminalHandler struct {
 func (h *fakeTerminalHandler) OnWelcome(ctx context.Context, w *pm.Welcome) error {
 	return nil
 }
-func (h *fakeTerminalHandler) OnAction(ctx context.Context, a *pm.Action) (*pm.ActionResult, error) {
+func (h *fakeTerminalHandler) OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error) {
 	return nil, nil
 }
 func (h *fakeTerminalHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {
@@ -63,7 +63,7 @@ func (h *fakeTerminalHandler) OnTerminalStop(ctx context.Context, req *pm.Termin
 type fakeBareHandler struct{}
 
 func (fakeBareHandler) OnWelcome(ctx context.Context, w *pm.Welcome) error { return nil }
-func (fakeBareHandler) OnAction(ctx context.Context, a *pm.Action) (*pm.ActionResult, error) {
+func (fakeBareHandler) OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error) {
 	return nil, nil
 }
 func (fakeBareHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {
@@ -453,7 +453,7 @@ func (h *recordingWelcomeHandler) OnWelcome(ctx context.Context, w *pm.Welcome) 
 	h.called = true
 	return nil
 }
-func (h *recordingWelcomeHandler) OnAction(ctx context.Context, a *pm.Action) (*pm.ActionResult, error) {
+func (h *recordingWelcomeHandler) OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error) {
 	return nil, nil
 }
 func (h *recordingWelcomeHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {

@@ -195,8 +195,16 @@ message Welcome {
 }
 
 message ActionDispatch {
-  // @gotags: validate:"required"
-  Action action = 1;
+  // Deterministic protobuf wire bytes of the signed SignedActionEnvelope.
+  // The agent verifies `signature` over these exact bytes, then unmarshals
+  // THESE SAME bytes to execute — the executed message is the verified
+  // message. Clean break from carrying a typed Action with a separate
+  // params_canonical (sdk#82).
+  // @gotags: validate:"required,min=1"
+  bytes envelope = 1;
+  // CA signature over the `envelope` bytes (control's CA key).
+  // @gotags: validate:"required,min=1"
+  bytes signature = 2;
 }
 
 message Error {
