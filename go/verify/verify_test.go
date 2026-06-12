@@ -13,262 +13,225 @@ import (
 	"time"
 )
 
-// generateTestCA creates a self-signed CA certificate and private key for testing.
+// generateTestCA creates a self-signed ECDSA CA certificate and key.
 func generateTestCA(t *testing.T) (certPEM []byte, key *ecdsa.PrivateKey) {
 	t.Helper()
-
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatalf("generate CA key: %v", err)
 	}
-
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: "Test CA",
-		},
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Test CA"},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(24 * time.Hour),
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
 		BasicConstraintsValid: true,
 	}
-
 	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {
 		t.Fatalf("create CA certificate: %v", err)
 	}
-
-	certPEM = pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certDER,
-	})
-
-	return certPEM, key
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}), key
 }
 
 // generateTestRSACA creates a self-signed RSA CA for testing.
 func generateTestRSACA(t *testing.T) (certPEM []byte, key *rsa.PrivateKey) {
 	t.Helper()
-
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("generate RSA key: %v", err)
 	}
-
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: "Test RSA CA",
-		},
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Test RSA CA"},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(24 * time.Hour),
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
 		BasicConstraintsValid: true,
 	}
-
 	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {
 		t.Fatalf("create RSA CA certificate: %v", err)
 	}
-
-	certPEM = pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certDER,
-	})
-
-	return certPEM, key
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}), key
 }
 
-func TestSignVerifyRoundTrip_ECDSA(t *testing.T) {
+// TestSignVerify_BytesRoundTrip_ECDSA pins that a signature minted over a
+// byte string verifies with the matching CA public key.
+func TestSignVerify_BytesRoundTrip_ECDSA(t *testing.T) {
 	certPEM, caKey := generateTestCA(t)
-
 	signer := NewActionSigner(caKey)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
 		t.Fatalf("NewActionVerifier: %v", err)
 	}
-
-	actionID := "01HWXYZ123456789ABCDEFGH"
-	actionType := int32(1) // PACKAGE
-	paramsJSON := []byte(`{"name":"nginx","desired_state":"PRESENT"}`)
-
-	sig, err := signer.Sign(actionID, actionType, paramsJSON)
+	payload := []byte("deterministic-envelope-bytes")
+	sig, err := signer.Sign(payload)
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
-
-	if err := verifier.Verify(actionID, actionType, paramsJSON, sig); err != nil {
+	if err := verifier.Verify(payload, sig); err != nil {
 		t.Fatalf("Verify: %v", err)
 	}
 }
 
-func TestSignVerifyRoundTrip_RSA(t *testing.T) {
+// TestSignVerify_BytesRoundTrip_RSA exercises the RSA branch.
+func TestSignVerify_BytesRoundTrip_RSA(t *testing.T) {
 	certPEM, rsaKey := generateTestRSACA(t)
-
 	signer := NewActionSigner(rsaKey)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
 		t.Fatalf("NewActionVerifier: %v", err)
 	}
-
-	actionID := "01HWXYZ123456789ABCDEFGH"
-	actionType := int32(7) // SHELL
-	paramsJSON := []byte(`{"script":"echo hello"}`)
-
-	sig, err := signer.Sign(actionID, actionType, paramsJSON)
+	payload := []byte("rsa-deterministic-envelope-bytes")
+	sig, err := signer.Sign(payload)
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
-
-	if err := verifier.Verify(actionID, actionType, paramsJSON, sig); err != nil {
+	if err := verifier.Verify(payload, sig); err != nil {
 		t.Fatalf("Verify: %v", err)
 	}
 }
 
-func TestVerify_EmptySignature(t *testing.T) {
+// TestVerify_EmptySignatureRejected covers the ABSENT signature path.
+func TestVerify_EmptySignatureRejected(t *testing.T) {
 	certPEM, _ := generateTestCA(t)
-
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
 		t.Fatalf("NewActionVerifier: %v", err)
 	}
-
-	err = verifier.Verify("action123", 1, []byte(`{}`), nil)
-	if err == nil {
+	if err := verifier.Verify([]byte("envelope"), nil); err == nil {
+		t.Fatal("expected error for nil signature")
+	}
+	if err := verifier.Verify([]byte("envelope"), []byte{}); err == nil {
 		t.Fatal("expected error for empty signature")
 	}
 }
 
-func TestVerify_InvalidSignature(t *testing.T) {
-	certPEM, _ := generateTestCA(t)
-
-	verifier, err := NewActionVerifier(certPEM)
-	if err != nil {
-		t.Fatalf("NewActionVerifier: %v", err)
-	}
-
-	err = verifier.Verify("action123", 1, []byte(`{}`), []byte("not-a-signature"))
-	if err == nil {
-		t.Fatal("expected error for invalid signature")
-	}
-}
-
-func TestVerify_TamperedPayload(t *testing.T) {
+// TestVerify_EmptyEnvelopeRejected covers the ABSENT envelope path.
+func TestVerify_EmptyEnvelopeRejected(t *testing.T) {
 	certPEM, caKey := generateTestCA(t)
-
 	signer := NewActionSigner(caKey)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
 		t.Fatalf("NewActionVerifier: %v", err)
 	}
-
-	actionID := "01HWXYZ123456789ABCDEFGH"
-	actionType := int32(1)
-	paramsJSON := []byte(`{"name":"nginx"}`)
-
-	sig, err := signer.Sign(actionID, actionType, paramsJSON)
+	sig, err := signer.Sign([]byte("x"))
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
-
-	// Tamper with the action ID
-	if err := verifier.Verify("01HWXYZ_TAMPERED_ID", actionType, paramsJSON, sig); err == nil {
-		t.Fatal("expected error for tampered action ID")
+	if err := verifier.Verify(nil, sig); err == nil {
+		t.Fatal("expected error for nil envelope")
 	}
-
-	// Tamper with the action type
-	if err := verifier.Verify(actionID, int32(99), paramsJSON, sig); err == nil {
-		t.Fatal("expected error for tampered action type")
-	}
-
-	// Tamper with the params
-	if err := verifier.Verify(actionID, actionType, []byte(`{"name":"malware"}`), sig); err == nil {
-		t.Fatal("expected error for tampered params")
+	if err := verifier.Verify([]byte{}, sig); err == nil {
+		t.Fatal("expected error for empty envelope")
 	}
 }
 
-func TestVerify_WrongKey(t *testing.T) {
-	certPEM, _ := generateTestCA(t)
-	_, differentKey := generateTestCA(t) // Generate a different CA
+// TestSign_RefusesEmptyEnvelope is the signer-side fail-closed.
+func TestSign_RefusesEmptyEnvelope(t *testing.T) {
+	_, caKey := generateTestCA(t)
+	signer := NewActionSigner(caKey)
+	if _, err := signer.Sign(nil); err == nil {
+		t.Fatal("expected Sign to refuse a nil envelope")
+	}
+	if _, err := signer.Sign([]byte{}); err == nil {
+		t.Fatal("expected Sign to refuse an empty envelope")
+	}
+}
 
-	signer := NewActionSigner(differentKey) // Sign with a different key
+// TestVerify_ByteTamperedSignature flips one byte of the ASN.1 signature
+// (not a wrong key) so a no-op verify cannot pass.
+func TestVerify_ByteTamperedSignature(t *testing.T) {
+	certPEM, caKey := generateTestCA(t)
+	signer := NewActionSigner(caKey)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
 		t.Fatalf("NewActionVerifier: %v", err)
 	}
-
-	sig, err := signer.Sign("action123", 1, []byte(`{}`))
+	payload := []byte("envelope-bytes")
+	sig, err := signer.Sign(payload)
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
+	tampered := append([]byte(nil), sig...)
+	tampered[len(tampered)-1] ^= 0x01
+	if err := verifier.Verify(payload, tampered); err == nil {
+		t.Fatal("expected error for byte-tampered signature")
+	}
+}
 
-	// Verify with the original CA — should fail
-	if err := verifier.Verify("action123", 1, []byte(`{}`), sig); err == nil {
-		t.Fatal("expected error when verifying with wrong CA")
+// TestVerify_ByteTamperedEnvelope flips one byte of the signed bytes.
+func TestVerify_ByteTamperedEnvelope(t *testing.T) {
+	certPEM, caKey := generateTestCA(t)
+	signer := NewActionSigner(caKey)
+	verifier, err := NewActionVerifier(certPEM)
+	if err != nil {
+		t.Fatalf("NewActionVerifier: %v", err)
+	}
+	payload := []byte("envelope-bytes-to-tamper")
+	sig, err := signer.Sign(payload)
+	if err != nil {
+		t.Fatalf("Sign: %v", err)
+	}
+	tampered := append([]byte(nil), payload...)
+	tampered[0] ^= 0x01
+	if err := verifier.Verify(tampered, sig); err == nil {
+		t.Fatal("expected error for byte-tampered envelope")
+	}
+}
+
+// TestVerify_WrongKey signs with one CA and verifies with another.
+func TestVerify_WrongKey(t *testing.T) {
+	certPEM, _ := generateTestCA(t)
+	_, differentKey := generateTestCA(t)
+	signer := NewActionSigner(differentKey)
+	verifier, err := NewActionVerifier(certPEM)
+	if err != nil {
+		t.Fatalf("NewActionVerifier: %v", err)
+	}
+	sig, err := signer.Sign([]byte("envelope"))
+	if err != nil {
+		t.Fatalf("Sign: %v", err)
+	}
+	if err := verifier.Verify([]byte("envelope"), sig); err == nil {
+		t.Fatal("expected error when verifying with the wrong CA")
+	}
+}
+
+// TestSignVerify_LargeEnvelope round-trips a 1 MiB payload.
+func TestSignVerify_LargeEnvelope(t *testing.T) {
+	certPEM, caKey := generateTestCA(t)
+	signer := NewActionSigner(caKey)
+	verifier, err := NewActionVerifier(certPEM)
+	if err != nil {
+		t.Fatalf("NewActionVerifier: %v", err)
+	}
+	payload := make([]byte, 1<<20)
+	for i := range payload {
+		payload[i] = byte('a' + (i % 26))
+	}
+	sig, err := signer.Sign(payload)
+	if err != nil {
+		t.Fatalf("Sign: %v", err)
+	}
+	if err := verifier.Verify(payload, sig); err != nil {
+		t.Fatalf("Verify: %v", err)
 	}
 }
 
 func TestNewActionVerifier_InvalidPEM(t *testing.T) {
-	_, err := NewActionVerifier([]byte("not-a-pem"))
-	if err == nil {
+	if _, err := NewActionVerifier([]byte("not-a-pem")); err == nil {
 		t.Fatal("expected error for invalid PEM")
 	}
 }
 
 func TestNewActionVerifier_InvalidCertificate(t *testing.T) {
-	badPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: []byte("not-a-certificate"),
-	})
-
-	_, err := NewActionVerifier(badPEM)
-	if err == nil {
+	badPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("not-a-certificate")})
+	if _, err := NewActionVerifier(badPEM); err == nil {
 		t.Fatal("expected error for invalid certificate DER")
-	}
-}
-
-func TestSignVerify_EmptyParams(t *testing.T) {
-	certPEM, caKey := generateTestCA(t)
-
-	signer := NewActionSigner(caKey)
-	verifier, err := NewActionVerifier(certPEM)
-	if err != nil {
-		t.Fatalf("NewActionVerifier: %v", err)
-	}
-
-	sig, err := signer.Sign("action123", 0, []byte{})
-	if err != nil {
-		t.Fatalf("Sign with empty params: %v", err)
-	}
-
-	if err := verifier.Verify("action123", 0, []byte{}, sig); err != nil {
-		t.Fatalf("Verify with empty params: %v", err)
-	}
-}
-
-func TestSignVerify_LargePayload(t *testing.T) {
-	certPEM, caKey := generateTestCA(t)
-
-	signer := NewActionSigner(caKey)
-	verifier, err := NewActionVerifier(certPEM)
-	if err != nil {
-		t.Fatalf("NewActionVerifier: %v", err)
-	}
-
-	// 1MB payload
-	largeParams := make([]byte, 1<<20)
-	for i := range largeParams {
-		largeParams[i] = byte('a' + (i % 26))
-	}
-
-	sig, err := signer.Sign("action123", 1, largeParams)
-	if err != nil {
-		t.Fatalf("Sign: %v", err)
-	}
-
-	if err := verifier.Verify("action123", 1, largeParams, sig); err != nil {
-		t.Fatalf("Verify: %v", err)
 	}
 }

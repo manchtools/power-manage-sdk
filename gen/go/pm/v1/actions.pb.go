@@ -824,11 +824,19 @@ type Action struct {
 	// sibling in declared order.
 	// @gotags: validate:"omitempty"
 	Schedule *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty"`
-	// ECDSA signature over canonical action payload (signed by CA key).
-	// Used to verify actions were created by the control server.
+	// CA signature over `signed_envelope` (the deterministic wire bytes of
+	// a SignedActionEnvelope). The agent verifies this over `signed_envelope`
+	// and unmarshals THOSE bytes to execute — the executed action is the
+	// verified action.
 	Signature []byte `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Canonical JSON params used for signature verification.
-	ParamsCanonical []byte `protobuf:"bytes,7,opt,name=params_canonical,json=paramsCanonical,proto3" json:"params_canonical,omitempty"`
+	// Deterministic wire bytes of the device-bound SignedActionEnvelope this
+	// action executes. Carried on actions delivered via SyncActions (the
+	// offline-scheduler pull path) so the agent verifies and executes the
+	// same bytes it would on the push (ActionDispatch) path. Reuses field 7,
+	// freed by the params_canonical removal. The typed params/schedule fields
+	// below remain for the scheduler's display/ordering, but EXECUTION and
+	// all security-relevant decisions use the verified envelope.
+	SignedEnvelope []byte `protobuf:"bytes,7,opt,name=signed_envelope,json=signedEnvelope,proto3" json:"signed_envelope,omitempty"`
 	// Type-specific parameters
 	//
 	// Types that are valid to be assigned to Params:
@@ -928,9 +936,9 @@ func (x *Action) GetSignature() []byte {
 	return nil
 }
 
-func (x *Action) GetParamsCanonical() []byte {
+func (x *Action) GetSignedEnvelope() []byte {
 	if x != nil {
-		return x.ParamsCanonical
+		return x.SignedEnvelope
 	}
 	return nil
 }
@@ -1216,6 +1224,419 @@ func (*Action_Wifi) isAction_Params() {}
 
 func (*Action_AgentUpdate) isAction_Params() {}
 
+// SignedActionEnvelope is the canonical, signed representation of an
+// executable action. The control server's CA signs the DETERMINISTIC
+// protobuf wire bytes of this message (proto.MarshalOptions{Deterministic:
+// true}); the agent verifies the signature over the received bytes and
+// unmarshals THOSE SAME bytes to execute. There is exactly one
+// representation: the executed message IS the verified message.
+//
+// Binding the full executed envelope closes the gap (sdk#82 / audit
+// F-C2 / SA-C1) where a compromised gateway or Valkey relay could rewrite
+// the executed action — flip desired_state PRESENT->ABSENT, swap params,
+// change the timeout/schedule, or retarget the device — under a signature
+// that covered only (id, type, params). Every field below is bound:
+//
+//   - target_device_id binds the action to one device (no cross-device
+//     replay of a captured envelope).
+//   - action_type binds the type (no lifting a signed envelope onto SYNC).
+//   - desired_state / timeout_seconds / schedule bind the execution
+//     semantics.
+//   - the params oneof binds exactly what runs.
+//
+// There is no signature field inside the envelope — the signature is over
+// the envelope's bytes and travels alongside them (see ActionDispatch).
+type SignedActionEnvelope struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Execution id this envelope authorizes (the wire ActionId.value).
+	ActionId       *ActionId       `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	ActionType     ActionType      `protobuf:"varint,2,opt,name=action_type,json=actionType,proto3,enum=pm.v1.ActionType" json:"action_type,omitempty"`
+	DesiredState   DesiredState    `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty"`
+	TimeoutSeconds int32           `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	Schedule       *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty"`
+	// The single device this envelope is authorized to run on.
+	TargetDeviceId string `protobuf:"bytes,6,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	// Type-specific parameters — the same param message types as Action,
+	// re-declared here so the signed bytes carry exactly what executes.
+	//
+	// Types that are valid to be assigned to Params:
+	//
+	//	*SignedActionEnvelope_Package
+	//	*SignedActionEnvelope_App
+	//	*SignedActionEnvelope_Shell
+	//	*SignedActionEnvelope_Service
+	//	*SignedActionEnvelope_File
+	//	*SignedActionEnvelope_Update
+	//	*SignedActionEnvelope_Repository
+	//	*SignedActionEnvelope_Flatpak
+	//	*SignedActionEnvelope_Directory
+	//	*SignedActionEnvelope_User
+	//	*SignedActionEnvelope_Ssh
+	//	*SignedActionEnvelope_Sshd
+	//	*SignedActionEnvelope_AdminPolicy
+	//	*SignedActionEnvelope_Lps
+	//	*SignedActionEnvelope_Group
+	//	*SignedActionEnvelope_Encryption
+	//	*SignedActionEnvelope_Wifi
+	//	*SignedActionEnvelope_AgentUpdate
+	Params        isSignedActionEnvelope_Params `protobuf_oneof:"params"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignedActionEnvelope) Reset() {
+	*x = SignedActionEnvelope{}
+	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignedActionEnvelope) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignedActionEnvelope) ProtoMessage() {}
+
+func (x *SignedActionEnvelope) ProtoReflect() protoreflect.Message {
+	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignedActionEnvelope.ProtoReflect.Descriptor instead.
+func (*SignedActionEnvelope) Descriptor() ([]byte, []int) {
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SignedActionEnvelope) GetActionId() *ActionId {
+	if x != nil {
+		return x.ActionId
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetActionType() ActionType {
+	if x != nil {
+		return x.ActionType
+	}
+	return ActionType_ACTION_TYPE_UNSPECIFIED
+}
+
+func (x *SignedActionEnvelope) GetDesiredState() DesiredState {
+	if x != nil {
+		return x.DesiredState
+	}
+	return DesiredState_DESIRED_STATE_PRESENT
+}
+
+func (x *SignedActionEnvelope) GetTimeoutSeconds() int32 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
+}
+
+func (x *SignedActionEnvelope) GetSchedule() *ActionSchedule {
+	if x != nil {
+		return x.Schedule
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetTargetDeviceId() string {
+	if x != nil {
+		return x.TargetDeviceId
+	}
+	return ""
+}
+
+func (x *SignedActionEnvelope) GetParams() isSignedActionEnvelope_Params {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetPackage() *PackageParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Package); ok {
+			return x.Package
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetApp() *AppInstallParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_App); ok {
+			return x.App
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetShell() *ShellParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Shell); ok {
+			return x.Shell
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetService() *ServiceParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Service); ok {
+			return x.Service
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetFile() *FileParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_File); ok {
+			return x.File
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetUpdate() *UpdateParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Update); ok {
+			return x.Update
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetRepository() *RepositoryParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Repository); ok {
+			return x.Repository
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetFlatpak() *FlatpakParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Flatpak); ok {
+			return x.Flatpak
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetDirectory() *DirectoryParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Directory); ok {
+			return x.Directory
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetUser() *UserParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_User); ok {
+			return x.User
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetSsh() *SshParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Ssh); ok {
+			return x.Ssh
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetSshd() *SshdParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Sshd); ok {
+			return x.Sshd
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetAdminPolicy() *AdminPolicyParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_AdminPolicy); ok {
+			return x.AdminPolicy
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetLps() *LpsParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Lps); ok {
+			return x.Lps
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetGroup() *GroupParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Group); ok {
+			return x.Group
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetEncryption() *EncryptionParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Encryption); ok {
+			return x.Encryption
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetWifi() *WifiParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_Wifi); ok {
+			return x.Wifi
+		}
+	}
+	return nil
+}
+
+func (x *SignedActionEnvelope) GetAgentUpdate() *AgentUpdateParams {
+	if x != nil {
+		if x, ok := x.Params.(*SignedActionEnvelope_AgentUpdate); ok {
+			return x.AgentUpdate
+		}
+	}
+	return nil
+}
+
+type isSignedActionEnvelope_Params interface {
+	isSignedActionEnvelope_Params()
+}
+
+type SignedActionEnvelope_Package struct {
+	Package *PackageParams `protobuf:"bytes,7,opt,name=package,proto3,oneof"`
+}
+
+type SignedActionEnvelope_App struct {
+	App *AppInstallParams `protobuf:"bytes,8,opt,name=app,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Shell struct {
+	Shell *ShellParams `protobuf:"bytes,9,opt,name=shell,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Service struct {
+	Service *ServiceParams `protobuf:"bytes,10,opt,name=service,proto3,oneof"`
+}
+
+type SignedActionEnvelope_File struct {
+	File *FileParams `protobuf:"bytes,11,opt,name=file,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Update struct {
+	Update *UpdateParams `protobuf:"bytes,12,opt,name=update,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Repository struct {
+	Repository *RepositoryParams `protobuf:"bytes,13,opt,name=repository,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Flatpak struct {
+	Flatpak *FlatpakParams `protobuf:"bytes,14,opt,name=flatpak,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Directory struct {
+	Directory *DirectoryParams `protobuf:"bytes,15,opt,name=directory,proto3,oneof"`
+}
+
+type SignedActionEnvelope_User struct {
+	User *UserParams `protobuf:"bytes,16,opt,name=user,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Ssh struct {
+	Ssh *SshParams `protobuf:"bytes,17,opt,name=ssh,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Sshd struct {
+	Sshd *SshdParams `protobuf:"bytes,18,opt,name=sshd,proto3,oneof"`
+}
+
+type SignedActionEnvelope_AdminPolicy struct {
+	AdminPolicy *AdminPolicyParams `protobuf:"bytes,19,opt,name=admin_policy,json=adminPolicy,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Lps struct {
+	Lps *LpsParams `protobuf:"bytes,20,opt,name=lps,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Group struct {
+	Group *GroupParams `protobuf:"bytes,21,opt,name=group,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Encryption struct {
+	Encryption *EncryptionParams `protobuf:"bytes,22,opt,name=encryption,proto3,oneof"`
+}
+
+type SignedActionEnvelope_Wifi struct {
+	Wifi *WifiParams `protobuf:"bytes,23,opt,name=wifi,proto3,oneof"`
+}
+
+type SignedActionEnvelope_AgentUpdate struct {
+	AgentUpdate *AgentUpdateParams `protobuf:"bytes,24,opt,name=agent_update,json=agentUpdate,proto3,oneof"`
+}
+
+func (*SignedActionEnvelope_Package) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_App) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Shell) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Service) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_File) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Update) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Repository) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Flatpak) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Directory) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_User) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Ssh) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Sshd) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_AdminPolicy) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Lps) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Group) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Encryption) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_Wifi) isSignedActionEnvelope_Params() {}
+
+func (*SignedActionEnvelope_AgentUpdate) isSignedActionEnvelope_Params() {}
+
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
 type ActionSchedule struct {
@@ -1240,7 +1661,7 @@ type ActionSchedule struct {
 
 func (x *ActionSchedule) Reset() {
 	*x = ActionSchedule{}
-	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	mi := &file_pm_v1_actions_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1252,7 +1673,7 @@ func (x *ActionSchedule) String() string {
 func (*ActionSchedule) ProtoMessage() {}
 
 func (x *ActionSchedule) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[1]
+	mi := &file_pm_v1_actions_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1265,7 +1686,7 @@ func (x *ActionSchedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionSchedule.ProtoReflect.Descriptor instead.
 func (*ActionSchedule) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ActionSchedule) GetCron() string {
@@ -1324,7 +1745,7 @@ type PackageParams struct {
 
 func (x *PackageParams) Reset() {
 	*x = PackageParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[2]
+	mi := &file_pm_v1_actions_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1336,7 +1757,7 @@ func (x *PackageParams) String() string {
 func (*PackageParams) ProtoMessage() {}
 
 func (x *PackageParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[2]
+	mi := &file_pm_v1_actions_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1349,7 +1770,7 @@ func (x *PackageParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageParams.ProtoReflect.Descriptor instead.
 func (*PackageParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PackageParams) GetName() string {
@@ -1422,7 +1843,7 @@ type AppInstallParams struct {
 
 func (x *AppInstallParams) Reset() {
 	*x = AppInstallParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[3]
+	mi := &file_pm_v1_actions_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1434,7 +1855,7 @@ func (x *AppInstallParams) String() string {
 func (*AppInstallParams) ProtoMessage() {}
 
 func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[3]
+	mi := &file_pm_v1_actions_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1447,7 +1868,7 @@ func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppInstallParams.ProtoReflect.Descriptor instead.
 func (*AppInstallParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AppInstallParams) GetUrl() string {
@@ -1496,7 +1917,7 @@ type ShellParams struct {
 
 func (x *ShellParams) Reset() {
 	*x = ShellParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[4]
+	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1508,7 +1929,7 @@ func (x *ShellParams) String() string {
 func (*ShellParams) ProtoMessage() {}
 
 func (x *ShellParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[4]
+	mi := &file_pm_v1_actions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1521,7 +1942,7 @@ func (x *ShellParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShellParams.ProtoReflect.Descriptor instead.
 func (*ShellParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ShellParams) GetScript() string {
@@ -1597,7 +2018,7 @@ type ServiceParams struct {
 
 func (x *ServiceParams) Reset() {
 	*x = ServiceParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[5]
+	mi := &file_pm_v1_actions_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1609,7 +2030,7 @@ func (x *ServiceParams) String() string {
 func (*ServiceParams) ProtoMessage() {}
 
 func (x *ServiceParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[5]
+	mi := &file_pm_v1_actions_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1622,7 +2043,7 @@ func (x *ServiceParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceParams.ProtoReflect.Descriptor instead.
 func (*ServiceParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ServiceParams) GetUnitName() string {
@@ -1684,7 +2105,7 @@ type FileParams struct {
 
 func (x *FileParams) Reset() {
 	*x = FileParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[6]
+	mi := &file_pm_v1_actions_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1696,7 +2117,7 @@ func (x *FileParams) String() string {
 func (*FileParams) ProtoMessage() {}
 
 func (x *FileParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[6]
+	mi := &file_pm_v1_actions_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1709,7 +2130,7 @@ func (x *FileParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileParams.ProtoReflect.Descriptor instead.
 func (*FileParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *FileParams) GetPath() string {
@@ -1777,7 +2198,7 @@ type DirectoryParams struct {
 
 func (x *DirectoryParams) Reset() {
 	*x = DirectoryParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1789,7 +2210,7 @@ func (x *DirectoryParams) String() string {
 func (*DirectoryParams) ProtoMessage() {}
 
 func (x *DirectoryParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	mi := &file_pm_v1_actions_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1802,7 +2223,7 @@ func (x *DirectoryParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryParams.ProtoReflect.Descriptor instead.
 func (*DirectoryParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DirectoryParams) GetPath() string {
@@ -1856,7 +2277,7 @@ type UpdateParams struct {
 
 func (x *UpdateParams) Reset() {
 	*x = UpdateParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_pm_v1_actions_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1868,7 +2289,7 @@ func (x *UpdateParams) String() string {
 func (*UpdateParams) ProtoMessage() {}
 
 func (x *UpdateParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_pm_v1_actions_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1881,7 +2302,7 @@ func (x *UpdateParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateParams.ProtoReflect.Descriptor instead.
 func (*UpdateParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateParams) GetSecurityOnly() bool {
@@ -1928,7 +2349,7 @@ type FlatpakParams struct {
 
 func (x *FlatpakParams) Reset() {
 	*x = FlatpakParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	mi := &file_pm_v1_actions_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1940,7 +2361,7 @@ func (x *FlatpakParams) String() string {
 func (*FlatpakParams) ProtoMessage() {}
 
 func (x *FlatpakParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	mi := &file_pm_v1_actions_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1953,7 +2374,7 @@ func (x *FlatpakParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlatpakParams.ProtoReflect.Descriptor instead.
 func (*FlatpakParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *FlatpakParams) GetAppId() string {
@@ -2009,7 +2430,7 @@ type RepositoryParams struct {
 
 func (x *RepositoryParams) Reset() {
 	*x = RepositoryParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	mi := &file_pm_v1_actions_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2021,7 +2442,7 @@ func (x *RepositoryParams) String() string {
 func (*RepositoryParams) ProtoMessage() {}
 
 func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	mi := &file_pm_v1_actions_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2034,7 +2455,7 @@ func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryParams.ProtoReflect.Descriptor instead.
 func (*RepositoryParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RepositoryParams) GetName() string {
@@ -2105,7 +2526,7 @@ type AptRepository struct {
 
 func (x *AptRepository) Reset() {
 	*x = AptRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	mi := &file_pm_v1_actions_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2117,7 +2538,7 @@ func (x *AptRepository) String() string {
 func (*AptRepository) ProtoMessage() {}
 
 func (x *AptRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	mi := &file_pm_v1_actions_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2130,7 +2551,7 @@ func (x *AptRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AptRepository.ProtoReflect.Descriptor instead.
 func (*AptRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *AptRepository) GetUrl() string {
@@ -2219,7 +2640,7 @@ type DnfRepository struct {
 
 func (x *DnfRepository) Reset() {
 	*x = DnfRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	mi := &file_pm_v1_actions_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2231,7 +2652,7 @@ func (x *DnfRepository) String() string {
 func (*DnfRepository) ProtoMessage() {}
 
 func (x *DnfRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	mi := &file_pm_v1_actions_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2244,7 +2665,7 @@ func (x *DnfRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DnfRepository.ProtoReflect.Descriptor instead.
 func (*DnfRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DnfRepository) GetBaseurl() string {
@@ -2314,7 +2735,7 @@ type PacmanRepository struct {
 
 func (x *PacmanRepository) Reset() {
 	*x = PacmanRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[13]
+	mi := &file_pm_v1_actions_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2326,7 +2747,7 @@ func (x *PacmanRepository) String() string {
 func (*PacmanRepository) ProtoMessage() {}
 
 func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[13]
+	mi := &file_pm_v1_actions_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2339,7 +2760,7 @@ func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PacmanRepository.ProtoReflect.Descriptor instead.
 func (*PacmanRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{13}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PacmanRepository) GetServer() string {
@@ -2396,7 +2817,7 @@ type ZypperRepository struct {
 
 func (x *ZypperRepository) Reset() {
 	*x = ZypperRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[14]
+	mi := &file_pm_v1_actions_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2408,7 +2829,7 @@ func (x *ZypperRepository) String() string {
 func (*ZypperRepository) ProtoMessage() {}
 
 func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[14]
+	mi := &file_pm_v1_actions_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2421,7 +2842,7 @@ func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ZypperRepository.ProtoReflect.Descriptor instead.
 func (*ZypperRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{14}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ZypperRepository) GetUrl() string {
@@ -2545,7 +2966,7 @@ type UserParams struct {
 
 func (x *UserParams) Reset() {
 	*x = UserParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[15]
+	mi := &file_pm_v1_actions_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2557,7 +2978,7 @@ func (x *UserParams) String() string {
 func (*UserParams) ProtoMessage() {}
 
 func (x *UserParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[15]
+	mi := &file_pm_v1_actions_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2570,7 +2991,7 @@ func (x *UserParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserParams.ProtoReflect.Descriptor instead.
 func (*UserParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{15}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UserParams) GetUsername() string {
@@ -2686,7 +3107,7 @@ type GroupParams struct {
 
 func (x *GroupParams) Reset() {
 	*x = GroupParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	mi := &file_pm_v1_actions_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2698,7 +3119,7 @@ func (x *GroupParams) String() string {
 func (*GroupParams) ProtoMessage() {}
 
 func (x *GroupParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	mi := &file_pm_v1_actions_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2711,7 +3132,7 @@ func (x *GroupParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupParams.ProtoReflect.Descriptor instead.
 func (*GroupParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{16}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GroupParams) GetName() string {
@@ -2763,7 +3184,7 @@ type SshParams struct {
 
 func (x *SshParams) Reset() {
 	*x = SshParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	mi := &file_pm_v1_actions_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2775,7 +3196,7 @@ func (x *SshParams) String() string {
 func (*SshParams) ProtoMessage() {}
 
 func (x *SshParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	mi := &file_pm_v1_actions_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2788,7 +3209,7 @@ func (x *SshParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshParams.ProtoReflect.Descriptor instead.
 func (*SshParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SshParams) GetAllowPubkey() bool {
@@ -2827,7 +3248,7 @@ type SshdDirective struct {
 
 func (x *SshdDirective) Reset() {
 	*x = SshdDirective{}
-	mi := &file_pm_v1_actions_proto_msgTypes[18]
+	mi := &file_pm_v1_actions_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2839,7 +3260,7 @@ func (x *SshdDirective) String() string {
 func (*SshdDirective) ProtoMessage() {}
 
 func (x *SshdDirective) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[18]
+	mi := &file_pm_v1_actions_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2852,7 +3273,7 @@ func (x *SshdDirective) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshdDirective.ProtoReflect.Descriptor instead.
 func (*SshdDirective) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{18}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SshdDirective) GetKey() string {
@@ -2887,7 +3308,7 @@ type SshdParams struct {
 
 func (x *SshdParams) Reset() {
 	*x = SshdParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[19]
+	mi := &file_pm_v1_actions_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2899,7 +3320,7 @@ func (x *SshdParams) String() string {
 func (*SshdParams) ProtoMessage() {}
 
 func (x *SshdParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[19]
+	mi := &file_pm_v1_actions_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2912,7 +3333,7 @@ func (x *SshdParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshdParams.ProtoReflect.Descriptor instead.
 func (*SshdParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{19}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SshdParams) GetPriority() uint32 {
@@ -2960,7 +3381,7 @@ type AdminPolicyParams struct {
 
 func (x *AdminPolicyParams) Reset() {
 	*x = AdminPolicyParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[20]
+	mi := &file_pm_v1_actions_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2972,7 +3393,7 @@ func (x *AdminPolicyParams) String() string {
 func (*AdminPolicyParams) ProtoMessage() {}
 
 func (x *AdminPolicyParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[20]
+	mi := &file_pm_v1_actions_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2985,7 +3406,7 @@ func (x *AdminPolicyParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminPolicyParams.ProtoReflect.Descriptor instead.
 func (*AdminPolicyParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{20}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *AdminPolicyParams) GetAccessLevel() AdminAccessLevel {
@@ -3045,7 +3466,7 @@ type LpsParams struct {
 
 func (x *LpsParams) Reset() {
 	*x = LpsParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[21]
+	mi := &file_pm_v1_actions_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3057,7 +3478,7 @@ func (x *LpsParams) String() string {
 func (*LpsParams) ProtoMessage() {}
 
 func (x *LpsParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[21]
+	mi := &file_pm_v1_actions_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3070,7 +3491,7 @@ func (x *LpsParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpsParams.ProtoReflect.Descriptor instead.
 func (*LpsParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{21}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *LpsParams) GetUsernames() []string {
@@ -3143,7 +3564,7 @@ type EncryptionParams struct {
 
 func (x *EncryptionParams) Reset() {
 	*x = EncryptionParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	mi := &file_pm_v1_actions_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3155,7 +3576,7 @@ func (x *EncryptionParams) String() string {
 func (*EncryptionParams) ProtoMessage() {}
 
 func (x *EncryptionParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	mi := &file_pm_v1_actions_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3168,7 +3589,7 @@ func (x *EncryptionParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EncryptionParams.ProtoReflect.Descriptor instead.
 func (*EncryptionParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{22}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *EncryptionParams) GetPresharedKey() string {
@@ -3261,7 +3682,7 @@ type WifiParams struct {
 
 func (x *WifiParams) Reset() {
 	*x = WifiParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	mi := &file_pm_v1_actions_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3273,7 +3694,7 @@ func (x *WifiParams) String() string {
 func (*WifiParams) ProtoMessage() {}
 
 func (x *WifiParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	mi := &file_pm_v1_actions_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3286,7 +3707,7 @@ func (x *WifiParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WifiParams.ProtoReflect.Descriptor instead.
 func (*WifiParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{23}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *WifiParams) GetSsid() string {
@@ -3396,7 +3817,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[24]
+	mi := &file_pm_v1_actions_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3408,7 +3829,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[24]
+	mi := &file_pm_v1_actions_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3421,7 +3842,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{24}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -3509,7 +3930,7 @@ type AgentUpdateArch struct {
 
 func (x *AgentUpdateArch) Reset() {
 	*x = AgentUpdateArch{}
-	mi := &file_pm_v1_actions_proto_msgTypes[25]
+	mi := &file_pm_v1_actions_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3521,7 +3942,7 @@ func (x *AgentUpdateArch) String() string {
 func (*AgentUpdateArch) ProtoMessage() {}
 
 func (x *AgentUpdateArch) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[25]
+	mi := &file_pm_v1_actions_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3534,7 +3955,7 @@ func (x *AgentUpdateArch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentUpdateArch.ProtoReflect.Descriptor instead.
 func (*AgentUpdateArch) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{25}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *AgentUpdateArch) GetBinaryUrl() string {
@@ -3566,7 +3987,7 @@ type AgentUpdateParams struct {
 
 func (x *AgentUpdateParams) Reset() {
 	*x = AgentUpdateParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[26]
+	mi := &file_pm_v1_actions_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3578,7 +3999,7 @@ func (x *AgentUpdateParams) String() string {
 func (*AgentUpdateParams) ProtoMessage() {}
 
 func (x *AgentUpdateParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[26]
+	mi := &file_pm_v1_actions_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3591,7 +4012,7 @@ func (x *AgentUpdateParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentUpdateParams.ProtoReflect.Descriptor instead.
 func (*AgentUpdateParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{26}
+	return file_pm_v1_actions_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AgentUpdateParams) GetAmd64() *AgentUpdateArch {
@@ -3612,15 +4033,15 @@ var File_pm_v1_actions_proto protoreflect.FileDescriptor
 
 const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9f\t\n" +
+	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9d\t\n" +
 	"\x06Action\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
 	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
 	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12\x1c\n" +
-	"\tsignature\x18\x06 \x01(\fR\tsignature\x12)\n" +
-	"\x10params_canonical\x18\a \x01(\fR\x0fparamsCanonical\x120\n" +
+	"\tsignature\x18\x06 \x01(\fR\tsignature\x12'\n" +
+	"\x0fsigned_envelope\x18\a \x01(\fR\x0esignedEnvelope\x120\n" +
 	"\apackage\x18\b \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
 	"\x03app\x18\t \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
 	"\x05shell\x18\n" +
@@ -3644,6 +4065,38 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"encryption\x12'\n" +
 	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
 	"\fagent_update\x18\x19 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
+	"\x06params\"\xa8\t\n" +
+	"\x14SignedActionEnvelope\x12,\n" +
+	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x122\n" +
+	"\vaction_type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\n" +
+	"actionType\x128\n" +
+	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
+	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
+	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12(\n" +
+	"\x10target_device_id\x18\x06 \x01(\tR\x0etargetDeviceId\x120\n" +
+	"\apackage\x18\a \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
+	"\x03app\x18\b \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x05shell\x18\t \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\aservice\x18\n" +
+	" \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
+	"\x04file\x18\v \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x06update\x18\f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	"\n" +
+	"repository\x18\r \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
+	"repository\x120\n" +
+	"\aflatpak\x18\x0e \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
+	"\tdirectory\x18\x0f \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
+	"\x04user\x18\x10 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
+	"\x03ssh\x18\x11 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
+	"\x04sshd\x18\x12 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
+	"\fadmin_policy\x18\x13 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
+	"\x03lps\x18\x14 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
+	"\x05group\x18\x15 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
+	"\n" +
+	"encryption\x18\x16 \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
+	"encryption\x12'\n" +
+	"\x04wifi\x18\x17 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
+	"\fagent_update\x18\x18 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -3942,7 +4395,7 @@ func file_pm_v1_actions_proto_rawDescGZIP() []byte {
 }
 
 var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_pm_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),                   // 0: pm.v1.ActionType
 	(ServiceBackend)(0),               // 1: pm.v1.ServiceBackend
@@ -3958,92 +4411,115 @@ var file_pm_v1_actions_proto_goTypes = []any{
 	(WifiAuthType)(0),                 // 11: pm.v1.WifiAuthType
 	(WifiBackend)(0),                  // 12: pm.v1.WifiBackend
 	(*Action)(nil),                    // 13: pm.v1.Action
-	(*ActionSchedule)(nil),            // 14: pm.v1.ActionSchedule
-	(*PackageParams)(nil),             // 15: pm.v1.PackageParams
-	(*AppInstallParams)(nil),          // 16: pm.v1.AppInstallParams
-	(*ShellParams)(nil),               // 17: pm.v1.ShellParams
-	(*ServiceParams)(nil),             // 18: pm.v1.ServiceParams
-	(*FileParams)(nil),                // 19: pm.v1.FileParams
-	(*DirectoryParams)(nil),           // 20: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),              // 21: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),             // 22: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),          // 23: pm.v1.RepositoryParams
-	(*AptRepository)(nil),             // 24: pm.v1.AptRepository
-	(*DnfRepository)(nil),             // 25: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),          // 26: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),          // 27: pm.v1.ZypperRepository
-	(*UserParams)(nil),                // 28: pm.v1.UserParams
-	(*GroupParams)(nil),               // 29: pm.v1.GroupParams
-	(*SshParams)(nil),                 // 30: pm.v1.SshParams
-	(*SshdDirective)(nil),             // 31: pm.v1.SshdDirective
-	(*SshdParams)(nil),                // 32: pm.v1.SshdParams
-	(*AdminPolicyParams)(nil),         // 33: pm.v1.AdminPolicyParams
-	(*LpsParams)(nil),                 // 34: pm.v1.LpsParams
-	(*EncryptionParams)(nil),          // 35: pm.v1.EncryptionParams
-	(*WifiParams)(nil),                // 36: pm.v1.WifiParams
-	(*ActionResult)(nil),              // 37: pm.v1.ActionResult
-	(*AgentUpdateArch)(nil),           // 38: pm.v1.AgentUpdateArch
-	(*AgentUpdateParams)(nil),         // 39: pm.v1.AgentUpdateParams
-	nil,                               // 40: pm.v1.ShellParams.EnvironmentEntry
-	nil,                               // 41: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),                  // 42: pm.v1.ActionId
-	(DesiredState)(0),                 // 43: pm.v1.DesiredState
-	(ExecutionStatus)(0),              // 44: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),             // 45: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil),     // 46: google.protobuf.Timestamp
+	(*SignedActionEnvelope)(nil),      // 14: pm.v1.SignedActionEnvelope
+	(*ActionSchedule)(nil),            // 15: pm.v1.ActionSchedule
+	(*PackageParams)(nil),             // 16: pm.v1.PackageParams
+	(*AppInstallParams)(nil),          // 17: pm.v1.AppInstallParams
+	(*ShellParams)(nil),               // 18: pm.v1.ShellParams
+	(*ServiceParams)(nil),             // 19: pm.v1.ServiceParams
+	(*FileParams)(nil),                // 20: pm.v1.FileParams
+	(*DirectoryParams)(nil),           // 21: pm.v1.DirectoryParams
+	(*UpdateParams)(nil),              // 22: pm.v1.UpdateParams
+	(*FlatpakParams)(nil),             // 23: pm.v1.FlatpakParams
+	(*RepositoryParams)(nil),          // 24: pm.v1.RepositoryParams
+	(*AptRepository)(nil),             // 25: pm.v1.AptRepository
+	(*DnfRepository)(nil),             // 26: pm.v1.DnfRepository
+	(*PacmanRepository)(nil),          // 27: pm.v1.PacmanRepository
+	(*ZypperRepository)(nil),          // 28: pm.v1.ZypperRepository
+	(*UserParams)(nil),                // 29: pm.v1.UserParams
+	(*GroupParams)(nil),               // 30: pm.v1.GroupParams
+	(*SshParams)(nil),                 // 31: pm.v1.SshParams
+	(*SshdDirective)(nil),             // 32: pm.v1.SshdDirective
+	(*SshdParams)(nil),                // 33: pm.v1.SshdParams
+	(*AdminPolicyParams)(nil),         // 34: pm.v1.AdminPolicyParams
+	(*LpsParams)(nil),                 // 35: pm.v1.LpsParams
+	(*EncryptionParams)(nil),          // 36: pm.v1.EncryptionParams
+	(*WifiParams)(nil),                // 37: pm.v1.WifiParams
+	(*ActionResult)(nil),              // 38: pm.v1.ActionResult
+	(*AgentUpdateArch)(nil),           // 39: pm.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),         // 40: pm.v1.AgentUpdateParams
+	nil,                               // 41: pm.v1.ShellParams.EnvironmentEntry
+	nil,                               // 42: pm.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),                  // 43: pm.v1.ActionId
+	(DesiredState)(0),                 // 44: pm.v1.DesiredState
+	(ExecutionStatus)(0),              // 45: pm.v1.ExecutionStatus
+	(*CommandOutput)(nil),             // 46: pm.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil),     // 47: google.protobuf.Timestamp
 }
 var file_pm_v1_actions_proto_depIdxs = []int32{
-	42, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
+	43, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
 	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	43, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	14, // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	15, // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	16, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	17, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	18, // 7: pm.v1.Action.service:type_name -> pm.v1.ServiceParams
-	19, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	21, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	23, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	22, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	20, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	28, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	30, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	32, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	33, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	34, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	29, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	35, // 19: pm.v1.Action.encryption:type_name -> pm.v1.EncryptionParams
-	36, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
-	39, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
-	40, // 22: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	5,  // 23: pm.v1.ServiceParams.desired_state:type_name -> pm.v1.ServiceUnitState
-	1,  // 24: pm.v1.ServiceParams.backend:type_name -> pm.v1.ServiceBackend
-	24, // 25: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	25, // 26: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	26, // 27: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	27, // 28: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	31, // 29: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	6,  // 30: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
-	7,  // 31: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
-	8,  // 32: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	10, // 33: pm.v1.EncryptionParams.device_bound_key_type:type_name -> pm.v1.EncryptionDeviceBoundKeyType
-	8,  // 34: pm.v1.EncryptionParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	9,  // 35: pm.v1.EncryptionParams.backend:type_name -> pm.v1.EncryptionBackend
-	11, // 36: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
-	12, // 37: pm.v1.WifiParams.backend:type_name -> pm.v1.WifiBackend
-	42, // 38: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	44, // 39: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	45, // 40: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	46, // 41: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	41, // 42: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	45, // 43: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
-	38, // 44: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
-	38, // 45: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
-	46, // [46:46] is the sub-list for method output_type
-	46, // [46:46] is the sub-list for method input_type
-	46, // [46:46] is the sub-list for extension type_name
-	46, // [46:46] is the sub-list for extension extendee
-	0,  // [0:46] is the sub-list for field type_name
+	44, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
+	15, // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
+	16, // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
+	17, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
+	18, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
+	19, // 7: pm.v1.Action.service:type_name -> pm.v1.ServiceParams
+	20, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
+	22, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
+	24, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
+	23, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
+	21, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
+	29, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
+	31, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
+	33, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
+	34, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
+	35, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
+	30, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
+	36, // 19: pm.v1.Action.encryption:type_name -> pm.v1.EncryptionParams
+	37, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
+	40, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
+	43, // 22: pm.v1.SignedActionEnvelope.action_id:type_name -> pm.v1.ActionId
+	0,  // 23: pm.v1.SignedActionEnvelope.action_type:type_name -> pm.v1.ActionType
+	44, // 24: pm.v1.SignedActionEnvelope.desired_state:type_name -> pm.v1.DesiredState
+	15, // 25: pm.v1.SignedActionEnvelope.schedule:type_name -> pm.v1.ActionSchedule
+	16, // 26: pm.v1.SignedActionEnvelope.package:type_name -> pm.v1.PackageParams
+	17, // 27: pm.v1.SignedActionEnvelope.app:type_name -> pm.v1.AppInstallParams
+	18, // 28: pm.v1.SignedActionEnvelope.shell:type_name -> pm.v1.ShellParams
+	19, // 29: pm.v1.SignedActionEnvelope.service:type_name -> pm.v1.ServiceParams
+	20, // 30: pm.v1.SignedActionEnvelope.file:type_name -> pm.v1.FileParams
+	22, // 31: pm.v1.SignedActionEnvelope.update:type_name -> pm.v1.UpdateParams
+	24, // 32: pm.v1.SignedActionEnvelope.repository:type_name -> pm.v1.RepositoryParams
+	23, // 33: pm.v1.SignedActionEnvelope.flatpak:type_name -> pm.v1.FlatpakParams
+	21, // 34: pm.v1.SignedActionEnvelope.directory:type_name -> pm.v1.DirectoryParams
+	29, // 35: pm.v1.SignedActionEnvelope.user:type_name -> pm.v1.UserParams
+	31, // 36: pm.v1.SignedActionEnvelope.ssh:type_name -> pm.v1.SshParams
+	33, // 37: pm.v1.SignedActionEnvelope.sshd:type_name -> pm.v1.SshdParams
+	34, // 38: pm.v1.SignedActionEnvelope.admin_policy:type_name -> pm.v1.AdminPolicyParams
+	35, // 39: pm.v1.SignedActionEnvelope.lps:type_name -> pm.v1.LpsParams
+	30, // 40: pm.v1.SignedActionEnvelope.group:type_name -> pm.v1.GroupParams
+	36, // 41: pm.v1.SignedActionEnvelope.encryption:type_name -> pm.v1.EncryptionParams
+	37, // 42: pm.v1.SignedActionEnvelope.wifi:type_name -> pm.v1.WifiParams
+	40, // 43: pm.v1.SignedActionEnvelope.agent_update:type_name -> pm.v1.AgentUpdateParams
+	41, // 44: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
+	5,  // 45: pm.v1.ServiceParams.desired_state:type_name -> pm.v1.ServiceUnitState
+	1,  // 46: pm.v1.ServiceParams.backend:type_name -> pm.v1.ServiceBackend
+	25, // 47: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
+	26, // 48: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
+	27, // 49: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
+	28, // 50: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
+	32, // 51: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
+	6,  // 52: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
+	7,  // 53: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
+	8,  // 54: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
+	10, // 55: pm.v1.EncryptionParams.device_bound_key_type:type_name -> pm.v1.EncryptionDeviceBoundKeyType
+	8,  // 56: pm.v1.EncryptionParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
+	9,  // 57: pm.v1.EncryptionParams.backend:type_name -> pm.v1.EncryptionBackend
+	11, // 58: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
+	12, // 59: pm.v1.WifiParams.backend:type_name -> pm.v1.WifiBackend
+	43, // 60: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
+	45, // 61: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
+	46, // 62: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
+	47, // 63: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	42, // 64: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
+	46, // 65: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
+	39, // 66: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
+	39, // 67: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
+	68, // [68:68] is the sub-list for method output_type
+	68, // [68:68] is the sub-list for method input_type
+	68, // [68:68] is the sub-list for extension type_name
+	68, // [68:68] is the sub-list for extension extendee
+	0,  // [0:68] is the sub-list for field type_name
 }
 
 func init() { file_pm_v1_actions_proto_init() }
@@ -4072,13 +4548,33 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Wifi)(nil),
 		(*Action_AgentUpdate)(nil),
 	}
+	file_pm_v1_actions_proto_msgTypes[1].OneofWrappers = []any{
+		(*SignedActionEnvelope_Package)(nil),
+		(*SignedActionEnvelope_App)(nil),
+		(*SignedActionEnvelope_Shell)(nil),
+		(*SignedActionEnvelope_Service)(nil),
+		(*SignedActionEnvelope_File)(nil),
+		(*SignedActionEnvelope_Update)(nil),
+		(*SignedActionEnvelope_Repository)(nil),
+		(*SignedActionEnvelope_Flatpak)(nil),
+		(*SignedActionEnvelope_Directory)(nil),
+		(*SignedActionEnvelope_User)(nil),
+		(*SignedActionEnvelope_Ssh)(nil),
+		(*SignedActionEnvelope_Sshd)(nil),
+		(*SignedActionEnvelope_AdminPolicy)(nil),
+		(*SignedActionEnvelope_Lps)(nil),
+		(*SignedActionEnvelope_Group)(nil),
+		(*SignedActionEnvelope_Encryption)(nil),
+		(*SignedActionEnvelope_Wifi)(nil),
+		(*SignedActionEnvelope_AgentUpdate)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
 			NumEnums:      13,
-			NumMessages:   29,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

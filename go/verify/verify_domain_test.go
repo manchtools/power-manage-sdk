@@ -3,98 +3,72 @@ package verify
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/base64"
-	"fmt"
+	"encoding/binary"
 	"strings"
 	"testing"
 )
 
-// TestCanonicalPayload_StableShape pins the canonical hash output
-// length. The format itself is iterated in place (no in-tree v1/v2
-// versioning), so we don't pin the bytes — server and agent ship
-// from the same SDK so any change in this function rolls out
-// atomically. The length pin catches an accidental switch off SHA-256
-// (which would change the signature surface entirely).
-func TestCanonicalPayload_StableShape(t *testing.T) {
-	got := canonicalPayload("01JABCDEFGHJKMNPQRSTVWXYZ0", 200, []byte(`{"script":"echo ok"}`))
-	if len(got) != 32 {
-		t.Fatalf("canonicalPayload returned %d bytes; SHA-256 must always be 32", len(got))
+// TestCanonicalDigest_StableShape pins the digest length. The format is
+// iterated in place (no in-tree versioning — server and agent ship from
+// the same SDK), so we don't pin the bytes; the length pin catches an
+// accidental switch off SHA-256.
+func TestCanonicalDigest_StableShape(t *testing.T) {
+	if got := canonicalDigest([]byte("envelope-bytes")); len(got) != 32 {
+		t.Fatalf("canonicalDigest returned %d bytes; SHA-256 must be 32", len(got))
 	}
 }
 
-// TestCanonicalPayload_NoCrossInputCollision proves the canonical hash
-// is sensitive to all three signed inputs — any single field changing
-// flips the hash. The audit finding #11 phrasing was "signatures
-// cannot be replayed across domains/action encodings"; this is the
-// collision check that catches the action-encoding half of the replay
-// class. The domain-prefix half is covered by
-// TestCanonicalPayload_DomainPrefixBreaksReplay below.
-func TestCanonicalPayload_NoCrossInputCollision(t *testing.T) {
-	const baseID = "01JABCDEFGHJKMNPQRSTVWXYZ0"
-	const baseType = int32(200)
-	baseParams := []byte(`{"script":"echo ok"}`)
+// TestCanonicalDigest_MixesDomain proves the domain tag actually
+// contributes: the digest of a payload is NOT the bare SHA-256 of that
+// payload, and it equals the explicit length-prefixed-domain formula. If
+// the domain ever stopped being mixed in, a signature for this surface
+// could be replayed against another surface sharing the CA key.
+func TestCanonicalDigest_MixesDomain(t *testing.T) {
+	payload := []byte("envelope-bytes")
 
-	base := canonicalPayload(baseID, baseType, baseParams)
-
-	cases := []struct {
-		label      string
-		id         string
-		actionType int32
-		params     []byte
-	}{
-		{"different id", "01JABCDEFGHJKMNPQRSTVWXYZ1", baseType, baseParams},
-		{"different type", baseID, 201, baseParams},
-		{"different params", baseID, baseType, []byte(`{"script":"echo evil"}`)},
-		{"params byte-flip", baseID, baseType, []byte(`{"script":"echo Ok"}`)},
+	bare := sha256.Sum256(payload)
+	if bytes.Equal(canonicalDigest(payload), bare[:]) {
+		t.Fatal("canonicalDigest equals the bare SHA-256 of the payload — the domain tag is not contributing")
 	}
-	for _, tc := range cases {
-		t.Run(tc.label, func(t *testing.T) {
-			got := canonicalPayload(tc.id, tc.actionType, tc.params)
-			if bytes.Equal(got, base) {
-				t.Fatalf("canonical hash collided across distinct inputs (%s); replay would be possible", tc.label)
-			}
-		})
+
+	// Reproduce the documented pre-image: len32(domain) || domain || payload.
+	h := sha256.New()
+	var lenPrefix [4]byte
+	binary.BigEndian.PutUint32(lenPrefix[:], uint32(len(ActionSignatureDomain)))
+	h.Write(lenPrefix[:])
+	h.Write([]byte(ActionSignatureDomain))
+	h.Write(payload)
+	if !bytes.Equal(canonicalDigest(payload), h.Sum(nil)) {
+		t.Fatal("canonicalDigest does not match the documented len32(domain)||domain||payload pre-image")
 	}
 }
 
-// TestCanonicalPayload_IncludesDomainPrefix proves the
-// ActionSignatureDomain constant actually contributes to the hash —
-// i.e., changing the constant would change every signature produced
-// by Sign. The test reproduces the canonical format with a different
-// domain string in-line and asserts the hash differs from
-// canonicalPayload's output. This is the cross-surface replay
-// protection contract: a signature made under one domain cannot be
-// verified as if it had been made under another.
-func TestCanonicalPayload_IncludesDomainPrefix(t *testing.T) {
-	const id = "01JABCDEFGHJKMNPQRSTVWXYZ0"
-	const at = int32(200)
-	params := []byte(`{"x":1}`)
+// TestCanonicalDigest_LengthPrefixDefeatsDomainConfusion pins that the
+// 4-byte length prefix makes "domain || payload" unambiguous: a digest
+// computed WITHOUT the length prefix (a different framing) differs, so no
+// other domain string can be confused with ActionSignatureDomain followed
+// by an attacker-chosen payload prefix.
+func TestCanonicalDigest_LengthPrefixDefeatsDomainConfusion(t *testing.T) {
+	payload := []byte("p")
 
-	got := canonicalPayload(id, at, params)
-
-	// Recompute with a deliberately different domain and confirm the
-	// hashes diverge. If they ever match, the domain prefix isn't
-	// actually being read.
-	if otherDomainHashesAreEqual(t, "power-manage-terminal", id, at, params, got) {
-		t.Fatal("changing the domain string did not change the canonical hash; ActionSignatureDomain is not contributing to the digest")
+	// Framing without the length prefix (the naive domain||payload concat).
+	unframed := sha256.Sum256(append([]byte(ActionSignatureDomain), payload...))
+	if bytes.Equal(canonicalDigest(payload), unframed[:]) {
+		t.Fatal("canonicalDigest matches the unframed domain||payload concat — the length prefix is not applied")
 	}
+}
 
-	// Spot-check: the constant the code uses is named in the way the
-	// audit + the doc comment describe.
+// TestCanonicalDigest_SensitiveToPayload pins that distinct payloads yield
+// distinct digests (the binding the signature relies on).
+func TestCanonicalDigest_SensitiveToPayload(t *testing.T) {
+	if bytes.Equal(canonicalDigest([]byte("a")), canonicalDigest([]byte("b"))) {
+		t.Fatal("canonicalDigest collided across distinct payloads")
+	}
+}
+
+// TestActionSignatureDomain_Recognizable keeps the domain string auditable.
+func TestActionSignatureDomain_Recognizable(t *testing.T) {
 	if !strings.HasPrefix(ActionSignatureDomain, "power-manage-action") {
-		t.Errorf("ActionSignatureDomain = %q; expected to start with 'power-manage-action' so the domain string is recognisable in audit traces", ActionSignatureDomain)
+		t.Errorf("ActionSignatureDomain = %q; expected to start with 'power-manage-action'", ActionSignatureDomain)
 	}
-}
-
-// otherDomainHashesAreEqual reproduces the canonical-payload shape
-// in-line with a caller-chosen domain and checks against want.
-// Returns true iff the hash matches (i.e. the domain didn't matter).
-func otherDomainHashesAreEqual(t *testing.T, domain, id string, at int32, params, want []byte) bool {
-	t.Helper()
-	// Mirror canonicalPayload's body but with the supplied domain.
-	// Kept in-test so the test can vary the domain without the
-	// production code needing a second entry point.
-	canonical := fmt.Sprintf("%s|%s:%d:%s", domain, id, at, base64.StdEncoding.EncodeToString(params))
-	hash := sha256.Sum256([]byte(canonical))
-	return bytes.Equal(hash[:], want)
 }

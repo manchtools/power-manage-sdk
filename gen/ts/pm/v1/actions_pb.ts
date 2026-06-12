@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/actions.proto.
  */
 export const file_pm_v1_actions: GenFile = /*@__PURE__*/
-  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSK8BwoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSGAoQcGFyYW1zX2Nhbm9uaWNhbBgHIAEoDBInCgdwYWNrYWdlGAggASgLMhQucG0udjEuUGFja2FnZVBhcmFtc0gAEiYKA2FwcBgJIAEoCzIXLnBtLnYxLkFwcEluc3RhbGxQYXJhbXNIABIjCgVzaGVsbBgKIAEoCzISLnBtLnYxLlNoZWxsUGFyYW1zSAASJwoHc2VydmljZRgLIAEoCzIULnBtLnYxLlNlcnZpY2VQYXJhbXNIABIhCgRmaWxlGAwgASgLMhEucG0udjEuRmlsZVBhcmFtc0gAEiUKBnVwZGF0ZRgNIAEoCzITLnBtLnYxLlVwZGF0ZVBhcmFtc0gAEi0KCnJlcG9zaXRvcnkYDiABKAsyFy5wbS52MS5SZXBvc2l0b3J5UGFyYW1zSAASJwoHZmxhdHBhaxgPIAEoCzIULnBtLnYxLkZsYXRwYWtQYXJhbXNIABIrCglkaXJlY3RvcnkYECABKAsyFi5wbS52MS5EaXJlY3RvcnlQYXJhbXNIABIhCgR1c2VyGBEgASgLMhEucG0udjEuVXNlclBhcmFtc0gAEh8KA3NzaBgSIAEoCzIQLnBtLnYxLlNzaFBhcmFtc0gAEiEKBHNzaGQYEyABKAsyES5wbS52MS5Tc2hkUGFyYW1zSAASMAoMYWRtaW5fcG9saWN5GBQgASgLMhgucG0udjEuQWRtaW5Qb2xpY3lQYXJhbXNIABIfCgNscHMYFSABKAsyEC5wbS52MS5McHNQYXJhbXNIABIjCgVncm91cBgWIAEoCzISLnBtLnYxLkdyb3VwUGFyYW1zSAASLQoKZW5jcnlwdGlvbhgXIAEoCzIXLnBtLnYxLkVuY3J5cHRpb25QYXJhbXNIABIhCgR3aWZpGBggASgLMhEucG0udjEuV2lmaVBhcmFtc0gAEjAKDGFnZW50X3VwZGF0ZRgZIAEoCzIYLnBtLnYxLkFnZW50VXBkYXRlUGFyYW1zSABCCAoGcGFyYW1zImgKDkFjdGlvblNjaGVkdWxlEgwKBGNyb24YASABKAkSFgoOaW50ZXJ2YWxfaG91cnMYAiABKAUSFQoNcnVuX29uX2Fzc2lnbhgDIAEoCBIZChFza2lwX2lmX3VuY2hhbmdlZBgEIAEoCCKiAQoNUGFja2FnZVBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSFwoPYWxsb3dfZG93bmdyYWRlGAMgASgIEgsKA3BpbhgEIAEoCBIQCghhcHRfbmFtZRgFIAEoCRIQCghkbmZfbmFtZRgGIAEoCRITCgtwYWNtYW5fbmFtZRgHIAEoCRITCgt6eXBwZXJfbmFtZRgIIAEoCSJOChBBcHBJbnN0YWxsUGFyYW1zEgsKA3VybBgBIAEoCRIXCg9jaGVja3N1bV9zaGEyNTYYAiABKAkSFAoMaW5zdGFsbF9wYXRoGAMgASgJIoECCgtTaGVsbFBhcmFtcxIOCgZzY3JpcHQYASABKAkSEwoLaW50ZXJwcmV0ZXIYAiABKAkSEwoLcnVuX2FzX3Jvb3QYAyABKAgSGQoRd29ya2luZ19kaXJlY3RvcnkYBCABKAkSOAoLZW52aXJvbm1lbnQYBSADKAsyIy5wbS52MS5TaGVsbFBhcmFtcy5FbnZpcm9ubWVudEVudHJ5EhgKEGRldGVjdGlvbl9zY3JpcHQYBiABKAkSFQoNaXNfY29tcGxpYW5jZRgHIAEoCBoyChBFbnZpcm9ubWVudEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEioAEKDVNlcnZpY2VQYXJhbXMSEQoJdW5pdF9uYW1lGAEgASgJEi4KDWRlc2lyZWRfc3RhdGUYAiABKA4yFy5wbS52MS5TZXJ2aWNlVW5pdFN0YXRlEg4KBmVuYWJsZRgDIAEoCBIUCgx1bml0X2NvbnRlbnQYBCABKAkSJgoHYmFja2VuZBgFIAEoDjIVLnBtLnYxLlNlcnZpY2VCYWNrZW5kIm4KCkZpbGVQYXJhbXMSDAoEcGF0aBgBIAEoCRIPCgdjb250ZW50GAIgASgJEg0KBW93bmVyGAMgASgJEg0KBWdyb3VwGAQgASgJEgwKBG1vZGUYBSABKAkSFQoNbWFuYWdlZF9ibG9jaxgGIAEoCCJeCg9EaXJlY3RvcnlQYXJhbXMSDAoEcGF0aBgBIAEoCRINCgVvd25lchgCIAEoCRINCgVncm91cBgDIAEoCRIMCgRtb2RlGAQgASgJEhEKCXJlY3Vyc2l2ZRgFIAEoCCJVCgxVcGRhdGVQYXJhbXMSFQoNc2VjdXJpdHlfb25seRgBIAEoCBISCgphdXRvcmVtb3ZlGAIgASgIEhoKEnJlYm9vdF9pZl9yZXF1aXJlZBgDIAEoCCJRCg1GbGF0cGFrUGFyYW1zEg4KBmFwcF9pZBgBIAEoCRIOCgZyZW1vdGUYAiABKAkSEwoLc3lzdGVtX3dpZGUYAyABKAgSCwoDcGluGAQgASgIIrgBChBSZXBvc2l0b3J5UGFyYW1zEgwKBG5hbWUYASABKAkSIQoDYXB0GAIgASgLMhQucG0udjEuQXB0UmVwb3NpdG9yeRIhCgNkbmYYAyABKAsyFC5wbS52MS5EbmZSZXBvc2l0b3J5EicKBnBhY21hbhgEIAEoCzIXLnBtLnYxLlBhY21hblJlcG9zaXRvcnkSJwoGenlwcGVyGAUgASgLMhcucG0udjEuWnlwcGVyUmVwb3NpdG9yeSKdAQoNQXB0UmVwb3NpdG9yeRILCgN1cmwYASABKAkSFAoMZGlzdHJpYnV0aW9uGAIgASgJEhIKCmNvbXBvbmVudHMYAyADKAkSEwoLZ3BnX2tleV91cmwYBCABKAkSDwoHZ3BnX2tleRgFIAEoCRIPCgd0cnVzdGVkGAYgASgIEgwKBGFyY2gYByABKAkSEAoIZGlzYWJsZWQYCCABKAgikwEKDURuZlJlcG9zaXRvcnkSDwoHYmFzZXVybBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhAKCGdwZ2NoZWNrGAQgASgIEg4KBmdwZ2tleRgFIAEoCRIXCg9tb2R1bGVfaG90Zml4ZXMYBiABKAgSEAoIZGlzYWJsZWQYByABKAgiRwoQUGFjbWFuUmVwb3NpdG9yeRIOCgZzZXJ2ZXIYASABKAkSEQoJc2lnX2xldmVsGAIgASgJEhAKCGRpc2FibGVkGAMgASgIIpwBChBaeXBwZXJSZXBvc2l0b3J5EgsKA3VybBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhMKC2F1dG9yZWZyZXNoGAQgASgIEhAKCGdwZ2NoZWNrGAUgASgIEg4KBmdwZ2tleRgGIAEoCRIMCgR0eXBlGAcgASgJEhAKCGRpc2FibGVkGAggASgIIv8BCgpVc2VyUGFyYW1zEhAKCHVzZXJuYW1lGAEgASgJEgsKA3VpZBgCIAEoBRILCgNnaWQYAyABKAUSEAoIaG9tZV9kaXIYBCABKAkSDQoFc2hlbGwYBSABKAkSGwoTc3NoX2F1dGhvcml6ZWRfa2V5cxgGIAMoCRIPCgdjb21tZW50GAcgASgJEhMKC3N5c3RlbV91c2VyGAggASgIEhMKC2NyZWF0ZV9ob21lGAkgASgIEhAKCGRpc2FibGVkGAogASgIEhUKDXByaW1hcnlfZ3JvdXAYCyABKAkSDgoGaGlkZGVuGAwgASgIEhMKC25vX3Bhc3N3b3JkGA0gASgIIk8KC0dyb3VwUGFyYW1zEgwKBG5hbWUYASABKAkSDwoHbWVtYmVycxgCIAMoCRILCgNnaWQYAyABKAUSFAoMc3lzdGVtX2dyb3VwGAQgASgIIkgKCVNzaFBhcmFtcxIUCgxhbGxvd19wdWJrZXkYASABKAgSFgoOYWxsb3dfcGFzc3dvcmQYAiABKAgSDQoFdXNlcnMYAyADKAkiKwoNU3NoZERpcmVjdGl2ZRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAkiSAoKU3NoZFBhcmFtcxIQCghwcmlvcml0eRgBIAEoDRIoCgpkaXJlY3RpdmVzGAIgAygLMhQucG0udjEuU3NoZERpcmVjdGl2ZSKSAQoRQWRtaW5Qb2xpY3lQYXJhbXMSLQoMYWNjZXNzX2xldmVsGAEgASgOMhcucG0udjEuQWRtaW5BY2Nlc3NMZXZlbBINCgV1c2VycxgCIAMoCRIVCg1jdXN0b21fY29uZmlnGAMgASgJEigKB2JhY2tlbmQYBCABKA4yFy5wbS52MS5Qcml2aWxlZ2VCYWNrZW5kIqUBCglMcHNQYXJhbXMSEQoJdXNlcm5hbWVzGAEgAygJEhcKD3Bhc3N3b3JkX2xlbmd0aBgCIAEoBRIwCgpjb21wbGV4aXR5GAMgASgOMhwucG0udjEuTHBzUGFzc3dvcmRDb21wbGV4aXR5Eh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYBCABKAUSGgoSZ3JhY2VfcGVyaW9kX2hvdXJzGAUgASgFIrECChBFbmNyeXB0aW9uUGFyYW1zEhUKDXByZXNoYXJlZF9rZXkYASABKAkSHgoWcm90YXRpb25faW50ZXJ2YWxfZGF5cxgCIAEoBRIRCgltaW5fd29yZHMYAyABKAUSQgoVZGV2aWNlX2JvdW5kX2tleV90eXBlGAQgASgOMiMucG0udjEuRW5jcnlwdGlvbkRldmljZUJvdW5kS2V5VHlwZRIiChp1c2VyX3Bhc3NwaHJhc2VfbWluX2xlbmd0aBgFIAEoBRJAChp1c2VyX3Bhc3NwaHJhc2VfY29tcGxleGl0eRgGIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eRIpCgdiYWNrZW5kGAcgASgOMhgucG0udjEuRW5jcnlwdGlvbkJhY2tlbmQi+AEKCldpZmlQYXJhbXMSDAoEc3NpZBgBIAEoCRImCglhdXRoX3R5cGUYAiABKA4yEy5wbS52MS5XaWZpQXV0aFR5cGUSCwoDcHNrGAMgASgJEg8KB2NhX2NlcnQYBCABKAkSEwoLY2xpZW50X2NlcnQYBSABKAkSEgoKY2xpZW50X2tleRgGIAEoCRIQCghpZGVudGl0eRgHIAEoCRIUCgxhdXRvX2Nvbm5lY3QYCCABKAgSDgoGaGlkZGVuGAkgASgIEhAKCHByaW9yaXR5GAogASgFEiMKB2JhY2tlbmQYCyABKA4yEi5wbS52MS5XaWZpQmFja2VuZCKQAwoMQWN0aW9uUmVzdWx0EiIKCWFjdGlvbl9pZBgBIAEoCzIPLnBtLnYxLkFjdGlvbklkEiYKBnN0YXR1cxgCIAEoDjIWLnBtLnYxLkV4ZWN1dGlvblN0YXR1cxINCgVlcnJvchgDIAEoCRIkCgZvdXRwdXQYBCABKAsyFC5wbS52MS5Db21tYW5kT3V0cHV0EjAKDGNvbXBsZXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLZHVyYXRpb25fbXMYBiABKAMSDwoHY2hhbmdlZBgHIAEoCBIzCghtZXRhZGF0YRgIIAMoCzIhLnBtLnYxLkFjdGlvblJlc3VsdC5NZXRhZGF0YUVudHJ5EhEKCWNvbXBsaWFudBgJIAEoCBIuChBkZXRlY3Rpb25fb3V0cHV0GAogASgLMhQucG0udjEuQ29tbWFuZE91dHB1dBovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOwoPQWdlbnRVcGRhdGVBcmNoEhIKCmJpbmFyeV91cmwYASABKAkSFAoMY2hlY2tzdW1fdXJsGAIgASgJImEKEUFnZW50VXBkYXRlUGFyYW1zEiUKBWFtZDY0GAEgASgLMhYucG0udjEuQWdlbnRVcGRhdGVBcmNoEiUKBWFybTY0GAIgASgLMhYucG0udjEuQWdlbnRVcGRhdGVBcmNoKuoECgpBY3Rpb25UeXBlEhsKF0FDVElPTl9UWVBFX1VOU1BFQ0lGSUVEEAASFwoTQUNUSU9OX1RZUEVfUEFDS0FHRRABEhYKEkFDVElPTl9UWVBFX1VQREFURRACEhoKFkFDVElPTl9UWVBFX1JFUE9TSVRPUlkQAxIZChVBQ1RJT05fVFlQRV9BUFBfSU1BR0UQZBITCg9BQ1RJT05fVFlQRV9ERUIQZRITCg9BQ1RJT05fVFlQRV9SUE0QZhIXChNBQ1RJT05fVFlQRV9GTEFUUEFLEGcSFgoRQUNUSU9OX1RZUEVfU0hFTEwQyAESGwoWQUNUSU9OX1RZUEVfU0NSSVBUX1JVThDJARIYChNBQ1RJT05fVFlQRV9TRVJWSUNFEKwCEhUKEEFDVElPTl9UWVBFX0ZJTEUQkAMSGgoVQUNUSU9OX1RZUEVfRElSRUNUT1JZEJEDEhcKEkFDVElPTl9UWVBFX1JFQk9PVBD0AxIVChBBQ1RJT05fVFlQRV9TWU5DEPUDEhUKEEFDVElPTl9UWVBFX1VTRVIQ2AQSFgoRQUNUSU9OX1RZUEVfR1JPVVAQ2QQSFAoPQUNUSU9OX1RZUEVfU1NIELwFEhUKEEFDVElPTl9UWVBFX1NTSEQQvQUSHQoYQUNUSU9OX1RZUEVfQURNSU5fUE9MSUNZEKAGEhQKD0FDVElPTl9UWVBFX0xQUxCEBxIbChZBQ1RJT05fVFlQRV9FTkNSWVBUSU9OEOgHEhUKEEFDVElPTl9UWVBFX1dJRkkQzAgSHQoYQUNUSU9OX1RZUEVfQUdFTlRfVVBEQVRFELAJKnwKDlNlcnZpY2VCYWNrZW5kEhsKF1NFUlZJQ0VfQkFDS0VORF9TWVNURU1EEAASGgoWU0VSVklDRV9CQUNLRU5EX09QRU5SQxABEhkKFVNFUlZJQ0VfQkFDS0VORF9SVU5JVBACEhYKElNFUlZJQ0VfQkFDS0VORF9TNhADKqIBCg9GaXJld2FsbEJhY2tlbmQSHQoZRklSRVdBTExfQkFDS0VORF9ORlRBQkxFUxAAEh0KGUZJUkVXQUxMX0JBQ0tFTkRfSVBUQUJMRVMQARIeChpGSVJFV0FMTF9CQUNLRU5EX0ZJUkVXQUxMRBACEhgKFEZJUkVXQUxMX0JBQ0tFTkRfVUZXEAMSFwoTRklSRVdBTExfQkFDS0VORF9QRhAEKnsKCkRuc0JhY2tlbmQSGAoURE5TX0JBQ0tFTkRfUkVTT0xWRUQQABIaChZETlNfQkFDS0VORF9SRVNPTFZDT05GEAESFwoTRE5TX0JBQ0tFTkRfRE5TTUFTURACEh4KGkROU19CQUNLRU5EX05FVFdPUktNQU5BR0VSEAMq2gEKFE5ldHdvcmtDb25maWdCYWNrZW5kEikKJU5FVFdPUktfQ09ORklHX0JBQ0tFTkRfTkVUV09SS01BTkFHRVIQABIrCidORVRXT1JLX0NPTkZJR19CQUNLRU5EX1NZU1RFTURfTkVUV09SS0QQARIiCh5ORVRXT1JLX0NPTkZJR19CQUNLRU5EX05FVFBMQU4QAhIhCh1ORVRXT1JLX0NPTkZJR19CQUNLRU5EX0RIQ1BDRBADEiMKH05FVFdPUktfQ09ORklHX0JBQ0tFTkRfSUZVUERPV04QBCqYAQoQU2VydmljZVVuaXRTdGF0ZRIiCh5TRVJWSUNFX1VOSVRfU1RBVEVfVU5TUEVDSUZJRUQQABIeChpTRVJWSUNFX1VOSVRfU1RBVEVfU1RBUlRFRBABEh4KGlNFUlZJQ0VfVU5JVF9TVEFURV9TVE9QUEVEEAISIAocU0VSVklDRV9VTklUX1NUQVRFX1JFU1RBUlRFRBADKu0BChBBZG1pbkFjY2Vzc0xldmVsEiIKHkFETUlOX0FDQ0VTU19MRVZFTF9VTlNQRUNJRklFRBAAEhsKF0FETUlOX0FDQ0VTU19MRVZFTF9GVUxMEAESHgoaQURNSU5fQUNDRVNTX0xFVkVMX0xJTUlURUQQAhIdChlBRE1JTl9BQ0NFU1NfTEVWRUxfQ1VTVE9NEAMSLQopQURNSU5fQUNDRVNTX0xFVkVMX1RFUk1JTkFMX0FETUlOX0xJTUlURUQQBBIqCiZBRE1JTl9BQ0NFU1NfTEVWRUxfVEVSTUlOQUxfQURNSU5fRlVMTBAFKkoKEFByaXZpbGVnZUJhY2tlbmQSGgoWUFJJVklMRUdFX0JBQ0tFTkRfU1VETxAAEhoKFlBSSVZJTEVHRV9CQUNLRU5EX0RPQVMQASqPAQoVTHBzUGFzc3dvcmRDb21wbGV4aXR5EicKI0xQU19QQVNTV09SRF9DT01QTEVYSVRZX1VOU1BFQ0lGSUVEEAASKAokTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQUxQSEFOVU1FUklDEAESIwofTFBTX1BBU1NXT1JEX0NPTVBMRVhJVFlfQ09NUExFWBACKmkKEUVuY3J5cHRpb25CYWNrZW5kEhsKF0VOQ1JZUFRJT05fQkFDS0VORF9MVUtTEAASGwoXRU5DUllQVElPTl9CQUNLRU5EX0dFTEkQARIaChZFTkNSWVBUSU9OX0JBQ0tFTkRfQ0dEEAIqqQEKHEVuY3J5cHRpb25EZXZpY2VCb3VuZEtleVR5cGUSKQolRU5DUllQVElPTl9ERVZJQ0VfQk9VTkRfS0VZX1RZUEVfTk9ORRAAEigKJEVOQ1JZUFRJT05fREVWSUNFX0JPVU5EX0tFWV9UWVBFX1RQTRABEjQKMEVOQ1JZUFRJT05fREVWSUNFX0JPVU5EX0tFWV9UWVBFX1VTRVJfUEFTU1BIUkFTRRACKmIKDFdpZmlBdXRoVHlwZRIeChpXSUZJX0FVVEhfVFlQRV9VTlNQRUNJRklFRBAAEhYKEldJRklfQVVUSF9UWVBFX1BTSxABEhoKFldJRklfQVVUSF9UWVBFX0VBUF9UTFMQAip/CgtXaWZpQmFja2VuZBIfChtXSUZJX0JBQ0tFTkRfTkVUV09SS01BTkFHRVIQABIYChRXSUZJX0JBQ0tFTkRfQ09OTk1BThABEh8KG1dJRklfQkFDS0VORF9XUEFfU1VQUExJQ0FOVBACEhQKEFdJRklfQkFDS0VORF9JV0QQA0I6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlL3Nkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_common]);
+  fileDesc("ChNwbS92MS9hY3Rpb25zLnByb3RvEgVwbS52MSK7BwoGQWN0aW9uEhsKAmlkGAEgASgLMg8ucG0udjEuQWN0aW9uSWQSHwoEdHlwZRgCIAEoDjIRLnBtLnYxLkFjdGlvblR5cGUSKgoNZGVzaXJlZF9zdGF0ZRgDIAEoDjITLnBtLnYxLkRlc2lyZWRTdGF0ZRIXCg90aW1lb3V0X3NlY29uZHMYBCABKAUSJwoIc2NoZWR1bGUYBSABKAsyFS5wbS52MS5BY3Rpb25TY2hlZHVsZRIRCglzaWduYXR1cmUYBiABKAwSFwoPc2lnbmVkX2VudmVsb3BlGAcgASgMEicKB3BhY2thZ2UYCCABKAsyFC5wbS52MS5QYWNrYWdlUGFyYW1zSAASJgoDYXBwGAkgASgLMhcucG0udjEuQXBwSW5zdGFsbFBhcmFtc0gAEiMKBXNoZWxsGAogASgLMhIucG0udjEuU2hlbGxQYXJhbXNIABInCgdzZXJ2aWNlGAsgASgLMhQucG0udjEuU2VydmljZVBhcmFtc0gAEiEKBGZpbGUYDCABKAsyES5wbS52MS5GaWxlUGFyYW1zSAASJQoGdXBkYXRlGA0gASgLMhMucG0udjEuVXBkYXRlUGFyYW1zSAASLQoKcmVwb3NpdG9yeRgOIAEoCzIXLnBtLnYxLlJlcG9zaXRvcnlQYXJhbXNIABInCgdmbGF0cGFrGA8gASgLMhQucG0udjEuRmxhdHBha1BhcmFtc0gAEisKCWRpcmVjdG9yeRgQIAEoCzIWLnBtLnYxLkRpcmVjdG9yeVBhcmFtc0gAEiEKBHVzZXIYESABKAsyES5wbS52MS5Vc2VyUGFyYW1zSAASHwoDc3NoGBIgASgLMhAucG0udjEuU3NoUGFyYW1zSAASIQoEc3NoZBgTIAEoCzIRLnBtLnYxLlNzaGRQYXJhbXNIABIwCgxhZG1pbl9wb2xpY3kYFCABKAsyGC5wbS52MS5BZG1pblBvbGljeVBhcmFtc0gAEh8KA2xwcxgVIAEoCzIQLnBtLnYxLkxwc1BhcmFtc0gAEiMKBWdyb3VwGBYgASgLMhIucG0udjEuR3JvdXBQYXJhbXNIABItCgplbmNyeXB0aW9uGBcgASgLMhcucG0udjEuRW5jcnlwdGlvblBhcmFtc0gAEiEKBHdpZmkYGCABKAsyES5wbS52MS5XaWZpUGFyYW1zSAASMAoMYWdlbnRfdXBkYXRlGBkgASgLMhgucG0udjEuQWdlbnRVcGRhdGVQYXJhbXNIAEIICgZwYXJhbXMixQcKFFNpZ25lZEFjdGlvbkVudmVsb3BlEiIKCWFjdGlvbl9pZBgBIAEoCzIPLnBtLnYxLkFjdGlvbklkEiYKC2FjdGlvbl90eXBlGAIgASgOMhEucG0udjEuQWN0aW9uVHlwZRIqCg1kZXNpcmVkX3N0YXRlGAMgASgOMhMucG0udjEuRGVzaXJlZFN0YXRlEhcKD3RpbWVvdXRfc2Vjb25kcxgEIAEoBRInCghzY2hlZHVsZRgFIAEoCzIVLnBtLnYxLkFjdGlvblNjaGVkdWxlEhgKEHRhcmdldF9kZXZpY2VfaWQYBiABKAkSJwoHcGFja2FnZRgHIAEoCzIULnBtLnYxLlBhY2thZ2VQYXJhbXNIABImCgNhcHAYCCABKAsyFy5wbS52MS5BcHBJbnN0YWxsUGFyYW1zSAASIwoFc2hlbGwYCSABKAsyEi5wbS52MS5TaGVsbFBhcmFtc0gAEicKB3NlcnZpY2UYCiABKAsyFC5wbS52MS5TZXJ2aWNlUGFyYW1zSAASIQoEZmlsZRgLIAEoCzIRLnBtLnYxLkZpbGVQYXJhbXNIABIlCgZ1cGRhdGUYDCABKAsyEy5wbS52MS5VcGRhdGVQYXJhbXNIABItCgpyZXBvc2l0b3J5GA0gASgLMhcucG0udjEuUmVwb3NpdG9yeVBhcmFtc0gAEicKB2ZsYXRwYWsYDiABKAsyFC5wbS52MS5GbGF0cGFrUGFyYW1zSAASKwoJZGlyZWN0b3J5GA8gASgLMhYucG0udjEuRGlyZWN0b3J5UGFyYW1zSAASIQoEdXNlchgQIAEoCzIRLnBtLnYxLlVzZXJQYXJhbXNIABIfCgNzc2gYESABKAsyEC5wbS52MS5Tc2hQYXJhbXNIABIhCgRzc2hkGBIgASgLMhEucG0udjEuU3NoZFBhcmFtc0gAEjAKDGFkbWluX3BvbGljeRgTIAEoCzIYLnBtLnYxLkFkbWluUG9saWN5UGFyYW1zSAASHwoDbHBzGBQgASgLMhAucG0udjEuTHBzUGFyYW1zSAASIwoFZ3JvdXAYFSABKAsyEi5wbS52MS5Hcm91cFBhcmFtc0gAEi0KCmVuY3J5cHRpb24YFiABKAsyFy5wbS52MS5FbmNyeXB0aW9uUGFyYW1zSAASIQoEd2lmaRgXIAEoCzIRLnBtLnYxLldpZmlQYXJhbXNIABIwCgxhZ2VudF91cGRhdGUYGCABKAsyGC5wbS52MS5BZ2VudFVwZGF0ZVBhcmFtc0gAQggKBnBhcmFtcyJoCg5BY3Rpb25TY2hlZHVsZRIMCgRjcm9uGAEgASgJEhYKDmludGVydmFsX2hvdXJzGAIgASgFEhUKDXJ1bl9vbl9hc3NpZ24YAyABKAgSGQoRc2tpcF9pZl91bmNoYW5nZWQYBCABKAgiogEKDVBhY2thZ2VQYXJhbXMSDAoEbmFtZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgJEhcKD2FsbG93X2Rvd25ncmFkZRgDIAEoCBILCgNwaW4YBCABKAgSEAoIYXB0X25hbWUYBSABKAkSEAoIZG5mX25hbWUYBiABKAkSEwoLcGFjbWFuX25hbWUYByABKAkSEwoLenlwcGVyX25hbWUYCCABKAkiTgoQQXBwSW5zdGFsbFBhcmFtcxILCgN1cmwYASABKAkSFwoPY2hlY2tzdW1fc2hhMjU2GAIgASgJEhQKDGluc3RhbGxfcGF0aBgDIAEoCSKBAgoLU2hlbGxQYXJhbXMSDgoGc2NyaXB0GAEgASgJEhMKC2ludGVycHJldGVyGAIgASgJEhMKC3J1bl9hc19yb290GAMgASgIEhkKEXdvcmtpbmdfZGlyZWN0b3J5GAQgASgJEjgKC2Vudmlyb25tZW50GAUgAygLMiMucG0udjEuU2hlbGxQYXJhbXMuRW52aXJvbm1lbnRFbnRyeRIYChBkZXRlY3Rpb25fc2NyaXB0GAYgASgJEhUKDWlzX2NvbXBsaWFuY2UYByABKAgaMgoQRW52aXJvbm1lbnRFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIqABCg1TZXJ2aWNlUGFyYW1zEhEKCXVuaXRfbmFtZRgBIAEoCRIuCg1kZXNpcmVkX3N0YXRlGAIgASgOMhcucG0udjEuU2VydmljZVVuaXRTdGF0ZRIOCgZlbmFibGUYAyABKAgSFAoMdW5pdF9jb250ZW50GAQgASgJEiYKB2JhY2tlbmQYBSABKA4yFS5wbS52MS5TZXJ2aWNlQmFja2VuZCJuCgpGaWxlUGFyYW1zEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoCRINCgVvd25lchgDIAEoCRINCgVncm91cBgEIAEoCRIMCgRtb2RlGAUgASgJEhUKDW1hbmFnZWRfYmxvY2sYBiABKAgiXgoPRGlyZWN0b3J5UGFyYW1zEgwKBHBhdGgYASABKAkSDQoFb3duZXIYAiABKAkSDQoFZ3JvdXAYAyABKAkSDAoEbW9kZRgEIAEoCRIRCglyZWN1cnNpdmUYBSABKAgiVQoMVXBkYXRlUGFyYW1zEhUKDXNlY3VyaXR5X29ubHkYASABKAgSEgoKYXV0b3JlbW92ZRgCIAEoCBIaChJyZWJvb3RfaWZfcmVxdWlyZWQYAyABKAgiUQoNRmxhdHBha1BhcmFtcxIOCgZhcHBfaWQYASABKAkSDgoGcmVtb3RlGAIgASgJEhMKC3N5c3RlbV93aWRlGAMgASgIEgsKA3BpbhgEIAEoCCK4AQoQUmVwb3NpdG9yeVBhcmFtcxIMCgRuYW1lGAEgASgJEiEKA2FwdBgCIAEoCzIULnBtLnYxLkFwdFJlcG9zaXRvcnkSIQoDZG5mGAMgASgLMhQucG0udjEuRG5mUmVwb3NpdG9yeRInCgZwYWNtYW4YBCABKAsyFy5wbS52MS5QYWNtYW5SZXBvc2l0b3J5EicKBnp5cHBlchgFIAEoCzIXLnBtLnYxLlp5cHBlclJlcG9zaXRvcnkinQEKDUFwdFJlcG9zaXRvcnkSCwoDdXJsGAEgASgJEhQKDGRpc3RyaWJ1dGlvbhgCIAEoCRISCgpjb21wb25lbnRzGAMgAygJEhMKC2dwZ19rZXlfdXJsGAQgASgJEg8KB2dwZ19rZXkYBSABKAkSDwoHdHJ1c3RlZBgGIAEoCBIMCgRhcmNoGAcgASgJEhAKCGRpc2FibGVkGAggASgIIpMBCg1EbmZSZXBvc2l0b3J5Eg8KB2Jhc2V1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIQCghncGdjaGVjaxgEIAEoCBIOCgZncGdrZXkYBSABKAkSFwoPbW9kdWxlX2hvdGZpeGVzGAYgASgIEhAKCGRpc2FibGVkGAcgASgIIkcKEFBhY21hblJlcG9zaXRvcnkSDgoGc2VydmVyGAEgASgJEhEKCXNpZ19sZXZlbBgCIAEoCRIQCghkaXNhYmxlZBgDIAEoCCKcAQoQWnlwcGVyUmVwb3NpdG9yeRILCgN1cmwYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDwoHZW5hYmxlZBgDIAEoCBITCgthdXRvcmVmcmVzaBgEIAEoCBIQCghncGdjaGVjaxgFIAEoCBIOCgZncGdrZXkYBiABKAkSDAoEdHlwZRgHIAEoCRIQCghkaXNhYmxlZBgIIAEoCCL/AQoKVXNlclBhcmFtcxIQCgh1c2VybmFtZRgBIAEoCRILCgN1aWQYAiABKAUSCwoDZ2lkGAMgASgFEhAKCGhvbWVfZGlyGAQgASgJEg0KBXNoZWxsGAUgASgJEhsKE3NzaF9hdXRob3JpemVkX2tleXMYBiADKAkSDwoHY29tbWVudBgHIAEoCRITCgtzeXN0ZW1fdXNlchgIIAEoCBITCgtjcmVhdGVfaG9tZRgJIAEoCBIQCghkaXNhYmxlZBgKIAEoCBIVCg1wcmltYXJ5X2dyb3VwGAsgASgJEg4KBmhpZGRlbhgMIAEoCBITCgtub19wYXNzd29yZBgNIAEoCCJPCgtHcm91cFBhcmFtcxIMCgRuYW1lGAEgASgJEg8KB21lbWJlcnMYAiADKAkSCwoDZ2lkGAMgASgFEhQKDHN5c3RlbV9ncm91cBgEIAEoCCJICglTc2hQYXJhbXMSFAoMYWxsb3dfcHVia2V5GAEgASgIEhYKDmFsbG93X3Bhc3N3b3JkGAIgASgIEg0KBXVzZXJzGAMgAygJIisKDVNzaGREaXJlY3RpdmUSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJIkgKClNzaGRQYXJhbXMSEAoIcHJpb3JpdHkYASABKA0SKAoKZGlyZWN0aXZlcxgCIAMoCzIULnBtLnYxLlNzaGREaXJlY3RpdmUikgEKEUFkbWluUG9saWN5UGFyYW1zEi0KDGFjY2Vzc19sZXZlbBgBIAEoDjIXLnBtLnYxLkFkbWluQWNjZXNzTGV2ZWwSDQoFdXNlcnMYAiADKAkSFQoNY3VzdG9tX2NvbmZpZxgDIAEoCRIoCgdiYWNrZW5kGAQgASgOMhcucG0udjEuUHJpdmlsZWdlQmFja2VuZCKlAQoJTHBzUGFyYW1zEhEKCXVzZXJuYW1lcxgBIAMoCRIXCg9wYXNzd29yZF9sZW5ndGgYAiABKAUSMAoKY29tcGxleGl0eRgDIAEoDjIcLnBtLnYxLkxwc1Bhc3N3b3JkQ29tcGxleGl0eRIeChZyb3RhdGlvbl9pbnRlcnZhbF9kYXlzGAQgASgFEhoKEmdyYWNlX3BlcmlvZF9ob3VycxgFIAEoBSKxAgoQRW5jcnlwdGlvblBhcmFtcxIVCg1wcmVzaGFyZWRfa2V5GAEgASgJEh4KFnJvdGF0aW9uX2ludGVydmFsX2RheXMYAiABKAUSEQoJbWluX3dvcmRzGAMgASgFEkIKFWRldmljZV9ib3VuZF9rZXlfdHlwZRgEIAEoDjIjLnBtLnYxLkVuY3J5cHRpb25EZXZpY2VCb3VuZEtleVR5cGUSIgoadXNlcl9wYXNzcGhyYXNlX21pbl9sZW5ndGgYBSABKAUSQAoadXNlcl9wYXNzcGhyYXNlX2NvbXBsZXhpdHkYBiABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkSKQoHYmFja2VuZBgHIAEoDjIYLnBtLnYxLkVuY3J5cHRpb25CYWNrZW5kIvgBCgpXaWZpUGFyYW1zEgwKBHNzaWQYASABKAkSJgoJYXV0aF90eXBlGAIgASgOMhMucG0udjEuV2lmaUF1dGhUeXBlEgsKA3BzaxgDIAEoCRIPCgdjYV9jZXJ0GAQgASgJEhMKC2NsaWVudF9jZXJ0GAUgASgJEhIKCmNsaWVudF9rZXkYBiABKAkSEAoIaWRlbnRpdHkYByABKAkSFAoMYXV0b19jb25uZWN0GAggASgIEg4KBmhpZGRlbhgJIAEoCBIQCghwcmlvcml0eRgKIAEoBRIjCgdiYWNrZW5kGAsgASgOMhIucG0udjEuV2lmaUJhY2tlbmQikAMKDEFjdGlvblJlc3VsdBIiCglhY3Rpb25faWQYASABKAsyDy5wbS52MS5BY3Rpb25JZBImCgZzdGF0dXMYAiABKA4yFi5wbS52MS5FeGVjdXRpb25TdGF0dXMSDQoFZXJyb3IYAyABKAkSJAoGb3V0cHV0GAQgASgLMhQucG0udjEuQ29tbWFuZE91dHB1dBIwCgxjb21wbGV0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKC2R1cmF0aW9uX21zGAYgASgDEg8KB2NoYW5nZWQYByABKAgSMwoIbWV0YWRhdGEYCCADKAsyIS5wbS52MS5BY3Rpb25SZXN1bHQuTWV0YWRhdGFFbnRyeRIRCgljb21wbGlhbnQYCSABKAgSLgoQZGV0ZWN0aW9uX291dHB1dBgKIAEoCzIULnBtLnYxLkNvbW1hbmRPdXRwdXQaLwoNTWV0YWRhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjsKD0FnZW50VXBkYXRlQXJjaBISCgpiaW5hcnlfdXJsGAEgASgJEhQKDGNoZWNrc3VtX3VybBgCIAEoCSJhChFBZ2VudFVwZGF0ZVBhcmFtcxIlCgVhbWQ2NBgBIAEoCzIWLnBtLnYxLkFnZW50VXBkYXRlQXJjaBIlCgVhcm02NBgCIAEoCzIWLnBtLnYxLkFnZW50VXBkYXRlQXJjaCrqBAoKQWN0aW9uVHlwZRIbChdBQ1RJT05fVFlQRV9VTlNQRUNJRklFRBAAEhcKE0FDVElPTl9UWVBFX1BBQ0tBR0UQARIWChJBQ1RJT05fVFlQRV9VUERBVEUQAhIaChZBQ1RJT05fVFlQRV9SRVBPU0lUT1JZEAMSGQoVQUNUSU9OX1RZUEVfQVBQX0lNQUdFEGQSEwoPQUNUSU9OX1RZUEVfREVCEGUSEwoPQUNUSU9OX1RZUEVfUlBNEGYSFwoTQUNUSU9OX1RZUEVfRkxBVFBBSxBnEhYKEUFDVElPTl9UWVBFX1NIRUxMEMgBEhsKFkFDVElPTl9UWVBFX1NDUklQVF9SVU4QyQESGAoTQUNUSU9OX1RZUEVfU0VSVklDRRCsAhIVChBBQ1RJT05fVFlQRV9GSUxFEJADEhoKFUFDVElPTl9UWVBFX0RJUkVDVE9SWRCRAxIXChJBQ1RJT05fVFlQRV9SRUJPT1QQ9AMSFQoQQUNUSU9OX1RZUEVfU1lOQxD1AxIVChBBQ1RJT05fVFlQRV9VU0VSENgEEhYKEUFDVElPTl9UWVBFX0dST1VQENkEEhQKD0FDVElPTl9UWVBFX1NTSBC8BRIVChBBQ1RJT05fVFlQRV9TU0hEEL0FEh0KGEFDVElPTl9UWVBFX0FETUlOX1BPTElDWRCgBhIUCg9BQ1RJT05fVFlQRV9MUFMQhAcSGwoWQUNUSU9OX1RZUEVfRU5DUllQVElPThDoBxIVChBBQ1RJT05fVFlQRV9XSUZJEMwIEh0KGEFDVElPTl9UWVBFX0FHRU5UX1VQREFURRCwCSp8Cg5TZXJ2aWNlQmFja2VuZBIbChdTRVJWSUNFX0JBQ0tFTkRfU1lTVEVNRBAAEhoKFlNFUlZJQ0VfQkFDS0VORF9PUEVOUkMQARIZChVTRVJWSUNFX0JBQ0tFTkRfUlVOSVQQAhIWChJTRVJWSUNFX0JBQ0tFTkRfUzYQAyqiAQoPRmlyZXdhbGxCYWNrZW5kEh0KGUZJUkVXQUxMX0JBQ0tFTkRfTkZUQUJMRVMQABIdChlGSVJFV0FMTF9CQUNLRU5EX0lQVEFCTEVTEAESHgoaRklSRVdBTExfQkFDS0VORF9GSVJFV0FMTEQQAhIYChRGSVJFV0FMTF9CQUNLRU5EX1VGVxADEhcKE0ZJUkVXQUxMX0JBQ0tFTkRfUEYQBCp7CgpEbnNCYWNrZW5kEhgKFEROU19CQUNLRU5EX1JFU09MVkVEEAASGgoWRE5TX0JBQ0tFTkRfUkVTT0xWQ09ORhABEhcKE0ROU19CQUNLRU5EX0ROU01BU1EQAhIeChpETlNfQkFDS0VORF9ORVRXT1JLTUFOQUdFUhADKtoBChROZXR3b3JrQ29uZmlnQmFja2VuZBIpCiVORVRXT1JLX0NPTkZJR19CQUNLRU5EX05FVFdPUktNQU5BR0VSEAASKwonTkVUV09SS19DT05GSUdfQkFDS0VORF9TWVNURU1EX05FVFdPUktEEAESIgoeTkVUV09SS19DT05GSUdfQkFDS0VORF9ORVRQTEFOEAISIQodTkVUV09SS19DT05GSUdfQkFDS0VORF9ESENQQ0QQAxIjCh9ORVRXT1JLX0NPTkZJR19CQUNLRU5EX0lGVVBET1dOEAQqmAEKEFNlcnZpY2VVbml0U3RhdGUSIgoeU0VSVklDRV9VTklUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaU0VSVklDRV9VTklUX1NUQVRFX1NUQVJURUQQARIeChpTRVJWSUNFX1VOSVRfU1RBVEVfU1RPUFBFRBACEiAKHFNFUlZJQ0VfVU5JVF9TVEFURV9SRVNUQVJURUQQAyrtAQoQQWRtaW5BY2Nlc3NMZXZlbBIiCh5BRE1JTl9BQ0NFU1NfTEVWRUxfVU5TUEVDSUZJRUQQABIbChdBRE1JTl9BQ0NFU1NfTEVWRUxfRlVMTBABEh4KGkFETUlOX0FDQ0VTU19MRVZFTF9MSU1JVEVEEAISHQoZQURNSU5fQUNDRVNTX0xFVkVMX0NVU1RPTRADEi0KKUFETUlOX0FDQ0VTU19MRVZFTF9URVJNSU5BTF9BRE1JTl9MSU1JVEVEEAQSKgomQURNSU5fQUNDRVNTX0xFVkVMX1RFUk1JTkFMX0FETUlOX0ZVTEwQBSpKChBQcml2aWxlZ2VCYWNrZW5kEhoKFlBSSVZJTEVHRV9CQUNLRU5EX1NVRE8QABIaChZQUklWSUxFR0VfQkFDS0VORF9ET0FTEAEqjwEKFUxwc1Bhc3N3b3JkQ29tcGxleGl0eRInCiNMUFNfUEFTU1dPUkRfQ09NUExFWElUWV9VTlNQRUNJRklFRBAAEigKJExQU19QQVNTV09SRF9DT01QTEVYSVRZX0FMUEhBTlVNRVJJQxABEiMKH0xQU19QQVNTV09SRF9DT01QTEVYSVRZX0NPTVBMRVgQAippChFFbmNyeXB0aW9uQmFja2VuZBIbChdFTkNSWVBUSU9OX0JBQ0tFTkRfTFVLUxAAEhsKF0VOQ1JZUFRJT05fQkFDS0VORF9HRUxJEAESGgoWRU5DUllQVElPTl9CQUNLRU5EX0NHRBACKqkBChxFbmNyeXB0aW9uRGV2aWNlQm91bmRLZXlUeXBlEikKJUVOQ1JZUFRJT05fREVWSUNFX0JPVU5EX0tFWV9UWVBFX05PTkUQABIoCiRFTkNSWVBUSU9OX0RFVklDRV9CT1VORF9LRVlfVFlQRV9UUE0QARI0CjBFTkNSWVBUSU9OX0RFVklDRV9CT1VORF9LRVlfVFlQRV9VU0VSX1BBU1NQSFJBU0UQAipiCgxXaWZpQXV0aFR5cGUSHgoaV0lGSV9BVVRIX1RZUEVfVU5TUEVDSUZJRUQQABIWChJXSUZJX0FVVEhfVFlQRV9QU0sQARIaChZXSUZJX0FVVEhfVFlQRV9FQVBfVExTEAIqfwoLV2lmaUJhY2tlbmQSHwobV0lGSV9CQUNLRU5EX05FVFdPUktNQU5BR0VSEAASGAoUV0lGSV9CQUNLRU5EX0NPTk5NQU4QARIfChtXSUZJX0JBQ0tFTkRfV1BBX1NVUFBMSUNBTlQQAhIUChBXSUZJX0JBQ0tFTkRfSVdEEANCOlo4Z2l0aHViLmNvbS9tYW5jaHRvb2xzL3Bvd2VyLW1hbmFnZS9zZGsvZ2VuL2dvL3BtL3YxO3BtdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.Action
@@ -62,19 +62,27 @@ export type Action = Message<"pm.v1.Action"> & {
   schedule?: ActionSchedule;
 
   /**
-   * ECDSA signature over canonical action payload (signed by CA key).
-   * Used to verify actions were created by the control server.
+   * CA signature over `signed_envelope` (the deterministic wire bytes of
+   * a SignedActionEnvelope). The agent verifies this over `signed_envelope`
+   * and unmarshals THOSE bytes to execute — the executed action is the
+   * verified action.
    *
    * @generated from field: bytes signature = 6;
    */
   signature: Uint8Array;
 
   /**
-   * Canonical JSON params used for signature verification.
+   * Deterministic wire bytes of the device-bound SignedActionEnvelope this
+   * action executes. Carried on actions delivered via SyncActions (the
+   * offline-scheduler pull path) so the agent verifies and executes the
+   * same bytes it would on the push (ActionDispatch) path. Reuses field 7,
+   * freed by the params_canonical removal. The typed params/schedule fields
+   * below remain for the scheduler's display/ordering, but EXECUTION and
+   * all security-relevant decisions use the verified envelope.
    *
-   * @generated from field: bytes params_canonical = 7;
+   * @generated from field: bytes signed_envelope = 7;
    */
-  paramsCanonical: Uint8Array;
+  signedEnvelope: Uint8Array;
 
   /**
    * Type-specific parameters
@@ -200,6 +208,191 @@ export const ActionSchema: GenMessage<Action> = /*@__PURE__*/
   messageDesc(file_pm_v1_actions, 0);
 
 /**
+ * SignedActionEnvelope is the canonical, signed representation of an
+ * executable action. The control server's CA signs the DETERMINISTIC
+ * protobuf wire bytes of this message (proto.MarshalOptions{Deterministic:
+ * true}); the agent verifies the signature over the received bytes and
+ * unmarshals THOSE SAME bytes to execute. There is exactly one
+ * representation: the executed message IS the verified message.
+ *
+ * Binding the full executed envelope closes the gap (sdk#82 / audit
+ * F-C2 / SA-C1) where a compromised gateway or Valkey relay could rewrite
+ * the executed action — flip desired_state PRESENT->ABSENT, swap params,
+ * change the timeout/schedule, or retarget the device — under a signature
+ * that covered only (id, type, params). Every field below is bound:
+ *
+ *   - target_device_id binds the action to one device (no cross-device
+ *     replay of a captured envelope).
+ *   - action_type binds the type (no lifting a signed envelope onto SYNC).
+ *   - desired_state / timeout_seconds / schedule bind the execution
+ *     semantics.
+ *   - the params oneof binds exactly what runs.
+ *
+ * There is no signature field inside the envelope — the signature is over
+ * the envelope's bytes and travels alongside them (see ActionDispatch).
+ *
+ * @generated from message pm.v1.SignedActionEnvelope
+ */
+export type SignedActionEnvelope = Message<"pm.v1.SignedActionEnvelope"> & {
+  /**
+   * Execution id this envelope authorizes (the wire ActionId.value).
+   *
+   * @generated from field: pm.v1.ActionId action_id = 1;
+   */
+  actionId?: ActionId;
+
+  /**
+   * @generated from field: pm.v1.ActionType action_type = 2;
+   */
+  actionType: ActionType;
+
+  /**
+   * @generated from field: pm.v1.DesiredState desired_state = 3;
+   */
+  desiredState: DesiredState;
+
+  /**
+   * @generated from field: int32 timeout_seconds = 4;
+   */
+  timeoutSeconds: number;
+
+  /**
+   * @generated from field: pm.v1.ActionSchedule schedule = 5;
+   */
+  schedule?: ActionSchedule;
+
+  /**
+   * The single device this envelope is authorized to run on.
+   *
+   * @generated from field: string target_device_id = 6;
+   */
+  targetDeviceId: string;
+
+  /**
+   * Type-specific parameters — the same param message types as Action,
+   * re-declared here so the signed bytes carry exactly what executes.
+   *
+   * @generated from oneof pm.v1.SignedActionEnvelope.params
+   */
+  params: {
+    /**
+     * @generated from field: pm.v1.PackageParams package = 7;
+     */
+    value: PackageParams;
+    case: "package";
+  } | {
+    /**
+     * @generated from field: pm.v1.AppInstallParams app = 8;
+     */
+    value: AppInstallParams;
+    case: "app";
+  } | {
+    /**
+     * @generated from field: pm.v1.ShellParams shell = 9;
+     */
+    value: ShellParams;
+    case: "shell";
+  } | {
+    /**
+     * @generated from field: pm.v1.ServiceParams service = 10;
+     */
+    value: ServiceParams;
+    case: "service";
+  } | {
+    /**
+     * @generated from field: pm.v1.FileParams file = 11;
+     */
+    value: FileParams;
+    case: "file";
+  } | {
+    /**
+     * @generated from field: pm.v1.UpdateParams update = 12;
+     */
+    value: UpdateParams;
+    case: "update";
+  } | {
+    /**
+     * @generated from field: pm.v1.RepositoryParams repository = 13;
+     */
+    value: RepositoryParams;
+    case: "repository";
+  } | {
+    /**
+     * @generated from field: pm.v1.FlatpakParams flatpak = 14;
+     */
+    value: FlatpakParams;
+    case: "flatpak";
+  } | {
+    /**
+     * @generated from field: pm.v1.DirectoryParams directory = 15;
+     */
+    value: DirectoryParams;
+    case: "directory";
+  } | {
+    /**
+     * @generated from field: pm.v1.UserParams user = 16;
+     */
+    value: UserParams;
+    case: "user";
+  } | {
+    /**
+     * @generated from field: pm.v1.SshParams ssh = 17;
+     */
+    value: SshParams;
+    case: "ssh";
+  } | {
+    /**
+     * @generated from field: pm.v1.SshdParams sshd = 18;
+     */
+    value: SshdParams;
+    case: "sshd";
+  } | {
+    /**
+     * @generated from field: pm.v1.AdminPolicyParams admin_policy = 19;
+     */
+    value: AdminPolicyParams;
+    case: "adminPolicy";
+  } | {
+    /**
+     * @generated from field: pm.v1.LpsParams lps = 20;
+     */
+    value: LpsParams;
+    case: "lps";
+  } | {
+    /**
+     * @generated from field: pm.v1.GroupParams group = 21;
+     */
+    value: GroupParams;
+    case: "group";
+  } | {
+    /**
+     * @generated from field: pm.v1.EncryptionParams encryption = 22;
+     */
+    value: EncryptionParams;
+    case: "encryption";
+  } | {
+    /**
+     * @generated from field: pm.v1.WifiParams wifi = 23;
+     */
+    value: WifiParams;
+    case: "wifi";
+  } | {
+    /**
+     * @generated from field: pm.v1.AgentUpdateParams agent_update = 24;
+     */
+    value: AgentUpdateParams;
+    case: "agentUpdate";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message pm.v1.SignedActionEnvelope.
+ * Use `create(SignedActionEnvelopeSchema)` to create a new message.
+ */
+export const SignedActionEnvelopeSchema: GenMessage<SignedActionEnvelope> = /*@__PURE__*/
+  messageDesc(file_pm_v1_actions, 1);
+
+/**
  * ActionSchedule defines when an action should be executed by the agent.
  * Actions run autonomously on the agent even without server connection.
  *
@@ -246,7 +439,7 @@ export type ActionSchedule = Message<"pm.v1.ActionSchedule"> & {
  * Use `create(ActionScheduleSchema)` to create a new message.
  */
 export const ActionScheduleSchema: GenMessage<ActionSchedule> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 1);
+  messageDesc(file_pm_v1_actions, 2);
 
 /**
  * @generated from message pm.v1.PackageParams
@@ -326,7 +519,7 @@ export type PackageParams = Message<"pm.v1.PackageParams"> & {
  * Use `create(PackageParamsSchema)` to create a new message.
  */
 export const PackageParamsSchema: GenMessage<PackageParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 2);
+  messageDesc(file_pm_v1_actions, 3);
 
 /**
  * @generated from message pm.v1.AppInstallParams
@@ -359,7 +552,7 @@ export type AppInstallParams = Message<"pm.v1.AppInstallParams"> & {
  * Use `create(AppInstallParamsSchema)` to create a new message.
  */
 export const AppInstallParamsSchema: GenMessage<AppInstallParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 3);
+  messageDesc(file_pm_v1_actions, 4);
 
 /**
  * @generated from message pm.v1.ShellParams
@@ -423,7 +616,7 @@ export type ShellParams = Message<"pm.v1.ShellParams"> & {
  * Use `create(ShellParamsSchema)` to create a new message.
  */
 export const ShellParamsSchema: GenMessage<ShellParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 4);
+  messageDesc(file_pm_v1_actions, 5);
 
 /**
  * ServiceParams configures a service unit. unit_content is the verbatim
@@ -477,7 +670,7 @@ export type ServiceParams = Message<"pm.v1.ServiceParams"> & {
  * Use `create(ServiceParamsSchema)` to create a new message.
  */
 export const ServiceParamsSchema: GenMessage<ServiceParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 5);
+  messageDesc(file_pm_v1_actions, 6);
 
 /**
  * @generated from message pm.v1.FileParams
@@ -535,7 +728,7 @@ export type FileParams = Message<"pm.v1.FileParams"> & {
  * Use `create(FileParamsSchema)` to create a new message.
  */
 export const FileParamsSchema: GenMessage<FileParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 6);
+  messageDesc(file_pm_v1_actions, 7);
 
 /**
  * DirectoryParams configures directory management.
@@ -588,7 +781,7 @@ export type DirectoryParams = Message<"pm.v1.DirectoryParams"> & {
  * Use `create(DirectoryParamsSchema)` to create a new message.
  */
 export const DirectoryParamsSchema: GenMessage<DirectoryParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 7);
+  messageDesc(file_pm_v1_actions, 8);
 
 /**
  * UpdateParams configures system-wide package updates.
@@ -630,7 +823,7 @@ export type UpdateParams = Message<"pm.v1.UpdateParams"> & {
  * Use `create(UpdateParamsSchema)` to create a new message.
  */
 export const UpdateParamsSchema: GenMessage<UpdateParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 8);
+  messageDesc(file_pm_v1_actions, 9);
 
 /**
  * FlatpakParams configures Flatpak application installation.
@@ -678,7 +871,7 @@ export type FlatpakParams = Message<"pm.v1.FlatpakParams"> & {
  * Use `create(FlatpakParamsSchema)` to create a new message.
  */
 export const FlatpakParamsSchema: GenMessage<FlatpakParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 9);
+  messageDesc(file_pm_v1_actions, 10);
 
 /**
  * RepositoryParams configures external package repositories.
@@ -733,7 +926,7 @@ export type RepositoryParams = Message<"pm.v1.RepositoryParams"> & {
  * Use `create(RepositoryParamsSchema)` to create a new message.
  */
 export const RepositoryParamsSchema: GenMessage<RepositoryParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 10);
+  messageDesc(file_pm_v1_actions, 11);
 
 /**
  * AptRepository configures a Debian/Ubuntu APT repository.
@@ -811,7 +1004,7 @@ export type AptRepository = Message<"pm.v1.AptRepository"> & {
  * Use `create(AptRepositorySchema)` to create a new message.
  */
 export const AptRepositorySchema: GenMessage<AptRepository> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 11);
+  messageDesc(file_pm_v1_actions, 12);
 
 /**
  * DnfRepository configures a Fedora/RHEL DNF/YUM repository.
@@ -881,7 +1074,7 @@ export type DnfRepository = Message<"pm.v1.DnfRepository"> & {
  * Use `create(DnfRepositorySchema)` to create a new message.
  */
 export const DnfRepositorySchema: GenMessage<DnfRepository> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 12);
+  messageDesc(file_pm_v1_actions, 13);
 
 /**
  * PacmanRepository configures an Arch Linux pacman repository.
@@ -919,7 +1112,7 @@ export type PacmanRepository = Message<"pm.v1.PacmanRepository"> & {
  * Use `create(PacmanRepositorySchema)` to create a new message.
  */
 export const PacmanRepositorySchema: GenMessage<PacmanRepository> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 13);
+  messageDesc(file_pm_v1_actions, 14);
 
 /**
  * ZypperRepository configures an openSUSE zypper repository.
@@ -997,7 +1190,7 @@ export type ZypperRepository = Message<"pm.v1.ZypperRepository"> & {
  * Use `create(ZypperRepositorySchema)` to create a new message.
  */
 export const ZypperRepositorySchema: GenMessage<ZypperRepository> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 14);
+  messageDesc(file_pm_v1_actions, 15);
 
 /**
  * UserParams configures user account management.
@@ -1132,7 +1325,7 @@ export type UserParams = Message<"pm.v1.UserParams"> & {
  * Use `create(UserParamsSchema)` to create a new message.
  */
 export const UserParamsSchema: GenMessage<UserParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 15);
+  messageDesc(file_pm_v1_actions, 16);
 
 /**
  * GroupParams configures Linux group management.
@@ -1179,7 +1372,7 @@ export type GroupParams = Message<"pm.v1.GroupParams"> & {
  * Use `create(GroupParamsSchema)` to create a new message.
  */
 export const GroupParamsSchema: GenMessage<GroupParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 16);
+  messageDesc(file_pm_v1_actions, 17);
 
 /**
  * SshParams configures SSH access for a user.
@@ -1220,7 +1413,7 @@ export type SshParams = Message<"pm.v1.SshParams"> & {
  * Use `create(SshParamsSchema)` to create a new message.
  */
 export const SshParamsSchema: GenMessage<SshParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 17);
+  messageDesc(file_pm_v1_actions, 18);
 
 /**
  * SshdDirective represents a single sshd_config key-value directive.
@@ -1250,7 +1443,7 @@ export type SshdDirective = Message<"pm.v1.SshdDirective"> & {
  * Use `create(SshdDirectiveSchema)` to create a new message.
  */
 export const SshdDirectiveSchema: GenMessage<SshdDirective> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 18);
+  messageDesc(file_pm_v1_actions, 19);
 
 /**
  * SshdParams configures the SSH daemon via sshd_config.d drop-in files.
@@ -1283,7 +1476,7 @@ export type SshdParams = Message<"pm.v1.SshdParams"> & {
  * Use `create(SshdParamsSchema)` to create a new message.
  */
 export const SshdParamsSchema: GenMessage<SshdParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 19);
+  messageDesc(file_pm_v1_actions, 20);
 
 /**
  * AdminPolicyParams configures privilege-delegation policies.
@@ -1339,7 +1532,7 @@ export type AdminPolicyParams = Message<"pm.v1.AdminPolicyParams"> & {
  * Use `create(AdminPolicyParamsSchema)` to create a new message.
  */
 export const AdminPolicyParamsSchema: GenMessage<AdminPolicyParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 20);
+  messageDesc(file_pm_v1_actions, 21);
 
 /**
  * LpsParams configures Local Password Solution (LAPS-like) password management.
@@ -1398,7 +1591,7 @@ export type LpsParams = Message<"pm.v1.LpsParams"> & {
  * Use `create(LpsParamsSchema)` to create a new message.
  */
 export const LpsParamsSchema: GenMessage<LpsParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 21);
+  messageDesc(file_pm_v1_actions, 22);
 
 /**
  * EncryptionParams configures disk encryption management. The agent
@@ -1473,7 +1666,7 @@ export type EncryptionParams = Message<"pm.v1.EncryptionParams"> & {
  * Use `create(EncryptionParamsSchema)` to create a new message.
  */
 export const EncryptionParamsSchema: GenMessage<EncryptionParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 22);
+  messageDesc(file_pm_v1_actions, 23);
 
 /**
  * WifiParams configures WiFi connection management.
@@ -1582,7 +1775,7 @@ export type WifiParams = Message<"pm.v1.WifiParams"> & {
  * Use `create(WifiParamsSchema)` to create a new message.
  */
 export const WifiParamsSchema: GenMessage<WifiParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 23);
+  messageDesc(file_pm_v1_actions, 24);
 
 /**
  * @generated from message pm.v1.ActionResult
@@ -1666,7 +1859,7 @@ export type ActionResult = Message<"pm.v1.ActionResult"> & {
  * Use `create(ActionResultSchema)` to create a new message.
  */
 export const ActionResultSchema: GenMessage<ActionResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 24);
+  messageDesc(file_pm_v1_actions, 25);
 
 /**
  * Per-architecture binary source with checksum.
@@ -1696,7 +1889,7 @@ export type AgentUpdateArch = Message<"pm.v1.AgentUpdateArch"> & {
  * Use `create(AgentUpdateArchSchema)` to create a new message.
  */
 export const AgentUpdateArchSchema: GenMessage<AgentUpdateArch> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 25);
+  messageDesc(file_pm_v1_actions, 26);
 
 /**
  * AgentUpdateParams configures agent self-update via direct binary download.
@@ -1726,7 +1919,7 @@ export type AgentUpdateParams = Message<"pm.v1.AgentUpdateParams"> & {
  * Use `create(AgentUpdateParamsSchema)` to create a new message.
  */
 export const AgentUpdateParamsSchema: GenMessage<AgentUpdateParams> = /*@__PURE__*/
-  messageDesc(file_pm_v1_actions, 26);
+  messageDesc(file_pm_v1_actions, 27);
 
 /**
  * @generated from enum pm.v1.ActionType

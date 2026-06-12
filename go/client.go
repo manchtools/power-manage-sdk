@@ -339,8 +339,12 @@ func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert [
 type StreamHandler interface {
 	// OnWelcome is called when the server sends a welcome message.
 	OnWelcome(ctx context.Context, welcome *pm.Welcome) error
-	// OnAction is called when the server dispatches an action.
-	OnAction(ctx context.Context, action *pm.Action) (*pm.ActionResult, error)
+	// OnAction is called when the server dispatches an action. The handler
+	// receives the signed envelope bytes and the CA signature: it MUST
+	// verify the signature over `envelope` and unmarshal THOSE SAME bytes
+	// (a pm.SignedActionEnvelope) to execute — the executed action is the
+	// verified action (sdk#82).
+	OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error)
 	// OnQuery is called when the server sends an OS query.
 	OnQuery(ctx context.Context, query *pm.OSQuery) (*pm.OSQueryResult, error)
 	// OnError is called when the server sends an error.
@@ -353,8 +357,10 @@ type StreamHandler interface {
 type StreamingHandler interface {
 	StreamHandler
 	// OnActionWithStreaming is called when the server dispatches an action.
-	// The sendChunk callback can be used to stream output chunks during execution.
-	OnActionWithStreaming(ctx context.Context, action *pm.Action, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error)
+	// It receives the signed envelope bytes and CA signature (verify-then-
+	// unmarshal-then-execute the SAME bytes; see OnAction). The sendChunk
+	// callback streams output chunks during execution.
+	OnActionWithStreaming(ctx context.Context, envelope []byte, signature []byte, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error)
 }
 
 // LuksHandler extends StreamHandler with LUKS device-key revocation support.
@@ -971,9 +977,9 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			sendChunk := func(chunk *pm.OutputChunk) error {
 				return c.SendOutputChunk(ctx, chunk)
 			}
-			actionResult, err = streamingHandler.OnActionWithStreaming(ctx, p.Action.Action, sendChunk)
+			actionResult, err = streamingHandler.OnActionWithStreaming(ctx, p.Action.Envelope, p.Action.Signature, sendChunk)
 		} else {
-			actionResult, err = handler.OnAction(ctx, p.Action.Action)
+			actionResult, err = handler.OnAction(ctx, p.Action.Envelope, p.Action.Signature)
 		}
 
 		if err != nil {
