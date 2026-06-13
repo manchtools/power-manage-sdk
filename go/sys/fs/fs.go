@@ -196,22 +196,24 @@ func parseFileMode(mode string) (os.FileMode, error) {
 }
 
 // WriteFileAtomic writes content to a file with the specified permissions
-// and ownership, atomically and WITHOUT following symlinks.
+// and ownership, atomically.
 //
-// It routes the write through SafeReplaceFile: a same-directory temp file
-// with a RANDOM suffix, opened O_NOFOLLOW, fchmod'd, fsync'd, and renamed
-// into place. Ownership is then applied through an O_NOFOLLOW fd
-// (FchownNoFollow). The previous implementation tee'd content to a
-// PREDICTABLE temp path (path + ".pm-tmp") via the privilege backend;
-// because `tee` follows symlinks, a local attacker who could create
-// entries in the target directory could pre-plant `<target>.pm-tmp` as a
-// symlink and redirect the root agent's write to an arbitrary file — a
-// root arbitrary-file-write privesc (WS6 #2). The predictable name is
-// gone entirely and every step is symlink-aware.
+// When the active privilege backend is Root — i.e. the process is already
+// root, which is how the deployed agent runs — the write takes the
+// TOCTOU-safe, fd-based path (writeFileAtomicRoot): a random-suffix
+// same-directory temp opened O_NOFOLLOW, fchmod'd, fsync'd, renamed into
+// place, then chowned through an O_NOFOLLOW fd. This closes WS6 #2: the
+// previous implementation tee'd content to a PREDICTABLE temp path
+// (path + ".pm-tmp"), and because `tee` follows symlinks a local attacker
+// who could create entries in the target directory could pre-plant
+// `<target>.pm-tmp` as a symlink and redirect the root agent's write to
+// an arbitrary file — a root arbitrary-file-write privesc.
 //
-// The agent runs as root, so the underlying syscalls operate with root
-// privilege directly (no privilege-backend escalation per op). ctx is
-// honoured for early cancellation before the write begins.
+// When the backend is sudo/doas (a non-root caller, e.g. CI integration
+// or a dev tool), the escalated path is used: it cannot openat as root,
+// so it shells the write through the privilege backend as before. That
+// path is NOT symlink-safe, but the security-relevant consumer — the root
+// agent — never takes it.
 func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -219,6 +221,15 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 	if err := ValidatePath(path); err != nil {
 		return err
 	}
+	if exec.CurrentPrivilegeBackend() == exec.PrivilegeBackendRoot {
+		return writeFileAtomicRoot(path, content, mode, owner, group)
+	}
+	return writeFileAtomicEscalated(ctx, path, content, mode, owner, group)
+}
+
+// writeFileAtomicRoot is the fd-based, symlink-safe path (WS6 #2). Runs
+// the syscalls directly with the process's own (root) privilege.
+func writeFileAtomicRoot(path, content, mode, owner, group string) error {
 	perm, err := parseFileMode(mode)
 	if err != nil {
 		return err
@@ -234,6 +245,26 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 		if err := FchownNoFollow(path, uid, gid); err != nil {
 			return fmt.Errorf("set ownership on %s: %w", path, err)
 		}
+	}
+	return nil
+}
+
+// writeFileAtomicEscalated is the legacy privilege-backend (sudo/doas)
+// path for non-root callers. Predictable temp + `tee`/`mv`; not
+// symlink-safe (see WriteFileAtomic's doc for why that is acceptable).
+func writeFileAtomicEscalated(ctx context.Context, path, content, mode, owner, group string) error {
+	tmpPath := path + ".pm-tmp"
+	if err := WriteFile(ctx, tmpPath, content); err != nil {
+		Remove(ctx, tmpPath)
+		return fmt.Errorf("write file %s: %w", tmpPath, err)
+	}
+	if err := SetPermissions(ctx, tmpPath, mode, owner, group); err != nil {
+		Remove(ctx, tmpPath)
+		return err
+	}
+	if _, err := exec.Privileged(ctx, "mv", "-f", "--", tmpPath, path); err != nil {
+		Remove(ctx, tmpPath)
+		return fmt.Errorf("move file into place: %w", err)
 	}
 	return nil
 }
@@ -384,10 +415,19 @@ func RemoveDir(ctx context.Context, path string) error {
 	if !filepath.IsAbs(clean) {
 		return fmt.Errorf("path must be absolute: %s", path)
 	}
+	// Deny-by-default applies regardless of backend (WS6 #12).
 	if IsUnderProtectedPrefix(clean) {
 		return fmt.Errorf("refusing to remove protected path: %s", clean)
 	}
-	return removeDirSecure(ctx, clean)
+	// Root (the deployed agent): symlink-refusing fd-anchored delete
+	// (WS6 #4). Non-root callers cannot openat as root, so they fall back
+	// to the privilege-backend `rm -rf` (not symlink-safe, but not the
+	// root agent's path).
+	if exec.CurrentPrivilegeBackend() == exec.PrivilegeBackendRoot {
+		return removeDirSecure(ctx, clean)
+	}
+	_, err := exec.Privileged(ctx, "rm", "-rf", "--", clean)
+	return err
 }
 
 // =============================================================================

@@ -27,6 +27,7 @@ import (
 //   - the final inode is a real regular file with the requested content
 //     and mode.
 func TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget(t *testing.T) {
+	useRootBackend(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "managed.conf")
 
@@ -92,6 +93,7 @@ func TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget(t *testing.T) {
 // the symlink's victim. Pins that the new inode is real and the victim
 // is untouched.
 func TestWriteFileAtomic_TargetSymlinkNotDereferenced(t *testing.T) {
+	useRootBackend(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "managed.conf")
 
@@ -125,6 +127,7 @@ func TestWriteFileAtomic_TargetSymlinkNotDereferenced(t *testing.T) {
 // could follow a swapped symlink). Run against the current user so it
 // works without root.
 func TestWriteFileAtomic_AppliesOwnershipToSelf(t *testing.T) {
+	useRootBackend(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "owned.conf")
 

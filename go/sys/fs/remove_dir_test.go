@@ -58,6 +58,7 @@ func TestIsUnderProtectedPrefix(t *testing.T) {
 // Using real system paths is safe precisely because the refusal happens
 // in the predicate, before any unlink.
 func TestRemoveDir_RefusesProtectedPrefixes(t *testing.T) {
+	useRootBackend(t)
 	for _, p := range []string{
 		"/etc/sudoers.d/power-manage",
 		"/etc/cron.d",
@@ -77,6 +78,7 @@ func TestRemoveDir_RefusesProtectedPrefixes(t *testing.T) {
 // Positive path: a managed tree under a non-protected prefix is removed
 // recursively. Runs as the test user against t.TempDir(); no root needed.
 func TestRemoveDir_DeletesManagedTree(t *testing.T) {
+	useRootBackend(t)
 	root := t.TempDir()
 	target := filepath.Join(root, "managed")
 	sub := filepath.Join(target, "a", "b")
@@ -104,6 +106,7 @@ func TestRemoveDir_DeletesManagedTree(t *testing.T) {
 // symlink fails the open instead of redirecting `rm -rf` into another
 // tree.
 func TestRemoveDir_RefusesSymlinkedComponent(t *testing.T) {
+	useRootBackend(t)
 	root := t.TempDir()
 
 	// A victim tree the attacker hopes RemoveDir will descend into.
@@ -135,6 +138,7 @@ func TestRemoveDir_RefusesSymlinkedComponent(t *testing.T) {
 // asked to delete a DIRECTORY; a symlink is not one and must not be
 // dereferenced (nor silently unlinked as if it were the target dir).
 func TestRemoveDir_RefusesSymlinkTarget(t *testing.T) {
+	useRootBackend(t)
 	root := t.TempDir()
 	victim := filepath.Join(root, "victim")
 	if err := os.MkdirAll(victim, 0o755); err != nil {
