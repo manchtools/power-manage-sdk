@@ -16754,8 +16754,13 @@ type IdentityProvider struct {
 	UpdatedAt                *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ScimEnabled              bool                   `protobuf:"varint,20,opt,name=scim_enabled,json=scimEnabled,proto3" json:"scim_enabled,omitempty"`
 	ScimEndpointUrl          string                 `protobuf:"bytes,21,opt,name=scim_endpoint_url,json=scimEndpointUrl,proto3" json:"scim_endpoint_url,omitempty"` // read-only, computed by server
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// trust_email_assertions: operator opt-in to delegate email-identity
+	// assertion to this IdP. When true, SCIM AutoLinkByEmail may bind an asserted
+	// email to a pre-existing local PASSWORD account; default false refuses that
+	// (account-takeover guard). See server ADR 0008.
+	TrustEmailAssertions bool `protobuf:"varint,22,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *IdentityProvider) Reset() {
@@ -16935,6 +16940,13 @@ func (x *IdentityProvider) GetScimEndpointUrl() string {
 	return ""
 }
 
+func (x *IdentityProvider) GetTrustEmailAssertions() bool {
+	if x != nil {
+		return x.TrustEmailAssertions
+	}
+	return false
+}
+
 type IdentityLink struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -17075,8 +17087,10 @@ type CreateIdentityProviderRequest struct {
 	DisablePasswordForLinked bool              `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
 	GroupClaim               string            `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty"`
 	GroupMapping             map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// See IdentityProvider.trust_email_assertions. Default false (secure).
+	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *CreateIdentityProviderRequest) Reset() {
@@ -17219,6 +17233,13 @@ func (x *CreateIdentityProviderRequest) GetGroupMapping() map[string]string {
 		return x.GroupMapping
 	}
 	return nil
+}
+
+func (x *CreateIdentityProviderRequest) GetTrustEmailAssertions() bool {
+	if x != nil {
+		return x.TrustEmailAssertions
+	}
+	return false
 }
 
 type CreateIdentityProviderResponse struct {
@@ -17489,8 +17510,10 @@ type UpdateIdentityProviderRequest struct {
 	DisablePasswordForLinked bool              `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
 	GroupClaim               string            `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty"`
 	GroupMapping             map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// See IdentityProvider.trust_email_assertions. Default false (secure).
+	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *UpdateIdentityProviderRequest) Reset() {
@@ -17633,6 +17656,13 @@ func (x *UpdateIdentityProviderRequest) GetGroupMapping() map[string]string {
 		return x.GroupMapping
 	}
 	return nil
+}
+
+func (x *UpdateIdentityProviderRequest) GetTrustEmailAssertions() bool {
+	if x != nil {
+		return x.TrustEmailAssertions
+	}
+	return false
 }
 
 type UpdateIdentityProviderResponse struct {
@@ -22504,7 +22534,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rusers_removed\x18\x03 \x01(\x05R\fusersRemoved\"\x7f\n" +
 	"$SetUserGroupMaintenanceWindowRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12G\n" +
-	"\x12maintenance_window\x18\x02 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindow\"\x9e\a\n" +
+	"\x12maintenance_window\x18\x02 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindow\"\xd4\a\n" +
 	"\x10IdentityProvider\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -22531,7 +22561,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12!\n" +
 	"\fscim_enabled\x18\x14 \x01(\bR\vscimEnabled\x12*\n" +
-	"\x11scim_endpoint_url\x18\x15 \x01(\tR\x0fscimEndpointUrl\x1a?\n" +
+	"\x11scim_endpoint_url\x18\x15 \x01(\tR\x0fscimEndpointUrl\x124\n" +
+	"\x16trust_email_assertions\x18\x16 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x03\n" +
@@ -22548,7 +22579,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rexternal_name\x18\b \x01(\tR\fexternalName\x127\n" +
 	"\tlinked_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\blinkedAt\x12>\n" +
 	"\rlast_login_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\"\xee\x05\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\"\xa4\x06\n" +
 	"\x1dCreateIdentityProviderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12@\n" +
@@ -22568,7 +22599,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1bdisable_password_for_linked\x18\x0e \x01(\bR\x18disablePasswordForLinked\x12\x1f\n" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
 	"groupClaim\x12[\n" +
-	"\rgroup_mapping\x18\x10 \x03(\v26.pm.v1.CreateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x1a?\n" +
+	"\rgroup_mapping\x18\x10 \x03(\v26.pm.v1.CreateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
+	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
@@ -22586,7 +22618,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\tproviders\x18\x01 \x03(\v2\x17.pm.v1.IdentityProviderR\tproviders\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xc2\x05\n" +
+	"totalCount\"\xf8\x05\n" +
 	"\x1dUpdateIdentityProviderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -22606,7 +22638,8 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1bdisable_password_for_linked\x18\x0e \x01(\bR\x18disablePasswordForLinked\x12\x1f\n" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
 	"groupClaim\x12[\n" +
-	"\rgroup_mapping\x18\x10 \x03(\v26.pm.v1.UpdateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x1a?\n" +
+	"\rgroup_mapping\x18\x10 \x03(\v26.pm.v1.UpdateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
+	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
