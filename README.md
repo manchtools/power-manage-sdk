@@ -209,6 +209,18 @@ verifier := verify.NewActionVerifier(caCert)   // agent-side verification
 err := verifier.Verify(action)                 // verify action signature
 ```
 
+Beyond actions, the same CA key signs the four root **stream-RPCs** (osquery,
+log query, LUKS revoke, inventory) under per-surface **disjoint domains** so a
+signature for one surface can never be replayed against another:
+
+```go
+// Control server signs the canonical bytes of each message (signature field
+// cleared) under that surface's domain; the agent verifies before any root work.
+canonical, _ := verify.OSQueryCanonical(q)                       // also LogQueryCanonical / RevokeLuksDeviceKeyCanonical / RequestInventoryCanonical
+sig, _  := signer.SignDomain(verify.OSQuerySignatureDomain, canonical)
+err     := verifier.VerifyDomain(verify.OSQuerySignatureDomain, canonical, sig)
+```
+
 ### Input Validation
 
 `go/validate/` wraps the [go-playground/validator](https://github.com/go-playground/validator) library with the project's custom rules (today: a `ulid` tag for ULID identifiers). RPC handlers and other server code use it via:
