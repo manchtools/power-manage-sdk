@@ -1353,7 +1353,15 @@ type OSQuery struct {
 	Limit int32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty" validate:"omitempty,gte=0,lte=10000"`
 	// Raw SQL query — when set, table/columns/where/limit are ignored.
 	// @gotags: validate:"omitempty,max=4096"
-	RawSql        string `protobuf:"bytes,6,opt,name=raw_sql,json=rawSql,proto3" json:"raw_sql,omitempty" validate:"omitempty,max=4096"`
+	RawSql string `protobuf:"bytes,6,opt,name=raw_sql,json=rawSql,proto3" json:"raw_sql,omitempty" validate:"omitempty,max=4096"`
+	// CA signature over the deterministic wire bytes of this message with
+	// signature cleared, under the osquery signing domain. Signed at the
+	// control server, relayed opaquely by the gateway, verified fail-closed
+	// by the agent before any osquery execution (incl. raw_sql). A compromised
+	// gateway/Valkey relay cannot originate or tamper a query under a valid
+	// signature.
+	// @gotags: validate:"omitempty"
+	Signature     []byte `protobuf:"bytes,7,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1428,6 +1436,13 @@ func (x *OSQuery) GetRawSql() string {
 		return x.RawSql
 	}
 	return ""
+}
+
+func (x *OSQuery) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
 }
 
 type OSQueryCondition struct {
@@ -1708,9 +1723,22 @@ func (x *InventoryTable) GetRows() []*OSQueryRow {
 	return nil
 }
 
-// Server -> Agent: request fresh inventory collection
+// Server -> Agent: request fresh inventory collection.
+//
+// query_id + signature bind a server-originated collection request so a
+// compromised gateway cannot make the agent run osquery as root on a forged
+// request. Agent-initiated periodic inventory (on connect + every 24h) does
+// NOT travel this message and needs no signature — it is the agent's own
+// decision, not a relayed command.
 type RequestInventory struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	QueryId string `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty" validate:"required,ulid"`
+	// CA signature over the deterministic wire bytes of this message with
+	// signature cleared, under the inventory signing domain. Verified
+	// fail-closed by the agent before any osquery collection.
+	// @gotags: validate:"omitempty"
+	Signature     []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1743,6 +1771,20 @@ func (x *RequestInventory) ProtoReflect() protoreflect.Message {
 // Deprecated: Use RequestInventory.ProtoReflect.Descriptor instead.
 func (*RequestInventory) Descriptor() ([]byte, []int) {
 	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *RequestInventory) GetQueryId() string {
+	if x != nil {
+		return x.QueryId
+	}
+	return ""
+}
+
+func (x *RequestInventory) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
 }
 
 // Agent requests the current managed passphrase for a LUKS action.
@@ -1968,7 +2010,14 @@ func (x *StoreLuksKeyResponse) GetSuccess() bool {
 type RevokeLuksDeviceKey struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	ActionId      string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	// CA signature over the deterministic wire bytes of this message with
+	// signature cleared, under the LUKS-revoke signing domain. The slot-7
+	// device-key wipe is destructive and irreversible, so the agent verifies
+	// fail-closed before revoking — a compromised gateway cannot forge or
+	// replay a revocation onto any known action_id.
+	// @gotags: validate:"omitempty"
+	Signature     []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2008,6 +2057,13 @@ func (x *RevokeLuksDeviceKey) GetActionId() string {
 		return x.ActionId
 	}
 	return ""
+}
+
+func (x *RevokeLuksDeviceKey) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
 }
 
 // Agent reports the result of revoking the device-bound key.
@@ -2431,7 +2487,14 @@ type LogQuery struct {
 	// Log source. Defaults to LOG_SOURCE_JOURNALD. Agents without
 	// support for a requested source return an error.
 	// @gotags: validate:"omitempty"
-	Source        LogSource `protobuf:"varint,9,opt,name=source,proto3,enum=pm.v1.LogSource" json:"source,omitempty" validate:"omitempty"`
+	Source LogSource `protobuf:"varint,9,opt,name=source,proto3,enum=pm.v1.LogSource" json:"source,omitempty" validate:"omitempty"`
+	// CA signature over the deterministic wire bytes of this message with
+	// signature cleared, under the logquery signing domain. journalctl runs as
+	// root, so the agent verifies fail-closed before building any journalctl
+	// invocation — a compromised gateway cannot originate or retarget
+	// (e.g. swap the unit) a log read under a valid signature.
+	// @gotags: validate:"omitempty"
+	Signature     []byte `protobuf:"bytes,10,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2527,6 +2590,13 @@ func (x *LogQuery) GetSource() LogSource {
 		return x.Source
 	}
 	return LogSource_LOG_SOURCE_JOURNALD
+}
+
+func (x *LogQuery) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
 }
 
 // Agent -> Server: journalctl output result
@@ -3069,14 +3139,15 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\"5\n" +
 	"\x05Error\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xb2\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xd0\x01\n" +
 	"\aOSQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05table\x12\x18\n" +
 	"\acolumns\x18\x03 \x03(\tR\acolumns\x12-\n" +
 	"\x05where\x18\x04 \x03(\v2\x17.pm.v1.OSQueryConditionR\x05where\x12\x14\n" +
 	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x17\n" +
-	"\araw_sql\x18\x06 \x01(\tR\x06rawSql\"b\n" +
+	"\araw_sql\x18\x06 \x01(\tR\x06rawSql\x12\x1c\n" +
+	"\tsignature\x18\a \x01(\fR\tsignature\"b\n" +
 	"\x10OSQueryCondition\x12\x16\n" +
 	"\x06column\x18\x01 \x01(\tR\x06column\x12 \n" +
 	"\x02op\x18\x02 \x01(\x0e2\x10.pm.v1.OSQueryOpR\x02op\x12\x14\n" +
@@ -3097,8 +3168,10 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eInventoryTable\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12%\n" +
-	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"\x12\n" +
-	"\x10RequestInventory\"0\n" +
+	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"K\n" +
+	"\x10RequestInventory\x12\x19\n" +
+	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x1c\n" +
+	"\tsignature\x18\x02 \x01(\fR\tsignature\"0\n" +
 	"\x11GetLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"4\n" +
 	"\x12GetLuksKeyResponse\x12\x1e\n" +
@@ -3114,9 +3187,10 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"passphrase\x12>\n" +
 	"\x0frotation_reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"0\n" +
 	"\x14StoreLuksKeyResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"2\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"P\n" +
 	"\x13RevokeLuksDeviceKey\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\"h\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1c\n" +
+	"\tsignature\x18\x02 \x01(\fR\tsignature\"h\n" +
 	"\x19RevokeLuksDeviceKeyResult\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
@@ -3143,7 +3217,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\x12<\n" +
 	"\x12standalone_actions\x18\x03 \x03(\v2\r.pm.v1.ActionR\x11standaloneActions\x12;\n" +
 	"\x0fgrouped_actions\x18\x04 \x03(\v2\x12.pm.v1.ActionGroupR\x0egroupedActions\x12G\n" +
-	"\x12maintenance_window\x18\x05 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindowJ\x04\b\x01\x10\x02R\aactions\"\xed\x01\n" +
+	"\x12maintenance_window\x18\x05 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindowJ\x04\b\x01\x10\x02R\aactions\"\x8b\x02\n" +
 	"\bLogQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
@@ -3153,7 +3227,9 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\bpriority\x18\x06 \x01(\tR\bpriority\x12\x12\n" +
 	"\x04grep\x18\a \x01(\tR\x04grep\x12\x16\n" +
 	"\x06kernel\x18\b \x01(\bR\x06kernel\x12(\n" +
-	"\x06source\x18\t \x01(\x0e2\x10.pm.v1.LogSourceR\x06source\"o\n" +
+	"\x06source\x18\t \x01(\x0e2\x10.pm.v1.LogSourceR\x06source\x12\x1c\n" +
+	"\tsignature\x18\n" +
+	" \x01(\fR\tsignature\"o\n" +
 	"\x0eLogQueryResult\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +

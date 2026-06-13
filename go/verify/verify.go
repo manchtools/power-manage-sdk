@@ -56,24 +56,37 @@ import (
 	"fmt"
 )
 
-// ActionSignatureDomain is the domain tag mixed into every action-signature
-// pre-image. Every distinct signing surface that might share the CA key
-// declares its own domain string; the length-prefixed mix keeps the
-// pre-image hashes disjoint so a signature for one surface can never be
-// replayed against another.
-const ActionSignatureDomain = "power-manage-action"
+// Signing domains. Every distinct signing surface that might share the CA
+// key declares its own domain string; the length-prefixed mix (see
+// canonicalDigest) keeps the pre-image hashes disjoint so a signature minted
+// for one surface can never be replayed against another. Add a new surface by
+// adding a constant here — never reuse an existing domain for a new message
+// type.
+const (
+	// ActionSignatureDomain covers the full SignedActionEnvelope.
+	ActionSignatureDomain = "power-manage-action"
+	// OSQuerySignatureDomain covers an OSQuery dispatch (table or raw_sql).
+	OSQuerySignatureDomain = "power-manage-osquery"
+	// LogQuerySignatureDomain covers a LogQuery (journalctl) dispatch.
+	LogQuerySignatureDomain = "power-manage-logquery"
+	// LuksRevokeSignatureDomain covers a RevokeLuksDeviceKey instruction.
+	LuksRevokeSignatureDomain = "power-manage-luks-revoke"
+	// InventorySignatureDomain covers a server-originated RequestInventory.
+	InventorySignatureDomain = "power-manage-inventory"
+)
 
 // canonicalDigest hashes the length-prefixed domain tag followed by the
-// envelope bytes. The 4-byte big-endian domain length makes the
-// concatenation unambiguous: no other domain string can collide with
-// ActionSignatureDomain followed by an attacker-chosen payload prefix.
-func canonicalDigest(envelopeBytes []byte) []byte {
+// payload bytes. The 4-byte big-endian domain length makes the concatenation
+// unambiguous: no other domain string can collide with this domain followed
+// by an attacker-chosen payload prefix, so a signature for one domain can
+// never be confused with another.
+func canonicalDigest(domain string, payload []byte) []byte {
 	h := sha256.New()
 	var lenPrefix [4]byte
-	binary.BigEndian.PutUint32(lenPrefix[:], uint32(len(ActionSignatureDomain)))
+	binary.BigEndian.PutUint32(lenPrefix[:], uint32(len(domain)))
 	h.Write(lenPrefix[:])
-	h.Write([]byte(ActionSignatureDomain))
-	h.Write(envelopeBytes)
+	h.Write([]byte(domain))
+	h.Write(payload)
 	return h.Sum(nil)
 }
 
@@ -107,18 +120,38 @@ func (v *ActionVerifier) Verify(envelopeBytes, signature []byte) error {
 	if len(envelopeBytes) == 0 {
 		return fmt.Errorf("empty action envelope")
 	}
+	return v.verifyDigest(canonicalDigest(ActionSignatureDomain, envelopeBytes), signature)
+}
 
-	digest := canonicalDigest(envelopeBytes)
+// VerifyDomain checks signature against the payload bytes under the given
+// signing domain. Use this for non-action surfaces (osquery, log query, LUKS
+// revoke, inventory) — each passes its own domain constant and the
+// deterministic canonical bytes of its message (see canonical.go). The domain
+// is mixed into the pre-image (canonicalDigest) so a signature minted for one
+// domain can never verify under another.
+//
+// Fail-closed: an empty signature or empty payload is rejected.
+func (v *ActionVerifier) VerifyDomain(domain string, payload, signature []byte) error {
+	if len(signature) == 0 {
+		return fmt.Errorf("no signature provided for %s", domain)
+	}
+	if len(payload) == 0 {
+		return fmt.Errorf("empty payload for %s", domain)
+	}
+	return v.verifyDigest(canonicalDigest(domain, payload), signature)
+}
 
+// verifyDigest checks an already-computed digest against the public key.
+func (v *ActionVerifier) verifyDigest(digest, signature []byte) error {
 	switch key := v.pubKey.(type) {
 	case *ecdsa.PublicKey:
 		if !ecdsa.VerifyASN1(key, digest, signature) {
-			return fmt.Errorf("invalid ECDSA signature for action envelope")
+			return fmt.Errorf("invalid ECDSA signature")
 		}
 		return nil
 	case *rsa.PublicKey:
 		if err := rsa.VerifyPKCS1v15(key, crypto.SHA256, digest, signature); err != nil {
-			return fmt.Errorf("invalid RSA signature for action envelope: %w", err)
+			return fmt.Errorf("invalid RSA signature: %w", err)
 		}
 		return nil
 	default:
@@ -144,8 +177,23 @@ func (s *ActionSigner) Sign(envelopeBytes []byte) ([]byte, error) {
 	if len(envelopeBytes) == 0 {
 		return nil, fmt.Errorf("refusing to sign an empty action envelope")
 	}
-	digest := canonicalDigest(envelopeBytes)
+	return s.signDigest(canonicalDigest(ActionSignatureDomain, envelopeBytes))
+}
 
+// SignDomain signs the payload bytes under the given signing domain. The
+// control server uses this for non-action surfaces (osquery, log query, LUKS
+// revoke, inventory); the agent verifies the result with VerifyDomain under
+// the same domain. The domain is mixed into the pre-image so the signature is
+// disjoint from every other surface that shares the CA key.
+func (s *ActionSigner) SignDomain(domain string, payload []byte) ([]byte, error) {
+	if len(payload) == 0 {
+		return nil, fmt.Errorf("refusing to sign an empty payload for %s", domain)
+	}
+	return s.signDigest(canonicalDigest(domain, payload))
+}
+
+// signDigest signs an already-computed digest with the private key.
+func (s *ActionSigner) signDigest(digest []byte) ([]byte, error) {
 	switch key := s.key.(type) {
 	case *ecdsa.PrivateKey:
 		return ecdsa.SignASN1(rand.Reader, key, digest)
