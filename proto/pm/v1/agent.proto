@@ -232,6 +232,14 @@ message OSQuery {
   // Raw SQL query — when set, table/columns/where/limit are ignored.
   // @gotags: validate:"omitempty,max=4096"
   string raw_sql = 6;
+  // CA signature over the deterministic wire bytes of this message with
+  // signature cleared, under the osquery signing domain. Signed at the
+  // control server, relayed opaquely by the gateway, verified fail-closed
+  // by the agent before any osquery execution (incl. raw_sql). A compromised
+  // gateway/Valkey relay cannot originate or tamper a query under a valid
+  // signature.
+  // @gotags: validate:"omitempty"
+  bytes signature = 7;
 }
 
 message OSQueryCondition {
@@ -286,8 +294,22 @@ message InventoryTable {
   repeated OSQueryRow rows = 2;
 }
 
-// Server -> Agent: request fresh inventory collection
-message RequestInventory {}
+// Server -> Agent: request fresh inventory collection.
+//
+// query_id + signature bind a server-originated collection request so a
+// compromised gateway cannot make the agent run osquery as root on a forged
+// request. Agent-initiated periodic inventory (on connect + every 24h) does
+// NOT travel this message and needs no signature — it is the agent's own
+// decision, not a relayed command.
+message RequestInventory {
+  // @gotags: validate:"required,ulid"
+  string query_id = 1;
+  // CA signature over the deterministic wire bytes of this message with
+  // signature cleared, under the inventory signing domain. Verified
+  // fail-closed by the agent before any osquery collection.
+  // @gotags: validate:"omitempty"
+  bytes signature = 2;
+}
 
 // ============================================================================
 // Standard OS Query Tables
@@ -353,6 +375,13 @@ message StoreLuksKeyResponse {
 message RevokeLuksDeviceKey {
   // @gotags: validate:"required,ulid"
   string action_id = 1;
+  // CA signature over the deterministic wire bytes of this message with
+  // signature cleared, under the LUKS-revoke signing domain. The slot-7
+  // device-key wipe is destructive and irreversible, so the agent verifies
+  // fail-closed before revoking — a compromised gateway cannot forge or
+  // replay a revocation onto any known action_id.
+  // @gotags: validate:"omitempty"
+  bytes signature = 2;
 }
 
 // Agent reports the result of revoking the device-bound key.
@@ -494,6 +523,13 @@ message LogQuery {
   // support for a requested source return an error.
   // @gotags: validate:"omitempty"
   LogSource source = 9;
+  // CA signature over the deterministic wire bytes of this message with
+  // signature cleared, under the logquery signing domain. journalctl runs as
+  // root, so the agent verifies fail-closed before building any journalctl
+  // invocation — a compromised gateway cannot originate or retarget
+  // (e.g. swap the unit) a log read under a valid signature.
+  // @gotags: validate:"omitempty"
+  bytes signature = 10;
 }
 
 // Agent -> Server: journalctl output result
