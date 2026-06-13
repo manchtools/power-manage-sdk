@@ -1693,6 +1693,7 @@ export class ApiClient {
 		scopes?: string[];
 		autoCreateUsers?: boolean;
 		autoLinkByEmail?: boolean;
+		trustEmailAssertions?: boolean;
 		defaultRoleId?: string;
 		disablePasswordForLinked?: boolean;
 		groupClaim?: string;
@@ -1733,6 +1734,7 @@ export class ApiClient {
 		scopes?: string[];
 		autoCreateUsers?: boolean;
 		autoLinkByEmail?: boolean;
+		trustEmailAssertions?: boolean;
 		defaultRoleId?: string;
 		disablePasswordForLinked?: boolean;
 		groupClaim?: string;
