@@ -2184,6 +2184,11 @@ message IdentityProvider {
   google.protobuf.Timestamp updated_at = 19;
   bool scim_enabled = 20;
   string scim_endpoint_url = 21; // read-only, computed by server
+  // trust_email_assertions: operator opt-in to delegate email-identity
+  // assertion to this IdP. When true, SCIM AutoLinkByEmail may bind an asserted
+  // email to a pre-existing local PASSWORD account; default false refuses that
+  // (account-takeover guard). See server ADR 0008.
+  bool trust_email_assertions = 22;
 }
 
 message IdentityLink {
@@ -2222,6 +2227,8 @@ message CreateIdentityProviderRequest {
   bool disable_password_for_linked = 14;
   string group_claim = 15;
   map<string, string> group_mapping = 16;
+  // See IdentityProvider.trust_email_assertions. Default false (secure).
+  bool trust_email_assertions = 17;
 }
 
 message CreateIdentityProviderResponse {
@@ -2270,6 +2277,8 @@ message UpdateIdentityProviderRequest {
   bool disable_password_for_linked = 14;
   string group_claim = 15;
   map<string, string> group_mapping = 16;
+  // See IdentityProvider.trust_email_assertions. Default false (secure).
+  bool trust_email_assertions = 17;
 }
 
 message UpdateIdentityProviderResponse {
