@@ -367,9 +367,12 @@ type StreamingHandler interface {
 // Handlers that implement this interface will receive revoke requests from the server.
 type LuksHandler interface {
 	StreamHandler
-	// OnRevokeLuksDeviceKey is called when the server requests revocation of a LUKS device-bound key.
+	// OnRevokeLuksDeviceKey is called when the server requests revocation of a
+	// LUKS device-bound key. The full message is delivered (not just the
+	// action_id) so the handler can verify the CA signature that binds it
+	// before performing the destructive, irreversible slot-7 wipe.
 	// Returns (success, errorMessage).
-	OnRevokeLuksDeviceKey(ctx context.Context, actionID string) (bool, string)
+	OnRevokeLuksDeviceKey(ctx context.Context, req *pm.RevokeLuksDeviceKey) (bool, string)
 }
 
 // LogQueryHandler extends StreamHandler with remote log query support.
@@ -384,9 +387,18 @@ type LogQueryHandler interface {
 // Handlers that implement this interface can collect and send hardware/software inventory.
 type InventoryHandler interface {
 	StreamHandler
-	// CollectInventory gathers hardware/software inventory from the device.
-	// Returns nil if inventory collection is not available (e.g., osquery not installed).
+	// CollectInventory gathers hardware/software inventory from the device on
+	// the agent's OWN schedule (on connect + every 24h). This is the
+	// agent-initiated path: no server command is involved, so no signature is
+	// required. Returns nil if collection is unavailable (e.g. osquery not
+	// installed).
 	CollectInventory(ctx context.Context) *pm.DeviceInventory
+	// OnRequestInventory handles a SERVER-originated RequestInventory. Because
+	// a compromised gateway could forge this message, the handler verifies the
+	// CA signature that binds it before running osquery as root, then collects
+	// the same inventory. Returns nil on verification failure or when
+	// collection is unavailable.
+	OnRequestInventory(ctx context.Context, req *pm.RequestInventory) *pm.DeviceInventory
 }
 
 // TerminalHandler extends StreamHandler with remote terminal (PTY) session
@@ -1013,8 +1025,15 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 
 	case *pm.ServerMessage_RequestInventory:
 		if invHandler, ok := handler.(InventoryHandler); ok {
+			if p.RequestInventory == nil {
+				c.logger.Warn("dropping RequestInventory with nil payload", "message_id", msg.Id)
+				return nil
+			}
 			go func() {
-				if inv := invHandler.CollectInventory(ctx); inv != nil {
+				// Server-originated: verify the signature (inside the handler)
+				// before collecting. A forged RequestInventory from a
+				// compromised gateway yields nil and never runs osquery.
+				if inv := invHandler.OnRequestInventory(ctx, p.RequestInventory); inv != nil {
 					if err := c.SendInventory(ctx, inv); err != nil {
 						c.logger.Warn("failed to send inventory", "error", err)
 					}
@@ -1037,12 +1056,22 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 
 	case *pm.ServerMessage_RevokeLuksDeviceKey:
 		if luksHandler, ok := handler.(LuksHandler); ok {
-			actionID := p.RevokeLuksDeviceKey.ActionId
+			req := p.RevokeLuksDeviceKey
+			if req == nil {
+				// A compromised/buggy gateway could deliver a nil payload;
+				// dropping it avoids a nil dereference and is harmless (a
+				// real revocation always carries action_id + signature).
+				c.logger.Warn("dropping RevokeLuksDeviceKey with nil payload", "message_id", msg.Id)
+				return nil
+			}
+			actionID := req.ActionId
 			// Run in goroutine: the handler calls GetLuksKey which sends
 			// a request on the stream and waits for a response. Processing
 			// that response requires this receive loop to keep running.
 			go func() {
-				success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, actionID)
+				// Pass the full message so the handler can verify the CA
+				// signature binding action_id before the destructive wipe.
+				success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, req)
 				if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
 					c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
 				}
