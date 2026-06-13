@@ -56,12 +56,34 @@ type Client struct {
 	// to reset its ticker when Welcome arrives with a new interval.
 	// Non-nil only while Run() is active; guarded by mu.
 	heartbeatUpdate chan time.Duration
+
+	// invSem and luksRevokeSem bound how many server-originated
+	// RequestInventory / RevokeLuksDeviceKey handlers run concurrently.
+	// Each spawns a goroutine (inventory forks osquery; revoke does a
+	// request-response on the stream), so an unbounded flood from a
+	// compromised or buggy gateway could exhaust memory and goroutines.
+	// Acquisition is non-blocking: excess is DROPPED, not queued (WS6
+	// #11). Initialised by NewClient.
+	invSem        chan struct{}
+	luksRevokeSem chan struct{}
 }
+
+const (
+	// inventoryDispatchConcurrency bounds concurrent server-originated
+	// inventory collections. One full osquery scan at a time is the
+	// realistic need; 2 gives a little slack without risking exhaustion.
+	inventoryDispatchConcurrency = 2
+	// luksRevokeDispatchConcurrency bounds concurrent LUKS device-key
+	// revocations dispatched from the server.
+	luksRevokeDispatchConcurrency = 2
+)
 
 // NewClient creates a new SDK client.
 func NewClient(serverURL string, opts ...ClientOption) *Client {
 	c := &Client{
-		logger: slog.Default(),
+		logger:        slog.Default(),
+		invSem:        make(chan struct{}, inventoryDispatchConcurrency),
+		luksRevokeSem: make(chan struct{}, luksRevokeDispatchConcurrency),
 	}
 
 	httpClient := http.DefaultClient
@@ -1029,16 +1051,27 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 				c.logger.Warn("dropping RequestInventory with nil payload", "message_id", msg.Id)
 				return nil
 			}
-			go func() {
-				// Server-originated: verify the signature (inside the handler)
-				// before collecting. A forged RequestInventory from a
-				// compromised gateway yields nil and never runs osquery.
-				if inv := invHandler.OnRequestInventory(ctx, p.RequestInventory); inv != nil {
-					if err := c.SendInventory(ctx, inv); err != nil {
-						c.logger.Warn("failed to send inventory", "error", err)
+			req := p.RequestInventory
+			// Bound concurrency: drop (don't queue) when already at
+			// capacity so a flood cannot spawn unbounded osquery forks.
+			select {
+			case c.invSem <- struct{}{}:
+				go func() {
+					defer func() { <-c.invSem }()
+					// Server-originated: verify the signature (inside the
+					// handler) before collecting. A forged RequestInventory
+					// from a compromised gateway yields nil and never runs
+					// osquery.
+					if inv := invHandler.OnRequestInventory(ctx, req); inv != nil {
+						if err := c.SendInventory(ctx, inv); err != nil {
+							c.logger.Warn("failed to send inventory", "error", err)
+						}
 					}
-				}
-			}()
+				}()
+			default:
+				c.logger.Warn("dropping RequestInventory: inventory collection already at capacity",
+					"message_id", msg.Id, "limit", inventoryDispatchConcurrency)
+			}
 		}
 
 	case *pm.ServerMessage_LogQuery:
@@ -1068,14 +1101,23 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			// Run in goroutine: the handler calls GetLuksKey which sends
 			// a request on the stream and waits for a response. Processing
 			// that response requires this receive loop to keep running.
-			go func() {
-				// Pass the full message so the handler can verify the CA
-				// signature binding action_id before the destructive wipe.
-				success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, req)
-				if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
-					c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
-				}
-			}()
+			// Bound concurrency and drop overflow so a flood cannot spawn
+			// unbounded goroutines (WS6 #11).
+			select {
+			case c.luksRevokeSem <- struct{}{}:
+				go func() {
+					defer func() { <-c.luksRevokeSem }()
+					// Pass the full message so the handler can verify the CA
+					// signature binding action_id before the destructive wipe.
+					success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, req)
+					if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
+						c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
+					}
+				}()
+			default:
+				c.logger.Warn("dropping RevokeLuksDeviceKey: revocation already at capacity",
+					"message_id", msg.Id, "action_id", actionID, "limit", luksRevokeDispatchConcurrency)
+			}
 		}
 
 	case *pm.ServerMessage_TerminalStart:

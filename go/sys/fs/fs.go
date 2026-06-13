@@ -10,7 +10,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -178,39 +180,92 @@ func SetPermissions(ctx context.Context, path, mode, owner, group string) error 
 	return nil
 }
 
-// WriteFileAtomic writes content to a file with the specified permissions
-// using a write-then-rename sequence: it tees content to a predictable temp
-// path (path + ".pm-tmp"), chmod/chowns it, then mvs it into place.
-//
-// The mv-into-place at the end is what gives concurrent readers a consistent
-// view (they see either the old file or the new one, never a half-written
-// one). It does NOT guarantee fsync-level durability — the temp file is not
-// fsynced before the rename, and the parent directory is not fsynced after.
-// The temp path is also predictable, so this is not a defense against an
-// attacker who can create files in the target directory; for that, use
-// AtomicWriteFile in atomic_write.go (which uses os.CreateTemp with a
-// random suffix and proper fsync sequencing).
-func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group string) error {
-	tmpPath := path + ".pm-tmp"
-
-	// Write content to temp file
-	if err := WriteFile(ctx, tmpPath, content); err != nil {
-		Remove(ctx, tmpPath) // cleanup
-		return fmt.Errorf("write file %s: %w", tmpPath, err)
+// parseFileMode parses an octal mode string ("0644", "640") into an
+// os.FileMode. An empty string defaults to 0644 (the conventional mode
+// for a managed config file), so the resulting inode always carries a
+// deterministic mode rather than depending on the process umask.
+func parseFileMode(mode string) (os.FileMode, error) {
+	if mode == "" {
+		return 0o644, nil
 	}
+	v, err := strconv.ParseUint(mode, 8, 32)
+	if err != nil {
+		return 0, fmt.Errorf("invalid file mode %q: %w", mode, err)
+	}
+	return os.FileMode(v), nil
+}
 
-	// Set permissions on temp file before moving
-	if err := SetPermissions(ctx, tmpPath, mode, owner, group); err != nil {
-		Remove(ctx, tmpPath) // cleanup
+// WriteFileAtomic writes content to a file with the specified permissions
+// and ownership, atomically.
+//
+// When the active privilege backend is Root — i.e. the process is already
+// root, which is how the deployed agent runs — the write takes the
+// TOCTOU-safe, fd-based path (writeFileAtomicRoot): a random-suffix
+// same-directory temp opened O_NOFOLLOW, fchmod'd, fsync'd, renamed into
+// place, then chowned through an O_NOFOLLOW fd. This closes WS6 #2: the
+// previous implementation tee'd content to a PREDICTABLE temp path
+// (path + ".pm-tmp"), and because `tee` follows symlinks a local attacker
+// who could create entries in the target directory could pre-plant
+// `<target>.pm-tmp` as a symlink and redirect the root agent's write to
+// an arbitrary file — a root arbitrary-file-write privesc.
+//
+// When the backend is sudo/doas (a non-root caller, e.g. CI integration
+// or a dev tool), the escalated path is used: it cannot openat as root,
+// so it shells the write through the privilege backend as before. That
+// path is NOT symlink-safe, but the security-relevant consumer — the root
+// agent — never takes it.
+func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group string) error {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	if exec.CurrentPrivilegeBackend() == exec.PrivilegeBackendRoot {
+		return writeFileAtomicRoot(path, content, mode, owner, group)
+	}
+	return writeFileAtomicEscalated(ctx, path, content, mode, owner, group)
+}
 
-	// Atomic move into place
+// writeFileAtomicRoot is the fd-based, symlink-safe path (WS6 #2). Runs
+// the syscalls directly with the process's own (root) privilege.
+func writeFileAtomicRoot(path, content, mode, owner, group string) error {
+	perm, err := parseFileMode(mode)
+	if err != nil {
+		return err
+	}
+	if err := SafeReplaceFile(path, []byte(content), perm, true); err != nil {
+		return fmt.Errorf("write file %s: %w", path, err)
+	}
+	if owner != "" || group != "" {
+		uid, gid, err := ResolveOwnership(owner, group)
+		if err != nil {
+			return err
+		}
+		if err := FchownNoFollow(path, uid, gid); err != nil {
+			return fmt.Errorf("set ownership on %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// writeFileAtomicEscalated is the legacy privilege-backend (sudo/doas)
+// path for non-root callers. Predictable temp + `tee`/`mv`; not
+// symlink-safe (see WriteFileAtomic's doc for why that is acceptable).
+func writeFileAtomicEscalated(ctx context.Context, path, content, mode, owner, group string) error {
+	tmpPath := path + ".pm-tmp"
+	if err := WriteFile(ctx, tmpPath, content); err != nil {
+		Remove(ctx, tmpPath)
+		return fmt.Errorf("write file %s: %w", tmpPath, err)
+	}
+	if err := SetPermissions(ctx, tmpPath, mode, owner, group); err != nil {
+		Remove(ctx, tmpPath)
+		return err
+	}
 	if _, err := exec.Privileged(ctx, "mv", "-f", "--", tmpPath, path); err != nil {
-		Remove(ctx, tmpPath) // cleanup
+		Remove(ctx, tmpPath)
 		return fmt.Errorf("move file into place: %w", err)
 	}
-
 	return nil
 }
 
@@ -332,8 +387,26 @@ var dangerousPaths = map[string]bool{
 	"/root":  true,
 }
 
-// RemoveDir removes a directory and its contents via the privilege backend (rm -rf).
-// It validates the path to prevent accidental removal of critical system directories.
+// RemoveDir removes a directory and its contents WITHOUT following any
+// symlink (intermediate component, leaf, or descendant) and refuses any
+// target at or under a security-relevant system prefix.
+//
+// Two hardenings over the previous `rm -rf` implementation:
+//
+//   - Deny-by-default (WS6 #12): the old guard was a top-level-only
+//     exact-match denylist, so `/etc/sudoers.d`, `/home/alice`,
+//     `/var/lib/anything` slipped through to a root `rm -rf`.
+//     IsUnderProtectedPrefix refuses the whole subtree of every
+//     protected root.
+//   - Symlink-refusing fd-anchored delete (WS6 #4): `rm -rf <path>`
+//     re-resolves the path, so a component swapped for a symlink after
+//     validation could redirect the recursive delete. removeDirSecure
+//     walks the path by openat(O_NOFOLLOW) handles, never re-resolving a
+//     string, so a swapped component aborts the operation.
+//
+// The agent (root) reuses IsUnderProtectedPrefix in its directory action
+// to additionally require the target be under a configured managed prefix
+// (a true allowlist); this SDK guard is the defense-in-depth floor.
 func RemoveDir(ctx context.Context, path string) error {
 	if err := ValidatePath(path); err != nil {
 		return err
@@ -342,8 +415,16 @@ func RemoveDir(ctx context.Context, path string) error {
 	if !filepath.IsAbs(clean) {
 		return fmt.Errorf("path must be absolute: %s", path)
 	}
-	if dangerousPaths[clean] {
+	// Deny-by-default applies regardless of backend (WS6 #12).
+	if IsUnderProtectedPrefix(clean) {
 		return fmt.Errorf("refusing to remove protected path: %s", clean)
+	}
+	// Root (the deployed agent): symlink-refusing fd-anchored delete
+	// (WS6 #4). Non-root callers cannot openat as root, so they fall back
+	// to the privilege-backend `rm -rf` (not symlink-safe, but not the
+	// root agent's path).
+	if exec.CurrentPrivilegeBackend() == exec.PrivilegeBackendRoot {
+		return removeDirSecure(ctx, clean)
 	}
 	_, err := exec.Privileged(ctx, "rm", "-rf", "--", clean)
 	return err

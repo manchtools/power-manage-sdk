@@ -132,7 +132,12 @@ func TestWriteFileAtomic(t *testing.T) {
 
 func TestWriteFileAtomicCleansUpOnError(t *testing.T) {
 	ctx := context.Background()
-	// Use a directory that doesn't exist as parent for the temp file
+	// Use a directory that doesn't exist as parent for the temp file.
+	// This integration job runs non-root with sudo, so WriteFileAtomic
+	// takes the escalated (privilege-backend) path, which uses the
+	// predictable `.pm-tmp` temp name. The fd-based root path's no-leftover
+	// guarantee is covered by the unit test
+	// TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget.
 	path := "/tmp/pm-nonexistent-dir-12345/file.txt"
 	tmpFile := path + ".pm-tmp"
 
