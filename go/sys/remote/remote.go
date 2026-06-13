@@ -95,4 +95,11 @@ var (
 	// ErrBackendNotFound — a registry lookup (e.g. cfg.Driver on
 	// GitConfig) named a backend that was never registered.
 	ErrBackendNotFound = errors.New("remote: backend not registered")
+
+	// ErrBlockedAddress — an outbound fetch tried to connect to an IP the
+	// SSRF guard refuses (loopback, link-local / cloud-metadata, multicast,
+	// unspecified, or — when AddrPolicy.BlockPrivate is set — a private
+	// range), or a redirect pointed at an unsupported scheme. Enforced at
+	// dial time so it also covers redirects and DNS rebinding.
+	ErrBlockedAddress = errors.New("remote: blocked address (SSRF guard)")
 )

@@ -10,7 +10,6 @@ package user
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -159,10 +158,11 @@ func Create(ctx context.Context, username string, args ...string) (*exec.Result,
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	// slices.Clone avoids aliasing the caller's backing array — a
-	// bare `append(args, username)` would write into the caller's
-	// slice whenever it has spare capacity.
-	fullArgs := append(slices.Clone(args), username)
+	// SeparatePositionals inserts a "--" before the username so a value
+	// that slipped past validation as flag-shaped still can't be parsed as
+	// a useradd option. It also allocates fresh, so the caller's args slice
+	// is never aliased.
+	fullArgs := exec.SeparatePositionals(args, username)
 	return exec.Privileged(ctx, "useradd", fullArgs...)
 }
 
@@ -173,7 +173,7 @@ func Modify(ctx context.Context, username string, args ...string) (*exec.Result,
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	fullArgs := append(slices.Clone(args), username)
+	fullArgs := exec.SeparatePositionals(args, username)
 	return exec.Privileged(ctx, "usermod", fullArgs...)
 }
 
@@ -184,9 +184,9 @@ func Delete(ctx context.Context, username string, removeHome bool) (*exec.Result
 		return nil, err
 	}
 	if removeHome {
-		return exec.Privileged(ctx, "userdel", "-r", username)
+		return exec.Privileged(ctx, "userdel", exec.SeparatePositionals([]string{"-r"}, username)...)
 	}
-	return exec.Privileged(ctx, "userdel", username)
+	return exec.Privileged(ctx, "userdel", exec.SeparatePositionals(nil, username)...)
 }
 
 // Lock locks a user account (usermod -L).
@@ -194,7 +194,7 @@ func Lock(ctx context.Context, username string) (*exec.Result, error) {
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	return exec.Privileged(ctx, "usermod", "-L", username)
+	return exec.Privileged(ctx, "usermod", exec.SeparatePositionals([]string{"-L"}, username)...)
 }
 
 // Unlock unlocks a user account (usermod -U).
@@ -202,7 +202,7 @@ func Unlock(ctx context.Context, username string) (*exec.Result, error) {
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	return exec.Privileged(ctx, "usermod", "-U", username)
+	return exec.Privileged(ctx, "usermod", exec.SeparatePositionals([]string{"-U"}, username)...)
 }
 
 // =============================================================================
@@ -271,7 +271,7 @@ func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) 
 	if err := validateUsername(username); err != nil {
 		return nil, err
 	}
-	return exec.Privileged(ctx, "chage", "-d", "0", username)
+	return exec.Privileged(ctx, "chage", exec.SeparatePositionals([]string{"-d", "0"}, username)...)
 }
 
 // =============================================================================

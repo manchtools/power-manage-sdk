@@ -79,17 +79,26 @@ func IsRequired() bool {
 //
 // An empty delay defaults to "+1" since shutdown(8) requires a time argument.
 func Schedule(ctx context.Context, delay, message string) error {
-	if delay == "" {
-		delay = "+1"
-	}
-	args := []string{"-r", delay}
-	if message != "" {
-		args = append(args, message)
-	}
-	if _, err := sysexec.Privileged(ctx, "shutdown", args...); err != nil {
+	if _, err := sysexec.Privileged(ctx, "shutdown", shutdownRebootArgs(delay, message)...); err != nil {
 		return fmt.Errorf("schedule reboot: %w", err)
 	}
 	return nil
+}
+
+// shutdownRebootArgs builds the `shutdown -r` argv. It defaults an empty
+// delay to "+1" (shutdown requires a TIME) and inserts a "--" before the
+// TIME/WALL positionals so a delay or broadcast message beginning with "-"
+// can't be reparsed as a shutdown option (e.g. -c cancel, -h halt instead
+// of -r reboot).
+func shutdownRebootArgs(delay, message string) []string {
+	if delay == "" {
+		delay = "+1"
+	}
+	positionals := []string{delay}
+	if message != "" {
+		positionals = append(positionals, message)
+	}
+	return sysexec.SeparatePositionals([]string{"-r"}, positionals...)
 }
 
 // Cancel cancels a pending scheduled reboot.

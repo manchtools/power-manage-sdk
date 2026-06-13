@@ -74,6 +74,20 @@ func sendDesktopNotifications(ctx context.Context, title, message string, userFi
 	}
 }
 
+// desktopNotifyArgv builds the argv for `env … runuser -u <user> --
+// notify-send … -- <title> <message>`. The trailing "--" before the
+// caller-supplied title and body keeps a value that begins with "-" from
+// being parsed as a notify-send option (-i icon, -h hint, -c category, …).
+// The runuser wrapper keeps its own "--", so the argv carries two markers.
+func desktopNotifyArgv(dbusAddr, user, title, message string) []string {
+	return []string{
+		"DBUS_SESSION_BUS_ADDRESS=" + dbusAddr,
+		"runuser", "-u", user, "--",
+		"notify-send", "-u", "critical", "-a", "Power Manage", "-i", "dialog-warning",
+		exec.EndOfOptions, title, message,
+	}
+}
+
 // listGraphicalSessions returns all active graphical login sessions.
 func listGraphicalSessions(ctx context.Context) []session {
 	result, err := exec.Privileged(ctx, "loginctl", "list-sessions", "--no-legend")
@@ -177,12 +191,7 @@ func sendDesktopNotification(ctx context.Context, s session, title, message stri
 
 	// Use runuser to execute notify-send as the target user.
 	// Each argument is passed separately to avoid shell injection.
-	result, err := exec.Privileged(ctx, "env",
-		"DBUS_SESSION_BUS_ADDRESS="+dbusAddr,
-		"runuser", "-u", s.user, "--",
-		"notify-send", "-u", "critical", "-a", "Power Manage", "-i", "dialog-warning",
-		title, message,
-	)
+	result, err := exec.Privileged(ctx, "env", desktopNotifyArgv(dbusAddr, s.user, title, message)...)
 	if err != nil || (result != nil && result.ExitCode != 0) {
 		stderr := ""
 		if result != nil {

@@ -2,7 +2,9 @@ package pkg
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
+	"strings"
 )
 
 // validPackageName is the allowlist every package-name argument must
@@ -90,6 +92,60 @@ func ValidatePackageVersion(version string) error {
 	}
 	if !validPackageVersion.MatchString(version) {
 		return fmt.Errorf("invalid package version %q: must start with [a-zA-Z0-9] and contain only [a-zA-Z0-9._+:~^-]", version)
+	}
+	return nil
+}
+
+// validRemoteName guards a Flatpak remote name. First char alphanumeric
+// (so a name can never be flag-shaped), then the reverse-DNS / id charset
+// flatpak accepts, capped at 64. Same option-injection rationale as
+// validPackageName.
+var validRemoteName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`)
+
+// remoteURLSchemes are the only schemes a Flatpak remote URL may carry.
+// flatpak remotes are served over https / oci (optionally plain http for
+// an internal mirror). Restricting the scheme refuses both transport
+// injection (ext::, file://) and flag-shaped values (which have no
+// scheme), so a URL can never be reinterpreted as a remote-add option
+// like --from or --gpg-import.
+var remoteURLSchemes = map[string]bool{
+	"https":     true,
+	"http":      true,
+	"oci+https": true,
+	"oci+http":  true,
+}
+
+// ValidateRemoteName returns a non-nil error when name is unsafe to pass
+// as a Flatpak remote name argument.
+func ValidateRemoteName(name string) error {
+	if name == "" {
+		return fmt.Errorf("remote name is empty")
+	}
+	if !validRemoteName.MatchString(name) {
+		return fmt.Errorf("invalid remote name %q: must start with [a-zA-Z0-9] and contain only [a-zA-Z0-9._-], max 64 chars", name)
+	}
+	return nil
+}
+
+// ValidateRemoteURL returns a non-nil error when rawURL is unsafe to pass
+// as a Flatpak remote URL. It must be a control-character-free absolute URL
+// whose scheme is one of remoteURLSchemes.
+func ValidateRemoteURL(rawURL string) error {
+	if rawURL == "" {
+		return fmt.Errorf("remote url is empty")
+	}
+	if strings.ContainsAny(rawURL, "\x00\n\r\t ") {
+		return fmt.Errorf("invalid remote url: contains whitespace or control characters")
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid remote url %q: %w", rawURL, err)
+	}
+	if !remoteURLSchemes[strings.ToLower(u.Scheme)] {
+		return fmt.Errorf("invalid remote url %q: scheme must be one of https, http, oci+https, oci+http", rawURL)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("invalid remote url %q: missing host", rawURL)
 	}
 	return nil
 }

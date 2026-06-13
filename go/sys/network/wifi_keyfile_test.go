@@ -17,7 +17,11 @@ func TestBuildPSKKeyfile_ContainsPSKInWifiSecuritySection(t *testing.T) {
 		Hidden:      true,
 		Priority:    10,
 	}
-	got := string(BuildPSKKeyfile(p))
+	body, err := BuildPSKKeyfile(p)
+	if err != nil {
+		t.Fatalf("BuildPSKKeyfile: %v", err)
+	}
+	got := string(body)
 
 	// Spot-check the structurally important lines. We don't pin the
 	// whole file body because tweaking trailing whitespace or section
@@ -53,12 +57,16 @@ func TestBuildPSKKeyfile_ContainsPSKInWifiSecuritySection(t *testing.T) {
 }
 
 func TestBuildPSKKeyfile_AutoConnectFalseAndNoHidden(t *testing.T) {
-	got := string(BuildPSKKeyfile(WiFiProfile{
+	body, err := BuildPSKKeyfile(WiFiProfile{
 		Name:     "pm-wifi-2",
 		SSID:     "OpenNet",
 		AuthType: WiFiAuthPSK,
 		PSK:      "p",
-	}))
+	})
+	if err != nil {
+		t.Fatalf("BuildPSKKeyfile: %v", err)
+	}
+	got := string(body)
 	if !strings.Contains(got, "autoconnect=false") {
 		t.Errorf("expected autoconnect=false in keyfile:\n%s", got)
 	}

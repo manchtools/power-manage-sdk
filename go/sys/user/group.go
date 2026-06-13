@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"slices"
 	"sort"
 	"strings"
 
@@ -91,10 +90,10 @@ func GroupCreate(ctx context.Context, name string, args ...string) (*exec.Result
 	if err := validateName("group name", name); err != nil {
 		return nil, err
 	}
-	// slices.Clone avoids aliasing the caller's backing array — a
-	// bare `append(args, name)` would write into the caller's slice
-	// whenever it has spare capacity.
-	fullArgs := append(slices.Clone(args), name)
+	// SeparatePositionals inserts a "--" before the group name (and
+	// allocates fresh, so the caller's args slice isn't aliased) so a
+	// flag-shaped name can't be parsed as a groupadd option.
+	fullArgs := exec.SeparatePositionals(args, name)
 	return exec.Privileged(ctx, "groupadd", fullArgs...)
 }
 
@@ -104,7 +103,7 @@ func GroupDelete(ctx context.Context, name string) (*exec.Result, error) {
 	if err := validateName("group name", name); err != nil {
 		return nil, err
 	}
-	return exec.Privileged(ctx, "groupdel", name)
+	return exec.Privileged(ctx, "groupdel", exec.SeparatePositionals(nil, name)...)
 }
 
 // GroupEnsureExists creates a group if it doesn't already exist.

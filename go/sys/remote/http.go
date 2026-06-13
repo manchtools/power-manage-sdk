@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	sysfs "github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
@@ -359,20 +358,16 @@ func applyMode(ctx context.Context, dest, mode, owner, group string) error {
 	return nil
 }
 
-// defaultHTTPClient — modest timeouts so a Fetch can't hang forever, and
-// no automatic redirect following on by default? Actually leave Go's
-// default 10-redirect chase in place: legitimate CDNs (Cloudflare, GH
-// releases) use it heavily, and the URL validation already restricts
-// the scheme to http/https.
-func defaultHTTPClient() *http.Client {
-	return &http.Client{
-		Timeout: 30 * time.Minute,
-	}
-}
-
 func validateHTTPConfig(cfg *HTTPConfig) error {
 	if cfg.Prune && !cfg.Extract {
 		return fmt.Errorf("%w: prune requires extract", ErrInvalidConfig)
+	}
+	// Prune is mirror-with-delete: a poisoned origin could otherwise drive
+	// a destructive local sync. The doc-comment on ChecksumSHA256 calls
+	// the checksum "mandatory in combination with Extract+Prune" — enforce
+	// it here so the invariant can't be silently violated.
+	if cfg.Prune && cfg.ChecksumSHA256 == "" {
+		return fmt.Errorf("%w: prune requires checksum_sha256 (refusing an unverified destructive sync)", ErrInvalidConfig)
 	}
 	return nil
 }

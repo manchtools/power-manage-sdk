@@ -28,6 +28,9 @@ func EnrollTPM(ctx context.Context, devicePath, existingKey string) error {
 	if err := requireBackend(BackendLUKS, "EnrollTPM"); err != nil {
 		return err
 	}
+	if err := validateDevicePath(devicePath); err != nil {
+		return err
+	}
 	stdin := strings.NewReader(existingKey)
 	_, err := exec.PrivilegedWithStdin(ctx, stdin, "systemd-cryptenroll",
 		"--tpm2-device=auto", "--tpm2-pcrs=7+14", devicePath)
@@ -41,6 +44,9 @@ func EnrollTPM(ctx context.Context, devicePath, existingKey string) error {
 // passphrase for authentication.
 func WipeTPM(ctx context.Context, devicePath, existingKey string) error {
 	if err := requireBackend(BackendLUKS, "WipeTPM"); err != nil {
+		return err
+	}
+	if err := validateDevicePath(devicePath); err != nil {
 		return err
 	}
 	stdin := strings.NewReader(existingKey)

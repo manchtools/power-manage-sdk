@@ -34,7 +34,9 @@ func IsReadOnly(path string) (bool, error) {
 // RemountRW attempts to remount the filesystem at path as read-write
 // via the configured privilege backend: mount -o remount,rw.
 func RemountRW(ctx context.Context, path string) error {
-	_, err := exec.Privileged(ctx, "mount", "-o", "remount,rw", path)
+	// "--" before the path so a path that begins with "-" is read as the
+	// mount target, never as a mount option.
+	_, err := exec.Privileged(ctx, "mount", exec.SeparatePositionals([]string{"-o", "remount,rw"}, path)...)
 	if err != nil {
 		return fmt.Errorf("remount %s read-write: %w", path, err)
 	}

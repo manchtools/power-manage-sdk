@@ -68,6 +68,32 @@ func TestNewHTTP_RejectsPruneWithoutExtract(t *testing.T) {
 	}
 }
 
+// TestNewHTTP_RejectsPruneWithoutChecksum — Prune is mirror-with-delete,
+// so a poisoned origin could drive a destructive local sync. The
+// ChecksumSHA256 doc-comment declares it mandatory with Extract+Prune;
+// NewHTTP must enforce that rather than leaving it to documentation.
+func TestNewHTTP_RejectsPruneWithoutChecksum(t *testing.T) {
+	_, err := NewHTTP(HTTPConfig{
+		URL:     "https://example.test/dir.tar.gz",
+		Extract: true,
+		Prune:   true,
+		// ChecksumSHA256 deliberately empty.
+	})
+	if !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("NewHTTP(Prune without checksum) = %v; want errors.Is(..., ErrInvalidConfig)", err)
+	}
+
+	// With a valid checksum the combination is accepted.
+	if _, err := NewHTTP(HTTPConfig{
+		URL:            "https://example.test/dir.tar.gz",
+		Extract:        true,
+		Prune:          true,
+		ChecksumSHA256: strings.Repeat("a", 64),
+	}); err != nil {
+		t.Fatalf("NewHTTP(Prune with checksum) = %v; want nil", err)
+	}
+}
+
 // TestNewHTTP_RejectsBadChecksum — partial / non-hex / wrong-length
 // checksum strings get rejected up front so a Fetch never silently runs
 // without integrity verification.

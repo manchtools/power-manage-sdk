@@ -87,18 +87,22 @@ func (p *Pacman) InstallVersion(name string, opts InstallOptions) (*CommandResul
 	if opts.Version == "" {
 		return p.Install(name)
 	}
+	return p.run(p.ctx, pacmanInstallVersionArgs(name, opts.Version)...)
+}
 
-	// Try to install with version specification (name=version format)
-	// This works if the version is available in the repos
-	pkgSpec := fmt.Sprintf("%s=%s", name, opts.Version)
-
-	args := []string{"-S", "--noconfirm"}
-	if opts.AllowDowngrade {
-		args = append(args, "--overwrite", "*")
-	}
-	args = append(args, pkgSpec)
-
-	return p.run(p.ctx, args...)
+// pacmanInstallVersionArgs builds `pacman -S --noconfirm <name>=<version>`.
+//
+// AllowDowngrade is deliberately a no-op for pacman: installing an explicit
+// older version from a version spec needs no permit-downgrade flag (pacman
+// has none). The previous implementation injected `--overwrite "*"` here,
+// which force-overwrites ANY conflicting file on disk — including files
+// owned by OTHER packages — a far broader and more dangerous action than
+// the targeted `--allow-downgrades` (apt) / `--oldpackage` (zypper) the
+// sibling backends use. A genuine file conflict now fails loudly rather
+// than silently clobbering unrelated files. (name/version are validated by
+// the caller before reaching here.)
+func pacmanInstallVersionArgs(name, version string) []string {
+	return []string{"-S", "--noconfirm", fmt.Sprintf("%s=%s", name, version)}
 }
 
 // Remove removes packages.
