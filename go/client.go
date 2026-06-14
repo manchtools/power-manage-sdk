@@ -1072,12 +1072,26 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 	}()
 	switch p := msg.Payload.(type) {
 	case *pm.ServerMessage_Welcome:
+		if p.Welcome == nil {
+			c.logger.Warn("dropping Welcome with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		c.applyWelcomeHeartbeat(p.Welcome)
 		if err := handler.OnWelcome(ctx, p.Welcome); err != nil {
 			return fmt.Errorf("handle welcome: %w", err)
 		}
 
 	case *pm.ServerMessage_Action:
+		// Malformed-oneof guard: a compromised/buggy gateway could deliver a
+		// ServerMessage_Action whose inner ActionDispatch is nil. Reading
+		// p.Action.Envelope/.Signature on a nil p.Action is a nil-pointer
+		// dereference. Drop it non-fatally — every real Action on the wire
+		// carries the signed envelope + signature.
+		if p.Action == nil {
+			c.logger.Warn("dropping Action with nil dispatch payload", "message_id", msg.Id)
+			return nil
+		}
+
 		var actionResult *pm.ActionResult
 		var err error
 
@@ -1102,6 +1116,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_Query:
+		if p.Query == nil {
+			c.logger.Warn("dropping Query with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		queryResult, err := handler.OnQuery(ctx, p.Query)
 		if err != nil {
 			return fmt.Errorf("handle query: %w", err)
@@ -1113,6 +1131,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_Error:
+		if p.Error == nil {
+			c.logger.Warn("dropping Error with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		if err := handler.OnError(ctx, p.Error); err != nil {
 			return fmt.Errorf("handle error: %w", err)
 		}
@@ -1153,6 +1175,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_LogQuery:
+		if p.LogQuery == nil {
+			c.logger.Warn("dropping LogQuery with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		if lqHandler, ok := handler.(LogQueryHandler); ok {
 			result, err := lqHandler.OnLogQuery(ctx, p.LogQuery)
 			if err != nil {
@@ -1201,6 +1227,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_TerminalStart:
+		if p.TerminalStart == nil {
+			c.logger.Warn("dropping TerminalStart with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalStart(ctx, p.TerminalStart); err != nil {
 				return fmt.Errorf("handle terminal start: %w", err)
@@ -1211,6 +1241,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_TerminalInput:
+		if p.TerminalInput == nil {
+			c.logger.Warn("dropping TerminalInput with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalInput(ctx, p.TerminalInput); err != nil {
 				return fmt.Errorf("handle terminal input: %w", err)
@@ -1218,6 +1252,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_TerminalResize:
+		if p.TerminalResize == nil {
+			c.logger.Warn("dropping TerminalResize with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalResize(ctx, p.TerminalResize); err != nil {
 				return fmt.Errorf("handle terminal resize: %w", err)
@@ -1225,6 +1263,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_TerminalStop:
+		if p.TerminalStop == nil {
+			c.logger.Warn("dropping TerminalStop with nil payload", "message_id", msg.Id)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalStop(ctx, p.TerminalStop); err != nil {
 				return fmt.Errorf("handle terminal stop: %w", err)
