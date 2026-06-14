@@ -3924,16 +3924,27 @@ type AgentUpdateArch struct {
 	// Direct download URL for the agent binary (HTTPS only)
 	// @gotags: validate:"required,url,startswith=https://"
 	BinaryUrl string `protobuf:"bytes,1,opt,name=binary_url,json=binaryUrl,proto3" json:"binary_url,omitempty" validate:"required,url,startswith=https://"`
-	// URL to the SHA256 checksum file for the binary (HTTPS only)
-	// @gotags: validate:"required,url,startswith=https://"
-	ChecksumUrl string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"required,url,startswith=https://"`
-	// Expected SHA-256 of the binary, lowercase hex. This is the
-	// AUTHORITATIVE integrity gate for the self-update swap: it travels
-	// inside the CA-signed action, so the agent verifies the downloaded
-	// binary against a hash bound to the control server's signature rather
-	// than a checksum file fetched from the (untrusted) download origin.
-	// @gotags: validate:"required,len=64,hexadecimal"
-	ExpectedSha256 string `protobuf:"bytes,3,opt,name=expected_sha256,json=expectedSha256,proto3" json:"expected_sha256,omitempty" validate:"required,len=64,hexadecimal"`
+	// URL to a SHA256SUMS-style checksum file for the binary (HTTPS only).
+	// The DEFAULT integrity source: with it set (and expected_sha256
+	// unset) the agent fetches and verifies against this file, which lets
+	// an action point binary_url + checksum_url at "latest" release assets
+	// and have the fleet track new releases hands-off. Authenticity here is
+	// origin-trust (TLS + the operator's release host); an operator can
+	// host the checksum file on a SEPARATE host from the binary to mitigate
+	// the single-origin risk. At least one of checksum_url / expected_sha256
+	// must be set (enforced by the server validator).
+	// @gotags: validate:"omitempty,url,startswith=https://"
+	ChecksumUrl string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"omitempty,url,startswith=https://"`
+	// Optional pinned SHA-256 of the binary, lowercase hex. When set it is
+	// the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: it
+	// travels inside the CA-signed action, so the agent verifies the
+	// downloaded binary against a hash bound to the control server's
+	// signature rather than a checksum file fetched from the download
+	// origin. Use it to pin an exact binary (staged rollouts) or for
+	// stronger authenticity; leave it unset to track "latest" via
+	// checksum_url.
+	// @gotags: validate:"omitempty,len=64,hexadecimal"
+	ExpectedSha256 string `protobuf:"bytes,3,opt,name=expected_sha256,json=expectedSha256,proto3" json:"expected_sha256,omitempty" validate:"omitempty,len=64,hexadecimal"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }

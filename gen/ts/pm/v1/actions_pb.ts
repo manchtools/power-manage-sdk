@@ -1879,20 +1879,31 @@ export type AgentUpdateArch = Message<"pm.v1.AgentUpdateArch"> & {
   binaryUrl: string;
 
   /**
-   * URL to the SHA256 checksum file for the binary (HTTPS only)
-   * @gotags: validate:"required,url,startswith=https://"
+   * URL to a SHA256SUMS-style checksum file for the binary (HTTPS only).
+   * The DEFAULT integrity source: with it set (and expected_sha256
+   * unset) the agent fetches and verifies against this file, which lets
+   * an action point binary_url + checksum_url at "latest" release assets
+   * and have the fleet track new releases hands-off. Authenticity here is
+   * origin-trust (TLS + the operator's release host); an operator can
+   * host the checksum file on a SEPARATE host from the binary to mitigate
+   * the single-origin risk. At least one of checksum_url / expected_sha256
+   * must be set (enforced by the server validator).
+   * @gotags: validate:"omitempty,url,startswith=https://"
    *
    * @generated from field: string checksum_url = 2;
    */
   checksumUrl: string;
 
   /**
-   * Expected SHA-256 of the binary, lowercase hex. This is the
-   * AUTHORITATIVE integrity gate for the self-update swap: it travels
-   * inside the CA-signed action, so the agent verifies the downloaded
-   * binary against a hash bound to the control server's signature rather
-   * than a checksum file fetched from the (untrusted) download origin.
-   * @gotags: validate:"required,len=64,hexadecimal"
+   * Optional pinned SHA-256 of the binary, lowercase hex. When set it is
+   * the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: it
+   * travels inside the CA-signed action, so the agent verifies the
+   * downloaded binary against a hash bound to the control server's
+   * signature rather than a checksum file fetched from the download
+   * origin. Use it to pin an exact binary (staged rollouts) or for
+   * stronger authenticity; leave it unset to track "latest" via
+   * checksum_url.
+   * @gotags: validate:"omitempty,len=64,hexadecimal"
    *
    * @generated from field: string expected_sha256 = 3;
    */
