@@ -202,7 +202,12 @@ func TestDispatch_Action_NilEnvelope_NoPanic(t *testing.T) {
 
 	t.Run("absent: nil inner Action must be dropped, not dereferenced", func(t *testing.T) {
 		c := NewClient("https://gw.invalid", WithAuth("01HZZZZZZZZZZZZZZZZZZZZZZZZ", ""))
-		h := &panicStreamingHandler{ran: make(chan struct{})}
+		// panicAction:true makes the "handler must NOT have been invoked"
+		// assertion BINDING: if the nil-guard regressed and the handler were
+		// reached, signalRan() closes h.ran (before the recovered panic), so
+		// the select below fires t.Fatal. Without the flag the handler returns
+		// silently and the assertion could never catch a leak.
+		h := &panicStreamingHandler{ran: make(chan struct{}), panicAction: true}
 		// ServerMessage_Action with a nil inner ActionEnvelope. The dispatch
 		// path reads p.Action.Envelope / p.Action.Signature; a nil p.Action is
 		// a nil-pointer dereference today (RED → panic).
