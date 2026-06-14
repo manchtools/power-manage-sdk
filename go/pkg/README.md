@@ -233,6 +233,29 @@ type CommandResult struct {
 | zypper | openSUSE, SLES | `/usr/bin/zypper` | `zypper addlock/removelock` |
 | flatpak | Cross-distro | `/usr/bin/flatpak` | N/A |
 
+## Argument-Hardening Validators
+
+Every value that reaches a package-manager `argv` must be validated against
+its *intent* before the command runs. These exported validators are
+**mandatory** at the argv boundary (the agent's executors call them, and the
+positionals are then passed after an explicit `--` end-of-options separator
+built with `exec.SeparatePositionals`, so a flag-shaped value can never be
+reparsed as an option):
+
+| Validator | Guards | Rule |
+|-----------|--------|------|
+| `ValidatePackageName` / `ValidatePackageNames` | apt/dnf/pacman/zypper/flatpak names | first char alphanumeric, then `[a-zA-Z0-9._+:/@~-]`, ≤256 |
+| `ValidatePackageVersion` | `<name>=<version>` argv | cross-distro EVR grammar, empty = "no pin" |
+| `ValidateRpmPackageName` | `rpm -q` / `rpm -e <NAME>` (NAME read off a crafted `.rpm`) | first char alphanumeric, then `[a-zA-Z0-9._+-]`, ≤256 |
+| `ValidateRepoBaseURL` | dnf `baseurl` / zypper `url` / pacman `server` | **https only**, host required, control-char free (template vars `$releasever`/`$arch` allowed). apt is excluded — its security is the gpg-signed Release file. |
+| `ValidateGpgKeyRef` | dnf/zypper `gpgkey` passed to `rpm --import` | https URL, `file:///abs` path, or absolute path; no `..`, no leading `-`, no `http://`, no `ext::` |
+| `ValidateRemoteName` | flatpak remote alias | first char alphanumeric, then `[a-zA-Z0-9._-]`, ≤128 |
+
+`exec.SeparatePositionals(flags, positionals...)` (in `go/sys/exec`) builds a
+fresh slice, copies `flags`, inserts `--` unconditionally (even with no
+positionals), then appends the positionals — so the caller's `flags` slice is
+never aliased or mutated.
+
 ## Notes
 
 ### Version Formats
