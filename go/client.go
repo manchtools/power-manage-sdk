@@ -893,9 +893,12 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		}
 	}()
 
-	// Inventory: send on connect + every 24 hours
+	// Inventory: send on connect + every 24 hours. safeGo guards the
+	// loop so a panic in the agent-initiated CollectInventory path cannot
+	// crash the whole agent process (a panic in a bare goroutine is
+	// unrecoverable by the parent).
 	if invHandler, ok := handler.(InventoryHandler); ok {
-		go func() {
+		c.safeGo("inventory-ticker", func() {
 			// sendWithRetry sends inventory with up to 3 attempts at
 			// 1s/3s/9s backoff. The 24-hour ticker means a single
 			// transient send failure (network blip on connect) would
@@ -939,7 +942,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 					}
 				}
 			}
-		}()
+		})
 	}
 
 	// Channel to receive messages from blocking Receive call
@@ -1020,13 +1023,53 @@ func (c *Client) applyWelcomeHeartbeat(w *pm.Welcome) {
 	}
 }
 
+// safeGo runs fn in a new goroutine with a deferred recover so a panic
+// in a server-originated fan-out handler (inventory, LUKS revoke,
+// inventory ticker) cannot crash the whole agent process. A panic in a
+// goroutine is unrecoverable by the parent, so each spawned goroutine
+// must guard itself. label identifies the leg in the log line.
+func (c *Client) safeGo(label string, fn func()) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				c.logger.Error("recovered panic in stream dispatch goroutine",
+					"leg", label, "panic", fmt.Sprintf("%v", r))
+			}
+		}()
+		fn()
+	}()
+}
+
 // dispatchServerMessage routes a single ServerMessage to the appropriate
 // handler method. Extracted from Run for testability — call sites that
 // need a fake stream or hand-built messages can drive this directly.
 // Returns a non-nil error only for fatal stream errors that should tear
 // down the connection; per-message handler failures (LUKS, terminal,
 // etc.) are wrapped before returning so callers see what failed.
-func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessage, handler StreamHandler) error {
+//
+// The per-message body runs under a deferred recover(): a panic inside ANY
+// handler method is caught, logged, and turned into a NON-fatal outcome
+// (dispatch returns nil) so one buggy or hostile handler invocation cannot
+// crash-loop the agent (Run treats a returned error as fatal and tears the
+// connection down). Genuine fatal stream send/receive errors still return
+// as errors — only handler PANICS become non-fatal.
+func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessage, handler StreamHandler) (retErr error) {
+	defer func() {
+		if r := recover(); r != nil {
+			var payloadType string
+			if msg != nil {
+				payloadType = fmt.Sprintf("%T", msg.Payload)
+			}
+			var msgID string
+			if msg != nil {
+				msgID = msg.Id
+			}
+			c.logger.Error("recovered panic while dispatching ServerMessage; dropping frame (non-fatal)",
+				"message_id", msgID, "payload_type", payloadType, "panic", fmt.Sprintf("%v", r))
+			// Non-fatal: keep the receive loop alive.
+			retErr = nil
+		}
+	}()
 	switch p := msg.Payload.(type) {
 	case *pm.ServerMessage_Welcome:
 		c.applyWelcomeHeartbeat(p.Welcome)
@@ -1089,7 +1132,9 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			// capacity so a flood cannot spawn unbounded osquery forks.
 			select {
 			case c.invSem <- struct{}{}:
-				go func() {
+				// safeGo: a panic in OnRequestInventory runs in this spawned
+				// goroutine and would otherwise crash the whole agent.
+				c.safeGo("inventory", func() {
 					defer func() { <-c.invSem }()
 					// Server-originated: verify the signature (inside the
 					// handler) before collecting. A forged RequestInventory
@@ -1100,7 +1145,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 							c.logger.Warn("failed to send inventory", "error", err)
 						}
 					}
-				}()
+				})
 			default:
 				c.logger.Warn("dropping RequestInventory: inventory collection already at capacity",
 					"message_id", msg.Id, "limit", inventoryDispatchConcurrency)
@@ -1138,7 +1183,9 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			// unbounded goroutines (WS6 #11).
 			select {
 			case c.luksRevokeSem <- struct{}{}:
-				go func() {
+				// safeGo: a panic in OnRevokeLuksDeviceKey runs in this
+				// spawned goroutine and would otherwise crash the agent.
+				c.safeGo("luks-revoke", func() {
 					defer func() { <-c.luksRevokeSem }()
 					// Pass the full message so the handler can verify the CA
 					// signature binding action_id before the destructive wipe.
@@ -1146,7 +1193,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 					if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
 						c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
 					}
-				}()
+				})
 			default:
 				c.logger.Warn("dropping RevokeLuksDeviceKey: revocation already at capacity",
 					"message_id", msg.Id, "action_id", actionID, "limit", luksRevokeDispatchConcurrency)
