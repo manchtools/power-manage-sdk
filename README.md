@@ -91,6 +91,15 @@ client.Run(ctx, handler)
 
 Features: mTLS authentication, automatic heartbeat, action result reporting, live output streaming, security alerts.
 
+#### Stream-loop robustness
+
+The receive loop is hardened against a compromised or buggy gateway:
+
+- **Inbound size bound.** `NewClient` wires `connect.WithReadMaxBytes(maxInboundMessageBytes)` (16 MiB). An over-large `ServerMessage` is refused with a resource-exhausted error and the connection is torn down cleanly (the loop reconnects) instead of allocating the frame — closing an OOM/DoS vector.
+- **Per-message panic isolation.** `dispatchServerMessage` runs each message under a scoped `recover()`: a panic inside any handler method is caught, logged, and turned into a non-fatal dropped frame so one bad handler invocation cannot crash-loop the whole agent (fleet DoS). Genuine fatal stream send/receive errors still propagate.
+- **Bounded, panic-safe goroutine fan-out.** The server-originated `RequestInventory` and `RevokeLuksDeviceKey` legs (and the inventory ticker) run through `safeGo` — a spawned goroutine with its own deferred `recover()` — and are gated behind bounded semaphores so a flood of frames cannot spawn unbounded goroutines or crash the process from a goroutine panic.
+- **Malformed-oneof nil-guards.** A `ServerMessage` whose inner oneof payload is nil (e.g. a `ServerMessage_Action` with a nil `ActionDispatch`) is logged and dropped, never dereferenced.
+
 ### Certificate Renewal
 
 `go/client.go` also provides a standalone `RenewCertificate` function for certificate rotation:
