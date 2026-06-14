@@ -6,6 +6,36 @@ import (
 	"testing"
 )
 
+// TestWriteKeyFile_TmpfsAnd0600 pins the no-argv-secret directive: a LUKS
+// passphrase reaches cryptsetup via a tmpfs (/dev/shm) --key-file at mode
+// 0600, never on the command line where it would be world-readable in
+// /proc/<pid>/cmdline.
+func TestWriteKeyFile_TmpfsAnd0600(t *testing.T) {
+	path, err := writeKeyFile("secret-passphrase")
+	if err != nil {
+		t.Skipf("writeKeyFile needs %s (tmpfs): %v", keyFileDir, err)
+	}
+	t.Cleanup(func() { cleanupKeyFile(path) })
+
+	if !strings.HasPrefix(path, keyFileDir+"/") {
+		t.Errorf("key file %q is not under the tmpfs dir %q", path, keyFileDir)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat key file: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Errorf("key file mode = %v, want 0600", info.Mode().Perm())
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read key file: %v", err)
+	}
+	if string(b) != "secret-passphrase" {
+		t.Error("key file content does not match the passphrase")
+	}
+}
+
 // ─── GeneratePassphrase tests ────────────────────────────────────────────────
 
 func TestGeneratePassphrase_MinWords(t *testing.T) {
