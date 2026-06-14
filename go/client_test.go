@@ -2,7 +2,9 @@ package sdk
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +13,27 @@ import (
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
 )
+
+// TestBootstrapHTTPClient_Bounded pins the transport hardening for the
+// unauthenticated RegisterAgent/RenewCertificate bootstrap calls
+// (sdk#104): a bounded timeout (no hang/DoS) and a TLS 1.3 floor.
+// RegisterAgent and RenewCertificate use this as their default client.
+func TestBootstrapHTTPClient_Bounded(t *testing.T) {
+	c := bootstrapHTTPClient()
+	if c.Timeout == 0 {
+		t.Error("bootstrap client has no Timeout (a hung control endpoint could wedge enrollment)")
+	}
+	tr, ok := c.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("transport is %T, want *http.Transport", c.Transport)
+	}
+	if tr.TLSClientConfig == nil {
+		t.Fatal("bootstrap transport has no TLSClientConfig")
+	}
+	if tr.TLSClientConfig.MinVersion != tls.VersionTLS13 {
+		t.Errorf("TLS MinVersion = %#x, want TLS 1.3 (%#x)", tr.TLSClientConfig.MinVersion, tls.VersionTLS13)
+	}
+}
 
 // fakeTerminalHandler is a minimal StreamHandler+TerminalHandler that
 // records every call so dispatch tests can assert against it.

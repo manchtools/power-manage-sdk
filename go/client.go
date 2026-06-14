@@ -86,6 +86,11 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 		luksRevokeSem: make(chan struct{}, luksRevokeDispatchConcurrency),
 	}
 
+	// http.DefaultClient (no Timeout) is correct here: the agent client
+	// drives a long-lived bidi stream, and a whole-request timeout would
+	// kill it. In production NewClient is always given a WithMTLS* option
+	// that replaces this anyway. (The unary RegisterAgent/RenewCertificate
+	// bootstrap calls use the bounded bootstrapHTTPClient instead.)
 	httpClient := http.DefaultClient
 	for _, opt := range opts {
 		opt.apply(c, &httpClient)
@@ -281,6 +286,34 @@ func WithH2C() ClientOption {
 	}}
 }
 
+// bootstrapHTTPClient is the default client for the unauthenticated
+// RegisterAgent / RenewCertificate bootstrap calls. Unlike
+// http.DefaultClient it has a bounded Timeout (a hung or malicious
+// control endpoint must not be able to wedge enrollment/renewal forever)
+// and a TLS 1.3 floor. Proxy support is deliberately retained
+// (http.ProxyFromEnvironment): the agent runs as root under systemd with
+// a controlled environment, the channel is TLS-authenticated, and the
+// optional enrollment CA-pin catches a wrong-CA outcome — so honoring an
+// enterprise proxy is the right trade-off over breaking proxied
+// deployments. Overridable via ClientOption (the renewal mTLS variants
+// replace the client entirely).
+func bootstrapHTTPClient() *http.Client {
+	transport := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13},
+	}
+	// Preserve HTTP/2 parity with http.DefaultClient for the https
+	// control endpoint; falls back to HTTP/1.1 if configuration fails
+	// (unary register/renew works over either).
+	if err := http2.ConfigureTransport(transport); err != nil {
+		slog.Default().Warn("bootstrap: failed to configure HTTP/2 transport; falling back to HTTP/1.1", "error", err)
+	}
+	return &http.Client{
+		Timeout:   60 * time.Second,
+		Transport: transport,
+	}
+}
+
 // RegisterAgentResult contains the result of agent registration.
 type RegisterAgentResult struct {
 	DeviceID    string
@@ -295,7 +328,7 @@ type RegisterAgentResult struct {
 // Returns the gateway URL that the agent should use for streaming.
 func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agentVersion string, csr []byte, opts ...ClientOption) (*RegisterAgentResult, error) {
 	c := &Client{}
-	httpClient := http.DefaultClient
+	httpClient := bootstrapHTTPClient()
 	for _, opt := range opts {
 		opt.apply(c, &httpClient)
 	}
@@ -333,7 +366,7 @@ type RenewCertificateResult struct {
 // The agent presents its current certificate for identity verification.
 func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert []byte, opts ...ClientOption) (*RenewCertificateResult, error) {
 	c := &Client{}
-	httpClient := http.DefaultClient
+	httpClient := bootstrapHTTPClient()
 	for _, opt := range opts {
 		opt.apply(c, &httpClient)
 	}

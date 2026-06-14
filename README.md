@@ -104,6 +104,17 @@ result, _ := sdk.RenewCertificate(ctx, controlURL, csrPEM, currentCertPEM)
 
 The agent presents its current (still valid) certificate and a new CSR. The Control Server verifies the certificate, checks the fingerprint against the database, signs the new CSR, and returns the active CA certificate. If the CA has been rotated, the agent should update its stored CA certificate.
 
+**Bootstrap transport hardening.** `RegisterAgent` and `RenewCertificate` are the unauthenticated bootstrap calls; their default HTTP client is bounded (request timeout + TLS 1.3 floor) so a hung or malicious control endpoint cannot wedge enrollment/renewal. Proxy support is retained for enterprise deployments (the channel is TLS-authenticated and the optional enrollment CA-pin catches a wrong-CA outcome). A `ClientOption` (the mTLS variants) overrides the client entirely.
+
+**Enrollment trust helpers** (`go/crypto`):
+
+```go
+fp, _ := crypto.CAFingerprintFromPEM(caPEM)        // lowercase-hex SHA-256 of the CA DER
+err := crypto.VerifyCAContinuity(oldCAPEM, newCAPEM) // accept only an identical or cross-signed CA
+```
+
+`CAFingerprintFromPEM` is byte-identical to the control server's `ca.FingerprintFromPEM`, so an operator-supplied out-of-band pin (e.g. `openssl x509 -in ca.crt -outform DER | sha256sum`) matches what the agent derives from the registration-returned CA. `VerifyCAContinuity` guards certificate rotation: a returned CA is adopted only when it is byte-identical to, or cross-signed by, the enrolled CA — refusing an unrelated trust-anchor swap.
+
 ### Package Manager Library
 
 `go/pkg/` abstracts five Linux package managers behind a unified interface with a builder API:
