@@ -1833,8 +1833,11 @@ type AppInstallParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,url"
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty" validate:"required,url"`
-	// @gotags: validate:"omitempty,len=64,hexadecimal"
-	ChecksumSha256 string `protobuf:"bytes,2,opt,name=checksum_sha256,json=checksumSha256,proto3" json:"checksum_sha256,omitempty" validate:"omitempty,len=64,hexadecimal"`
+	// Mandatory integrity for download-and-install actions (deb/rpm/
+	// appimage): without it the agent would install a binary whose only
+	// authenticity is TLS to a possibly-compromised origin. Lowercase hex.
+	// @gotags: validate:"required,len=64,hexadecimal"
+	ChecksumSha256 string `protobuf:"bytes,2,opt,name=checksum_sha256,json=checksumSha256,proto3" json:"checksum_sha256,omitempty" validate:"required,len=64,hexadecimal"`
 	// @gotags: validate:"omitempty,startswith=/"
 	InstallPath   string `protobuf:"bytes,3,opt,name=install_path,json=installPath,proto3" json:"install_path,omitempty" validate:"omitempty,startswith=/"`
 	unknownFields protoimpl.UnknownFields
@@ -3923,9 +3926,16 @@ type AgentUpdateArch struct {
 	BinaryUrl string `protobuf:"bytes,1,opt,name=binary_url,json=binaryUrl,proto3" json:"binary_url,omitempty" validate:"required,url,startswith=https://"`
 	// URL to the SHA256 checksum file for the binary (HTTPS only)
 	// @gotags: validate:"required,url,startswith=https://"
-	ChecksumUrl   string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"required,url,startswith=https://"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ChecksumUrl string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"required,url,startswith=https://"`
+	// Expected SHA-256 of the binary, lowercase hex. This is the
+	// AUTHORITATIVE integrity gate for the self-update swap: it travels
+	// inside the CA-signed action, so the agent verifies the downloaded
+	// binary against a hash bound to the control server's signature rather
+	// than a checksum file fetched from the (untrusted) download origin.
+	// @gotags: validate:"required,len=64,hexadecimal"
+	ExpectedSha256 string `protobuf:"bytes,3,opt,name=expected_sha256,json=expectedSha256,proto3" json:"expected_sha256,omitempty" validate:"required,len=64,hexadecimal"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AgentUpdateArch) Reset() {
@@ -3972,6 +3982,13 @@ func (x *AgentUpdateArch) GetChecksumUrl() string {
 	return ""
 }
 
+func (x *AgentUpdateArch) GetExpectedSha256() string {
+	if x != nil {
+		return x.ExpectedSha256
+	}
+	return ""
+}
+
 // AgentUpdateParams configures agent self-update via direct binary download.
 // At least one architecture must be specified. The agent selects the entry
 // matching its own architecture (runtime.GOARCH) and skips if no match.
@@ -3980,9 +3997,16 @@ type AgentUpdateParams struct {
 	// AMD64 (x86_64) binary source
 	Amd64 *AgentUpdateArch `protobuf:"bytes,1,opt,name=amd64,proto3" json:"amd64,omitempty"`
 	// ARM64 (aarch64) binary source
-	Arm64         *AgentUpdateArch `protobuf:"bytes,2,opt,name=arm64,proto3" json:"arm64,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Arm64 *AgentUpdateArch `protobuf:"bytes,2,opt,name=arm64,proto3" json:"arm64,omitempty"`
+	// When true, the agent installs the target binary even if its version
+	// is older than or equal to the running version (downgrade). The flag
+	// rides inside the CA-signed action, so a downgrade is an explicit,
+	// authenticated operator decision — the agent otherwise refuses an
+	// older version (anti-rollback). Default false.
+	// @gotags: validate:"omitempty"
+	AllowDowngrade bool `protobuf:"varint,3,opt,name=allow_downgrade,json=allowDowngrade,proto3" json:"allow_downgrade,omitempty" validate:"omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AgentUpdateParams) Reset() {
@@ -4027,6 +4051,13 @@ func (x *AgentUpdateParams) GetArm64() *AgentUpdateArch {
 		return x.Arm64
 	}
 	return nil
+}
+
+func (x *AgentUpdateParams) GetAllowDowngrade() bool {
+	if x != nil {
+		return x.AllowDowngrade
+	}
+	return false
 }
 
 var File_pm_v1_actions_proto protoreflect.FileDescriptor
@@ -4288,14 +4319,16 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	" \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"S\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"|\n" +
 	"\x0fAgentUpdateArch\x12\x1d\n" +
 	"\n" +
 	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
-	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\"o\n" +
+	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\x12'\n" +
+	"\x0fexpected_sha256\x18\x03 \x01(\tR\x0eexpectedSha256\"\x98\x01\n" +
 	"\x11AgentUpdateParams\x12,\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
-	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64*\xea\x04\n" +
+	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64\x12'\n" +
+	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade*\xea\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +

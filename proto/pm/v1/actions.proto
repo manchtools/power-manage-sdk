@@ -235,7 +235,10 @@ message PackageParams {
 message AppInstallParams {
   // @gotags: validate:"required,url"
   string url = 1;
-  // @gotags: validate:"omitempty,len=64,hexadecimal"
+  // Mandatory integrity for download-and-install actions (deb/rpm/
+  // appimage): without it the agent would install a binary whose only
+  // authenticity is TLS to a possibly-compromised origin. Lowercase hex.
+  // @gotags: validate:"required,len=64,hexadecimal"
   string checksum_sha256 = 2;
   // @gotags: validate:"omitempty,startswith=/"
   string install_path = 3;
@@ -913,6 +916,14 @@ message AgentUpdateArch {
   // URL to the SHA256 checksum file for the binary (HTTPS only)
   // @gotags: validate:"required,url,startswith=https://"
   string checksum_url = 2;
+
+  // Expected SHA-256 of the binary, lowercase hex. This is the
+  // AUTHORITATIVE integrity gate for the self-update swap: it travels
+  // inside the CA-signed action, so the agent verifies the downloaded
+  // binary against a hash bound to the control server's signature rather
+  // than a checksum file fetched from the (untrusted) download origin.
+  // @gotags: validate:"required,len=64,hexadecimal"
+  string expected_sha256 = 3;
 }
 
 // AgentUpdateParams configures agent self-update via direct binary download.
@@ -924,4 +935,12 @@ message AgentUpdateParams {
 
   // ARM64 (aarch64) binary source
   AgentUpdateArch arm64 = 2;
+
+  // When true, the agent installs the target binary even if its version
+  // is older than or equal to the running version (downgrade). The flag
+  // rides inside the CA-signed action, so a downgrade is an explicit,
+  // authenticated operator decision — the agent otherwise refuses an
+  // older version (anti-rollback). Default false.
+  // @gotags: validate:"omitempty"
+  bool allow_downgrade = 3;
 }
