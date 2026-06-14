@@ -76,6 +76,18 @@ const (
 	// luksRevokeDispatchConcurrency bounds concurrent LUKS device-key
 	// revocations dispatched from the server.
 	luksRevokeDispatchConcurrency = 2
+
+	// maxInboundMessageBytes bounds the size of a single inbound
+	// ServerMessage the agent will decode. The agent only ever receives
+	// small control frames (actions, queries, terminal I/O chunks capped
+	// at 64 KiB, LUKS request-response) — none legitimately approach this
+	// size. Without a bound, a compromised or buggy gateway could push a
+	// multi-gigabyte frame and force the agent to allocate it, an OOM /
+	// DoS vector. 16 MiB is comfortably above any real frame yet refuses
+	// a frame whose only purpose is to exhaust memory. Enforced via
+	// connect.WithReadMaxBytes in NewClient; the connection that receives
+	// an oversized frame is torn down with a resource-exhausted error.
+	maxInboundMessageBytes = 16 << 20 // 16 MiB
 )
 
 // NewClient creates a new SDK client.
@@ -96,7 +108,15 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 		opt.apply(c, &httpClient)
 	}
 
-	c.client = pmv1connect.NewAgentServiceClient(httpClient, serverURL)
+	// Bound the size of inbound ServerMessages. A compromised or buggy
+	// gateway could otherwise push an arbitrarily large frame and force
+	// the agent to allocate it (OOM/DoS). connect.WithReadMaxBytes makes
+	// the connection that receives an oversized frame fail with a
+	// resource-exhausted error and tear down cleanly, rather than
+	// allocate. The long-lived bidi stream is unaffected for normal
+	// (small) control frames.
+	c.client = pmv1connect.NewAgentServiceClient(httpClient, serverURL,
+		connect.WithReadMaxBytes(maxInboundMessageBytes))
 	return c
 }
 
