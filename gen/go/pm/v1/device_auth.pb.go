@@ -24,11 +24,25 @@ const (
 type EnrollRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,url"
-	ServerUrl string `protobuf:"bytes,1,opt,name=server_url,json=serverUrl,proto3" json:"server_url,omitempty" validate:"required,url"` // Control server URL
+	ServerUrl string `protobuf:"bytes,1,opt,name=server_url,json=serverUrl,proto3" json:"server_url,omitempty" validate:"required,url"` // Control server URL (https only — enforced agent-side)
 	// @gotags: validate:"required"
-	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required"` // Registration token from web UI
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required"` // Registration token from web UI
+	// Optional out-of-band CA fingerprint pin: the 64-char hex SHA-256 of
+	// the control CA certificate DER. When set, the agent verifies the CA
+	// returned by registration matches this pin BEFORE trusting it,
+	// defending against a first-enrollment trust-anchor swap. Delivered by
+	// the operator alongside the token (e.g. power-manage://…?token=…&pin=…).
+	// Absent = trust-on-first-use (accepted residual). Case-insensitive:
+	// the enroll CLI strips colons and lowercases the operator's value
+	// (openssl emits uppercase, colon-separated) and the agent compares
+	// with EqualFold, so the `hexadecimal` tag is intentionally permissive
+	// on case. Field 3 (formerly the removed skip_verify bool) is reused in
+	// place — EnrollRequest only crosses the local enrollment socket within
+	// one agent binary, so there is no cross-version wire concern.
+	// @gotags: validate:"omitempty,len=64,hexadecimal"
+	CaFingerprintPin string `protobuf:"bytes,3,opt,name=ca_fingerprint_pin,json=caFingerprintPin,proto3" json:"ca_fingerprint_pin,omitempty" validate:"omitempty,len=64,hexadecimal"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *EnrollRequest) Reset() {
@@ -71,6 +85,13 @@ func (x *EnrollRequest) GetServerUrl() string {
 func (x *EnrollRequest) GetToken() string {
 	if x != nil {
 		return x.Token
+	}
+	return ""
+}
+
+func (x *EnrollRequest) GetCaFingerprintPin() string {
+	if x != nil {
+		return x.CaFingerprintPin
 	}
 	return ""
 }
@@ -240,11 +261,12 @@ var File_pm_v1_device_auth_proto protoreflect.FileDescriptor
 
 const file_pm_v1_device_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x17pm/v1/device_auth.proto\x12\x05pm.v1\"W\n" +
+	"\x17pm/v1/device_auth.proto\x12\x05pm.v1\"r\n" +
 	"\rEnrollRequest\x12\x1d\n" +
 	"\n" +
 	"server_url\x18\x01 \x01(\tR\tserverUrl\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05tokenJ\x04\b\x03\x10\x04R\vskip_verify\"]\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12,\n" +
+	"\x12ca_fingerprint_pin\x18\x03 \x01(\tR\x10caFingerprintPin\"]\n" +
 	"\x0eEnrollResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x14\n" +

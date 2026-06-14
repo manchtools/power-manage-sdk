@@ -27,11 +27,23 @@ service DeviceAuthService {
 
 message EnrollRequest {
   // @gotags: validate:"required,url"
-  string server_url = 1; // Control server URL
+  string server_url = 1; // Control server URL (https only — enforced agent-side)
   // @gotags: validate:"required"
   string token = 2; // Registration token from web UI
-  reserved 3; // was bool skip_verify; removed in 2026.05 (TLS bypass is not supported)
-  reserved "skip_verify";
+  // Optional out-of-band CA fingerprint pin: the 64-char hex SHA-256 of
+  // the control CA certificate DER. When set, the agent verifies the CA
+  // returned by registration matches this pin BEFORE trusting it,
+  // defending against a first-enrollment trust-anchor swap. Delivered by
+  // the operator alongside the token (e.g. power-manage://…?token=…&pin=…).
+  // Absent = trust-on-first-use (accepted residual). Case-insensitive:
+  // the enroll CLI strips colons and lowercases the operator's value
+  // (openssl emits uppercase, colon-separated) and the agent compares
+  // with EqualFold, so the `hexadecimal` tag is intentionally permissive
+  // on case. Field 3 (formerly the removed skip_verify bool) is reused in
+  // place — EnrollRequest only crosses the local enrollment socket within
+  // one agent binary, so there is no cross-version wire concern.
+  // @gotags: validate:"omitempty,len=64,hexadecimal"
+  string ca_fingerprint_pin = 3;
 }
 
 message EnrollResponse {

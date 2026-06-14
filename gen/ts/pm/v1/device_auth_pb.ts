@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/device_auth.proto.
  */
 export const file_pm_v1_device_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChdwbS92MS9kZXZpY2VfYXV0aC5wcm90bxIFcG0udjEiRQoNRW5yb2xsUmVxdWVzdBISCgpzZXJ2ZXJfdXJsGAEgASgJEg0KBXRva2VuGAIgASgJSgQIAxAEUgtza2lwX3ZlcmlmeSJDCg5FbnJvbGxSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEhEKCWRldmljZV9pZBgCIAEoCRINCgVlcnJvchgDIAEoCSIcChpHZXRFbnJvbGxtZW50U3RhdHVzUmVxdWVzdCJCChtHZXRFbnJvbGxtZW50U3RhdHVzUmVzcG9uc2USEAoIZW5yb2xsZWQYASABKAgSEQoJZGV2aWNlX2lkGAIgASgJMqgBChFEZXZpY2VBdXRoU2VydmljZRI1CgZFbnJvbGwSFC5wbS52MS5FbnJvbGxSZXF1ZXN0GhUucG0udjEuRW5yb2xsUmVzcG9uc2USXAoTR2V0RW5yb2xsbWVudFN0YXR1cxIhLnBtLnYxLkdldEVucm9sbG1lbnRTdGF0dXNSZXF1ZXN0GiIucG0udjEuR2V0RW5yb2xsbWVudFN0YXR1c1Jlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM");
+  fileDesc("ChdwbS92MS9kZXZpY2VfYXV0aC5wcm90bxIFcG0udjEiTgoNRW5yb2xsUmVxdWVzdBISCgpzZXJ2ZXJfdXJsGAEgASgJEg0KBXRva2VuGAIgASgJEhoKEmNhX2ZpbmdlcnByaW50X3BpbhgDIAEoCSJDCg5FbnJvbGxSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEhEKCWRldmljZV9pZBgCIAEoCRINCgVlcnJvchgDIAEoCSIcChpHZXRFbnJvbGxtZW50U3RhdHVzUmVxdWVzdCJCChtHZXRFbnJvbGxtZW50U3RhdHVzUmVzcG9uc2USEAoIZW5yb2xsZWQYASABKAgSEQoJZGV2aWNlX2lkGAIgASgJMqgBChFEZXZpY2VBdXRoU2VydmljZRI1CgZFbnJvbGwSFC5wbS52MS5FbnJvbGxSZXF1ZXN0GhUucG0udjEuRW5yb2xsUmVzcG9uc2USXAoTR2V0RW5yb2xsbWVudFN0YXR1cxIhLnBtLnYxLkdldEVucm9sbG1lbnRTdGF0dXNSZXF1ZXN0GiIucG0udjEuR2V0RW5yb2xsbWVudFN0YXR1c1Jlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Uvc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM");
 
 /**
  * @generated from message pm.v1.EnrollRequest
@@ -19,7 +19,7 @@ export type EnrollRequest = Message<"pm.v1.EnrollRequest"> & {
   /**
    * @gotags: validate:"required,url"
    *
-   * Control server URL
+   * Control server URL (https only — enforced agent-side)
    *
    * @generated from field: string server_url = 1;
    */
@@ -33,6 +33,25 @@ export type EnrollRequest = Message<"pm.v1.EnrollRequest"> & {
    * @generated from field: string token = 2;
    */
   token: string;
+
+  /**
+   * Optional out-of-band CA fingerprint pin: the 64-char hex SHA-256 of
+   * the control CA certificate DER. When set, the agent verifies the CA
+   * returned by registration matches this pin BEFORE trusting it,
+   * defending against a first-enrollment trust-anchor swap. Delivered by
+   * the operator alongside the token (e.g. power-manage://…?token=…&pin=…).
+   * Absent = trust-on-first-use (accepted residual). Case-insensitive:
+   * the enroll CLI strips colons and lowercases the operator's value
+   * (openssl emits uppercase, colon-separated) and the agent compares
+   * with EqualFold, so the `hexadecimal` tag is intentionally permissive
+   * on case. Field 3 (formerly the removed skip_verify bool) is reused in
+   * place — EnrollRequest only crosses the local enrollment socket within
+   * one agent binary, so there is no cross-version wire concern.
+   * @gotags: validate:"omitempty,len=64,hexadecimal"
+   *
+   * @generated from field: string ca_fingerprint_pin = 3;
+   */
+  caFingerprintPin: string;
 };
 
 /**
