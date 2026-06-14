@@ -74,6 +74,19 @@ func TestGenerateCSR(t *testing.T) {
 	if key.Curve != elliptic.P256() {
 		t.Fatalf("key curve = %v, want P-256", key.Curve.Params().Name)
 	}
+
+	// The returned private key MUST be the one that signed the CSR — its
+	// public half must equal the CSR's embedded public key. A GenerateCSR
+	// bug that signs with key-A but returns key-B (the key-swap path the
+	// other assertions cannot catch) would leave the agent unable to use
+	// the issued certificate. (#5)
+	csrPub, ok := csr.PublicKey.(*ecdsa.PublicKey)
+	if !ok {
+		t.Fatalf("CSR public key type = %T, want *ecdsa.PublicKey", csr.PublicKey)
+	}
+	if key.PublicKey.X.Cmp(csrPub.X) != 0 || key.PublicKey.Y.Cmp(csrPub.Y) != 0 {
+		t.Fatal("returned keyPEM does not match the CSR's embedded public key")
+	}
 }
 
 func TestGenerateCSR_DifferentHostnames(t *testing.T) {
