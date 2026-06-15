@@ -17,11 +17,13 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/go-playground/validator/v10"
 	"github.com/oklog/ulid/v2"
 	"golang.org/x/net/http2"
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
 	"github.com/manchtools/power-manage/sdk/gen/go/pm/v1/pmv1connect"
+	"github.com/manchtools/power-manage/sdk/go/validate"
 )
 
 // Heartbeat interval bounds. The SDK clamps server-supplied values from
@@ -41,8 +43,26 @@ type Client struct {
 	authToken string
 	logger    *slog.Logger
 
+	// httpClient is the underlying transport carrier, retained so the agent
+	// can release its idle connections on reconnect (CloseIdleConnections) and
+	// not leak a transport per reconnect attempt (WS13 #8).
+	httpClient *http.Client
+
+	// validator enforces the inbound `validate` gotags on each server command
+	// before dispatch (WS13 #5) — defence-in-depth against a compromised relay
+	// pushing a malformed-but-non-nil frame. Created in NewClient.
+	validator *validator.Validate
+
 	mu     sync.RWMutex
 	stream *connect.BidiStreamForClient[pm.AgentMessage, pm.ServerMessage]
+
+	// actionCh feeds the per-Run action worker. Server-dispatched actions are
+	// handed to a single worker goroutine (off the receive loop) so a
+	// long-running action can no longer head-of-line-block TerminalStop/Input/
+	// Resize (WS13 #7). A single worker preserves one-at-a-time, in-order
+	// execution; the buffered channel bounds memory. Non-nil only while Run()
+	// is active; guarded by mu.
+	actionCh chan *pm.ActionDispatch
 
 	// sendMu serializes all stream.Send() calls — concurrent writes on a
 	// bidi stream are not safe and can corrupt messages on the wire.
@@ -88,12 +108,20 @@ const (
 	// connect.WithReadMaxBytes in NewClient; the connection that receives
 	// an oversized frame is torn down with a resource-exhausted error.
 	maxInboundMessageBytes = 16 << 20 // 16 MiB
+
+	// actionQueueDepth bounds how many server-dispatched actions can wait for
+	// the single action worker (WS13 #7). Deep enough to absorb any legitimate
+	// burst; a backlog beyond it means a pathological flood, so the excess is
+	// dropped (the server re-dispatches on reconnect) rather than queued
+	// unbounded or allowed to block the receive loop.
+	actionQueueDepth = 256
 )
 
 // NewClient creates a new SDK client.
 func NewClient(serverURL string, opts ...ClientOption) *Client {
 	c := &Client{
 		logger:        slog.Default(),
+		validator:     validate.NewValidator(),
 		invSem:        make(chan struct{}, inventoryDispatchConcurrency),
 		luksRevokeSem: make(chan struct{}, luksRevokeDispatchConcurrency),
 	}
@@ -107,6 +135,7 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 	for _, opt := range opts {
 		opt.apply(c, &httpClient)
 	}
+	c.httpClient = httpClient
 
 	// Bound the size of inbound ServerMessages. A compromised or buggy
 	// gateway could otherwise push an arbitrarily large frame and force
@@ -118,6 +147,20 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 	c.client = pmv1connect.NewAgentServiceClient(httpClient, serverURL,
 		connect.WithReadMaxBytes(maxInboundMessageBytes))
 	return c
+}
+
+// CloseIdleConnections releases idle keep-alive connections held by this
+// client's transport. The agent calls it when tearing down a connection session
+// before reconnecting (WS13 #8): without it, each reconnect builds a fresh
+// client whose mTLS transport keeps its own idle-connection pool, leaking
+// sockets/file-descriptors across a long-lived reconnect loop. Safe to call on a
+// client with no custom transport (http.DefaultClient.Transport) or a nil
+// client.
+func (c *Client) CloseIdleConnections() {
+	if c == nil || c.httpClient == nil {
+		return
+	}
+	c.httpClient.CloseIdleConnections()
 }
 
 // ClientOption configures the client.
@@ -965,6 +1008,39 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		})
 	}
 
+	// Action worker (WS13 #7): server-dispatched actions execute on this single
+	// goroutine, off the receive loop, so a long-running action cannot
+	// head-of-line-block terminal control frames. One worker = one-at-a-time,
+	// in-order execution; the buffered channel bounds memory. Published on the
+	// Client so dispatchServerMessage can enqueue; cleared + drained on Run exit.
+	actionCh := make(chan *pm.ActionDispatch, actionQueueDepth)
+	workerCtx, cancelWorker := context.WithCancel(ctx)
+	c.mu.Lock()
+	c.actionCh = actionCh
+	c.mu.Unlock()
+	var actionWG sync.WaitGroup
+	actionWG.Add(1)
+	go func() {
+		defer actionWG.Done()
+		for disp := range actionCh {
+			// Skip queued actions once the connection is going down rather than
+			// half-applying system state during teardown; the server
+			// re-dispatches unacked actions on reconnect.
+			if workerCtx.Err() != nil {
+				continue
+			}
+			c.runDispatchedAction(workerCtx, disp, handler)
+		}
+	}()
+	defer func() {
+		c.mu.Lock()
+		c.actionCh = nil
+		c.mu.Unlock()
+		cancelWorker()
+		close(actionCh)
+		actionWG.Wait()
+	}()
+
 	// Channel to receive messages from blocking Receive call
 	type receiveResult struct {
 		msg *pm.ServerMessage
@@ -1073,6 +1149,59 @@ func (c *Client) safeGo(label string, fn func()) {
 // crash-loop the agent (Run treats a returned error as fatal and tears the
 // connection down). Genuine fatal stream send/receive errors still return
 // as errors — only handler PANICS become non-fatal.
+// validateInbound runs the shared `validate` gotags on a concrete inbound
+// command payload (WS13 #5) — defence-in-depth so a compromised relay can't push
+// a malformed-but-non-nil frame (out-of-range PTY dims, non-ULID session id,
+// empty action envelope) past the SDK boundary into a handler.
+func (c *Client) validateInbound(payload any) error {
+	if c.validator == nil {
+		return nil
+	}
+	if msg, ok := validate.Struct(c.validator, payload); !ok {
+		return errors.New(msg)
+	}
+	return nil
+}
+
+// currentActionCh returns the per-Run action worker channel, or nil when Run()
+// is not active (e.g. dispatchServerMessage driven directly by a unit test).
+func (c *Client) currentActionCh() chan *pm.ActionDispatch {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.actionCh
+}
+
+// runDispatchedAction executes one server-dispatched action and sends its
+// result. Run on the single action worker goroutine (or inline as a test
+// fallback). A panic is recovered (one bad action can't crash the agent); an
+// infrastructure error is logged, not propagated — off the receive loop there is
+// no connection to tear down, and an action *failure* already comes back as a
+// FAILED ActionResult rather than an error.
+func (c *Client) runDispatchedAction(ctx context.Context, disp *pm.ActionDispatch, handler StreamHandler) {
+	defer func() {
+		if r := recover(); r != nil {
+			c.logger.Error("recovered panic while executing dispatched action (non-fatal)", "panic", fmt.Sprintf("%v", r))
+		}
+	}()
+	var result *pm.ActionResult
+	var err error
+	if streamingHandler, ok := handler.(StreamingHandler); ok {
+		sendChunk := func(chunk *pm.OutputChunk) error { return c.SendOutputChunk(ctx, chunk) }
+		result, err = streamingHandler.OnActionWithStreaming(ctx, disp.Envelope, disp.Signature, sendChunk)
+	} else {
+		result, err = handler.OnAction(ctx, disp.Envelope, disp.Signature)
+	}
+	if err != nil {
+		c.logger.Error("action handler error", "error", err)
+		return
+	}
+	if result != nil {
+		if err := c.SendActionResult(ctx, result); err != nil {
+			c.logger.Warn("failed to send action result", "error", err)
+		}
+	}
+}
+
 func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessage, handler StreamHandler) (retErr error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1111,33 +1240,37 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			c.logger.Warn("dropping Action with nil dispatch payload", "message_id", msg.Id)
 			return nil
 		}
-
-		var actionResult *pm.ActionResult
-		var err error
-
-		// Check if handler supports streaming
-		if streamingHandler, ok := handler.(StreamingHandler); ok {
-			// Create a callback that sends output chunks
-			sendChunk := func(chunk *pm.OutputChunk) error {
-				return c.SendOutputChunk(ctx, chunk)
+		if err := c.validateInbound(p.Action); err != nil {
+			c.logger.Warn("dropping invalid Action", "message_id", msg.Id, "error", err)
+			return nil
+		}
+		// Off-loop (WS13 #7): hand the action to the single per-Run worker so a
+		// long-running action can't head-of-line-block TerminalStop/Input/Resize
+		// on the receive loop. The worker preserves one-at-a-time, in-order
+		// execution and sends the result via the sendMu-serialized SendActionResult.
+		if ch := c.currentActionCh(); ch != nil {
+			select {
+			case ch <- p.Action:
+			default:
+				// A full queue means a pathological flood (a legit gateway never
+				// has actionQueueDepth actions outstanding). Drop with a loud
+				// warning rather than block the receive loop; the server
+				// re-dispatches unacked actions on reconnect.
+				c.logger.Warn("action queue full; dropping dispatched action", "message_id", msg.Id, "depth", actionQueueDepth)
 			}
-			actionResult, err = streamingHandler.OnActionWithStreaming(ctx, p.Action.Envelope, p.Action.Signature, sendChunk)
-		} else {
-			actionResult, err = handler.OnAction(ctx, p.Action.Envelope, p.Action.Signature)
+			return nil
 		}
-
-		if err != nil {
-			return fmt.Errorf("handle action: %w", err)
-		}
-		if actionResult != nil {
-			if err := c.SendActionResult(ctx, actionResult); err != nil {
-				return fmt.Errorf("send action result: %w", err)
-			}
-		}
+		// Fallback: no worker (dispatchServerMessage driven directly, e.g. a unit
+		// test, outside Run) — execute inline so behaviour is preserved.
+		c.runDispatchedAction(ctx, p.Action, handler)
 
 	case *pm.ServerMessage_Query:
 		if p.Query == nil {
 			c.logger.Warn("dropping Query with nil payload", "message_id", msg.Id)
+			return nil
+		}
+		if err := c.validateInbound(p.Query); err != nil {
+			c.logger.Warn("dropping invalid Query", "message_id", msg.Id, "error", err)
 			return nil
 		}
 		queryResult, err := handler.OnQuery(ctx, p.Query)
@@ -1251,6 +1384,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			c.logger.Warn("dropping TerminalStart with nil payload", "message_id", msg.Id)
 			return nil
 		}
+		if err := c.validateInbound(p.TerminalStart); err != nil {
+			c.logger.Warn("dropping invalid TerminalStart", "message_id", msg.Id, "error", err)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalStart(ctx, p.TerminalStart); err != nil {
 				return fmt.Errorf("handle terminal start: %w", err)
@@ -1265,6 +1402,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			c.logger.Warn("dropping TerminalInput with nil payload", "message_id", msg.Id)
 			return nil
 		}
+		if err := c.validateInbound(p.TerminalInput); err != nil {
+			c.logger.Warn("dropping invalid TerminalInput", "message_id", msg.Id, "error", err)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalInput(ctx, p.TerminalInput); err != nil {
 				return fmt.Errorf("handle terminal input: %w", err)
@@ -1276,6 +1417,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			c.logger.Warn("dropping TerminalResize with nil payload", "message_id", msg.Id)
 			return nil
 		}
+		if err := c.validateInbound(p.TerminalResize); err != nil {
+			c.logger.Warn("dropping invalid TerminalResize", "message_id", msg.Id, "error", err)
+			return nil
+		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
 			if err := termHandler.OnTerminalResize(ctx, p.TerminalResize); err != nil {
 				return fmt.Errorf("handle terminal resize: %w", err)
@@ -1285,6 +1430,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 	case *pm.ServerMessage_TerminalStop:
 		if p.TerminalStop == nil {
 			c.logger.Warn("dropping TerminalStop with nil payload", "message_id", msg.Id)
+			return nil
+		}
+		if err := c.validateInbound(p.TerminalStop); err != nil {
+			c.logger.Warn("dropping invalid TerminalStop", "message_id", msg.Id, "error", err)
 			return nil
 		}
 		if termHandler, ok := handler.(TerminalHandler); ok {
