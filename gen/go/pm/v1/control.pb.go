@@ -1962,12 +1962,17 @@ type CreateUserRequest struct {
 	// @gotags: validate:"required,min=8"
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=8"`
 	// Role IDs to assign to the new user. If empty, the default "User" role is assigned.
-	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty"`
+	// @gotags: validate:"omitempty,dive,ulid"
+	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,dive,ulid"`
 	// Optional profile fields
-	DisplayName       string `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	GivenName         string `protobuf:"bytes,5,opt,name=given_name,json=givenName,proto3" json:"given_name,omitempty"`
-	FamilyName        string `protobuf:"bytes,6,opt,name=family_name,json=familyName,proto3" json:"family_name,omitempty"`
-	PreferredUsername string `protobuf:"bytes,7,opt,name=preferred_username,json=preferredUsername,proto3" json:"preferred_username,omitempty"`
+	// @gotags: validate:"omitempty,max=255"
+	DisplayName string `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,max=255"
+	GivenName string `protobuf:"bytes,5,opt,name=given_name,json=givenName,proto3" json:"given_name,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,max=255"
+	FamilyName string `protobuf:"bytes,6,opt,name=family_name,json=familyName,proto3" json:"family_name,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,max=64"
+	PreferredUsername string `protobuf:"bytes,7,opt,name=preferred_username,json=preferredUsername,proto3" json:"preferred_username,omitempty" validate:"omitempty,max=64"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2516,10 +2521,13 @@ func (x *UpdateUserResponse) GetUser() *User {
 type UpdateUserProfileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
-	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	GivenName   string `protobuf:"bytes,3,opt,name=given_name,json=givenName,proto3" json:"given_name,omitempty"`
-	FamilyName  string `protobuf:"bytes,4,opt,name=family_name,json=familyName,proto3" json:"family_name,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"omitempty,max=255"
+	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,max=255"
+	GivenName string `protobuf:"bytes,3,opt,name=given_name,json=givenName,proto3" json:"given_name,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,max=255"
+	FamilyName string `protobuf:"bytes,4,opt,name=family_name,json=familyName,proto3" json:"family_name,omitempty" validate:"omitempty,max=255"`
 	// @gotags: validate:"omitempty,max=64"
 	PreferredUsername string `protobuf:"bytes,5,opt,name=preferred_username,json=preferredUsername,proto3" json:"preferred_username,omitempty" validate:"omitempty,max=64"`
 	// @gotags: validate:"omitempty,max=2048"
@@ -3179,8 +3187,9 @@ type ListDevicesRequest struct {
 	// UNSPECIFIED (0) means "no status filter"; ONLINE / OFFLINE narrow
 	// the listing to that single status.
 	// @gotags: validate:"omitempty,gte=0,lte=2"
-	StatusFilter  DeviceStatus      `protobuf:"varint,3,opt,name=status_filter,json=statusFilter,proto3,enum=pm.v1.DeviceStatus" json:"status_filter,omitempty" validate:"omitempty,gte=0,lte=2"`
-	LabelFilter   map[string]string `protobuf:"bytes,4,rep,name=label_filter,json=labelFilter,proto3" json:"label_filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	StatusFilter DeviceStatus `protobuf:"varint,3,opt,name=status_filter,json=statusFilter,proto3,enum=pm.v1.DeviceStatus" json:"status_filter,omitempty" validate:"omitempty,gte=0,lte=2"`
+	// @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+	LabelFilter   map[string]string `protobuf:"bytes,4,rep,name=label_filter,json=labelFilter,proto3" json:"label_filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=64,endkeys,max=1024"`
 	MyDevicesOnly bool              `protobuf:"varint,5,opt,name=my_devices_only,json=myDevicesOnly,proto3" json:"my_devices_only,omitempty"` // when true, only return devices assigned to the authenticated user
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12305,10 +12314,11 @@ type ListExecutionsRequest struct {
 	// @gotags: validate:"omitempty"
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,ulid"
-	DeviceId      string          `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"` // optional filter
-	StatusFilter  ExecutionStatus `protobuf:"varint,4,opt,name=status_filter,json=statusFilter,proto3,enum=pm.v1.ExecutionStatus" json:"status_filter,omitempty"`
-	TypeFilter    ActionType      `protobuf:"varint,5,opt,name=type_filter,json=typeFilter,proto3,enum=pm.v1.ActionType" json:"type_filter,omitempty"` // optional action type filter
-	Search        string          `protobuf:"bytes,6,opt,name=search,proto3" json:"search,omitempty"`                                                  // searches action name and device hostname
+	DeviceId     string          `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"` // optional filter
+	StatusFilter ExecutionStatus `protobuf:"varint,4,opt,name=status_filter,json=statusFilter,proto3,enum=pm.v1.ExecutionStatus" json:"status_filter,omitempty"`
+	TypeFilter   ActionType      `protobuf:"varint,5,opt,name=type_filter,json=typeFilter,proto3,enum=pm.v1.ActionType" json:"type_filter,omitempty"` // optional action type filter
+	// @gotags: validate:"omitempty,max=255"
+	Search        string `protobuf:"bytes,6,opt,name=search,proto3" json:"search,omitempty" validate:"omitempty,max=255"` // searches action name and device hostname
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13798,7 +13808,8 @@ type GetDeviceInventoryRequest struct {
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// Optional: filter to specific tables (empty = all)
-	TableNames    []string `protobuf:"bytes,2,rep,name=table_names,json=tableNames,proto3" json:"table_names,omitempty"`
+	// @gotags: validate:"omitempty,dive,max=128"
+	TableNames    []string `protobuf:"bytes,2,rep,name=table_names,json=tableNames,proto3" json:"table_names,omitempty" validate:"omitempty,dive,max=128"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -17076,17 +17087,24 @@ type CreateIdentityProviderRequest struct {
 	// @gotags: validate:"required,min=1"
 	ClientSecret string `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty" validate:"required,min=1"`
 	// @gotags: validate:"required,url"
-	IssuerUrl                string            `protobuf:"bytes,6,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty" validate:"required,url"`
-	AuthorizationUrl         string            `protobuf:"bytes,7,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
-	TokenUrl                 string            `protobuf:"bytes,8,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
-	UserinfoUrl              string            `protobuf:"bytes,9,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty"`
-	Scopes                   []string          `protobuf:"bytes,10,rep,name=scopes,proto3" json:"scopes,omitempty"`
-	AutoCreateUsers          bool              `protobuf:"varint,11,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
-	AutoLinkByEmail          bool              `protobuf:"varint,12,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
-	DefaultRoleId            string            `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty"`
-	DisablePasswordForLinked bool              `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
-	GroupClaim               string            `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty"`
-	GroupMapping             map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	IssuerUrl string `protobuf:"bytes,6,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty" validate:"required,url"`
+	// @gotags: validate:"omitempty,url"
+	AuthorizationUrl string `protobuf:"bytes,7,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,url"
+	TokenUrl string `protobuf:"bytes,8,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,url"
+	UserinfoUrl string `protobuf:"bytes,9,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,dive,max=255"
+	Scopes          []string `protobuf:"bytes,10,rep,name=scopes,proto3" json:"scopes,omitempty" validate:"omitempty,dive,max=255"`
+	AutoCreateUsers bool     `protobuf:"varint,11,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
+	AutoLinkByEmail bool     `protobuf:"varint,12,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
+	// @gotags: validate:"omitempty,ulid"
+	DefaultRoleId            string `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty" validate:"omitempty,ulid"`
+	DisablePasswordForLinked bool   `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
+	// @gotags: validate:"omitempty,max=255"
+	GroupClaim string `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
+	GroupMapping map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=255"`
 	// See IdentityProvider.trust_email_assertions. Default false (secure).
 	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -17494,22 +17512,32 @@ type UpdateIdentityProviderRequest struct {
 	// @gotags: validate:"required,ulid"
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,min=1,max=64"
-	Name     string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=64"`
-	Enabled  bool   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=64"`
+	Enabled bool   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// @gotags: validate:"omitempty,max=255"
+	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" validate:"omitempty,max=255"`
 	// If empty, the existing secret is kept.
-	ClientSecret             string            `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	IssuerUrl                string            `protobuf:"bytes,6,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
-	AuthorizationUrl         string            `protobuf:"bytes,7,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
-	TokenUrl                 string            `protobuf:"bytes,8,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
-	UserinfoUrl              string            `protobuf:"bytes,9,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty"`
-	Scopes                   []string          `protobuf:"bytes,10,rep,name=scopes,proto3" json:"scopes,omitempty"`
-	AutoCreateUsers          bool              `protobuf:"varint,11,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
-	AutoLinkByEmail          bool              `protobuf:"varint,12,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
-	DefaultRoleId            string            `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty"`
-	DisablePasswordForLinked bool              `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
-	GroupClaim               string            `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty"`
-	GroupMapping             map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// @gotags: validate:"omitempty,max=4096"
+	ClientSecret string `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty" validate:"omitempty,max=4096"`
+	// @gotags: validate:"omitempty,url"
+	IssuerUrl string `protobuf:"bytes,6,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,url"
+	AuthorizationUrl string `protobuf:"bytes,7,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,url"
+	TokenUrl string `protobuf:"bytes,8,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,url"
+	UserinfoUrl string `protobuf:"bytes,9,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty" validate:"omitempty,url"`
+	// @gotags: validate:"omitempty,dive,max=255"
+	Scopes          []string `protobuf:"bytes,10,rep,name=scopes,proto3" json:"scopes,omitempty" validate:"omitempty,dive,max=255"`
+	AutoCreateUsers bool     `protobuf:"varint,11,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
+	AutoLinkByEmail bool     `protobuf:"varint,12,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
+	// @gotags: validate:"omitempty,ulid"
+	DefaultRoleId            string `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty" validate:"omitempty,ulid"`
+	DisablePasswordForLinked bool   `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
+	// @gotags: validate:"omitempty,max=255"
+	GroupClaim string `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
+	GroupMapping map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=255"`
 	// See IdentityProvider.trust_email_assertions. Default false (secure).
 	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -17853,7 +17881,8 @@ func (x *AuthMethodProvider) GetProviderType() IdentityProviderType {
 type ListAuthMethodsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Optional email to check user-specific auth methods.
-	Email         string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	// @gotags: validate:"omitempty,email,max=254"
+	Email         string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty" validate:"omitempty,email,max=254"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20136,14 +20165,19 @@ func (x *SearchDateFilter) GetEnd() int64 {
 
 type SearchRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Query string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	// @gotags: validate:"omitempty,max=1024"
+	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"omitempty,max=1024"`
 	// UNSPECIFIED (0) means "all scopes".
 	// @gotags: validate:"omitempty,gte=0,lte=10"
-	Scope         SearchScope         `protobuf:"varint,2,opt,name=scope,proto3,enum=pm.v1.SearchScope" json:"scope,omitempty" validate:"omitempty,gte=0,lte=10"`
-	PageSize      int32               `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string              `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	DateFilters   []*SearchDateFilter `protobuf:"bytes,5,rep,name=date_filters,json=dateFilters,proto3" json:"date_filters,omitempty"`
-	TagFilters    map[string]string   `protobuf:"bytes,6,rep,name=tag_filters,json=tagFilters,proto3" json:"tag_filters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // field → value(s), pipe-separated for OR (e.g. "completed|failed")
+	Scope SearchScope `protobuf:"varint,2,opt,name=scope,proto3,enum=pm.v1.SearchScope" json:"scope,omitempty" validate:"omitempty,gte=0,lte=10"`
+	// Matches the handler's effective clamp ([1,200], else default 50).
+	// @gotags: validate:"omitempty,gte=0,lte=200"
+	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=0,lte=200"`
+	// @gotags: validate:"omitempty,max=4096"
+	PageToken   string              `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty,max=4096"`
+	DateFilters []*SearchDateFilter `protobuf:"bytes,5,rep,name=date_filters,json=dateFilters,proto3" json:"date_filters,omitempty"`
+	// @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+	TagFilters    map[string]string `protobuf:"bytes,6,rep,name=tag_filters,json=tagFilters,proto3" json:"tag_filters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=64,endkeys,max=1024"` // field → value(s), pipe-separated for OR (e.g. "completed|failed")
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

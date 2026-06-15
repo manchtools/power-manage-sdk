@@ -979,6 +979,7 @@ export type CreateUserRequest = Message<"pm.v1.CreateUserRequest"> & {
 
   /**
    * Role IDs to assign to the new user. If empty, the default "User" role is assigned.
+   * @gotags: validate:"omitempty,dive,ulid"
    *
    * @generated from field: repeated string role_ids = 3;
    */
@@ -986,22 +987,29 @@ export type CreateUserRequest = Message<"pm.v1.CreateUserRequest"> & {
 
   /**
    * Optional profile fields
+   * @gotags: validate:"omitempty,max=255"
    *
    * @generated from field: string display_name = 4;
    */
   displayName: string;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string given_name = 5;
    */
   givenName: string;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string family_name = 6;
    */
   familyName: string;
 
   /**
+   * @gotags: validate:"omitempty,max=64"
+   *
    * @generated from field: string preferred_username = 7;
    */
   preferredUsername: string;
@@ -1236,16 +1244,22 @@ export type UpdateUserProfileRequest = Message<"pm.v1.UpdateUserProfileRequest">
   id: string;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string display_name = 2;
    */
   displayName: string;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string given_name = 3;
    */
   givenName: string;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string family_name = 4;
    */
   familyName: string;
@@ -1590,6 +1604,8 @@ export type ListDevicesRequest = Message<"pm.v1.ListDevicesRequest"> & {
   statusFilter: DeviceStatus;
 
   /**
+   * @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+   *
    * @generated from field: map<string, string> label_filter = 4;
    */
   labelFilter: { [key: string]: string };
@@ -5941,6 +5957,8 @@ export type ListExecutionsRequest = Message<"pm.v1.ListExecutionsRequest"> & {
   typeFilter: ActionType;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * searches action name and device hostname
    *
    * @generated from field: string search = 6;
@@ -6678,6 +6696,7 @@ export type GetDeviceInventoryRequest = Message<"pm.v1.GetDeviceInventoryRequest
 
   /**
    * Optional: filter to specific tables (empty = all)
+   * @gotags: validate:"omitempty,dive,max=128"
    *
    * @generated from field: repeated string table_names = 2;
    */
@@ -8288,21 +8307,29 @@ export type CreateIdentityProviderRequest = Message<"pm.v1.CreateIdentityProvide
   issuerUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string authorization_url = 7;
    */
   authorizationUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string token_url = 8;
    */
   tokenUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string userinfo_url = 9;
    */
   userinfoUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,dive,max=255"
+   *
    * @generated from field: repeated string scopes = 10;
    */
   scopes: string[];
@@ -8318,6 +8345,8 @@ export type CreateIdentityProviderRequest = Message<"pm.v1.CreateIdentityProvide
   autoLinkByEmail: boolean;
 
   /**
+   * @gotags: validate:"omitempty,ulid"
+   *
    * @generated from field: string default_role_id = 13;
    */
   defaultRoleId: string;
@@ -8328,11 +8357,15 @@ export type CreateIdentityProviderRequest = Message<"pm.v1.CreateIdentityProvide
   disablePasswordForLinked: boolean;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string group_claim = 15;
    */
   groupClaim: string;
 
   /**
+   * @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
+   *
    * @generated from field: map<string, string> group_mapping = 16;
    */
   groupMapping: { [key: string]: string };
@@ -8482,38 +8515,51 @@ export type UpdateIdentityProviderRequest = Message<"pm.v1.UpdateIdentityProvide
   enabled: boolean;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string client_id = 4;
    */
   clientId: string;
 
   /**
    * If empty, the existing secret is kept.
+   * @gotags: validate:"omitempty,max=4096"
    *
    * @generated from field: string client_secret = 5;
    */
   clientSecret: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string issuer_url = 6;
    */
   issuerUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string authorization_url = 7;
    */
   authorizationUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string token_url = 8;
    */
   tokenUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,url"
+   *
    * @generated from field: string userinfo_url = 9;
    */
   userinfoUrl: string;
 
   /**
+   * @gotags: validate:"omitempty,dive,max=255"
+   *
    * @generated from field: repeated string scopes = 10;
    */
   scopes: string[];
@@ -8529,6 +8575,8 @@ export type UpdateIdentityProviderRequest = Message<"pm.v1.UpdateIdentityProvide
   autoLinkByEmail: boolean;
 
   /**
+   * @gotags: validate:"omitempty,ulid"
+   *
    * @generated from field: string default_role_id = 13;
    */
   defaultRoleId: string;
@@ -8539,11 +8587,15 @@ export type UpdateIdentityProviderRequest = Message<"pm.v1.UpdateIdentityProvide
   disablePasswordForLinked: boolean;
 
   /**
+   * @gotags: validate:"omitempty,max=255"
+   *
    * @generated from field: string group_claim = 15;
    */
   groupClaim: string;
 
   /**
+   * @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
+   *
    * @generated from field: map<string, string> group_mapping = 16;
    */
   groupMapping: { [key: string]: string };
@@ -8645,6 +8697,7 @@ export const AuthMethodProviderSchema: GenMessage<AuthMethodProvider> = /*@__PUR
 export type ListAuthMethodsRequest = Message<"pm.v1.ListAuthMethodsRequest"> & {
   /**
    * Optional email to check user-specific auth methods.
+   * @gotags: validate:"omitempty,email,max=254"
    *
    * @generated from field: string email = 1;
    */
@@ -9680,6 +9733,8 @@ export const SearchDateFilterSchema: GenMessage<SearchDateFilter> = /*@__PURE__*
  */
 export type SearchRequest = Message<"pm.v1.SearchRequest"> & {
   /**
+   * @gotags: validate:"omitempty,max=1024"
+   *
    * @generated from field: string query = 1;
    */
   query: string;
@@ -9693,11 +9748,16 @@ export type SearchRequest = Message<"pm.v1.SearchRequest"> & {
   scope: SearchScope;
 
   /**
+   * Matches the handler's effective clamp ([1,200], else default 50).
+   * @gotags: validate:"omitempty,gte=0,lte=200"
+   *
    * @generated from field: int32 page_size = 3;
    */
   pageSize: number;
 
   /**
+   * @gotags: validate:"omitempty,max=4096"
+   *
    * @generated from field: string page_token = 4;
    */
   pageToken: string;
@@ -9708,6 +9768,8 @@ export type SearchRequest = Message<"pm.v1.SearchRequest"> & {
   dateFilters: SearchDateFilter[];
 
   /**
+   * @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
+   *
    * field → value(s), pipe-separated for OR (e.g. "completed|failed")
    *
    * @generated from field: map<string, string> tag_filters = 6;
