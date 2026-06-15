@@ -18,6 +18,28 @@ import (
 // validTableName matches only safe osquery table names (alphanumeric + underscore).
 var validTableName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
+// sensitiveTables are osquery tables that can expose credential material or
+// other high-value secrets — password-hash metadata (shadow), secrets in
+// process environments (process_envs), scheduled commands (crontab), shell
+// history (shell_history), and sudoers policy (sudoers). They all pass
+// validTableName, so the shape-only check is not enough: the convenience table
+// path refuses them so a compromised control server cannot exfiltrate them
+// through the agent's privileged osquery. The signed RawSql escape hatch is
+// intentionally NOT gated here — it is the operator's explicit, CA-signed path.
+var sensitiveTables = map[string]bool{
+	"shadow":        true,
+	"process_envs":  true,
+	"crontab":       true,
+	"shell_history": true,
+	"sudoers":       true,
+}
+
+// isSensitiveTable reports whether name is on the curated deny-list. Comparison
+// is case- and whitespace-insensitive so trivial variants cannot slip past.
+func isSensitiveTable(name string) bool {
+	return sensitiveTables[strings.ToLower(strings.TrimSpace(name))]
+}
+
 var (
 	// ErrNotInstalled is returned when osquery is not installed on the system.
 	ErrNotInstalled = errors.New("osquery is not installed")
@@ -125,6 +147,13 @@ func (c *Client) Query(ctx context.Context, query *pb.OSQuery) (*pb.OSQueryResul
 				Error:   fmt.Sprintf("invalid table name: %q", query.Table),
 			}, nil
 		}
+		if isSensitiveTable(query.Table) {
+			return &pb.OSQueryResult{
+				QueryId: query.QueryId,
+				Success: false,
+				Error:   fmt.Sprintf("table %q is not permitted", query.Table),
+			}, nil
+		}
 		sql = fmt.Sprintf("SELECT * FROM %s", query.Table)
 	}
 
@@ -171,10 +200,18 @@ func (c *Client) QueryTable(ctx context.Context, tableName string) ([]*pb.OSQuer
 		if !validTableName.MatchString(tableName) {
 			return nil, fmt.Errorf("invalid table name: %q", tableName)
 		}
+		if isSensitiveTable(tableName) {
+			return nil, fmt.Errorf("table %q is not permitted", tableName)
+		}
 		sql = fmt.Sprintf("SELECT * FROM %s", tableName)
 	}
 	return c.QuerySQL(ctx, sql)
 }
+
+// execPrivileged runs the osquery binary under the privilege backend. It is a
+// package var so tests can record (and refuse) execution, proving the
+// sensitive-table deny-list short-circuits BEFORE any query is run.
+var execPrivileged = sysexec.Privileged
 
 // execQuery executes an osquery command via sudo and returns the output.
 func (c *Client) execQuery(ctx context.Context, query string) (string, error) {
@@ -191,7 +228,7 @@ func (c *Client) execQuery(ctx context.Context, query string) (string, error) {
 		args = append(args, "--json", query)
 	}
 
-	result, err := sysexec.Privileged(ctx, c.binaryPath, args...)
+	result, err := execPrivileged(ctx, c.binaryPath, args...)
 	if err != nil {
 		stderr := ""
 		if result != nil {
