@@ -196,6 +196,14 @@ oq := osquery.New()                                // lazy-init, detects install
 rows, err := oq.Query(ctx, "os_version", nil, 0)   // query a table
 ```
 
+The convenience **table** path (`Query`/`QueryTable` with a table name) refuses a
+curated deny-list of credential-bearing tables — `shadow`, `process_envs`,
+`crontab`, `shell_history`, `sudoers` — before any SQL is built or run, so a
+compromised control server cannot exfiltrate them through the agent's privileged
+osquery. The deny-list is defense-in-depth on top of the CA-signed osquery
+RPC; the signed `RawSql` path is the operator's explicit escape hatch and is
+intentionally **not** gated.
+
 #### `sys/encryption` — Disk Encryption
 
 ```go
