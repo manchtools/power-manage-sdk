@@ -109,7 +109,7 @@ func makeTerminalMsg(name string) *pm.ServerMessage {
 	case "TerminalStart":
 		msg.Payload = &pm.ServerMessage_TerminalStart{
 			TerminalStart: &pm.TerminalStart{
-				SessionId: "01ABCDEF",
+				SessionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 				TtyUser:   "pm-tty-test",
 				Cols:      80,
 				Rows:      24,
@@ -118,14 +118,14 @@ func makeTerminalMsg(name string) *pm.ServerMessage {
 	case "TerminalInput":
 		msg.Payload = &pm.ServerMessage_TerminalInput{
 			TerminalInput: &pm.TerminalInput{
-				SessionId: "01ABCDEF",
+				SessionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 				Data:      []byte("ls -la\n"),
 			},
 		}
 	case "TerminalResize":
 		msg.Payload = &pm.ServerMessage_TerminalResize{
 			TerminalResize: &pm.TerminalResize{
-				SessionId: "01ABCDEF",
+				SessionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 				Cols:      120,
 				Rows:      40,
 			},
@@ -133,7 +133,7 @@ func makeTerminalMsg(name string) *pm.ServerMessage {
 	case "TerminalStop":
 		msg.Payload = &pm.ServerMessage_TerminalStop{
 			TerminalStop: &pm.TerminalStop{
-				SessionId: "01ABCDEF",
+				SessionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 				Reason:    "admin terminate",
 			},
 		}
@@ -159,8 +159,8 @@ func TestDispatch_Terminal_Routing(t *testing.T) {
 				if len(h.startCalls) != 1 {
 					t.Fatalf("OnTerminalStart calls = %d, want 1", len(h.startCalls))
 				}
-				if h.startCalls[0].SessionId != "01ABCDEF" {
-					t.Errorf("session_id = %q, want 01ABCDEF", h.startCalls[0].SessionId)
+				if h.startCalls[0].SessionId != "01ARZ3NDEKTSV4RRFFQ69G5FAV" {
+					t.Errorf("session_id = %q, want 01ARZ3NDEKTSV4RRFFQ69G5FAV", h.startCalls[0].SessionId)
 				}
 				if h.startCalls[0].TtyUser != "pm-tty-test" {
 					t.Errorf("tty_user = %q, want pm-tty-test", h.startCalls[0].TtyUser)
