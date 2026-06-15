@@ -78,7 +78,11 @@ func TestDispatch_ActionRunsOffLoop_DoesNotBlockTerminal(t *testing.T) {
 			c.runDispatchedAction(context.Background(), d, h)
 		}
 	}()
-	defer func() { close(actionCh); wg.Wait() }()
+	// Cleanup closes h.release here (not at the end) so an early assertion
+	// failure can't leave the worker blocked in OnActionWithStreaming and hang
+	// wg.Wait(). Closed exactly once, on every exit path. Order matters: unblock
+	// the action, then end the channel range, then wait.
+	defer func() { close(h.release); close(actionCh); wg.Wait() }()
 
 	// Dispatch a long-running action — returns immediately (enqueued off-loop).
 	actionMsg := &pm.ServerMessage{Id: NewULID(), Payload: &pm.ServerMessage_Action{
@@ -98,8 +102,7 @@ func TestDispatch_ActionRunsOffLoop_DoesNotBlockTerminal(t *testing.T) {
 	}}
 	require.NoError(t, c.dispatchServerMessage(context.Background(), stopMsg, h))
 	require.Len(t, h.stopCalls, 1, "TerminalStop must be handled while a long action is still in-flight (off-loop)")
-
-	close(h.release) // let the action finish so the worker drains cleanly
+	// h.release is closed by the deferred cleanup above (safe on any exit path).
 }
 
 // TestDispatch_DropsInvalidInbound pins WS13 #5: a command frame that violates
