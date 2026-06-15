@@ -276,11 +276,16 @@ message CreateUserRequest {
   // @gotags: validate:"required,min=8"
   string password = 2;
   // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
+  // @gotags: validate:"omitempty,dive,ulid"
   repeated string role_ids = 3;
   // Optional profile fields
+  // @gotags: validate:"omitempty,max=255"
   string display_name = 4;
+  // @gotags: validate:"omitempty,max=255"
   string given_name = 5;
+  // @gotags: validate:"omitempty,max=255"
   string family_name = 6;
+  // @gotags: validate:"omitempty,max=64"
   string preferred_username = 7;
 }
 
@@ -340,8 +345,11 @@ message UpdateUserResponse {
 message UpdateUserProfileRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
+  // @gotags: validate:"omitempty,max=255"
   string display_name = 2;
+  // @gotags: validate:"omitempty,max=255"
   string given_name = 3;
+  // @gotags: validate:"omitempty,max=255"
   string family_name = 4;
   // @gotags: validate:"omitempty,max=64"
   string preferred_username = 5;
@@ -430,6 +438,7 @@ message ListDevicesRequest {
   // the listing to that single status.
   // @gotags: validate:"omitempty,gte=0,lte=2"
   DeviceStatus status_filter = 3;
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
   map<string, string> label_filter = 4;
   bool my_devices_only = 5; // when true, only return devices assigned to the authenticated user
 }
@@ -1570,6 +1579,7 @@ message ListExecutionsRequest {
   string device_id = 3; // optional filter
   ExecutionStatus status_filter = 4;
   ActionType type_filter = 5; // optional action type filter
+  // @gotags: validate:"omitempty,max=255"
   string search = 6; // searches action name and device hostname
 }
 
@@ -1788,6 +1798,7 @@ message GetDeviceInventoryRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
   // Optional: filter to specific tables (empty = all)
+  // @gotags: validate:"omitempty,dive,max=128"
   repeated string table_names = 2;
 }
 
@@ -2217,15 +2228,22 @@ message CreateIdentityProviderRequest {
   string client_secret = 5;
   // @gotags: validate:"required,url"
   string issuer_url = 6;
+  // @gotags: validate:"omitempty,url"
   string authorization_url = 7;
+  // @gotags: validate:"omitempty,url"
   string token_url = 8;
+  // @gotags: validate:"omitempty,url"
   string userinfo_url = 9;
+  // @gotags: validate:"omitempty,dive,max=255"
   repeated string scopes = 10;
   bool auto_create_users = 11;
   bool auto_link_by_email = 12;
+  // @gotags: validate:"omitempty,ulid"
   string default_role_id = 13;
   bool disable_password_for_linked = 14;
+  // @gotags: validate:"omitempty,max=255"
   string group_claim = 15;
+  // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
   map<string, string> group_mapping = 16;
   // See IdentityProvider.trust_email_assertions. Default false (secure).
   bool trust_email_assertions = 17;
@@ -2263,19 +2281,29 @@ message UpdateIdentityProviderRequest {
   // @gotags: validate:"required,min=1,max=64"
   string name = 2;
   bool enabled = 3;
+  // @gotags: validate:"omitempty,max=255"
   string client_id = 4;
   // If empty, the existing secret is kept.
+  // @gotags: validate:"omitempty,max=4096"
   string client_secret = 5;
+  // @gotags: validate:"omitempty,url"
   string issuer_url = 6;
+  // @gotags: validate:"omitempty,url"
   string authorization_url = 7;
+  // @gotags: validate:"omitempty,url"
   string token_url = 8;
+  // @gotags: validate:"omitempty,url"
   string userinfo_url = 9;
+  // @gotags: validate:"omitempty,dive,max=255"
   repeated string scopes = 10;
   bool auto_create_users = 11;
   bool auto_link_by_email = 12;
+  // @gotags: validate:"omitempty,ulid"
   string default_role_id = 13;
   bool disable_password_for_linked = 14;
+  // @gotags: validate:"omitempty,max=255"
   string group_claim = 15;
+  // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
   map<string, string> group_mapping = 16;
   // See IdentityProvider.trust_email_assertions. Default false (secure).
   bool trust_email_assertions = 17;
@@ -2304,6 +2332,7 @@ message AuthMethodProvider {
 
 message ListAuthMethodsRequest {
   // Optional email to check user-specific auth methods.
+  // @gotags: validate:"omitempty,email,max=254"
   string email = 1;
 }
 
@@ -2564,13 +2593,18 @@ message SearchDateFilter {
 }
 
 message SearchRequest {
+  // @gotags: validate:"omitempty,max=1024"
   string query = 1;
   // UNSPECIFIED (0) means "all scopes".
   // @gotags: validate:"omitempty,gte=0,lte=10"
   SearchScope scope = 2;
+  // Matches the handler's effective clamp ([1,200], else default 50).
+  // @gotags: validate:"omitempty,gte=0,lte=200"
   int32 page_size = 3;
+  // @gotags: validate:"omitempty,max=4096"
   string page_token = 4;
   repeated SearchDateFilter date_filters = 5;
+  // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
   map<string, string> tag_filters = 6; // field → value(s), pipe-separated for OR (e.g. "completed|failed")
 }
 

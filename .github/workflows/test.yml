@@ -63,24 +63,12 @@ jobs:
       - name: go test (excludes integration-tagged files)
         run: go test -race -short ./...
 
-  # Proto-tag completeness checker. Reports every field across
-  # proto/pm/v1/ that lacks a validate: tag. Soft-fail today so the
-  # large historical backlog (~580 fields per the 2026-06-06 audit)
-  # doesn't block unrelated work; promote to hard-fail in a follow-up
-  # once the backlog is down to zero.
-  proto-validate-coverage:
-    name: Proto validate-tag coverage (soft-fail)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Run completeness checker
-        run: go run ./test/protovalidatecoverage ./proto/pm/v1
+  # NOTE: the validate-tag coverage gate is now the Go test
+  # TestEveryBoundableRequestFieldCarriesValidateTag (test/protovalidatecoverage/
+  # coverage_test.go). It hard-fails when a bound-able *Request* field lacks a
+  # validate tag and runs under the `go test` job above, so the previous
+  # soft-fail `go run ./test/protovalidatecoverage` job has been removed (it
+  # always exited 0 and counted response fields the gate intentionally exempts).
 
   proto-lint:
     name: Proto lint + format

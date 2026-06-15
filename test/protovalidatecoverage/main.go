@@ -1,11 +1,15 @@
 // Command protovalidatecoverage scans .proto files under the supplied
-// directory and reports fields that lack a `validate:` constraint
-// declared via the @gotags marker (protoc-go-inject-tag convention).
+// directory and prints a human-readable summary of fields that lack a
+// `validate:` constraint declared via the @gotags marker
+// (protoc-go-inject-tag convention), across ALL messages (requests AND
+// responses) for triage.
 //
-// Today it exits 0 and writes a summary to stdout so it can be wired
-// into CI as a soft signal without breaking unrelated PRs. Once the
-// historical backlog is down to zero the CI step that calls this
-// program should drop its `continue-on-error: true`.
+// It is a reporting tool only — it always exits 0. The authoritative CI gate
+// is the Go test TestEveryBoundableRequestFieldCarriesValidateTag in
+// coverage_test.go, which hard-fails when a bound-able *Request* field is
+// missing a validate tag and runs under the normal `go test ./...` job. This
+// binary stays useful for spotting untagged RESPONSE fields (which the gate
+// deliberately does not require) when triaging coverage by hand.
 //
 // Usage:
 //
@@ -126,9 +130,8 @@ func main() {
 		}
 	}
 
-	// Soft-fail today (continue-on-error in CI). Once the backlog is
-	// zero, flip the exit code below to a hard failure and drop the
-	// continue-on-error from .github/workflows/test.yml.
+	// Reporting tool only — always exits 0. The hard gate is the Go test
+	// TestEveryBoundableRequestFieldCarriesValidateTag (request fields, type-aware).
 	os.Exit(0)
 }
 
