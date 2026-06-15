@@ -2,6 +2,7 @@ package verify
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,6 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 )
@@ -159,8 +161,22 @@ func TestVerify_ByteTamperedSignature(t *testing.T) {
 	}
 	tampered := append([]byte(nil), sig...)
 	tampered[len(tampered)-1] ^= 0x01
-	if err := verifier.Verify(payload, tampered); err == nil {
+	err = verifier.Verify(payload, tampered)
+	if err == nil {
 		t.Fatal("expected error for byte-tampered signature")
+	}
+	// Pin that the rejection comes from the cryptographic comparison
+	// (ecdsa.VerifyASN1), not an ASN.1 parse error — a no-op verifier that only
+	// rejected malformed DER would pass the tail flip but fail this assertion.
+	if !strings.Contains(err.Error(), "invalid ECDSA signature") {
+		t.Errorf("error = %q, want it to name the invalid ECDSA signature (crypto compare)", err)
+	}
+	// A second flip in the middle of the DER guards against a verifier that only
+	// inspects trailing bytes.
+	mid := append([]byte(nil), sig...)
+	mid[len(mid)/2] ^= 0x01
+	if err := verifier.Verify(payload, mid); err == nil {
+		t.Fatal("expected error for a mid-signature byte flip")
 	}
 }
 
@@ -199,6 +215,66 @@ func TestVerify_WrongKey(t *testing.T) {
 	}
 	if err := verifier.Verify([]byte("envelope"), sig); err == nil {
 		t.Fatal("expected error when verifying with the wrong CA")
+	}
+}
+
+// generateTestEd25519CA creates a self-signed ed25519 CA certificate + key.
+// ed25519 is deliberately NOT a supported signing algorithm for action
+// envelopes (only ECDSA and RSA are) — these fixtures drive the fail-closed
+// unsupported-key branches.
+func generateTestEd25519CA(t *testing.T) (certPEM []byte, priv ed25519.PrivateKey) {
+	t.Helper()
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate ed25519 key: %v", err)
+	}
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Test Ed25519 CA"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, pub, priv)
+	if err != nil {
+		t.Fatalf("create ed25519 CA certificate: %v", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}), priv
+}
+
+// TestVerifier_RejectsEd25519Key pins the fail-closed unsupported-key contract:
+// a verifier built from an ed25519 cert must refuse to verify (anything other
+// than ECDSA/RSA is rejected), naming the unsupported key type rather than
+// silently treating the signature as valid.
+func TestVerifier_RejectsEd25519Key(t *testing.T) {
+	certPEM, _ := generateTestEd25519CA(t)
+	verifier, err := NewActionVerifier(certPEM)
+	if err != nil {
+		t.Fatalf("NewActionVerifier(ed25519): %v", err)
+	}
+	err = verifier.Verify([]byte("envelope-bytes"), []byte("any-signature-bytes"))
+	if err == nil {
+		t.Fatal("ed25519 verifier must fail closed, not accept the signature")
+	}
+	if !strings.Contains(err.Error(), "unsupported public key type") {
+		t.Errorf("error = %q, want it to name the unsupported public key type", err)
+	}
+}
+
+// TestSigner_RejectsEd25519Key pins the sign-side fail-closed branch: an
+// ActionSigner over an ed25519 key must refuse to sign rather than emit a
+// signature no agent verifier could check.
+func TestSigner_RejectsEd25519Key(t *testing.T) {
+	_, priv := generateTestEd25519CA(t)
+	signer := NewActionSigner(priv) // ed25519.PrivateKey satisfies crypto.Signer
+	_, err := signer.Sign([]byte("envelope-bytes"))
+	if err == nil {
+		t.Fatal("ed25519 signer must fail closed, not produce a signature")
+	}
+	if !strings.Contains(err.Error(), "unsupported key type") {
+		t.Errorf("error = %q, want it to name the unsupported key type", err)
 	}
 }
 
