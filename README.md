@@ -99,6 +99,9 @@ The receive loop is hardened against a compromised or buggy gateway:
 - **Per-message panic isolation.** `dispatchServerMessage` runs each message under a scoped `recover()`: a panic inside any handler method is caught, logged, and turned into a non-fatal dropped frame so one bad handler invocation cannot crash-loop the whole agent (fleet DoS). Genuine fatal stream send/receive errors still propagate (they return from `Run`, leaving reconnection to the caller).
 - **Bounded, panic-safe goroutine fan-out.** The server-originated `RequestInventory` and `RevokeLuksDeviceKey` legs (and the inventory ticker) run through `safeGo` — a spawned goroutine with its own deferred `recover()` — and are gated behind bounded semaphores so a flood of frames cannot spawn unbounded goroutines or crash the process from a goroutine panic.
 - **Malformed-oneof nil-guards.** A `ServerMessage` whose inner oneof payload is nil (e.g. a `ServerMessage_Action` with a nil `ActionDispatch`) is logged and dropped, never dereferenced.
+- **Context-honoring sends.** Every `Send*` method observes its `ctx` for both the send-lock acquisition and the underlying `stream.Send`. A stalled peer (a full HTTP/2 flow-control window) can no longer wedge a sender — or every sender queued behind it — past its deadline; a deadline surfaces as a `ctx` error. At most one `stream.Send` is ever in flight, so on-wire ordering is preserved.
+
+The `sys/exec` wrappers SIGKILL-escalate a cancelled child's process group after a bounded grace (then read the final status under a second bounded grace), so a SIGTERM-ignoring child cannot pin the reaping goroutine past the action's deadline.
 
 ### Certificate Renewal
 
