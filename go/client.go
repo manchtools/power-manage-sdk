@@ -64,9 +64,13 @@ type Client struct {
 	// is active; guarded by mu.
 	actionCh chan *pm.ActionDispatch
 
-	// sendMu serializes all stream.Send() calls — concurrent writes on a
-	// bidi stream are not safe and can corrupt messages on the wire.
-	sendMu sync.Mutex
+	// sendSem is a buffered-1 channel used as a ctx-aware send lock. It
+	// serializes all stream.Send() calls — concurrent writes on a bidi
+	// stream are not safe and can corrupt messages on the wire — while
+	// letting a sender abandon its claim on its own ctx deadline instead of
+	// blocking indefinitely behind a stalled send (WS16 #1). Initialised by
+	// NewClient.
+	sendSem chan struct{}
 
 	// pendingMu protects pendingRequests for LUKS request-response correlation.
 	pendingMu       sync.Mutex
@@ -122,6 +126,7 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 	c := &Client{
 		logger:        slog.Default(),
 		validator:     validate.NewValidator(),
+		sendSem:       make(chan struct{}, 1),
 		invSem:        make(chan struct{}, inventoryDispatchConcurrency),
 		luksRevokeSem: make(chan struct{}, luksRevokeDispatchConcurrency),
 	}
@@ -571,10 +576,19 @@ func (c *Client) Connect(ctx context.Context) error {
 	return nil
 }
 
-// send serializes all writes to the bidirectional stream.
+// send serializes all writes to the bidirectional stream and honors ctx.
 // Multiple goroutines (heartbeat, inventory, result sender) may call Send
 // methods concurrently; without serialization this can corrupt messages.
-func (c *Client) send(msg *pm.AgentMessage) error {
+//
+// Both the send-lock acquisition AND the underlying stream.Send observe ctx,
+// so a stalled peer (a full HTTP/2 flow-control window with no draining) can
+// no longer wedge a sender — or every other sender queued behind it — past
+// its own deadline (WS16 #1). At most one stream.Send is ever in flight: the
+// send slot is held until the in-flight Send actually returns, even if the
+// caller has already given up on ctx, so the on-wire serialization guarantee
+// is preserved. A send that is abandoned on ctx stays pending until the
+// stream is torn down (Close / run-ctx cancel on reconnect), which resets it.
+func (c *Client) send(ctx context.Context, msg *pm.AgentMessage) error {
 	c.mu.RLock()
 	stream := c.stream
 	c.mu.RUnlock()
@@ -583,9 +597,38 @@ func (c *Client) send(msg *pm.AgentMessage) error {
 		return errors.New("not connected")
 	}
 
-	c.sendMu.Lock()
-	defer c.sendMu.Unlock()
-	return stream.Send(msg)
+	// Refuse up front if the caller's ctx is already done — don't queue
+	// behind the send lock just to fail.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Acquire the send slot ctx-aware: a waiting sender abandons its claim on
+	// its own deadline instead of starving behind a stalled send.
+	select {
+	case c.sendSem <- struct{}{}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	// Run the blocking Send while holding the slot. The slot is released only
+	// when stream.Send actually returns (in the goroutine), so a second Send
+	// can never start concurrently with an abandoned one — no on-wire
+	// corruption. errCh is buffered so the goroutine never blocks publishing
+	// its result even after we have returned on ctx.
+	errCh := make(chan error, 1)
+	go func() {
+		err := stream.Send(msg)
+		<-c.sendSem
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // SendHello sends a hello message to the server.
@@ -595,7 +638,7 @@ func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) e
 	authToken := c.authToken
 	c.mu.RUnlock()
 
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Hello{
 			Hello: &pm.Hello{
@@ -611,7 +654,7 @@ func (c *Client) SendHello(ctx context.Context, hostname, agentVersion string) e
 
 // SendHeartbeat sends a heartbeat message to the server.
 func (c *Client) SendHeartbeat(ctx context.Context, hb *pm.Heartbeat) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Heartbeat{
 			Heartbeat: hb,
@@ -621,7 +664,7 @@ func (c *Client) SendHeartbeat(ctx context.Context, hb *pm.Heartbeat) error {
 
 // SendActionResult sends an action result to the server.
 func (c *Client) SendActionResult(ctx context.Context, result *pm.ActionResult) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_ActionResult{
 			ActionResult: result,
@@ -631,7 +674,7 @@ func (c *Client) SendActionResult(ctx context.Context, result *pm.ActionResult) 
 
 // SendOutputChunk sends an output chunk during action execution.
 func (c *Client) SendOutputChunk(ctx context.Context, chunk *pm.OutputChunk) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_OutputChunk{
 			OutputChunk: chunk,
@@ -641,7 +684,7 @@ func (c *Client) SendOutputChunk(ctx context.Context, chunk *pm.OutputChunk) err
 
 // SendQueryResult sends an OS query result to the server.
 func (c *Client) SendQueryResult(ctx context.Context, result *pm.OSQueryResult) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_QueryResult{
 			QueryResult: result,
@@ -651,7 +694,7 @@ func (c *Client) SendQueryResult(ctx context.Context, result *pm.OSQueryResult) 
 
 // SendLogQueryResult sends a log query result to the server.
 func (c *Client) SendLogQueryResult(ctx context.Context, result *pm.LogQueryResult) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_LogQueryResult{
 			LogQueryResult: result,
@@ -661,7 +704,7 @@ func (c *Client) SendLogQueryResult(ctx context.Context, result *pm.LogQueryResu
 
 // SendSecurityAlert sends a security alert to the server for audit logging.
 func (c *Client) SendSecurityAlert(ctx context.Context, alert *pm.SecurityAlert) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_SecurityAlert{
 			SecurityAlert: alert,
@@ -675,7 +718,7 @@ func (c *Client) SendInventory(ctx context.Context, inventory *pm.DeviceInventor
 		return nil
 	}
 
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_Inventory{
 			Inventory: inventory,
@@ -687,7 +730,7 @@ func (c *Client) SendInventory(ctx context.Context, inventory *pm.DeviceInventor
 // session back to the server. The TerminalHandler is responsible for
 // chunking PTY reads to fit the proto's 64KB max data size.
 func (c *Client) SendTerminalOutput(ctx context.Context, out *pm.TerminalOutput) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_TerminalOutput{
 			TerminalOutput: out,
@@ -701,7 +744,7 @@ func (c *Client) SendTerminalOutput(ctx context.Context, out *pm.TerminalOutput)
 // and ERROR for any failure that ends the session before STARTED or
 // in flight.
 func (c *Client) SendTerminalStateChange(ctx context.Context, change *pm.TerminalStateChange) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_TerminalStateChange{
 			TerminalStateChange: change,
@@ -716,7 +759,7 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
 
-	if err := c.send(&pm.AgentMessage{
+	if err := c.send(ctx, &pm.AgentMessage{
 		Id: id,
 		Payload: &pm.AgentMessage_GetLuksKey{
 			GetLuksKey: &pm.GetLuksKeyRequest{
@@ -748,7 +791,7 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
 
-	if err := c.send(&pm.AgentMessage{
+	if err := c.send(ctx, &pm.AgentMessage{
 		Id: id,
 		Payload: &pm.AgentMessage_StoreLuksKey{
 			StoreLuksKey: &pm.StoreLuksKeyRequest{
@@ -782,7 +825,7 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 
 // SendRevokeLuksDeviceKeyResult sends the result of a LUKS device key revocation back to the server.
 func (c *Client) SendRevokeLuksDeviceKeyResult(ctx context.Context, actionID string, success bool, errMsg string) error {
-	return c.send(&pm.AgentMessage{
+	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_RevokeLuksDeviceKeyResult{
 			RevokeLuksDeviceKeyResult: &pm.RevokeLuksDeviceKeyResult{

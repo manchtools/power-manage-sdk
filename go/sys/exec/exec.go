@@ -7,9 +7,50 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"syscall"
+	"time"
 
 	"github.com/go-cmd/cmd"
 )
+
+// killGrace bounds how long a cancelled child has to exit on SIGTERM before
+// its process group is escalated to SIGKILL. A package var (not const) so
+// tests can shorten it. WS16 #6: without escalation a SIGTERM-ignoring child
+// pins the reaping goroutine until the child exits on its own — or forever.
+var killGrace = 5 * time.Second
+
+// awaitStatusOrKill waits for a cancelled command's final status. It SIGTERMs
+// the process group (Stop, idempotent), and if the child has not exited within
+// killGrace it escalates to SIGKILL on the whole group, then reads the status
+// under a second bounded grace so a wedged child can never pin the caller
+// forever. go-cmd starts children with Setpgid, so -pid targets the group.
+func awaitStatusOrKill(c *cmd.Cmd, statusChan <-chan cmd.Status) cmd.Status {
+	_ = c.Stop() // SIGTERM the process group (no-op if already stopped/exited)
+
+	term := time.NewTimer(killGrace)
+	defer term.Stop()
+	select {
+	case status := <-statusChan:
+		return status
+	case <-term.C:
+	}
+
+	if pid := c.Status().PID; pid > 0 {
+		_ = syscall.Kill(-pid, syscall.SIGKILL)
+	}
+
+	kill := time.NewTimer(killGrace)
+	defer kill.Stop()
+	select {
+	case status := <-statusChan:
+		return status
+	case <-kill.C:
+		// Even SIGKILL could not be reaped within grace (e.g. an
+		// uninterruptible D-state). Return a best-effort snapshot rather
+		// than block the caller forever.
+		return c.Status()
+	}
+}
 
 // Run executes a command and returns its output.
 func Run(ctx context.Context, name string, args ...string) (*Result, error) {
@@ -205,13 +246,24 @@ func runStreamingWithEnv(ctx context.Context, name string, args []string, env []
 				}
 				recordLine(StreamStderr, line)
 			case <-ctx.Done():
-				c.Stop()
+				// Stop draining; awaitStatusOrKill below owns the SIGTERM →
+				// SIGKILL escalation so a SIGTERM-ignoring child can't pin us.
 				return
 			}
 		}
 	}()
 
-	status := <-statusChan
+	var (
+		status cmd.Status
+		runErr error
+	)
+	select {
+	case status = <-statusChan:
+		runErr = status.Error
+	case <-ctx.Done():
+		status = awaitStatusOrKill(c, statusChan)
+		runErr = ctx.Err()
+	}
 	<-done
 
 	stdoutStr := stdoutBuf.String()
@@ -227,7 +279,7 @@ func runStreamingWithEnv(ctx context.Context, name string, args []string, env []
 		ExitCode: status.Exit,
 		Stdout:   stdoutStr,
 		Stderr:   stderrStr,
-	}, status.Error
+	}, runErr
 }
 
 func runWithOptions(ctx context.Context, name string, args []string, stdin io.Reader, dir string) (*Result, error) {
@@ -254,8 +306,7 @@ func runWithOptions(ctx context.Context, name string, args []string, stdin io.Re
 		}
 		return result, nil
 	case <-ctx.Done():
-		c.Stop()
-		status := <-statusChan
+		status := awaitStatusOrKill(c, statusChan)
 		return statusToResult(status), ctx.Err()
 	}
 }
