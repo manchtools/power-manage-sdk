@@ -1,76 +1,19 @@
 package crypto
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/sha256"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/hex"
-	"encoding/pem"
-	"math/big"
 	"testing"
-	"time"
+
+	"github.com/manchtools/power-manage/sdk/go/cryptotest"
 )
-
-// genCA creates a self-signed CA cert (PEM) + its key.
-func genCA(t *testing.T, cn string) ([]byte, *ecdsa.PrivateKey, *x509.Certificate) {
-	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("ca key: %v", err)
-	}
-	tmpl := &x509.Certificate{
-		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: cn},
-		NotBefore:             time.Now().Add(-time.Hour),
-		NotAfter:              time.Now().Add(time.Hour),
-		IsCA:                  true,
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
-		BasicConstraintsValid: true,
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
-	if err != nil {
-		t.Fatalf("create ca: %v", err)
-	}
-	cert, err := x509.ParseCertificate(der)
-	if err != nil {
-		t.Fatalf("parse ca: %v", err)
-	}
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), key, cert
-}
-
-// genSubCA creates a CA cert (PEM) signed BY parent — a cross-signed /
-// successor CA, the legitimate-rotation continuity case.
-func genSubCA(t *testing.T, cn string, parent *x509.Certificate, parentKey *ecdsa.PrivateKey) []byte {
-	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("subca key: %v", err)
-	}
-	tmpl := &x509.Certificate{
-		SerialNumber:          big.NewInt(2),
-		Subject:               pkix.Name{CommonName: cn},
-		NotBefore:             time.Now().Add(-time.Hour),
-		NotAfter:              time.Now().Add(time.Hour),
-		IsCA:                  true,
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
-		BasicConstraintsValid: true,
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, parent, &key.PublicKey, parentKey)
-	if err != nil {
-		t.Fatalf("create subca: %v", err)
-	}
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
-}
 
 // TestCAFingerprintFromPEM pins that the fingerprint is the lowercase hex
 // SHA-256 of the certificate DER — byte-identical to the server's
 // ca.FingerprintFromPEM, so an operator-supplied pin (derived from the
 // control CA, e.g. `openssl x509 -outform DER | sha256sum`) matches.
 func TestCAFingerprintFromPEM(t *testing.T) {
-	caPEM, _, caCert := genCA(t, "fp-ca")
+	caPEM, _, caCert := cryptotest.GenCA(t, "fp-ca")
 	want := hex.EncodeToString(func() []byte { s := sha256.Sum256(caCert.Raw); return s[:] }())
 
 	got, err := CAFingerprintFromPEM(caPEM)
@@ -102,9 +45,9 @@ func TestCAFingerprintFromPEM(t *testing.T) {
 // adopted if it is byte-identical to, or cross-signed by, the enrolled
 // CA. An unrelated CA (the trust-anchor-swap attack) is refused.
 func TestVerifyCAContinuity(t *testing.T) {
-	oldPEM, oldKey, oldCert := genCA(t, "old-ca")
-	successorPEM := genSubCA(t, "successor-ca", oldCert, oldKey)
-	unrelatedPEM, _, _ := genCA(t, "attacker-ca")
+	oldPEM, oldKey, oldCert := cryptotest.GenCA(t, "old-ca")
+	successorPEM := cryptotest.GenSubCA(t, "successor-ca", oldCert, oldKey)
+	unrelatedPEM, _, _ := cryptotest.GenCA(t, "attacker-ca")
 
 	t.Run("byte-identical accepted", func(t *testing.T) {
 		if err := VerifyCAContinuity(oldPEM, oldPEM); err != nil {

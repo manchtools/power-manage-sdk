@@ -2,18 +2,11 @@ package sdk
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -26,6 +19,7 @@ import (
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
 	"github.com/manchtools/power-manage/sdk/gen/go/pm/v1/pmv1connect"
+	"github.com/manchtools/power-manage/sdk/go/cryptotest"
 )
 
 // agentLoopback wires an in-process AgentService handler behind an h2c
@@ -570,10 +564,9 @@ func (h *welcomeRecordingHandler) OnError(ctx context.Context, e *pm.Error) erro
 // ---------------------------------------------------------------------------
 
 func TestWithMTLSFromPEM_ClientPresentsCertificate(t *testing.T) {
-	caCert, caKey := mustGenCA(t)
-	serverCertPEM, serverKeyPEM := mustGenCert(t, caCert, caKey, "127.0.0.1", true)
-	clientCertPEM, clientKeyPEM := mustGenCert(t, caCert, caKey, "device-client", false)
-	caPEM := mustEncodeCert(caCert)
+	caPEM, caKey, caCert := cryptotest.GenCA(t, "test-ca")
+	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "127.0.0.1", true)
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
 
 	caPool := x509.NewCertPool()
 	if !caPool.AppendCertsFromPEM(caPEM) {
@@ -663,66 +656,3 @@ func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { retu
 // ---------------------------------------------------------------------------
 // Cert generation helpers
 // ---------------------------------------------------------------------------
-
-func mustGenCA(t *testing.T) (*x509.Certificate, *ecdsa.PrivateKey) {
-	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("ca key: %v", err)
-	}
-	tmpl := &x509.Certificate{
-		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "test-ca"},
-		NotBefore:             time.Now().Add(-time.Hour),
-		NotAfter:              time.Now().Add(time.Hour),
-		IsCA:                  true,
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
-		BasicConstraintsValid: true,
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
-	if err != nil {
-		t.Fatalf("create ca: %v", err)
-	}
-	cert, err := x509.ParseCertificate(der)
-	if err != nil {
-		t.Fatalf("parse ca: %v", err)
-	}
-	return cert, key
-}
-
-func mustGenCert(t *testing.T, ca *x509.Certificate, caKey *ecdsa.PrivateKey, name string, isServer bool) (certPEM, keyPEM []byte) {
-	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("leaf key: %v", err)
-	}
-	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(time.Now().UnixNano()),
-		Subject:      pkix.Name{CommonName: name},
-		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(time.Hour),
-		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-	}
-	if isServer {
-		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-		tmpl.IPAddresses = []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}
-		tmpl.DNSNames = []string{"localhost"}
-	} else {
-		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, ca, &key.PublicKey, caKey)
-	if err != nil {
-		t.Fatalf("create cert: %v", err)
-	}
-	certPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
-	keyDER, err := x509.MarshalECPrivateKey(key)
-	if err != nil {
-		t.Fatalf("marshal key: %v", err)
-	}
-	keyPEM = pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
-	return certPEM, keyPEM
-}
-
-func mustEncodeCert(cert *x509.Certificate) []byte {
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
-}
