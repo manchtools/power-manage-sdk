@@ -12,9 +12,11 @@ import (
 // assertNoStale fails the build if a listed sink stops calling Reveal (e.g. it
 // was refactored away), so the allowlist cannot rot into a silent gap.
 var revealSinkAllowlist = map[string]string{
-	"go/sys/user/password.go :: password.Reveal()": "chpasswd stdin: the sole sink that writes a user password to useradd's helper",
-	"go/sys/encryption/luks.go :: key.Reveal()":    "LUKS key file in /dev/shm: cryptsetup --key-file sink (never argv)",
-	"go/sys/encryption/tpm.go :: key.Reveal()":     "systemd-cryptenroll stdin: the TPM-enrollment passphrase sink (never argv)",
+	"go/sys/user/password.go :: password.Reveal()":    "chpasswd stdin: the sole sink that writes a user password to useradd's helper",
+	"go/sys/encryption/luks.go :: key.Reveal()":       "LUKS key file in /dev/shm: cryptsetup --key-file sink (never argv)",
+	"go/sys/encryption/tpm.go :: key.Reveal()":        "systemd-cryptenroll stdin: the TPM-enrollment passphrase sink (never argv)",
+	"go/sys/network/keyfile.go :: p.PSK.Reveal()":     "NetworkManager keyfile [wifi-security] psk= line (0600 file, never argv)",
+	"go/sys/network/certs.go :: p.ClientKey.Reveal()": "EAP-TLS client-key.pem (0600 file write + on-disk drift compare, never argv)",
 }
 
 // TestRevealOnlyFromKnownSinks locks the exec.Secret redaction contract: the

@@ -31,6 +31,37 @@ func TestNewSecret_EmptyIsValidAndZero(t *testing.T) {
 	}
 }
 
+func TestNewMultilineSecret_AllowsNewlinesAndStillRedacts(t *testing.T) {
+	// A PEM private key is the motivating case: it is multi-line and is written
+	// verbatim to a 0600 file (never piped to stdin), so the newline rejection
+	// must NOT apply — but the redaction and Reveal contract must be identical.
+	const pem = "-----BEGIN PRIVATE KEY-----\nMIIBVgIBADAN\nQ==\n-----END PRIVATE KEY-----\n"
+	s := NewMultilineSecret(pem)
+	if s.IsZero() {
+		t.Error("non-empty multiline secret IsZero() = true, want false")
+	}
+	if got := s.Reveal(); got != pem {
+		t.Errorf("Reveal() round-trip = %q, want the verbatim PEM", got)
+	}
+	var logged any = s
+	for verb, out := range map[string]string{
+		"String()": s.String(),
+		"%v":       fmt.Sprintf("%v", logged),
+		"%s":       fmt.Sprintf("%s", logged),
+	} {
+		if strings.Contains(out, "PRIVATE KEY") || strings.Contains(out, "MIIBVgIBADAN") {
+			t.Errorf("%s leaked PEM material: %q", verb, out)
+		}
+		if !strings.Contains(out, "[REDACTED]") {
+			t.Errorf("%s = %q, want [REDACTED]", verb, out)
+		}
+	}
+	// Empty is zero, same as NewSecret.
+	if !NewMultilineSecret("").IsZero() {
+		t.Error("empty multiline secret IsZero() = false, want true")
+	}
+}
+
 func TestSecret_RedactsEverywhereButReveal(t *testing.T) {
 	const plaintext = "hunter2-s3cr3t"
 	s, err := NewSecret(plaintext)

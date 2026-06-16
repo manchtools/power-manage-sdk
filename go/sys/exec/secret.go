@@ -31,6 +31,18 @@ func NewSecret(v string) (Secret, error) {
 	return Secret{v: v}, nil
 }
 
+// NewMultilineSecret constructs a Secret WITHOUT the newline rejection NewSecret
+// applies. It is for credentials written verbatim to a FILE — e.g. an EAP-TLS PEM
+// private key — where embedded newlines are part of the payload and there is no
+// stdin record-splitting (or keyfile line-injection) hazard.
+//
+// NEVER use it for a credential piped to a tool's stdin or interpolated into a
+// line-oriented config (chpasswd, an nmcli keyfile psk= line): there, use
+// NewSecret, whose newline rejection prevents the value from splitting into a
+// second record. The redaction (String/GoString) and Reveal-sink contract are
+// identical; only the construction-time newline check differs.
+func NewMultilineSecret(v string) Secret { return Secret{v: v} }
+
 // String renders the redaction sentinel so a Secret in a log/format never leaks.
 func (s Secret) String() string { return "[REDACTED]" }
 
