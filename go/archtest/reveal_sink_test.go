@@ -13,6 +13,8 @@ import (
 // was refactored away), so the allowlist cannot rot into a silent gap.
 var revealSinkAllowlist = map[string]string{
 	"go/sys/user/password.go :: password.Reveal()": "chpasswd stdin: the sole sink that writes a user password to useradd's helper",
+	"go/sys/encryption/luks.go :: key.Reveal()":    "LUKS key file in /dev/shm: cryptsetup --key-file sink (never argv)",
+	"go/sys/encryption/tpm.go :: key.Reveal()":     "systemd-cryptenroll stdin: the TPM-enrollment passphrase sink (never argv)",
 }
 
 // TestRevealOnlyFromKnownSinks locks the exec.Secret redaction contract: the

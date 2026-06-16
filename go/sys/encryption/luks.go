@@ -13,25 +13,23 @@ import (
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// LUKS2 supports eight keyslots (0..7). LUKS1 supported the same
-// range. Both formats reject values outside this range at the
-// cryptsetup layer with an opaque error; rejecting at the SDK
-// boundary surfaces the operator-facing reason clearly.
-//
-// Per audit finding #10: "validate LUKS keyslot ranges before
-// invoking cryptsetup."
+// luks is the cryptsetup/LUKS Manager. cryptsetup needs root, so every command
+// is escalated through the injected Runner. Passphrases are written to an
+// ephemeral /dev/shm key file and passed as --key-file, never in argv.
+type luks struct {
+	r exec.Runner
+}
+
+// LUKS2 (and LUKS1) support eight keyslots, 0..7. Rejecting out-of-range slots
+// at the SDK boundary surfaces a clear reason instead of cryptsetup's opaque one.
 const (
 	LuksMinKeySlot = 0
 	LuksMaxKeySlot = 7
 )
 
-// ErrInvalidKeySlot is returned when AddKeyToSlot / KillSlot get a
-// slot index outside [LuksMinKeySlot, LuksMaxKeySlot].
+// ErrInvalidKeySlot is returned for a slot index outside [LuksMinKeySlot, LuksMaxKeySlot].
 var ErrInvalidKeySlot = errors.New("invalid LUKS keyslot")
 
-// validateKeySlot enforces the [0, 7] range the LUKS on-disk format
-// itself uses. Wrapped in a helper so the rejection wording is
-// identical at every call site.
 func validateKeySlot(slot int) error {
 	if slot < LuksMinKeySlot || slot > LuksMaxKeySlot {
 		return fmt.Errorf("%w: slot %d outside valid range %d..%d", ErrInvalidKeySlot, slot, LuksMinKeySlot, LuksMaxKeySlot)
@@ -39,76 +37,61 @@ func validateKeySlot(slot int) error {
 	return nil
 }
 
-// IsLuks checks if a device is a LUKS-encrypted volume.
-func IsLuks(ctx context.Context, devicePath string) (bool, error) {
-	if err := requireBackend(BackendLUKS, "IsLuks"); err != nil {
+// IsEncrypted reports whether dev is a LUKS volume.
+func (l *luks) IsEncrypted(ctx context.Context, dev string) (bool, error) {
+	if err := validateDevicePath(dev); err != nil {
 		return false, err
 	}
-	result, err := exec.Privileged(ctx, "cryptsetup", "isLuks", devicePath)
+	res, err := l.r.Run(ctx, exec.Command{Name: "cryptsetup", Args: []string{"isLuks", dev}, Escalate: true})
 	if err != nil {
-		if result != nil && result.ExitCode == 1 {
-			return false, nil
+		return false, fmt.Errorf("cryptsetup isLuks: %w", err)
+	}
+	switch res.ExitCode {
+	case 0:
+		return true, nil
+	case 1:
+		return false, nil // not a LUKS device
+	default:
+		return false, cryptsetupError("isLuks", res)
+	}
+}
+
+// AddKey adds newKey to a LUKS volume, authenticating with existing. With
+// opts.Slot nil cryptsetup auto-assigns a free slot; otherwise the given slot
+// (0..7) is targeted.
+func (l *luks) AddKey(ctx context.Context, dev string, existing, newKey exec.Secret, opts AddKeyOptions) error {
+	if err := validateDevicePath(dev); err != nil {
+		return err
+	}
+	if opts.Slot != nil {
+		if err := validateKeySlot(*opts.Slot); err != nil {
+			return err
 		}
-		return false, fmt.Errorf("cryptsetup isLuks failed: %w", err)
 	}
-	return true, nil
-}
-
-// AddKey adds a new passphrase to a LUKS volume using an existing key for authentication.
-func AddKey(ctx context.Context, devicePath, existingKey, newKey string) error {
-	if err := requireBackend(BackendLUKS, "AddKey"); err != nil {
-		return err
-	}
-	existingFile, err := writeKeyFile(existingKey)
+	existingFile, err := writeKeyFile(existing)
 	if err != nil {
 		return err
 	}
 	defer cleanupKeyFile(existingFile)
-
 	newFile, err := writeKeyFile(newKey)
 	if err != nil {
 		return err
 	}
 	defer cleanupKeyFile(newFile)
 
-	result, err := exec.Privileged(ctx, "cryptsetup", "luksAddKey", devicePath, newFile, "--key-file", existingFile, "--batch-mode")
-	if err != nil {
-		return cryptsetupError("luksAddKey", result, err)
+	args := []string{"luksAddKey", dev, newFile, "--key-file", existingFile}
+	op := "luksAddKey"
+	if opts.Slot != nil {
+		args = append(args, "--key-slot", strconv.Itoa(*opts.Slot))
+		op = fmt.Sprintf("luksAddKey (slot %d)", *opts.Slot)
 	}
-	return nil
-}
-
-// AddKeyToSlot adds a new passphrase to a specific LUKS slot.
-func AddKeyToSlot(ctx context.Context, devicePath string, slot int, existingKey, newKey string) error {
-	if err := requireBackend(BackendLUKS, "AddKeyToSlot"); err != nil {
-		return err
-	}
-	if err := validateKeySlot(slot); err != nil {
-		return err
-	}
-	existingFile, err := writeKeyFile(existingKey)
-	if err != nil {
-		return err
-	}
-	defer cleanupKeyFile(existingFile)
-
-	newFile, err := writeKeyFile(newKey)
-	if err != nil {
-		return err
-	}
-	defer cleanupKeyFile(newFile)
-
-	result, err := exec.Privileged(ctx, "cryptsetup", "luksAddKey", devicePath, newFile,
-		"--key-file", existingFile, "--key-slot", strconv.Itoa(slot), "--batch-mode")
-	if err != nil {
-		return cryptsetupError(fmt.Sprintf("luksAddKey (slot %d)", slot), result, err)
-	}
-	return nil
+	args = append(args, "--batch-mode")
+	return l.runCryptsetup(ctx, op, args)
 }
 
 // RemoveKey removes a passphrase from a LUKS volume.
-func RemoveKey(ctx context.Context, devicePath, key string) error {
-	if err := requireBackend(BackendLUKS, "RemoveKey"); err != nil {
+func (l *luks) RemoveKey(ctx context.Context, dev string, key exec.Secret) error {
+	if err := validateDevicePath(dev); err != nil {
 		return err
 	}
 	keyFile, err := writeKeyFile(key)
@@ -116,73 +99,87 @@ func RemoveKey(ctx context.Context, devicePath, key string) error {
 		return err
 	}
 	defer cleanupKeyFile(keyFile)
-
-	result, err := exec.Privileged(ctx, "cryptsetup", "luksRemoveKey", devicePath, "--key-file", keyFile, "--batch-mode")
-	if err != nil {
-		return cryptsetupError("luksRemoveKey", result, err)
-	}
-	return nil
+	return l.runCryptsetup(ctx, "luksRemoveKey",
+		[]string{"luksRemoveKey", dev, "--key-file", keyFile, "--batch-mode"})
 }
 
-// KillSlot removes a specific LUKS slot using an existing key for authentication.
-func KillSlot(ctx context.Context, devicePath string, slot int, existingKey string) error {
-	if err := requireBackend(BackendLUKS, "KillSlot"); err != nil {
+// KillSlot removes a specific keyslot, authenticating with existing.
+func (l *luks) KillSlot(ctx context.Context, dev string, slot int, existing exec.Secret) error {
+	if err := validateDevicePath(dev); err != nil {
 		return err
 	}
 	if err := validateKeySlot(slot); err != nil {
 		return err
 	}
-	keyFile, err := writeKeyFile(existingKey)
+	keyFile, err := writeKeyFile(existing)
 	if err != nil {
 		return err
 	}
 	defer cleanupKeyFile(keyFile)
+	return l.runCryptsetup(ctx, fmt.Sprintf("luksKillSlot %d", slot),
+		[]string{"luksKillSlot", dev, strconv.Itoa(slot), "--key-file", keyFile, "--batch-mode"})
+}
 
-	result, err := exec.Privileged(ctx, "cryptsetup", "luksKillSlot", devicePath, strconv.Itoa(slot),
-		"--key-file", keyFile, "--batch-mode")
+// VerifyPassphrase reports whether p unlocks dev, without unlocking it.
+func (l *luks) VerifyPassphrase(ctx context.Context, dev string, p exec.Secret) (bool, error) {
+	if err := validateDevicePath(dev); err != nil {
+		return false, err
+	}
+	keyFile, err := writeKeyFile(p)
 	if err != nil {
-		return cryptsetupError(fmt.Sprintf("luksKillSlot %d", slot), result, err)
+		return false, err
+	}
+	defer cleanupKeyFile(keyFile)
+
+	res, err := l.r.Run(ctx, exec.Command{
+		Name:     "cryptsetup",
+		Args:     []string{"open", "--test-passphrase", dev, "--key-file", keyFile, "--batch-mode"},
+		Escalate: true,
+	})
+	if err != nil {
+		return false, fmt.Errorf("cryptsetup test-passphrase: %w", err)
+	}
+	switch res.ExitCode {
+	case 0:
+		return true, nil
+	case 2:
+		return false, nil // wrong passphrase
+	default:
+		return false, cryptsetupError("test-passphrase", res)
+	}
+}
+
+func (l *luks) TPM() (TPMEnroller, bool) {
+	return &tpmEnroller{r: l.r}, true
+}
+
+// runCryptsetup runs an escalated cryptsetup command and maps a non-zero exit to
+// a decoded error.
+func (l *luks) runCryptsetup(ctx context.Context, op string, args []string) error {
+	res, err := l.r.Run(ctx, exec.Command{Name: "cryptsetup", Args: args, Escalate: true})
+	if err != nil {
+		return fmt.Errorf("cryptsetup %s: %w", op, err)
+	}
+	if res.ExitCode != 0 {
+		return cryptsetupError(op, res)
 	}
 	return nil
 }
 
-// cryptsetupError builds a descriptive error from a cryptsetup result.
-// cryptsetup --batch-mode suppresses stderr, so we translate known exit codes.
-func cryptsetupError(cmd string, result *exec.Result, err error) error {
-	detail := exitCodeDetail(result)
-	if result != nil && result.Stderr != "" {
-		detail = strings.TrimSpace(result.Stderr)
+// cryptsetupError decodes a cryptsetup non-zero exit. --batch-mode suppresses
+// most stderr, so known exit codes are translated (cryptsetup(8) RETURN CODES);
+// any stderr present is preferred.
+func cryptsetupError(op string, res exec.Result) error {
+	detail := exitCodeDetail(res.ExitCode)
+	if s := strings.TrimSpace(res.Stderr); s != "" {
+		detail = s
 	}
-	slog.Warn("cryptsetup command failed",
-		"command", cmd,
-		"exit_code", exitCode(result),
-		"detail", detail,
-		"stderr", trimmedStderr(result),
-	)
-	return fmt.Errorf("cryptsetup %s failed: %s (exit code %d)", cmd, detail, exitCode(result))
+	slog.Warn("cryptsetup command failed", "command", op, "exit_code", res.ExitCode, "detail", detail)
+	return fmt.Errorf("cryptsetup %s failed: %s (exit code %d)", op, detail, res.ExitCode)
 }
 
-func exitCode(r *exec.Result) int {
-	if r != nil {
-		return r.ExitCode
-	}
-	return -1
-}
-
-func trimmedStderr(r *exec.Result) string {
-	if r != nil {
-		return strings.TrimSpace(r.Stderr)
-	}
-	return ""
-}
-
-// exitCodeDetail translates cryptsetup exit codes to human-readable messages.
-// See cryptsetup(8) RETURN CODES.
-func exitCodeDetail(r *exec.Result) string {
-	if r == nil {
-		return "unknown error"
-	}
-	switch r.ExitCode {
+func exitCodeDetail(code int) string {
+	switch code {
 	case 1:
 		return "wrong parameters"
 	case 2:
@@ -194,108 +191,93 @@ func exitCodeDetail(r *exec.Result) string {
 	case 5:
 		return "device already exists or device is busy"
 	default:
-		return fmt.Sprintf("unexpected error (exit code %d)", r.ExitCode)
+		return fmt.Sprintf("unexpected error (exit code %d)", code)
 	}
 }
 
-// keyFileDir is the private directory for ephemeral key files.
-// /dev/shm is a tmpfs mount (RAM-backed) — files never touch disk.
-const keyFileDir = "/dev/shm/pm-luks"
+// keyFileDir is the private directory for ephemeral key files. /dev/shm is a
+// tmpfs (RAM-backed) — files never touch disk. A var (not const) so tests can
+// redirect it to exercise the fail-closed "no tmpfs" path.
+var keyFileDir = "/dev/shm/pm-luks"
 
-// TestPassphrase checks if a passphrase is valid for a LUKS volume without unlocking it.
-// Returns true if the passphrase is accepted, false if rejected.
-func TestPassphrase(ctx context.Context, devicePath, passphrase string) (bool, error) {
-	if err := requireBackend(BackendLUKS, "TestPassphrase"); err != nil {
-		return false, err
-	}
-	keyFile, err := writeKeyFile(passphrase)
-	if err != nil {
-		return false, err
-	}
-	defer cleanupKeyFile(keyFile)
-
-	result, err := exec.Privileged(ctx, "cryptsetup", "open", "--test-passphrase", devicePath,
-		"--key-file", keyFile, "--batch-mode")
-	if err != nil {
-		if result != nil && result.ExitCode == 2 {
-			return false, nil // Wrong passphrase
-		}
-		slog.Warn("cryptsetup test-passphrase failed",
-			"exit_code", exitCode(result),
-			"detail", exitCodeDetail(result),
-			"stderr", trimmedStderr(result),
-		)
-		return false, fmt.Errorf("cryptsetup test-passphrase failed: %s (exit code %d)", exitCodeDetail(result), exitCode(result))
-	}
-	return true, nil
+// keyFileHandle / scrubFile are the minimal subsets of *os.File the key-file
+// helpers need. Behind package-var seams so tests can inject per-method I/O
+// failures and exercise the fail-closed cleanup paths of this security-critical
+// code; *os.File satisfies both.
+type keyFileHandle interface {
+	Name() string
+	Chmod(os.FileMode) error
+	WriteString(string) (int, error)
+	Close() error
 }
 
-// writeKeyFile writes a key to a temporary file in /dev/shm (RAM only).
-// The private directory has mode 0700 to prevent other users from listing files.
-// Returns an error if /dev/shm is not available — never falls back to disk.
-func writeKeyFile(key string) (string, error) {
-	if err := os.MkdirAll(keyFileDir, 0700); err != nil {
-		return "", fmt.Errorf("failed to create key file directory %s: %w", keyFileDir, err)
-	}
+type scrubFile interface {
+	Stat() (os.FileInfo, error)
+	WriteAt([]byte, int64) (int, error)
+	Close() error
+}
 
-	f, err := os.CreateTemp(keyFileDir, "key-*")
+var (
+	mkdirAll      = os.MkdirAll
+	createKeyFile = func(dir string) (keyFileHandle, error) { return os.CreateTemp(dir, "key-*") }
+	removeFile    = os.Remove
+	openKeyFile   = func(path string) (scrubFile, error) {
+		return os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW, 0)
+	}
+)
+
+// writeKeyFile writes a Secret to a 0600 temp file in /dev/shm and returns its
+// path. Reveal() here is the single sanctioned key-file sink. Never falls back
+// to disk: an unavailable /dev/shm is a hard error.
+func writeKeyFile(key exec.Secret) (string, error) {
+	if err := mkdirAll(keyFileDir, 0o700); err != nil {
+		return "", fmt.Errorf("create key file directory %s: %w", keyFileDir, err)
+	}
+	f, err := createKeyFile(keyFileDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to create key file: %w", err)
+		return "", fmt.Errorf("create key file: %w", err)
 	}
-
-	// Explicitly set mode 0600 regardless of umask.
-	if err := f.Chmod(0600); err != nil {
+	if err := f.Chmod(0o600); err != nil {
 		f.Close()
-		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to set key file permissions: %w", err)
+		removeFile(f.Name())
+		return "", fmt.Errorf("set key file permissions: %w", err)
 	}
-
-	if _, err := f.WriteString(key); err != nil {
+	if _, err := f.WriteString(key.Reveal()); err != nil {
 		f.Close()
-		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to write key file: %w", err)
+		removeFile(f.Name())
+		return "", fmt.Errorf("write key file: %w", err)
 	}
-
 	if err := f.Close(); err != nil {
-		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to close key file: %w", err)
+		removeFile(f.Name())
+		return "", fmt.Errorf("close key file: %w", err)
 	}
-
 	return f.Name(), nil
 }
 
-// cleanupKeyFile overwrites a key file with zeros and removes it.
-// Uses O_WRONLY|O_NOFOLLOW to avoid TOCTOU symlink attacks — if the path
-// has been replaced with a symlink, the open will fail and we skip overwriting.
-//
-// A failed zero-overwrite (ENOSPC, EIO, etc.) is logged at WARN — the unlink
-// still happens on a best-effort basis so the file does not linger on disk,
-// but the operator should know the passphrase bytes may have survived in the
-// underlying block device until reuse.
+// cleanupKeyFile zero-overwrites and removes a key file. O_NOFOLLOW rejects a
+// symlink that may have replaced the path (TOCTOU); a failed scrub is logged but
+// the unlink still proceeds best-effort.
 func cleanupKeyFile(path string) {
 	if path == "" {
 		return
 	}
-	// Open with O_NOFOLLOW to reject symlinks (prevents TOCTOU attack).
-	f, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW, 0)
+	f, err := openKeyFile(path)
 	if err != nil {
-		// File already removed or is a symlink — just try to remove.
-		if rmErr := os.Remove(path); rmErr != nil && !os.IsNotExist(rmErr) {
+		if rmErr := removeFile(path); rmErr != nil && !os.IsNotExist(rmErr) {
 			slog.Warn("luks: removing unscrubbed key file failed", "path", path, "error", rmErr)
 		}
 		return
 	}
-	// Get size from the open fd (no TOCTOU race).
 	if info, err := f.Stat(); err == nil && info.Size() > 0 {
 		zeros := make([]byte, info.Size())
 		if _, werr := f.WriteAt(zeros, 0); werr != nil {
-			slog.Warn("luks: scrubbing key file before unlink failed; passphrase bytes may persist on disk", "path", path, "error", werr)
+			slog.Warn("luks: scrubbing key file before unlink failed; passphrase bytes may persist", "path", path, "error", werr)
 		}
 	}
 	if cerr := f.Close(); cerr != nil {
 		slog.Warn("luks: closing key file failed", "path", path, "error", cerr)
 	}
-	if rmErr := os.Remove(path); rmErr != nil && !os.IsNotExist(rmErr) {
+	if rmErr := removeFile(path); rmErr != nil && !os.IsNotExist(rmErr) {
 		slog.Warn("luks: removing key file failed", "path", path, "error", rmErr)
 	}
 }
