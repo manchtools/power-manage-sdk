@@ -1,30 +1,33 @@
-// Package user provides user and group management utilities for Linux systems.
-//
-// User operations (Create, Delete, Modify, Lock, etc.) escalate through the
-// configured privilege backend (sudo or doas — see exec.SetPrivilegeBackend).
-// Query operations (Get, Exists, PrimaryGroup) run as the current user where
-// possible, falling back to the privilege backend for restricted data like
-// the shadow file.
 package user
 
 import (
 	"context"
 	"fmt"
-	"slices"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
-	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
-// queryTimeout caps the context-less query helpers (Get / Exists /
-// PrimaryGroup / SupplementaryGroups) so a hung getent / id call —
-// e.g. a stalled NSS module — cannot pin the calling goroutine
-// indefinitely. Local NSS lookups normally return in milliseconds;
-// 10s leaves headroom for slow LDAP / SSSD backends. F023.
+// queryTimeout caps a query op when the caller's context carries no deadline so
+// a hung getent/id (e.g. a stalled NSS/LDAP/SSSD backend) cannot pin the call
+// indefinitely. Local lookups return in milliseconds; 10s leaves headroom.
 const queryTimeout = 10 * time.Second
+
+// Backend selects the user/group implementation. It is passed explicitly even
+// though shadow-utils is the only value today; the zero value is invalid
+// (New → ErrUnknownBackend) and a real second backend (adduser/homed/busybox)
+// is appended when actually written.
+type Backend int
+
+// ShadowUtils is the useradd/usermod/userdel/chpasswd/chage implementation.
+const ShadowUtils Backend = iota + 1
+
+// ErrUnknownBackend is returned by New for the zero value or any Backend the
+// SDK does not implement (fail-closed).
+var ErrUnknownBackend = fmt.Errorf("user: unknown backend")
 
 // Info holds the current state of a user account.
 type Info struct {
@@ -33,213 +36,350 @@ type Info struct {
 	Comment string
 	HomeDir string
 	Shell   string
-	Groups  []string // supplementary groups (excluding primary)
+	Groups  []string // supplementary groups (excluding the primary)
 	Locked  bool
 }
 
-// =============================================================================
-// User Query Functions
-// =============================================================================
+// CreateOptions configures Create. The zero value creates a normal interactive
+// account with a login shell and the backend's matching primary group, and NO
+// home directory.
+type CreateOptions struct {
+	UID          int      // 0 = auto-assign
+	PrimaryGroup string   // group name or numeric GID; "" = useradd matching-group default
+	Groups       []string // supplementary groups
+	Shell        string   // "" = DefaultShell(System)
+	HomeDir      string   // "" = /home/<name>
+	Comment      string   // GECOS
+	System       bool     // -r system account; also flips DefaultShell to nologin
+	CreateHome   bool     // -m; Create handles the "home already exists" -M/chown dance
+}
 
-// Get retrieves the current state of a user from the system.
-func Get(username string) (*Info, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
-	defer cancel()
+// ModifyOptions configures Modify. An empty string leaves that attribute
+// unchanged; if every field is empty Modify is a no-op (no usermod run).
+type ModifyOptions struct {
+	Shell        string
+	HomeDir      string
+	Comment      string
+	PrimaryGroup string
+}
 
-	// Get passwd entry: username:x:uid:gid:comment:home:shell
-	out, err := exec.QueryCtx(ctx, "getent", "passwd", username)
+// DeleteOptions configures Delete.
+type DeleteOptions struct {
+	RemoveHome bool // userdel -r
+}
+
+// GroupCreateOptions configures GroupCreate.
+type GroupCreateOptions struct {
+	GID    int  // 0 = auto-assign
+	System bool // -r system group
+}
+
+// Manager is the user/group contract. Today shadow-utils is the only
+// implementation; the interface leaves room for adduser/systemd-homed/busybox.
+type Manager interface {
+	// Accounts
+	Get(ctx context.Context, name string) (Info, error)
+	Exists(ctx context.Context, name string) (bool, error)
+	Create(ctx context.Context, name string, opts CreateOptions) error
+	Modify(ctx context.Context, name string, opts ModifyOptions) error
+	Delete(ctx context.Context, name string, opts DeleteOptions) error
+	Lock(ctx context.Context, name string) error
+	Unlock(ctx context.Context, name string) error
+	SetPassword(ctx context.Context, name string, password exec.Secret) error
+	ExpirePassword(ctx context.Context, name string) error
+	PrimaryGroup(ctx context.Context, name string) (string, error)
+	SupplementaryGroups(ctx context.Context, name string) ([]string, error)
+	KillSessions(ctx context.Context, name string) error
+	SetHiddenOnLoginScreen(ctx context.Context, name string, hidden bool) error
+	// Groups
+	GroupExists(ctx context.Context, name string) (bool, error)
+	GroupMembers(ctx context.Context, name string) ([]string, error)
+	GroupCreate(ctx context.Context, name string, opts GroupCreateOptions) error
+	GroupDelete(ctx context.Context, name string) error
+	GroupEnsure(ctx context.Context, name string) error
+	AddToGroup(ctx context.Context, name, group string) error
+	RemoveFromGroup(ctx context.Context, name, group string) error
+}
+
+// shadowUtils is the shadow-utils Manager. Every operation runs through the
+// injected exec.Runner (reads unescalated; writes and the shadow read with
+// Escalate), so the whole package is unit-testable with exectest.FakeRunner.
+type shadowUtils struct {
+	r exec.Runner
+}
+
+// New returns a Manager for the named backend, driven by runner. It is pure:
+// it validates the backend is known and does not probe the host. The zero value
+// and any unimplemented backend are rejected with ErrUnknownBackend.
+func New(b Backend, runner exec.Runner, _ ...Option) (Manager, error) {
+	if b != ShadowUtils {
+		return nil, fmt.Errorf("%w: %d", ErrUnknownBackend, int(b))
+	}
+	if runner == nil {
+		return nil, fmt.Errorf("user: runner is required")
+	}
+	return &shadowUtils{r: runner}, nil
+}
+
+// Option is the functional-option type for backend-specific knobs. None are
+// defined today; it reserves the constructor shape.
+type Option func(*shadowUtils)
+
+// ensureCtx applies the package query timeout when the caller's context has no
+// deadline of its own.
+func ensureCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, queryTimeout)
+}
+
+// run executes an escalated mutating command and maps a non-zero exit to a
+// *exec.CommandError carrying stderr (the "user already exists" context callers
+// need).
+func (u *shadowUtils) run(ctx context.Context, name string, args ...string) error {
+	res, err := u.r.Run(ctx, exec.Command{Name: name, Args: args, Escalate: true})
 	if err != nil {
-		return nil, fmt.Errorf("lookup passwd entry for %q: %w", username, err)
+		return err
+	}
+	if res.ExitCode != 0 {
+		return &exec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+	}
+	return nil
+}
+
+// query executes an unescalated read command and returns trimmed stdout, mapping
+// a non-zero exit to a *exec.CommandError.
+func (u *shadowUtils) query(ctx context.Context, name string, args ...string) (string, error) {
+	res, err := u.r.Run(ctx, exec.Command{Name: name, Args: args})
+	if err != nil {
+		return "", err
+	}
+	if res.ExitCode != 0 {
+		return "", &exec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+	}
+	return strings.TrimSpace(res.Stdout), nil
+}
+
+// =============================================================================
+// Accounts
+// =============================================================================
+
+// Create creates a new user account. The default-shell policy and the
+// "home already exists" -M/chown dance live here (moved out of the agent).
+func (u *shadowUtils) Create(ctx context.Context, name string, opts CreateOptions) error {
+	if err := validateUsername(name); err != nil {
+		return err
 	}
 
-	fields := strings.Split(strings.TrimSpace(out), ":")
-	if len(fields) < 7 {
-		return nil, fmt.Errorf("invalid passwd entry")
+	args := make([]string, 0, 16)
+	if opts.UID > 0 {
+		args = append(args, "-u", strconv.Itoa(opts.UID))
+	}
+	if opts.PrimaryGroup != "" {
+		args = append(args, "-g", opts.PrimaryGroup)
+	}
+	if len(opts.Groups) > 0 {
+		args = append(args, "-G", strings.Join(opts.Groups, ","))
+	}
+	if opts.HomeDir != "" {
+		args = append(args, "-d", opts.HomeDir)
+	}
+	shell := opts.Shell
+	if shell == "" {
+		shell = DefaultShell(opts.System)
+	}
+	args = append(args, "-s", shell)
+	if opts.System {
+		args = append(args, "-r")
 	}
 
-	uid, _ := strconv.Atoi(fields[2])
-	gid, _ := strconv.Atoi(fields[3])
+	homeDir := opts.HomeDir
+	if homeDir == "" {
+		homeDir = "/home/" + name
+	}
+	_, statErr := os.Stat(homeDir)
+	homeExists := statErr == nil
+	// useradd -m fails if the home already exists; use -M and fix ownership
+	// afterwards so an explicit CreateHome over a pre-seeded directory is
+	// idempotent.
+	if opts.CreateHome && !homeExists {
+		args = append(args, "-m")
+	} else {
+		args = append(args, "-M")
+	}
+	if opts.Comment != "" {
+		args = append(args, "-c", opts.Comment)
+	}
+	args = append(args, name)
 
-	info := &Info{
-		UID:     uid,
-		GID:     gid,
-		Comment: fields[4],
-		HomeDir: fields[5],
-		Shell:   fields[6],
+	if err := u.run(ctx, "useradd", args...); err != nil {
+		return err
 	}
 
-	// Resolve the primary group name from the GID we already have, so we
-	// don't have to shell out to `id -gn` in addition to `id -Gn`.
-	var primary string
-	if out, err := exec.QueryCtx(ctx, "getent", "group", strconv.Itoa(gid)); err == nil {
-		// getent group format: name:passwd:gid:members
-		if idx := strings.IndexByte(out, ':'); idx > 0 {
-			primary = out[:idx]
+	if opts.CreateHome && homeExists {
+		group := opts.PrimaryGroup
+		if group == "" {
+			group = name // useradd's matching-group default
+		}
+		if _, err := setOwnershipRecursive(ctx, homeDir, name, group); err != nil {
+			return fmt.Errorf("fix ownership of existing home %q: %w", homeDir, err)
 		}
 	}
+	return nil
+}
 
-	// Get supplementary groups (filter out the primary group).
-	if allGroups, err := exec.QueryCtx(ctx, "id", "-Gn", username); err == nil {
-		for _, g := range strings.Fields(strings.TrimSpace(allGroups)) {
+// Modify changes account attributes. Empty option fields are left unchanged; if
+// nothing is set it is a no-op (no usermod run).
+func (u *shadowUtils) Modify(ctx context.Context, name string, opts ModifyOptions) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	args := make([]string, 0, 8)
+	if opts.Shell != "" {
+		args = append(args, "-s", opts.Shell)
+	}
+	if opts.HomeDir != "" {
+		args = append(args, "-d", opts.HomeDir)
+	}
+	if opts.Comment != "" {
+		args = append(args, "-c", opts.Comment)
+	}
+	if opts.PrimaryGroup != "" {
+		args = append(args, "-g", opts.PrimaryGroup)
+	}
+	if len(args) == 0 {
+		return nil // nothing to change
+	}
+	args = append(args, name)
+	return u.run(ctx, "usermod", args...)
+}
+
+// Delete removes a user account (and its home when opts.RemoveHome).
+func (u *shadowUtils) Delete(ctx context.Context, name string, opts DeleteOptions) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	if opts.RemoveHome {
+		return u.run(ctx, "userdel", "-r", name)
+	}
+	return u.run(ctx, "userdel", name)
+}
+
+// Lock locks an account (usermod -L).
+func (u *shadowUtils) Lock(ctx context.Context, name string) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	return u.run(ctx, "usermod", "-L", name)
+}
+
+// Unlock unlocks an account (usermod -U).
+func (u *shadowUtils) Unlock(ctx context.Context, name string) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	return u.run(ctx, "usermod", "-U", name)
+}
+
+// Get retrieves the current state of a user.
+func (u *shadowUtils) Get(ctx context.Context, name string) (Info, error) {
+	if err := validateUsername(name); err != nil {
+		return Info{}, err
+	}
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+
+	out, err := u.query(ctx, "getent", "passwd", name)
+	if err != nil {
+		return Info{}, fmt.Errorf("lookup passwd entry for %q: %w", name, err)
+	}
+	fields := strings.Split(out, ":")
+	if len(fields) < 7 {
+		return Info{}, fmt.Errorf("invalid passwd entry for %q", name)
+	}
+	uid, err := strconv.Atoi(fields[2])
+	if err != nil {
+		return Info{}, fmt.Errorf("invalid UID in passwd entry for %q: %w", name, err)
+	}
+	gid, err := strconv.Atoi(fields[3])
+	if err != nil {
+		return Info{}, fmt.Errorf("invalid GID in passwd entry for %q: %w", name, err)
+	}
+	info := Info{UID: uid, GID: gid, Comment: fields[4], HomeDir: fields[5], Shell: fields[6]}
+
+	// Resolve the primary group name from the GID so we filter it out below.
+	var primary string
+	if gout, err := u.query(ctx, "getent", "group", strconv.Itoa(gid)); err == nil {
+		if idx := strings.IndexByte(gout, ':'); idx > 0 {
+			primary = gout[:idx]
+		}
+	}
+	if allGroups, err := u.query(ctx, "id", "-Gn", name); err == nil {
+		for _, g := range strings.Fields(allGroups) {
 			if g != primary {
 				info.Groups = append(info.Groups, g)
 			}
 		}
 	}
 
-	// Check if account is locked (password field starts with ! or *).
-	// The shadow file is root-only — escalate via the configured
-	// privilege backend (sudo or doas, see exec.SetPrivilegeBackend).
-	// If escalation is not authorized for this caller, the Privileged
-	// call returns an error and we leave Locked=false rather than guessing.
-	if shadowRes, err := exec.Privileged(ctx, "getent", "shadow", username); err == nil && shadowRes != nil && shadowRes.ExitCode == 0 && shadowRes.Stdout != "" {
-		shadowFields := strings.Split(strings.TrimSpace(shadowRes.Stdout), ":")
-		if len(shadowFields) >= 2 {
-			passField := shadowFields[1]
-			info.Locked = strings.HasPrefix(passField, "!") || strings.HasPrefix(passField, "*")
+	// The shadow file is root-only: read it escalated. If escalation is not
+	// authorized, leave Locked=false rather than guessing.
+	if res, err := u.r.Run(ctx, exec.Command{Name: "getent", Args: []string{"shadow", name}, Escalate: true}); err == nil && res.ExitCode == 0 && res.Stdout != "" {
+		sf := strings.Split(strings.TrimSpace(res.Stdout), ":")
+		if len(sf) >= 2 {
+			info.Locked = strings.HasPrefix(sf[1], "!") || strings.HasPrefix(sf[1], "*")
 		}
 	}
-
 	return info, nil
 }
 
-// Exists checks if a user exists on the system.
-func Exists(username string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
-	defer cancel()
-	return exec.CheckCtx(ctx, "id", username)
-}
-
-// IsValidName checks if a username is valid and safe.
-// Valid usernames: start with lowercase letter, contain only [a-z0-9_-], max 32 chars.
-func IsValidName(username string) bool {
-	if len(username) == 0 || len(username) > 32 {
-		return false
-	}
-	// Must start with a lowercase letter
-	if username[0] < 'a' || username[0] > 'z' {
-		return false
-	}
-	// Rest can be lowercase letters, digits, underscores, or hyphens
-	for _, c := range username[1:] {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') {
-			return false
-		}
-	}
-	return true
-}
-
-// validateName checks a POSIX-style account name (user or group)
-// against IsValidName and returns a descriptive error naming the
-// argument kind. Every privileged helper in this package goes
-// through it so that (a) a name starting with "-" cannot become a
-// useradd/usermod/groupadd flag, and (b) a name containing control
-// characters (newline, colon) cannot inject extra chpasswd records.
-func validateName(kind, name string) error {
+// Exists reports whether a user exists.
+func (u *shadowUtils) Exists(ctx context.Context, name string) (bool, error) {
 	if !IsValidName(name) {
-		return fmt.Errorf("invalid %s %q: must start with a lowercase letter and contain only [a-z0-9_-], max 32 chars", kind, name)
+		return false, nil
 	}
-	return nil
-}
-
-// validateUsername is a thin wrapper around validateName for
-// readability at call sites that specifically handle usernames.
-func validateUsername(username string) error { return validateName("username", username) }
-
-// =============================================================================
-// User Management Operations
-// =============================================================================
-
-// Create creates a new user account with the given options.
-// Extra args are passed before the username (e.g., "-m", "-s", "/bin/bash").
-// Returns the command result (stdout/stderr/exit code) so callers can
-// surface useradd's stderr — important context like "user 'foo' already
-// exists" lives there. The Result is non-nil on most failure paths too.
-func Create(ctx context.Context, username string, args ...string) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
-	}
-	// slices.Clone avoids aliasing the caller's backing array — a
-	// bare `append(args, username)` would write into the caller's
-	// slice whenever it has spare capacity.
-	fullArgs := append(slices.Clone(args), username)
-	return exec.Privileged(ctx, "useradd", fullArgs...)
-}
-
-// Modify modifies an existing user account.
-// Extra args are passed before the username (e.g., "-s", "/bin/zsh").
-// Returns the command result so callers can surface usermod's stderr.
-func Modify(ctx context.Context, username string, args ...string) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
-	}
-	fullArgs := append(slices.Clone(args), username)
-	return exec.Privileged(ctx, "usermod", fullArgs...)
-}
-
-// Delete removes a user account. If removeHome is true, also removes the home directory.
-// Returns the command result so callers can surface userdel's stderr.
-func Delete(ctx context.Context, username string, removeHome bool) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
-	}
-	if removeHome {
-		return exec.Privileged(ctx, "userdel", "-r", username)
-	}
-	return exec.Privileged(ctx, "userdel", username)
-}
-
-// Lock locks a user account (usermod -L).
-func Lock(ctx context.Context, username string) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
-	}
-	return exec.Privileged(ctx, "usermod", "-L", username)
-}
-
-// Unlock unlocks a user account (usermod -U).
-func Unlock(ctx context.Context, username string) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
-	}
-	return exec.Privileged(ctx, "usermod", "-U", username)
-}
-
-// =============================================================================
-// User Group Queries
-// =============================================================================
-
-// PrimaryGroup returns the primary group name for a user.
-func PrimaryGroup(username string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	ctx, cancel := ensureCtx(ctx)
 	defer cancel()
-	out, err := exec.QueryCtx(ctx, "id", "-gn", username)
+	res, err := u.r.Run(ctx, exec.Command{Name: "id", Args: []string{name}})
 	if err != nil {
+		return false, err
+	}
+	return res.ExitCode == 0, nil
+}
+
+// PrimaryGroup returns the user's primary group name.
+func (u *shadowUtils) PrimaryGroup(ctx context.Context, name string) (string, error) {
+	if err := validateUsername(name); err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(out), nil
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	return u.query(ctx, "id", "-gn", name)
 }
 
-// SupplementaryGroups returns the supplementary groups for a user
-// (excluding the primary group).
-func SupplementaryGroups(username string) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+// SupplementaryGroups returns the user's supplementary groups (excluding the
+// primary).
+func (u *shadowUtils) SupplementaryGroups(ctx context.Context, name string) ([]string, error) {
+	if err := validateUsername(name); err != nil {
+		return nil, err
+	}
+	ctx, cancel := ensureCtx(ctx)
 	defer cancel()
-	out, err := exec.QueryCtx(ctx, "id", "-Gn", username)
+	out, err := u.query(ctx, "id", "-Gn", name)
 	if err != nil {
 		return nil, err
 	}
-	groups := strings.Fields(strings.TrimSpace(out))
-
-	// Filter out primary group
-	primaryGroup, err := PrimaryGroup(username)
+	groups := strings.Fields(out)
+	primary, err := u.query(ctx, "id", "-gn", name)
 	if err != nil {
-		return groups, nil
+		// Cannot guarantee the primary is excluded (the method's contract), so
+		// fail closed rather than return a list that may include it.
+		return nil, fmt.Errorf("lookup primary group for %q: %w", name, err)
 	}
-
-	var supplementary []string
+	supplementary := make([]string, 0, len(groups))
 	for _, g := range groups {
-		if g != primaryGroup {
+		if g != primary {
 			supplementary = append(supplementary, g)
 		}
 	}
@@ -247,45 +387,43 @@ func SupplementaryGroups(username string) ([]string, error) {
 }
 
 // =============================================================================
-// Password Management
+// Validation (pure helpers)
 // =============================================================================
 
-// SetPassword sets a user's password using chpasswd.
-// Rejects passwords containing newlines — chpasswd reads newline-
-// separated "user:password" records from stdin, so a newline in the
-// password (or a crafted username) would inject a second record and
-// let a caller change an unrelated account. IsValidName already
-// eliminates newline-carrying usernames.
-func SetPassword(ctx context.Context, username, password string) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
+// IsValidName reports whether name is a valid, safe POSIX account name: starts
+// with a lowercase letter, contains only [a-z0-9_-], max 32 chars. The leading-
+// letter rule means a name can never become a useradd/usermod flag, and the
+// charset rejects the newline/colon that would inject an extra chpasswd record.
+func IsValidName(name string) bool {
+	if len(name) == 0 || len(name) > 32 {
+		return false
 	}
-	if strings.ContainsAny(password, "\n\r") {
-		return nil, fmt.Errorf("invalid password: must not contain newline or carriage-return characters")
+	if name[0] < 'a' || name[0] > 'z' {
+		return false
 	}
-	return exec.PrivilegedWithStdin(ctx, strings.NewReader(fmt.Sprintf("%s:%s", username, password)), "chpasswd")
+	for _, c := range name[1:] {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') {
+			return false
+		}
+	}
+	return true
 }
 
-// ExpirePassword forces a user to change their password on next login.
-func ExpirePassword(ctx context.Context, username string) (*exec.Result, error) {
-	if err := validateUsername(username); err != nil {
-		return nil, err
+// DefaultShell returns the SDK's default login shell: an interactive shell for
+// normal accounts, nologin for system accounts. (Product concepts like
+// "disabled" are the consumer's policy — pass Shell explicitly for those.)
+func DefaultShell(system bool) string {
+	if system {
+		return "/usr/sbin/nologin"
 	}
-	return exec.Privileged(ctx, "chage", "-d", "0", username)
+	return "/bin/bash"
 }
 
-// =============================================================================
-// User Permission Operations
-// =============================================================================
-
-// ChownRecursive is a thin compatibility alias that forwards to
-// fs.SetOwnershipRecursive. The implementation moved out of sys/user
-// because it operates on any path, not on a user account; sys/fs is
-// the natural home for ownership ops alongside SetOwnership. Kept
-// here so existing agent call sites keep compiling. F018 in the SDK
-// tech-debt audit.
-//
-// Deprecated: use fs.SetOwnershipRecursive.
-func ChownRecursive(ctx context.Context, path, owner, group string) (*exec.Result, error) {
-	return fs.SetOwnershipRecursive(ctx, path, owner, group)
+func validateName(kind, name string) error {
+	if !IsValidName(name) {
+		return fmt.Errorf("invalid %s %q: must start with a lowercase letter and contain only [a-z0-9_-], max 32 chars", kind, name)
+	}
+	return nil
 }
+
+func validateUsername(name string) error { return validateName("username", name) }

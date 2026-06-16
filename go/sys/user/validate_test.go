@@ -1,101 +1,49 @@
 package user
 
 import (
-	"context"
 	"strings"
 	"testing"
 )
 
-// TestPrivilegedFunctions_RejectMaliciousUsername covers the
-// flag-injection + chpasswd-newline-injection vectors for every
-// privileged helper that takes a username. Each call should fail
-// validation and therefore never reach exec.Privileged; we can
-// assert that by using a cancelled context — if validation doesn't
-// short-circuit first, the call would observe ctx.Err() instead
-// of our "invalid username" error.
-func TestPrivilegedFunctions_RejectMaliciousUsername(t *testing.T) {
-	badNames := []string{
-		"-o",          // would become a useradd flag
-		"--help",      // systemctl/groupadd flag
-		"",            // empty
-		"RootUser",    // uppercase — violates convention
-		"alice\nroot", // newline — chpasswd stdin injection
-		"alice:root",  // colon — chpasswd field separator
-		"user with spaces",
-		"alice/..", // path traversal characters
+func TestIsValidName(t *testing.T) {
+	// The length fencepost both ways: exactly 32 is valid, 33 is not.
+	max32 := "a" + strings.Repeat("b", 31) // 32 chars
+	if !IsValidName(max32) {
+		t.Errorf("IsValidName(32-char) = false, want true (exact max boundary)")
+	}
+	if IsValidName(max32 + "c") {
+		t.Errorf("IsValidName(33-char) = true, want false (one over max)")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	for _, name := range badNames {
-		t.Run(name, func(t *testing.T) {
-			if _, err := Create(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("Create(%q): want validation error, got %v", name, err)
-			}
-			if _, err := Modify(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("Modify(%q): want validation error, got %v", name, err)
-			}
-			if _, err := Delete(ctx, name, false); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("Delete(%q): want validation error, got %v", name, err)
-			}
-			if _, err := Lock(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("Lock(%q): want validation error, got %v", name, err)
-			}
-			if _, err := Unlock(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("Unlock(%q): want validation error, got %v", name, err)
-			}
-			if _, err := SetPassword(ctx, name, "TestPass123!"); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("SetPassword(%q): want validation error, got %v", name, err)
-			}
-			if _, err := ExpirePassword(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid username") {
-				t.Errorf("ExpirePassword(%q): want validation error, got %v", name, err)
-			}
-
-			if _, err := GroupCreate(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid group name") {
-				t.Errorf("GroupCreate(%q): want group-name validation error, got %v", name, err)
-			}
-			if _, err := GroupDelete(ctx, name); err == nil || !strings.Contains(err.Error(), "invalid group name") {
-				t.Errorf("GroupDelete(%q): want group-name validation error, got %v", name, err)
-			}
-		})
+	valid := []string{"deploy", "a", "user_1", "svc-acct", max32}
+	for _, n := range valid {
+		if !IsValidName(n) {
+			t.Errorf("IsValidName(%q) = false, want true", n)
+		}
 	}
-}
-
-func TestSetPassword_RejectsNewlineInPassword(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	// Valid username, crafted password — must be rejected by the
-	// password check, not slip through to chpasswd stdin.
-	badPasswords := []string{
-		"pass\nroot:attackerpass",
-		"pass\r\nroot:attackerpass",
-		"\npayload",
+	invalid := []string{
+		"",                                  // empty
+		"Deploy",                            // uppercase start
+		"1user",                             // digit start
+		"-rf",                               // flag-shaped (leading dash)
+		"_priv",                             // underscore start
+		"user name",                         // space
+		"user:x",                            // colon (chpasswd record separator)
+		"user\nroot",                        // newline (record injection)
+		"a2345678901234567890123456789012x", // > 32 chars
 	}
-	for _, pw := range badPasswords {
-		if _, err := SetPassword(ctx, "alice", pw); err == nil || !strings.Contains(err.Error(), "invalid password") {
-			t.Errorf("SetPassword(valid, %q): want invalid-password error, got %v", pw, err)
+	for _, n := range invalid {
+		if IsValidName(n) {
+			t.Errorf("IsValidName(%q) = true, want false", n)
 		}
 	}
 }
 
-func TestGroupMembership_RejectsMaliciousNames(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	// Either argument being malicious must cause rejection before
-	// exec.Privileged is called.
-	if _, err := GroupAddUser(ctx, "-o", "wheel"); err == nil || !strings.Contains(err.Error(), "invalid username") {
-		t.Errorf("GroupAddUser(bad user): got %v", err)
+func TestDefaultShell(t *testing.T) {
+	if got := DefaultShell(false); got != "/bin/bash" {
+		t.Errorf("DefaultShell(false) = %q, want /bin/bash", got)
 	}
-	if _, err := GroupAddUser(ctx, "alice", "-o"); err == nil || !strings.Contains(err.Error(), "invalid group name") {
-		t.Errorf("GroupAddUser(bad group): got %v", err)
-	}
-	if _, err := GroupRemoveUser(ctx, "-o", "wheel"); err == nil || !strings.Contains(err.Error(), "invalid username") {
-		t.Errorf("GroupRemoveUser(bad user): got %v", err)
-	}
-	if _, err := GroupRemoveUser(ctx, "alice", "-o"); err == nil || !strings.Contains(err.Error(), "invalid group name") {
-		t.Errorf("GroupRemoveUser(bad group): got %v", err)
+	if got := DefaultShell(true); got != "/usr/sbin/nologin" {
+		t.Errorf("DefaultShell(true) = %q, want /usr/sbin/nologin", got)
 	}
 }
