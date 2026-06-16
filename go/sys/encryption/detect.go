@@ -9,14 +9,6 @@ import (
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// Volume represents a detected LUKS-encrypted volume.
-type Volume struct {
-	DevicePath string // e.g., "/dev/sda2"
-	MapperName string // e.g., "luks-xxxx" (empty if locked)
-	MountPoint string // e.g., "/home" (of the unlocked dm device, empty if locked)
-}
-
-// lsblkOutput is the JSON output of lsblk.
 type lsblkOutput struct {
 	BlockDevices []lsblkDevice `json:"blockdevices"`
 }
@@ -29,127 +21,94 @@ type lsblkDevice struct {
 	Children   []lsblkDevice `json:"children,omitempty"`
 }
 
-// DetectVolume auto-detects the primary LUKS volume on the system.
-// Priority: volume with /home mounted > volume with / mounted > first found.
-// Returns error if no LUKS volumes are found.
-func DetectVolume(ctx context.Context) (*Volume, error) {
-	if err := requireBackend(BackendLUKS, "DetectVolume"); err != nil {
-		return nil, err
-	}
-	volumes, err := DetectAllVolumes(ctx)
+// DetectAllVolumes returns every LUKS volume on the system (lsblk -J; read-only,
+// unprivileged).
+func (l *luks) DetectAllVolumes(ctx context.Context) ([]Volume, error) {
+	res, err := l.r.Run(ctx, exec.Command{Name: "lsblk", Args: []string{"-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT"}})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("lsblk: %w", err)
 	}
-	if len(volumes) == 0 {
-		return nil, fmt.Errorf("no LUKS-encrypted volumes detected on this device")
+	if res.ExitCode != 0 {
+		return nil, &exec.CommandError{Name: "lsblk", ExitCode: res.ExitCode, Stderr: res.Stderr}
 	}
-	if len(volumes) == 1 {
-		return &volumes[0], nil
-	}
-
-	// Prefer volume with /home mounted
-	for i := range volumes {
-		if volumes[i].MountPoint == "/home" {
-			return &volumes[i], nil
-		}
-	}
-	// Fall back to volume with / mounted
-	for i := range volumes {
-		if volumes[i].MountPoint == "/" {
-			return &volumes[i], nil
-		}
-	}
-	// Last resort: first found
-	return &volumes[0], nil
-}
-
-// DetectVolumeByKey finds the LUKS volume that accepts the given passphrase.
-// Enumerates all volumes and tests the passphrase against each one.
-// Returns error if no volume matches or if detection fails.
-func DetectVolumeByKey(ctx context.Context, passphrase string) (*Volume, error) {
-	if err := requireBackend(BackendLUKS, "DetectVolumeByKey"); err != nil {
-		return nil, err
-	}
-	volumes, err := DetectAllVolumes(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(volumes) == 0 {
-		return nil, fmt.Errorf("no LUKS-encrypted volumes detected on this device")
-	}
-
-	for i := range volumes {
-		ok, err := TestPassphrase(ctx, volumes[i].DevicePath, passphrase)
-		if err != nil {
-			// Don't abort: a single volume we can't test (permissions,
-			// transient cryptsetup error) shouldn't hide a match on
-			// another volume. Log so operators can diagnose.
-			slog.Warn("failed to test passphrase on LUKS volume; skipping",
-				"device", volumes[i].DevicePath,
-				"error", err,
-			)
-			continue
-		}
-		if ok {
-			return &volumes[i], nil
-		}
-	}
-
-	return nil, fmt.Errorf("no LUKS volume accepts the provided passphrase")
-}
-
-// DetectAllVolumes returns all LUKS-encrypted volumes on the system.
-func DetectAllVolumes(ctx context.Context) ([]Volume, error) {
-	if err := requireBackend(BackendLUKS, "DetectAllVolumes"); err != nil {
-		return nil, err
-	}
-	result, err := exec.Run(ctx, "lsblk", "-J", "-o", "NAME,TYPE,FSTYPE,MOUNTPOINT")
-	if err != nil {
-		return nil, fmt.Errorf("lsblk failed: %w", err)
-	}
-
 	var output lsblkOutput
-	if err := json.Unmarshal([]byte(result.Stdout), &output); err != nil {
-		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
+	if err := json.Unmarshal([]byte(res.Stdout), &output); err != nil {
+		return nil, fmt.Errorf("parse lsblk output: %w", err)
 	}
-
 	var volumes []Volume
-	findLuksVolumes(&output.BlockDevices, &volumes)
+	findLuksVolumes(output.BlockDevices, &volumes)
 	return volumes, nil
 }
 
-func findLuksVolumes(devices *[]lsblkDevice, volumes *[]Volume) {
-	for _, dev := range *devices {
+// DetectVolume auto-selects the primary LUKS volume: /home > / > first found.
+func (l *luks) DetectVolume(ctx context.Context) (Volume, error) {
+	volumes, err := l.DetectAllVolumes(ctx)
+	if err != nil {
+		return Volume{}, err
+	}
+	if len(volumes) == 0 {
+		return Volume{}, fmt.Errorf("no LUKS-encrypted volumes detected on this device")
+	}
+	for _, want := range []string{"/home", "/"} {
+		for i := range volumes {
+			if volumes[i].MountPoint == want {
+				return volumes[i], nil
+			}
+		}
+	}
+	return volumes[0], nil
+}
+
+// DetectVolumeByKey returns the LUKS volume that accepts p.
+func (l *luks) DetectVolumeByKey(ctx context.Context, p exec.Secret) (Volume, error) {
+	volumes, err := l.DetectAllVolumes(ctx)
+	if err != nil {
+		return Volume{}, err
+	}
+	if len(volumes) == 0 {
+		return Volume{}, fmt.Errorf("no LUKS-encrypted volumes detected on this device")
+	}
+	for i := range volumes {
+		ok, err := l.VerifyPassphrase(ctx, volumes[i].DevicePath, p)
+		if err != nil {
+			// A single untestable volume (permissions, transient error) must
+			// not hide a match elsewhere — log and continue.
+			slog.Warn("failed to test passphrase on LUKS volume; skipping", "device", volumes[i].DevicePath, "error", err)
+			continue
+		}
+		if ok {
+			return volumes[i], nil
+		}
+	}
+	return Volume{}, fmt.Errorf("no LUKS volume accepts the provided passphrase")
+}
+
+func findLuksVolumes(devices []lsblkDevice, volumes *[]Volume) {
+	for _, dev := range devices {
 		fstype := ""
 		if dev.FSType != nil {
 			fstype = *dev.FSType
 		}
-
 		if fstype == "crypto_LUKS" {
-			vol := Volume{
-				DevicePath: "/dev/" + dev.Name,
-			}
-			// Check children for unlocked mapper device
+			vol := Volume{DevicePath: "/dev/" + dev.Name}
 			for _, child := range dev.Children {
 				if child.Type == "crypt" {
 					vol.MapperName = child.Name
 					if child.MountPoint != nil && *child.MountPoint != "" {
 						vol.MountPoint = *child.MountPoint
 					}
-					// Check children of crypt device (e.g., LVM on LUKS)
-					for _, grandchild := range child.Children {
-						if grandchild.MountPoint != nil && *grandchild.MountPoint != "" {
-							vol.MountPoint = *grandchild.MountPoint
+					// LVM-on-LUKS: a grandchild holds the mount.
+					for _, gc := range child.Children {
+						if gc.MountPoint != nil && *gc.MountPoint != "" {
+							vol.MountPoint = *gc.MountPoint
 						}
 					}
 				}
 			}
 			*volumes = append(*volumes, vol)
 		}
-
-		// Recurse into children
 		if len(dev.Children) > 0 {
-			findLuksVolumes(&dev.Children, volumes)
+			findLuksVolumes(dev.Children, volumes)
 		}
 	}
 }

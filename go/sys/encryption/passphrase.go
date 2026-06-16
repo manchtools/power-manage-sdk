@@ -5,27 +5,32 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// GeneratePassphrase generates a word-based passphrase with at least minWords
-// words and a minimum total length of 32 characters.
-// Format: "Apple-Tower-Kitchen-Forest" (capitalized, hyphen-separated).
-func GeneratePassphrase(minWords int) (string, error) {
+// randInt is a seam over crypto/rand.Int so the (practically unreachable)
+// RNG-failure path is exercisable in tests.
+var randInt = rand.Int
+
+// GeneratePassphrase generates a word-based passphrase as a Secret: at least
+// minWords (minimum 3) capitalized words joined by '-', and at least 32 chars
+// total. Example: "Apple-Tower-Kitchen-Forest".
+func GeneratePassphrase(minWords int) (exec.Secret, error) {
 	if minWords < 3 {
 		minWords = 3
 	}
-
 	var words []string
 	for {
-		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(wordList))))
+		idx, err := randInt(rand.Reader, big.NewInt(int64(len(wordList))))
 		if err != nil {
-			return "", fmt.Errorf("failed to generate random index: %w", err)
+			return exec.Secret{}, fmt.Errorf("generate random index: %w", err)
 		}
 		words = append(words, wordList[idx.Int64()])
-
-		passphrase := strings.Join(words, "-")
-		if len(words) >= minWords && len(passphrase) >= 32 {
-			return passphrase, nil
+		phrase := strings.Join(words, "-")
+		if len(words) >= minWords && len(phrase) >= 32 {
+			// The wordlist + '-' contain no newline/CR, so NewSecret cannot reject.
+			return exec.NewSecret(phrase)
 		}
 	}
 }
