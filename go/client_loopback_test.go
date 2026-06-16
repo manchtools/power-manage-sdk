@@ -572,37 +572,14 @@ func TestWithMTLSFromPEM_ClientPresentsCertificate(t *testing.T) {
 	if !caPool.AppendCertsFromPEM(caPEM) {
 		t.Fatal("AppendCertsFromPEM(ca)")
 	}
-	serverCert, err := tls.X509KeyPair(serverCertPEM, serverKeyPEM)
-	if err != nil {
-		t.Fatalf("server keypair: %v", err)
-	}
-
-	handler := &recordingControlHandler{}
-	handler.registerFn = func(req *connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error) {
-		return connect.NewResponse(&pm.RegisterResponse{
-			DeviceId: &pm.DeviceId{Value: "ok"},
-		}), nil
-	}
-	path, h := pmv1connect.NewControlServiceHandler(handler)
-	mux := http.NewServeMux()
-	mux.Handle(path, h)
-
-	srv := httptest.NewUnstartedServer(mux)
-	srv.TLS = &tls.Config{
-		Certificates: []tls.Certificate{serverCert},
-		ClientCAs:    caPool,
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		MinVersion:   tls.VersionTLS13,
-	}
-	srv.StartTLS()
-	t.Cleanup(srv.Close)
+	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, caPool)
 
 	t.Run("with cert succeeds", func(t *testing.T) {
 		opt, err := WithMTLSFromPEM(clientCertPEM, clientKeyPEM, caPEM)
 		if err != nil {
 			t.Fatalf("WithMTLSFromPEM: %v", err)
 		}
-		got, err := RegisterAgent(context.Background(), srv.URL,
+		got, err := RegisterAgent(context.Background(), srvURL,
 			"tok", "host", "v0", []byte("csr"), opt)
 		if err != nil {
 			t.Fatalf("RegisterAgent: %v", err)
@@ -619,12 +596,131 @@ func TestWithMTLSFromPEM_ClientPresentsCertificate(t *testing.T) {
 			MinVersion: tls.VersionTLS13,
 		}
 		hc := newHTTPClientWithTLS(tlsConfig)
-		_, err := RegisterAgent(context.Background(), srv.URL,
+		_, err := RegisterAgent(context.Background(), srvURL,
 			"tok", "host", "v0", []byte("csr"), WithHTTPClient(hc))
 		if err == nil {
 			t.Fatal("expected handshake failure without client cert")
 		}
 	})
+}
+
+// startMTLSTestServer starts an httptest TLS server presenting serverCert/Key
+// and requiring a client certificate verified against clientCAPool. It returns
+// the server URL. Shared by the mTLS option tests so the boilerplate lives in
+// one place.
+func startMTLSTestServer(t *testing.T, serverCertPEM, serverKeyPEM []byte, clientCAPool *x509.CertPool) string {
+	t.Helper()
+	serverCert, err := tls.X509KeyPair(serverCertPEM, serverKeyPEM)
+	if err != nil {
+		t.Fatalf("server keypair: %v", err)
+	}
+	handler := &recordingControlHandler{}
+	handler.registerFn = func(*connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error) {
+		return connect.NewResponse(&pm.RegisterResponse{DeviceId: &pm.DeviceId{Value: "ok"}}), nil
+	}
+	path, h := pmv1connect.NewControlServiceHandler(handler)
+	mux := http.NewServeMux()
+	mux.Handle(path, h)
+	srv := httptest.NewUnstartedServer(mux)
+	srv.TLS = &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientCAs:    clientCAPool,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		MinVersion:   tls.VersionTLS13,
+	}
+	srv.StartTLS()
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+// TestWithMTLSFromPEM_RejectsServerSignedByForeignCA pins the core gateway-
+// pinning property (WS9 #10): the STRICT variant trusts the internal CA ONLY,
+// so a server whose certificate is signed by a different ("public"/system) CA
+// must be rejected even though it presents a syntactically valid chain. Without
+// this, a publicly-trusted cert with a matching SNI could impersonate the
+// gateway.
+func TestWithMTLSFromPEM_RejectsServerSignedByForeignCA(t *testing.T) {
+	internalCAPEM, _, _ := cryptotest.GenCA(t, "internal-ca")
+	// The client identity is signed by the internal CA so the SERVER accepts the
+	// client; the rejection under test must be the CLIENT refusing the server.
+	internalCAForClientPEM, internalKey, internalCert := cryptotest.GenCA(t, "internal-ca-2")
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, internalCert, internalKey, "device-client", false)
+	clientCAPool := x509.NewCertPool()
+	if !clientCAPool.AppendCertsFromPEM(internalCAForClientPEM) {
+		t.Fatal("AppendCertsFromPEM(client ca)")
+	}
+
+	// Server cert signed by a FOREIGN CA the strict client does not trust.
+	foreignCAPEM, foreignKey, foreignCert := cryptotest.GenCA(t, "foreign-public-ca")
+	_ = foreignCAPEM
+	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, foreignCert, foreignKey, "127.0.0.1", true)
+	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
+
+	opt, err := WithMTLSFromPEM(clientCertPEM, clientKeyPEM, internalCAPEM)
+	if err != nil {
+		t.Fatalf("WithMTLSFromPEM: %v", err)
+	}
+	_, err = RegisterAgent(context.Background(), srvURL,
+		"tok", "host", "v0", []byte("csr"), opt)
+	if err == nil {
+		t.Fatal("strict mTLS must reject a server signed by a CA other than the pinned internal CA")
+	}
+}
+
+// TestWithMTLSFromPEMAndSystemRoots_TrustsInternalCA pins that the system-roots
+// variant adds the internal CA to the trust pool (WS9 #10 — the variant had no
+// coverage at all): a server signed by the internal CA is accepted.
+func TestWithMTLSFromPEMAndSystemRoots_TrustsInternalCA(t *testing.T) {
+	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
+	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "127.0.0.1", true)
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
+	clientCAPool := x509.NewCertPool()
+	if !clientCAPool.AppendCertsFromPEM(caPEM) {
+		t.Fatal("AppendCertsFromPEM(ca)")
+	}
+	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
+
+	opt, err := WithMTLSFromPEMAndSystemRoots(clientCertPEM, clientKeyPEM, caPEM)
+	if err != nil {
+		t.Fatalf("WithMTLSFromPEMAndSystemRoots: %v", err)
+	}
+	got, err := RegisterAgent(context.Background(), srvURL,
+		"tok", "host", "v0", []byte("csr"), opt)
+	if err != nil {
+		t.Fatalf("system-roots variant must trust a server signed by the internal CA: %v", err)
+	}
+	if got.DeviceID != "ok" {
+		t.Errorf("DeviceID = %q", got.DeviceID)
+	}
+}
+
+// TestWithMTLSFromPEMAndSystemRoots_RejectsUntrustedServer pins that broadening
+// the pool to system roots does NOT blanket-trust everything: a server signed by
+// a random CA that is neither the internal CA nor a host system root is still
+// rejected (WS9 #10).
+func TestWithMTLSFromPEMAndSystemRoots_RejectsUntrustedServer(t *testing.T) {
+	internalCAPEM, _, _ := cryptotest.GenCA(t, "internal-ca")
+	clientCAPEM, clientKey, clientCACert := cryptotest.GenCA(t, "internal-ca-2")
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, clientCACert, clientKey, "device-client", false)
+	clientCAPool := x509.NewCertPool()
+	if !clientCAPool.AppendCertsFromPEM(clientCAPEM) {
+		t.Fatal("AppendCertsFromPEM(client ca)")
+	}
+
+	// Server signed by a CA that is neither the internal CA nor a system root.
+	_, foreignKey, foreignCert := cryptotest.GenCA(t, "untrusted-ca")
+	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, foreignCert, foreignKey, "127.0.0.1", true)
+	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
+
+	opt, err := WithMTLSFromPEMAndSystemRoots(clientCertPEM, clientKeyPEM, internalCAPEM)
+	if err != nil {
+		t.Fatalf("WithMTLSFromPEMAndSystemRoots: %v", err)
+	}
+	_, err = RegisterAgent(context.Background(), srvURL,
+		"tok", "host", "v0", []byte("csr"), opt)
+	if err == nil {
+		t.Fatal("system-roots variant must still reject a server signed by an untrusted CA")
+	}
 }
 
 func TestWithHTTPClient_AppliedToControlCalls(t *testing.T) {

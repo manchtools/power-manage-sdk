@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	pm "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
+	"github.com/manchtools/power-manage/sdk/go/cryptotest"
 )
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestSignVerifyDomain_RoundTrip_AllDomains(t *testing.T) {
-	certPEM, key := generateTestCA(t)
+	certPEM, key, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(key)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
@@ -67,7 +68,7 @@ func TestSignVerifyDomain_RoundTrip_AllDomains(t *testing.T) {
 // payload. This is what stops a compromised relay from lifting, say, an
 // inventory signature onto a LUKS-revoke instruction.
 func TestVerifyDomain_RejectsCrossDomainSignature(t *testing.T) {
-	certPEM, key := generateTestCA(t)
+	certPEM, key, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(key)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
@@ -99,7 +100,7 @@ func TestVerifyDomain_RejectsCrossDomainSignature(t *testing.T) {
 // TestSignDomain_RefusesEmptyPayload pins the signer fail-closed: an empty
 // payload is never signed (a blank pre-image would be trivially forgeable).
 func TestSignDomain_RefusesEmptyPayload(t *testing.T) {
-	_, key := generateTestCA(t)
+	_, key, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(key)
 	if _, err := signer.SignDomain(OSQuerySignatureDomain, nil); err == nil {
 		t.Fatal("SignDomain accepted an empty payload")
@@ -111,7 +112,7 @@ func TestSignDomain_RefusesEmptyPayload(t *testing.T) {
 // with Sign still verifies with Verify, and equals signing the same envelope
 // bytes under ActionSignatureDomain via SignDomain.
 func TestActionPath_ByteStable(t *testing.T) {
-	certPEM, key := generateTestCA(t)
+	certPEM, key, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(key)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
@@ -271,7 +272,7 @@ func TestLuksAndInventoryCanonical_BindIdentifiers(t *testing.T) {
 // the signature, then verify the received message. Proves both the happy path
 // and that mutating the message after signing (field swap) is rejected.
 func TestEndToEnd_OSQuerySignThenVerify(t *testing.T) {
-	certPEM, key := generateTestCA(t)
+	certPEM, key, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(key)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
