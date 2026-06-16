@@ -1,278 +1,240 @@
 package service
 
-// Systemd backend implementation. These functions are unexported and
-// reached through service.go's dispatch; callers should use the public
-// API (Enable, Start, …) rather than importing these directly.
-
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
-	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
-// validSystemdUnitName restricts systemd unit names to safe characters.
+// systemd is the systemctl-backed Manager. Every operation runs through the
+// injected Runner — query verbs unprivileged, mutations escalated — so the
+// package is unit-testable with exectest.FakeRunner.
+type systemd struct {
+	r exec.Runner
+}
+
+// validSystemdUnitName restricts unit names to safe characters.
 //
-// Three design choices worth calling out:
+//   - Leading '.' is rejected (not a valid systemd name; avoids hidden-file
+//     confusion).
+//   - Leading '-' IS allowed (legit units like "-.mount"); argv flag injection
+//     is independently prevented by the "--" end-of-options separator on every
+//     systemctl call.
+//   - `\xHH` escapes are permitted so systemd-escape(1) output validates as-is.
 //
-//   - Leading '.' is rejected. Unit names starting with a dot aren't
-//     valid systemd names and would look like hidden filesystem
-//     entries; rejecting them here prevents any path-traversal-style
-//     confusion downstream.
-//
-//   - Leading '-' IS allowed. systemd has legitimate unit names that
-//     start with '-' (e.g. "-.mount", the root mount for '/'). Flag
-//     injection at the argv level is prevented by always passing
-//     unitName after an explicit "--" end-of-options separator in
-//     every systemctl call in this file (defence in depth).
-//
-//   - `\xHH` hex-escape sequences are permitted so names produced by
-//     systemd-escape(1) for paths or reserved characters flow through
-//     validation unchanged (systemd.unit(5), "STRING ESCAPING FOR
-//     INCLUSION IN UNIT NAMES").
-//
-// Suffixes cover every unit type systemd recognises, including the
-// auto-generated .device units for hardware.
+// Suffixes cover every unit type systemd recognises.
 var validSystemdUnitName = regexp.MustCompile(`^(?:[a-zA-Z0-9@_:-]|\\x[0-9A-Fa-f]{2})(?:[a-zA-Z0-9@._:-]|\\x[0-9A-Fa-f]{2})*\.(service|socket|device|timer|mount|automount|swap|target|path|slice|scope)$`)
 
-// systemctlQueryTimeout caps every is-enabled/is-active query so a
-// hung unit (D-Bus stall, dependency loop, kernel oops) cannot pin
-// the calling goroutine indefinitely. systemctl normally returns in
-// well under a second; 30s leaves headroom for slow boot phases
-// while still bounding worst-case wait. F023 in TECH_DEBT_AUDIT.md.
-const systemctlQueryTimeout = 30 * time.Second
+// ValidateUnitName reports whether unit is a safe, well-formed systemd unit name.
+func ValidateUnitName(unit string) error {
+	if !validSystemdUnitName.MatchString(unit) {
+		return fmt.Errorf("invalid systemd unit name %q: must not start with '.' and must match <name>.<type> where type is one of service, socket, device, timer, mount, automount, swap, target, path, slice, scope", unit)
+	}
+	return nil
+}
 
-// validSystemctlOutputs whitelists the answers each verb is allowed to
-// print. Anything else (most importantly "not-found" with exit 4 from
-// is-enabled when the unit file is missing) is treated as a query
-// failure so callers can distinguish "definitely disabled" from "the
-// unit doesn't exist at all".
-//
-// The lists are taken straight from systemctl(1) — they cover every
-// state the man page documents for the corresponding verb.
+// validSystemctlOutputs whitelists the answers each query verb may print.
+// Anything else (most importantly "not-found" / a blank line / a D-Bus stall) is
+// a query FAILURE, so callers can tell "definitely disabled" from "couldn't
+// tell". Lists are taken from systemctl(1).
 var validSystemctlOutputs = map[string]map[string]struct{}{
 	"is-enabled": {
-		"enabled":         {},
-		"enabled-runtime": {},
-		"linked":          {},
-		"linked-runtime":  {},
-		"alias":           {},
-		"masked":          {},
-		"masked-runtime":  {},
-		"static":          {},
-		"indirect":        {},
-		"disabled":        {},
-		"generated":       {},
-		"transient":       {},
+		"enabled": {}, "enabled-runtime": {}, "linked": {}, "linked-runtime": {},
+		"alias": {}, "masked": {}, "masked-runtime": {}, "static": {},
+		"indirect": {}, "disabled": {}, "generated": {}, "transient": {},
 	},
 	"is-active": {
-		"active":       {},
-		"reloading":    {},
-		"inactive":     {},
-		"failed":       {},
-		"activating":   {},
-		"deactivating": {},
+		"active": {}, "reloading": {}, "inactive": {},
+		"failed": {}, "activating": {}, "deactivating": {},
 	},
 }
 
-// systemctl returns non-zero exit codes for several "the unit is in
-// state X" answers (is-enabled prints "disabled" and exits 1; is-active
-// prints "inactive" and exits 3). Those are not query failures — the
-// query succeeded and the answer is "no". A real query failure (D-Bus
-// stall, dbus.service down, the timeout firing, the unit file missing)
-// either leaves stdout blank or prints something not in
-// validSystemctlOutputs. In both cases, surface an error so callers
-// don't collapse "couldn't tell" into "definitely disabled / inactive".
-func runSystemctlQuery(unitName, verb string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), systemctlQueryTimeout)
+// query runs an unprivileged `systemctl <verb> -- <unit>` and returns the
+// trimmed, whitelist-validated state. A non-zero exit is NOT a failure on its
+// own (is-enabled prints "disabled" and exits 1; is-active prints "inactive" and
+// exits 3) — only an exec error or an off-whitelist/blank output is. The caller
+// validates the unit name.
+func (s *systemd) query(ctx context.Context, unit, verb string) (string, error) {
+	ctx, cancel := ensureCtx(ctx)
 	defer cancel()
-	out, _, err := exec.QueryOutputCtx(ctx, "systemctl", verb, "--", unitName)
-	trimmed := strings.TrimSpace(out)
+	res, err := s.r.Run(ctx, exec.Command{Name: "systemctl", Args: []string{verb, "--", unit}})
+	if err != nil {
+		return "", fmt.Errorf("systemctl %s %s: %w", verb, unit, err)
+	}
+	trimmed := strings.TrimSpace(res.Stdout)
 	allowed, known := validSystemctlOutputs[verb]
 	if !known {
-		return "", fmt.Errorf("systemctl %s %s: unsupported verb (no output whitelist)", verb, unitName)
+		return "", fmt.Errorf("systemctl %s: unsupported query verb", verb)
 	}
 	if _, ok := allowed[trimmed]; !ok {
-		slog.Debug("systemctl query returned unrecognised state", "unit", unitName, "verb", verb, "output", trimmed, "error", err)
-		if err != nil {
-			return "", fmt.Errorf("systemctl %s %s: %w", verb, unitName, err)
-		}
-		return "", fmt.Errorf("systemctl %s %s: unrecognised output %q", verb, unitName, trimmed)
+		return "", fmt.Errorf("systemctl %s %s: unrecognised output %q (exit %d)", verb, unit, trimmed, res.ExitCode)
 	}
 	return trimmed, nil
 }
 
-func statusSystemd(unitName string) (UnitStatus, error) {
-	status := UnitStatus{}
+// mutate runs an escalated systemctl command, mapping a non-zero exit to a
+// *exec.CommandError.
+func (s *systemd) mutate(ctx context.Context, args ...string) error {
+	res, err := s.r.Run(ctx, exec.Command{Name: "systemctl", Args: args, Escalate: true})
+	if err != nil {
+		return err
+	}
+	if res.ExitCode != 0 {
+		return &exec.CommandError{Name: "systemctl", ExitCode: res.ExitCode, Stderr: res.Stderr}
+	}
+	return nil
+}
 
-	enabledStatus, err := runSystemctlQuery(unitName, "is-enabled")
+// --- Queries ---------------------------------------------------------------
+
+func (s *systemd) Status(ctx context.Context, unit string) (UnitStatus, error) {
+	if err := ValidateUnitName(unit); err != nil {
+		return UnitStatus{}, err
+	}
+	var status UnitStatus
+	enabled, err := s.query(ctx, unit, "is-enabled")
 	if err != nil {
 		return UnitStatus{}, err
 	}
-
-	// systemctl distinguishes explicitly-enabled units ("enabled",
-	// "enabled-runtime") from units that happen to start at boot via
-	// dependencies ("static", "indirect", "generated"). Callers asking
-	// "is this explicitly enabled?" should get false for the latter
-	// group — `systemctl enable` on a static unit fails with "has no
-	// [Install] section". Callers that need "will it run at boot?"
-	// should check Enabled || Static.
-	switch enabledStatus {
+	switch enabled {
 	case "enabled", "enabled-runtime":
 		status.Enabled = true
 	case "static", "indirect", "generated":
 		status.Static = true
 	case "masked", "masked-runtime":
-		// masked-runtime is the session-only variant produced by
-		// `systemctl mask --runtime`; reporting both as Masked
-		// matches operator intent.
 		status.Masked = true
 	}
-
-	activeStatus, err := runSystemctlQuery(unitName, "is-active")
+	active, err := s.query(ctx, unit, "is-active")
 	if err != nil {
 		return UnitStatus{}, err
 	}
-	status.Active = activeStatus == "active"
-
+	status.Active = active == "active"
 	return status, nil
 }
 
-func isEnabledSystemd(unitName string) (bool, error) {
-	trimmed, err := runSystemctlQuery(unitName, "is-enabled")
+func (s *systemd) IsEnabled(ctx context.Context, unit string) (bool, error) {
+	if err := ValidateUnitName(unit); err != nil {
+		return false, err
+	}
+	// Only "enabled"/"enabled-runtime" count: static/indirect/generated units
+	// boot via dependencies but cannot be toggled with systemctl enable/disable.
+	out, err := s.query(ctx, unit, "is-enabled")
 	if err != nil {
 		return false, err
 	}
-	// Only "enabled" and "enabled-runtime" count as explicitly enabled.
-	// Static / indirect / generated units boot via dependencies but
-	// cannot be toggled with systemctl enable/disable, so reporting
-	// them as enabled here would mislead callers that use this result
-	// to decide whether to call Enable().
-	return trimmed == "enabled" || trimmed == "enabled-runtime", nil
+	return out == "enabled" || out == "enabled-runtime", nil
 }
 
-func isMaskedSystemd(unitName string) (bool, error) {
-	trimmed, err := runSystemctlQuery(unitName, "is-enabled")
+func (s *systemd) IsMasked(ctx context.Context, unit string) (bool, error) {
+	if err := ValidateUnitName(unit); err != nil {
+		return false, err
+	}
+	out, err := s.query(ctx, unit, "is-enabled")
 	if err != nil {
 		return false, err
 	}
-	// "masked-runtime" is `systemctl mask --runtime`'s session-only
-	// variant — still masked from the caller's perspective.
-	return trimmed == "masked" || trimmed == "masked-runtime", nil
+	return out == "masked" || out == "masked-runtime", nil
 }
 
-func isActiveSystemd(unitName string) (bool, error) {
-	trimmed, err := runSystemctlQuery(unitName, "is-active")
+func (s *systemd) IsActive(ctx context.Context, unit string) (bool, error) {
+	if err := ValidateUnitName(unit); err != nil {
+		return false, err
+	}
+	out, err := s.query(ctx, unit, "is-active")
 	if err != nil {
 		return false, err
 	}
-	return trimmed == "active", nil
+	return out == "active", nil
 }
 
-func daemonReloadSystemd(ctx context.Context) error {
-	_, err := exec.Privileged(ctx, "systemctl", "daemon-reload")
-	return err
-}
+// --- Mutations -------------------------------------------------------------
 
-func enableSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Enable(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "enable", "--", unitName)
-	return err
+	return s.mutate(ctx, "enable", "--", unit)
 }
 
-func disableSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Disable(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "disable", "--", unitName)
-	return err
+	return s.mutate(ctx, "disable", "--", unit)
 }
 
-func startSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) EnableNow(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "start", "--", unitName)
-	return err
+	return s.mutate(ctx, "enable", "--now", "--", unit)
 }
 
-func stopSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) DisableNow(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "stop", "--", unitName)
-	return err
+	return s.mutate(ctx, "disable", "--now", "--", unit)
 }
 
-func restartSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Start(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "restart", "--", unitName)
-	return err
+	return s.mutate(ctx, "start", "--", unit)
 }
 
-func maskSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Stop(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "mask", "--", unitName)
-	return err
+	return s.mutate(ctx, "stop", "--", unit)
 }
 
-func unmaskSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Restart(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "unmask", "--", unitName)
-	return err
+	return s.mutate(ctx, "restart", "--", unit)
 }
 
-func enableNowSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Mask(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "enable", "--now", "--", unitName)
-	return err
+	return s.mutate(ctx, "mask", "--", unit)
 }
 
-func disableNowSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) Unmask(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	_, err := exec.Privileged(ctx, "systemctl", "disable", "--now", "--", unitName)
-	return err
+	return s.mutate(ctx, "unmask", "--", unit)
 }
 
-func validateUnitNameSystemd(unitName string) error {
-	if !validSystemdUnitName.MatchString(unitName) {
-		return fmt.Errorf("invalid systemd unit name %q: must not start with '.' and must match <name>.<type> where type is one of service, socket, device, timer, mount, automount, swap, target, path, slice, scope", unitName)
-	}
-	return nil
+func (s *systemd) DaemonReload(ctx context.Context) error {
+	return s.mutate(ctx, "daemon-reload")
 }
 
-func writeUnitSystemd(ctx context.Context, unitName, content string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+// --- Unit files ------------------------------------------------------------
+
+func (s *systemd) WriteUnit(ctx context.Context, unit, content string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	unitPath := "/etc/systemd/system/" + unitName
-	return fs.WriteFileAtomic(ctx, unitPath, content, "0644", "root", "root")
+	return writeFileAtomic(ctx, "/etc/systemd/system/"+unit, content, "0644", "root", "root")
 }
 
-func removeUnitSystemd(ctx context.Context, unitName string) error {
-	if err := validateUnitNameSystemd(unitName); err != nil {
+func (s *systemd) RemoveUnit(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	unitPath := "/etc/systemd/system/" + unitName
-	if err := fs.RemoveStrict(ctx, unitPath); err != nil {
-		return fmt.Errorf("remove systemd unit %s: %w", unitPath, err)
+	path := "/etc/systemd/system/" + unit
+	if err := removeStrict(ctx, path); err != nil {
+		return fmt.Errorf("remove systemd unit %s: %w", path, err)
 	}
 	return nil
 }
