@@ -103,6 +103,14 @@ func TestParseLoginctlShowSession(t *testing.T) {
 			wantOK:    false,
 		},
 		{
+			// Inverse of the above: User present but Name empty. Builds an
+			// anonymous session we can't target, so it's rejected.
+			name:      "missing Name property is rejected",
+			sessionID: "c6b",
+			stdout:    "Type=wayland\nUser=1009",
+			wantOK:    false,
+		},
+		{
 			// Malformed UID is now treated as an invalid session
 			// because uid=0 (the silent Atoi fallback) would build
 			// /run/user/0/bus and either misroute the notification
@@ -119,6 +127,14 @@ func TestParseLoginctlShowSession(t *testing.T) {
 			stdout:    "  Type=wayland \n  Name=henry  \n  User=1005  ",
 			wantOK:    true,
 			want:      session{id: "c8", user: "henry", uid: 1005, typ: "wayland"},
+		},
+		{
+			// A line with no '=' (blank line, banner) is ignored, not fatal.
+			name:      "ignores lines without an equals sign",
+			sessionID: "c9",
+			stdout:    "Type=x11\n\nName=ivy\nUser=1006\nnot a property",
+			wantOK:    true,
+			want:      session{id: "c9", user: "ivy", uid: 1006, typ: "x11"},
 		},
 	}
 	for _, tc := range cases {

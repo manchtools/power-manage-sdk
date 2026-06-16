@@ -1,4 +1,13 @@
-// Package osquery provides integration with the osquery binary for system queries.
+// Package osquery integrates the osquery binary for system queries through an
+// injected exec.Runner.
+//
+// Build a Client with a Runner and call its methods; every query is escalated
+// through the Runner. The convenience table path refuses a curated deny-list of
+// credential-bearing tables before running anything; the signed RawSql escape
+// hatch is the operator's explicit path and is intentionally not gated.
+//
+//	r, _ := exec.NewRunner(exec.Sudo)
+//	c, err := osquery.NewClient(r) // ErrNotInstalled if osqueryi is absent
 package osquery
 
 import (
@@ -6,26 +15,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os/exec"
+	osexec "os/exec"
 	"regexp"
 	"strings"
 	"time"
 
 	pb "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
-	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // validTableName matches only safe osquery table names (alphanumeric + underscore).
 var validTableName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
-// sensitiveTables are osquery tables that can expose credential material or
-// other high-value secrets — password-hash metadata (shadow), secrets in
-// process environments (process_envs), scheduled commands (crontab), shell
-// history (shell_history), and sudoers policy (sudoers). They all pass
-// validTableName, so the shape-only check is not enough: the convenience table
-// path refuses them so a compromised control server cannot exfiltrate them
-// through the agent's privileged osquery. The signed RawSql escape hatch is
-// intentionally NOT gated here — it is the operator's explicit, CA-signed path.
+// sensitiveTables are osquery tables that can expose credential material or other
+// high-value secrets — password-hash metadata (shadow), secrets in process
+// environments (process_envs), scheduled commands (crontab), shell history
+// (shell_history), and sudoers policy (sudoers). They all pass validTableName, so
+// the shape-only check is not enough: the convenience table path refuses them so a
+// compromised control server cannot exfiltrate them through the agent's
+// privileged osquery. The signed RawSql escape hatch is intentionally NOT gated
+// here — it is the operator's explicit, CA-signed path.
 var sensitiveTables = map[string]bool{
 	"shadow":        true,
 	"process_envs":  true,
@@ -34,8 +43,8 @@ var sensitiveTables = map[string]bool{
 	"sudoers":       true,
 }
 
-// isSensitiveTable reports whether name is on the curated deny-list. Comparison
-// is case- and whitespace-insensitive so trivial variants cannot slip past.
+// isSensitiveTable reports whether name is on the curated deny-list. Comparison is
+// case- and whitespace-insensitive so trivial variants cannot slip past.
 func isSensitiveTable(name string) bool {
 	return sensitiveTables[strings.ToLower(strings.TrimSpace(name))]
 }
@@ -58,19 +67,23 @@ var (
 	defaultTimeout = 30 * time.Second
 )
 
-// Client wraps osquery binary execution.
+// Client wraps osquery binary execution over an injected Runner.
 type Client struct {
 	binaryPath string
+	r          exec.Runner
 }
 
-// NewClient creates a new osquery client.
-// Returns ErrNotInstalled if osquery binary is not found.
-func NewClient() (*Client, error) {
+// NewClient creates an osquery client driven by runner. Returns ErrNotInstalled
+// when the osqueryi binary is not found, and an error when runner is nil.
+func NewClient(runner exec.Runner) (*Client, error) {
+	if runner == nil {
+		return nil, errors.New("osquery: runner is required")
+	}
 	path := findOsqueryBinary()
 	if path == "" {
 		return nil, ErrNotInstalled
 	}
-	return &Client{binaryPath: path}, nil
+	return &Client{binaryPath: path, r: runner}, nil
 }
 
 // IsInstalled checks if osquery is installed on the system.
@@ -78,26 +91,24 @@ func IsInstalled() bool {
 	return findOsqueryBinary() != ""
 }
 
-// lookPath is the resolution function used by findOsqueryBinary.
-// It defaults to exec.LookPath and is overridable from tests so the
-// binary-discovery logic can be exercised without depending on what
-// is installed on the test host (F026 in TECH_DEBT_AUDIT.md).
-var lookPath = exec.LookPath
+// lookPath is the resolution function used by findOsqueryBinary. It defaults to
+// os/exec.LookPath and is overridable from tests so binary discovery can be
+// exercised without depending on what is installed on the test host (F026 in
+// TECH_DEBT_AUDIT.md).
+var lookPath = osexec.LookPath
 
 // findOsqueryBinary searches for the osqueryi binary.
 //
-// Resolution order: explicit absolute paths in osqueryPaths first
-// (matches the "use the system package's location if available"
-// expectation on Fedora/RHEL/Debian), then PATH lookup for the bare
-// "osqueryi" name (covers Homebrew/Linuxbrew, Nix, Snap, manual
-// installs).
+// Resolution order: explicit absolute paths in osqueryPaths first (matches the
+// "use the system package's location if available" expectation on
+// Fedora/RHEL/Debian), then PATH lookup for the bare "osqueryi" name (covers
+// Homebrew/Linuxbrew, Nix, Snap, manual installs).
 func findOsqueryBinary() string {
 	for _, path := range osqueryPaths {
 		if _, err := lookPath(path); err == nil {
 			return path
 		}
 	}
-	// Also check PATH
 	if path, err := lookPath("osqueryi"); err == nil {
 		return path
 	}
@@ -208,12 +219,8 @@ func (c *Client) QueryTable(ctx context.Context, tableName string) ([]*pb.OSQuer
 	return c.QuerySQL(ctx, sql)
 }
 
-// execPrivileged runs the osquery binary under the privilege backend. It is a
-// package var so tests can record (and refuse) execution, proving the
-// sensitive-table deny-list short-circuits BEFORE any query is run.
-var execPrivileged = sysexec.Privileged
-
-// execQuery executes an osquery command via sudo and returns the output.
+// execQuery executes an osquery command (escalated through the Runner) and
+// returns its stdout.
 func (c *Client) execQuery(ctx context.Context, query string) (string, error) {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -228,47 +235,16 @@ func (c *Client) execQuery(ctx context.Context, query string) (string, error) {
 		args = append(args, "--json", query)
 	}
 
-	result, err := execPrivileged(ctx, c.binaryPath, args...)
+	res, err := c.r.Run(ctx, exec.Command{Name: c.binaryPath, Args: args, Escalate: true})
 	if err != nil {
-		stderr := ""
-		if result != nil {
-			stderr = result.Stderr
-		}
-		if stderr != "" {
-			return "", fmt.Errorf("%w: %s", ErrQueryFailed, stderr)
-		}
 		return "", fmt.Errorf("%w: %v", ErrQueryFailed, err)
 	}
-
-	return strings.TrimSpace(result.Stdout), nil
-}
-
-// Registry provides backwards compatibility with the old interface.
-type Registry struct {
-	client *Client
-}
-
-// NewRegistry creates a new Registry.
-// Returns an error if osquery is not installed.
-func NewRegistry() (*Registry, error) {
-	client, err := NewClient()
-	if err != nil {
-		return nil, err
+	if res.ExitCode != 0 {
+		if stderr := strings.TrimSpace(res.Stderr); stderr != "" {
+			return "", fmt.Errorf("%w: %s", ErrQueryFailed, stderr)
+		}
+		return "", fmt.Errorf("%w: exit code %d", ErrQueryFailed, res.ExitCode)
 	}
-	return &Registry{client: client}, nil
-}
 
-// Query executes a query against an osquery table.
-func (r *Registry) Query(query *pb.OSQuery) (*pb.OSQueryResult, error) {
-	return r.client.Query(context.Background(), query)
-}
-
-// ListTables returns available osquery tables.
-func (r *Registry) ListTables() ([]string, error) {
-	return r.client.ListTables(context.Background())
-}
-
-// QueryTable queries a specific table by name.
-func (r *Registry) QueryTable(tableName string) ([]*pb.OSQueryRow, error) {
-	return r.client.QueryTable(context.Background(), tableName)
+	return strings.TrimSpace(res.Stdout), nil
 }
