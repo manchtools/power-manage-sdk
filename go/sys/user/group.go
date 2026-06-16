@@ -2,147 +2,134 @@ package user
 
 import (
 	"context"
-	"slices"
-	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// =============================================================================
-// Group Query Functions
-// =============================================================================
-
-// GroupExists checks if a group exists on the system.
-func GroupExists(name string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
-	defer cancel()
-	return exec.CheckCtx(ctx, "getent", "group", name)
-}
-
-// GroupMembers returns the members of a group.
-// Returns nil if the group doesn't exist or has no members.
-func GroupMembers(name string) []string {
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
-	defer cancel()
-	out, err := exec.QueryCtx(ctx, "getent", "group", name)
-	if err != nil {
-		return nil
-	}
-	fields := strings.Split(strings.TrimSpace(out), ":")
-	if len(fields) < 4 || fields[3] == "" {
-		return nil
-	}
-	return strings.Split(fields[3], ",")
-}
-
-// GroupHasUser checks if a user is a member of the specified group.
-func GroupHasUser(username, groupName string) bool {
-	members := GroupMembers(groupName)
-	for _, m := range members {
-		if m == username {
-			return true
+// MembersMatch reports whether two member lists contain the same set of names,
+// ignoring order and duplicates. A pure helper for group-membership
+// reconciliation (compare desired vs. GroupMembers); the caller decides what to
+// do about a mismatch.
+func MembersMatch(a, b []string) bool {
+	set := func(xs []string) map[string]struct{} {
+		m := make(map[string]struct{}, len(xs))
+		for _, x := range xs {
+			m[x] = struct{}{}
 		}
+		return m
 	}
-	return false
-}
-
-// GroupMembersMatch checks if the current group members match the desired list.
-// Comparison is order-independent.
-func GroupMembersMatch(groupName string, desiredUsers []string) bool {
-	if !GroupExists(groupName) {
-		return len(desiredUsers) == 0
-	}
-	current := GroupMembers(groupName)
-	if len(current) != len(desiredUsers) {
+	sa, sb := set(a), set(b)
+	if len(sa) != len(sb) {
 		return false
 	}
-
-	sortedCurrent := make([]string, len(current))
-	copy(sortedCurrent, current)
-	sort.Strings(sortedCurrent)
-
-	sortedDesired := make([]string, len(desiredUsers))
-	copy(sortedDesired, desiredUsers)
-	sort.Strings(sortedDesired)
-
-	for i := range sortedCurrent {
-		if sortedCurrent[i] != sortedDesired[i] {
+	for k := range sa {
+		if _, ok := sb[k]; !ok {
 			return false
 		}
 	}
 	return true
 }
 
-// =============================================================================
-// Group Management Operations
-// =============================================================================
-
-// GroupCreate creates a new group.
-// Extra args are passed before the group name (e.g., "-g", "1001", "-r").
-// Rejects names that would become flags or contain control characters —
-// the same IsValidName rules apply because groupadd/usermod parse argv
-// identically to useradd.
-//
-// Returns the command result so callers can surface groupadd's stderr
-// — symmetric with the user.Create / user.Modify / user.Delete shape
-// (F038 in the SDK tech-debt audit).
-func GroupCreate(ctx context.Context, name string, args ...string) (*exec.Result, error) {
+// GroupExists reports whether a group exists.
+func (u *shadowUtils) GroupExists(ctx context.Context, name string) (bool, error) {
 	if err := validateName("group name", name); err != nil {
-		return nil, err
+		return false, err
 	}
-	// slices.Clone avoids aliasing the caller's backing array — a
-	// bare `append(args, name)` would write into the caller's slice
-	// whenever it has spare capacity.
-	fullArgs := append(slices.Clone(args), name)
-	return exec.Privileged(ctx, "groupadd", fullArgs...)
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	res, err := u.r.Run(ctx, exec.Command{Name: "getent", Args: []string{"group", name}})
+	if err != nil {
+		return false, err
+	}
+	return res.ExitCode == 0, nil
 }
 
-// GroupDelete deletes a group. See GroupCreate for the result-return
-// rationale.
-func GroupDelete(ctx context.Context, name string) (*exec.Result, error) {
+// GroupMembers returns a group's members, or nil if the group has none / does
+// not exist.
+func (u *shadowUtils) GroupMembers(ctx context.Context, name string) ([]string, error) {
 	if err := validateName("group name", name); err != nil {
 		return nil, err
 	}
-	return exec.Privileged(ctx, "groupdel", name)
-}
-
-// GroupEnsureExists creates a group if it doesn't already exist.
-// Returns (nil, nil) when the group already exists (no command run).
-func GroupEnsureExists(ctx context.Context, name string) (*exec.Result, error) {
-	if err := validateName("group name", name); err != nil {
-		return nil, err
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	out, err := u.query(ctx, "getent", "group", name)
+	if err != nil {
+		return nil, nil // not found / unreadable → no members
 	}
-	if GroupExists(name) {
+	fields := strings.Split(out, ":")
+	if len(fields) < 4 || fields[3] == "" {
 		return nil, nil
 	}
-	return GroupCreate(ctx, name)
+	// Filter empty entries defensively (a stray "a,,b" must not yield a "").
+	raw := strings.Split(fields[3], ",")
+	members := make([]string, 0, len(raw))
+	for _, m := range raw {
+		if m != "" {
+			members = append(members, m)
+		}
+	}
+	if len(members) == 0 {
+		return nil, nil
+	}
+	return members, nil
 }
 
-// =============================================================================
-// Group Membership Operations
-// =============================================================================
-
-// GroupAddUser adds a user to a supplementary group. See GroupCreate
-// for the result-return rationale.
-func GroupAddUser(ctx context.Context, username, groupName string) (*exec.Result, error) {
-	if err := validateName("username", username); err != nil {
-		return nil, err
+// GroupCreate creates a new group.
+func (u *shadowUtils) GroupCreate(ctx context.Context, name string, opts GroupCreateOptions) error {
+	if err := validateName("group name", name); err != nil {
+		return err
 	}
-	if err := validateName("group name", groupName); err != nil {
-		return nil, err
+	args := make([]string, 0, 4)
+	if opts.GID > 0 {
+		args = append(args, "-g", strconv.Itoa(opts.GID))
 	}
-	return exec.Privileged(ctx, "usermod", "-aG", groupName, username)
+	if opts.System {
+		args = append(args, "-r")
+	}
+	args = append(args, name)
+	return u.run(ctx, "groupadd", args...)
 }
 
-// GroupRemoveUser removes a user from a supplementary group. See
-// GroupCreate for the result-return rationale.
-func GroupRemoveUser(ctx context.Context, username, groupName string) (*exec.Result, error) {
-	if err := validateName("username", username); err != nil {
-		return nil, err
+// GroupDelete deletes a group.
+func (u *shadowUtils) GroupDelete(ctx context.Context, name string) error {
+	if err := validateName("group name", name); err != nil {
+		return err
 	}
-	if err := validateName("group name", groupName); err != nil {
-		return nil, err
+	return u.run(ctx, "groupdel", name)
+}
+
+// GroupEnsure creates a group if it does not already exist (no-op when present).
+func (u *shadowUtils) GroupEnsure(ctx context.Context, name string) error {
+	exists, err := u.GroupExists(ctx, name)
+	if err != nil {
+		return err
 	}
-	return exec.Privileged(ctx, "gpasswd", "-d", username, groupName)
+	if exists {
+		return nil
+	}
+	return u.GroupCreate(ctx, name, GroupCreateOptions{})
+}
+
+// AddToGroup adds a user to a supplementary group (usermod -aG).
+func (u *shadowUtils) AddToGroup(ctx context.Context, name, group string) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	if err := validateName("group name", group); err != nil {
+		return err
+	}
+	return u.run(ctx, "usermod", "-aG", group, name)
+}
+
+// RemoveFromGroup removes a user from a supplementary group (gpasswd -d).
+func (u *shadowUtils) RemoveFromGroup(ctx context.Context, name, group string) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	if err := validateName("group name", group); err != nil {
+		return err
+	}
+	return u.run(ctx, "gpasswd", "-d", name, group)
 }

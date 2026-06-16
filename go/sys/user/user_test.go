@@ -1,422 +1,392 @@
-//go:build integration
-
-package user_test
+package user
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"errors"
+	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
-	"github.com/manchtools/power-manage/sdk/go/sys/fs"
-	"github.com/manchtools/power-manage/sdk/go/sys/user"
+	"github.com/manchtools/power-manage/sdk/go/sys/exec/exectest"
 )
 
-func testUsername(suffix string) string {
-	return fmt.Sprintf("pmtest%s%d", suffix, os.Getpid()%10000)
-}
-
-func cleanupUser(t *testing.T, username string) {
+func mgr(t *testing.T, f *exectest.FakeRunner) Manager {
 	t.Helper()
-	ctx := context.Background()
-	exec.Privileged(ctx, "userdel", "-r", username)
+	m, err := New(ShadowUtils, f)
+	if err != nil {
+		t.Fatalf("New(ShadowUtils): %v", err)
+	}
+	return m
 }
 
-func createTestUser(t *testing.T, username string) {
+// wantOneCmd asserts exactly one command was run, with the given name, argv, and
+// escalation flag.
+func wantOneCmd(t *testing.T, f *exectest.FakeRunner, name string, args []string, escalate bool) {
 	t.Helper()
-	ctx := context.Background()
-	if _, err := user.Create(ctx, username, "-m", "-s", "/bin/bash"); err != nil {
-		t.Fatalf("failed to create test user %s: %v", username, err)
+	calls := f.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("got %d commands, want 1: %+v", len(calls), calls)
+	}
+	c := calls[0]
+	if c.Name != name {
+		t.Errorf("command name = %q, want %q", c.Name, name)
+	}
+	if strings.Join(c.Args, "\x00") != strings.Join(args, "\x00") {
+		t.Errorf("argv = %v\n want %v", c.Args, args)
+	}
+	if c.Escalate != escalate {
+		t.Errorf("Escalate = %v, want %v", c.Escalate, escalate)
 	}
 }
 
-func TestCreate(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("cr")
-	defer cleanupUser(t, name)
-
-	result, err := user.Create(ctx, name, "-m", "-s", "/bin/bash")
-	if err != nil {
-		t.Fatalf("Create failed: %v", err)
+func TestNew_FailClosed(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	for _, b := range []Backend{0, Backend(-1), Backend(99)} {
+		if _, err := New(b, f); !errors.Is(err, ErrUnknownBackend) {
+			t.Errorf("New(%d) err = %v, want ErrUnknownBackend", b, err)
+		}
 	}
-	// Verify the *exec.Result contract on the success path.
-	if result == nil {
-		t.Fatal("expected non-nil *exec.Result on success")
+	if _, err := New(ShadowUtils, nil); err == nil {
+		t.Error("New with nil runner returned nil error, want a required-runner error")
 	}
-	if result.ExitCode != 0 {
-		t.Errorf("expected exit code 0 on success, got %d", result.ExitCode)
-	}
-
-	if !user.Exists(name) {
-		t.Error("user should exist after creation")
-	}
-
-	info, err := user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-	if info.Shell != "/bin/bash" {
-		t.Errorf("expected shell /bin/bash, got %s", info.Shell)
+	if _, err := New(ShadowUtils, f); err != nil {
+		t.Errorf("New(ShadowUtils, runner) err = %v, want nil", err)
 	}
 }
 
-func TestCreateSystemUser(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("sys")
-	defer cleanupUser(t, name)
+// Create — golden argv across option combinations. HomeDir is set explicitly so
+// the -m/-M home-exists stat is deterministic.
+func TestCreate_GoldenArgv(t *testing.T) {
+	nonexistent := filepath.Join(t.TempDir(), "nohome")
 
-	_, err := user.Create(ctx, name, "--system", "--no-create-home", "-s", "/usr/sbin/nologin")
-	if err != nil {
-		t.Fatalf("Create system user failed: %v", err)
-	}
+	t.Run("minimal interactive with home", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{HomeDir: nonexistent, CreateHome: true}); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "useradd", []string{"-d", nonexistent, "-s", "/bin/bash", "-m", "deploy"}, true)
+	})
 
-	info, err := user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
+	t.Run("system account gets nologin + -r + -M", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Create(context.Background(), "svc", CreateOptions{System: true}); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "useradd", []string{"-s", "/usr/sbin/nologin", "-r", "-M", "svc"}, true)
+	})
+
+	t.Run("full options in canonical order", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		opts := CreateOptions{
+			UID: 1500, PrimaryGroup: "staff", Groups: []string{"docker", "sudo"},
+			HomeDir: nonexistent, Comment: "Service Acct", System: true, CreateHome: false,
+		}
+		if err := mgr(t, f).Create(context.Background(), "svc", opts); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "useradd", []string{
+			"-u", "1500", "-g", "staff", "-G", "docker,sudo", "-d", nonexistent,
+			"-s", "/usr/sbin/nologin", "-r", "-M", "-c", "Service Acct", "svc",
+		}, true)
+	})
+
+	t.Run("explicit shell overrides the default", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Create(context.Background(), "ops", CreateOptions{Shell: "/bin/zsh"}); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "useradd", []string{"-s", "/bin/zsh", "-M", "ops"}, true)
+	})
+}
+
+// Create over a PRE-EXISTING home uses -M (useradd -m would fail) and fixes
+// ownership afterwards — exercised via the fs seam so the test stays hermetic.
+func TestCreate_ExistingHomeUsesMinusMAndChowns(t *testing.T) {
+	existing := t.TempDir() // exists
+	f := exectest.New(exec.Direct)
+
+	var chown struct {
+		path, owner, group string
+		called             bool
 	}
-	if info.Shell != "/usr/sbin/nologin" {
-		t.Errorf("expected nologin shell, got %s", info.Shell)
+	restore := setOwnershipRecursive
+	setOwnershipRecursive = func(ctx context.Context, path, owner, group string) (*exec.Result, error) {
+		chown.path, chown.owner, chown.group, chown.called = path, owner, group, true
+		return &exec.Result{}, nil
 	}
-	// System users typically have UID < 1000
-	if info.UID >= 1000 {
-		t.Errorf("expected system UID < 1000, got %d", info.UID)
+	defer func() { setOwnershipRecursive = restore }()
+
+	if err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{HomeDir: existing, CreateHome: true, PrimaryGroup: "staff"}); err != nil {
+		t.Fatal(err)
+	}
+	wantOneCmd(t, f, "useradd", []string{"-g", "staff", "-d", existing, "-s", "/bin/bash", "-M", "deploy"}, true)
+	if !chown.called {
+		t.Fatal("ownership of the pre-existing home was not fixed")
+	}
+	if chown.path != existing || chown.owner != "deploy" || chown.group != "staff" {
+		t.Errorf("chown(%q,%q,%q), want (%q,deploy,staff)", chown.path, chown.owner, chown.group, existing)
 	}
 }
 
-func TestGet(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("gt")
-	defer cleanupUser(t, name)
+func TestCreate_ChownDefaultsGroupToUsername(t *testing.T) {
+	existing := t.TempDir()
+	f := exectest.New(exec.Direct)
+	var gotGroup string
+	restore := setOwnershipRecursive
+	setOwnershipRecursive = func(ctx context.Context, path, owner, group string) (*exec.Result, error) {
+		gotGroup = group
+		return &exec.Result{}, nil
+	}
+	defer func() { setOwnershipRecursive = restore }()
 
-	if _, err := user.Create(ctx, name, "-m", "-s", "/bin/bash", "-c", "Test User"); err != nil {
-		t.Fatalf("Create failed: %v", err)
+	if err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{HomeDir: existing, CreateHome: true}); err != nil {
+		t.Fatal(err)
 	}
-
-	info, err := user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-	if info.UID == 0 {
-		t.Error("expected non-zero UID")
-	}
-	if info.Comment != "Test User" {
-		t.Errorf("expected comment 'Test User', got %q", info.Comment)
-	}
-	if info.HomeDir == "" {
-		t.Error("expected non-empty home directory")
-	}
-	if info.Shell != "/bin/bash" {
-		t.Errorf("expected /bin/bash, got %s", info.Shell)
+	if gotGroup != "deploy" {
+		t.Errorf("chown group = %q, want the username (useradd matching-group default)", gotGroup)
 	}
 }
 
-func TestGetNonexistent(t *testing.T) {
-	_, err := user.Get("pm-nonexistent-user-12345")
-	if err == nil {
-		t.Fatal("expected error for non-existent user")
+func TestCreate_RejectsInvalidNameBeforeRunner(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	if err := mgr(t, f).Create(context.Background(), "-rf", CreateOptions{}); err == nil {
+		t.Error("Create with a flag-shaped name returned nil error")
+	}
+	if len(f.Calls()) != 0 {
+		t.Errorf("runner was called for an invalid name: %+v", f.Calls())
 	}
 }
 
-func TestExists(t *testing.T) {
-	if !user.Exists("root") {
-		t.Error("root user should exist")
+func TestCreate_MapsNonZeroExitToCommandError(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	f.Push(exec.Result{ExitCode: 9, Stderr: "useradd: user 'deploy' already exists"}, nil)
+	err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{})
+	var ce *exec.CommandError
+	if !errors.As(err, &ce) {
+		t.Fatalf("err = %v, want *exec.CommandError", err)
 	}
-	if user.Exists("pm-nonexistent-user-12345") {
-		t.Error("non-existent user should not exist")
+	if ce.ExitCode != 9 || !strings.Contains(ce.Stderr, "already exists") {
+		t.Errorf("CommandError = %+v, want exit 9 + stderr", ce)
 	}
 }
 
 func TestModify(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("mod")
-	defer cleanupUser(t, name)
-
-	createTestUser(t, name)
-
-	_, err := user.Modify(ctx, name, "-s", "/bin/sh")
-	if err != nil {
-		t.Fatalf("Modify failed: %v", err)
-	}
-
-	info, err := user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-	if info.Shell != "/bin/sh" {
-		t.Errorf("expected /bin/sh after modify, got %s", info.Shell)
-	}
+	t.Run("golden each field", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		opts := ModifyOptions{Shell: "/bin/zsh", HomeDir: "/srv/deploy", Comment: "Deploy Service", PrimaryGroup: "staff"}
+		if err := mgr(t, f).Modify(context.Background(), "deploy", opts); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "usermod", []string{"-s", "/bin/zsh", "-d", "/srv/deploy", "-c", "Deploy Service", "-g", "staff", "deploy"}, true)
+	})
+	t.Run("empty options is a no-op (no usermod)", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Modify(context.Background(), "deploy", ModifyOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		if len(f.Calls()) != 0 {
+			t.Errorf("empty Modify ran a command: %+v", f.Calls())
+		}
+	})
 }
 
 func TestDelete(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("del")
-
-	createTestUser(t, name)
-
-	_, err := user.Delete(ctx, name, false)
-	if err != nil {
-		t.Fatalf("Delete failed: %v", err)
-	}
-
-	if user.Exists(name) {
-		t.Error("user should not exist after deletion")
-	}
-}
-
-func TestDeleteWithHome(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("dlh")
-
-	createTestUser(t, name)
-
-	info, err := user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-	homeDir := info.HomeDir
-
-	_, err = user.Delete(ctx, name, true)
-	if err != nil {
-		t.Fatalf("Delete with home failed: %v", err)
-	}
-
-	if user.Exists(name) {
-		t.Error("user should not exist after deletion")
-	}
-	if fs.FileExists(ctx, homeDir) {
-		t.Error("home directory should be removed")
-	}
-}
-
-func TestDeleteNonexistent(t *testing.T) {
-	ctx := context.Background()
-	result, err := user.Delete(ctx, "pm-nonexistent-user-12345", false)
-	if err == nil {
-		t.Fatal("expected error deleting non-existent user")
-	}
-	// The whole point of returning *exec.Result is that callers can
-	// surface the underlying tool's stderr. Verify the contract holds
-	// on a deterministic failure path.
-	if result == nil {
-		t.Fatal("expected non-nil *exec.Result on failure")
-	}
-	if result.ExitCode == 0 {
-		t.Errorf("expected non-zero exit code on failure, got %d", result.ExitCode)
-	}
-	if result.Stderr == "" {
-		t.Errorf("expected stderr to be populated on failure, got empty (exit=%d)", result.ExitCode)
-	}
+	t.Run("with home", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Delete(context.Background(), "deploy", DeleteOptions{RemoveHome: true}); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "userdel", []string{"-r", "deploy"}, true)
+	})
+	t.Run("without home", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Delete(context.Background(), "deploy", DeleteOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		wantOneCmd(t, f, "userdel", []string{"deploy"}, true)
+	})
 }
 
 func TestLockUnlock(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("lck")
-	defer cleanupUser(t, name)
+	f := exectest.New(exec.Direct)
+	if err := mgr(t, f).Lock(context.Background(), "deploy"); err != nil {
+		t.Fatal(err)
+	}
+	wantOneCmd(t, f, "usermod", []string{"-L", "deploy"}, true)
 
-	createTestUser(t, name)
+	f2 := exectest.New(exec.Direct)
+	if err := mgr(t, f2).Unlock(context.Background(), "deploy"); err != nil {
+		t.Fatal(err)
+	}
+	wantOneCmd(t, f2, "usermod", []string{"-U", "deploy"}, true)
+}
 
-	// Set a password first so lock is meaningful
-	if _, err := user.SetPassword(ctx, name, "TestPass123!"); err != nil {
-		t.Fatalf("SetPassword failed: %v", err)
+func TestGet(t *testing.T) {
+	t.Run("parses passwd + groups + unlocked shadow", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{Stdout: "deploy:x:1000:1000:Deploy User:/home/deploy:/bin/bash\n"}, nil) // getent passwd
+		f.Push(exec.Result{Stdout: "deploy:x:1000:\n"}, nil)                                        // getent group 1000
+		f.Push(exec.Result{Stdout: "deploy docker sudo\n"}, nil)                                    // id -Gn
+		f.Push(exec.Result{Stdout: "deploy:$6$abc:19000:0:99999:7:::\n"}, nil)                      // getent shadow
+
+		info, err := mgr(t, f).Get(context.Background(), "deploy")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.UID != 1000 || info.GID != 1000 || info.Comment != "Deploy User" || info.HomeDir != "/home/deploy" || info.Shell != "/bin/bash" {
+			t.Errorf("Info = %+v", info)
+		}
+		if strings.Join(info.Groups, ",") != "docker,sudo" {
+			t.Errorf("Groups = %v, want [docker sudo] (primary filtered)", info.Groups)
+		}
+		if info.Locked {
+			t.Error("Locked = true, want false for a hashed shadow entry")
+		}
+		// The shadow read must be escalated.
+		if c := f.Calls()[3]; c.Name != "getent" || !c.Escalate {
+			t.Errorf("shadow read = %+v, want escalated getent", c)
+		}
+	})
+
+	t.Run("detects locked account", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{Stdout: "deploy:x:1000:1000::/home/deploy:/bin/bash\n"}, nil)
+		f.Push(exec.Result{Stdout: "deploy:x:1000:\n"}, nil)
+		f.Push(exec.Result{Stdout: "deploy\n"}, nil)
+		f.Push(exec.Result{Stdout: "deploy:!$6$abc:19000:0:99999:7:::\n"}, nil)
+		info, err := mgr(t, f).Get(context.Background(), "deploy")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !info.Locked {
+			t.Error("Locked = false, want true for a '!'-prefixed shadow entry")
+		}
+	})
+
+	t.Run("malformed passwd entry errors", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{Stdout: "deploy:x:1000\n"}, nil)
+		if _, err := mgr(t, f).Get(context.Background(), "deploy"); err == nil {
+			t.Error("Get with a malformed passwd entry returned nil error")
+		}
+	})
+}
+
+func TestExists(t *testing.T) {
+	t.Run("present", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{ExitCode: 0}, nil)
+		ok, err := mgr(t, f).Exists(context.Background(), "deploy")
+		if err != nil || !ok {
+			t.Errorf("Exists = (%v,%v), want (true,nil)", ok, err)
+		}
+	})
+	t.Run("absent", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{ExitCode: 1}, nil)
+		ok, _ := mgr(t, f).Exists(context.Background(), "ghost")
+		if ok {
+			t.Error("Exists = true for an absent user")
+		}
+	})
+	t.Run("invalid name short-circuits without running id", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		ok, err := mgr(t, f).Exists(context.Background(), "-rf")
+		if ok || err != nil {
+			t.Errorf("Exists(-rf) = (%v,%v), want (false,nil)", ok, err)
+		}
+		if len(f.Calls()) != 0 {
+			t.Error("ran id for an invalid name")
+		}
+	})
+}
+
+func TestPrimaryAndSupplementaryGroups(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	f.Push(exec.Result{Stdout: "staff\n"}, nil)
+	pg, err := mgr(t, f).PrimaryGroup(context.Background(), "deploy")
+	if err != nil || pg != "staff" {
+		t.Errorf("PrimaryGroup = (%q,%v), want (staff,nil)", pg, err)
 	}
 
-	// Lock
-	if _, err := user.Lock(ctx, name); err != nil {
-		t.Fatalf("Lock failed: %v", err)
-	}
-	info, err := user.Get(name)
+	f2 := exectest.New(exec.Direct)
+	f2.Push(exec.Result{Stdout: "staff docker sudo\n"}, nil) // id -Gn
+	f2.Push(exec.Result{Stdout: "staff\n"}, nil)             // id -gn (primary)
+	sg, err := mgr(t, f2).SupplementaryGroups(context.Background(), "deploy")
 	if err != nil {
-		t.Fatalf("Get failed: %v", err)
+		t.Fatal(err)
 	}
-	if !info.Locked {
-		t.Error("user should be locked")
-	}
-
-	// Unlock
-	if _, err := user.Unlock(ctx, name); err != nil {
-		t.Fatalf("Unlock failed: %v", err)
-	}
-	info, err = user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-	if info.Locked {
-		t.Error("user should be unlocked")
+	if strings.Join(sg, ",") != "docker,sudo" {
+		t.Errorf("SupplementaryGroups = %v, want [docker sudo] (primary filtered)", sg)
 	}
 }
 
-func TestSetPassword(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("pwd")
-	defer cleanupUser(t, name)
-
-	createTestUser(t, name)
-
-	_, err := user.SetPassword(ctx, name, "TestPass123!")
-	if err != nil {
-		t.Fatalf("SetPassword failed: %v", err)
+// TestEveryMethodRejectsUnsafeNameBeforeRunner is the self-discovering security
+// guard: for EVERY Manager method, a flag-shaped name ("-rf") must never reach
+// the Runner as a command argument. Discovered by reflection over the interface,
+// so a newly-added method is covered automatically.
+func TestEveryMethodRejectsUnsafeNameBeforeRunner(t *testing.T) {
+	const unsafe = "-rf"
+	mt := reflect.TypeOf((*Manager)(nil)).Elem()
+	if mt.NumMethod() == 0 {
+		t.Fatal("matches-zero guard: Manager has no methods — reflection is mis-scoped")
 	}
+	secretType := reflect.TypeOf(exec.Secret{})
+	ctxType := reflect.TypeOf((*context.Context)(nil)).Elem()
+	checked := 0
 
-	// Verify the user is no longer locked (has a valid password)
-	info, err := user.Get(name)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-	if info.Locked {
-		t.Error("user should not be locked after setting password")
-	}
-}
+	// safe is a valid name/group placed in every OTHER string position, so each
+	// string parameter is tested for validation INDIVIDUALLY — a method that
+	// validates only one of several string params is still caught.
+	const safe = "deploy"
 
-func TestExpirePassword(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("exp")
-	defer cleanupUser(t, name)
+	for i := 0; i < mt.NumMethod(); i++ {
+		name := mt.Method(i).Name
+		ft := reflect.ValueOf(mgr(t, exectest.New(exec.Direct))).MethodByName(name).Type()
 
-	createTestUser(t, name)
-	if _, err := user.SetPassword(ctx, name, "TestPass123!"); err != nil {
-		t.Fatalf("SetPassword failed: %v", err)
-	}
+		var stringParams []int
+		for p := 0; p < ft.NumIn(); p++ {
+			if ft.In(p).Kind() == reflect.String {
+				stringParams = append(stringParams, p)
+			}
+		}
+		if len(stringParams) == 0 {
+			continue
+		}
 
-	_, err := user.ExpirePassword(ctx, name)
-	if err != nil {
-		t.Fatalf("ExpirePassword failed: %v", err)
-	}
-
-	// Verify the password is expired by checking chage output
-	out, err := exec.Query("sudo", "-n", "chage", "-l", name)
-	if err != nil {
-		t.Logf("chage -l failed (may need sudo): %v", err)
-		return
-	}
-	// "Last password change" should show "password must be changed"
-	_ = out // Just verifying no error
-}
-
-func TestPrimaryGroup(t *testing.T) {
-	name := testUsername("pg")
-	defer cleanupUser(t, name)
-
-	createTestUser(t, name)
-
-	group, err := user.PrimaryGroup(name)
-	if err != nil {
-		t.Fatalf("PrimaryGroup failed: %v", err)
-	}
-	if group == "" {
-		t.Error("expected non-empty primary group")
-	}
-	// Primary group typically matches username
-	if group != name {
-		t.Logf("primary group %q differs from username %q (may be expected)", group, name)
-	}
-}
-
-func TestSupplementaryGroups(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("sg")
-	groupName := testUsername("sgg")
-	defer cleanupUser(t, name)
-	defer func() { exec.Privileged(ctx, "groupdel", groupName) }()
-
-	createTestUser(t, name)
-
-	// Create a test group and add user to it
-	if _, err := user.GroupCreate(ctx, groupName); err != nil {
-		t.Fatalf("GroupCreate failed: %v", err)
-	}
-	if _, err := user.GroupAddUser(ctx, name, groupName); err != nil {
-		t.Fatalf("GroupAddUser failed: %v", err)
-	}
-
-	groups, err := user.SupplementaryGroups(name)
-	if err != nil {
-		t.Fatalf("SupplementaryGroups failed: %v", err)
-	}
-
-	found := false
-	for _, g := range groups {
-		if g == groupName {
-			found = true
-			break
+		// One sub-case per string parameter: only that param is unsafe, the
+		// rest are valid. Catches a method that validates one string but not another.
+		for _, target := range stringParams {
+			f := exectest.New(exec.Direct)
+			fn := reflect.ValueOf(mgr(t, f)).MethodByName(name)
+			args := make([]reflect.Value, ft.NumIn())
+			for p := 0; p < ft.NumIn(); p++ {
+				pt := ft.In(p)
+				switch {
+				case pt == ctxType:
+					args[p] = reflect.ValueOf(context.Background())
+				case pt.Kind() == reflect.String:
+					if p == target {
+						args[p] = reflect.ValueOf(unsafe)
+					} else {
+						args[p] = reflect.ValueOf(safe)
+					}
+				case pt == secretType:
+					args[p] = reflect.ValueOf(exec.Secret{})
+				default:
+					args[p] = reflect.Zero(pt)
+				}
+			}
+			fn.Call(args)
+			if n := len(f.Calls()); n != 0 {
+				t.Errorf("%s ran %d command(s) when only string param #%d was unsafe (%q) — every string param must be validated before the Runner", name, n, target, unsafe)
+			}
+			checked++
 		}
 	}
-	if !found {
-		t.Errorf("expected %q in supplementary groups, got %v", groupName, groups)
-	}
-
-	// Primary group should NOT be in supplementary list
-	primary, _ := user.PrimaryGroup(name)
-	for _, g := range groups {
-		if g == primary {
-			t.Errorf("primary group %q should not be in supplementary list", primary)
-		}
-	}
-}
-
-func TestChownRecursive(t *testing.T) {
-	ctx := context.Background()
-	name := testUsername("co")
-	defer cleanupUser(t, name)
-
-	createTestUser(t, name)
-
-	dir := fmt.Sprintf("/tmp/pm-chown-test-%d", os.Getpid())
-	defer func() { exec.Privileged(ctx, "rm", "-rf", dir) }()
-
-	if err := fs.Mkdir(ctx, dir+"/sub", true); err != nil {
-		t.Fatalf("Mkdir failed: %v", err)
-	}
-	if err := fs.WriteFile(ctx, dir+"/sub/file.txt", "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	if _, err := user.ChownRecursive(ctx, dir, name, name); err != nil {
-		t.Fatalf("ChownRecursive failed: %v", err)
-	}
-
-	// Verify ownership of the file
-	owner, group := fs.GetOwnership(dir + "/sub/file.txt")
-	if owner != name {
-		t.Errorf("expected owner %q, got %q", name, owner)
-	}
-	if group != name {
-		t.Errorf("expected group %q, got %q", name, group)
-	}
-
-	// No-op path: empty owner and group should return (nil, nil) so
-	// callers can distinguish skipped from succeeded.
-	res, err := user.ChownRecursive(ctx, dir, "", "")
-	if err != nil {
-		t.Fatalf("ChownRecursive no-op returned error: %v", err)
-	}
-	if res != nil {
-		t.Errorf("expected nil *exec.Result on no-op, got %+v", res)
-	}
-}
-
-func TestIsValidName(t *testing.T) {
-	valid := []string{"root", "test-user", "user_name", "a", "abc123", "a-b-c"}
-	for _, name := range valid {
-		if !user.IsValidName(name) {
-			t.Errorf("expected %q to be valid", name)
-		}
-	}
-
-	invalid := []string{
-		"",
-		"1starts-with-digit",
-		"-starts-with-dash",
-		"_starts-with-underscore",
-		"UPPERCASE",
-		"has spaces",
-		"has.dots",
-		"has@symbol",
-		"abcdefghijklmnopqrstuvwxyz1234567", // 33 chars, too long
-	}
-	for _, name := range invalid {
-		if user.IsValidName(name) {
-			t.Errorf("expected %q to be invalid", name)
-		}
+	if checked == 0 {
+		t.Fatal("matches-zero guard: no name-taking methods were exercised")
 	}
 }

@@ -2,43 +2,30 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os/exec"
 
-	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// KillSessions terminates all sessions for a user.
-// Uses loginctl terminate-user if available, falls back to pkill -KILL -u.
-func KillSessions(ctx context.Context, username string) error {
-	if !IsValidName(username) {
-		return fmt.Errorf("invalid username: %s", username)
+// KillSessions terminates all of a user's sessions. It prefers systemd's
+// loginctl terminate-user and falls back to pkill -KILL -u. A pkill exit of 1
+// (no matching processes) is treated as success.
+func (u *shadowUtils) KillSessions(ctx context.Context, name string) error {
+	if err := validateUsername(name); err != nil {
+		return err
 	}
-
-	// Try loginctl first (systemd).
-	var loginctlErr error
-	if _, err := exec.LookPath("loginctl"); err == nil {
-		_, loginctlErr = sysexec.Privileged(ctx, "loginctl", "terminate-user", username)
-		if loginctlErr == nil {
-			return nil
-		}
-		// Fall through to pkill on failure.
+	// loginctl first; the Runner resolves and runs it, reporting "not found" if
+	// systemd-logind is absent, in which case we fall through to pkill.
+	if res, err := u.r.Run(ctx, exec.Command{Name: "loginctl", Args: []string{"terminate-user", name}, Escalate: true}); err == nil && res.ExitCode == 0 {
+		return nil
 	}
-
-	// Fallback: pkill -KILL -u.
-	// pkill exits 1 if no processes matched, which is fine.
-	result, err := sysexec.Privileged(ctx, "pkill", "-KILL", "-u", username)
+	res, err := u.r.Run(ctx, exec.Command{Name: "pkill", Args: []string{"-KILL", "-u", name}, Escalate: true})
 	if err != nil {
-		// Exit code 1 means no processes found — not an error.
-		if result != nil && result.ExitCode == 1 {
-			return nil
-		}
-		// Combine both errors if loginctl also failed.
-		if loginctlErr != nil {
-			return fmt.Errorf("kill sessions for %s: %w", username, errors.Join(loginctlErr, err))
-		}
-		return fmt.Errorf("kill sessions for %s: %w", username, err)
+		return fmt.Errorf("kill sessions for %s: %w", name, err)
+	}
+	// pkill exits 1 when no processes matched — not an error here.
+	if res.ExitCode != 0 && res.ExitCode != 1 {
+		return &exec.CommandError{Name: "pkill", ExitCode: res.ExitCode, Stderr: res.Stderr}
 	}
 	return nil
 }
