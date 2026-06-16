@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-
-	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // nftables backend. Each Manager owns a dedicated `inet <namespace>_filter`
@@ -19,8 +17,13 @@ import (
 //
 // All mutations go through `nft -f -` (batch / stdin) so the kernel
 // applies them in a single atomic transaction — partial state is never
-// visible. The wrapper `exec.Privileged` handles sudo / doas
-// elevation per the active PrivilegeBackend.
+// visible. The injected Runner handles sudo / doas elevation per the
+// configured PrivilegeBackend.
+type nftables struct {
+	base
+}
+
+var _ Manager = (*nftables)(nil)
 
 const (
 	nftFamily = "inet"
@@ -51,26 +54,37 @@ func nftAddressFamily(addr string) (string, error) {
 	return "", fmt.Errorf("%w: %q is not a valid IP address or CIDR", ErrInvalidRule, addr)
 }
 
-func applyNftables(ctx context.Context, namespace string, rule Rule) error {
-	script, err := nftBuildApplyScriptStrict(namespace, rule, 0)
+// ApplyRule installs or updates rule. The whole change (table + chain ensure,
+// optional delete-of-previous, add) goes into one atomic `nft -f -` batch.
+func (n *nftables) ApplyRule(ctx context.Context, rule Rule) error {
+	if err := validateRule(rule); err != nil {
+		return err
+	}
+	// If a rule with this ID already exists, replace it in the same batch so the
+	// kernel never sees "old gone but new not yet applied". A missing table
+	// (list error) just means handle 0 = no delete.
+	var handle int64
+	if raw, lerr := n.nftListJSON(ctx); lerr == nil {
+		if h, ok := nftFindRuleHandle(raw, rule.ID); ok {
+			handle = h
+		}
+	}
+	// Built once, after the handle is known, so there's a single source of the
+	// nft-untranslatable rejection (port without protocol / mixed IP families).
+	script, err := nftBuildApplyScriptStrict(n.ns, rule, handle)
 	if err != nil {
 		return err
 	}
-	// Translate "" into 0 (no delete) without surfacing the empty
-	// listing as an error.
-	if raw, lerr := nftListJSON(ctx, namespace); lerr == nil {
-		if handle, ok := nftFindRuleHandle(raw, rule.ID); ok {
-			script, err = nftBuildApplyScriptStrict(namespace, rule, handle)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nftRunScript(ctx, script)
+	return n.nftRunScript(ctx, script)
 }
 
-func removeNftables(ctx context.Context, namespace, id string) error {
-	raw, err := nftListJSON(ctx, namespace)
+// RemoveRule deletes the rule with the given ID; a missing table or rule is a
+// no-op (the post-condition "absent" already holds).
+func (n *nftables) RemoveRule(ctx context.Context, id string) error {
+	if err := validateRuleID(id); err != nil {
+		return err
+	}
+	raw, err := n.nftListJSON(ctx)
 	if err != nil {
 		// No table → nothing to remove.
 		return nil
@@ -79,12 +93,13 @@ func removeNftables(ctx context.Context, namespace, id string) error {
 	if !ok {
 		return nil
 	}
-	script := fmt.Sprintf("delete rule %s %s %s handle %d\n", nftFamily, nftTableName(namespace), nftChain, handle)
-	return nftRunScript(ctx, script)
+	script := fmt.Sprintf("delete rule %s %s %s handle %d\n", nftFamily, nftTableName(n.ns), nftChain, handle)
+	return n.nftRunScript(ctx, script)
 }
 
-func listNftables(ctx context.Context, namespace string) ([]Rule, error) {
-	raw, err := nftListJSON(ctx, namespace)
+// List returns every managed rule in this namespace's table.
+func (n *nftables) List(ctx context.Context) ([]Rule, error) {
+	raw, err := n.nftListJSON(ctx)
 	if err != nil {
 		// No table yet → no managed rules.
 		return nil, nil
@@ -92,34 +107,32 @@ func listNftables(ctx context.Context, namespace string) ([]Rule, error) {
 	return nftParseRules(raw)
 }
 
-// nftListJSON runs `nft -j list table inet <namespace>_filter` and
-// returns the raw JSON. The query is unprivileged in principle but in
-// practice most distros restrict nft to root, so the call goes through
-// exec.Privileged like every other op in this file.
-func nftListJSON(ctx context.Context, namespace string) ([]byte, error) {
-	res, err := sysexec.Privileged(ctx, "nft", "-j", "list", "table", nftFamily, nftTableName(namespace))
+// nftListJSON runs `nft -j list table inet <namespace>_filter` and returns the
+// raw JSON. Most distros restrict nft to root, so the call is escalated like
+// every other op here. A non-zero exit (table missing) surfaces as an error the
+// callers translate into "no managed rules".
+func (n *nftables) nftListJSON(ctx context.Context) ([]byte, error) {
+	res, err := n.run(ctx, "nft", "-j", "list", "table", nftFamily, nftTableName(n.ns))
 	if err != nil {
 		return nil, fmt.Errorf("nft list table: %w", err)
 	}
 	return []byte(res.Stdout), nil
 }
 
-// nftRunScript pipes a batch script into `nft -f -`. The script is
-// applied atomically; nft's transaction guarantees roll back the
-// whole batch if any line fails to parse or apply.
-func nftRunScript(ctx context.Context, script string) error {
-	_, err := sysexec.PrivilegedWithStdin(ctx, strings.NewReader(script), "nft", "-f", "-")
-	if err != nil {
+// nftRunScript pipes a batch script into `nft -f -`. nft's transaction
+// guarantees roll back the whole batch if any line fails.
+func (n *nftables) nftRunScript(ctx context.Context, script string) error {
+	if _, err := n.runStdin(ctx, script, "nft", "-f", "-"); err != nil {
 		return fmt.Errorf("nft -f -: %w", err)
 	}
 	return nil
 }
 
-// nftDeleteManagedTable removes this namespace's table; used by test
+// nftDeleteManagedTable removes this namespace's table; used by integration-test
 // cleanup so each test starts on a fresh kernel.
-func nftDeleteManagedTable(ctx context.Context, namespace string) error {
-	script := fmt.Sprintf("delete table %s %s\n", nftFamily, nftTableName(namespace))
-	_, err := sysexec.PrivilegedWithStdin(ctx, strings.NewReader(script), "nft", "-f", "-")
+func (n *nftables) nftDeleteManagedTable(ctx context.Context) error {
+	script := fmt.Sprintf("delete table %s %s\n", nftFamily, nftTableName(n.ns))
+	_, err := n.runStdin(ctx, script, "nft", "-f", "-")
 	return err // missing table on the second teardown surfaces as a (harmless) error
 }
 

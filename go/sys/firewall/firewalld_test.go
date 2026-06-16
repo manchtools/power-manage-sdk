@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 const firewalldTestNamespace = "fwtest"
@@ -135,18 +137,28 @@ func TestFirewalldFilterNamespaceServices(t *testing.T) {
 // cleans up the services it created so subsequent runs start fresh.
 // =============================================================================
 
+func firewalldIntegrationManager(t *testing.T) Manager {
+	t.Helper()
+	r, err := exec.NewRunner(exec.Direct) // skip guard guarantees we are root
+	if err != nil {
+		t.Fatalf("NewRunner: %v", err)
+	}
+	return newMgr(t, Firewalld, firewalldTestNamespace, r)
+}
+
 func TestFirewalldIntegration_ApplyListRemoveCycle(t *testing.T) {
 	skipIfNotFirewalldUsable(t)
 	ctx := context.Background()
+	m := firewalldIntegrationManager(t)
 	rule := Rule{ID: "test-svc", Allow: true, Protocol: ProtocolTCP, Port: 12345}
-	t.Cleanup(func() { _ = removeFirewalld(ctx, firewalldTestNamespace, rule.ID) })
+	t.Cleanup(func() { _ = m.RemoveRule(ctx, rule.ID) })
 
-	if err := applyFirewalld(ctx, firewalldTestNamespace, rule); err != nil {
-		t.Fatalf("applyFirewalld: %v", err)
+	if err := m.ApplyRule(ctx, rule); err != nil {
+		t.Fatalf("ApplyRule: %v", err)
 	}
-	rules, err := listFirewalld(ctx, firewalldTestNamespace)
+	rules, err := m.List(ctx)
 	if err != nil {
-		t.Fatalf("listFirewalld: %v", err)
+		t.Fatalf("List: %v", err)
 	}
 	found := false
 	for _, r := range rules {
@@ -158,23 +170,24 @@ func TestFirewalldIntegration_ApplyListRemoveCycle(t *testing.T) {
 		t.Fatalf("applied rule not visible in List: %+v", rules)
 	}
 
-	if err := removeFirewalld(ctx, firewalldTestNamespace, rule.ID); err != nil {
-		t.Fatalf("removeFirewalld: %v", err)
+	if err := m.RemoveRule(ctx, rule.ID); err != nil {
+		t.Fatalf("RemoveRule: %v", err)
 	}
 }
 
 func TestFirewalldIntegration_ApplyIsIdempotent(t *testing.T) {
 	skipIfNotFirewalldUsable(t)
 	ctx := context.Background()
+	m := firewalldIntegrationManager(t)
 	rule := Rule{ID: "idemp", Allow: true, Protocol: ProtocolTCP, Port: 12346}
-	t.Cleanup(func() { _ = removeFirewalld(ctx, firewalldTestNamespace, rule.ID) })
+	t.Cleanup(func() { _ = m.RemoveRule(ctx, rule.ID) })
 
 	for i := 0; i < 3; i++ {
-		if err := applyFirewalld(ctx, firewalldTestNamespace, rule); err != nil {
-			t.Fatalf("applyFirewalld #%d: %v", i, err)
+		if err := m.ApplyRule(ctx, rule); err != nil {
+			t.Fatalf("ApplyRule #%d: %v", i, err)
 		}
 	}
-	rules, _ := listFirewalld(ctx, firewalldTestNamespace)
+	rules, _ := m.List(ctx)
 	count := 0
 	for _, r := range rules {
 		if r.ID == rule.ID {
