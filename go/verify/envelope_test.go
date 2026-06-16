@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	pmv1 "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
+	"github.com/manchtools/power-manage/sdk/go/cryptotest"
 )
 
 // newTestEnvelope returns a fully-populated baseline SignedActionEnvelope.
@@ -45,7 +46,7 @@ var fieldMutations = []struct {
 // TestSignVerify_FullEnvelopeRoundTrip pins the correct case: a signature
 // over the deterministic bytes of a full envelope verifies.
 func TestSignVerify_FullEnvelopeRoundTrip(t *testing.T) {
-	certPEM, caKey := generateTestCA(t)
+	certPEM, caKey, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(caKey)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
@@ -72,7 +73,7 @@ func TestSignVerify_FullEnvelopeRoundTrip(t *testing.T) {
 // (sdk#82 / F-C2 / SA-C1) where a compromised relay rewrote the executed
 // action under a still-valid signature.
 func TestVerify_RejectsEveryFieldSwap(t *testing.T) {
-	certPEM, caKey := generateTestCA(t)
+	certPEM, caKey, _ := cryptotest.GenCA(t, "Test CA")
 	signer := NewActionSigner(caKey)
 	verifier, err := NewActionVerifier(certPEM)
 	if err != nil {
