@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // nftTestNamespace is the namespace every nftables test uses. Tests
@@ -291,44 +293,58 @@ func TestNftFindRuleHandle(t *testing.T) {
 // cleans up its namespace's table on exit so the next run starts fresh.
 // =============================================================================
 
+// nftIntegrationBackend builds a concrete *nftables driven by a real root Runner
+// for the integration cycle tests (also exposes nftDeleteManagedTable for
+// cleanup).
+func nftIntegrationBackend(t *testing.T) *nftables {
+	t.Helper()
+	r, err := exec.NewRunner(exec.Direct) // skip guard guarantees we are root
+	if err != nil {
+		t.Fatalf("NewRunner: %v", err)
+	}
+	return &nftables{base: base{ns: nftTestNamespace, cmd: cmd{r: r}}}
+}
+
 func TestNftablesIntegration_ApplyListRemoveCycle(t *testing.T) {
 	skipIfNotNftablesUsable(t)
-	t.Cleanup(func() { _ = nftDeleteManagedTable(context.Background(), nftTestNamespace) })
+	n := nftIntegrationBackend(t)
+	t.Cleanup(func() { _ = n.nftDeleteManagedTable(context.Background()) })
 
 	ctx := context.Background()
 	rule := Rule{ID: "test-ssh", Allow: true, Protocol: ProtocolTCP, Port: 22}
 
-	if err := applyNftables(ctx, nftTestNamespace, rule); err != nil {
-		t.Fatalf("applyNftables: %v", err)
+	if err := n.ApplyRule(ctx, rule); err != nil {
+		t.Fatalf("ApplyRule: %v", err)
 	}
-	rules, err := listNftables(ctx, nftTestNamespace)
+	rules, err := n.List(ctx)
 	if err != nil {
-		t.Fatalf("listNftables: %v", err)
+		t.Fatalf("List: %v", err)
 	}
 	if len(rules) != 1 || rules[0].ID != "test-ssh" {
-		t.Fatalf("listNftables = %+v; want [{ID:test-ssh ...}]", rules)
+		t.Fatalf("List = %+v; want [{ID:test-ssh ...}]", rules)
 	}
-	if err := removeNftables(ctx, nftTestNamespace, "test-ssh"); err != nil {
-		t.Fatalf("removeNftables: %v", err)
+	if err := n.RemoveRule(ctx, "test-ssh"); err != nil {
+		t.Fatalf("RemoveRule: %v", err)
 	}
-	rules, _ = listNftables(ctx, nftTestNamespace)
+	rules, _ = n.List(ctx)
 	if len(rules) != 0 {
-		t.Fatalf("after remove: listNftables = %+v; want empty", rules)
+		t.Fatalf("after remove: List = %+v; want empty", rules)
 	}
 }
 
 func TestNftablesIntegration_ApplyIsIdempotent(t *testing.T) {
 	skipIfNotNftablesUsable(t)
-	t.Cleanup(func() { _ = nftDeleteManagedTable(context.Background(), nftTestNamespace) })
+	n := nftIntegrationBackend(t)
+	t.Cleanup(func() { _ = n.nftDeleteManagedTable(context.Background()) })
 
 	ctx := context.Background()
 	rule := Rule{ID: "idemp", Allow: true, Protocol: ProtocolTCP, Port: 8080}
 	for i := 0; i < 3; i++ {
-		if err := applyNftables(ctx, nftTestNamespace, rule); err != nil {
-			t.Fatalf("applyNftables #%d: %v", i, err)
+		if err := n.ApplyRule(ctx, rule); err != nil {
+			t.Fatalf("ApplyRule #%d: %v", i, err)
 		}
 	}
-	rules, _ := listNftables(ctx, nftTestNamespace)
+	rules, _ := n.List(ctx)
 	if len(rules) != 1 {
 		t.Fatalf("after 3 applies: rules = %+v; want exactly 1", rules)
 	}
@@ -336,9 +352,10 @@ func TestNftablesIntegration_ApplyIsIdempotent(t *testing.T) {
 
 func TestNftablesIntegration_RemoveOnMissingIsNoOp(t *testing.T) {
 	skipIfNotNftablesUsable(t)
-	t.Cleanup(func() { _ = nftDeleteManagedTable(context.Background(), nftTestNamespace) })
+	n := nftIntegrationBackend(t)
+	t.Cleanup(func() { _ = n.nftDeleteManagedTable(context.Background()) })
 
-	if err := removeNftables(context.Background(), nftTestNamespace, "never-applied"); err != nil {
-		t.Fatalf("removeNftables(missing) = %v; want nil", err)
+	if err := n.RemoveRule(context.Background(), "never-applied"); err != nil {
+		t.Fatalf("RemoveRule(missing) = %v; want nil", err)
 	}
 }

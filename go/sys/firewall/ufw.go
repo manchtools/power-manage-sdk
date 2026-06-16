@@ -6,9 +6,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
+
+// ufw is the ufw(8)-backed Manager. Every Apply/Remove/List goes through the ufw
+// CLI (escalated via the injected Runner) because ufw expects to be the
+// authoritative manager — raw nft rules behind its back get blown away on reload.
+type ufw struct {
+	base
+}
+
+var _ Manager = (*ufw)(nil)
 
 // ufw backend. ufw is Debian/Ubuntu's userspace wrapper over
 // nftables/iptables. Like firewalld it expects to be the authoritative
@@ -41,71 +48,78 @@ func ufwCommentIdentity(namespace, id string) string {
 	return namespace + ":" + id
 }
 
-func applyUFW(ctx context.Context, namespace string, rule Rule) error {
-	if err := ufwValidateRule(rule); err != nil {
+// ApplyRule installs or updates rule. Any previous variant with the same ID is
+// deleted first so the final ruleset has exactly one rule per ID.
+func (u *ufw) ApplyRule(ctx context.Context, rule Rule) error {
+	if err := validateRule(rule); err != nil {
 		return err
 	}
-	// Best-effort find-and-delete the previous rule by id. We do this
-	// before the add so the final ruleset has exactly one rule per
-	// id — re-adding without delete would let stale variants
-	// accumulate.
-	if status, err := ufwStatusNumbered(ctx); err == nil {
-		if num, ok := ufwFindRuleNumber(status, namespace, rule.ID); ok {
-			if err := ufwDeleteByNumber(ctx, num); err != nil {
+	// Build (and ufw-scope-validate) the add args first, so an out-of-scope rule
+	// is rejected before any exec — ufwBuildAddArgs is the single source of the
+	// ufw scope check.
+	args, err := ufwBuildAddArgs(u.ns, rule)
+	if err != nil {
+		return err
+	}
+	// Best-effort find-and-delete the previous rule by id before the add —
+	// re-adding without delete would let stale variants accumulate.
+	if status, err := u.ufwStatusNumbered(ctx); err == nil {
+		if num, ok := ufwFindRuleNumber(status, u.ns, rule.ID); ok {
+			if err := u.ufwDeleteByNumber(ctx, num); err != nil {
 				return fmt.Errorf("ufw delete existing rule %d: %w", num, err)
 			}
 		}
 	}
-	args, err := ufwBuildAddArgs(namespace, rule)
-	if err != nil {
-		return err
-	}
-	if _, err := sysexec.Privileged(ctx, "ufw", args...); err != nil {
+	if _, err := u.run(ctx, "ufw", args...); err != nil {
 		return fmt.Errorf("ufw %s: %w", strings.Join(args, " "), err)
 	}
 	return nil
 }
 
-func removeUFW(ctx context.Context, namespace, id string) error {
-	status, err := ufwStatusNumbered(ctx)
+// RemoveRule deletes the rule with the given ID; an inactive ufw or a missing
+// rule is a no-op.
+func (u *ufw) RemoveRule(ctx context.Context, id string) error {
+	if err := validateRuleID(id); err != nil {
+		return err
+	}
+	status, err := u.ufwStatusNumbered(ctx)
 	if err != nil {
-		// No status (likely ufw inactive) → no rule to remove. Matches
-		// the idempotency contract: "this rule is absent" already holds.
+		// No status (likely ufw inactive) → no rule to remove. Matches the
+		// idempotency contract: "this rule is absent" already holds.
 		return nil
 	}
-	num, ok := ufwFindRuleNumber(status, namespace, id)
+	num, ok := ufwFindRuleNumber(status, u.ns, id)
 	if !ok {
 		return nil
 	}
-	return ufwDeleteByNumber(ctx, num)
+	return u.ufwDeleteByNumber(ctx, num)
 }
 
-func listUFW(ctx context.Context, namespace string) ([]Rule, error) {
-	status, err := ufwStatusNumbered(ctx)
+// List returns every managed rule (comment prefix `<namespace>:`).
+func (u *ufw) List(ctx context.Context) ([]Rule, error) {
+	status, err := u.ufwStatusNumbered(ctx)
 	if err != nil {
 		// ufw not active → no managed rules.
 		return nil, nil
 	}
-	return ufwParseStatus(status, namespace)
+	return ufwParseStatus(status, u.ns)
 }
 
-// ufwStatusNumbered runs `ufw status numbered` and returns its stdout.
-// Goes through Privileged because ufw insists on root for status, even
-// though the underlying kernel state is world-readable.
-func ufwStatusNumbered(ctx context.Context) (string, error) {
-	res, err := sysexec.Privileged(ctx, "ufw", "status", "numbered")
+// ufwStatusNumbered runs `ufw status numbered` and returns its stdout. Escalated
+// because ufw insists on root for status even though the kernel state is
+// world-readable.
+func (u *ufw) ufwStatusNumbered(ctx context.Context) (string, error) {
+	res, err := u.run(ctx, "ufw", "status", "numbered")
 	if err != nil {
 		return "", fmt.Errorf("ufw status numbered: %w", err)
 	}
 	return res.Stdout, nil
 }
 
-// ufwDeleteByNumber issues `ufw --force delete N`. The --force flag
-// suppresses the "are you sure? (y/n)" prompt that would otherwise hang
-// the call.
-func ufwDeleteByNumber(ctx context.Context, num int) error {
-	_, err := sysexec.Privileged(ctx, "ufw", "--force", "delete", strconv.Itoa(num))
-	if err != nil {
+// ufwDeleteByNumber issues `ufw --force delete N`. --force suppresses the
+// "are you sure? (y/n)" prompt that would otherwise hang the call.
+func (u *ufw) ufwDeleteByNumber(ctx context.Context, num int) error {
+	if _, err := u.run(ctx, "ufw", "--force", "delete", strconv.Itoa(num)); err != nil {
 		return fmt.Errorf("ufw --force delete %d: %w", num, err)
 	}
 	return nil

@@ -7,10 +7,15 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
-	sysfs "github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
+
+// firewalld is the firewall-cmd-backed Manager. Every mutating call is escalated
+// through the injected Runner; service XML is written via the fs seams.
+type firewalld struct {
+	base
+}
+
+var _ Manager = (*firewalld)(nil)
 
 // firewalld backend. Each Rule is materialised as a single custom
 // firewalld service definition (XML at /etc/firewalld/services/<ns>-<id>.xml)
@@ -40,51 +45,56 @@ func firewalldServiceName(namespace, id string) string {
 	return namespace + "-" + id
 }
 
-// applyFirewalld installs or updates rule. Writes the service XML,
-// reloads firewalld so the new definition is recognised, and adds it
-// to the default zone (no-op if already present).
-func applyFirewalld(ctx context.Context, namespace string, rule Rule) error {
+// ApplyRule installs or updates rule. Writes the service XML, reloads firewalld
+// so the new definition is recognised, and adds it to the default zone (no-op if
+// already present).
+func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
+	if err := validateRule(rule); err != nil {
+		return err
+	}
 	if err := firewalldValidateRule(rule); err != nil {
 		return err
 	}
-	zone, err := firewalldDefaultZone(ctx)
+	zone, err := f.firewalldDefaultZone(ctx)
 	if err != nil {
 		return err
 	}
-	svc := firewalldServiceName(namespace, rule.ID)
-	xml := firewalldServiceXML(namespace, rule)
+	svc := firewalldServiceName(f.ns, rule.ID)
+	xml := firewalldServiceXML(f.ns, rule)
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
-	if err := sysfs.WriteFileAtomic(ctx, path, xml, "0644", "root", "root"); err != nil {
+	if err := writeFileAtomic(ctx, path, xml, "0644", "root", "root"); err != nil {
 		return fmt.Errorf("write service xml %s: %w", path, err)
 	}
 	// Reload so the new service definition is parsed. Without this,
 	// --add-service rejects the name.
-	if _, err := sysexec.Privileged(ctx, "firewall-cmd", "--reload"); err != nil {
+	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
 		return fmt.Errorf("firewall-cmd --reload: %w", err)
 	}
 	// --permanent so the change survives reboot; --add-service is
 	// idempotent at the API level (no-op when already enabled).
-	if _, err := sysexec.Privileged(ctx, "firewall-cmd",
+	if _, err := f.run(ctx, "firewall-cmd",
 		"--permanent", "--zone="+zone, "--add-service="+svc,
 	); err != nil {
 		return fmt.Errorf("firewall-cmd add-service: %w", err)
 	}
 	// Final reload so the runtime config matches permanent.
-	if _, err := sysexec.Privileged(ctx, "firewall-cmd", "--reload"); err != nil {
+	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
 		return fmt.Errorf("firewall-cmd --reload (post-enable): %w", err)
 	}
 	return nil
 }
 
-// removeFirewalld disables the service in the default zone and deletes
-// its XML file. Missing services / files are no-ops, matching the
-// idempotency contract.
-func removeFirewalld(ctx context.Context, namespace, id string) error {
-	zone, err := firewalldDefaultZone(ctx)
+// RemoveRule disables the service in the default zone and deletes its XML file.
+// Missing services / files are no-ops, matching the idempotency contract.
+func (f *firewalld) RemoveRule(ctx context.Context, id string) error {
+	if err := validateRuleID(id); err != nil {
+		return err
+	}
+	zone, err := f.firewalldDefaultZone(ctx)
 	if err != nil {
 		return err
 	}
-	svc := firewalldServiceName(namespace, id)
+	svc := firewalldServiceName(f.ns, id)
 
 	// List services first so we can tell "service isn't enabled
 	// (legitimate idempotency no-op)" apart from "firewall-cmd failed
@@ -93,67 +103,67 @@ func removeFirewalld(ctx context.Context, namespace, id string) error {
 	// would swallow real failures and return success while the rule
 	// is still enabled. String-matching the error message would work
 	// but is fragile across firewalld versions and locales.
-	enabled, err := firewalldServiceIsEnabled(ctx, zone, svc)
+	enabled, err := f.firewalldServiceIsEnabled(ctx, zone, svc)
 	if err != nil {
 		return fmt.Errorf("firewall-cmd list-services: %w", err)
 	}
 	if enabled {
-		if _, err := sysexec.Privileged(ctx, "firewall-cmd",
+		if _, err := f.run(ctx, "firewall-cmd",
 			"--permanent", "--zone="+zone, "--remove-service="+svc,
 		); err != nil {
 			return fmt.Errorf("firewall-cmd --remove-service: %w", err)
 		}
 	}
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
-	if err := sysfs.RemoveStrict(ctx, path); err != nil && !os.IsNotExist(err) {
+	if err := removeStrict(ctx, path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("remove %s: %w", path, err)
 	}
-	if _, err := sysexec.Privileged(ctx, "firewall-cmd", "--reload"); err != nil {
+	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
 		return fmt.Errorf("firewall-cmd --reload: %w", err)
 	}
 	return nil
 }
 
-// firewalldServiceIsEnabled reports whether svc is currently in the
-// permanent service list for zone. Pre-check before --remove-service
-// so removeFirewalld can distinguish idempotency no-ops from real
-// failures without parsing error messages.
-func firewalldServiceIsEnabled(ctx context.Context, zone, svc string) (bool, error) {
-	res, err := sysexec.Privileged(ctx, "firewall-cmd",
+// firewalldServiceIsEnabled reports whether svc is currently in the permanent
+// service list for zone. Pre-check before --remove-service so RemoveRule can
+// distinguish idempotency no-ops from real failures without parsing error
+// messages.
+func (f *firewalld) firewalldServiceIsEnabled(ctx context.Context, zone, svc string) (bool, error) {
+	res, err := f.run(ctx, "firewall-cmd",
 		"--permanent", "--zone="+zone, "--list-services",
 	)
 	if err != nil {
 		return false, err
 	}
-	for _, f := range strings.Fields(res.Stdout) {
-		if f == svc {
+	for _, field := range strings.Fields(res.Stdout) {
+		if field == svc {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-// listFirewalld returns every managed service enabled in the default
-// zone whose name starts with `<namespace>-`, reconstructed into Rule
-// structs by reading each service's XML body.
-func listFirewalld(ctx context.Context, namespace string) ([]Rule, error) {
-	zone, err := firewalldDefaultZone(ctx)
+// List returns every managed service enabled in the default zone whose name
+// starts with `<namespace>-`, reconstructed into Rule structs by reading each
+// service's XML body.
+func (f *firewalld) List(ctx context.Context) ([]Rule, error) {
+	zone, err := f.firewalldDefaultZone(ctx)
 	if err != nil {
 		return nil, err
 	}
-	res, err := sysexec.Privileged(ctx, "firewall-cmd",
+	res, err := f.run(ctx, "firewall-cmd",
 		"--permanent", "--zone="+zone, "--list-services",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("firewall-cmd list-services: %w", err)
 	}
-	ids := firewalldFilterNamespaceServices(res.Stdout, namespace)
+	ids := firewalldFilterNamespaceServices(res.Stdout, f.ns)
 	rules := make([]Rule, 0, len(ids))
 	for _, id := range ids {
-		rule, ok := firewalldReadServiceRule(namespace, id)
+		rule, ok := firewalldReadServiceRule(f.ns, id)
 		if !ok {
-			// Service is enabled but its XML disappeared (operator
-			// deleted by hand) — skip rather than fail the whole List.
+			// Service is enabled but its XML disappeared (operator deleted by
+			// hand) — skip rather than fail the whole List.
 			continue
 		}
 		rules = append(rules, rule)
@@ -223,7 +233,7 @@ func firewalldFilterNamespaceServices(out, namespace string) []string {
 // the XML doesn't look like one we wrote.
 func firewalldReadServiceRule(namespace, id string) (Rule, bool) {
 	path := filepath.Join(firewalldServicesDir, firewalldServiceName(namespace, id)+".xml")
-	body, err := os.ReadFile(path) //nolint:gosec // path constructed from a validated namespace + id.
+	body, err := readFile(path) //nolint:gosec // path constructed from a validated namespace + id.
 	if err != nil {
 		return Rule{}, false
 	}
@@ -257,8 +267,8 @@ func firewalldReadServiceRule(namespace, id string) (Rule, bool) {
 // zone. Caches nothing — `--get-default-zone` is a cheap call and
 // operators changing the default zone at runtime should see the new
 // answer on the next Apply.
-func firewalldDefaultZone(ctx context.Context) (string, error) {
-	res, err := sysexec.Privileged(ctx, "firewall-cmd", "--get-default-zone")
+func (f *firewalld) firewalldDefaultZone(ctx context.Context) (string, error) {
+	res, err := f.run(ctx, "firewall-cmd", "--get-default-zone")
 	if err != nil {
 		return "", fmt.Errorf("firewall-cmd --get-default-zone: %w", err)
 	}

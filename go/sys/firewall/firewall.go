@@ -7,53 +7,66 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	osexec "os/exec"
 	"regexp"
-	"sync/atomic"
+	"strings"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// Backend identifies which packet-filter framework the SDK targets.
+// Backend selects the packet-filter framework the SDK targets. Passed explicitly
+// to New; the zero value is invalid (New → ErrUnknownBackend). The
+// never-implemented iptables/pf scaffolds are not ported; a real fourth backend
+// is appended here when actually written.
 type Backend int
 
 const (
-	// BackendNftables is Linux nftables via nft(8). Default — the modern
-	// Linux firewall framework that iptables is migrating toward.
-	BackendNftables Backend = 0
-	// BackendIptables is Linux iptables (iptables-legacy or iptables-nft).
-	BackendIptables Backend = 1
-	// BackendFirewalld is the firewalld wrapper common on Red Hat family.
-	BackendFirewalld Backend = 2
-	// BackendUFW is Debian/Ubuntu's ufw wrapper.
-	BackendUFW Backend = 3
-	// BackendPF is the BSD packet filter.
-	BackendPF Backend = 4
+	// Nftables is Linux nftables via nft(8) — the modern framework iptables is
+	// migrating toward. Each Manager owns a dedicated `inet <namespace>_filter`
+	// table.
+	Nftables Backend = iota + 1
+	// Firewalld wraps firewall-cmd (Red Hat family). Each rule becomes a custom
+	// service in the default zone. v1 scope: allow-only, concrete tcp/udp, port.
+	Firewalld
+	// UFW wraps ufw(8) (Debian/Ubuntu). Identity is the native comment field.
+	UFW
 )
 
-// ErrBackendNotSupported is returned when a caller invokes an operation
-// on a backend that has no concrete implementation yet.
-var ErrBackendNotSupported = errors.New("firewall backend not supported")
+// String renders the backend as its canonical tool name.
+func (b Backend) String() string {
+	switch b {
+	case Nftables:
+		return "nftables"
+	case Firewalld:
+		return "firewalld"
+	case UFW:
+		return "ufw"
+	default:
+		return fmt.Sprintf("unknown(%d)", int(b))
+	}
+}
 
-// ErrInvalidRule is returned by Manager methods when the Rule fails
-// backend-independent validation — most often a Rule.ID that doesn't
-// match the safe-identifier regex.
+// ErrUnknownBackend is returned by New for the zero value or any Backend the SDK
+// does not implement (fail-closed).
+var ErrUnknownBackend = errors.New("firewall: unknown backend")
+
+// ErrInvalidRule is returned by Manager methods when a Rule fails validation —
+// the backend-independent checks (ID/port/protocol/addr) or a backend-specific
+// scope limit (e.g. a deny rule on the firewalld v1 backend).
 var ErrInvalidRule = errors.New("invalid firewall rule")
 
-// ErrInvalidNamespace is returned by New when the caller-supplied
-// namespace doesn't match the safe-identifier regex.
+// ErrInvalidNamespace is returned by New when the namespace fails validation.
 var ErrInvalidNamespace = errors.New("invalid firewall namespace")
 
-// namespaceRE constrains the per-Manager namespace to a backend-safe
-// subset: lowercase letter start, then lowercase/digit/underscore. No
-// hyphens, no colons — those are reserved as separators when the
-// namespace is composed with a Rule.ID into a backend identity string
-// (e.g. nft table names disallow hyphens in some grammars; reserving
-// the separator keeps parsing unambiguous everywhere).
+// namespaceRE constrains the per-Manager namespace to a backend-safe subset:
+// lowercase letter start, then lowercase/digit/underscore. No hyphens or colons
+// — those are reserved as separators when the namespace is composed with a
+// Rule.ID into a backend identity string.
 var namespaceRE = regexp.MustCompile(`^[a-z][a-z0-9_]{0,30}$`)
 
-// ruleIDRE constrains Rule.ID to a backend-safe subset. Lowercase
-// alphanum start, then lowercase/digit/hyphen/underscore. Hyphens are
-// allowed inside an ID (callers commonly compose IDs from an
-// action-style ULID plus a suffix like "-allow-22"), but the leading
-// char excludes hyphen so a stray ID can't look like a CLI flag.
+// ruleIDRE constrains Rule.ID to a backend-safe subset. Hyphens are allowed
+// inside an ID (callers compose IDs from a ULID plus a suffix like "-allow-22"),
+// but the leading char excludes hyphen so a stray ID can't look like a CLI flag.
 var ruleIDRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)
 
 func validateNamespace(ns string) error {
@@ -76,10 +89,9 @@ func validateRuleID(id string) error {
 	return nil
 }
 
-// validatePort enforces 0 ≤ port ≤ 65535. Port 0 is the "any port"
-// sentinel; any negative or out-of-range value is rejected here so
-// every backend gets the same reply (audit finding #12 called out
-// missing port-range validation as a backend-parity gap).
+// validatePort enforces 0 ≤ port ≤ 65535. Port 0 is the "any port" sentinel; any
+// negative or out-of-range value is rejected here so every backend gets the same
+// reply.
 func validatePort(port int) error {
 	if port < 0 || port > 65535 {
 		return fmt.Errorf("%w: port %d outside valid TCP/UDP range 0..65535", ErrInvalidRule, port)
@@ -87,10 +99,8 @@ func validatePort(port int) error {
 	return nil
 }
 
-// validateProtocol restricts Protocol to the SDK's three canonical
-// values. Anything else (a typo, a future protocol not yet wired)
-// is refused here so the backend dispatch only ever sees one of the
-// expected three.
+// validateProtocol restricts Protocol to the SDK's three canonical values so the
+// backend dispatch only ever sees one of the expected three.
 func validateProtocol(p Protocol) error {
 	switch p {
 	case ProtocolTCP, ProtocolUDP, ProtocolAny:
@@ -101,9 +111,9 @@ func validateProtocol(p Protocol) error {
 	}
 }
 
-// validateAddr accepts an empty string (the "any address" sentinel),
-// a bare IP literal (v4 or v6), or a CIDR. Anything else — including
-// hostnames, garbage, and shell-shape strings — is refused.
+// validateAddr accepts an empty string (the "any address" sentinel), a bare IP
+// literal (v4 or v6), or a CIDR. Anything else — hostnames, garbage,
+// shell-shape strings — is refused.
 func validateAddr(field, addr string) error {
 	if addr == "" {
 		return nil
@@ -117,15 +127,11 @@ func validateAddr(field, addr string) error {
 	return fmt.Errorf("%w: %s %q is not a valid IP address or CIDR", ErrInvalidRule, field, addr)
 }
 
-// validateRule runs every backend-independent invariant a Rule must
-// satisfy before dispatch. Called once at the top of ApplyRule so all
-// three backends inherit the same rejection contract — backend-parity
-// of inputs was the headline of audit finding #12.
-//
-// Backend-specific rejections (firewalld's "no source scopes in the v1
-// rich rule generator", nft's "port without protocol", etc.) layer on
-// top of this; they fire in the backend's own validator after this one
-// passes.
+// validateRule runs every backend-independent invariant a Rule must satisfy
+// before dispatch. Called at the top of every backend's ApplyRule so all three
+// inherit the same rejection contract. Backend-specific rejections (firewalld's
+// allow-only scope, nft's "port without protocol") layer on top in the backend's
+// own validator.
 func validateRule(rule Rule) error {
 	if err := validateRuleID(rule.ID); err != nil {
 		return err
@@ -145,50 +151,6 @@ func validateRule(rule Rule) error {
 	return nil
 }
 
-var backend atomic.Int32
-
-// SetBackend selects the active backend for every Manager in the
-// process. Call once at startup. Backend selection is host-level (a
-// single host runs at most one active packet-filter manager), so the
-// atomic process-wide variable matches the deployment reality even
-// though namespacing is per-Manager.
-//
-// Unknown values are ignored so a zero-valued Backend enum cannot
-// silently regress an explicitly-set backend.
-func SetBackend(b Backend) {
-	switch b {
-	case BackendNftables, BackendIptables, BackendFirewalld, BackendUFW, BackendPF:
-		backend.Store(int32(b))
-	}
-}
-
-// CurrentBackend returns the active backend.
-func CurrentBackend() Backend {
-	return Backend(backend.Load())
-}
-
-// String renders the backend as its canonical tool name.
-func (b Backend) String() string {
-	switch b {
-	case BackendNftables:
-		return "nftables"
-	case BackendIptables:
-		return "iptables"
-	case BackendFirewalld:
-		return "firewalld"
-	case BackendUFW:
-		return "ufw"
-	case BackendPF:
-		return "pf"
-	default:
-		return fmt.Sprintf("unknown(%d)", int(b))
-	}
-}
-
-func unsupported(op string) error {
-	return fmt.Errorf("%w: %s on backend %s", ErrBackendNotSupported, op, CurrentBackend())
-}
-
 // Protocol names a network protocol for rule matching.
 type Protocol string
 
@@ -198,124 +160,132 @@ const (
 	ProtocolAny Protocol = ""
 )
 
-// Rule describes a single allow-or-deny decision. The cross-backend
-// surface stays intentionally minimal — implementations translate it
-// into the backend's native grammar (chains + priorities for nft,
-// zones + services for firewalld, numbered rules for ufw).
+// Rule describes a single allow-or-deny decision. The cross-backend surface
+// stays intentionally minimal — implementations translate it into the backend's
+// native grammar (chains + priorities for nft, zones + services for firewalld,
+// numbered rules for ufw).
 //
-// Idempotency: ID is the key every backend uses to find a previously
-// installed rule. Manager.ApplyRule with an existing ID updates the
-// rule in place; Manager.RemoveRule on a missing ID is a no-op. ID is
-// opaque to the SDK — pick whatever scheme fits the application
-// (a ULID, a UUID, a hierarchical path, a hash). The on-host identity
-// stored by every backend is derived from the Manager's namespace plus
-// this ID, so two Managers with different namespaces will never see
-// each other's rules even if they choose the same ID.
+// Idempotency: ID is the key every backend uses to find a previously installed
+// rule. ApplyRule with an existing ID updates the rule in place; RemoveRule on a
+// missing ID is a no-op. ID is opaque to the SDK — pick whatever scheme fits
+// (a ULID, a UUID, a path, a hash). The on-host identity stored by every backend
+// is derived from the Manager's namespace plus this ID, so two Managers with
+// different namespaces never see each other's rules even with the same ID.
 //
-// ID must match `^[a-z0-9][a-z0-9_-]{0,62}$` so it round-trips through
-// nft comments, firewalld service names, and ufw comments without
-// per-backend escaping.
+// ID must match `^[a-z0-9][a-z0-9_-]{0,62}$` so it round-trips through nft
+// comments, firewalld service names, and ufw comments without per-backend
+// escaping.
 type Rule struct {
-	ID       string   // Stable, namespace-scoped identifier.
-	Allow    bool     // true = allow, false = deny.
-	Protocol Protocol // tcp / udp / "" (any).
-	Port     int      // 0 = any.
-	Source   string   // IPv4/IPv6 CIDR or address; empty = any.
-	Dest     string   // IPv4/IPv6 CIDR or address; empty = any.
+	ID       string   // stable, namespace-scoped identifier
+	Allow    bool     // true = allow, false = deny
+	Protocol Protocol // tcp / udp / "" (any)
+	Port     int      // 0 = any
+	Source   string   // IPv4/IPv6 CIDR or address; empty = any
+	Dest     string   // IPv4/IPv6 CIDR or address; empty = any
 }
 
-// Manager owns a namespaced set of firewall rules. Two Managers with
-// different namespaces are isolated: each one's List, ApplyRule, and
-// RemoveRule only see and touch rules in its own namespace. Other rules
-// on the host (system-installed, operator-added, or owned by a different
-// caller) stay invisible and untouched.
-//
-// Manager is safe for concurrent use by multiple goroutines; the
-// underlying CLI tools (nft, firewall-cmd, ufw) are themselves not
-// guaranteed reentrant, so simultaneous mutations from many goroutines
-// may serialise inside the OS.
-type Manager struct {
-	namespace string
+// Manager owns a namespaced set of firewall rules. Two Managers with different
+// namespaces are isolated: each one's List, ApplyRule, and RemoveRule only see
+// and touch rules in its own namespace. Other rules on the host (system,
+// operator-added, or owned by a different caller) stay invisible and untouched.
+type Manager interface {
+	// ApplyRule installs or updates a rule (idempotent by Rule.ID). Returns
+	// ErrInvalidRule for a rule the active backend can't express.
+	ApplyRule(ctx context.Context, rule Rule) error
+	// RemoveRule removes a rule by ID; a missing rule is a no-op.
+	RemoveRule(ctx context.Context, id string) error
+	// List returns every rule this Manager owns (namespace-scoped).
+	List(ctx context.Context) ([]Rule, error)
+	// Namespace returns the namespace this Manager was constructed with.
+	Namespace() string
 }
 
-// New constructs a Manager for the given namespace. The namespace
-// scopes List, ApplyRule, and RemoveRule, and is also used as the
-// prefix for every rule's on-host identity (e.g. nft owns a dedicated
-// table named `<namespace>_filter`; firewalld services are named
-// `<namespace>-<rule.ID>`; ufw comments are `<namespace>:<rule.ID>`).
+// Option is the functional-option type for backend-specific knobs (none today).
+type Option func(*base)
+
+// New constructs a Manager for the given backend and namespace, driven by runner.
+// Pure: it validates inputs and does not probe the host (use Detect). The zero /
+// unimplemented backend is rejected with ErrUnknownBackend, a bad namespace with
+// ErrInvalidNamespace, and a nil runner with an error.
 //
-// namespace must match `^[a-z][a-z0-9_]{0,30}$`. The 31-char cap and
-// the 63-char Rule.ID cap together leave room for the separators every
-// backend needs (the nft table-name grammar, the firewalld service-name
-// grammar, the 128-byte nft comment field).
-func New(namespace string) (*Manager, error) {
+// namespace must match `^[a-z][a-z0-9_]{0,30}$`. The 31-char cap and the 63-char
+// Rule.ID cap together leave room for the separators every backend needs.
+func New(b Backend, namespace string, runner exec.Runner, _ ...Option) (Manager, error) {
 	if err := validateNamespace(namespace); err != nil {
 		return nil, err
 	}
-	return &Manager{namespace: namespace}, nil
+	if runner == nil {
+		return nil, fmt.Errorf("firewall: runner is required")
+	}
+	base := base{ns: namespace, cmd: cmd{r: runner}}
+	switch b {
+	case Nftables:
+		return &nftables{base: base}, nil
+	case Firewalld:
+		return &firewalld{base: base}, nil
+	case UFW:
+		return &ufw{base: base}, nil
+	default:
+		return nil, fmt.Errorf("%w: %d", ErrUnknownBackend, int(b))
+	}
+}
+
+// lookPath is a package-var seam so Detect is deterministically testable.
+var lookPath = osexec.LookPath
+
+// Detect reports the firewall backends usable on THIS host: Nftables when nft is
+// on PATH, Firewalld when firewall-cmd is, UFW when ufw is. It lists; it never
+// picks and never constructs a Manager. An empty slice means no usable manager.
+//
+// The ctx is accepted for signature uniformity with the other capability Detect
+// functions; the present probe is a pure PATH lookup.
+func Detect(ctx context.Context) []Backend {
+	_ = ctx
+	var out []Backend
+	if _, err := lookPath("nft"); err == nil {
+		out = append(out, Nftables)
+	}
+	if _, err := lookPath("firewall-cmd"); err == nil {
+		out = append(out, Firewalld)
+	}
+	if _, err := lookPath("ufw"); err == nil {
+		out = append(out, UFW)
+	}
+	return out
+}
+
+// cmd carries the injected Runner and maps a non-zero exit (or a failure to
+// execute) into an error — the backends rely on "err != nil ⇒ the tool failed",
+// which the old exec.Privileged provided and the new Runner (exit in Result)
+// does not.
+type cmd struct {
+	r exec.Runner
+}
+
+func (c cmd) run(ctx context.Context, name string, args ...string) (exec.Result, error) {
+	return c.exec(ctx, exec.Command{Name: name, Args: args, Escalate: true})
+}
+
+func (c cmd) runStdin(ctx context.Context, stdin, name string, args ...string) (exec.Result, error) {
+	return c.exec(ctx, exec.Command{Name: name, Args: args, Stdin: strings.NewReader(stdin), Escalate: true})
+}
+
+func (c cmd) exec(ctx context.Context, spec exec.Command) (exec.Result, error) {
+	res, err := c.r.Run(ctx, spec)
+	if err != nil {
+		return res, err
+	}
+	if res.ExitCode != 0 {
+		return res, &exec.CommandError{Name: spec.Name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+	}
+	return res, nil
+}
+
+// base is embedded by each backend: the namespace plus the command runner.
+type base struct {
+	ns string
+	cmd
 }
 
 // Namespace returns the namespace this Manager was constructed with.
-// Read-only; immutable for the lifetime of the Manager.
-func (m *Manager) Namespace() string { return m.namespace }
-
-// ApplyRule installs or updates a rule. Identified by Rule.ID so
-// reapplying the same rule is idempotent — backends find the previous
-// rule by ID and update it in place. Returns ErrInvalidRule for IDs
-// that fail validation and ErrBackendNotSupported when the active
-// backend has no implementation.
-func (m *Manager) ApplyRule(ctx context.Context, rule Rule) error {
-	if err := validateRule(rule); err != nil {
-		return err
-	}
-	switch CurrentBackend() {
-	case BackendNftables:
-		return applyNftables(ctx, m.namespace, rule)
-	case BackendFirewalld:
-		return applyFirewalld(ctx, m.namespace, rule)
-	case BackendUFW:
-		return applyUFW(ctx, m.namespace, rule)
-	default:
-		return unsupported("ApplyRule")
-	}
-}
-
-// RemoveRule removes a rule by ID. Missing rules are a no-op (the
-// post-condition "this rule is absent" already holds). Validates the
-// ID with the same regex as ApplyRule so a caller can't smuggle
-// backend-grammar-breaking input through the inverse path.
-func (m *Manager) RemoveRule(ctx context.Context, id string) error {
-	if err := validateRuleID(id); err != nil {
-		return err
-	}
-	switch CurrentBackend() {
-	case BackendNftables:
-		return removeNftables(ctx, m.namespace, id)
-	case BackendFirewalld:
-		return removeFirewalld(ctx, m.namespace, id)
-	case BackendUFW:
-		return removeUFW(ctx, m.namespace, id)
-	default:
-		return unsupported("RemoveRule")
-	}
-}
-
-// List returns every rule the Manager currently owns. Rules outside
-// this Manager's namespace (system-installed, owned by a different
-// Manager, operator-added) are not returned — the inspection surface
-// stays scoped to what this caller actually owns, so callers can't
-// accidentally mutate rules they didn't install.
-//
-// Order is not guaranteed across calls; sort if you need stability.
-func (m *Manager) List(ctx context.Context) ([]Rule, error) {
-	switch CurrentBackend() {
-	case BackendNftables:
-		return listNftables(ctx, m.namespace)
-	case BackendFirewalld:
-		return listFirewalld(ctx, m.namespace)
-	case BackendUFW:
-		return listUFW(ctx, m.namespace)
-	default:
-		return nil, unsupported("List")
-	}
-}
+func (b base) Namespace() string { return b.ns }

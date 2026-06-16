@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 const ufwTestNamespace = "fwtest"
@@ -247,18 +249,28 @@ func assertArgsEqual(t *testing.T, got, want []string) {
 // its own rules so subsequent runs start fresh.
 // =============================================================================
 
+func ufwIntegrationManager(t *testing.T) Manager {
+	t.Helper()
+	r, err := exec.NewRunner(exec.Direct) // skip guard guarantees we are root
+	if err != nil {
+		t.Fatalf("NewRunner: %v", err)
+	}
+	return newMgr(t, UFW, ufwTestNamespace, r)
+}
+
 func TestUFWIntegration_ApplyListRemoveCycle(t *testing.T) {
 	skipIfNotUFWUsable(t)
 	ctx := context.Background()
+	m := ufwIntegrationManager(t)
 	rule := Rule{ID: "test-rule", Allow: true, Protocol: ProtocolTCP, Port: 12345}
-	t.Cleanup(func() { _ = removeUFW(ctx, ufwTestNamespace, rule.ID) })
+	t.Cleanup(func() { _ = m.RemoveRule(ctx, rule.ID) })
 
-	if err := applyUFW(ctx, ufwTestNamespace, rule); err != nil {
-		t.Fatalf("applyUFW: %v", err)
+	if err := m.ApplyRule(ctx, rule); err != nil {
+		t.Fatalf("ApplyRule: %v", err)
 	}
-	rules, err := listUFW(ctx, ufwTestNamespace)
+	rules, err := m.List(ctx)
 	if err != nil {
-		t.Fatalf("listUFW: %v", err)
+		t.Fatalf("List: %v", err)
 	}
 	found := false
 	for _, r := range rules {
@@ -269,23 +281,24 @@ func TestUFWIntegration_ApplyListRemoveCycle(t *testing.T) {
 	if !found {
 		t.Fatalf("applied rule not visible in List: %+v", rules)
 	}
-	if err := removeUFW(ctx, ufwTestNamespace, rule.ID); err != nil {
-		t.Fatalf("removeUFW: %v", err)
+	if err := m.RemoveRule(ctx, rule.ID); err != nil {
+		t.Fatalf("RemoveRule: %v", err)
 	}
 }
 
 func TestUFWIntegration_ApplyIsIdempotent(t *testing.T) {
 	skipIfNotUFWUsable(t)
 	ctx := context.Background()
+	m := ufwIntegrationManager(t)
 	rule := Rule{ID: "idemp", Allow: true, Protocol: ProtocolTCP, Port: 12346}
-	t.Cleanup(func() { _ = removeUFW(ctx, ufwTestNamespace, rule.ID) })
+	t.Cleanup(func() { _ = m.RemoveRule(ctx, rule.ID) })
 
 	for i := 0; i < 3; i++ {
-		if err := applyUFW(ctx, ufwTestNamespace, rule); err != nil {
-			t.Fatalf("applyUFW #%d: %v", i, err)
+		if err := m.ApplyRule(ctx, rule); err != nil {
+			t.Fatalf("ApplyRule #%d: %v", i, err)
 		}
 	}
-	rules, _ := listUFW(ctx, ufwTestNamespace)
+	rules, _ := m.List(ctx)
 	count := 0
 	for _, r := range rules {
 		if r.ID == rule.ID {

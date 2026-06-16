@@ -3,211 +3,234 @@ package firewall
 import (
 	"context"
 	"errors"
+	"io"
+	"os"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-func TestBackend_DefaultIsNftables(t *testing.T) {
-	SetBackend(BackendNftables)
-	if got := CurrentBackend(); got != BackendNftables {
-		t.Errorf("default = %v, want %v", got, BackendNftables)
+// recordingRunner is the test exec.Runner: it records each Command (so a test can
+// assert the exact tool argv + stdin) and scripts the Run results FIFO. A default
+// result (exit 0, empty) is returned once the script is exhausted.
+type recordingRunner struct {
+	mu      sync.Mutex
+	calls   []capturedCall
+	results []scripted
+}
+
+type capturedCall struct {
+	cmd   exec.Command
+	stdin string
+}
+
+type scripted struct {
+	res exec.Result
+	err error
+}
+
+func (r *recordingRunner) push(res exec.Result, err error) {
+	r.results = append(r.results, scripted{res, err})
+}
+
+// pushOut is a convenience for the common "exit 0 with this stdout" case.
+func (r *recordingRunner) pushOut(stdout string) { r.push(exec.Result{Stdout: stdout}, nil) }
+
+func (r *recordingRunner) record(c exec.Command) (exec.Result, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	cc := capturedCall{cmd: c}
+	if c.Stdin != nil {
+		b, _ := io.ReadAll(c.Stdin)
+		cc.stdin = string(b)
+	}
+	r.calls = append(r.calls, cc)
+	if len(r.results) == 0 {
+		return exec.Result{}, nil
+	}
+	s := r.results[0]
+	r.results = r.results[1:]
+	return s.res, s.err
+}
+
+func (r *recordingRunner) Run(ctx context.Context, c exec.Command) (exec.Result, error) {
+	return r.record(c)
+}
+func (r *recordingRunner) Stream(ctx context.Context, c exec.Command, _ exec.OutputCallback) (exec.Result, error) {
+	return r.record(c)
+}
+func (r *recordingRunner) Backend() exec.PrivilegeBackend { return exec.Direct }
+
+var _ exec.Runner = (*recordingRunner)(nil)
+
+// argvOf returns the joined argv of the n-th recorded call.
+func (r *recordingRunner) argvOf(n int) string {
+	if n >= len(r.calls) {
+		return ""
+	}
+	return r.calls[n].cmd.Name + " " + strings.Join(r.calls[n].cmd.Args, " ")
+}
+
+func newMgr(t *testing.T, b Backend, ns string, r exec.Runner) Manager {
+	t.Helper()
+	m, err := New(b, ns, r)
+	if err != nil {
+		t.Fatalf("New(%d, %q): %v", b, ns, err)
+	}
+	return m
+}
+
+// --- New ---
+
+func TestNew_FailClosed(t *testing.T) {
+	r := &recordingRunner{}
+	for _, b := range []Backend{0, Backend(-1), Backend(99)} {
+		if _, err := New(b, "app", r); !errors.Is(err, ErrUnknownBackend) {
+			t.Errorf("New(%d) err = %v, want ErrUnknownBackend", b, err)
+		}
+	}
+	if _, err := New(Nftables, "app", nil); err == nil {
+		t.Error("New with nil runner returned nil error")
+	}
+	for _, b := range []Backend{Nftables, Firewalld, UFW} {
+		m, err := New(b, "app", r)
+		if err != nil {
+			t.Fatalf("New(%d) err = %v, want nil", b, err)
+		}
+		if m.Namespace() != "app" {
+			t.Errorf("Namespace() = %q, want app", m.Namespace())
+		}
 	}
 }
 
-func TestBackend_IgnoresUnknown(t *testing.T) {
-	t.Cleanup(func() { SetBackend(BackendNftables) })
-	SetBackend(BackendPF)
-	SetBackend(Backend(99))
-	if got := CurrentBackend(); got != BackendPF {
-		t.Errorf("unknown value leaked through: got %v, want %v", got, BackendPF)
-	}
-}
-
-// TestNew_AcceptsValidNamespace — representative namespaces operators
-// might pick. Lowercase ASCII + digits + underscore, starts with a
-// letter, no longer than 31 chars.
 func TestNew_AcceptsValidNamespace(t *testing.T) {
-	good := []string{
-		"app",
-		"pm_firewall",
-		"a",
-		"some_app_42",
-		strings.Repeat("a", 31),
-	}
-	for _, ns := range good {
-		t.Run("ns="+truncate(ns, 16), func(t *testing.T) {
-			mgr, err := New(ns)
-			if err != nil {
-				t.Fatalf("New(%q) = %v; want nil", ns, err)
-			}
-			if mgr.Namespace() != ns {
-				t.Errorf("Namespace() = %q; want %q", mgr.Namespace(), ns)
-			}
-		})
+	r := &recordingRunner{}
+	for _, ns := range []string{"app", "pm_firewall", "a", "some_app_42", strings.Repeat("a", 31)} {
+		if _, err := New(Nftables, ns, r); err != nil {
+			t.Errorf("New(%q) = %v, want nil", ns, err)
+		}
 	}
 }
 
-// TestNew_RejectsInvalidNamespace — the namespace flows into nft table
-// names, firewalld service-name prefixes, and ufw comment prefixes.
-// Anything outside the safe regex must be refused up front so the
-// caller never gets a partially-constructed Manager that breaks later.
 func TestNew_RejectsInvalidNamespace(t *testing.T) {
+	r := &recordingRunner{}
 	bad := []string{
 		"",                      // empty
-		"-leading-hyphen",       // leading char not letter
+		"-leading-hyphen",       // leading char not a letter
 		"1leading-digit",        // leading digit
 		"UPPER",                 // uppercase
 		"has space",             // whitespace
 		"with-hyphen",           // hyphens reserved as separator
 		"with:colon",            // colons reserved as separator
-		strings.Repeat("a", 32), // 32 chars > 31 cap
+		strings.Repeat("a", 32), // 32 > 31 cap
 	}
 	for _, ns := range bad {
-		t.Run("ns="+truncate(ns, 16), func(t *testing.T) {
-			_, err := New(ns)
-			if !errors.Is(err, ErrInvalidNamespace) {
-				t.Fatalf("New(%q) = %v; want ErrInvalidNamespace", ns, err)
+		if _, err := New(Nftables, ns, r); !errors.Is(err, ErrInvalidNamespace) {
+			t.Errorf("New(%q) = %v, want ErrInvalidNamespace", ns, err)
+		}
+	}
+}
+
+// --- Detect ---
+
+func TestDetect(t *testing.T) {
+	orig := lookPath
+	defer func() { lookPath = orig }()
+
+	t.Run("all present", func(t *testing.T) {
+		lookPath = func(string) (string, error) { return "/usr/sbin/tool", nil }
+		got := Detect(context.Background())
+		want := []Backend{Nftables, Firewalld, UFW}
+		if len(got) != 3 || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+			t.Errorf("Detect = %v, want %v", got, want)
+		}
+	})
+	t.Run("only ufw", func(t *testing.T) {
+		lookPath = func(name string) (string, error) {
+			if name == "ufw" {
+				return "/usr/sbin/ufw", nil
 			}
-		})
-	}
+			return "", os.ErrNotExist
+		}
+		got := Detect(context.Background())
+		if len(got) != 1 || got[0] != UFW {
+			t.Errorf("Detect = %v, want [UFW]", got)
+		}
+	})
+	t.Run("none", func(t *testing.T) {
+		lookPath = func(string) (string, error) { return "", os.ErrNotExist }
+		if got := Detect(context.Background()); len(got) != 0 {
+			t.Errorf("Detect = %v, want empty", got)
+		}
+	})
 }
 
-func TestApplyRule_ReturnsSentinel(t *testing.T) {
-	t.Cleanup(func() { SetBackend(BackendNftables) })
-	SetBackend(BackendPF) // BSD pf — no impl in v1, exercises the sentinel path
-	mgr, err := New("test")
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	err = mgr.ApplyRule(context.Background(), Rule{ID: "ssh-in", Allow: true, Protocol: ProtocolTCP, Port: 22})
-	if err == nil || !errors.Is(err, ErrBackendNotSupported) {
-		t.Errorf("want ErrBackendNotSupported, got %v", err)
-	}
-}
+// --- entry-path Rule.ID validation (backend-independent, dispatched through a
+// real backend with a recordingRunner so we prove validation precedes any exec) ---
 
-// TestList_DefaultBackendErrors — List is the inspection counterpart
-// to ApplyRule and dispatches the same way. The unimplemented-backend
-// behaviour must surface the same sentinel so callers can branch
-// uniformly.
-func TestList_DefaultBackendErrors(t *testing.T) {
-	t.Cleanup(func() { SetBackend(BackendNftables) })
-	SetBackend(BackendPF) // BSD pf — no impl yet
-	mgr, err := New("test")
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	_, err = mgr.List(context.Background())
-	if !errors.Is(err, ErrBackendNotSupported) {
-		t.Fatalf("List on unimplemented backend = %v; want ErrBackendNotSupported", err)
-	}
-}
-
-// TestApplyRule_RejectsInvalidID — Rule.ID is the idempotency key;
-// backends round-trip it through their comment fields, so anything
-// that could break the backend's grammar (whitespace, quotes, shell
-// metas, control characters) must be rejected up front. Validation is
-// backend-independent so a rule that's accepted on nftables is also
-// accepted on firewalld.
 func TestApplyRule_RejectsInvalidID(t *testing.T) {
-	mgr, err := New("test")
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
 	bad := []string{
-		"",                // empty
-		" ",               // whitespace only
-		"with space",      // embedded whitespace
-		"UPPER",           // uppercase
-		"-leading-hyphen", // leading hyphen
-		"quote\"in",       // double quote
-		"tick'in",         // single quote
-		"newline\nin",     // control char
-		"semicolon;in",    // shell-meta
-		"pipe|in",         // shell-meta
-		"backtick`in",     // shell-meta
-		"dollar$in",       // shell-meta
-		"way-too-long-" + strings.Repeat("x", 64), // over 63 chars
+		"", " ", "with space", "UPPER", "-leading-hyphen",
+		"quote\"in", "tick'in", "newline\nin", "semicolon;in", "pipe|in",
+		"backtick`in", "dollar$in", "way-too-long-" + strings.Repeat("x", 64),
 	}
-	for _, id := range bad {
-		t.Run("id="+truncate(id, 16), func(t *testing.T) {
-			err := mgr.ApplyRule(context.Background(), Rule{ID: id, Allow: true, Protocol: ProtocolTCP, Port: 22})
+	for _, b := range []Backend{Nftables, Firewalld, UFW} {
+		for _, id := range bad {
+			r := &recordingRunner{}
+			m := newMgr(t, b, "app", r)
+			err := m.ApplyRule(context.Background(), Rule{ID: id, Allow: true, Protocol: ProtocolTCP, Port: 22})
 			if !errors.Is(err, ErrInvalidRule) {
-				t.Fatalf("ApplyRule(id=%q) = %v; want ErrInvalidRule", id, err)
+				t.Errorf("backend %d ApplyRule(id=%q) = %v, want ErrInvalidRule", b, id, err)
 			}
-		})
+			if len(r.calls) != 0 {
+				t.Errorf("backend %d ran %d command(s) for an invalid ID; validation must precede exec", b, len(r.calls))
+			}
+		}
 	}
 }
 
-// TestApplyRule_AcceptsValidID — the allowed character class is
-// documented on Rule.ID; lock in a representative sample so the regex
-// doesn't get tightened by accident. Uses BackendPF so the dispatch
-// falls through to the sentinel path without trying to shell out to a
-// real firewall tool (the test verifies "id passed validation," not
-// "nft is available on this host").
 func TestApplyRule_AcceptsValidID(t *testing.T) {
-	t.Cleanup(func() { SetBackend(BackendNftables) })
-	SetBackend(BackendPF)
-	mgr, err := New("test")
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
 	good := []string{
-		"ssh-in",
-		"allow-22",
-		"web_https",
-		"a",                                   // single char ok
-		"01jxr5qxa3pn5g9b7tvyf2h4nm-allow-22", // ULID + suffix (multi-rule action)
-		"01jxr5qxa3pn5g9b7tvyf2h4nm",          // bare ULID-style ID
+		"ssh-in", "allow-22", "web_https", "a",
+		"01jxr5qxa3pn5g9b7tvyf2h4nm-allow-22", "01jxr5qxa3pn5g9b7tvyf2h4nm",
 	}
 	for _, id := range good {
-		t.Run("id="+id, func(t *testing.T) {
-			err := mgr.ApplyRule(context.Background(), Rule{ID: id, Allow: true, Protocol: ProtocolTCP, Port: 22})
-			// We're locking in "the id passed validation and reached
-			// the dispatch layer." On BackendPF the dispatch hits the
-			// default arm and returns ErrBackendNotSupported, which is
-			// fine — anything except ErrInvalidRule means the regex
-			// accepted the id.
-			if errors.Is(err, ErrInvalidRule) {
-				t.Fatalf("ApplyRule(id=%q) rejected valid id: %v", id, err)
-			}
-		})
+		r := &recordingRunner{}
+		// nft list returns exit 1 (no table) then the add succeeds.
+		r.push(exec.Result{ExitCode: 1}, nil)
+		r.pushOut("")
+		m := newMgr(t, Nftables, "app", r)
+		if err := m.ApplyRule(context.Background(), Rule{ID: id, Allow: true, Protocol: ProtocolTCP, Port: 22}); errors.Is(err, ErrInvalidRule) {
+			t.Errorf("ApplyRule(id=%q) rejected a valid ID: %v", id, err)
+		}
 	}
 }
 
-// TestRemoveRule_RejectsInvalidID — symmetric guard on the remove path
-// so a caller can't smuggle backend-grammar-breaking input through the
-// inverse op.
 func TestRemoveRule_RejectsInvalidID(t *testing.T) {
-	mgr, err := New("test")
-	if err != nil {
-		t.Fatalf("New: %v", err)
+	for _, b := range []Backend{Nftables, Firewalld, UFW} {
+		r := &recordingRunner{}
+		m := newMgr(t, b, "app", r)
+		if err := m.RemoveRule(context.Background(), "id with space"); !errors.Is(err, ErrInvalidRule) {
+			t.Errorf("backend %d RemoveRule(invalid) = %v, want ErrInvalidRule", b, err)
+		}
+		if len(r.calls) != 0 {
+			t.Errorf("backend %d ran a command for an invalid remove ID", b)
+		}
 	}
-	err = mgr.RemoveRule(context.Background(), "id with space")
-	if !errors.Is(err, ErrInvalidRule) {
-		t.Fatalf("RemoveRule(invalid) = %v; want ErrInvalidRule", err)
-	}
-}
-
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n] + "..."
 }
 
 func TestBackendString(t *testing.T) {
-	tests := []struct {
+	for _, tt := range []struct {
 		b    Backend
 		want string
 	}{
-		{BackendNftables, "nftables"},
-		{BackendIptables, "iptables"},
-		{BackendFirewalld, "firewalld"},
-		{BackendUFW, "ufw"},
-		{BackendPF, "pf"},
+		{Nftables, "nftables"},
+		{Firewalld, "firewalld"},
+		{UFW, "ufw"},
 		{Backend(42), "unknown(42)"},
-	}
-	for _, tt := range tests {
+	} {
 		if got := tt.b.String(); got != tt.want {
 			t.Errorf("%d.String() = %q, want %q", tt.b, got, tt.want)
 		}
