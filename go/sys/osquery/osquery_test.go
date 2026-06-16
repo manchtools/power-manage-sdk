@@ -3,6 +3,9 @@ package osquery
 import (
 	"errors"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/exec/exectest"
 )
 
 // TestFindOsqueryBinary_DiscoveryOrder pins the resolution order of
@@ -90,12 +93,36 @@ func TestNewClient_NotInstalled(t *testing.T) {
 		return "", errors.New("not found")
 	}
 
-	c, err := NewClient()
+	c, err := NewClient(exectest.New(exec.Direct))
 	if !errors.Is(err, ErrNotInstalled) {
 		t.Errorf("NewClient: want ErrNotInstalled, got %v", err)
 	}
 	if c != nil {
 		t.Errorf("NewClient: want nil client on failure, got %+v", c)
+	}
+}
+
+func TestNewClient_NilRunner(t *testing.T) {
+	if _, err := NewClient(nil); err == nil {
+		t.Error("NewClient(nil) returned nil error")
+	}
+}
+
+func TestNewClient_Success(t *testing.T) {
+	restore := lookPath
+	defer func() { lookPath = restore }()
+	lookPath = func(name string) (string, error) {
+		if name == "/usr/bin/osqueryi" {
+			return name, nil
+		}
+		return "", errors.New("not found")
+	}
+	c, err := NewClient(exectest.New(exec.Direct))
+	if err != nil || c == nil {
+		t.Fatalf("NewClient = (%v,%v), want a client", c, err)
+	}
+	if c.binaryPath != "/usr/bin/osqueryi" {
+		t.Errorf("binaryPath = %q", c.binaryPath)
 	}
 }
 

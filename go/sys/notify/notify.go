@@ -1,11 +1,16 @@
-// Package notify sends system-wide notifications to logged-in users.
-// It uses wall for terminal sessions and notify-send for graphical sessions.
-// All operations are best-effort — errors are logged but never returned,
-// ensuring notifications never block the calling action.
+// Package notify sends system-wide notifications to logged-in users through an
+// injected exec.Runner. It uses wall for terminal sessions and notify-send for
+// graphical sessions. All operations are best-effort — errors are logged but
+// never returned, so notifications never block the calling action.
+//
+//	r, _ := exec.NewRunner(exec.Sudo)
+//	n, _ := notify.New(r)
+//	n.NotifyAll(ctx, "Maintenance", "Reboot in 5 minutes")
 package notify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -16,6 +21,13 @@ import (
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
+// Seams: notify-send presence + the per-user D-Bus socket check. Overridable from
+// tests so desktop-notification dispatch can be exercised without a real session.
+var (
+	lookPath   = osexec.LookPath
+	statSocket = os.Stat
+)
+
 // session represents a logged-in user session discovered via loginctl.
 type session struct {
 	id   string
@@ -24,77 +36,90 @@ type session struct {
 	typ  string // "tty", "x11", "wayland", "mir"
 }
 
-// NotifyAll sends a notification to all logged-in users.
-// Terminal users receive a wall broadcast, graphical users receive a desktop notification.
-func NotifyAll(ctx context.Context, title, message string) {
-	sendWall(ctx, fmt.Sprintf("%s: %s", title, message))
-	sendDesktopNotifications(ctx, title, message, nil)
+// Manager sends notifications to logged-in users. All methods are best-effort
+// (failures are logged, never returned).
+type Manager interface {
+	// NotifyAll notifies every logged-in user: a wall broadcast to terminal
+	// sessions and a desktop notification to graphical ones.
+	NotifyAll(ctx context.Context, title, message string)
+	// NotifyUsers notifies the named users only (wall still broadcasts, since it
+	// has no per-user target).
+	NotifyUsers(ctx context.Context, usernames []string, title, message string)
 }
 
-// NotifyUsers sends a notification to specific users.
-// Only sessions belonging to the named users receive notifications.
-func NotifyUsers(ctx context.Context, usernames []string, title, message string) {
-	sendWall(ctx, fmt.Sprintf("%s: %s", title, message))
+// New returns a Manager driven by runner. A nil runner is rejected.
+func New(runner exec.Runner) (Manager, error) {
+	if runner == nil {
+		return nil, errors.New("notify: runner is required")
+	}
+	return &notifier{r: runner}, nil
+}
 
+type notifier struct {
+	r exec.Runner
+}
+
+func (n *notifier) NotifyAll(ctx context.Context, title, message string) {
+	n.sendWall(ctx, fmt.Sprintf("%s: %s", title, message))
+	n.sendDesktopNotifications(ctx, title, message, nil)
+}
+
+func (n *notifier) NotifyUsers(ctx context.Context, usernames []string, title, message string) {
+	n.sendWall(ctx, fmt.Sprintf("%s: %s", title, message))
 	filter := make(map[string]bool, len(usernames))
 	for _, u := range usernames {
 		filter[u] = true
 	}
-	sendDesktopNotifications(ctx, title, message, filter)
+	n.sendDesktopNotifications(ctx, title, message, filter)
 }
 
-// sendWall broadcasts a message to all terminal sessions.
-func sendWall(ctx context.Context, message string) {
-	result, err := exec.PrivilegedWithStdin(ctx, strings.NewReader(message), "wall")
-	if err != nil {
-		stderr := ""
-		if result != nil {
-			stderr = result.Stderr
-		}
-		slog.Warn("wall notification failed", "error", err, "stderr", stderr)
+// sendWall broadcasts a message to all terminal sessions via wall (stdin).
+func (n *notifier) sendWall(ctx context.Context, message string) {
+	res, err := n.r.Run(ctx, exec.Command{
+		Name:     "wall",
+		Stdin:    strings.NewReader(message),
+		Escalate: true,
+	})
+	if err != nil || res.ExitCode != 0 {
+		slog.Warn("wall notification failed", "error", err, "stderr", res.Stderr)
 	}
 }
 
-// sendDesktopNotifications discovers graphical sessions and sends notify-send
-// to each. If userFilter is non-nil, only sessions matching those usernames
-// are notified.
-func sendDesktopNotifications(ctx context.Context, title, message string, userFilter map[string]bool) {
-	if _, err := osexec.LookPath("notify-send"); err != nil {
+// sendDesktopNotifications discovers graphical sessions and sends notify-send to
+// each. With a non-nil userFilter only matching usernames are notified.
+func (n *notifier) sendDesktopNotifications(ctx context.Context, title, message string, userFilter map[string]bool) {
+	if _, err := lookPath("notify-send"); err != nil {
 		slog.Warn("notify-send not available, skipping desktop notifications")
 		return
 	}
-
-	sessions := listGraphicalSessions(ctx)
+	sessions := n.listGraphicalSessions(ctx)
 	slog.Info("discovered graphical sessions for desktop notification", "count", len(sessions))
 	for _, s := range sessions {
 		if userFilter != nil && !userFilter[s.user] {
 			continue
 		}
-		sendDesktopNotification(ctx, s, title, message)
+		n.sendDesktopNotification(ctx, s, title, message)
 	}
 }
 
 // listGraphicalSessions returns all active graphical login sessions.
-func listGraphicalSessions(ctx context.Context) []session {
-	result, err := exec.Privileged(ctx, "loginctl", "list-sessions", "--no-legend")
-	if err != nil || result.ExitCode != 0 {
-		stderr := ""
-		if result != nil {
-			stderr = result.Stderr
-		}
-		slog.Warn("failed to list sessions", "error", err, "stderr", stderr)
+func (n *notifier) listGraphicalSessions(ctx context.Context) []session {
+	res, err := n.r.Run(ctx, exec.Command{Name: "loginctl", Args: []string{"list-sessions", "--no-legend"}, Escalate: true})
+	if err != nil || res.ExitCode != 0 {
+		slog.Warn("failed to list sessions", "error", err, "stderr", res.Stderr)
 		return nil
 	}
 
 	var sessions []session
-	for _, sessionID := range parseLoginctlListSessions(result.Stdout) {
-		// Query session type and user details. Without --value loginctl
-		// prints Key=Value lines so we can parse by name — D-Bus
-		// emission order isn't documented as stable, so positional
-		// parsing would silently misassign fields when the order
-		// shifts across systemd versions.
-		info, err := exec.Privileged(ctx, "loginctl", "show-session", sessionID,
-			"-p", "Type", "-p", "Name", "-p", "User")
+	for _, sessionID := range parseLoginctlListSessions(res.Stdout) {
+		// Without --value loginctl prints Key=Value lines so we parse by name —
+		// D-Bus emission order isn't documented as stable, so positional parsing
+		// would silently misassign fields across systemd versions.
+		info, err := n.r.Run(ctx, exec.Command{
+			Name:     "loginctl",
+			Args:     []string{"show-session", sessionID, "-p", "Type", "-p", "Name", "-p", "User"},
+			Escalate: true,
+		})
 		if err != nil || info.ExitCode != 0 {
 			continue
 		}
@@ -104,15 +129,13 @@ func listGraphicalSessions(ctx context.Context) []session {
 		}
 		sessions = append(sessions, s)
 	}
-
 	return sessions
 }
 
-// parseLoginctlListSessions extracts session IDs from `loginctl
-// list-sessions --no-legend` output. The first whitespace-separated
-// field is the session ID; lines with fewer than three fields are
-// skipped (matches the prior in-line behaviour). Pure-function shape
-// so it can be tested without shelling out (F026 in TECH_DEBT_AUDIT.md).
+// parseLoginctlListSessions extracts session IDs from `loginctl list-sessions
+// --no-legend` output. The first whitespace-separated field is the session ID;
+// lines with fewer than three fields are skipped. Pure-function shape so it can be
+// tested without shelling out (F026 in TECH_DEBT_AUDIT.md).
 func parseLoginctlListSessions(stdout string) []string {
 	var ids []string
 	for _, line := range strings.Split(strings.TrimSpace(stdout), "\n") {
@@ -125,13 +148,11 @@ func parseLoginctlListSessions(stdout string) []string {
 	return ids
 }
 
-// parseLoginctlShowSession parses `loginctl show-session <id> -p Type
-// -p Name -p User` output into a session struct. loginctl emits
-// Key=Value lines in D-Bus dictionary order, NOT the order of the -p
-// flags, so we parse by name instead of relying on positional output.
-// Returns (session, false) when any of Type / Name / User is missing,
-// when User isn't a numeric uid, when Name is empty, or when Type
-// isn't a graphical session (x11 / wayland / mir).
+// parseLoginctlShowSession parses `loginctl show-session <id> -p Type -p Name -p
+// User` output into a session struct, by property name (loginctl emits Key=Value
+// in D-Bus dictionary order, not -p order). Returns (session, false) when any of
+// Type / Name / User is missing, User isn't a numeric uid, Name is empty, or Type
+// isn't graphical (x11 / wayland / mir).
 func parseLoginctlShowSession(sessionID, stdout string) (session, bool) {
 	props := map[string]string{}
 	for _, line := range strings.Split(stdout, "\n") {
@@ -154,41 +175,33 @@ func parseLoginctlShowSession(sessionID, stdout string) (session, bool) {
 	if typ != "x11" && typ != "wayland" && typ != "mir" {
 		return session{}, false
 	}
-	return session{
-		id:   sessionID,
-		user: user,
-		uid:  uid,
-		typ:  typ,
-	}, true
+	return session{id: sessionID, user: user, uid: uid, typ: typ}, true
 }
 
-// sendDesktopNotification sends a freedesktop notification to a single graphical session.
-// It runs notify-send as the target user via runuser with the user's DBUS session.
-func sendDesktopNotification(ctx context.Context, s session, title, message string) {
-	dbusAddr := fmt.Sprintf("unix:path=/run/user/%d/bus", s.uid)
-
-	// Check if the DBUS socket exists
+// sendDesktopNotification sends a freedesktop notification to a single graphical
+// session, running notify-send as the target user (via runuser) with the user's
+// D-Bus session address. Each argument is passed separately to avoid shell
+// injection.
+func (n *notifier) sendDesktopNotification(ctx context.Context, s session, title, message string) {
 	socketPath := fmt.Sprintf("/run/user/%d/bus", s.uid)
-	if _, err := os.Stat(socketPath); err != nil {
-		slog.Warn("DBUS socket not found, skipping desktop notification",
-			"user", s.user, "path", socketPath)
+	if _, err := statSocket(socketPath); err != nil {
+		slog.Warn("DBUS socket not found, skipping desktop notification", "user", s.user, "path", socketPath)
 		return
 	}
+	dbusAddr := "unix:path=" + socketPath
 
-	// Use runuser to execute notify-send as the target user.
-	// Each argument is passed separately to avoid shell injection.
-	result, err := exec.Privileged(ctx, "env",
-		"DBUS_SESSION_BUS_ADDRESS="+dbusAddr,
-		"runuser", "-u", s.user, "--",
-		"notify-send", "-u", "critical", "-a", "Power Manage", "-i", "dialog-warning",
-		title, message,
-	)
-	if err != nil || (result != nil && result.ExitCode != 0) {
-		stderr := ""
-		if result != nil {
-			stderr = result.Stderr
-		}
+	res, err := n.r.Run(ctx, exec.Command{
+		Name: "env",
+		Args: []string{
+			"DBUS_SESSION_BUS_ADDRESS=" + dbusAddr,
+			"runuser", "-u", s.user, "--",
+			"notify-send", "-u", "critical", "-a", "Power Manage", "-i", "dialog-warning",
+			title, message,
+		},
+		Escalate: true,
+	})
+	if err != nil || res.ExitCode != 0 {
 		slog.Warn("desktop notification failed",
-			"user", s.user, "session", s.id, "type", s.typ, "error", err, "stderr", stderr)
+			"user", s.user, "session", s.id, "type", s.typ, "error", err, "stderr", res.Stderr)
 	}
 }

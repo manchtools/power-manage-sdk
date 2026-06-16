@@ -2,20 +2,23 @@
 
 // Package inventory provides lightweight system inventory collection using
 // standard Linux interfaces (/proc, /etc, standard tools) without requiring
-// osquery.
+// osquery. Command-backed collectors run through an injected exec.Runner.
+//
+//	r, _ := exec.NewRunner(exec.Direct)
+//	inv, _ := inventory.New(r)
+//	sys, _ := inv.System(ctx)
 //
 // Status: SDK-resident, single-consumer today (the agent's connect-time
 // inventory snapshot). The package lives in the SDK rather than under
-// agent/internal/sys because the planned server-side compliance preview
-// (control server emitting "what would my next inventory look like?"
-// for a registered device) needs the same parsers. Until that consumer
-// materialises, the second-consumer rule (CLAUDE.md) is provisionally
-// waived. F027 in TECH_DEBT_AUDIT.md.
+// agent/internal/sys because the planned server-side compliance preview needs
+// the same parsers. F027 in TECH_DEBT_AUDIT.md.
 package inventory
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -23,8 +26,15 @@ import (
 	"strings"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
+)
 
-	"context"
+// Seams for the file-backed sources, overridable from tests so the
+// command-driven collectors can be exercised deterministically.
+var (
+	cpuinfoPath   = "/proc/cpuinfo"
+	meminfoPath   = "/proc/meminfo"
+	osReleasePath = "/etc/os-release"
+	hostnameFn    = os.Hostname
 )
 
 // SystemInfo holds basic hardware and kernel information.
@@ -37,43 +47,185 @@ type SystemInfo struct {
 	KernelVersion string
 }
 
-// GetSystemInfo returns basic system information.
-// Sources: hostname(), /proc/cpuinfo, /proc/meminfo, runtime.GOARCH, uname -r.
-func GetSystemInfo(ctx context.Context) (*SystemInfo, error) {
-	info := &SystemInfo{
-		Arch: runtime.GOARCH,
-	}
+// OSInfo holds operating system identification details.
+type OSInfo struct {
+	Name       string // e.g. "Fedora Linux"
+	Version    string // e.g. "43"
+	ID         string // e.g. "fedora"
+	PrettyName string // e.g. "Fedora Linux 43 (Workstation Edition)"
+	VersionID  string // e.g. "43"
+	Arch       string // e.g. "x86_64" (runtime.GOARCH)
+}
 
-	hostname, err := os.Hostname()
+// DiskInfo holds block device information.
+type DiskInfo struct {
+	Device string // e.g. "/dev/sda"
+	Size   string // e.g. "500G" (human-readable from lsblk)
+	Type   string // e.g. "disk", "part"
+	Mount  string // e.g. "/"
+}
+
+// NetworkInterface holds network interface details.
+type NetworkInterface struct {
+	Name      string
+	MAC       string
+	Addresses []string // e.g. ["192.168.1.100/24", "fe80::1/64"]
+	State     string   // "UP" or "DOWN"
+}
+
+// Collector gathers system inventory. Command-backed methods run through the
+// injected Runner; OS() is a pure /etc/os-release read.
+type Collector interface {
+	System(ctx context.Context) (*SystemInfo, error)
+	OS() (*OSInfo, error)
+	Disks(ctx context.Context) ([]DiskInfo, error)
+	NetworkInterfaces(ctx context.Context) ([]NetworkInterface, error)
+}
+
+// New returns a Collector driven by runner. A nil runner is rejected.
+func New(runner exec.Runner) (Collector, error) {
+	if runner == nil {
+		return nil, errors.New("inventory: runner is required")
+	}
+	return &collector{r: runner}, nil
+}
+
+type collector struct {
+	r exec.Runner
+}
+
+// read runs an unprivileged query and returns its stdout, mapping a non-zero
+// exit (or a failure to execute) to an error.
+func (c *collector) read(ctx context.Context, name string, args ...string) (string, error) {
+	res, err := c.r.Run(ctx, exec.Command{Name: name, Args: args})
+	if err != nil {
+		return "", err
+	}
+	if res.ExitCode != 0 {
+		return "", &exec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+	}
+	return res.Stdout, nil
+}
+
+// System returns basic system information. Sources: hostname, /proc/cpuinfo,
+// /proc/meminfo, runtime.GOARCH, uname -r.
+func (c *collector) System(ctx context.Context) (*SystemInfo, error) {
+	info := &SystemInfo{Arch: runtime.GOARCH}
+
+	hostname, err := hostnameFn()
 	if err != nil {
 		return nil, fmt.Errorf("get hostname: %w", err)
 	}
 	info.Hostname = hostname
 
-	cpuModel, cpuCores, err := parseCPUInfo("/proc/cpuinfo")
+	cpuModel, cpuCores, err := parseCPUInfo(cpuinfoPath)
 	if err != nil {
 		return nil, fmt.Errorf("parse cpuinfo: %w", err)
 	}
 	info.CPUModel = cpuModel
 	info.CPUCores = cpuCores
 
-	memTotal, err := parseMemTotal("/proc/meminfo")
+	memTotal, err := parseMemTotal(meminfoPath)
 	if err != nil {
 		return nil, fmt.Errorf("parse meminfo: %w", err)
 	}
 	info.MemoryTotalMB = memTotal
 
-	result, err := exec.Run(ctx, "uname", "-r")
+	out, err := c.read(ctx, "uname", "-r")
 	if err != nil {
 		return nil, fmt.Errorf("get kernel version: %w", err)
 	}
-	info.KernelVersion = strings.TrimSpace(result.Stdout)
+	info.KernelVersion = strings.TrimSpace(out)
 
 	return info, nil
 }
 
-// parseCPUInfo reads /proc/cpuinfo and extracts the CPU model name and core
-// count.
+// OS returns operating system details from /etc/os-release.
+func (c *collector) OS() (*OSInfo, error) {
+	info, err := parseOSRelease(osReleasePath)
+	if err != nil {
+		return nil, err
+	}
+	info.Arch = runtime.GOARCH
+	return info, nil
+}
+
+// Disks returns block device information via lsblk --json.
+func (c *collector) Disks(ctx context.Context) ([]DiskInfo, error) {
+	out, err := c.read(ctx, "lsblk", "--json", "-o", "NAME,SIZE,TYPE,MOUNTPOINT")
+	if err != nil {
+		return nil, fmt.Errorf("run lsblk: %w", err)
+	}
+
+	type blockDevice struct {
+		Name       string        `json:"name"`
+		Size       string        `json:"size"`
+		Type       string        `json:"type"`
+		Mountpoint string        `json:"mountpoint"`
+		Children   []blockDevice `json:"children"`
+	}
+	var output struct {
+		Blockdevices []blockDevice `json:"blockdevices"`
+	}
+	if err := json.Unmarshal([]byte(out), &output); err != nil {
+		return nil, fmt.Errorf("parse lsblk output: %w", err)
+	}
+
+	var disks []DiskInfo
+	var walk func(devices []blockDevice)
+	walk = func(devices []blockDevice) {
+		for _, bd := range devices {
+			disks = append(disks, DiskInfo{
+				Device: "/dev/" + bd.Name,
+				Size:   bd.Size,
+				Type:   bd.Type,
+				Mount:  bd.Mountpoint,
+			})
+			if len(bd.Children) > 0 {
+				walk(bd.Children)
+			}
+		}
+	}
+	walk(output.Blockdevices)
+	return disks, nil
+}
+
+// NetworkInterfaces returns network interface details via ip -j addr.
+func (c *collector) NetworkInterfaces(ctx context.Context) ([]NetworkInterface, error) {
+	out, err := c.read(ctx, "ip", "-j", "addr")
+	if err != nil {
+		return nil, fmt.Errorf("run ip addr: %w", err)
+	}
+
+	var output []struct {
+		IfName    string `json:"ifname"`
+		Address   string `json:"address"`
+		OperState string `json:"operstate"`
+		AddrInfo  []struct {
+			Local     string `json:"local"`
+			PrefixLen int    `json:"prefixlen"`
+		} `json:"addr_info"`
+	}
+	if err := json.Unmarshal([]byte(out), &output); err != nil {
+		return nil, fmt.Errorf("parse ip addr output: %w", err)
+	}
+
+	interfaces := make([]NetworkInterface, 0, len(output))
+	for _, iface := range output {
+		ni := NetworkInterface{
+			Name:  iface.IfName,
+			MAC:   iface.Address,
+			State: strings.ToUpper(iface.OperState),
+		}
+		for _, addr := range iface.AddrInfo {
+			ni.Addresses = append(ni.Addresses, fmt.Sprintf("%s/%d", addr.Local, addr.PrefixLen))
+		}
+		interfaces = append(interfaces, ni)
+	}
+	return interfaces, nil
+}
+
+// parseCPUInfo reads /proc/cpuinfo and extracts the CPU model name and core count.
 func parseCPUInfo(path string) (model string, cores int, err error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -131,26 +283,6 @@ func parseMemTotal(path string) (int64, error) {
 	return 0, fmt.Errorf("MemTotal not found in %s", path)
 }
 
-// OSInfo holds operating system identification details.
-type OSInfo struct {
-	Name       string // e.g. "Fedora Linux"
-	Version    string // e.g. "43"
-	ID         string // e.g. "fedora"
-	PrettyName string // e.g. "Fedora Linux 43 (Workstation Edition)"
-	VersionID  string // e.g. "43"
-	Arch       string // e.g. "x86_64" (from runtime.GOARCH mapped to uname convention)
-}
-
-// GetOSInfo returns operating system details from /etc/os-release.
-func GetOSInfo() (*OSInfo, error) {
-	info, err := parseOSRelease("/etc/os-release")
-	if err != nil {
-		return nil, err
-	}
-	info.Arch = runtime.GOARCH
-	return info, nil
-}
-
 // parseOSRelease parses an os-release file and returns OSInfo.
 func parseOSRelease(path string) (*OSInfo, error) {
 	f, err := os.Open(path)
@@ -162,8 +294,7 @@ func parseOSRelease(path string) (*OSInfo, error) {
 	info := &OSInfo{}
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		line := scanner.Text()
-		key, value, ok := parseOSReleaseLine(line)
+		key, value, ok := parseOSReleaseLine(scanner.Text())
 		if !ok {
 			continue
 		}
@@ -186,8 +317,8 @@ func parseOSRelease(path string) (*OSInfo, error) {
 	return info, nil
 }
 
-// parseOSReleaseLine parses a single KEY=VALUE line from os-release.
-// Values may be optionally quoted with double quotes.
+// parseOSReleaseLine parses a single KEY=VALUE line from os-release. Values may be
+// optionally quoted with double quotes.
 func parseOSReleaseLine(line string) (key, value string, ok bool) {
 	line = strings.TrimSpace(line)
 	if line == "" || strings.HasPrefix(line, "#") {
@@ -199,102 +330,8 @@ func parseOSReleaseLine(line string) (key, value string, ok bool) {
 	}
 	key = parts[0]
 	value = parts[1]
-	// Remove surrounding quotes if present.
 	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
 		value = value[1 : len(value)-1]
 	}
 	return key, value, true
-}
-
-// DiskInfo holds block device information.
-type DiskInfo struct {
-	Device string // e.g. "/dev/sda"
-	Size   string // e.g. "500G" (human-readable from lsblk)
-	Type   string // e.g. "disk", "part"
-	Mount  string // e.g. "/"
-}
-
-// GetDisks returns block device information via lsblk --json.
-func GetDisks(ctx context.Context) ([]DiskInfo, error) {
-	result, err := exec.Run(ctx, "lsblk", "--json", "-o", "NAME,SIZE,TYPE,MOUNTPOINT")
-	if err != nil {
-		return nil, fmt.Errorf("run lsblk: %w", err)
-	}
-
-	type blockDevice struct {
-		Name       string        `json:"name"`
-		Size       string        `json:"size"`
-		Type       string        `json:"type"`
-		Mountpoint string        `json:"mountpoint"`
-		Children   []blockDevice `json:"children"`
-	}
-
-	var output struct {
-		Blockdevices []blockDevice `json:"blockdevices"`
-	}
-	if err := json.Unmarshal([]byte(result.Stdout), &output); err != nil {
-		return nil, fmt.Errorf("parse lsblk output: %w", err)
-	}
-
-	var disks []DiskInfo
-	var walk func(devices []blockDevice)
-	walk = func(devices []blockDevice) {
-		for _, bd := range devices {
-			disks = append(disks, DiskInfo{
-				Device: "/dev/" + bd.Name,
-				Size:   bd.Size,
-				Type:   bd.Type,
-				Mount:  bd.Mountpoint,
-			})
-			if len(bd.Children) > 0 {
-				walk(bd.Children)
-			}
-		}
-	}
-	walk(output.Blockdevices)
-	return disks, nil
-}
-
-// NetworkInterface holds network interface details.
-type NetworkInterface struct {
-	Name      string
-	MAC       string
-	Addresses []string // e.g. ["192.168.1.100/24", "fe80::1/64"]
-	State     string   // "UP" or "DOWN"
-}
-
-// GetNetworkInterfaces returns network interface details via ip -j addr.
-func GetNetworkInterfaces(ctx context.Context) ([]NetworkInterface, error) {
-	result, err := exec.Run(ctx, "ip", "-j", "addr")
-	if err != nil {
-		return nil, fmt.Errorf("run ip addr: %w", err)
-	}
-
-	var output []struct {
-		IfName    string   `json:"ifname"`
-		Address   string   `json:"address"`
-		OperState string   `json:"operstate"`
-		Flags     []string `json:"flags"`
-		AddrInfo  []struct {
-			Local     string `json:"local"`
-			PrefixLen int    `json:"prefixlen"`
-		} `json:"addr_info"`
-	}
-	if err := json.Unmarshal([]byte(result.Stdout), &output); err != nil {
-		return nil, fmt.Errorf("parse ip addr output: %w", err)
-	}
-
-	interfaces := make([]NetworkInterface, 0, len(output))
-	for _, iface := range output {
-		ni := NetworkInterface{
-			Name:  iface.IfName,
-			MAC:   iface.Address,
-			State: strings.ToUpper(iface.OperState),
-		}
-		for _, addr := range iface.AddrInfo {
-			ni.Addresses = append(ni.Addresses, fmt.Sprintf("%s/%d", addr.Local, addr.PrefixLen))
-		}
-		interfaces = append(interfaces, ni)
-	}
-	return interfaces, nil
 }

@@ -1,10 +1,17 @@
-// Package reboot provides system reboot detection and scheduling utilities.
+// Package reboot provides system reboot detection and scheduling through an
+// injected exec.Runner.
 //
-// Status: SDK-resident, single-consumer today (the agent's reboot-required
-// + scheduled-reboot pipeline). Sits in the SDK because the planned
-// server-side maintenance-window simulator needs the same "next reboot
-// window" math; until that surfaces the second-consumer rule
-// (CLAUDE.md) is provisionally waived. F027 in TECH_DEBT_AUDIT.md.
+// Build a Manager with a Runner and call its methods. Scheduling escalates
+// through the Runner; the reboot-required probe runs unprivileged.
+//
+//	r, _ := exec.NewRunner(exec.Sudo)
+//	rb, _ := reboot.New(r)
+//	if need, _ := rb.IsRequired(ctx); need { _ = rb.Schedule(ctx, "+5", "patching") }
+//
+// Status: SDK-resident, single-consumer today (the agent's reboot-required +
+// scheduled-reboot pipeline). Sits in the SDK because the planned server-side
+// maintenance-window simulator needs the same "next reboot window" math. F027 in
+// TECH_DEBT_AUDIT.md.
 package reboot
 
 import (
@@ -13,72 +20,68 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 
-	sysexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// Injectable seams for testing. Production code uses the defaults.
-var (
-	statFunc     = os.Stat
-	lookPathFunc = exec.LookPath
-	runCmdFunc   = func(name string, args ...string) error {
-		return exec.Command(name, args...).Run()
-	}
-)
+// rebootRequiredPath is the Debian/Ubuntu reboot-required marker (created by
+// update-notifier). A var so tests can redirect it.
+var rebootRequiredPath = "/var/run/reboot-required"
 
-// IsRequired checks if the system requires a reboot after updates.
-//
-// Detection methods:
-//   - Debian/Ubuntu: checks /var/run/reboot-required (created by update-notifier)
-//   - Fedora/RHEL: runs needs-restarting -r (exit 1 = reboot needed)
-//
-// Returns false on unsupported systems or if detection fails. Unexpected
-// errors (permission denied on stat, exec failure on needs-restarting) are
-// logged via slog.Debug rather than returned, since callers treat this as a
-// best-effort hint.
-func IsRequired() bool {
-	// Debian/Ubuntu: file-based detection. A successful stat means the
-	// file exists and reboot is required. ErrNotExist is the expected
-	// "no reboot needed" path; any other error is unexpected and logged.
-	if _, err := statFunc("/var/run/reboot-required"); err == nil {
-		return true
-	} else if !errors.Is(err, os.ErrNotExist) {
-		slog.Debug("stat /var/run/reboot-required failed", "error", err)
-	}
+// statFunc seams the marker-file check for tests.
+var statFunc = os.Stat
 
-	// Fedora/RHEL: needs-restarting (from dnf-utils/yum-utils).
-	// Look up the binary; if absent, we silently fall through (no detection
-	// available on this system).
-	path, err := lookPathFunc("needs-restarting")
-	if err != nil {
-		return false
-	}
-
-	runErr := runCmdFunc(path, "-r")
-	if runErr == nil {
-		return false // exit 0 = no reboot needed
-	}
-	// needs-restarting exits 1 when a reboot IS needed.
-	var exitErr *exec.ExitError
-	if errors.As(runErr, &exitErr) {
-		return exitErr.ExitCode() == 1
-	}
-	// Couldn't even run needs-restarting (e.g. *exec.Error wrapping ENOENT
-	// or a permission error). Log and report no reboot rather than guess.
-	slog.Debug("needs-restarting -r failed to run", "error", runErr)
-	return false
+// Manager detects and schedules system reboots.
+type Manager interface {
+	// IsRequired reports whether the system needs a reboot after updates. It is
+	// best-effort: an unsupported host or a detection failure yields (false, nil);
+	// the returned error is reserved for a genuinely unexpected condition the
+	// caller may want to surface (e.g. a non-ENOENT stat error on the marker).
+	IsRequired(ctx context.Context) (bool, error)
+	// Schedule schedules a reboot via shutdown -r. An empty delay defaults to
+	// "+1"; a non-empty message is broadcast to logged-in users.
+	Schedule(ctx context.Context, delay, message string) error
+	// Cancel cancels a pending scheduled reboot (shutdown -c).
+	Cancel(ctx context.Context) error
 }
 
-// Schedule schedules a system reboot via shutdown -r.
-//
-// Parameters:
-//   - ctx: context for the sudo command
-//   - delay: shutdown delay (e.g. "+1" for 1 minute, "+5" for 5 minutes, "now" for immediate)
-//   - message: broadcast message shown to logged-in users (omitted when empty)
-//
-// An empty delay defaults to "+1" since shutdown(8) requires a time argument.
-func Schedule(ctx context.Context, delay, message string) error {
+// New returns a Manager driven by runner. A nil runner is rejected.
+func New(runner exec.Runner) (Manager, error) {
+	if runner == nil {
+		return nil, errors.New("reboot: runner is required")
+	}
+	return &rebooter{r: runner}, nil
+}
+
+type rebooter struct {
+	r exec.Runner
+}
+
+// IsRequired checks the Debian/Ubuntu marker file, then falls back to
+// `needs-restarting -r` (Fedora/RHEL; exit 1 = reboot needed) run unprivileged
+// through the Runner. A binary that isn't installed, or any execution failure, is
+// treated as "not required" — this is a hint, not an authority.
+func (rb *rebooter) IsRequired(ctx context.Context) (bool, error) {
+	if _, err := statFunc(rebootRequiredPath); err == nil {
+		return true, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		// A stat error other than "not found" (e.g. permission) is the one
+		// genuinely unexpected condition worth surfacing.
+		return false, fmt.Errorf("stat %s: %w", rebootRequiredPath, err)
+	}
+
+	res, err := rb.r.Run(ctx, exec.Command{Name: "needs-restarting", Args: []string{"-r"}})
+	if err != nil {
+		// needs-restarting absent or unrunnable → no detection available here.
+		slog.Debug("needs-restarting -r could not run", "error", err)
+		return false, nil
+	}
+	// Exit 1 = a reboot is needed; 0 = not; anything else = indeterminate.
+	return res.ExitCode == 1, nil
+}
+
+// Schedule schedules a system reboot via shutdown -r (escalated).
+func (rb *rebooter) Schedule(ctx context.Context, delay, message string) error {
 	if delay == "" {
 		delay = "+1"
 	}
@@ -86,16 +89,21 @@ func Schedule(ctx context.Context, delay, message string) error {
 	if message != "" {
 		args = append(args, message)
 	}
-	if _, err := sysexec.Privileged(ctx, "shutdown", args...); err != nil {
-		return fmt.Errorf("schedule reboot: %w", err)
-	}
-	return nil
+	return rb.shutdown(ctx, "schedule reboot", args...)
 }
 
-// Cancel cancels a pending scheduled reboot.
-func Cancel(ctx context.Context) error {
-	if _, err := sysexec.Privileged(ctx, "shutdown", "-c"); err != nil {
-		return fmt.Errorf("cancel reboot: %w", err)
+// Cancel cancels a pending scheduled reboot (escalated).
+func (rb *rebooter) Cancel(ctx context.Context) error {
+	return rb.shutdown(ctx, "cancel reboot", "-c")
+}
+
+func (rb *rebooter) shutdown(ctx context.Context, op string, args ...string) error {
+	res, err := rb.r.Run(ctx, exec.Command{Name: "shutdown", Args: args, Escalate: true})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if res.ExitCode != 0 {
+		return fmt.Errorf("%s: %w", op, &exec.CommandError{Name: "shutdown", ExitCode: res.ExitCode, Stderr: res.Stderr})
 	}
 	return nil
 }

@@ -1,209 +1,142 @@
 package reboot
 
 import (
+	"context"
 	"errors"
+	"io/fs"
 	"os"
-	"os/exec"
-	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/exec/exectest"
 )
 
-// withSeams snapshots and restores the package-level injection points so
-// tests can override them safely.
-func withSeams(t *testing.T) {
+func mgr(t *testing.T, r exec.Runner) Manager {
 	t.Helper()
-	origStat, origLookPath, origRunCmd := statFunc, lookPathFunc, runCmdFunc
-	t.Cleanup(func() {
-		statFunc = origStat
-		lookPathFunc = origLookPath
-		runCmdFunc = origRunCmd
+	m, err := New(r)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return m
+}
+
+// withStat redirects the marker-file stat seam for one test.
+func withStat(t *testing.T, fn func(string) (os.FileInfo, error)) {
+	t.Helper()
+	orig := statFunc
+	statFunc = fn
+	t.Cleanup(func() { statFunc = orig })
+}
+
+func TestNew_NilRunner(t *testing.T) {
+	if _, err := New(nil); err == nil {
+		t.Error("New(nil) returned nil error")
+	}
+}
+
+func TestIsRequired_MarkerPresent(t *testing.T) {
+	withStat(t, func(string) (os.FileInfo, error) { return nil, nil }) // exists
+	r := exectest.New(exec.Direct)
+	need, err := mgr(t, r).IsRequired(context.Background())
+	if err != nil || !need {
+		t.Fatalf("IsRequired = (%v,%v), want (true,nil)", need, err)
+	}
+	if len(r.Calls()) != 0 {
+		t.Error("marker present should short-circuit before running needs-restarting")
+	}
+}
+
+func TestIsRequired_MarkerStatError(t *testing.T) {
+	withStat(t, func(string) (os.FileInfo, error) {
+		return nil, &fs.PathError{Op: "stat", Err: errors.New("permission denied")}
+	})
+	if _, err := mgr(t, exectest.New(exec.Direct)).IsRequired(context.Background()); err == nil {
+		t.Error("a non-ENOENT stat error should surface, not be swallowed")
+	}
+}
+
+func TestIsRequired_NeedsRestarting(t *testing.T) {
+	withStat(t, func(string) (os.FileInfo, error) { return nil, os.ErrNotExist })
+	cases := []struct {
+		name   string
+		res    exec.Result
+		runErr error
+		want   bool
+	}{
+		{"reboot needed (exit 1)", exec.Result{ExitCode: 1}, nil, true},
+		{"no reboot (exit 0)", exec.Result{ExitCode: 0}, nil, false},
+		{"indeterminate (exit 2)", exec.Result{ExitCode: 2}, nil, false},
+		{"not installed (run error)", exec.Result{}, errors.New("exec: needs-restarting not found"), false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := exectest.New(exec.Direct)
+			r.Push(c.res, c.runErr)
+			need, err := mgr(t, r).IsRequired(context.Background())
+			if err != nil || need != c.want {
+				t.Fatalf("IsRequired = (%v,%v), want (%v,nil)", need, err, c.want)
+			}
+			cmd := r.Calls()[0]
+			if cmd.Name != "needs-restarting" || cmd.Escalate || strings.Join(cmd.Args, " ") != "-r" {
+				t.Errorf("command = %+v, want unprivileged `needs-restarting -r`", cmd)
+			}
+		})
+	}
+}
+
+func TestSchedule(t *testing.T) {
+	t.Run("default delay + message, escalated", func(t *testing.T) {
+		r := exectest.New(exec.Sudo)
+		if err := mgr(t, r).Schedule(context.Background(), "", "patching now"); err != nil {
+			t.Fatal(err)
+		}
+		cmd := r.Calls()[0]
+		if cmd.Name != "shutdown" || !cmd.Escalate {
+			t.Fatalf("command = %+v, want escalated shutdown", cmd)
+		}
+		if strings.Join(cmd.Args, " ") != "-r +1 patching now" {
+			t.Errorf("argv = %q, want `-r +1 patching now`", strings.Join(cmd.Args, " "))
+		}
+	})
+	t.Run("explicit delay, no message", func(t *testing.T) {
+		r := exectest.New(exec.Sudo)
+		if err := mgr(t, r).Schedule(context.Background(), "+5", ""); err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Join(r.Calls()[0].Args, " "); got != "-r +5" {
+			t.Errorf("argv = %q, want `-r +5`", got)
+		}
+	})
+	t.Run("non-zero exit is an error", func(t *testing.T) {
+		r := exectest.New(exec.Sudo)
+		r.Push(exec.Result{ExitCode: 1, Stderr: "Failed to schedule"}, nil)
+		if err := mgr(t, r).Schedule(context.Background(), "+1", ""); err == nil {
+			t.Error("Schedule swallowed a non-zero exit")
+		}
+	})
+	t.Run("exec failure is an error", func(t *testing.T) {
+		r := exectest.New(exec.Sudo)
+		r.Push(exec.Result{}, errors.New("sudo: a password is required"))
+		if err := mgr(t, r).Schedule(context.Background(), "+1", ""); err == nil {
+			t.Error("Schedule swallowed an exec failure")
+		}
 	})
 }
 
-// assertNeedsRestartingArgs fails the test if the runCmdFunc invocation does
-// not match the expected `needs-restarting -r` call. Used by Fedora-path
-// tests to catch regressions that would invoke the wrong binary or drop the
-// -r flag.
-func assertNeedsRestartingArgs(t *testing.T, name string, args []string) {
-	t.Helper()
-	if name != "/usr/bin/needs-restarting" {
-		t.Errorf("runCmd called with name=%q, want %q", name, "/usr/bin/needs-restarting")
-	}
-	if len(args) != 1 || args[0] != "-r" {
-		t.Errorf("runCmd called with args=%v, want [-r]", args)
-	}
-}
-
-// exitErrCode returns an *exec.ExitError that reports the given exit code,
-// produced by actually running a tiny shell command. Constructing one
-// directly isn't portable since ProcessState is OS-specific. Skips the test
-// if /bin/sh is not available in PATH (e.g. minimal containers).
-func exitErrCode(t *testing.T, code int) error {
-	t.Helper()
-	shPath, err := exec.LookPath("sh")
-	if err != nil {
-		t.Skipf("skipping test: sh not found in PATH: %v", err)
-	}
-	cmd := exec.Command(shPath, "-c", "exit "+itoa(code))
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	t.Fatalf("expected exit %d to produce an error", code)
-	return nil
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
-}
-
-func TestIsRequired_DebianFileExists(t *testing.T) {
-	withSeams(t)
-	dir := t.TempDir()
-	fakeFile := filepath.Join(dir, "reboot-required")
-	if err := os.WriteFile(fakeFile, []byte("*** System restart required ***\n"), 0644); err != nil {
+func TestCancel(t *testing.T) {
+	r := exectest.New(exec.Sudo)
+	if err := mgr(t, r).Cancel(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-
-	statFunc = func(name string) (os.FileInfo, error) {
-		if name == "/var/run/reboot-required" {
-			return os.Stat(fakeFile)
-		}
-		return os.Stat(name)
+	cmd := r.Calls()[0]
+	if cmd.Name != "shutdown" || !cmd.Escalate || strings.Join(cmd.Args, " ") != "-c" {
+		t.Errorf("command = %+v, want escalated `shutdown -c`", cmd)
 	}
 
-	if !IsRequired() {
-		t.Error("expected IsRequired() = true when reboot-required file exists")
+	r2 := exectest.New(exec.Sudo)
+	r2.Push(exec.Result{ExitCode: 1}, nil)
+	if err := mgr(t, r2).Cancel(context.Background()); err == nil {
+		t.Error("Cancel swallowed a non-zero exit")
 	}
-}
-
-func TestIsRequired_DebianFileAbsent(t *testing.T) {
-	withSeams(t)
-	statFunc = func(name string) (os.FileInfo, error) {
-		return nil, os.ErrNotExist
-	}
-	lookPathFunc = func(file string) (string, error) {
-		return "", exec.ErrNotFound
-	}
-
-	if IsRequired() {
-		t.Error("expected IsRequired() = false when no detection method available")
-	}
-}
-
-// An unexpected stat error (e.g. EACCES) must NOT short-circuit to true and
-// must fall through to the needs-restarting branch.
-func TestIsRequired_DebianStatUnexpectedError(t *testing.T) {
-	withSeams(t)
-	statFunc = func(name string) (os.FileInfo, error) {
-		return nil, os.ErrPermission
-	}
-	lookPathFunc = func(file string) (string, error) {
-		return "", exec.ErrNotFound
-	}
-
-	if IsRequired() {
-		t.Error("expected IsRequired() = false when stat fails with permission error and no fallback")
-	}
-}
-
-func TestIsRequired_FedoraRebootNeeded(t *testing.T) {
-	withSeams(t)
-	statFunc = func(name string) (os.FileInfo, error) {
-		return nil, os.ErrNotExist
-	}
-	lookPathFunc = func(file string) (string, error) {
-		if file == "needs-restarting" {
-			return "/usr/bin/needs-restarting", nil
-		}
-		return "", exec.ErrNotFound
-	}
-	runCmdFunc = func(name string, args ...string) error {
-		assertNeedsRestartingArgs(t, name, args)
-		return exitErrCode(t, 1)
-	}
-
-	if !IsRequired() {
-		t.Error("expected IsRequired() = true when needs-restarting exits 1")
-	}
-}
-
-func TestIsRequired_FedoraNoReboot(t *testing.T) {
-	withSeams(t)
-	statFunc = func(name string) (os.FileInfo, error) {
-		return nil, os.ErrNotExist
-	}
-	lookPathFunc = func(file string) (string, error) {
-		return "/usr/bin/needs-restarting", nil
-	}
-	runCmdFunc = func(name string, args ...string) error {
-		assertNeedsRestartingArgs(t, name, args)
-		return nil // exit 0
-	}
-
-	if IsRequired() {
-		t.Error("expected IsRequired() = false when needs-restarting exits 0")
-	}
-}
-
-// needs-restarting exit codes other than 0 and 1 must NOT be interpreted as
-// "reboot needed" — only exit 1 means that.
-func TestIsRequired_FedoraOtherExitCode(t *testing.T) {
-	withSeams(t)
-	statFunc = func(name string) (os.FileInfo, error) {
-		return nil, os.ErrNotExist
-	}
-	lookPathFunc = func(file string) (string, error) {
-		return "/usr/bin/needs-restarting", nil
-	}
-	runCmdFunc = func(name string, args ...string) error {
-		assertNeedsRestartingArgs(t, name, args)
-		return exitErrCode(t, 2)
-	}
-
-	if IsRequired() {
-		t.Error("expected IsRequired() = false when needs-restarting exits with code 2")
-	}
-}
-
-// If runCmd returns a non-ExitError (e.g. *exec.Error wrapping ENOENT), we
-// must NOT report a reboot — log and return false.
-func TestIsRequired_FedoraRunCmdNonExitError(t *testing.T) {
-	withSeams(t)
-	statFunc = func(name string) (os.FileInfo, error) {
-		return nil, os.ErrNotExist
-	}
-	lookPathFunc = func(file string) (string, error) {
-		return "/usr/bin/needs-restarting", nil
-	}
-	runCmdFunc = func(name string, args ...string) error {
-		assertNeedsRestartingArgs(t, name, args)
-		return &exec.Error{Name: name, Err: errors.New("permission denied")}
-	}
-
-	if IsRequired() {
-		t.Error("expected IsRequired() = false when needs-restarting fails to execute")
-	}
-}
-
-func TestIsRequired_LiveSystem(t *testing.T) {
-	result := IsRequired()
-	t.Logf("IsRequired() = %v (live system)", result)
 }
