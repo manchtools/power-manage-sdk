@@ -1,306 +1,116 @@
-// Package service provides service-manager operations that dispatch
-// through a configurable backend. The default backend is systemd; call
-// SetServiceBackend at agent startup to select a different one. The
-// public API is stable across backends — an implementation that lacks
-// a particular capability returns ErrBackendNotSupported so callers
-// can surface a clear error rather than silently misbehaving.
+// Package service manages init/service units through an injected exec.Runner.
+//
+// Build a Manager for an explicit backend (systemd is the only one today) and a
+// Runner, then call its methods. Query verbs (is-enabled/is-active) run
+// unprivileged; mutations escalate through the Runner.
+//
+//	r, _ := exec.NewRunner(exec.Direct)
+//	svc, _ := service.New(service.Systemd, r)
+//	_ = svc.EnableNow(ctx, "nginx.service")
+//
+// Detect reports whether systemd is usable on the host so a consumer can choose
+// a backend explicitly.
 package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"sync/atomic"
+	"os"
+	osexec "os/exec"
+	"time"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
-// ServiceBackend identifies which service-manager the SDK targets.
-type ServiceBackend int
+// Backend selects the service-manager implementation. Passed explicitly even
+// though systemd is the only value today; the zero value is invalid
+// (New → ErrUnknownBackend). The deleted OpenRC/Runit/S6 scaffolds — which only
+// ever returned "not supported" — are not ported; a real second backend is
+// appended here when actually written.
+type Backend int
 
-const (
-	// ServiceBackendSystemd wraps systemctl. Default.
-	ServiceBackendSystemd ServiceBackend = 0
-	// ServiceBackendOpenRC wraps rc-service / rc-update.
-	ServiceBackendOpenRC ServiceBackend = 1
-	// ServiceBackendRunit wraps sv / update-service.
-	ServiceBackendRunit ServiceBackend = 2
-	// ServiceBackendS6 wraps s6-rc.
-	ServiceBackendS6 ServiceBackend = 3
-)
+// Systemd wraps systemctl.
+const Systemd Backend = iota + 1
 
-// ErrBackendNotSupported is returned when the caller requests an
-// operation on a backend that has not been implemented yet. Callers
-// can errors.Is against this sentinel to decide whether to fall back
-// or surface a clear diagnostic.
-var ErrBackendNotSupported = errors.New("service backend not supported")
+// ErrUnknownBackend is returned by New for the zero value or any Backend the SDK
+// does not implement (fail-closed).
+var ErrUnknownBackend = fmt.Errorf("service: unknown backend")
 
-// UnitStatus is the cross-backend view of a unit's current state.
-// Implementations fill in whichever subset of these fields their
-// backend can answer and leave the rest false.
+// UnitStatus is a unit's current state.
 type UnitStatus struct {
-	Enabled bool
+	Enabled bool // explicitly enabled (systemctl enable), not boot-via-dependency
 	Active  bool
 	Masked  bool
-	Static  bool
+	Static  bool // starts at boot via deps but cannot be enabled/disabled
 }
 
-var backend atomic.Int32
+// Manager is the service-manager contract.
+type Manager interface {
+	Status(ctx context.Context, unit string) (UnitStatus, error)
+	IsEnabled(ctx context.Context, unit string) (bool, error)
+	IsActive(ctx context.Context, unit string) (bool, error)
+	IsMasked(ctx context.Context, unit string) (bool, error)
+	Enable(ctx context.Context, unit string) error
+	Disable(ctx context.Context, unit string) error
+	EnableNow(ctx context.Context, unit string) error
+	DisableNow(ctx context.Context, unit string) error
+	Start(ctx context.Context, unit string) error
+	Stop(ctx context.Context, unit string) error
+	Restart(ctx context.Context, unit string) error
+	Mask(ctx context.Context, unit string) error
+	Unmask(ctx context.Context, unit string) error
+	DaemonReload(ctx context.Context) error
+	WriteUnit(ctx context.Context, unit, content string) error
+	RemoveUnit(ctx context.Context, unit string) error
+}
 
-// SetBackend selects the active backend. Call this once at
-// startup from agent code. Unknown values are ignored so a zero-valued
-// proto enum can never regress an explicitly-set backend.
-//
-// Naming: docs/backend-pattern.md prescribes plain SetBackend /
-// CurrentBackend; the SetServiceBackend / CurrentServiceBackend
-// spellings are retained as deprecated aliases so existing callers
-// keep compiling. New code should use SetBackend / CurrentBackend.
-func SetBackend(b ServiceBackend) {
-	switch b {
-	case ServiceBackendSystemd, ServiceBackendOpenRC, ServiceBackendRunit, ServiceBackendS6:
-		backend.Store(int32(b))
+// Option is the functional-option type for backend-specific knobs (none today).
+type Option func(*systemd)
+
+// New returns a Manager for the named backend, driven by runner. Pure: validates
+// the backend is known; it does not probe the host (use Detect). The zero value
+// and any unimplemented backend are rejected with ErrUnknownBackend.
+func New(b Backend, runner exec.Runner, _ ...Option) (Manager, error) {
+	if b != Systemd {
+		return nil, fmt.Errorf("%w: %d", ErrUnknownBackend, int(b))
 	}
-}
-
-// CurrentBackend returns the active backend. Useful for agent code
-// that needs to render backend-specific paths or log output.
-func CurrentBackend() ServiceBackend {
-	return ServiceBackend(backend.Load())
-}
-
-// SetServiceBackend is a deprecated alias for SetBackend.
-//
-// Deprecated: use SetBackend instead.
-func SetServiceBackend(b ServiceBackend) { SetBackend(b) }
-
-// CurrentServiceBackend is a deprecated alias for CurrentBackend.
-//
-// Deprecated: use CurrentBackend instead.
-func CurrentServiceBackend() ServiceBackend { return CurrentBackend() }
-
-// unsupported returns a descriptive error for any backend without a
-// concrete implementation for the given operation.
-func unsupported(op string) error {
-	return fmt.Errorf("%w: %s on backend %s", ErrBackendNotSupported, op, CurrentBackend())
-}
-
-// String renders the backend as its canonical CLI name.
-func (b ServiceBackend) String() string {
-	switch b {
-	case ServiceBackendSystemd:
-		return "systemd"
-	case ServiceBackendOpenRC:
-		return "openrc"
-	case ServiceBackendRunit:
-		return "runit"
-	case ServiceBackendS6:
-		return "s6"
-	default:
-		return fmt.Sprintf("unknown(%d)", int(b))
+	if runner == nil {
+		return nil, fmt.Errorf("service: runner is required")
 	}
+	return &systemd{r: runner}, nil
 }
 
-// =============================================================================
-// Public API — dispatches to the active backend
-// =============================================================================
-
-// Status retrieves the current status of a unit. Returns
-// ErrBackendNotSupported if the active backend has no implementation,
-// or a validation error if the unit name is not well-formed.
-func Status(unitName string) (UnitStatus, error) {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		if err := validateUnitNameSystemd(unitName); err != nil {
-			return UnitStatus{}, err
-		}
-		return statusSystemd(unitName)
-	default:
-		return UnitStatus{}, unsupported("Status")
+// Detect reports the service backends usable on THIS host: Systemd when both
+// systemctl is on PATH and /run/systemd/system exists (systemd is PID 1). It
+// lists; it never picks. An empty slice means no usable service manager.
+func Detect(ctx context.Context) []Backend {
+	_ = ctx
+	if _, err := lookPath("systemctl"); err != nil {
+		return nil
 	}
+	if _, err := os.Stat(systemdRunMarker); err != nil {
+		return nil
+	}
+	return []Backend{Systemd}
 }
 
-// IsEnabled reports whether a unit is enabled (or in a state where
-// enabling is not needed, for backends that track that distinction).
-// Returns ErrBackendNotSupported if the active backend has no
-// implementation, or a validation error if the unit name is not
-// well-formed.
-func IsEnabled(unitName string) (bool, error) {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		if err := validateUnitNameSystemd(unitName); err != nil {
-			return false, err
-		}
-		return isEnabledSystemd(unitName)
-	default:
-		return false, unsupported("IsEnabled")
+const systemctlQueryTimeout = 30 * time.Second
+
+// ensureCtx applies the query timeout when the caller's context has no deadline.
+func ensureCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
 	}
+	return context.WithTimeout(ctx, systemctlQueryTimeout)
 }
 
-// IsMasked reports whether a unit is masked. Returns
-// ErrBackendNotSupported on backends without a masking concept so
-// callers can distinguish "not masked" from "backend cannot tell",
-// or a validation error if the unit name is not well-formed.
-func IsMasked(unitName string) (bool, error) {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		if err := validateUnitNameSystemd(unitName); err != nil {
-			return false, err
-		}
-		return isMaskedSystemd(unitName)
-	default:
-		return false, unsupported("IsMasked")
-	}
-}
-
-// IsActive reports whether a unit is currently active (running).
-// Returns ErrBackendNotSupported if the active backend has no
-// implementation, or a validation error if the unit name is not
-// well-formed.
-func IsActive(unitName string) (bool, error) {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		if err := validateUnitNameSystemd(unitName); err != nil {
-			return false, err
-		}
-		return isActiveSystemd(unitName)
-	default:
-		return false, unsupported("IsActive")
-	}
-}
-
-// DaemonReload reloads the service manager's on-disk configuration.
-func DaemonReload(ctx context.Context) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return daemonReloadSystemd(ctx)
-	default:
-		return unsupported("DaemonReload")
-	}
-}
-
-// Enable enables a unit (persistent across reboots).
-func Enable(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return enableSystemd(ctx, unitName)
-	default:
-		return unsupported("Enable")
-	}
-}
-
-// Disable disables a unit.
-func Disable(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return disableSystemd(ctx, unitName)
-	default:
-		return unsupported("Disable")
-	}
-}
-
-// Start starts a unit.
-func Start(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return startSystemd(ctx, unitName)
-	default:
-		return unsupported("Start")
-	}
-}
-
-// Stop stops a unit.
-func Stop(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return stopSystemd(ctx, unitName)
-	default:
-		return unsupported("Stop")
-	}
-}
-
-// Restart restarts a unit.
-func Restart(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return restartSystemd(ctx, unitName)
-	default:
-		return unsupported("Restart")
-	}
-}
-
-// Mask masks a unit, preventing it from being started.
-// Not all backends support masking; those that don't return
-// ErrBackendNotSupported.
-func Mask(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return maskSystemd(ctx, unitName)
-	default:
-		return unsupported("Mask")
-	}
-}
-
-// Unmask unmasks a unit.
-func Unmask(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return unmaskSystemd(ctx, unitName)
-	default:
-		return unsupported("Unmask")
-	}
-}
-
-// EnableNow enables and starts a unit.
-func EnableNow(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return enableNowSystemd(ctx, unitName)
-	default:
-		return unsupported("EnableNow")
-	}
-}
-
-// DisableNow disables and stops a unit.
-func DisableNow(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return disableNowSystemd(ctx, unitName)
-	default:
-		return unsupported("DisableNow")
-	}
-}
-
-// ValidateUnitName validates the unit name per the active backend's
-// naming rules (e.g., systemd requires a type suffix). Returns an
-// error describing the violation.
-func ValidateUnitName(unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return validateUnitNameSystemd(unitName)
-	default:
-		return unsupported("ValidateUnitName")
-	}
-}
-
-// WriteUnit writes the unit file content to the backend's conventional
-// location (/etc/systemd/system for systemd, /etc/init.d for openrc, etc.).
-// content is passed through verbatim.
-func WriteUnit(ctx context.Context, unitName, content string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return writeUnitSystemd(ctx, unitName, content)
-	default:
-		return unsupported("WriteUnit")
-	}
-}
-
-// RemoveUnit deletes the unit file from the backend's location.
-// Returns an error if the unit name is invalid for the active backend
-// or if the backend has no implementation; the filesystem removal
-// itself remains best-effort.
-func RemoveUnit(ctx context.Context, unitName string) error {
-	switch CurrentBackend() {
-	case ServiceBackendSystemd:
-		return removeUnitSystemd(ctx, unitName)
-	default:
-		return unsupported("RemoveUnit")
-	}
-}
+// Package-var seams. lookPath + systemdRunMarker make Detect deterministically
+// testable; the fs seams make WriteUnit/RemoveUnit hermetic (fs gains its own
+// injected Runner in a later capability PR).
+var (
+	lookPath         = osexec.LookPath
+	systemdRunMarker = "/run/systemd/system"
+	writeFileAtomic  = fs.WriteFileAtomic
+	removeStrict     = fs.RemoveStrict
+)
