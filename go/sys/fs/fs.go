@@ -221,7 +221,7 @@ func WriteFileAtomic(ctx context.Context, path, content, mode, owner, group stri
 	if err := ValidatePath(path); err != nil {
 		return err
 	}
-	if exec.CurrentPrivilegeBackend() == exec.PrivilegeBackendRoot {
+	if exec.CurrentPrivilegeBackend() == exec.Direct {
 		return writeFileAtomicRoot(path, content, mode, owner, group)
 	}
 	return writeFileAtomicEscalated(ctx, path, content, mode, owner, group)
@@ -423,7 +423,7 @@ func RemoveDir(ctx context.Context, path string) error {
 	// (WS6 #4). Non-root callers cannot openat as root, so they fall back
 	// to the privilege-backend `rm -rf` (not symlink-safe, but not the
 	// root agent's path).
-	if exec.CurrentPrivilegeBackend() == exec.PrivilegeBackendRoot {
+	if exec.CurrentPrivilegeBackend() == exec.Direct {
 		return removeDirSecure(ctx, clean)
 	}
 	_, err := exec.Privileged(ctx, "rm", "-rf", "--", clean)

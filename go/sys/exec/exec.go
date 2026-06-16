@@ -174,6 +174,17 @@ func composeEnv(childPath string, envVars []string) []string {
 // A nil env inherits the parent environment fully; a non-nil env (even an
 // empty one) replaces it.
 func runStreamingWithEnv(ctx context.Context, name string, args []string, env []string, dir string, callback OutputCallback) (*Result, error) {
+	return runStreamingWithStdin(ctx, name, args, nil, env, dir, callback)
+}
+
+// runStreamingWithStdin is the shared low-level execution core: line-buffered
+// streaming with a per-stream MaxOutputBytes cap, ctx-cancel SIGTERM→SIGKILL
+// process-group escalation, and non-zero-exit-is-NOT-an-error semantics (the
+// exit code is in Result; the returned error is non-nil only on failure to
+// execute or ctx cancellation). Both the legacy RunStreaming* entry points
+// (stdin nil) and the injected Runner build on it. A nil env inherits the
+// parent environment fully; a non-nil env (even empty) replaces it.
+func runStreamingWithStdin(ctx context.Context, name string, args []string, stdin io.Reader, env []string, dir string, callback OutputCallback) (*Result, error) {
 	c := cmd.NewCmdOptions(cmd.Options{
 		Buffered:       false,
 		Streaming:      true,
@@ -187,7 +198,12 @@ func runStreamingWithEnv(ctx context.Context, name string, args []string, env []
 		c.Env = env
 	}
 
-	statusChan := c.Start()
+	var statusChan <-chan cmd.Status
+	if stdin != nil {
+		statusChan = c.StartWithStdin(stdin)
+	} else {
+		statusChan = c.Start()
+	}
 
 	var stdoutSeq, stderrSeq int64
 	var stdoutBuf, stderrBuf strings.Builder

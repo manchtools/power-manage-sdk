@@ -1,8 +1,14 @@
 // Package exec provides command execution utilities for Linux system management.
 //
 // It wraps the go-cmd library to provide buffered and streaming command execution
-// with privilege-escalation support (sudo or doas, selectable via
-// SetPrivilegeBackend), context cancellation, and output truncation.
+// with privilege escalation, context cancellation, and output truncation.
+//
+// New code uses the injected Runner: build one with NewRunner(Sudo|Doas|Direct)
+// (Detect lists the escalation tools available on the host) and pass it to a
+// capability constructor. The Runner carries no global state and is unit-testable
+// with exectest.FakeRunner. The package-level Run*/Privileged* functions and the
+// SetPrivilegeBackend global are the legacy path, retained only until every
+// capability is migrated onto the Runner.
 package exec
 
 // MaxOutputBytes is the maximum number of bytes captured per output stream.
