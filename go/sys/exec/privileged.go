@@ -8,76 +8,66 @@ import (
 	"sync/atomic"
 )
 
-// PrivilegeBackend selects which privilege-escalation tool Privileged
-// and PrivilegedWithStdin dispatch through. The SDK defaults to the
-// sudo backend; agents running on doas-only hosts call
-// SetPrivilegeBackend(PrivilegeBackendDoas) once at startup, and
-// agents running as root (post sudoers-removal architecture) call
-// SetPrivilegeBackend(PrivilegeBackendRoot) so the dispatch becomes
-// a direct exec instead of a sudo/doas wrap.
-type PrivilegeBackend int
+// This file is the LEGACY process-global privilege path. It is retained, and
+// still load-bearing, only while the capability packages are migrated onto the
+// injected Runner (see runner.go / sdk-rework-design.md Decision 2). It is
+// deleted in the final cleanup PR once no caller reads the global. New code must
+// use NewRunner, never SetPrivilegeBackend.
+//
+// The PrivilegeBackend type and the Sudo/Doas/Direct values are defined in
+// runner.go (the ratified, fail-closed enum). The global below preserves the
+// historical default-to-sudo behaviour for not-yet-migrated callers: an unset
+// global (the invalid zero value) still resolves to sudo via privilegeTool.
 
-const (
-	// PrivilegeBackendSudo wraps commands with `sudo -n`. Default.
-	PrivilegeBackendSudo PrivilegeBackend = 0
-	// PrivilegeBackendDoas wraps commands with `doas -n`.
-	PrivilegeBackendDoas PrivilegeBackend = 1
-	// PrivilegeBackendRoot runs commands directly with no escalation
-	// wrapper. Use when the agent process is already root — sudo's
-	// "root needs to be in sudoers" check varies by distro (opensuse
-	// rejects it by default), and rolling our own no-op pass-through
-	// avoids both that quirk and the cost of forking sudo just to
-	// re-exec the same binary.
-	PrivilegeBackendRoot PrivilegeBackend = 2
-)
-
-// backend stores the active PrivilegeBackend as an int32. Access is
-// via atomic load/store so the setter is safe to call concurrently
-// with any in-flight Privileged call (though in practice the setter
-// runs once at startup).
+// backend stores the active PrivilegeBackend as an int32. Access is via atomic
+// load/store so the setter is safe to call concurrently with any in-flight
+// Privileged call (though in practice the setter runs once at startup).
 var backend atomic.Int32
 
-// SetPrivilegeBackend selects which escalation tool Privileged,
-// PrivilegedWithStdin, and PrivilegedStreaming use. Call this once
-// at startup from the agent's main() based on configuration. Valid
-// values are PrivilegeBackendSudo (default), PrivilegeBackendDoas,
-// and PrivilegeBackendRoot; unknown values are ignored so callers
-// don't accidentally silence the dispatch by passing 0 from a
-// zero-valued proto enum.
+// SetPrivilegeBackend selects which escalation tool the legacy Privileged,
+// PrivilegedWithStdin, and PrivilegedStreaming dispatch through. Call once at
+// startup. Valid values are Sudo, Doas, and Direct; unknown values are ignored
+// so a caller can't silence the dispatch by passing an uninitialised value.
+//
+// Prefer NewRunner and inject the Runner. This global is removed once
+// the capability migration is complete.
 func SetPrivilegeBackend(b PrivilegeBackend) {
 	switch b {
-	case PrivilegeBackendSudo, PrivilegeBackendDoas, PrivilegeBackendRoot:
+	case Sudo, Doas, Direct:
 		backend.Store(int32(b))
 	}
 }
 
-// CurrentPrivilegeBackend returns the active backend. Useful for tests
-// and for agent code that needs to render backend-specific file paths
-// (e.g. /etc/sudoers.d vs /etc/doas.d).
+// CurrentPrivilegeBackend returns the active legacy backend. Used by code that
+// renders backend-specific paths (e.g. /etc/sudoers.d vs /etc/doas.d) and by
+// fs's privilege-keyed write/delete path during the migration window.
+//
+// Prefer Runner.Backend() on an injected Runner.
 func CurrentPrivilegeBackend() PrivilegeBackend {
 	return PrivilegeBackend(backend.Load())
 }
 
-// privilegeTool returns the CLI name for the active backend.
-// Returns the empty string for PrivilegeBackendRoot, which signals
-// the dispatchers to skip the wrapper entirely.
+// privilegeTool returns the CLI name for the active legacy backend. Direct
+// returns "" (skip the wrapper). The unset/zero value resolves to sudo, the
+// historical default for callers that never called SetPrivilegeBackend.
 func privilegeTool() string {
 	switch CurrentPrivilegeBackend() {
-	case PrivilegeBackendDoas:
+	case Doas:
 		return "doas"
-	case PrivilegeBackendRoot:
+	case Direct:
 		return ""
 	default:
 		return "sudo"
 	}
 }
 
-// Privileged runs name with args under the configured privilege backend
-// (sudo by default, doas when SetPrivilegeBackend has been called, or
-// directly with no wrapper when the backend is root). The command is
-// resolved to an absolute path so it matches sudoers/doas.conf rules.
-// The backend is invoked with `-n` to fail immediately rather than
+// Privileged runs name with args under the configured legacy privilege backend
+// (sudo by default, doas when set, or directly with no wrapper when Direct).
+// The command is resolved to an absolute path so it matches sudoers/doas.conf
+// rules. The backend is invoked with `-n` to fail immediately rather than
 // prompting — agents never get a terminal to enter a password.
+//
+// Prefer Runner.Run with Command{Escalate: true}.
 func Privileged(ctx context.Context, name string, args ...string) (*Result, error) {
 	absPath, err := exec.LookPath(name)
 	if err != nil {
@@ -85,7 +75,7 @@ func Privileged(ctx context.Context, name string, args ...string) (*Result, erro
 	}
 	tool := privilegeTool()
 	if tool == "" {
-		// Root backend — direct exec, no wrapper.
+		// Direct backend — direct exec, no wrapper.
 		return Run(ctx, absPath, args...)
 	}
 	if _, err := exec.LookPath(tool); err != nil {
@@ -96,6 +86,8 @@ func Privileged(ctx context.Context, name string, args ...string) (*Result, erro
 }
 
 // PrivilegedWithStdin is the stdin-accepting variant of Privileged.
+//
+// Prefer Runner.Run with Command{Escalate: true, Stdin: r}.
 func PrivilegedWithStdin(ctx context.Context, stdin io.Reader, name string, args ...string) (*Result, error) {
 	absPath, err := exec.LookPath(name)
 	if err != nil {
@@ -112,17 +104,12 @@ func PrivilegedWithStdin(ctx context.Context, stdin io.Reader, name string, args
 	return RunWithStdin(ctx, stdin, tool, wrapped...)
 }
 
-// PrivilegedStreaming is the streaming variant of Privileged. Same
-// privilege wrapping as Privileged (absolute-path resolution, `-n`
-// flag, backend-installed check) but dispatches through
-// RunStreaming so callers can observe stdout/stderr lines as they
-// arrive via the OutputCallback.
+// PrivilegedStreaming is the streaming variant of Privileged. Same privilege
+// wrapping as Privileged (absolute-path resolution, `-n` flag, backend-installed
+// check) but dispatches through RunStreaming so callers can observe stdout/stderr
+// lines as they arrive via the OutputCallback.
 //
-// Used by agent action types that produce long-running output
-// (shell scripts under sudo, package-manager streaming) where
-// buffering the entire output before returning would delay the
-// operator's view of progress and could push large results past
-// MaxOutputBytes.
+// Prefer Runner.Stream with Command{Escalate: true}.
 func PrivilegedStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
 	absPath, err := exec.LookPath(name)
 	if err != nil {

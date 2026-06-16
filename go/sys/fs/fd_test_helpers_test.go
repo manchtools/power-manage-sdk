@@ -30,6 +30,18 @@ func fileUID(t *testing.T, info os.FileInfo) int {
 func useRootBackend(t *testing.T) {
 	t.Helper()
 	prev := exec.CurrentPrivilegeBackend()
-	exec.SetPrivilegeBackend(exec.PrivilegeBackendRoot)
-	t.Cleanup(func() { exec.SetPrivilegeBackend(prev) })
+	exec.SetPrivilegeBackend(exec.Direct)
+	t.Cleanup(func() {
+		switch prev {
+		case exec.Sudo, exec.Doas, exec.Direct:
+			exec.SetPrivilegeBackend(prev)
+		default:
+			// Pre-rework the unset zero value resolved to sudo, so the captured
+			// "prev" round-tripped cleanly. The fail-closed enum now makes the
+			// zero value invalid, which SetPrivilegeBackend ignores — leaving the
+			// global stuck on Direct and breaking later non-root sudo-path tests.
+			// Restore the historical default (sudo) explicitly.
+			exec.SetPrivilegeBackend(exec.Sudo)
+		}
+	})
 }
