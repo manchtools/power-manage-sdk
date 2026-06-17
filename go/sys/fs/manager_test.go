@@ -287,11 +287,9 @@ func TestReadFile_ReturnsStdoutVerbatim(t *testing.T) {
 	if got := argv(f.Calls()[0]); got != "cat -- /etc/app.conf" {
 		t.Errorf("cat argv = %q", got)
 	}
-	// cat must run under a forced C locale so the "No such file" stderr check in
-	// ReadFile is reliable on non-English hosts.
-	if !f.Calls()[0].CLocale {
-		t.Error("cat Command must set CLocale for locale-stable error parsing")
-	}
+	// Locale stability (the "No such file" check working on non-English hosts) is
+	// the Runner's invariant now, pinned by exec.TestRunner_ForcesDeterministicEnv
+	// + the fs integration suite running under ja_JP — not a per-Command flag.
 }
 
 func TestReadFile_DoesNotReAddNewline(t *testing.T) {

@@ -31,13 +31,17 @@ const (
 // required. The capability layer fills this in and sets Escalate per operation;
 // it is escalation-method-agnostic. The Runner alone turns Escalate into the
 // concrete sudo/doas/bare invocation.
+//
+// There is no locale knob: the Runner ALWAYS forces a deterministic environment
+// (LC_ALL=C, LANG=C, NO_COLOR=1) on every command so the SDK's parsing of tool
+// output is locale/format-stable by construction. It is not overridable — those
+// names are rejected if passed via Env. (TZ is deliberately left to the device.)
 type Command struct {
 	Name      string    // resolved to an absolute path before escalation
 	Args      []string  // operands; the caller pre-applies SeparatePositionals
 	Dir       string    // "" = inherit cwd
 	Env       []string  // extra KEY=VALUE; screened by the env hijack blocklist
 	Stdin     io.Reader // "" = no stdin
-	CLocale   bool      // force LC_ALL=C / LANG=C for stable English-only parsing
 	ChildPath string    // explicit, isolating child PATH; "" = inherit/sanitized
 	Escalate  bool      // run through the privilege backend
 }
@@ -202,25 +206,44 @@ func detectEscalationDenied(b PrivilegeBackend, res Result) error {
 	return nil
 }
 
-// buildChildEnv composes and validates the Command's child environment. The
-// hijack blocklist (LD_PRELOAD, PATH, BASH_ENV, …) is enforced on Command.Env;
+// forcedEnv is the deterministic environment the Runner imposes on EVERY command
+// so the SDK's parsing of tool output is locale/format-stable by construction:
+// English C locale (which also pins LC_NUMERIC/LC_TIME/LC_COLLATE, not just
+// messages) and NO_COLOR to suppress ANSI escapes. It is appended LAST so it wins
+// over any inherited or caller-supplied value; callers cannot set these (they are
+// rejected in validateEnvVars). TZ is intentionally NOT forced — the SDK parses
+// no timestamps and a consumer expects the device-local zone.
+var forcedEnv = []string{"LC_ALL=C", "LANG=C", "NO_COLOR=1"}
+
+// buildChildEnv composes and validates the Command's child environment, then
+// imposes forcedEnv (non-overridable). The hijack blocklist (LD_PRELOAD, PATH,
+// BASH_ENV, …) plus the forced-locale/NO_COLOR names are enforced on Command.Env;
 // a curated PATH goes through ChildPath, which REPLACES (never augments) the
-// parent env — the isolation the per-user runuser fan-out needs. A nil return
-// means "inherit the parent fully" (the contract when no customization is
-// requested).
+// parent env — the isolation the per-user runuser fan-out needs. The default
+// (no ChildPath, no Env) inherits the parent fully; in every case forcedEnv is
+// appended last so the deterministic vars always win.
 func buildChildEnv(c Command) ([]string, error) {
-	extra := append([]string(nil), c.Env...)
-	if c.CLocale {
-		extra = append(extra, "LC_ALL=C", "LANG=C")
-	}
-	if err := validateEnvVars(extra); err != nil {
+	if err := validateEnvVars(c.Env); err != nil {
 		return nil, err
 	}
-	if c.ChildPath != "" {
-		return composeEnv(c.ChildPath, extra), nil // curated PATH; parent NOT inherited
+	// The forced-locale/NO_COLOR names are the Runner's invariant — a consumer
+	// may not set them via Env (they'd be silently overridden anyway; reject
+	// explicitly so a mistake surfaces).
+	for _, e := range c.Env {
+		if key, _, _ := strings.Cut(e, "="); isReservedEnvVar(key) {
+			return nil, fmt.Errorf("%w: %q is forced by the Runner (LC_ALL=C/LANG=C/NO_COLOR=1) and may not be set via Command.Env", ErrReservedEnvVar, key)
+		}
 	}
-	if len(extra) > 0 {
-		return composeEnv(os.Getenv("PATH"), extra), nil // sanitized parent PATH + extras
+	switch {
+	case c.ChildPath != "":
+		// Curated, isolating env (runuser fan-out): PATH + caller Env + forced.
+		return append(composeEnv(c.ChildPath, c.Env), forcedEnv...), nil
+	case len(c.Env) > 0:
+		// Sanitized parent PATH + caller Env + forced (the env-only contract).
+		return append(composeEnv(os.Getenv("PATH"), c.Env), forcedEnv...), nil
+	default:
+		// Inherit the parent fully, then force the deterministic vars on top.
+		env := append([]string(nil), os.Environ()...)
+		return append(env, forcedEnv...), nil
 	}
-	return nil, nil // inherit parent fully
 }

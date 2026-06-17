@@ -211,18 +211,44 @@ func TestRunner_AllowedEnvReachesChild(t *testing.T) {
 	}
 }
 
-// CLocale forces LC_ALL=C / LANG=C so the agent's English-only output parsers
-// are stable regardless of the host locale.
-func TestRunner_CLocaleForcesC(t *testing.T) {
+// The Runner forces a deterministic environment (LC_ALL=C, LANG=C, NO_COLOR=1)
+// on EVERY command — not a per-command opt-in — so the SDK's parsing of tool
+// output is locale/format-stable regardless of the host locale.
+func TestRunner_ForcesDeterministicEnv(t *testing.T) {
 	res, err := directRunner(t).Run(context.Background(), Command{
-		Name: "sh", Args: []string{"-c", "printf %s \"$LC_ALL\""},
-		CLocale: true,
+		Name: "sh", Args: []string{"-c", `printf '%s|%s|%s' "$LC_ALL" "$LANG" "$NO_COLOR"`},
 	})
 	if err != nil {
 		t.Fatalf("Run err = %v", err)
 	}
-	if strings.TrimSpace(res.Stdout) != "C" {
-		t.Errorf("LC_ALL in child = %q, want C", res.Stdout)
+	if got := strings.TrimSpace(res.Stdout); got != "C|C|1" {
+		t.Errorf("forced LC_ALL|LANG|NO_COLOR = %q, want \"C|C|1\"", got)
+	}
+}
+
+// A consumer cannot override the forced deterministic env via Command.Env — the
+// reserved names are rejected before the command runs.
+func TestRunner_RejectsReservedEnv(t *testing.T) {
+	for _, e := range []string{"LANG=ja_JP.UTF-8", "LC_ALL=ja_JP.UTF-8", "LC_NUMERIC=de_DE.UTF-8", "LANGUAGE=ja", "NO_COLOR="} {
+		_, err := directRunner(t).Run(context.Background(), Command{Name: "true", Env: []string{e}})
+		if !errors.Is(err, ErrReservedEnvVar) {
+			t.Errorf("Run with Env %q err = %v, want ErrReservedEnvVar", e, err)
+		}
+	}
+}
+
+// The forced env is an OVERRIDE, not a replacement: a plain command still
+// inherits the parent environment; only the deterministic vars are pinned.
+func TestRunner_InheritsParentEnvWhilePinningLocale(t *testing.T) {
+	t.Setenv("PM_TEST_INHERIT", "visible")
+	res, err := directRunner(t).Run(context.Background(), Command{
+		Name: "sh", Args: []string{"-c", `printf '%s|%s' "$PM_TEST_INHERIT" "$LC_ALL"`},
+	})
+	if err != nil {
+		t.Fatalf("Run err = %v", err)
+	}
+	if got := strings.TrimSpace(res.Stdout); got != "visible|C" {
+		t.Errorf("got %q, want \"visible|C\" (parent var inherited + locale pinned)", got)
 	}
 }
 

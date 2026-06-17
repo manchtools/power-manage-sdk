@@ -132,12 +132,12 @@ func (m *manager) direct() bool { return m.r.Backend() == pmexec.Direct }
 // Result.ExitCode (not the error); the error is non-nil only when the command
 // could not be executed or escalation failed.
 //
-// CLocale forces LC_ALL=C / LANG=C so any stderr/stdout the caller parses is the
+// The Runner forces the C locale so any stderr/stdout the caller parses is the
 // stable English form regardless of host locale — ReadFile's "No such file"
 // missing-file detection depends on it (a localized cat error would otherwise be
 // misread as a hard failure).
 func (m *manager) runPriv(ctx context.Context, name string, args ...string) (pmexec.Result, error) {
-	return m.r.Run(ctx, pmexec.Command{Name: name, Args: args, CLocale: true, Escalate: true})
+	return m.r.Run(ctx, pmexec.Command{Name: name, Args: args, Escalate: true})
 }
 
 // runPrivStdin is runPriv with stdin (the tee write path).
@@ -146,17 +146,17 @@ func (m *manager) runPrivStdin(ctx context.Context, stdin string, name string, a
 	if stdin != "" {
 		in = strings.NewReader(stdin)
 	}
-	cmd := pmexec.Command{Name: name, Args: args, CLocale: true, Escalate: true}
+	cmd := pmexec.Command{Name: name, Args: args, Escalate: true}
 	if in != nil {
 		cmd.Stdin = in
 	}
 	return m.r.Run(ctx, cmd)
 }
 
-// runQuery runs an unprivileged read (findmnt) through the Runner. CLocale keeps
-// the output parse locale-stable, matching runPriv.
+// runQuery runs an unprivileged read (findmnt) through the Runner. The Runner
+// forces the C locale, keeping the output parse locale-stable.
 func (m *manager) runQuery(ctx context.Context, name string, args ...string) (pmexec.Result, error) {
-	return m.r.Run(ctx, pmexec.Command{Name: name, Args: args, CLocale: true})
+	return m.r.Run(ctx, pmexec.Command{Name: name, Args: args})
 }
 
 // cmdError turns a completed command's Result into a typed error when its exit

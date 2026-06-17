@@ -17,6 +17,24 @@ var ErrInvalidEnvVar = errors.New("invalid env entry")
 // RunStreaming caller doesn't have to remember the check.
 var ErrBlockedEnvVar = errors.New("env var blocked by hijack-prevention allowlist")
 
+// ErrReservedEnvVar is returned when an env entry tries to set a variable the
+// Runner forces for deterministic output (the locale family + NO_COLOR). The SDK
+// parses standardized tool output, so a consumer must not be able to change the
+// locale/color of a command — these are imposed by the Runner, not negotiable.
+var ErrReservedEnvVar = errors.New("env var reserved by the SDK for deterministic output")
+
+// isReservedEnvVar reports whether name is one the Runner forces and a caller
+// therefore may not set via Command.Env: the whole LC_* family, LANG, LANGUAGE
+// (all neutralised by the forced LC_ALL=C), and NO_COLOR. Case-insensitive.
+func isReservedEnvVar(name string) bool {
+	upper := strings.ToUpper(name)
+	switch upper {
+	case "LANG", "LANGUAGE", "NO_COLOR":
+		return true
+	}
+	return strings.HasPrefix(upper, "LC_")
+}
+
 // ValidEnvVarName matches safe environment variable names (letters, digits, underscore).
 var ValidEnvVarName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 

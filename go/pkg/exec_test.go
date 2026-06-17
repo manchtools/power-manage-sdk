@@ -9,7 +9,7 @@ import (
 	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-func TestRunRead_BuildsUnprivilegedCLocaleCommand(t *testing.T) {
+func TestRunRead_BuildsUnprivilegedCommand(t *testing.T) {
 	f := newFake()
 	ok(f, "stdout-here")
 	res, err := runRead(context.Background(), f, "apt", "search", "vim")
@@ -26,9 +26,8 @@ func TestRunRead_BuildsUnprivilegedCLocaleCommand(t *testing.T) {
 	if c.Escalate {
 		t.Error("reads must not escalate")
 	}
-	if !c.CLocale {
-		t.Error("reads must force the C locale for stable parsing")
-	}
+	// Locale stability is the Runner's invariant (TestRunner_ForcesDeterministicEnv),
+	// not a per-command flag — nothing to assert on the Command here.
 }
 
 func TestRunRead_PropagatesExecError(t *testing.T) {
@@ -48,9 +47,6 @@ func TestRunPriv_EscalatesAndCarriesEnv(t *testing.T) {
 	c := f.Calls()[0]
 	if !c.Escalate {
 		t.Error("runPriv(escalate=true) must set Escalate")
-	}
-	if !c.CLocale {
-		t.Error("runPriv must force the C locale")
 	}
 	if len(c.Env) != 1 || c.Env[0] != "DEBIAN_FRONTEND=noninteractive" {
 		t.Errorf("env = %v", c.Env)

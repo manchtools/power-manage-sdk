@@ -23,7 +23,7 @@ type apt struct {
 var _ Manager = (*apt)(nil)
 
 // aptWriteEnv prevents debconf from attempting an interactive frontend when
-// there is no terminal. The C locale is forced separately via Command.CLocale.
+// there is no terminal. The C locale is forced by the Runner on every command.
 var aptWriteEnv = []string{"DEBIAN_FRONTEND=noninteractive"}
 
 // dpkgConfOptions keep dpkg non-interactive when a postinst would otherwise
