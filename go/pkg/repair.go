@@ -9,208 +9,90 @@ import (
 	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// Repair attempts to fix common package manager issues.
-//
-// The ctx parameter is propagated through to the underlying subprocess
-// invocations, so deadlines and cancellations from the caller are honored.
-// Repair methods short-circuit and return ctx.Err() the moment ctx is
-// cancelled, so a cancelled caller does not cause additional sudo
-// subprocesses to be spawned.
+// statFile is the os.Stat seam used by removeStaleLock so the lock-file probe
+// can be exercised hermetically in tests.
+var statFile = os.Stat
 
-// repairErr returns ctx.Err() if the context has been cancelled, otherwise
-// it wraps err with the given message and the subprocess stderr. The
-// returned error is detectable via errors.Is(err, context.Canceled) /
-// errors.Is(err, context.DeadlineExceeded).
-func repairErr(ctx context.Context, msg, stderr string, err error) error {
+// bestEffortStep classifies the outcome of one best-effort repair step. A nil
+// err means success. A cancelled context returns ctx.Err() so the caller stops
+// the chain; any other failure is logged and swallowed (returns nil) so a single
+// wedged step does not abort the whole repair. The step is run by the caller
+// (its err is passed in), so a cancelled context still fails the step closed —
+// runPriv refuses to spawn — and is reported here as the cancellation.
+func bestEffortStep(ctx context.Context, what string, err error) error {
+	if err == nil {
+		return nil
+	}
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return ctxErr
 	}
-	return fmt.Errorf("%s: %s: %w", msg, stderr, err)
-}
-
-// Repair for Apt: removes stale lock files, runs dpkg --configure -a,
-// apt --fix-broken install -y, and apt update.
-func (a *Apt) Repair(ctx context.Context) error {
-	// Remove stale lock files
-	lockFiles := []string{
-		"/var/lib/dpkg/lock",
-		"/var/lib/dpkg/lock-frontend",
-		"/var/lib/apt/lists/lock",
-		"/var/cache/apt/archives/lock",
-	}
-	for _, lf := range lockFiles {
-		if err := removeStaleLock(ctx, lf); err != nil {
-			return err
-		}
-	}
-
-	// dpkg --configure -a
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := a.run(ctx, "dpkg", "--configure", "-a"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("dpkg --configure -a failed", "error", err, "stderr", result.Stderr)
-	}
-
-	// apt --fix-broken install -y
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := a.fixBroken(ctx); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("apt --fix-broken install failed", "error", err, "stderr", result.Stderr)
-	}
-
-	// apt update
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := a.run(ctx, "apt", "update"); err != nil {
-		return repairErr(ctx, "apt update failed", result.Stderr, err)
-	}
-
+	slog.Warn(what+" failed", "error", err)
 	return nil
 }
 
-// Repair for Dnf: runs dnf history redo last, dnf remove --duplicates, rpm --verifydb.
-func (d *Dnf) Repair(ctx context.Context) error {
-	// dnf -y history redo last
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := d.run(ctx, "history", "redo", "last", "-y"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("dnf history redo last failed", "error", err, "stderr", result.Stderr)
-	}
-
-	// dnf -y remove --duplicates
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := d.run(ctx, "remove", "--duplicates", "-y"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("dnf remove --duplicates failed", "error", err, "stderr", result.Stderr)
-	}
-
-	// rpm --verifydb (read-only, no sudo needed)
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	c := readCmd(ctx, "rpm", "--verifydb")
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-	if out, err := c.CombinedOutput(); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("rpm --verifydb failed", "error", err, "output", string(out))
-	}
-
-	return nil
-}
-
-// Repair for Pacman: removes stale db.lck, runs pacman -Syy --noconfirm.
-func (p *Pacman) Repair(ctx context.Context) error {
-	// Remove stale lock file
-	if err := removeStaleLock(ctx, "/var/lib/pacman/db.lck"); err != nil {
-		return err
-	}
-
-	// pacman -Syy --noconfirm (force refresh all databases)
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := p.run(ctx, "-Syy", "--noconfirm"); err != nil {
-		return repairErr(ctx, "pacman -Syy failed", result.Stderr, err)
-	}
-
-	return nil
-}
-
-// Repair for Zypper: removes stale zypp.pid, runs zypper refresh.
-func (z *Zypper) Repair(ctx context.Context) error {
-	// Remove stale lock file
-	if err := removeStaleLock(ctx, "/run/zypp.pid"); err != nil {
-		return err
-	}
-
-	// zypper --non-interactive refresh
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := z.run(ctx, "--non-interactive", "refresh"); err != nil {
-		return repairErr(ctx, "zypper refresh failed", result.Stderr, err)
-	}
-
-	return nil
-}
-
-// Repair for Flatpak: runs flatpak repair --system.
-func (f *Flatpak) Repair(ctx context.Context) error {
-	args := []string{"repair"}
-	if f.useSudo {
-		args = append(args, "--system")
-	} else {
-		args = append(args, "--user")
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if result, err := f.run(ctx, args...); err != nil {
-		return repairErr(ctx, "flatpak repair failed", result.Stderr, err)
-	}
-
-	return nil
-}
-
-// removeStaleLock removes a lock file if the owning package manager process
-// is not running. Uses fuser to check if any process has the file open,
-// which is more reliable than pgrep for detecting active locks.
-//
-// Returns ctx.Err() if the context is cancelled at any point so callers
-// can short-circuit cleanly. A failure to actually remove the file is
-// logged via slog.Warn (best-effort) and does not return an error, but
-// a context cancellation always wins over the warning path.
-func removeStaleLock(ctx context.Context, path string) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if _, err := os.Stat(path); err != nil {
-		return nil // file doesn't exist
-	}
-
-	// Check if any process has this specific file open.
-	// fuser exits 0 if processes are using the file, 1 if not, and
-	// other non-zero codes for probe failures (binary missing,
-	// permission denied, signal). Treat anything other than the
-	// canonical "no process holds it" exit (1) as inconclusive — we
-	// must not delete the lock based on a failed probe.
-	cmd := readCmd(ctx, "fuser", path)
-	if err := cmd.Run(); err == nil {
-		return nil // file is actively in use
-	} else if ctxErr := ctx.Err(); ctxErr != nil {
+// repairErr returns ctx.Err() when the context has been cancelled, otherwise it
+// wraps err with msg. err is typically an *exec.CommandError, which already
+// carries the subprocess stderr. The returned error stays detectable via
+// errors.Is(err, context.Canceled / context.DeadlineExceeded).
+func repairErr(ctx context.Context, msg string, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
 		return ctxErr
-	} else if cmd.ProcessState == nil || cmd.ProcessState.ExitCode() != 1 {
-		slog.Warn("fuser probe failed; skipping stale lock removal", "path", path, "error", err)
+	}
+	return fmt.Errorf("%s: %w", msg, err)
+}
+
+// removeStaleLock removes a package-manager lock file when no process holds it
+// open. It probes with fuser (read-side, unprivileged) and only deletes when
+// fuser reports the canonical "no process holds it" exit (1); any other probe
+// outcome is treated as inconclusive and the lock is left in place — we must
+// never delete a live lock based on a failed probe. The actual removal runs
+// escalated through the Runner (rm -f).
+//
+// Returns ctx.Err() the moment the context is cancelled so callers short-circuit
+// cleanly; a failure to remove the file is logged (best-effort) and does not
+// return an error, but a context cancellation always wins over the warning path.
+func removeStaleLock(ctx context.Context, r pmexec.Runner, path string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if _, err := statFile(path); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		if os.IsNotExist(err) {
+			return nil // file doesn't exist — nothing to remove
+		}
+		// A permission/I/O stat failure is not proof of absence; leave the lock
+		// untouched rather than risk removing a live one, and surface it.
+		slog.Warn("failed to stat lock file; leaving it in place", "path", path, "error", err)
 		return nil
 	}
 
-	// No process has the file open — lock is stale. Remove it via the
-	// configured privilege backend (sudo or doas) so the doas-only path
-	// works too — bare `sudo` was the previous shape and silently failed
-	// on doas hosts. CONTRIBUTING.md:71 requires the privilege wrapper.
-	if err := ctx.Err(); err != nil {
-		return err
+	// fuser exits 0 if a process is using the file, 1 if not, and other codes
+	// for probe failures (binary missing, permission denied). Treat anything
+	// other than the canonical "no process holds it" exit (1) as inconclusive.
+	res, err := runRead(ctx, r, "fuser", path)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		slog.Warn("fuser probe failed; skipping stale lock removal", "path", path, "error", err)
+		return nil
 	}
-	if _, err := pmexec.Privileged(ctx, "rm", "-f", path); err != nil {
+	if res.ExitCode == 0 {
+		return nil // file is actively in use
+	}
+	if res.ExitCode != 1 {
+		slog.Warn("fuser probe inconclusive; skipping stale lock removal", "path", path, "exit", res.ExitCode)
+		return nil
+	}
+
+	// rm is best-effort. A cancelled context makes runPriv fail closed with
+	// ctx.Err(); distinguish that from a genuine removal failure and propagate
+	// the cancellation promptly (matching the fuser-probe and bestEffortStep
+	// handling), rather than logging a spurious warning and relying on a later
+	// caller check.
+	if _, err := runPriv(ctx, r, true, nil, "rm", "-f", path); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return ctxErr
 		}

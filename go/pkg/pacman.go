@@ -2,255 +2,251 @@ package pkg
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
-	"log/slog"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+
+	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// validPacmanPkgName restricts package names to safe characters,
-// preventing config injection via IgnorePkg in pacman.conf.
+// validPacmanPkgName restricts IgnorePkg values to safe characters, preventing
+// config injection via pacman.conf even after ValidatePackageName has passed.
 var validPacmanPkgName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._+-]*$`)
 
-// Pacman implements the Manager interface for Arch Linux-based systems.
-type Pacman struct {
-	ctx     context.Context
-	useSudo bool
+// pacman drives the Arch Linux package manager over an injected Runner.
+type pacman struct {
+	r pmexec.Runner
 }
 
-// NewPacman creates a new Pacman package manager.
-// By default, sudo is enabled for privileged operations.
-func NewPacman() *Pacman {
-	return &Pacman{ctx: context.Background(), useSudo: true}
-}
+var _ Manager = (*pacman)(nil)
 
-// NewPacmanWithContext creates a new Pacman package manager with context.
-// By default, sudo is enabled for privileged operations.
-func NewPacmanWithContext(ctx context.Context) *Pacman {
-	return &Pacman{ctx: ctx, useSudo: true}
-}
+func (p *pacman) Backend() Backend { return Pacman }
 
-// WithSudo sets whether to use sudo for privileged operations.
-func (p *Pacman) WithSudo(useSudo bool) *Pacman {
-	p.useSudo = useSudo
-	return p
-}
-
-// Info returns pacman version information.
-func (p *Pacman) Info() (name, version string, err error) {
-	out, err := readCmd(p.ctx, "pacman", "--version").Output()
+func (p *pacman) write(ctx context.Context, args ...string) error {
+	res, err := runPriv(ctx, p.r, true, nil, "pacman", args...)
 	if err != nil {
-		return "", "", err
+		return err
 	}
-	// Output format: " Pacman v6.0.2 - ..."
-	lines := strings.Split(string(out), "\n")
-	for _, line := range lines {
+	return asCommandError("pacman", res)
+}
+
+// Version returns the pacman version string (parsed from " Pacman v6.0.2 - …").
+func (p *pacman) Version(ctx context.Context) (string, error) {
+	out, err := readOut(ctx, p.r, "pacman", "--version")
+	if err != nil {
+		return "", err
+	}
+	for _, line := range strings.Split(out, "\n") {
 		if strings.Contains(line, "Pacman v") {
-			parts := strings.Fields(line)
-			for _, part := range parts {
-				if strings.HasPrefix(part, "v") {
-					return "pacman", strings.TrimPrefix(part, "v"), nil
+			for _, field := range strings.Fields(line) {
+				if strings.HasPrefix(field, "v") {
+					return strings.TrimPrefix(field, "v"), nil
 				}
 			}
 		}
 	}
-	return "pacman", "", nil
+	return "", nil
 }
 
-// Install installs packages (latest version).
-func (p *Pacman) Install(packages ...string) (*CommandResult, error) {
+// Install installs packages. With opts.Version it targets a single package via
+// the name=version form (pacman can only satisfy this if the version is in a
+// configured repo); opts.AllowDowngrade adds `--overwrite '*'`.
+func (p *pacman) Install(ctx context.Context, opts InstallOptions, packages ...string) error {
 	if err := ValidatePackageNames(packages); err != nil {
-		return nil, err
-	}
-	if len(packages) == 0 {
-		return &CommandResult{Success: true}, nil
-	}
-	// -S: sync, --noconfirm: non-interactive, --needed: don't reinstall if up to date
-	args := append([]string{"-S", "--noconfirm", "--needed"}, packages...)
-	return p.run(p.ctx, args...)
-}
-
-// InstallVersion installs a package with specific version options.
-// Note: Pacman doesn't natively support installing specific versions.
-// This requires the package to be available in the repos or using downgrade tools.
-func (p *Pacman) InstallVersion(name string, opts InstallOptions) (*CommandResult, error) {
-	if err := ValidatePackageName(name); err != nil {
-		return nil, err
+		return err
 	}
 	if err := ValidatePackageVersion(opts.Version); err != nil {
-		return nil, err
+		return err
+	}
+	if opts.Version != "" && len(packages) != 1 {
+		return fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
+	}
+	if len(packages) == 0 {
+		return nil
 	}
 	if opts.Version == "" {
-		return p.Install(name)
+		return p.write(ctx, append([]string{"-S", "--noconfirm", "--needed"}, packages...)...)
 	}
-
-	// Try to install with version specification (name=version format)
-	// This works if the version is available in the repos
-	pkgSpec := fmt.Sprintf("%s=%s", name, opts.Version)
-
-	args := []string{"-S", "--noconfirm"}
-	if opts.AllowDowngrade {
-		args = append(args, "--overwrite", "*")
-	}
-	args = append(args, pkgSpec)
-
-	return p.run(p.ctx, args...)
+	// A pinned `name=version` install also performs a downgrade when the target
+	// version is lower and still available in a sync repo, so AllowDowngrade
+	// needs no extra flag. We deliberately do NOT pass `--overwrite '*'`: it
+	// force-overwrites every conflicting file on disk (data-loss risk) and is not
+	// a correct downgrade mechanism.
+	return p.write(ctx, "-S", "--noconfirm", fmt.Sprintf("%s=%s", packages[0], opts.Version))
 }
 
-// Remove removes packages.
-func (p *Pacman) Remove(packages ...string) (*CommandResult, error) {
+// Remove removes packages; opts.Purge uses -Rns (with deps + config files).
+func (p *pacman) Remove(ctx context.Context, opts RemoveOptions, packages ...string) error {
 	if err := ValidatePackageNames(packages); err != nil {
-		return nil, err
+		return err
 	}
 	if len(packages) == 0 {
-		return &CommandResult{Success: true}, nil
+		return nil
 	}
-	// -R: remove, --noconfirm: non-interactive
-	args := append([]string{"-R", "--noconfirm"}, packages...)
-	return p.run(p.ctx, args...)
+	flag := "-R"
+	if opts.Purge {
+		flag = "-Rns"
+	}
+	return p.write(ctx, append([]string{flag, "--noconfirm"}, packages...)...)
 }
 
-// Purge removes packages including configuration files.
-func (p *Pacman) Purge(packages ...string) (*CommandResult, error) {
+// Update syncs the package databases (-Sy).
+func (p *pacman) Update(ctx context.Context) error {
+	return p.write(ctx, "-Sy", "--noconfirm")
+}
+
+// Upgrade upgrades the named packages, or the whole system (-Syu) with no names.
+func (p *pacman) Upgrade(ctx context.Context, packages ...string) error {
 	if err := ValidatePackageNames(packages); err != nil {
-		return nil, err
+		return err
 	}
 	if len(packages) == 0 {
-		return &CommandResult{Success: true}, nil
+		return p.write(ctx, "-Syu", "--noconfirm")
 	}
-	// -Rns: remove with dependencies and config files
-	args := append([]string{"-Rns", "--noconfirm"}, packages...)
-	return p.run(p.ctx, args...)
+	return p.write(ctx, append([]string{"-S", "--noconfirm"}, packages...)...)
 }
 
-// Update updates the package database.
-func (p *Pacman) Update() (*CommandResult, error) {
-	// -Sy: sync database
-	return p.run(p.ctx, "-Sy", "--noconfirm")
-}
-
-// Upgrade upgrades packages.
-func (p *Pacman) Upgrade(packages ...string) (*CommandResult, error) {
-	if err := ValidatePackageNames(packages); err != nil {
-		return nil, err
-	}
-	if len(packages) == 0 {
-		// -Syu: sync, refresh, upgrade all
-		return p.run(p.ctx, "-Syu", "--noconfirm")
-	}
-	// Upgrade specific packages
-	args := append([]string{"-S", "--noconfirm"}, packages...)
-	return p.run(p.ctx, args...)
-}
-
-// Search searches for packages.
-func (p *Pacman) Search(query string) ([]SearchResult, error) {
-	out, err := readCmd(p.ctx, "pacman", "-Ss", query).Output()
+// Autoremove removes orphaned packages (installed as deps, no longer required).
+func (p *pacman) Autoremove(ctx context.Context) error {
+	res, err := runRead(ctx, p.r, "pacman", "-Qtdq")
 	if err != nil {
-		// pacman returns exit code 1 if no results
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-			return nil, nil
+		return err
+	}
+	if res.ExitCode == 1 {
+		return nil // no orphans
+	}
+	if res.ExitCode != 0 {
+		return asCommandError("pacman", res)
+	}
+	var orphans []string
+	for _, line := range strings.Split(res.Stdout, "\n") {
+		if name := strings.TrimSpace(line); name != "" {
+			orphans = append(orphans, name)
 		}
+	}
+	if len(orphans) == 0 {
+		return nil
+	}
+	return p.write(ctx, append([]string{"-Rns", "--noconfirm"}, orphans...)...)
+}
+
+// Repair clears a stale db lock and force-refreshes all databases.
+func (p *pacman) Repair(ctx context.Context) error {
+	if err := removeStaleLock(ctx, p.r, "/var/lib/pacman/db.lck"); err != nil {
+		return err
+	}
+	if err := p.write(ctx, "-Syy", "--noconfirm"); err != nil {
+		return repairErr(ctx, "pacman -Syy failed", err)
+	}
+	return nil
+}
+
+// Search searches packages (-Ss; exit 1 = no matches).
+func (p *pacman) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	res, err := runRead(ctx, p.r, "pacman", "-Ss", query)
+	if err != nil {
 		return nil, err
+	}
+	if res.ExitCode == 1 {
+		return nil, nil
+	}
+	if res.ExitCode != 0 {
+		return nil, asCommandError("pacman", res)
 	}
 
 	var results []SearchResult
-	scanner := bufio.NewScanner(bytes.NewReader(out))
-	var currentResult *SearchResult
-
+	var current *SearchResult
+	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, " ") {
-			// Description line (indented)
-			if currentResult != nil {
-				currentResult.Description = strings.TrimSpace(line)
-				results = append(results, *currentResult)
-				currentResult = nil
+		if strings.HasPrefix(line, " ") { // indented description line
+			if current != nil {
+				current.Description = strings.TrimSpace(line)
+				results = append(results, *current)
+				current = nil
 			}
-		} else if line != "" {
-			// Package line: repo/name version
-			parts := strings.Fields(line)
-			if len(parts) >= 2 {
-				nameParts := strings.Split(parts[0], "/")
-				name := nameParts[len(nameParts)-1]
-				repo := ""
-				if len(nameParts) > 1 {
-					repo = nameParts[0]
-				}
-				currentResult = &SearchResult{
-					Name:       name,
-					Version:    parts[1],
-					Repository: repo,
-				}
+			continue
+		}
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line) // repo/name version …
+		if len(fields) >= 2 {
+			nameParts := strings.Split(fields[0], "/")
+			name := nameParts[len(nameParts)-1]
+			repo := ""
+			if len(nameParts) > 1 {
+				repo = nameParts[0]
 			}
+			current = &SearchResult{Name: name, Version: fields[1], Repository: repo}
 		}
 	}
-
 	return results, nil
 }
 
-// List lists installed packages.
-func (p *Pacman) List() ([]Package, error) {
-	// -Q: query installed, -i: info format
-	out, err := readCmd(p.ctx, "pacman", "-Q").Output()
+// List lists installed packages (-Q).
+func (p *pacman) List(ctx context.Context) ([]Package, error) {
+	out, err := readOut(ctx, p.r, "pacman", "-Q")
 	if err != nil {
 		return nil, err
 	}
 
-	pinnedPkgs, _ := p.getPinnedSet()
+	pinned, err := p.getPinnedSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var packages []Package
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
 		if len(fields) < 2 {
 			continue
 		}
-		pkg := Package{
+		packages = append(packages, Package{
 			Name:    fields[0],
 			Version: fields[1],
 			Status:  "installed",
-			Pinned:  pinnedPkgs[fields[0]],
-		}
-		packages = append(packages, pkg)
+			Pinned:  pinned[fields[0]],
+		})
 	}
 	return packages, nil
 }
 
-// ListUpgradable lists packages with available upgrades.
-func (p *Pacman) ListUpgradable() ([]PackageUpdate, error) {
-	// -Qu: query upgradable
-	out, err := readCmd(p.ctx, "pacman", "-Qu").Output()
+// ListUpgradable lists packages with an available upgrade (-Qu; exit 1 = none).
+func (p *pacman) ListUpgradable(ctx context.Context) ([]PackageUpdate, error) {
+	res, err := runRead(ctx, p.r, "pacman", "-Qu")
 	if err != nil {
-		// Exit code 1 means no updates available
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-			return nil, nil
-		}
 		return nil, err
+	}
+	if res.ExitCode == 1 {
+		return nil, nil
+	}
+	if res.ExitCode != 0 {
+		return nil, asCommandError("pacman", res)
 	}
 
 	var updates []PackageUpdate
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
 	for scanner.Scan() {
-		// Format: name current_version -> new_version
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		if len(fields) >= 4 && fields[2] == "->" {
+		fields := strings.Fields(scanner.Text())
+		switch {
+		case len(fields) >= 4 && fields[2] == "->": // name current -> new
 			updates = append(updates, PackageUpdate{
 				Name:           fields[0],
 				CurrentVersion: fields[1],
 				NewVersion:     fields[3],
 			})
-		} else if len(fields) >= 2 {
-			// Simple format: name new_version
-			currentVersion, _ := p.GetInstalledVersion(fields[0])
+		case len(fields) >= 2: // name new
+			current, err := p.InstalledVersion(ctx, fields[0])
+			if err != nil {
+				return nil, err
+			}
 			updates = append(updates, PackageUpdate{
 				Name:           fields[0],
-				CurrentVersion: currentVersion,
+				CurrentVersion: current,
 				NewVersion:     fields[1],
 			})
 		}
@@ -258,201 +254,214 @@ func (p *Pacman) ListUpgradable() ([]PackageUpdate, error) {
 	return updates, nil
 }
 
-// Show returns detailed information about a package.
-func (p *Pacman) Show(name string) (*Package, error) {
+// Show returns detailed information about a package (-Qi installed, else -Si).
+func (p *pacman) Show(ctx context.Context, name string) (*Package, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return nil, err
 	}
-	// Try installed first (-Qi), then sync database (-Si)
-	var out []byte
-	var err error
-	var status string
-
-	out, err = readCmd(p.ctx, "pacman", "-Qi", name).Output()
-	if err == nil {
-		status = "installed"
-	} else {
-		out, err = readCmd(p.ctx, "pacman", "-Si", name).Output()
+	// -Qi reports an installed package; a non-zero exit means "not installed"
+	// (try the sync DB), while a runner/context failure propagates.
+	out, ok, err := probe(ctx, p.r, "pacman", "-Qi", name)
+	if err != nil {
+		return nil, err
+	}
+	status := "installed"
+	if !ok {
+		out, ok, err = probe(ctx, p.r, "pacman", "-Si", name)
 		if err != nil {
 			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("package not found: %s", name)
 		}
 		status = "available"
 	}
 
 	pkg := &Package{Name: name, Status: status}
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "Version") {
+		switch {
+		case strings.HasPrefix(line, "Version"):
 			pkg.Version = parsePacmanValue(line)
-		} else if strings.HasPrefix(line, "Architecture") {
+		case strings.HasPrefix(line, "Architecture"):
 			pkg.Architecture = parsePacmanValue(line)
-		} else if strings.HasPrefix(line, "Description") {
+		case strings.HasPrefix(line, "Description"):
 			pkg.Description = parsePacmanValue(line)
-		} else if strings.HasPrefix(line, "Installed Size") {
+		case strings.HasPrefix(line, "Installed Size"):
 			pkg.Size = parsePacmanSize(parsePacmanValue(line))
-		} else if strings.HasPrefix(line, "Repository") {
+		case strings.HasPrefix(line, "Repository"):
 			pkg.Repository = parsePacmanValue(line)
 		}
 	}
 
-	if pinned, err := p.IsPinned(name); err != nil {
-		slog.Debug("failed to check pin status", "package", name, "error", err)
-	} else {
-		pkg.Pinned = pinned
+	pinned, err := p.IsPinned(ctx, name)
+	if err != nil {
+		return nil, err
 	}
-
+	pkg.Pinned = pinned
 	return pkg, nil
 }
 
-// ListVersions lists all available versions of a package.
-// Note: Pacman typically only keeps the latest version in repos.
-func (p *Pacman) ListVersions(name string) (*VersionInfo, error) {
+// ListVersions reports the single repo version pacman keeps for a package.
+func (p *pacman) ListVersions(ctx context.Context, name string) (*VersionInfo, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return nil, err
 	}
 	info := &VersionInfo{Name: name}
-	if installed, err := p.GetInstalledVersion(name); err != nil {
-		slog.Debug("failed to get installed version", "package", name, "error", err)
-	} else {
-		info.Installed = installed
-	}
-
-	// Get version from sync database
-	out, err := readCmd(p.ctx, "pacman", "-Si", name).Output()
+	installed, err := p.InstalledVersion(ctx, name)
 	if err != nil {
-		return info, nil
+		return nil, err
+	}
+	info.Installed = installed
+
+	out, ok, err := probe(ctx, p.r, "pacman", "-Si", name)
+	if err != nil {
+		return nil, err // runner/context failure
+	}
+	if !ok {
+		return info, nil // not in any sync repo
 	}
 
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+	// Parse Version and Repository order-independently (do not assume Repository
+	// follows Version in the -Si output).
+	var version, repo string
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "Version") {
-			version := parsePacmanValue(line)
-			repo := ""
-			// Try to get repo from package info
-			for scanner.Scan() {
-				l := scanner.Text()
-				if strings.HasPrefix(l, "Repository") {
-					repo = parsePacmanValue(l)
-					break
-				}
-			}
-			info.Versions = append(info.Versions, AvailableVersion{
-				Version:    version,
-				Repository: repo,
-			})
-			break
+		switch {
+		case strings.HasPrefix(line, "Version"):
+			version = parsePacmanValue(line)
+		case strings.HasPrefix(line, "Repository"):
+			repo = parsePacmanValue(line)
 		}
 	}
-
+	if version != "" {
+		info.Versions = append(info.Versions, AvailableVersion{Version: version, Repository: repo})
+	}
 	return info, nil
 }
 
-// IsInstalled checks if a package is installed.
-func (p *Pacman) IsInstalled(name string) (bool, error) {
+// IsInstalled reports whether a package is installed (pacman -Q exits 0).
+func (p *pacman) IsInstalled(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return false, err
 	}
-	err := readCmd(p.ctx, "pacman", "-Q", name).Run()
-	return err == nil, nil
+	res, err := runRead(ctx, p.r, "pacman", "-Q", name)
+	if err != nil {
+		return false, err
+	}
+	return res.ExitCode == 0, nil
 }
 
-// GetInstalledVersion returns the installed version of a package.
-func (p *Pacman) GetInstalledVersion(name string) (string, error) {
+// InstalledVersion returns the installed version of a package, or "" if absent.
+func (p *pacman) InstalledVersion(ctx context.Context, name string) (string, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return "", err
 	}
-	out, err := readCmd(p.ctx, "pacman", "-Q", name).Output()
+	res, err := runRead(ctx, p.r, "pacman", "-Q", name)
 	if err != nil {
 		return "", err
 	}
-	fields := strings.Fields(string(out))
+	if res.ExitCode != 0 {
+		return "", nil
+	}
+	fields := strings.Fields(res.Stdout)
 	if len(fields) >= 2 {
 		return fields[1], nil
 	}
 	return "", nil
 }
 
-// Pin prevents a package from being upgraded using IgnorePkg in pacman.conf.
-// Note: This modifies /etc/pacman.conf which requires root privileges.
-func (p *Pacman) Pin(packages ...string) (*CommandResult, error) {
-	if err := ValidatePackageNames(packages); err != nil {
-		return nil, err
-	}
-	if len(packages) == 0 {
-		return &CommandResult{Success: true}, nil
-	}
-
-	// Validate package names to prevent config injection
-	for _, pkg := range packages {
-		if !validPacmanPkgName.MatchString(pkg) {
-			return nil, fmt.Errorf("invalid package name %q: must match [a-zA-Z0-9][a-zA-Z0-9._+-]*", pkg)
-		}
-	}
-
-	// Read current pacman.conf
-	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
+// InstalledCount returns the number of installed packages (-Qq).
+func (p *pacman) InstalledCount(ctx context.Context) (int, error) {
+	out, err := readOut(ctx, p.r, "pacman", "-Qq")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read pacman.conf: %w", err)
+		return 0, err
 	}
-
-	// Get currently ignored packages
-	ignoredPkgs := p.getIgnoredPackages(string(confContent))
-
-	// Add new packages to ignore list
-	for _, pkg := range packages {
-		if !contains(ignoredPkgs, pkg) {
-			ignoredPkgs = append(ignoredPkgs, pkg)
-		}
-	}
-
-	// Update pacman.conf
-	return p.updateIgnorePkg(string(confContent), ignoredPkgs)
+	return countNonEmptyLines(out), nil
 }
 
-// Unpin allows a package to be upgraded again by removing from IgnorePkg.
-func (p *Pacman) Unpin(packages ...string) (*CommandResult, error) {
+// HasUpdates reports whether any update is available (-Qu: exit 0 + output).
+// pacman has no security-only feed, so securityOnly is ignored.
+func (p *pacman) HasUpdates(ctx context.Context, securityOnly bool) (bool, error) {
+	_ = securityOnly
+	res, err := runRead(ctx, p.r, "pacman", "-Qu")
+	if err != nil {
+		return false, err
+	}
+	if res.ExitCode == 1 {
+		return false, nil
+	}
+	if res.ExitCode != 0 {
+		return false, asCommandError("pacman", res)
+	}
+	return strings.TrimSpace(res.Stdout) != "", nil
+}
+
+// Pin holds packages by adding them to IgnorePkg in /etc/pacman.conf.
+func (p *pacman) Pin(ctx context.Context, packages ...string) error {
 	if err := ValidatePackageNames(packages); err != nil {
-		return nil, err
+		return err
 	}
 	if len(packages) == 0 {
-		return &CommandResult{Success: true}, nil
+		return nil
 	}
-
-	// Read current pacman.conf
-	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read pacman.conf: %w", err)
-	}
-
-	// Get currently ignored packages
-	ignoredPkgs := p.getIgnoredPackages(string(confContent))
-
-	// Remove packages from ignore list
-	var newIgnored []string
-	for _, pkg := range ignoredPkgs {
-		if !contains(packages, pkg) {
-			newIgnored = append(newIgnored, pkg)
+	// Second, stricter gate: IgnorePkg values land in pacman.conf, so reject any
+	// name that could inject a config directive even though ValidatePackageNames
+	// already passed.
+	for _, name := range packages {
+		if !validPacmanPkgName.MatchString(name) {
+			return fmt.Errorf("invalid package name %q: must match [a-zA-Z0-9][a-zA-Z0-9._+-]*", name)
 		}
 	}
 
-	// Update pacman.conf
-	return p.updateIgnorePkg(string(confContent), newIgnored)
+	conf, err := p.readConf(ctx)
+	if err != nil {
+		return err
+	}
+	ignored := getIgnoredPackages(conf)
+	for _, name := range packages {
+		if !contains(ignored, name) {
+			ignored = append(ignored, name)
+		}
+	}
+	return p.writeIgnorePkg(ctx, conf, ignored)
 }
 
-// ListPinned lists all pinned (IgnorePkg) packages.
-func (p *Pacman) ListPinned() ([]Package, error) {
-	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
+// Unpin releases packages by removing them from IgnorePkg.
+func (p *pacman) Unpin(ctx context.Context, packages ...string) error {
+	if err := ValidatePackageNames(packages); err != nil {
+		return err
+	}
+	if len(packages) == 0 {
+		return nil
+	}
+	conf, err := p.readConf(ctx)
+	if err != nil {
+		return err
+	}
+	var kept []string
+	for _, name := range getIgnoredPackages(conf) {
+		if !contains(packages, name) {
+			kept = append(kept, name)
+		}
+	}
+	return p.writeIgnorePkg(ctx, conf, kept)
+}
+
+// ListPinned lists IgnorePkg-held packages.
+func (p *pacman) ListPinned(ctx context.Context) ([]Package, error) {
+	conf, err := p.readConf(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	ignoredPkgs := p.getIgnoredPackages(string(confContent))
-
 	var packages []Package
-	for _, name := range ignoredPkgs {
-		version, _ := p.GetInstalledVersion(name)
+	for _, name := range getIgnoredPackages(conf) {
+		version, err := p.InstalledVersion(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, Package{
 			Name:    name,
 			Version: version,
@@ -463,105 +472,101 @@ func (p *Pacman) ListPinned() ([]Package, error) {
 	return packages, nil
 }
 
-// IsPinned checks if a package is pinned (in IgnorePkg).
-func (p *Pacman) IsPinned(name string) (bool, error) {
+// IsPinned reports whether a package is in IgnorePkg.
+func (p *pacman) IsPinned(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return false, err
 	}
-	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
+	conf, err := p.readConf(ctx)
 	if err != nil {
 		return false, err
 	}
-	ignoredPkgs := p.getIgnoredPackages(string(confContent))
-	return contains(ignoredPkgs, name), nil
+	return contains(getIgnoredPackages(conf), name), nil
 }
 
-func (p *Pacman) getPinnedSet() (map[string]bool, error) {
-	confContent, err := readCmd(p.ctx, "cat", "/etc/pacman.conf").Output()
+func (p *pacman) getPinnedSet(ctx context.Context) (map[string]bool, error) {
+	conf, err := p.readConf(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	pinned := make(map[string]bool)
-	for _, pkg := range p.getIgnoredPackages(string(confContent)) {
-		pinned[pkg] = true
+	for _, name := range getIgnoredPackages(conf) {
+		pinned[name] = true
 	}
 	return pinned, nil
 }
 
-func (p *Pacman) getIgnoredPackages(confContent string) []string {
+// readConf reads /etc/pacman.conf (world-readable, so unprivileged) via cat,
+// matching the privilege-wrapper discipline the writes use.
+func (p *pacman) readConf(ctx context.Context) (string, error) {
+	out, err := readOut(ctx, p.r, "cat", "/etc/pacman.conf")
+	if err != nil {
+		return "", fmt.Errorf("failed to read pacman.conf: %w", err)
+	}
+	return out, nil
+}
+
+// writeIgnorePkg rewrites pacman.conf with the given IgnorePkg set and installs
+// it via an escalated `tee`.
+func (p *pacman) writeIgnorePkg(ctx context.Context, conf string, ignored []string) error {
+	out := buildIgnorePkgConf(conf, ignored)
+	res, err := runPrivStdin(ctx, p.r, true, nil, out, "tee", "/etc/pacman.conf")
+	if err != nil {
+		return err
+	}
+	return asCommandError("tee", res)
+}
+
+func getIgnoredPackages(conf string) []string {
 	var ignored []string
-	scanner := bufio.NewScanner(strings.NewReader(confContent))
+	scanner := bufio.NewScanner(strings.NewReader(conf))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "IgnorePkg") {
-			// Format: IgnorePkg = pkg1 pkg2 pkg3
-			parts := strings.SplitN(line, "=", 2)
-			if len(parts) == 2 {
-				pkgs := strings.Fields(strings.TrimSpace(parts[1]))
-				ignored = append(ignored, pkgs...)
-			}
+		if !strings.HasPrefix(line, "IgnorePkg") {
+			continue
+		}
+		if parts := strings.SplitN(line, "=", 2); len(parts) == 2 {
+			ignored = append(ignored, strings.Fields(strings.TrimSpace(parts[1]))...)
 		}
 	}
 	return ignored
 }
 
-func (p *Pacman) updateIgnorePkg(confContent string, ignoredPkgs []string) (*CommandResult, error) {
-	var newConf strings.Builder
-	foundIgnorePkg := false
-	scanner := bufio.NewScanner(strings.NewReader(confContent))
-
+// buildIgnorePkgConf returns conf with its IgnorePkg line replaced (or inserted
+// after [options]) to reflect ignored. An empty set drops the directive.
+func buildIgnorePkgConf(conf string, ignored []string) string {
+	var b strings.Builder
+	found := false
+	scanner := bufio.NewScanner(strings.NewReader(conf))
 	for scanner.Scan() {
 		line := scanner.Text()
-		trimmed := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmed, "IgnorePkg") {
-			if !foundIgnorePkg {
-				foundIgnorePkg = true
-				if len(ignoredPkgs) > 0 {
-					newConf.WriteString(fmt.Sprintf("IgnorePkg = %s\n", strings.Join(ignoredPkgs, " ")))
+		if strings.HasPrefix(strings.TrimSpace(line), "IgnorePkg") {
+			// Emit the single consolidated directive in place of the first
+			// IgnorePkg line, then drop EVERY IgnorePkg line (a conf may carry
+			// several) so no stale entry survives a later Unpin.
+			if !found {
+				found = true
+				if len(ignored) > 0 {
+					fmt.Fprintf(&b, "IgnorePkg = %s\n", strings.Join(ignored, " "))
 				}
-				// Skip the old line
-				continue
 			}
+			continue
 		}
-		newConf.WriteString(line + "\n")
+		b.WriteString(line + "\n")
 	}
 
-	// If IgnorePkg wasn't found and we have packages to ignore, add it
-	if !foundIgnorePkg && len(ignoredPkgs) > 0 {
-		// Insert after [options] section
-		content := newConf.String()
-		optionsIdx := strings.Index(content, "[options]")
-		if optionsIdx != -1 {
-			// Find next newline after [options]
-			nextNewline := strings.Index(content[optionsIdx:], "\n")
-			if nextNewline != -1 {
-				insertPos := optionsIdx + nextNewline + 1
-				content = content[:insertPos] + fmt.Sprintf("IgnorePkg = %s\n", strings.Join(ignoredPkgs, " ")) + content[insertPos:]
+	if !found && len(ignored) > 0 {
+		content := b.String()
+		if optionsIdx := strings.Index(content, "[options]"); optionsIdx != -1 {
+			if nl := strings.Index(content[optionsIdx:], "\n"); nl != -1 {
+				insert := optionsIdx + nl + 1
+				content = content[:insert] + fmt.Sprintf("IgnorePkg = %s\n", strings.Join(ignored, " ")) + content[insert:]
 			}
 		}
-		newConf.Reset()
-		newConf.WriteString(content)
+		b.Reset()
+		b.WriteString(content)
 	}
-
-	// Write the new config using sudo tee
-	return p.runWithStdin("tee", "/etc/pacman.conf", newConf.String())
-}
-
-func (p *Pacman) run(ctx context.Context, args ...string) (*CommandResult, error) {
-	// Force English locale for reliable output parsing.
-	//
-	// Do NOT seed with os.Environ() — F-31 hardening in sys/exec.RunStreaming
-	// refuses caller-supplied PATH/LD_PRELOAD/BASH_ENV etc., which os.Environ()
-	// always carries. RunStreaming auto-injects its own sanitized PATH when
-	// envVars is non-empty.
-	env := []string{"LANG=C", "LC_ALL=C"}
-	return runPM(ctx, p.useSudo, "pacman", args, env)
-}
-
-func (p *Pacman) runWithStdin(cmd, arg, stdin string) (*CommandResult, error) {
-	return runPMWithStdin(p.ctx, p.useSudo, stdin, cmd, arg)
+	return b.String()
 }
 
 func parsePacmanValue(line string) string {
@@ -575,20 +580,19 @@ func parsePacmanValue(line string) string {
 func parsePacmanSize(s string) int64 {
 	s = strings.TrimSpace(s)
 	multiplier := int64(1)
-
-	if strings.HasSuffix(s, " KiB") {
+	switch {
+	case strings.HasSuffix(s, " KiB"):
 		multiplier = 1024
 		s = strings.TrimSuffix(s, " KiB")
-	} else if strings.HasSuffix(s, " MiB") {
+	case strings.HasSuffix(s, " MiB"):
 		multiplier = 1024 * 1024
 		s = strings.TrimSuffix(s, " MiB")
-	} else if strings.HasSuffix(s, " GiB") {
+	case strings.HasSuffix(s, " GiB"):
 		multiplier = 1024 * 1024 * 1024
 		s = strings.TrimSuffix(s, " GiB")
-	} else if strings.HasSuffix(s, " B") {
+	case strings.HasSuffix(s, " B"):
 		s = strings.TrimSuffix(s, " B")
 	}
-
 	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
 	return int64(size * float64(multiplier))
 }

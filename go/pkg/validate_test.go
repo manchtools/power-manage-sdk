@@ -180,6 +180,7 @@ func TestValidateRepoBaseURL_Rejects(t *testing.T) {
 		"-o/tmp/x",           // flag-shaped, no scheme
 		"https://a\nb",       // control char (config injection)
 		"https://",           // no host
+		"https://[::1",       // malformed URL (unterminated IPv6) → url.Parse error
 		"not-a-url",          // no scheme/host
 	}
 	for _, u := range cases {
@@ -222,8 +223,12 @@ func TestValidateGpgKeyRef_Rejects(t *testing.T) {
 		"http://evil/key",         // plaintext http → MITM the key
 		"ext::sh -c id",           // rpm "external" transport → command exec
 		"relative/key",            // relative path
-		"file://../../etc/passwd", // file:// with traversal
+		"file://../../etc/passwd", // file:// with traversal (non-empty host)
+		"file:///etc/../shadow",   // file:// absolute path with traversal
+		"file://%zz",              // malformed file URL → url.Parse error
 		"/etc/../etc/shadow",      // absolute path with traversal
+		"https://[::1",            // malformed https URL → url.Parse error
+		"https:///RPM-GPG-KEY",    // https with no host
 		"https://a\nhttps://b",    // control char
 	}
 	for _, ref := range cases {

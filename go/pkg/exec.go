@@ -1,121 +1,108 @@
-// Privilege dispatch helper for the package-manager backends.
-//
-// Every Apt/Dnf/Pacman/Zypper/Flatpak/Repair shell-out used to hardcode
-// `"sudo", "-n"`, which silently broke the doas backend on hosts that
-// configured it via SetPrivilegeBackend. CONTRIBUTING.md (line 71)
-// explicitly bans direct `os/exec` use for privileged operations:
-//
-//	Privileged operations go through `sys/exec.Privileged` —
-//	not direct `os/exec`.
-//
-// runPM routes the privileged path through PrivilegedStreaming (which
-// already does absolute-path resolution + backend dispatch + the `-n`
-// flag) and the unprivileged path through RunStreaming. Both branches
-// support env injection — package backends need DEBIAN_FRONTEND,
-// LANG=C, LC_ALL=C — which the simpler `sys/exec.Run` does not.
 package pkg
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os"
-	"os/exec"
 	"strings"
-	"time"
 
 	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// readCmd builds an *exec.Cmd for a read-side package-manager query
-// (Info / Search / List / Show / version checks / status probes) with
-// LANG=C and LC_ALL=C forced so the output parser sees the stable
-// English form regardless of the host locale.
-//
-// The privileged write paths (Install / Remove / Update) go through
-// runPM, which already injects the env via PrivilegedStreaming. The
-// read paths historically used os/exec directly and would misparse
-// localized output (e.g. "Beschreibung:" instead of "Description:")
-// on non-English hosts. Use this helper for every read-side shell-out
-// from the package backends; the cmd returned is wired to the same
-// context the caller provides so timeout / cancel propagate.
-func readCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
-	c := exec.CommandContext(ctx, name, args...)
-	c.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
-	return c
+// runRead executes an unprivileged read-side query (Info / Search / List /
+// Show / version + status probes) through the injected Runner. CLocale forces
+// LANG=C / LC_ALL=C so the output parser sees the stable English form
+// regardless of the host locale. A non-zero exit is reported in Result.ExitCode
+// (NOT as an error) — read callers branch on specific codes (e.g. dnf
+// check-update's 100, dpkg -s's 1) — so the returned error is non-nil only when
+// the command could not be executed at all.
+func runRead(ctx context.Context, r pmexec.Runner, name string, args ...string) (pmexec.Result, error) {
+	return r.Run(ctx, pmexec.Command{Name: name, Args: args, CLocale: true})
 }
 
-// runPM executes a package-manager command and returns a CommandResult.
-// When useSudo is true the command runs through the configured privilege
-// backend (sudo or doas, see exec.SetPrivilegeBackend). Both paths share
-// the same env / output capture / exit code recording so callers see a
-// uniform CommandResult regardless of escalation.
-//
-// Non-zero exit codes are surfaced as errors (and CommandResult.Success
-// is false) even when the underlying go-cmd library reports a clean
-// status. The pre-runPM shape used os/exec.Cmd.Run, which returned an
-// *exec.ExitError on non-zero exit; the go-cmd library does not, so
-// without this synthesised error the agent would treat
-// `apt install <nonexistent-package>` (exits 100) as a successful
-// install. PR #57 of the cleanup release shipped that regression;
-// callers (Apt.Install / Dnf.Install / etc.) check err and Success to
-// decide between EXECUTION_STATUS_SUCCESS and EXECUTION_STATUS_FAILED.
-func runPM(ctx context.Context, useSudo bool, name string, args []string, envVars []string) (*CommandResult, error) {
-	start := time.Now()
-
-	var (
-		res *pmexec.Result
-		err error
-	)
-	if useSudo {
-		res, err = pmexec.PrivilegedStreaming(ctx, name, args, envVars, "", nil)
-	} else {
-		res, err = pmexec.RunStreaming(ctx, name, args, envVars, "", nil)
+// probe runs an unprivileged read whose non-zero exit is a benign domain signal
+// — "not installed" / "not pinned" / "not in repo" / "no such subcommand" —
+// rather than a failure, while a runner error (binary missing, blocked env,
+// context cancellation) propagates. It returns (stdout, ok, err): ok is true
+// only on a clean (exit 0) run. This is the seam that keeps tolerant lookups
+// from masking cancellations and executor failures as a benign miss.
+func probe(ctx context.Context, r pmexec.Runner, name string, args ...string) (string, bool, error) {
+	res, err := runRead(ctx, r, name, args...)
+	if err != nil {
+		return "", false, err
 	}
-
-	result := &CommandResult{Duration: time.Since(start)}
-	if res != nil {
-		result.Stdout = res.Stdout
-		result.Stderr = res.Stderr
-		result.ExitCode = res.ExitCode
-	}
-	if err == nil && result.ExitCode != 0 {
-		err = fmt.Errorf("%s exited with status %d", name, result.ExitCode)
-	}
-	result.Success = err == nil
-	return result, err
+	return res.Stdout, res.ExitCode == 0, nil
 }
 
-// runPMWithStdin is the stdin-bearing companion of runPM. It dispatches
-// through PrivilegedWithStdin / RunWithStdin instead of the streaming
-// variants (which do not accept stdin). Non-zero exit codes are
-// surfaced as errors for the same reason as runPM.
-func runPMWithStdin(ctx context.Context, useSudo bool, stdin string, name string, args ...string) (*CommandResult, error) {
-	start := time.Now()
-	var reader io.Reader
+// runPriv executes a privileged write-side command (Install / Remove / Update /
+// …) through the Runner. escalate is true for every native-manager mutation and
+// for system-scope flatpak; it is false for user-scope flatpak. env carries any
+// backend-specific variables (e.g. apt's DEBIAN_FRONTEND=noninteractive) on top
+// of the forced C locale. Like runRead, a non-zero exit is in Result.ExitCode,
+// not the error; callers convert it via asCommandError when a non-zero exit
+// means failure (most do; dnf check-update does not).
+func runPriv(ctx context.Context, r pmexec.Runner, escalate bool, env []string, name string, args ...string) (pmexec.Result, error) {
+	return r.Run(ctx, pmexec.Command{
+		Name:     name,
+		Args:     args,
+		Env:      env,
+		CLocale:  true,
+		Escalate: escalate,
+	})
+}
+
+// readOut runs an unprivileged read whose non-zero exit is itself a failure
+// (List/Show/Version/… — a garbled or error exit means the parse can't proceed),
+// returning stdout on a clean exit and an *exec.CommandError otherwise. Reads
+// that branch on a specific exit code (dpkg -s's 1, dnf check-update's 100,
+// search's "no matches" codes) call runRead directly and inspect Result.ExitCode.
+func readOut(ctx context.Context, r pmexec.Runner, name string, args ...string) (string, error) {
+	res, err := runRead(ctx, r, name, args...)
+	if err != nil {
+		return "", err
+	}
+	if res.ExitCode != 0 {
+		return "", &pmexec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+	}
+	return res.Stdout, nil
+}
+
+// runPrivStdin is the stdin-bearing companion of runPriv (pacman.conf rewrite
+// via tee). An empty stdin sends no input.
+func runPrivStdin(ctx context.Context, r pmexec.Runner, escalate bool, env []string, stdin, name string, args ...string) (pmexec.Result, error) {
+	var in io.Reader
 	if stdin != "" {
-		reader = strings.NewReader(stdin)
+		in = strings.NewReader(stdin)
 	}
+	return r.Run(ctx, pmexec.Command{
+		Name:     name,
+		Args:     args,
+		Env:      env,
+		Stdin:    in,
+		CLocale:  true,
+		Escalate: escalate,
+	})
+}
 
-	var (
-		res *pmexec.Result
-		err error
-	)
-	if useSudo {
-		res, err = pmexec.PrivilegedWithStdin(ctx, reader, name, args...)
-	} else {
-		res, err = pmexec.RunWithStdin(ctx, reader, name, args...)
+// asCommandError turns a completed command's Result into a typed error when its
+// exit code is non-zero, mirroring the old "non-zero exit ⇒ failure" contract
+// the mutating methods rely on. A clean exit returns nil. The exit code and
+// stderr are preserved on *exec.CommandError so callers can branch via
+// errors.As.
+func asCommandError(name string, res pmexec.Result) error {
+	if res.ExitCode == 0 {
+		return nil
 	}
+	return &pmexec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+}
 
-	result := &CommandResult{Duration: time.Since(start)}
-	if res != nil {
-		result.Stdout = res.Stdout
-		result.Stderr = res.Stderr
-		result.ExitCode = res.ExitCode
+// countNonEmptyLines counts non-blank lines in command output.
+func countNonEmptyLines(data string) int {
+	count := 0
+	for _, line := range bytes.Split([]byte(data), []byte("\n")) {
+		if len(strings.TrimSpace(string(line))) > 0 {
+			count++
+		}
 	}
-	if err == nil && result.ExitCode != 0 {
-		err = fmt.Errorf("%s exited with status %d", name, result.ExitCode)
-	}
-	result.Success = err == nil
-	return result, err
+	return count
 }

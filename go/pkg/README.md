@@ -1,244 +1,166 @@
 # Package Manager SDK
 
-A Go library for interacting with Linux package managers (apt, dnf, pacman, zypper, flatpak) with structured data output and a fluent builder API.
+A Go library for driving Linux package managers (apt, dnf, pacman, zypper,
+flatpak) through a single `Manager` interface built over an injected
+`exec.Runner` — no global escalation state, fully unit-testable with
+`exectest.FakeRunner` (no host, no sudo, no container).
 
 ## Installation
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/pkg"
+import (
+    "github.com/manchtools/power-manage/sdk/go/pkg"
+    "github.com/manchtools/power-manage/sdk/go/sys/exec"
+)
 ```
 
 ## Quick Start
 
 ```go
-// Auto-detect and create a package manager with builder API
-pm, err := pkg.New()
+// Build a Runner for the host's escalation backend, then a Manager for a backend.
+r, err := exec.NewRunner(exec.Sudo) // or exec.Doas / exec.Direct (already root)
+if err != nil {
+    log.Fatal(err)
+}
+m, err := pkg.New(pkg.Apt, r)
 if err != nil {
     log.Fatal(err)
 }
 
-// Install latest version
-result, err := pm.Install("nginx").Run()
+ctx := context.Background()
 
-// Install specific version
-result, err := pm.Install("nginx").Version("1.24.0-1").Run()
-
-// Install with downgrade support
-result, err := pm.Install("nginx").Version("1.22.0-1").AllowDowngrade().Run()
-```
-
-## Builder API
-
-The builder pattern provides a fluent interface for package operations:
-
-### Install
-
-```go
 // Install latest
-pm.Install("nginx").Run()
+err = m.Install(ctx, pkg.InstallOptions{}, "nginx", "curl")
 
-// Install specific version
-pm.Install("nginx").Version("1.24.0-1").Run()
+// Install a pinned version (exactly one package when Version is set)
+err = m.Install(ctx, pkg.InstallOptions{Version: "1.24.0-1"}, "nginx")
 
-// Install older version (downgrade)
-pm.Install("nginx").Version("1.22.0-1").AllowDowngrade().Run()
+// Allow a downgrade
+err = m.Install(ctx, pkg.InstallOptions{Version: "1.22.0-1", AllowDowngrade: true}, "nginx")
 ```
 
-### Remove
+Mutating methods (`Install`/`Remove`/`Update`/`Upgrade`/`Pin`/`Unpin`/`Repair`/
+`Autoremove`) return `error` only — a non-zero exit becomes an
+`*exec.CommandError` carrying the exit code and stderr (`errors.As` to inspect).
+Query methods return typed results.
+
+## Choosing a backend
+
+`New` is pure — it does not probe the host. Use `Detect` to learn which
+backends are installed (it lists, in priority order; it never picks):
 
 ```go
-// Remove package
-pm.Remove("nginx").Run()
-
-// Remove multiple packages
-pm.Remove("nginx", "curl", "wget").Run()
-
-// Purge (remove with config files, apt only)
-pm.Remove("nginx").Purge().Run()
-```
-
-### Upgrade
-
-```go
-// Upgrade all packages
-pm.Upgrade().Run()
-
-// Upgrade specific packages
-pm.Upgrade("nginx", "curl").Run()
-```
-
-### Pin/Unpin
-
-```go
-// Pin packages to prevent upgrades
-pm.Pin("nginx", "curl").Run()
-
-// Unpin to allow upgrades
-pm.Unpin("nginx").Run()
-```
-
-## Direct Manager Access
-
-The `PackageManager` embeds the `Manager` interface, so you can still access all methods directly:
-
-```go
-pm, _ := pkg.New()
-
-// Builder API
-pm.Install("nginx").Version("1.24.0").Run()
-
-// Direct access
-packages, _ := pm.List()
-versions, _ := pm.ListVersions("nginx")
-pinned, _ := pm.IsPinned("nginx")
-```
-
-## Low-Level Manager Interface
-
-For more control, use the Manager interface directly:
-
-```go
-// Auto-detect
-manager, err := pkg.Detect()
-
-// Or use specific implementations
-apt := pkg.NewApt()
-dnf := pkg.NewDnf()
-pacman := pkg.NewPacman()
-zypper := pkg.NewZypper()
-flatpak := pkg.NewFlatpak()
-
-// All Manager methods available
-manager.Install("nginx")
-manager.InstallVersion("nginx", pkg.InstallOptions{
-    Version:        "1.24.0-1",
-    AllowDowngrade: true,
-})
-manager.Remove("nginx")
-manager.List()
-manager.ListVersions("nginx")
-manager.Pin("nginx")
-```
-
-## Query Methods
-
-```go
-pm, _ := pkg.New()
-
-// List installed packages
-packages, _ := pm.List()
-for _, p := range packages {
-    fmt.Printf("%s %s (pinned: %v)\n", p.Name, p.Version, p.Pinned)
+for _, b := range pkg.Detect(ctx) {
+    fmt.Println(b) // "apt", "dnf", "flatpak", ...
 }
-
-// List available versions
-info, _ := pm.ListVersions("nginx")
-fmt.Printf("Installed: %s\n", info.Installed)
-for _, v := range info.Versions {
-    fmt.Printf("  %s (%s)\n", v.Version, v.Repository)
-}
-
-// Get installed version
-version, _ := pm.GetInstalledVersion("nginx")
-
-// Check if installed
-installed, _ := pm.IsInstalled("nginx")
-
-// Check if pinned
-pinned, _ := pm.IsPinned("nginx")
-
-// List pinned packages
-pinnedPkgs, _ := pm.ListPinned()
-
-// List upgradable packages
-updates, _ := pm.ListUpgradable()
-for _, u := range updates {
-    fmt.Printf("%s: %s -> %s\n", u.Name, u.CurrentVersion, u.NewVersion)
-}
-
-// Search packages
-results, _ := pm.Search("nginx")
-
-// Get package details
-p, _ := pm.Show("nginx")
+m, err := pkg.New(pkg.Dnf, r)
 ```
 
-## Context Support
+An unknown backend or a nil runner is rejected (`pkg.ErrUnknownBackend` /
+"runner is required") — fail-closed, no silent default.
+
+## Mutations
 
 ```go
-ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-defer cancel()
-
-// With context
-apt := pkg.NewAptWithContext(ctx)
-dnf := pkg.NewDnfWithContext(ctx)
-
-// Or via Detect
-manager, _ := pkg.DetectWithContext(ctx)
-pm := pkg.NewPackageManager(manager)
+m.Install(ctx, pkg.InstallOptions{}, "nginx")
+m.Remove(ctx, pkg.RemoveOptions{}, "nginx")
+m.Remove(ctx, pkg.RemoveOptions{Purge: true}, "nginx") // also delete config/data where supported
+m.Update(ctx)                                          // refresh metadata
+m.Upgrade(ctx)                                         // full system upgrade (no names)
+m.Upgrade(ctx, "nginx", "curl")                        // upgrade specific packages
+m.Pin(ctx, "nginx")                                    // hold back from upgrades
+m.Unpin(ctx, "nginx")
+m.Autoremove(ctx)                                      // remove now-unneeded deps (no-op on zypper)
+m.Repair(ctx)                                          // clear stale locks / fix broken state
 ```
+
+Reads run unprivileged; mutations escalate through the Runner's backend
+(`sudo -n` / `doas -n` / bare for `Direct`).
+
+## Queries
+
+```go
+ver, _ := m.Version(ctx)                 // package-manager tool version
+packages, _ := m.List(ctx)               // installed packages
+updates, _ := m.ListUpgradable(ctx)      // []PackageUpdate
+p, _ := m.Show(ctx, "nginx")             // *Package
+info, _ := m.ListVersions(ctx, "nginx")  // *VersionInfo
+ok, _ := m.IsInstalled(ctx, "nginx")
+v, _ := m.InstalledVersion(ctx, "nginx") // "" if absent
+n, _ := m.InstalledCount(ctx)
+has, _ := m.HasUpdates(ctx, false)       // true if any update; pass true for security-only (where supported)
+pinned, _ := m.IsPinned(ctx, "nginx")
+held, _ := m.ListPinned(ctx)
+results, _ := m.Search(ctx, "nginx")
+```
+
+## Flatpak
+
+`New(pkg.Flatpak, r)` returns a value that also satisfies `FlatpakManager`,
+adding remote (repository) management. Use `WithUserScope()` to operate on the
+per-user installation (`--user`, unprivileged) instead of the system one:
+
+```go
+m, _ := pkg.New(pkg.Flatpak, r)                 // system scope (--system, escalated)
+mu, _ := pkg.New(pkg.Flatpak, r, pkg.WithUserScope()) // per-user (--user, unprivileged)
+
+if fm, ok := m.(pkg.FlatpakManager); ok {
+    fm.AddRemote(ctx, "flathub", "https://dl.flathub.org/repo/flathub.flatpakrepo")
+    remotes, _ := fm.ListRemotes(ctx)
+    fm.RemoveRemote(ctx, "flathub")
+}
+```
+
+`AddRemote` validates the alias (`ValidateRemoteName`) and the URL
+(`ValidateRepoBaseURL`, https only). Flatpak does not support traditional
+version pinning, so `InstallOptions.Version` is validated but ignored for it.
 
 ## Types
 
-### Package
-
 ```go
-type Package struct {
-    Name         string
-    Version      string
-    Architecture string
-    Description  string
-    Status       string // "installed", "available"
-    Size         int64  // bytes
-    Repository   string
-    Pinned       bool   // held/versionlocked
+type InstallOptions struct {
+    Version        string // pins a single package; requires exactly one name
+    AllowDowngrade bool
 }
-```
 
-### VersionInfo
+type RemoveOptions struct {
+    Purge bool // also remove config/data (apt purge / pacman -Rns / flatpak --delete-data)
+}
 
-```go
+type Package struct {
+    Name, Version, Architecture, Description, Status, Repository string
+    Size                                                         int64 // bytes
+    Pinned                                                       bool
+}
+
+type PackageUpdate struct {
+    Name, CurrentVersion, NewVersion, Architecture, Repository string
+}
+
 type VersionInfo struct {
     Name      string
     Versions  []AvailableVersion
     Installed string
 }
-
-type AvailableVersion struct {
-    Version    string
-    Repository string
-    Size       int64
-}
-```
-
-### CommandResult
-
-```go
-type CommandResult struct {
-    Success  bool
-    ExitCode int
-    Stdout   string
-    Stderr   string
-    Duration time.Duration
-}
 ```
 
 ## Supported Package Managers
 
-| Manager | Systems | Detection | Pinning |
-|---------|---------|-----------|---------|
-| apt | Debian, Ubuntu, Linux Mint | `/usr/bin/apt-get` | `apt-mark hold/unhold` |
-| dnf | Fedora, RHEL 8+, CentOS Stream | `/usr/bin/dnf` | `dnf versionlock` (requires plugin) |
-| pacman | Arch Linux, Manjaro | `/usr/bin/pacman` | `IgnorePkg` in pacman.conf |
-| zypper | openSUSE, SLES | `/usr/bin/zypper` | `zypper addlock/removelock` |
-| flatpak | Cross-distro | `/usr/bin/flatpak` | N/A |
+| Backend | Systems | `Detect` binary | Pinning |
+|---------|---------|-----------------|---------|
+| `pkg.Apt` | Debian, Ubuntu, Mint | `apt-get` | `apt-mark hold/unhold` |
+| `pkg.Dnf` | Fedora, RHEL 8+, CentOS Stream | `dnf` | `dnf versionlock` (plugin auto-installed) |
+| `pkg.Pacman` | Arch, Manjaro | `pacman` | `IgnorePkg` in `/etc/pacman.conf` |
+| `pkg.Zypper` | openSUSE, SLES | `zypper` | `zypper addlock/removelock` |
+| `pkg.Flatpak` | Cross-distro | `flatpak` | `flatpak mask` |
 
 ## Argument-Hardening Validators
 
-Every value that reaches a package-manager `argv` must be validated against
-its *intent* before the command runs. These exported validators are
-**mandatory** at the argv boundary (the agent's executors call them, and the
-positionals are then passed after an explicit `--` end-of-options separator
+Every value that reaches a package-manager `argv` is validated against its
+*intent* before the command runs. Package names and versions are checked inside
+each method (there is no opt-out). The remaining exported validators are
+**mandatory** at the argv boundaries they protect (the agent's executors call
+them, and positionals are passed after an explicit `--` end-of-options separator
 built with `exec.SeparatePositionals`, so a flag-shaped value can never be
 reparsed as an option):
 
@@ -247,33 +169,36 @@ reparsed as an option):
 | `ValidatePackageName` / `ValidatePackageNames` | apt/dnf/pacman/zypper/flatpak names | first char alphanumeric, then `[a-zA-Z0-9._+:/@~-]`, ≤256 |
 | `ValidatePackageVersion` | `<name>=<version>` argv | cross-distro EVR grammar, empty = "no pin" |
 | `ValidateRpmPackageName` | `rpm -q` / `rpm -e <NAME>` (NAME read off a crafted `.rpm`) | first char alphanumeric, then `[a-zA-Z0-9._+-]`, ≤256 |
-| `ValidateRepoBaseURL` | dnf `baseurl` / zypper `url` / pacman `server` | **https only**, host required, control-char free (template vars `$releasever`/`$arch` allowed). apt is excluded — its security is the gpg-signed Release file. |
+| `ValidateRepoBaseURL` | dnf `baseurl` / zypper `url` / pacman `server` / flatpak remote URL | **https only**, host required, control-char free (template vars `$releasever`/`$arch` allowed). apt is excluded — its security is the gpg-signed Release file. |
 | `ValidateGpgKeyRef` | dnf/zypper `gpgkey` passed to `rpm --import` | https URL, `file:///abs` path, or absolute path; no `..`, no leading `-`, no `http://`, no `ext::` |
 | `ValidateRemoteName` | flatpak remote alias | first char alphanumeric, then `[a-zA-Z0-9._-]`, ≤128 |
 
-`exec.SeparatePositionals(flags, positionals...)` (in `go/sys/exec`) builds a
-fresh slice, copies `flags`, inserts `--` unconditionally (even with no
-positionals), then appends the positionals — so the caller's `flags` slice is
-never aliased or mutated.
+In addition, pacman's `Pin` runs a stricter `[a-zA-Z0-9][a-zA-Z0-9._+-]*` gate
+before a name is written to `IgnorePkg`, blocking config-injection even for
+names that `ValidatePackageName` would accept.
+
+## Testing
+
+Because the Manager is built with an injected Runner, tests pass an
+`exectest.FakeRunner`, script command results, and assert on the exact
+`exec.Command`s the Manager built (argv, escalation, stdin) — no real package
+manager is invoked:
+
+```go
+f := exectest.New(exec.Direct)
+f.Push(exec.Result{Stdout: "..."}, nil)
+m, _ := pkg.New(pkg.Apt, f)
+m.Install(ctx, pkg.InstallOptions{}, "nginx")
+// f.Calls()[0] is the recorded `apt install -y --fix-broken nginx`
+```
 
 ## Notes
 
-### Version Formats
-
-- **apt**: Use exact version from `apt-cache madison`, e.g., `1.24.0-1ubuntu1`
-- **dnf**: Use version-release format, e.g., `1.24.0-1.fc39`
-- **pacman**: Use version from `pacman -Si`, e.g., `1.24.0-1`
-- **zypper**: Use version from `zypper info`, e.g., `1.24.0-1.1`
-- **flatpak**: Use application ID, e.g., `org.mozilla.firefox`
-
-### Non-Interactive Mode
-
-All apt/dnf/zypper/pacman commands are executed with `DEBIAN_FRONTEND=noninteractive` set in the environment. This prevents debconf from trying interactive frontends (Dialog, Readline, Teletype) when running without a terminal, which would cause dpkg post-install scripts to fail.
-
-### Pinning Requirements
-
-- **apt**: No additional setup required
-- **dnf**: Uses `python3-dnf-plugin-versionlock` (automatically installed when pinning is first used)
-- **pacman**: Modifies `/etc/pacman.conf` (requires root)
-- **zypper**: No additional setup required
-- **flatpak**: Pinning not supported
+- **Non-interactive mode**: apt commands run with
+  `DEBIAN_FRONTEND=noninteractive`; the C locale (`LANG=C`/`LC_ALL=C`) is forced
+  on every command for stable English-only output parsing.
+- **Version formats**: apt `1.24.0-1ubuntu1`, dnf `1.24.0-1.fc39`, pacman
+  `1.24.0-1`, zypper `1.24.0-1.1`. Flatpak addresses bundles by application ID
+  (e.g. `org.mozilla.firefox`) and has no version pin.
+- **Pinning setup**: dnf auto-installs `python3-dnf-plugin-versionlock` on first
+  use; pacman edits `/etc/pacman.conf` (root). apt/zypper need no setup.
