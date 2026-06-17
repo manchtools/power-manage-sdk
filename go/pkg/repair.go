@@ -56,6 +56,9 @@ func removeStaleLock(ctx context.Context, r pmexec.Runner, path string) error {
 		return err
 	}
 	if _, err := statFile(path); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
 		if os.IsNotExist(err) {
 			return nil // file doesn't exist — nothing to remove
 		}

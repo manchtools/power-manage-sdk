@@ -345,19 +345,20 @@ func TestApt_Repair(t *testing.T) {
 			t.Error("cancelled repair must run nothing")
 		}
 	})
-	t.Run("cancellation during a repair step is propagated", func(t *testing.T) {
+	t.Run("cancellation during a best-effort step is propagated", func(t *testing.T) {
 		stubLookPath(t, "apt")
+		stubStatFile(t, nil) // locks absent -> lock loop makes no runner calls
 		ctx2, cancel := context.WithCancel(context.Background())
-		probes := 0
-		// No lock files exist; cancel the context once the lock loop has finished
-		// probing all four, so the first best-effort step sees the cancellation.
-		stubStatFile(t, func() {
-			probes++
-			if probes >= 4 {
-				cancel()
-			}
-		})
-		m, _ := mustNew(t, Apt)
+		// dpkg --configure -a (runner call 1) succeeds; the context is then
+		// cancelled, so the next best-effort step (apt --fix-broken) fails closed
+		// and Repair propagates the cancellation.
+		inner := newFake()
+		inner.Push(pmexec.Result{}, nil) // dpkg --configure -a
+		r := &cancelAfterRunner{inner: inner, n: 1, cancel: cancel}
+		m, err := New(Apt, r)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if err := m.Repair(ctx2); !errors.Is(err, context.Canceled) {
 			t.Fatalf("err = %v, want context.Canceled", err)
 		}

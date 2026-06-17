@@ -305,7 +305,9 @@ func (z *zypper) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 	if err := ValidatePackageName(name); err != nil {
 		return nil, err
 	}
-	out, err := readOut(ctx, z.r, "zypper", "--non-interactive", "search", "-s", "--match-exact", name)
+	// search exits 104 for "no matches" (as Search treats it) — a benign empty
+	// result, not a failure. A runner/context failure still propagates.
+	res, err := runRead(ctx, z.r, "zypper", "--non-interactive", "search", "-s", "--match-exact", name)
 	if err != nil {
 		return nil, err
 	}
@@ -317,8 +319,15 @@ func (z *zypper) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 	}
 	info.Installed = installed
 
+	if res.ExitCode == 104 {
+		return info, nil // no matching package
+	}
+	if res.ExitCode != 0 {
+		return nil, asCommandError("zypper", res)
+	}
+
 	seen := make(map[string]bool)
-	scanner := bufio.NewScanner(strings.NewReader(out))
+	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
 	headerPassed := false
 	for scanner.Scan() {
 		line := scanner.Text()

@@ -386,6 +386,26 @@ func TestZypper_ListVersions(t *testing.T) {
 			t.Fatalf("info=%+v", info)
 		}
 	})
+	t.Run("no match (exit 104) returns info without versions", func(t *testing.T) {
+		m, f := zypperM(t)
+		f.Push(pmexec.Result{ExitCode: 104}, nil) // search: no matches (benign)
+		ok(f, "9.0-1\n")                          // InstalledVersion
+		info, err := m.ListVersions(ctx, "vim")
+		if err != nil {
+			t.Fatalf("exit 104 must not fail: %v", err)
+		}
+		if info.Installed != "9.0-1" || len(info.Versions) != 0 {
+			t.Fatalf("info=%+v", info)
+		}
+	})
+	t.Run("genuine search failure surfaces", func(t *testing.T) {
+		m, f := zypperM(t)
+		f.Push(pmexec.Result{ExitCode: 6, Stderr: "no repos"}, nil) // search: real failure
+		ok(f, "9.0-1\n")                                            // InstalledVersion
+		if _, err := m.ListVersions(ctx, "vim"); err == nil {
+			t.Fatal("a non-0/104 search exit must surface as an error")
+		}
+	})
 	t.Run("installed-version runner failure propagates", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "S | Name | Type | Version | Arch | Repository\n---\nv | vim | package | 9.0-2 | x86_64 | repo-oss\n")

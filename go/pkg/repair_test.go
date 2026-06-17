@@ -120,6 +120,21 @@ func TestRemoveStaleLock_StatErrorLeavesLock(t *testing.T) {
 	}
 }
 
+// A stat failure concurrent with a cancellation reports the cancellation, not a
+// best-effort skip.
+func TestRemoveStaleLock_StatErrorWithCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	orig := statFile
+	statFile = func(string) (fs.FileInfo, error) {
+		cancel()
+		return nil, fs.ErrPermission
+	}
+	t.Cleanup(func() { statFile = orig })
+	if err := removeStaleLock(ctx, newFake(), "/lock"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+}
+
 func TestRemoveStaleLock_CtxCancelledAtEntry(t *testing.T) {
 	stubStatFile(t, nil, "/lock")
 	ctx, cancel := context.WithCancel(context.Background())
