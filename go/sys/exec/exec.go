@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -12,6 +11,11 @@ import (
 
 	"github.com/go-cmd/cmd"
 )
+
+// This file holds the shared low-level execution core used by the injected
+// Runner (runner.go). The legacy process-global entry points (Run/RunStreaming/
+// Privileged/Query/SetPrivilegeBackend, …) were removed once every capability
+// migrated onto the Runner; only the internals the Runner builds on remain here.
 
 // killGrace bounds how long a cancelled child has to exit on SIGTERM before
 // its process group is escalated to SIGKILL. A package var (not const) so
@@ -52,97 +56,11 @@ func awaitStatusOrKill(c *cmd.Cmd, statusChan <-chan cmd.Status) cmd.Status {
 	}
 }
 
-// Run executes a command and returns its output.
-func Run(ctx context.Context, name string, args ...string) (*Result, error) {
-	return runWithOptions(ctx, name, args, nil, "")
-}
-
-// RunInDir executes a command in a specific directory.
-func RunInDir(ctx context.Context, dir, name string, args ...string) (*Result, error) {
-	return runWithOptions(ctx, name, args, nil, dir)
-}
-
-// RunWithStdin executes a command with stdin input.
-func RunWithStdin(ctx context.Context, stdin io.Reader, name string, args ...string) (*Result, error) {
-	return runWithOptions(ctx, name, args, stdin, "")
-}
-
-// RunWithCLocale runs a command with LC_ALL=C and LANG=C forced into
-// the environment. Use this whenever the agent parses tool output
-// that is not stable across locales — `last`, `getent`, `df`, `stat`,
-// etc. emit translated date/error strings under a non-English LANG,
-// which silently break English-only string parsers.
-//
-// PATH is preserved from the calling process so binary lookup keeps
-// working; everything else from the caller's environment is dropped
-// to keep the run reproducible. SDK helper for agent finding F025
-// (LC_ALL=C for `last(1)` parsing).
-func RunWithCLocale(ctx context.Context, name string, args ...string) (*Result, error) {
-	// RunStreaming prepends a sanitized PATH= for us when envVars is
-	// non-empty, so we only need to pass the deterministic-locale
-	// pair. The previous explicit PATH+=os.Getenv("PATH") here would
-	// now be redundant (PATH is on the blocklist for user-supplied
-	// env, but the SDK-internal prepend is unaffected).
-	return RunStreaming(ctx, name, args, []string{"LC_ALL=C", "LANG=C"}, "", nil)
-}
-
-// RunStreaming executes a command with real-time output streaming.
-// The callback is called for each line of output as it's produced.
-//
-// SECURITY: every entry in envVars is validated against
-// IsAllowedEnvVar before the child is spawned. Names that hijack
-// process execution (LD_PRELOAD, PATH, BASH_ENV, GCONV_PATH,
-// LD_LIBRARY_PATH, NODE_OPTIONS, PYTHONPATH, …) are refused with
-// ErrBlockedEnvVar. Entries that aren't KEY=VALUE shaped are refused
-// with ErrInvalidEnvVar. This is the SDK boundary — every caller
-// (Privileged, PrivilegedStreaming, pkg/exec.runPM, …) inherits the
-// check, so the audit-finding-#8 enforcement lives in one place.
-func RunStreaming(ctx context.Context, name string, args []string, envVars []string, dir string, callback OutputCallback) (*Result, error) {
-	if err := validateEnvVars(envVars); err != nil {
-		return nil, err
-	}
-	// Backward-compatible env composition. When the caller supplies env
-	// vars we compose [sanitized parent PATH] + their vars; when they
-	// supply NONE we leave the child env nil so it inherits the parent
-	// environment fully — the long-standing contract every Run*/
-	// Privileged*/pkg caller relies on. (RunStreamingChildPath does NOT
-	// share this fall-through; see its doc.)
-	var finalEnv []string
-	if len(envVars) > 0 {
-		finalEnv = composeEnv(os.Getenv("PATH"), envVars)
-	}
-	return runStreamingWithEnv(ctx, name, args, finalEnv, dir, callback)
-}
-
-// RunStreamingChildPath is RunStreaming with an explicit, TRUSTED child
-// PATH. PATH is on the BlockedEnvVars list so an untrusted caller can't
-// smuggle it through envVars; this entry point lets a trusted caller
-// (e.g. the agent's per-user runuser fan-out, which must run with the
-// target user's PATH rather than root's) set the child PATH directly.
-//
-// SECURITY: unlike RunStreaming, the curated childPath is ALWAYS
-// authoritative — the child env is composed as [PATH=childPath] + envVars
-// even when envVars is EMPTY, and the parent environment is NEVER
-// inherited. This is deliberate: the whole reason a caller reaches for a
-// curated PATH is isolation, so an empty envVars must not silently fall
-// back to inheriting the agent's (root's) full environment — the exact
-// un-sandboxing the previous "childPath used only when envVars is
-// non-empty" shape allowed. A caller that genuinely wants full parent
-// inheritance must use RunStreaming, not this entry point.
-func RunStreamingChildPath(ctx context.Context, name string, args []string, envVars []string, childPath string, dir string, callback OutputCallback) (*Result, error) {
-	if err := validateEnvVars(envVars); err != nil {
-		return nil, err
-	}
-	// Always a non-nil (composed) env: the curated PATH replaces, never
-	// augments, the parent environment.
-	return runStreamingWithEnv(ctx, name, args, composeEnv(childPath, envVars), dir, callback)
-}
-
 // validateEnvVars enforces the SDK env boundary: every entry must be
 // KEY=VALUE and the key must not be on the BlockedEnvVars list (PATH,
 // LD_PRELOAD, BASH_ENV, GCONV_PATH, LD_LIBRARY_PATH, …). This is the one
-// place the audit-finding-#8 check lives; both streaming entry points run
-// it before composing the child env.
+// place the audit-finding-#8 check lives; the Runner runs it (via
+// buildChildEnv) before composing the child env.
 func validateEnvVars(envVars []string) error {
 	for _, e := range envVars {
 		key, _, ok := strings.Cut(e, "=")
@@ -161,7 +79,7 @@ func validateEnvVars(envVars []string) error {
 // vars. PATH cannot appear in envVars (it is blocklisted), so the
 // leading entry is the only PATH the child sees. The returned slice is
 // always non-nil so callers can distinguish "isolated env" (this) from
-// "inherit parent fully" (a nil env passed to runStreamingWithEnv).
+// "inherit parent fully" (a nil env passed to runStreamingWithStdin).
 func composeEnv(childPath string, envVars []string) []string {
 	env := make([]string, 0, len(envVars)+1)
 	if childPath != "" {
@@ -170,20 +88,12 @@ func composeEnv(childPath string, envVars []string) []string {
 	return append(env, envVars...)
 }
 
-// runStreamingWithEnv runs the command with a fully-composed child env.
-// A nil env inherits the parent environment fully; a non-nil env (even an
-// empty one) replaces it.
-func runStreamingWithEnv(ctx context.Context, name string, args []string, env []string, dir string, callback OutputCallback) (*Result, error) {
-	return runStreamingWithStdin(ctx, name, args, nil, env, dir, callback)
-}
-
 // runStreamingWithStdin is the shared low-level execution core: line-buffered
 // streaming with a per-stream MaxOutputBytes cap, ctx-cancel SIGTERM→SIGKILL
 // process-group escalation, and non-zero-exit-is-NOT-an-error semantics (the
 // exit code is in Result; the returned error is non-nil only on failure to
-// execute or ctx cancellation). Both the legacy RunStreaming* entry points
-// (stdin nil) and the injected Runner build on it. A nil env inherits the
-// parent environment fully; a non-nil env (even empty) replaces it.
+// execute or ctx cancellation). The injected Runner builds on it. A nil env
+// inherits the parent environment fully; a non-nil env (even empty) replaces it.
 func runStreamingWithStdin(ctx context.Context, name string, args []string, stdin io.Reader, env []string, dir string, callback OutputCallback) (*Result, error) {
 	c := cmd.NewCmdOptions(cmd.Options{
 		Buffered:       false,
@@ -296,51 +206,4 @@ func runStreamingWithStdin(ctx context.Context, name string, args []string, stdi
 		Stdout:   stdoutStr,
 		Stderr:   stderrStr,
 	}, runErr
-}
-
-func runWithOptions(ctx context.Context, name string, args []string, stdin io.Reader, dir string) (*Result, error) {
-	c := cmd.NewCmd(name, args...)
-	if dir != "" {
-		c.Dir = dir
-	}
-
-	var statusChan <-chan cmd.Status
-	if stdin != nil {
-		statusChan = c.StartWithStdin(stdin)
-	} else {
-		statusChan = c.Start()
-	}
-
-	select {
-	case status := <-statusChan:
-		result := statusToResult(status)
-		if status.Error != nil {
-			return result, status.Error
-		}
-		if status.Exit != 0 {
-			return result, fmt.Errorf("exit code %d", status.Exit)
-		}
-		return result, nil
-	case <-ctx.Done():
-		status := awaitStatusOrKill(c, statusChan)
-		return statusToResult(status), ctx.Err()
-	}
-}
-
-func statusToResult(status cmd.Status) *Result {
-	stdout := strings.Join(status.Stdout, "\n")
-	stderr := strings.Join(status.Stderr, "\n")
-
-	if len(stdout) > MaxOutputBytes {
-		stdout = stdout[:MaxOutputBytes] + "\n[output truncated]"
-	}
-	if len(stderr) > MaxOutputBytes {
-		stderr = stderr[:MaxOutputBytes] + "\n[output truncated]"
-	}
-
-	return &Result{
-		ExitCode: status.Exit,
-		Stdout:   stdout,
-		Stderr:   stderr,
-	}
 }

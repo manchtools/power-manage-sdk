@@ -9,74 +9,57 @@ import (
 	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// TestRunStreaming_RejectsLDPRELOAD pins finding #8 of the SDK audit
-// (2026-06-06): RunStreaming must refuse to forward LD_PRELOAD even
-// when a caller mistakenly passes it. The error returned is
-// ErrBlockedEnvVar so callers can branch (e.g. report it as a
-// security violation in a logged audit event) instead of treating it
-// as a generic exec failure.
-func TestRunStreaming_RejectsLDPRELOAD(t *testing.T) {
-	_, err := pmexec.RunStreaming(context.Background(), "true", nil,
-		[]string{"LD_PRELOAD=/tmp/evil.so"}, "", nil)
-	if !errors.Is(err, pmexec.ErrBlockedEnvVar) {
-		t.Fatalf("err = %v, want ErrBlockedEnvVar", err)
+// The Runner enforces the SDK env hijack boundary (audit finding #8) on
+// Command.Env via buildChildEnv→validateEnvVars: a blocked name is refused
+// BEFORE the child is spawned, returning ErrBlockedEnvVar so a caller can
+// branch (e.g. log a security violation) rather than treat it as a generic exec
+// failure. These cases pin the breadth of the blocklist end-to-end through the
+// real Runner.
+func runnerForEnvTest(t *testing.T) pmexec.Runner {
+	t.Helper()
+	r, err := pmexec.NewRunner(pmexec.Direct)
+	if err != nil {
+		t.Fatalf("NewRunner(Direct): %v", err)
+	}
+	return r
+}
+
+func TestRunner_RejectsBlockedEnvVars(t *testing.T) {
+	blocked := []string{
+		"LD_PRELOAD=/tmp/evil.so",
+		"PATH=/tmp/attacker", // user-supplied PATH is blocked; use ChildPath for a curated one
+		"BASH_ENV=/tmp/evil.sh",
+		"GCONV_PATH=/tmp/evil",
+		"LD_LIBRARY_PATH=/tmp/evil",
+	}
+	r := runnerForEnvTest(t)
+	for _, e := range blocked {
+		_, err := r.Run(context.Background(), pmexec.Command{Name: "true", Env: []string{e}})
+		if !errors.Is(err, pmexec.ErrBlockedEnvVar) {
+			t.Errorf("Run with Env %q err = %v, want ErrBlockedEnvVar", e, err)
+		}
 	}
 }
 
-// TestRunStreaming_RejectsPATHOverride proves that user-supplied PATH
-// values are blocked at the boundary. The SDK-internal PATH prepend
-// (which uses the agent's own environment) still works — see
-// TestRunStreaming_PrependsInheritedPATH.
-func TestRunStreaming_RejectsPATHOverride(t *testing.T) {
-	_, err := pmexec.RunStreaming(context.Background(), "true", nil,
-		[]string{"PATH=/tmp/attacker"}, "", nil)
-	if !errors.Is(err, pmexec.ErrBlockedEnvVar) {
-		t.Fatalf("err = %v, want ErrBlockedEnvVar", err)
-	}
-}
-
-func TestRunStreaming_RejectsBASHENV(t *testing.T) {
-	_, err := pmexec.RunStreaming(context.Background(), "true", nil,
-		[]string{"BASH_ENV=/tmp/evil.sh"}, "", nil)
-	if !errors.Is(err, pmexec.ErrBlockedEnvVar) {
-		t.Fatalf("err = %v, want ErrBlockedEnvVar", err)
-	}
-}
-
-func TestRunStreaming_RejectsGCONVPATH(t *testing.T) {
-	_, err := pmexec.RunStreaming(context.Background(), "true", nil,
-		[]string{"GCONV_PATH=/tmp/evil"}, "", nil)
-	if !errors.Is(err, pmexec.ErrBlockedEnvVar) {
-		t.Fatalf("err = %v, want ErrBlockedEnvVar", err)
-	}
-}
-
-func TestRunStreaming_RejectsLDLibraryPath(t *testing.T) {
-	_, err := pmexec.RunStreaming(context.Background(), "true", nil,
-		[]string{"LD_LIBRARY_PATH=/tmp/evil"}, "", nil)
-	if !errors.Is(err, pmexec.ErrBlockedEnvVar) {
-		t.Fatalf("err = %v, want ErrBlockedEnvVar", err)
-	}
-}
-
-func TestRunStreaming_RejectsMalformedEntry(t *testing.T) {
-	_, err := pmexec.RunStreaming(context.Background(), "true", nil,
-		[]string{"NOTKEY_EQUALS_VALUE"}, "", nil)
+func TestRunner_RejectsMalformedEnvEntry(t *testing.T) {
+	r := runnerForEnvTest(t)
+	_, err := r.Run(context.Background(), pmexec.Command{Name: "true", Env: []string{"NOTKEY_EQUALS_VALUE"}})
 	if !errors.Is(err, pmexec.ErrInvalidEnvVar) {
 		t.Fatalf("err = %v, want ErrInvalidEnvVar", err)
 	}
 }
 
-// TestRunStreaming_AcceptsSafeVar is the inverse contract: a name not
-// on the blocklist must pass through and be visible to the child.
-func TestRunStreaming_AcceptsSafeVar(t *testing.T) {
-	res, err := pmexec.RunStreaming(context.Background(), "sh",
-		[]string{"-c", "echo -n $PM_AUDIT_TEST_MARKER"}, []string{"PM_AUDIT_TEST_MARKER=ok"}, "", nil)
+// The inverse contract: a name not on the blocklist passes through and is
+// visible to the child.
+func TestRunner_AcceptsSafeEnvVar(t *testing.T) {
+	r := runnerForEnvTest(t)
+	res, err := r.Run(context.Background(), pmexec.Command{
+		Name: "sh", Args: []string{"-c", "printf %s \"$PM_AUDIT_TEST_MARKER\""},
+		Env: []string{"PM_AUDIT_TEST_MARKER=ok"},
+	})
 	if err != nil {
-		t.Fatalf("RunStreaming: %v", err)
+		t.Fatalf("Run: %v", err)
 	}
-	// RunStreaming's recordLine pipeline appends a trailing newline
-	// per captured line; assert on the trimmed payload.
 	if got := strings.TrimSpace(res.Stdout); got != "ok" {
 		t.Fatalf("child did not see the safe env var: stdout=%q (trimmed=%q)", res.Stdout, got)
 	}
