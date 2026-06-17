@@ -4,26 +4,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
-
-	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
-// findmntTimeout caps the context-less IsReadOnly call so a hung
-// findmnt (e.g. on an NFS mount with a stalled server) cannot pin
-// the calling goroutine indefinitely. F023.
-const findmntTimeout = 10 * time.Second
-
-// IsReadOnly checks if the filesystem at path is mounted read-only
-// by examining mount options via findmnt.
-func IsReadOnly(path string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), findmntTimeout)
-	defer cancel()
-	out, err := exec.QueryCtx(ctx, "findmnt", "-n", "-o", "OPTIONS", "--target", path)
+// IsReadOnly reports whether the filesystem mounted at path is read-only, by
+// examining the mount options via findmnt (unprivileged). The caller controls
+// timeout/cancellation through ctx.
+func (m *manager) IsReadOnly(ctx context.Context, path string) (bool, error) {
+	if err := ValidatePath(path); err != nil {
+		return false, err
+	}
+	res, err := m.runQuery(ctx, "findmnt", "-n", "-o", "OPTIONS", "--target", path)
 	if err != nil {
 		return false, err
 	}
-	for _, opt := range strings.Split(strings.TrimSpace(out), ",") {
+	if res.ExitCode != 0 {
+		return false, cmdError("findmnt", res)
+	}
+	for _, opt := range strings.Split(strings.TrimSpace(res.Stdout), ",") {
 		if opt == "ro" {
 			return true, nil
 		}
@@ -31,11 +28,10 @@ func IsReadOnly(path string) (bool, error) {
 	return false, nil
 }
 
-// RemountRW attempts to remount the filesystem at path as read-write
-// via the configured privilege backend: mount -o remount,rw.
-func RemountRW(ctx context.Context, path string) error {
-	_, err := exec.Privileged(ctx, "mount", "-o", "remount,rw", path)
-	if err != nil {
+// RemountRW remounts the filesystem at path read-write through the privilege
+// backend: mount -o remount,rw.
+func (m *manager) RemountRW(ctx context.Context, path string) error {
+	if err := m.runChecked(ctx, "mount", "-o", "remount,rw", path); err != nil {
 		return fmt.Errorf("remount %s read-write: %w", path, err)
 	}
 	return nil

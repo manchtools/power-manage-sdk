@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	osexec "os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,470 +15,295 @@ import (
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
+// foreignLocale returns an installed non-English UTF-8 locale (Japanese or
+// Chinese), or "" if none is present. Used to exercise the locale guard.
+func foreignLocale(t *testing.T) string {
+	t.Helper()
+	out, err := osexec.Command("locale", "-a").Output()
+	if err != nil {
+		return ""
+	}
+	installed := strings.Split(string(out), "\n")
+	for canonical, variants := range map[string][]string{
+		"ja_JP.UTF-8": {"ja_JP.utf8", "ja_JP.UTF-8"},
+		"zh_CN.UTF-8": {"zh_CN.utf8", "zh_CN.UTF-8"},
+	} {
+		for _, v := range variants {
+			for _, have := range installed {
+				if strings.EqualFold(strings.TrimSpace(have), v) {
+					return canonical
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// missingPath returns a path guaranteed not to exist — a child of a fresh, empty
+// t.TempDir — so the missing-file tests can't flake on a reused/shared host that
+// happens to have a fixed /tmp literal lying around.
+func missingPath(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(t.TempDir(), "definitely-missing")
+}
+
+// intManager builds a real Manager for the integration job: Direct when the job
+// runs as root, otherwise Sudo (the CI default). The Direct backend exercises
+// the fd-safe path; Sudo exercises the escalated tee/mv path.
+func intManager(t *testing.T) fs.Manager {
+	t.Helper()
+	b := exec.Sudo
+	if os.Geteuid() == 0 {
+		b = exec.Direct
+	}
+	r, err := exec.NewRunner(b)
+	if err != nil {
+		t.Fatalf("NewRunner: %v", err)
+	}
+	m, err := fs.New(r)
+	if err != nil {
+		t.Fatalf("fs.New: %v", err)
+	}
+	return m
+}
+
 func tmpPath(t *testing.T, name string) string {
 	t.Helper()
 	return fmt.Sprintf("/tmp/pm-fs-test-%s-%d", name, os.Getpid())
 }
 
-func cleanup(t *testing.T, path string) {
+func cleanup(t *testing.T, m fs.Manager, path string) {
 	t.Helper()
-	ctx := context.Background()
-	fs.Remove(ctx, path)
+	_ = m.Remove(context.Background(), path)
 }
 
-func TestWriteFile(t *testing.T) {
+// statMode returns the permission bits of path via os.Stat (metadata is
+// world-readable even when the file is root-owned).
+func statMode(t *testing.T, path string) os.FileMode {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat %s: %v", path, err)
+	}
+	return info.Mode().Perm()
+}
+
+func TestWriteAndReadRoundTrip(t *testing.T) {
 	ctx := context.Background()
+	m := intManager(t)
 	path := tmpPath(t, "write")
-	defer cleanup(t, path)
+	defer cleanup(t, m, path)
 
-	err := fs.WriteFile(ctx, path, "hello world\n")
+	content := []byte("hello world\n")
+	if err := m.WriteFile(ctx, path, content, fs.WriteOptions{}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	if ok, err := m.Exists(ctx, path); err != nil || !ok {
+		t.Fatalf("Exists = (%v,%v), want (true,nil)", ok, err)
+	}
+	got, err := m.ReadFile(ctx, path)
 	if err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
+		t.Fatalf("ReadFile: %v", err)
 	}
-
-	// Verify the file exists
-	if !fs.FileExists(ctx, path) {
-		t.Fatal("file should exist after WriteFile")
-	}
-}
-
-func TestReadFile(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "read")
-	defer cleanup(t, path)
-
-	content := "hello world\n"
-	err := fs.WriteFile(ctx, path, content)
-	if err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	got, err := fs.ReadFile(ctx, path)
-	if err != nil {
-		t.Fatalf("ReadFile failed: %v", err)
-	}
-	if got != content {
-		t.Errorf("expected %q, got %q", content, got)
+	if string(got) != string(content) {
+		t.Errorf("ReadFile = %q, want %q", got, content)
 	}
 }
 
 func TestReadFileNotFound(t *testing.T) {
-	ctx := context.Background()
-	got, err := fs.ReadFile(ctx, "/tmp/pm-nonexistent-file-12345")
+	got, err := intManager(t).ReadFile(context.Background(), missingPath(t))
 	if err != nil {
-		t.Fatalf("ReadFile should not error for missing file, got: %v", err)
+		t.Fatalf("ReadFile(missing) should not error, got: %v", err)
 	}
-	if got != "" {
-		t.Errorf("expected empty string for missing file, got %q", got)
+	if got != nil {
+		t.Errorf("ReadFile(missing) = %q, want nil", got)
 	}
 }
 
-func TestReadFileBinary(t *testing.T) {
+func TestWriteFileWithModeAndOwnership(t *testing.T) {
 	ctx := context.Background()
-	path := tmpPath(t, "binary")
-	defer cleanup(t, path)
-
-	// Write binary-ish content (no null bytes since tee/cat may not handle them)
-	content := "line1\nline2\nline3\n"
-	if err := fs.WriteFile(ctx, path, content); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	got, err := fs.ReadFile(ctx, path)
-	if err != nil {
-		t.Fatalf("ReadFile failed: %v", err)
-	}
-	if got != content {
-		t.Errorf("expected %q, got %q", content, got)
-	}
-}
-
-func TestWriteFileAtomic(t *testing.T) {
-	ctx := context.Background()
+	m := intManager(t)
 	path := tmpPath(t, "atomic")
-	defer cleanup(t, path)
+	defer cleanup(t, m, path)
 
-	content := "atomic content\n"
-	err := fs.WriteFileAtomic(ctx, path, content, "0644", "root", "root")
+	content := []byte("# SSH Config\nPort 22\nPermitRootLogin no\n")
+	if err := m.WriteFile(ctx, path, content, fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got, err := m.ReadFile(ctx, path)
 	if err != nil {
-		t.Fatalf("WriteFileAtomic failed: %v", err)
+		t.Fatalf("ReadFile: %v", err)
 	}
-
-	// Verify content
-	got, err := fs.ReadFile(ctx, path)
-	if err != nil {
-		t.Fatalf("ReadFile failed: %v", err)
+	if string(got) != string(content) {
+		t.Errorf("content mismatch:\n  expected: %q\n  got:      %q", content, got)
 	}
-	if got != content {
-		t.Errorf("expected %q, got %q", content, got)
+	if mode := statMode(t, path); mode != 0o644 {
+		t.Errorf("mode = %v, want 0644", mode)
 	}
-
-	// Verify permissions
-	out, err := exec.Query("stat", "-c", "%a", path)
-	if err != nil {
-		t.Fatalf("stat failed: %v", err)
-	}
-	if strings.TrimSpace(out) != "644" {
-		t.Errorf("expected mode 644, got %s", strings.TrimSpace(out))
-	}
-
-	// Verify ownership
-	owner, group := fs.GetOwnership(path)
-	if owner != "root" {
-		t.Errorf("expected owner 'root', got %q", owner)
-	}
-	if group != "root" {
-		t.Errorf("expected group 'root', got %q", group)
+	if owner, group := fs.GetOwnership(path); owner != "root" || group != "root" {
+		t.Errorf("ownership = %s:%s, want root:root", owner, group)
 	}
 }
 
-func TestWriteFileAtomicCleansUpOnError(t *testing.T) {
+func TestSetModeAndOwnership(t *testing.T) {
 	ctx := context.Background()
-	// Use a directory that doesn't exist as parent for the temp file.
-	// This integration job runs non-root with sudo, so WriteFileAtomic
-	// takes the escalated (privilege-backend) path, which uses the
-	// predictable `.pm-tmp` temp name. The fd-based root path's no-leftover
-	// guarantee is covered by the unit test
-	// TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget.
-	path := "/tmp/pm-nonexistent-dir-12345/file.txt"
-	tmpFile := path + ".pm-tmp"
-
-	_ = fs.WriteFileAtomic(ctx, path, "content", "0644", "root", "root")
-	// The temp file should not be left behind
-	if fs.FileExists(ctx, tmpFile) {
-		t.Error("temp file should be cleaned up after error")
-		fs.Remove(ctx, tmpFile)
-	}
-}
-
-func TestFileExists(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "exists")
-	defer cleanup(t, path)
-
-	// Should not exist yet
-	if fs.FileExists(ctx, path) {
-		t.Error("file should not exist yet")
-	}
-
-	// Create it
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	// Should exist now
-	if !fs.FileExists(ctx, path) {
-		t.Error("file should exist after creation")
-	}
-}
-
-func TestFileExistsRestrictedDir(t *testing.T) {
-	ctx := context.Background()
-	// /etc/sudoers.d is typically mode 0750, not readable by normal users
-	// but our FileExists uses sudo, so it should work
-	exists := fs.FileExists(ctx, "/etc/sudoers.d")
-	if !exists {
-		t.Error("expected /etc/sudoers.d to exist (via sudo)")
-	}
-}
-
-func TestSetMode(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "mode")
-	defer cleanup(t, path)
-
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	if err := fs.SetMode(ctx, path, "0755"); err != nil {
-		t.Fatalf("SetMode failed: %v", err)
-	}
-
-	out, err := exec.Query("stat", "-c", "%a", path)
-	if err != nil {
-		t.Fatalf("stat failed: %v", err)
-	}
-	if strings.TrimSpace(out) != "755" {
-		t.Errorf("expected mode 755, got %s", strings.TrimSpace(out))
-	}
-}
-
-func TestSetModeEmpty(t *testing.T) {
-	ctx := context.Background()
-	// Empty mode should be a no-op
-	err := fs.SetMode(ctx, "/tmp/nonexistent", "")
-	if err != nil {
-		t.Errorf("SetMode with empty mode should be no-op, got: %v", err)
-	}
-}
-
-func TestSetOwnership(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "ownership")
-	defer cleanup(t, path)
-
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	if err := fs.SetOwnership(ctx, path, "root", "root"); err != nil {
-		t.Fatalf("SetOwnership failed: %v", err)
-	}
-
-	owner, group := fs.GetOwnership(path)
-	if owner != "root" {
-		t.Errorf("expected owner 'root', got %q", owner)
-	}
-	if group != "root" {
-		t.Errorf("expected group 'root', got %q", group)
-	}
-}
-
-func TestSetPermissions(t *testing.T) {
-	ctx := context.Background()
+	m := intManager(t)
 	path := tmpPath(t, "perms")
-	defer cleanup(t, path)
+	defer cleanup(t, m, path)
 
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
+	if err := m.WriteFile(ctx, path, []byte("x"), fs.WriteOptions{}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
-
-	if err := fs.SetPermissions(ctx, path, "0600", "root", "root"); err != nil {
-		t.Fatalf("SetPermissions failed: %v", err)
+	if err := m.SetMode(ctx, path, 0o600); err != nil {
+		t.Fatalf("SetMode: %v", err)
 	}
+	if mode := statMode(t, path); mode != 0o600 {
+		t.Errorf("mode = %v, want 0600", mode)
+	}
+	if err := m.SetOwnership(ctx, path, "root", "root"); err != nil {
+		t.Fatalf("SetOwnership: %v", err)
+	}
+	if owner, group := fs.GetOwnership(path); owner != "root" || group != "root" {
+		t.Errorf("ownership = %s:%s, want root:root", owner, group)
+	}
+}
 
-	out, err := exec.Query("stat", "-c", "%a", path)
+func TestExistsRestrictedDir(t *testing.T) {
+	// Exists probes through the privilege backend, so it should resolve a
+	// root-only path even though the test user can't read it. Pick the first
+	// restricted path that exists on this host image rather than assume a
+	// distro-specific one, and skip if none is present.
+	var path string
+	for _, c := range []string{"/etc/sudoers.d", "/etc/ssl/private", "/root"} {
+		if _, err := os.Stat(c); err == nil {
+			path = c
+			break
+		}
+	}
+	if path == "" {
+		t.Skip("no restricted path available on this host image")
+	}
+	ok, err := intManager(t).Exists(context.Background(), path)
 	if err != nil {
-		t.Fatalf("stat failed: %v", err)
+		t.Fatalf("Exists(%s): %v", path, err)
 	}
-	if strings.TrimSpace(out) != "600" {
-		t.Errorf("expected mode 600, got %s", strings.TrimSpace(out))
-	}
-
-	owner, group := fs.GetOwnership(path)
-	if owner != "root" || group != "root" {
-		t.Errorf("expected root:root, got %s:%s", owner, group)
+	if !ok {
+		t.Errorf("expected %s to exist (via the privilege backend)", path)
 	}
 }
 
 func TestRemove(t *testing.T) {
 	ctx := context.Background()
+	m := intManager(t)
 	path := tmpPath(t, "remove")
 
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
+	if err := m.WriteFile(ctx, path, []byte("x"), fs.WriteOptions{}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
-
-	fs.Remove(ctx, path)
-
-	if fs.FileExists(ctx, path) {
+	if err := m.Remove(ctx, path); err != nil {
+		t.Fatalf("Remove: %v", err)
+	}
+	if ok, _ := m.Exists(ctx, path); ok {
 		t.Error("file should be removed")
 	}
-
-	// Removing a non-existent file should not panic
-	fs.Remove(ctx, path)
-}
-
-func TestRemoveStrict(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "removestrict")
-
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	err := fs.RemoveStrict(ctx, path)
-	if err != nil {
-		t.Fatalf("RemoveStrict failed: %v", err)
-	}
-
-	if fs.FileExists(ctx, path) {
-		t.Error("file should be removed")
+	// rm -f is idempotent: removing an absent file succeeds.
+	if err := m.Remove(ctx, path); err != nil {
+		t.Errorf("Remove of an absent file = %v, want nil (rm -f)", err)
 	}
 }
 
-func TestCopyFile(t *testing.T) {
+func TestCopy(t *testing.T) {
 	ctx := context.Background()
+	m := intManager(t)
 	src := tmpPath(t, "copysrc")
 	dst := tmpPath(t, "copydst")
-	defer cleanup(t, src)
-	defer cleanup(t, dst)
+	defer cleanup(t, m, src)
+	defer cleanup(t, m, dst)
 
-	content := "copy me\n"
-	if err := fs.WriteFile(ctx, src, content); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
+	content := []byte("copy me\n")
+	if err := m.WriteFile(ctx, src, content, fs.WriteOptions{}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
-
-	if err := fs.CopyFile(ctx, src, dst); err != nil {
-		t.Fatalf("CopyFile failed: %v", err)
+	if err := m.Copy(ctx, src, dst, fs.WriteOptions{Mode: 0o600}); err != nil {
+		t.Fatalf("Copy: %v", err)
 	}
-
-	got, err := fs.ReadFile(ctx, dst)
+	got, err := m.ReadFile(ctx, dst)
 	if err != nil {
-		t.Fatalf("ReadFile failed: %v", err)
+		t.Fatalf("ReadFile: %v", err)
 	}
-	if got != content {
-		t.Errorf("expected %q, got %q", content, got)
+	if string(got) != string(content) {
+		t.Errorf("copied content = %q, want %q", got, content)
 	}
-}
-
-func TestCopyFileWithPermissions(t *testing.T) {
-	ctx := context.Background()
-	src := tmpPath(t, "copyperm-src")
-	dst := tmpPath(t, "copyperm-dst")
-	defer cleanup(t, src)
-	defer cleanup(t, dst)
-
-	if err := fs.WriteFile(ctx, src, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	if err := fs.CopyFileWithPermissions(ctx, src, dst, "0600", "root", "root"); err != nil {
-		t.Fatalf("CopyFileWithPermissions failed: %v", err)
-	}
-
-	out, err := exec.Query("stat", "-c", "%a", dst)
-	if err != nil {
-		t.Fatalf("stat failed: %v", err)
-	}
-	if strings.TrimSpace(out) != "600" {
-		t.Errorf("expected mode 600, got %s", strings.TrimSpace(out))
+	if mode := statMode(t, dst); mode != 0o600 {
+		t.Errorf("dst mode = %v, want 0600", mode)
 	}
 }
 
-func TestMkdir(t *testing.T) {
+func TestMkdirAndRemoveDir(t *testing.T) {
 	ctx := context.Background()
-	path := tmpPath(t, "mkdir")
-	defer func() { exec.Privileged(ctx, "rm", "-rf", path) }()
+	m := intManager(t)
+	base := tmpPath(t, "mkdir")
+	defer func() { _ = m.RemoveDir(ctx, base) }()
 
-	if err := fs.Mkdir(ctx, path, false); err != nil {
-		t.Fatalf("Mkdir failed: %v", err)
+	leaf := base + "/a/b"
+	if err := m.Mkdir(ctx, leaf, fs.MkdirOptions{Mode: 0o750, Owner: "root", Group: "root", Recursive: true}); err != nil {
+		t.Fatalf("Mkdir: %v", err)
 	}
-
-	if !fs.FileExists(ctx, path) {
-		t.Error("directory should exist")
+	if ok, _ := m.Exists(ctx, leaf); !ok {
+		t.Fatal("nested directory should exist")
 	}
-}
-
-func TestMkdirRecursive(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "mkdir-recursive") + "/a/b/c"
-	basePath := tmpPath(t, "mkdir-recursive")
-	defer func() { exec.Privileged(ctx, "rm", "-rf", basePath) }()
-
-	if err := fs.Mkdir(ctx, path, true); err != nil {
-		t.Fatalf("Mkdir recursive failed: %v", err)
+	// Mode applies to the target (leaf) directory; mkdir -p leaves parents at
+	// their default mode.
+	if mode := statMode(t, leaf); mode != 0o750 {
+		t.Errorf("leaf dir mode = %v, want 0750", mode)
 	}
-
-	if !fs.FileExists(ctx, path) {
-		t.Error("nested directory should exist")
+	if err := m.WriteFile(ctx, base+"/a/b/file.txt", []byte("x"), fs.WriteOptions{}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
-}
-
-func TestMkdirWithPermissions(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "mkdir-perms")
-	defer func() { exec.Privileged(ctx, "rm", "-rf", path) }()
-
-	if err := fs.MkdirWithPermissions(ctx, path, "0750", "root", "root", false); err != nil {
-		t.Fatalf("MkdirWithPermissions failed: %v", err)
+	if err := m.RemoveDir(ctx, base); err != nil {
+		t.Fatalf("RemoveDir: %v", err)
 	}
-
-	out, err := exec.Query("stat", "-c", "%a", path)
-	if err != nil {
-		t.Fatalf("stat failed: %v", err)
-	}
-	if strings.TrimSpace(out) != "750" {
-		t.Errorf("expected mode 750, got %s", strings.TrimSpace(out))
-	}
-}
-
-func TestRemoveDir(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "rmdir")
-
-	if err := fs.Mkdir(ctx, path+"/sub", true); err != nil {
-		t.Fatalf("Mkdir failed: %v", err)
-	}
-	if err := fs.WriteFile(ctx, path+"/sub/file.txt", "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	if err := fs.RemoveDir(ctx, path); err != nil {
-		t.Fatalf("RemoveDir failed: %v", err)
-	}
-
-	if fs.FileExists(ctx, path) {
+	if ok, _ := m.Exists(ctx, base); ok {
 		t.Error("directory should be removed")
 	}
 }
 
-func TestOwnership(t *testing.T) {
-	tests := []struct {
-		owner, group, expected string
-	}{
+func TestOwnershipHelper(t *testing.T) {
+	for _, tt := range []struct{ owner, group, want string }{
 		{"root", "root", "root:root"},
 		{"root", "", "root"},
 		{"", "root", ":root"},
 		{"", "", ""},
 		{"user", "group", "user:group"},
-	}
-	for _, tt := range tests {
-		got := fs.Ownership(tt.owner, tt.group)
-		if got != tt.expected {
-			t.Errorf("Ownership(%q, %q) = %q, want %q", tt.owner, tt.group, got, tt.expected)
+	} {
+		if got := fs.Ownership(tt.owner, tt.group); got != tt.want {
+			t.Errorf("Ownership(%q,%q) = %q, want %q", tt.owner, tt.group, got, tt.want)
 		}
 	}
 }
 
-func TestGetOwnership(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "getowner")
-	defer cleanup(t, path)
-
-	if err := fs.WriteFile(ctx, path, "test"); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-	if err := fs.SetOwnership(ctx, path, "root", "root"); err != nil {
-		t.Fatalf("SetOwnership failed: %v", err)
-	}
-
-	owner, group := fs.GetOwnership(path)
-	if owner != "root" {
-		t.Errorf("expected owner 'root', got %q", owner)
-	}
-	if group != "root" {
-		t.Errorf("expected group 'root', got %q", group)
-	}
-}
-
 func TestGetOwnershipMissing(t *testing.T) {
-	owner, group := fs.GetOwnership("/tmp/pm-nonexistent-12345")
-	if owner != "" || group != "" {
-		t.Errorf("expected empty for missing file, got %q:%q", owner, group)
+	if owner, group := fs.GetOwnership(missingPath(t)); owner != "" || group != "" {
+		t.Errorf("GetOwnership(missing) = %q:%q, want empties", owner, group)
 	}
 }
 
-func TestContentRoundTrip(t *testing.T) {
-	ctx := context.Background()
-	path := tmpPath(t, "roundtrip")
-	defer cleanup(t, path)
-
-	// This is the regression test for the idempotency bug:
-	// content with trailing newline should round-trip exactly.
-	content := "# SSH Config\nPort 22\nPermitRootLogin no\n"
-
-	err := fs.WriteFileAtomic(ctx, path, content, "0644", "root", "root")
-	if err != nil {
-		t.Fatalf("WriteFileAtomic failed: %v", err)
+// TestReadFile_MissingUnderForeignLocale is the end-to-end locale guard: under a
+// non-English process locale, ReadFile of a missing file must still return
+// (nil,nil). It fails if the Runner stops forcing LC_ALL=C — cat's translated
+// "No such file" message would then be misread as a hard error. (The whole
+// integration suite also runs under ja_JP via the harness; this is the explicit,
+// self-contained pin that holds even when run under C.)
+func TestReadFile_MissingUnderForeignLocale(t *testing.T) {
+	loc := foreignLocale(t)
+	if loc == "" {
+		t.Skip("no ja/zh locale installed to exercise the locale guard")
 	}
-
-	got, err := fs.ReadFile(ctx, path)
-	if err != nil {
-		t.Fatalf("ReadFile failed: %v", err)
-	}
-	if got != content {
-		t.Errorf("content mismatch:\n  expected: %q\n  got:      %q", content, got)
+	t.Setenv("LANG", loc)
+	t.Setenv("LC_ALL", loc)
+	got, err := intManager(t).ReadFile(context.Background(), missingPath(t))
+	if err != nil || got != nil {
+		t.Fatalf("ReadFile(missing) under %s = (%q,%v), want (nil,nil) — the Runner must force LC_ALL=C", loc, got, err)
 	}
 }

@@ -7,63 +7,81 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/exec/exectest"
+	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
+// fakeFS is a hermetic fsManager: it records the last call and, when set,
+// returns scripted errors — so WriteUnit/RemoveUnit are exercised without a real
+// filesystem or privilege. install() swaps the newFS seam to return it.
+type fakeFS struct {
+	wrotePath, wroteContent string
+	wroteOpts               fs.WriteOptions
+	removedPath             string
+	writeErr, removeErr     error
+}
+
+func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
+	f.wrotePath, f.wroteContent, f.wroteOpts = path, string(data), opts
+	return f.writeErr
+}
+
+func (f *fakeFS) Remove(_ context.Context, path string) error {
+	f.removedPath = path
+	return f.removeErr
+}
+
+func (f *fakeFS) install(t *testing.T) {
+	t.Helper()
+	prev := newFS
+	newFS = func(exec.Runner) (fsManager, error) { return f, nil }
+	t.Cleanup(func() { newFS = prev })
+}
+
 func TestWriteUnit(t *testing.T) {
-	var got struct {
-		path, content, mode, owner, group string
-	}
-	w, r := writeFileAtomic, removeStrict
-	writeFileAtomic = func(_ context.Context, path, content, mode, owner, group string) error {
-		got.path, got.content, got.mode, got.owner, got.group = path, content, mode, owner, group
-		return nil
-	}
-	defer func() { writeFileAtomic, removeStrict = w, r }()
+	f := &fakeFS{}
+	f.install(t)
 
 	content := "[Unit]\nDescription=demo\n[Service]\nExecStart=/usr/bin/true\n"
-	if err := mgr(t, exectest.New(0)).WriteUnit(context.Background(), "demo.service", content); err != nil {
+	if err := mgr(t, exectest.New(exec.Sudo)).WriteUnit(context.Background(), "demo.service", content); err != nil {
 		t.Fatal(err)
 	}
-	if got.path != "/etc/systemd/system/demo.service" || got.content != content || got.mode != "0644" || got.owner != "root" || got.group != "root" {
-		t.Errorf("WriteUnit wrote %+v", got)
+	if f.wrotePath != "/etc/systemd/system/demo.service" || f.wroteContent != content ||
+		f.wroteOpts.Mode != 0o644 || f.wroteOpts.Owner != "root" || f.wroteOpts.Group != "root" {
+		t.Errorf("WriteUnit wrote path=%q content=%q opts=%+v", f.wrotePath, f.wroteContent, f.wroteOpts)
 	}
 }
 
 func TestWriteUnit_RejectsInvalidNameBeforeFS(t *testing.T) {
-	called := false
-	w, r := writeFileAtomic, removeStrict
-	writeFileAtomic = func(context.Context, string, string, string, string, string) error { called = true; return nil }
-	defer func() { writeFileAtomic, removeStrict = w, r }()
+	f := &fakeFS{}
+	f.install(t)
 
-	if err := mgr(t, exectest.New(0)).WriteUnit(context.Background(), "evil", "x"); err == nil {
+	if err := mgr(t, exectest.New(exec.Sudo)).WriteUnit(context.Background(), "evil", "x"); err == nil {
 		t.Error("WriteUnit accepted a unit name without a valid type suffix")
 	}
-	if called {
+	if f.wrotePath != "" {
 		t.Error("WriteUnit touched the filesystem for an invalid unit name")
 	}
 }
 
 func TestRemoveUnit(t *testing.T) {
-	var removed string
-	w, r := writeFileAtomic, removeStrict
-	removeStrict = func(_ context.Context, path string) error { removed = path; return nil }
-	defer func() { writeFileAtomic, removeStrict = w, r }()
+	f := &fakeFS{}
+	f.install(t)
 
-	if err := mgr(t, exectest.New(0)).RemoveUnit(context.Background(), "demo.service"); err != nil {
+	if err := mgr(t, exectest.New(exec.Sudo)).RemoveUnit(context.Background(), "demo.service"); err != nil {
 		t.Fatal(err)
 	}
-	if removed != "/etc/systemd/system/demo.service" {
-		t.Errorf("RemoveUnit removed %q", removed)
+	if f.removedPath != "/etc/systemd/system/demo.service" {
+		t.Errorf("RemoveUnit removed %q", f.removedPath)
 	}
 }
 
 func TestRemoveUnit_WrapsFSError(t *testing.T) {
-	w, r := writeFileAtomic, removeStrict
-	removeStrict = func(context.Context, string) error { return errors.New("read-only file system") }
-	defer func() { writeFileAtomic, removeStrict = w, r }()
+	f := &fakeFS{removeErr: errors.New("read-only file system")}
+	f.install(t)
 
-	err := mgr(t, exectest.New(0)).RemoveUnit(context.Background(), "demo.service")
+	err := mgr(t, exectest.New(exec.Sudo)).RemoveUnit(context.Background(), "demo.service")
 	if err == nil {
 		t.Fatal("RemoveUnit returned nil on an fs error, want a wrapped error")
 	}

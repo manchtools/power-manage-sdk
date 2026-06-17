@@ -8,24 +8,16 @@ import (
 	"github.com/manchtools/power-manage/sdk/go/sys/exec/exectest"
 )
 
-// useSeams points the accountsservice file ops at capturing fakes + a temp dir,
-// restoring them on cleanup.
+// useAccountsSeams points the accountsservice file ops at a capturing fake fs
+// (via the newFS seam) and a temp dir, restoring both on cleanup. The returned
+// maps are backed by the fake, so the existing test bodies read them unchanged.
 func useAccountsSeams(t *testing.T, dir string) (writes map[string]string, removes *[]string) {
 	t.Helper()
-	w := map[string]string{}
-	var r []string
-	rw, rr, rdir := writeFileAtomic, removeStrict, accountsServiceDir
-	writeFileAtomic = func(ctx context.Context, path, content, mode, owner, group string) error {
-		w[path] = content
-		return nil
-	}
-	removeStrict = func(ctx context.Context, path string) error {
-		r = append(r, path)
-		return nil
-	}
+	f := newFakeFS().install(t)
+	rdir := accountsServiceDir
 	accountsServiceDir = dir
-	t.Cleanup(func() { writeFileAtomic, removeStrict, accountsServiceDir = rw, rr, rdir })
-	return w, &r
+	t.Cleanup(func() { accountsServiceDir = rdir })
+	return f.writes, &f.removes
 }
 
 func TestSetHiddenOnLoginScreen_HideWritesSystemAccount(t *testing.T) {

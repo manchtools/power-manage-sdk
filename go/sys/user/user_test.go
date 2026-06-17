@@ -107,45 +107,30 @@ func TestCreate_ExistingHomeUsesMinusMAndChowns(t *testing.T) {
 	existing := t.TempDir() // exists
 	f := exectest.New(exec.Direct)
 
-	var chown struct {
-		path, owner, group string
-		called             bool
-	}
-	restore := setOwnershipRecursive
-	setOwnershipRecursive = func(ctx context.Context, path, owner, group string) (*exec.Result, error) {
-		chown.path, chown.owner, chown.group, chown.called = path, owner, group, true
-		return &exec.Result{}, nil
-	}
-	defer func() { setOwnershipRecursive = restore }()
+	ffs := newFakeFS().install(t)
 
 	if err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{HomeDir: existing, CreateHome: true, PrimaryGroup: "staff"}); err != nil {
 		t.Fatal(err)
 	}
 	wantOneCmd(t, f, "useradd", []string{"-g", "staff", "-d", existing, "-s", "/bin/bash", "-M", "deploy"}, true)
-	if !chown.called {
+	if !ffs.chown.called {
 		t.Fatal("ownership of the pre-existing home was not fixed")
 	}
-	if chown.path != existing || chown.owner != "deploy" || chown.group != "staff" {
-		t.Errorf("chown(%q,%q,%q), want (%q,deploy,staff)", chown.path, chown.owner, chown.group, existing)
+	if ffs.chown.path != existing || ffs.chown.owner != "deploy" || ffs.chown.group != "staff" {
+		t.Errorf("chown(%q,%q,%q), want (%q,deploy,staff)", ffs.chown.path, ffs.chown.owner, ffs.chown.group, existing)
 	}
 }
 
 func TestCreate_ChownDefaultsGroupToUsername(t *testing.T) {
 	existing := t.TempDir()
 	f := exectest.New(exec.Direct)
-	var gotGroup string
-	restore := setOwnershipRecursive
-	setOwnershipRecursive = func(ctx context.Context, path, owner, group string) (*exec.Result, error) {
-		gotGroup = group
-		return &exec.Result{}, nil
-	}
-	defer func() { setOwnershipRecursive = restore }()
+	ffs := newFakeFS().install(t)
 
 	if err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{HomeDir: existing, CreateHome: true}); err != nil {
 		t.Fatal(err)
 	}
-	if gotGroup != "deploy" {
-		t.Errorf("chown group = %q, want the username (useradd matching-group default)", gotGroup)
+	if ffs.chown.group != "deploy" {
+		t.Errorf("chown group = %q, want the username (useradd matching-group default)", ffs.chown.group)
 	}
 }
 

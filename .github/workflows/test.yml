@@ -224,10 +224,14 @@ jobs:
             sleep 0.5
           done
 
-      - name: Run sys integration tests
+      # Run under a non-English locale (Japanese) so locale-fragile parsing of
+      # real tool output is caught in CI: any capability matching an English
+      # error string without forcing LC_ALL=C (Command.CLocale) fails here.
+      - name: Run sys integration tests (ja_JP.UTF-8 locale)
         run: |
           docker exec -w /workspace pm-sdk-test \
-            runuser -u power-manage -- /usr/local/go/bin/go test \
+            runuser -u power-manage -- env LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8 \
+              /usr/local/go/bin/go test \
               -v -tags=integration -count=1 -timeout=10m \
               ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/service/
 

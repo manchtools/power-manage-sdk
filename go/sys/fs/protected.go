@@ -5,10 +5,31 @@ import (
 	"strings"
 )
 
+// dangerousPaths are top-level system directories that must never be removed.
+// IsProtectedPath matches these (plus extraProtectedPaths); the deny-by-default
+// subtree check RemoveDir uses lives in IsUnderProtectedPrefix below.
+var dangerousPaths = map[string]bool{
+	"/":      true,
+	"/boot":  true,
+	"/dev":   true,
+	"/etc":   true,
+	"/proc":  true,
+	"/run":   true,
+	"/sys":   true,
+	"/usr":   true,
+	"/var":   true,
+	"/bin":   true,
+	"/sbin":  true,
+	"/lib":   true,
+	"/lib64": true,
+	"/home":  true,
+	"/root":  true,
+}
+
 // IsProtectedPath returns true if path is a system directory that should
 // never be deleted. The path is cleaned and resolved to absolute before checking.
-// This uses the same set as dangerousPaths (used by RemoveDir) plus additional
-// top-level directories.
+// This uses the same set as dangerousPaths plus additional top-level
+// directories.
 func IsProtectedPath(path string) bool {
 	clean := filepath.Clean(path)
 	if !filepath.IsAbs(clean) {

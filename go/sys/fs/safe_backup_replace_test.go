@@ -18,7 +18,7 @@ func TestSafeBackupAndReplace_RoundTrip(t *testing.T) {
 	if err := os.WriteFile(path, []byte("OLD"), 0o755); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	if err := SafeBackupAndReplace(path, backup, []byte("NEW"), 0o755, true); err != nil {
+	if err := safeBackupAndReplace(path, backup, []byte("NEW"), 0o755, true); err != nil {
 		t.Fatalf("SafeBackupAndReplace: %v", err)
 	}
 
@@ -52,7 +52,7 @@ func TestSafeBackupAndReplace_RejectsSymlinkPath(t *testing.T) {
 		t.Fatalf("symlink: %v", err)
 	}
 
-	err := SafeBackupAndReplace(link, filepath.Join(dir, "link.bak"), []byte("NEW"), 0o644, true)
+	err := safeBackupAndReplace(link, filepath.Join(dir, "link.bak"), []byte("NEW"), 0o644, true)
 	if err == nil {
 		t.Fatal("expected an error for a symlinked path")
 	}
@@ -86,14 +86,14 @@ func TestSafeBackupAndReplace_WriteFailureLeavesPathIntact(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	// Make path's directory read-only so SafeReplaceFile(path) fails at
+	// Make path's directory read-only so safeReplaceFile(path) fails at
 	// temp creation; restore perms on cleanup so TempDir can be removed.
 	if err := os.Chmod(pathDir, 0o500); err != nil {
 		t.Fatalf("chmod: %v", err)
 	}
 	t.Cleanup(func() { _ = os.Chmod(pathDir, 0o755) })
 
-	err := SafeBackupAndReplace(path, backup, []byte("NEW"), 0o755, true)
+	err := safeBackupAndReplace(path, backup, []byte("NEW"), 0o755, true)
 	if err == nil {
 		t.Fatal("expected an error when the path write step fails")
 	}

@@ -7,13 +7,15 @@ import (
 	"strings"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
 // systemd is the systemctl-backed Manager. Every operation runs through the
 // injected Runner — query verbs unprivileged, mutations escalated — so the
 // package is unit-testable with exectest.FakeRunner.
 type systemd struct {
-	r exec.Runner
+	r   exec.Runner
+	fsm fsManager
 }
 
 // validSystemdUnitName restricts unit names to safe characters.
@@ -225,7 +227,7 @@ func (s *systemd) WriteUnit(ctx context.Context, unit, content string) error {
 	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
-	return writeFileAtomic(ctx, "/etc/systemd/system/"+unit, content, "0644", "root", "root")
+	return s.fsm.WriteFile(ctx, "/etc/systemd/system/"+unit, []byte(content), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"})
 }
 
 func (s *systemd) RemoveUnit(ctx context.Context, unit string) error {
@@ -233,7 +235,7 @@ func (s *systemd) RemoveUnit(ctx context.Context, unit string) error {
 		return err
 	}
 	path := "/etc/systemd/system/" + unit
-	if err := removeStrict(ctx, path); err != nil {
+	if err := s.fsm.Remove(ctx, path); err != nil {
 		return fmt.Errorf("remove systemd unit %s: %w", path, err)
 	}
 	return nil

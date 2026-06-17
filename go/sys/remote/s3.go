@@ -122,7 +122,7 @@ func (s *s3Source) Fetch(ctx context.Context, dest string) (Result, error) {
 		return Result{}, fmt.Errorf("rename to %s: %w", dest, err)
 	}
 
-	if err := applyMode(ctx, dest, s.cfg.Mode, s.cfg.Owner, s.cfg.Group); err != nil {
+	if err := applyMode(dest, s.cfg.Mode, s.cfg.Owner, s.cfg.Group); err != nil {
 		return Result{}, err
 	}
 

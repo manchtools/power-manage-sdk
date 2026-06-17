@@ -60,7 +60,7 @@ func (g *gitSource) Fetch(ctx context.Context, dest string) (Result, error) {
 		return Result{}, err
 	}
 
-	if err := applyMode(ctx, dest, "", g.cfg.Owner, g.cfg.Group); err != nil {
+	if err := applyMode(dest, "", g.cfg.Owner, g.cfg.Group); err != nil {
 		return Result{}, err
 	}
 

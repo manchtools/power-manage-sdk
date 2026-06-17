@@ -3,10 +3,11 @@ package firewall
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
 
 // firewalld is the firewall-cmd-backed Manager. Every mutating call is escalated
@@ -62,7 +63,7 @@ func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
 	svc := firewalldServiceName(f.ns, rule.ID)
 	xml := firewalldServiceXML(f.ns, rule)
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
-	if err := writeFileAtomic(ctx, path, xml, "0644", "root", "root"); err != nil {
+	if err := f.fsm.WriteFile(ctx, path, []byte(xml), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"}); err != nil {
 		return fmt.Errorf("write service xml %s: %w", path, err)
 	}
 	// Reload so the new service definition is parsed. Without this,
@@ -115,7 +116,9 @@ func (f *firewalld) RemoveRule(ctx context.Context, id string) error {
 		}
 	}
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
-	if err := removeStrict(ctx, path); err != nil && !os.IsNotExist(err) {
+	// rm -f succeeds on an already-absent file, so a non-nil error is a real
+	// failure (permission denied, etc.), not idempotent "not found".
+	if err := f.fsm.Remove(ctx, path); err != nil {
 		return fmt.Errorf("remove %s: %w", path, err)
 	}
 	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
