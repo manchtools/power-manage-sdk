@@ -130,6 +130,44 @@ func TestRemoveStaleLock_CtxCancelledAfterStat(t *testing.T) {
 	}
 }
 
+// cancelAfterRunner wraps a Runner and cancels the context once the nth Run has
+// completed, letting a test drive a capability into a mid-sequence cancellation
+// (e.g. cancelled between the fuser probe and the rm).
+type cancelAfterRunner struct {
+	inner  pmexec.Runner
+	n      int
+	cancel context.CancelFunc
+	calls  int
+}
+
+func (c *cancelAfterRunner) Run(ctx context.Context, cmd pmexec.Command) (pmexec.Result, error) {
+	res, err := c.inner.Run(ctx, cmd)
+	c.calls++
+	if c.calls == c.n {
+		c.cancel()
+	}
+	return res, err
+}
+
+func (c *cancelAfterRunner) Stream(ctx context.Context, cmd pmexec.Command, onLine pmexec.OutputCallback) (pmexec.Result, error) {
+	return c.inner.Stream(ctx, cmd, onLine)
+}
+
+func (c *cancelAfterRunner) Backend() pmexec.PrivilegeBackend { return c.inner.Backend() }
+
+// When the context is cancelled after a stale probe but before the rm, the rm's
+// fail-closed ctx.Err() is reported as the cancellation, not swallowed.
+func TestRemoveStaleLock_CtxCancelledDuringRemoval(t *testing.T) {
+	stubStatFile(t, nil, "/lock")
+	ctx, cancel := context.WithCancel(context.Background())
+	inner := newFake()
+	inner.Push(pmexec.Result{ExitCode: 1}, nil) // fuser: stale
+	r := &cancelAfterRunner{inner: inner, n: 1, cancel: cancel}
+	if err := removeStaleLock(ctx, r, "/lock"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled from the rm step", err)
+	}
+}
+
 func TestBestEffortStep(t *testing.T) {
 	t.Run("nil error passes", func(t *testing.T) {
 		if err := bestEffortStep(context.Background(), "step", nil); err != nil {

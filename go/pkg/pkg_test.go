@@ -95,7 +95,10 @@ func TestNew_FlatpakIsFlatpakManager(t *testing.T) {
 
 func TestNew_NativeBackendsAreNotFlatpakManager(t *testing.T) {
 	for _, b := range []Backend{Apt, Dnf, Pacman, Zypper} {
-		m, _ := New(b, newFake())
+		m, err := New(b, newFake())
+		if err != nil {
+			t.Fatalf("New(%v): %v", b, err)
+		}
 		if _, ok := m.(FlatpakManager); ok {
 			t.Errorf("%v unexpectedly satisfies FlatpakManager", b)
 		}

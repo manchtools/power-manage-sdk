@@ -79,10 +79,14 @@ func removeStaleLock(ctx context.Context, r pmexec.Runner, path string) error {
 	}
 
 	// rm is best-effort. A cancelled context makes runPriv fail closed with
-	// ctx.Err(); we log and return nil — the caller's own ctx check (the Repair
-	// loop re-enters here, or the backend checks before its refresh) propagates
-	// the cancellation, so we don't need to special-case it.
+	// ctx.Err(); distinguish that from a genuine removal failure and propagate
+	// the cancellation promptly (matching the fuser-probe and bestEffortStep
+	// handling), rather than logging a spurious warning and relying on a later
+	// caller check.
 	if _, err := runPriv(ctx, r, true, nil, "rm", "-f", path); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
 		slog.Warn("failed to remove stale lock", "path", path, "error", err)
 	}
 	return nil

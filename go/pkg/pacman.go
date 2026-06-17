@@ -529,13 +529,16 @@ func buildIgnorePkgConf(conf string, ignored []string) string {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(strings.TrimSpace(line), "IgnorePkg") {
+			// Emit the single consolidated directive in place of the first
+			// IgnorePkg line, then drop EVERY IgnorePkg line (a conf may carry
+			// several) so no stale entry survives a later Unpin.
 			if !found {
 				found = true
 				if len(ignored) > 0 {
 					fmt.Fprintf(&b, "IgnorePkg = %s\n", strings.Join(ignored, " "))
 				}
-				continue // drop the old line
 			}
+			continue
 		}
 		b.WriteString(line + "\n")
 	}

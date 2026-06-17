@@ -801,6 +801,25 @@ func TestPacman_BuildIgnorePkgConf(t *testing.T) {
 			t.Errorf("without [options] there is nowhere to insert: %q", out)
 		}
 	})
+	t.Run("consolidates multiple IgnorePkg lines into one", func(t *testing.T) {
+		// pacman.conf may carry several IgnorePkg directives (getIgnoredPackages
+		// reads them all). The rewrite must drop ALL of them and emit a single
+		// consolidated line, otherwise stale entries survive an Unpin.
+		in := "[options]\nIgnorePkg = a\nIgnorePkg = b\nServer = x\n"
+		out := buildIgnorePkgConf(in, []string{"a", "b", "c"})
+		if n := strings.Count(out, "IgnorePkg"); n != 1 {
+			t.Errorf("want exactly one IgnorePkg line, got %d:\n%s", n, out)
+		}
+		if !strings.Contains(out, "IgnorePkg = a b c") {
+			t.Errorf("want consolidated line:\n%s", out)
+		}
+	})
+	t.Run("dropping all entries removes every IgnorePkg line", func(t *testing.T) {
+		in := "[options]\nIgnorePkg = a\nIgnorePkg = b\n"
+		if out := buildIgnorePkgConf(in, nil); strings.Contains(out, "IgnorePkg") {
+			t.Errorf("emptying must drop every IgnorePkg line:\n%s", out)
+		}
+	})
 }
 
 func TestPacman_GetIgnoredPackages(t *testing.T) {
