@@ -27,8 +27,9 @@ type GitConfig struct {
 	// (see Slice 13 doc.go).
 	Submodules bool
 
-	// Owner / Group — applied to the dest tree after CloneOrSync via
-	// os.Chmod / sys/fs.FchownNoFollow. Empty strings leave the OS default.
+	// Owner / Group — ownership applied to the dest clone directory after
+	// CloneOrSync via sys/fs's fd-anchored no-follow chown (a git clone has no
+	// mode input). Empty strings leave the OS default ownership.
 	Owner string
 	Group string
 

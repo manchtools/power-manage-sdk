@@ -336,11 +336,13 @@ func tmpPathFor(dest string) string {
 	return dest + ".tmp." + hex.EncodeToString(b[:])
 }
 
-// applyMode sets mode and/or ownership on the freshly-written destination. Mode
-// is applied with a local chmod (no privilege needed). Ownership is applied
-// through sys/fs's fd-anchored, symlink-refusing FchownNoFollow — the
-// destination was just renamed into place, so this requires CAP_CHOWN (the root
-// agent has it). Empty fields are skipped.
+// applyMode sets mode and/or ownership on the freshly-written destination, which
+// may be a regular file (single-file fetch) OR a directory (archive extract, git
+// clone, S3 prefix). Mode is applied with a local chmod (no privilege needed).
+// Ownership is applied through sys/fs's fd-anchored, symlink-refusing primitives
+// — FchownNoFollow for a regular file, OpenRealDir+Chown for a directory (the
+// former refuses non-regular files, so directories MUST take the dir path) — and
+// requires CAP_CHOWN (the root agent has it). Empty fields are skipped.
 func applyMode(dest, mode, owner, group string) error {
 	if mode == "" && owner == "" && group == "" {
 		return nil
@@ -359,11 +361,31 @@ func applyMode(dest, mode, owner, group string) error {
 		if err != nil {
 			return fmt.Errorf("resolve ownership for %s: %w", dest, err)
 		}
-		if err := sysfs.FchownNoFollow(dest, uid, gid); err != nil {
+		if err := chownNoFollow(dest, uid, gid); err != nil {
 			return fmt.Errorf("set ownership on %s: %w", dest, err)
 		}
 	}
 	return nil
+}
+
+// chownNoFollow applies ownership to dest without following a final symlink,
+// dispatching by inode type: a directory goes through an O_NOFOLLOW|O_DIRECTORY
+// fd (OpenRealDir), a regular file through FchownNoFollow. A symlink at dest is
+// refused by both paths rather than dereferenced.
+func chownNoFollow(dest string, uid, gid int) error {
+	info, err := os.Lstat(dest)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		d, err := sysfs.OpenRealDir(dest)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+		return d.Chown(uid, gid)
+	}
+	return sysfs.FchownNoFollow(dest, uid, gid)
 }
 
 // defaultHTTPClient — modest timeouts so a Fetch can't hang forever, and

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // WriteFile writes data to path atomically, applying opts (mode/ownership, and
@@ -30,6 +31,12 @@ func (m *manager) WriteFile(ctx context.Context, path string, data []byte, opts 
 	if opts.Backup != "" {
 		if err := ValidatePath(opts.Backup); err != nil {
 			return err
+		}
+		// Backing a file up to itself is meaningless and behaves differently per
+		// backend (Direct silently no-ops; the escalated cp errors "same file"),
+		// so reject it up front for deterministic, intent-preserving behavior.
+		if filepath.Clean(opts.Backup) == filepath.Clean(path) {
+			return fmt.Errorf("%w: backup path must differ from the target path", ErrInvalidPath)
 		}
 	}
 	if m.direct() {

@@ -247,6 +247,11 @@ func TestWriteFile_RejectsInvalidPathAndBackup(t *testing.T) {
 	if err := m.WriteFile(context.Background(), "/ok", []byte("x"), WriteOptions{Backup: "-evil"}); !errors.Is(err, ErrInvalidPath) {
 		t.Errorf("WriteFile(bad backup) err = %v, want ErrInvalidPath", err)
 	}
+	// Backup == target is rejected (backends would diverge: Direct no-ops, the
+	// escalated cp errors "same file").
+	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"), WriteOptions{Backup: "/etc/./app.conf"}); !errors.Is(err, ErrInvalidPath) {
+		t.Errorf("WriteFile(self-backup) err = %v, want ErrInvalidPath", err)
+	}
 	if n := len(f.Calls()); n != 0 {
 		t.Errorf("an invalid path reached the Runner (%d calls)", n)
 	}
@@ -281,6 +286,11 @@ func TestReadFile_ReturnsStdoutVerbatim(t *testing.T) {
 	}
 	if got := argv(f.Calls()[0]); got != "cat -- /etc/app.conf" {
 		t.Errorf("cat argv = %q", got)
+	}
+	// cat must run under a forced C locale so the "No such file" stderr check in
+	// ReadFile is reliable on non-English hosts.
+	if !f.Calls()[0].CLocale {
+		t.Error("cat Command must set CLocale for locale-stable error parsing")
 	}
 }
 
@@ -606,6 +616,15 @@ func TestIsReadOnly(t *testing.T) {
 		f.Push(pmexec.Result{}, errors.New("findmnt missing"))
 		if _, err := mustManager(t, f).IsReadOnly(context.Background(), "/x"); err == nil {
 			t.Error("want the runner error to propagate")
+		}
+	})
+	t.Run("invalid path rejected before exec", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		if _, err := mustManager(t, f).IsReadOnly(context.Background(), "-rf"); !errors.Is(err, ErrInvalidPath) {
+			t.Errorf("err = %v, want ErrInvalidPath", err)
+		}
+		if n := len(f.Calls()); n != 0 {
+			t.Errorf("a flag-shaped path reached findmnt (%d calls)", n)
 		}
 	})
 }

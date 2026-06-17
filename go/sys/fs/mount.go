@@ -10,6 +10,9 @@ import (
 // examining the mount options via findmnt (unprivileged). The caller controls
 // timeout/cancellation through ctx.
 func (m *manager) IsReadOnly(ctx context.Context, path string) (bool, error) {
+	if err := ValidatePath(path); err != nil {
+		return false, err
+	}
 	res, err := m.runQuery(ctx, "findmnt", "-n", "-o", "OPTIONS", "--target", path)
 	if err != nil {
 		return false, err

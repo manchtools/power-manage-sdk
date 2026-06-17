@@ -6,11 +6,20 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
+
+// missingPath returns a path guaranteed not to exist — a child of a fresh, empty
+// t.TempDir — so the missing-file tests can't flake on a reused/shared host that
+// happens to have a fixed /tmp literal lying around.
+func missingPath(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(t.TempDir(), "definitely-missing")
+}
 
 // intManager builds a real Manager for the integration job: Direct when the job
 // runs as root, otherwise Sudo (the CI default). The Direct backend exercises
@@ -76,7 +85,7 @@ func TestWriteAndReadRoundTrip(t *testing.T) {
 }
 
 func TestReadFileNotFound(t *testing.T) {
-	got, err := intManager(t).ReadFile(context.Background(), "/tmp/pm-nonexistent-file-12345")
+	got, err := intManager(t).ReadFile(context.Background(), missingPath(t))
 	if err != nil {
 		t.Fatalf("ReadFile(missing) should not error, got: %v", err)
 	}
@@ -135,14 +144,26 @@ func TestSetModeAndOwnership(t *testing.T) {
 }
 
 func TestExistsRestrictedDir(t *testing.T) {
-	// /etc/sudoers.d is typically mode 0750, not readable by normal users, but
-	// Exists probes through the privilege backend, so it should resolve.
-	ok, err := intManager(t).Exists(context.Background(), "/etc/sudoers.d")
+	// Exists probes through the privilege backend, so it should resolve a
+	// root-only path even though the test user can't read it. Pick the first
+	// restricted path that exists on this host image rather than assume a
+	// distro-specific one, and skip if none is present.
+	var path string
+	for _, c := range []string{"/etc/sudoers.d", "/etc/ssl/private", "/root"} {
+		if _, err := os.Stat(c); err == nil {
+			path = c
+			break
+		}
+	}
+	if path == "" {
+		t.Skip("no restricted path available on this host image")
+	}
+	ok, err := intManager(t).Exists(context.Background(), path)
 	if err != nil {
-		t.Fatalf("Exists(/etc/sudoers.d): %v", err)
+		t.Fatalf("Exists(%s): %v", path, err)
 	}
 	if !ok {
-		t.Error("expected /etc/sudoers.d to exist (via the privilege backend)")
+		t.Errorf("expected %s to exist (via the privilege backend)", path)
 	}
 }
 
@@ -237,7 +258,7 @@ func TestOwnershipHelper(t *testing.T) {
 }
 
 func TestGetOwnershipMissing(t *testing.T) {
-	if owner, group := fs.GetOwnership("/tmp/pm-nonexistent-12345"); owner != "" || group != "" {
+	if owner, group := fs.GetOwnership(missingPath(t)); owner != "" || group != "" {
 		t.Errorf("GetOwnership(missing) = %q:%q, want empties", owner, group)
 	}
 }
