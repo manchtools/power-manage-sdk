@@ -91,6 +91,8 @@ func readIntegration(t *testing.T, m Manager, knownPkg string) {
 
 	if p, err := m.Show(ctx, knownPkg); err != nil {
 		t.Errorf("Show(%s): %v", knownPkg, err)
+	} else if p == nil {
+		t.Errorf("Show(%s) returned nil package without error", knownPkg)
 	} else if p.Name != knownPkg {
 		t.Errorf("Show(%s).Name = %q", knownPkg, p.Name)
 	}
@@ -102,6 +104,8 @@ func readIntegration(t *testing.T, m Manager, knownPkg string) {
 	}
 	if info, err := m.ListVersions(ctx, knownPkg); err != nil {
 		t.Errorf("ListVersions(%s): %v", knownPkg, err)
+	} else if info == nil {
+		t.Errorf("ListVersions(%s) returned nil info without error", knownPkg)
 	} else if info.Name != knownPkg {
 		t.Errorf("ListVersions(%s).Name = %q", knownPkg, info.Name)
 	}
