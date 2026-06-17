@@ -539,6 +539,16 @@ methods — accepted, because the interface *is* the full intended surface.
 > `service`/`user`, which name their one backend explicitly against a future
 > second). Their constructor is `New(runner, opts...)` — no `Backend` argument,
 > but still the required `exec.Runner` so the construction shape matches.
+>
+> **One exception: `terminal`.** A PTY session is a long-lived, bidirectional
+> stream, not a captured one-shot `Command` → `Result`, so the Runner abstraction
+> cannot model it. `terminal.New()` therefore takes **no** Runner; honesty (no
+> dead parameter) wins over shape-uniformity here. The privilege to switch UID
+> comes from the agent already running as root (the child's `syscall.Credential`).
+> `osquery` and `desktop` do take the Runner — osquery runs every query through
+> it; desktop runs its `loginctl` probes through it (and gains the forced-C locale
+> for stable stderr parsing), while `RunAsCommand` builds a direct `*exec.Cmd`
+> that intentionally keeps the *user's* locale.
 
 ---
 

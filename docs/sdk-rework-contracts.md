@@ -508,7 +508,7 @@ type NetworkInterface struct { Name, MAC string; Addresses []string; State strin
 ## 11. `desktop`
 
 ```go
-func New(opts ...Option) (Manager, error)
+func New(runner exec.Runner, opts ...Option) (Manager, error) // WithHomeRoot(dir) for tests
 type Manager interface {
     ActiveSessions(ctx context.Context) ([]Session, error)
     HomeUsers(ctx context.Context) ([]Session, error)
@@ -522,6 +522,13 @@ func EnvFor(s Session) []string ; func UserPath(s Session) string // pure helper
 
 - `HomeUsers`/`UsersWithFlatpakInstall` gain `ctx`. `RunAsCommand`'s positional
   `extraEnv` becomes `RunAsOptions`.
+- **Runner-driven probes:** the `loginctl` PROBES (`ActiveSessions` and helpers)
+  run through the injected Runner, so they inherit the forced **C locale** — the
+  no-logind / no-session stderr fingerprints are matched against stable English
+  regardless of host locale. **`RunAsCommand` is the deliberate exception:** it
+  builds a command run ON BEHALF OF a signed-in user (Flatpak install, user
+  script) whose output the SDK does NOT parse, so it does NOT go through the
+  Runner and keeps the **user's own locale** — forcing C there would be wrong.
 - **Preserved:** absolute `loginctl`/`runuser` paths, env-wholesaling (agent env
   NOT inherited; curated `UserPath` applied last), forced `Home` workdir.
 
@@ -530,9 +537,9 @@ func EnvFor(s Session) []string ; func UserPath(s Session) string // pure helper
 ## 12. `osquery`
 
 ```go
-func New(opts ...Option) (Querier, error) // was NewClient; lazy-init preserved
+func New(runner exec.Runner) (Querier, error) // was NewClient; eager ErrNotInstalled probe preserved
 type Querier interface {
-    IsInstalled(ctx context.Context) bool
+    IsInstalled(ctx context.Context) bool // LIVE re-probe (detects removal at runtime)
     ListTables(ctx context.Context) ([]string, error)
     Query(ctx context.Context, q *pb.OSQuery) (*pb.OSQueryResult, error)
     QueryTable(ctx context.Context, table string) ([]*pb.OSQueryRow, error)
@@ -540,6 +547,12 @@ type Querier interface {
 }
 var ErrNotInstalled, ErrQueryFailed error
 ```
+
+- `New` keeps the current **eager** behaviour: it probes for the osqueryi binary
+  and returns `ErrNotInstalled` when absent (a caller learns at construction).
+  The free `IsInstalled()` function is removed — `IsInstalled(ctx)` is a Querier
+  method that re-probes live so a binary removed during the agent's lifetime is
+  reported as gone. No `opts ...Option` — there is no real option to configure.
 
 - **Preserved verbatim — the security core:** the credential-table **deny-list**
   (`shadow`, `process_envs`, `crontab`, `shell_history`, `sudoers`),
@@ -556,9 +569,9 @@ var ErrNotInstalled, ErrQueryFailed error
 ## 13. `terminal`
 
 ```go
-func New(opts ...Option) (Manager, error)
+func New() (Manager, error) // NO Runner — a PTY is a long-lived stream the captured-output Runner can't model
 type Manager interface {
-    Open(ctx context.Context, cfg SessionConfig) (*Session, error) // was Start(cfg) — gains ctx
+    Open(ctx context.Context, cfg SessionConfig) (*Session, error) // was Start(cfg) — ctx gates ALLOCATION only
 }
 type SessionConfig struct {
     User, Shell string

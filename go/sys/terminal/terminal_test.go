@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -23,13 +24,25 @@ func isSandboxStartErr(err error) bool {
 		errors.Is(err, os.ErrPermission)
 }
 
+// openSession builds a Manager and opens a session with a background
+// context. It is the single seam the rest of the tests use so the
+// Manager.Open contract is exercised everywhere a session is created.
+func openSession(t *testing.T, cfg SessionConfig) (*Session, error) {
+	t.Helper()
+	m, err := New()
+	if err != nil {
+		t.Fatalf("terminal.New: %v", err)
+	}
+	return m.Open(context.Background(), cfg)
+}
+
 // startSessionOrSkip is the canonical helper for tests that need a live
 // session: it returns the Session on success, skips the test on a
-// sandbox-related Start failure, and fatally fails the test on any other
+// sandbox-related Open failure, and fatally fails the test on any other
 // error so real bugs are not silently masked.
 func startSessionOrSkip(t *testing.T, cfg SessionConfig) *Session {
 	t.Helper()
-	s, err := Start(cfg)
+	s, err := openSession(t, cfg)
 	if err != nil {
 		if isSandboxStartErr(err) {
 			t.Skipf("start session: sandbox restriction: %v", err)
@@ -56,8 +69,8 @@ func requireLinuxCurrentUser(t *testing.T) *user.User {
 	return cur
 }
 
-func TestStart_EmptyUser(t *testing.T) {
-	_, err := Start(SessionConfig{})
+func TestOpen_EmptyUser(t *testing.T) {
+	_, err := openSession(t, SessionConfig{})
 	if err == nil {
 		t.Fatal("expected error for empty user")
 	}
@@ -66,8 +79,8 @@ func TestStart_EmptyUser(t *testing.T) {
 	}
 }
 
-func TestStart_UnknownUser(t *testing.T) {
-	_, err := Start(SessionConfig{User: "this-user-definitely-does-not-exist-pm-12345"})
+func TestOpen_UnknownUser(t *testing.T) {
+	_, err := openSession(t, SessionConfig{User: "this-user-definitely-does-not-exist-pm-12345"})
 	if err == nil {
 		t.Fatal("expected error for unknown user")
 	}
@@ -77,12 +90,12 @@ func TestStart_UnknownUser(t *testing.T) {
 	}
 }
 
-func TestStart_MissingShell(t *testing.T) {
+func TestOpen_MissingShell(t *testing.T) {
 	cur, err := user.Current()
 	if err != nil {
 		t.Skipf("user.Current() failed: %v", err)
 	}
-	_, err = Start(SessionConfig{
+	_, err = openSession(t, SessionConfig{
 		User:  cur.Username,
 		Shell: "/no/such/shell/binary",
 	})
@@ -94,12 +107,12 @@ func TestStart_MissingShell(t *testing.T) {
 	}
 }
 
-func TestStart_ShellIsDirectory(t *testing.T) {
+func TestOpen_ShellIsDirectory(t *testing.T) {
 	cur, err := user.Current()
 	if err != nil {
 		t.Skipf("user.Current() failed: %v", err)
 	}
-	_, err = Start(SessionConfig{User: cur.Username, Shell: "/tmp"})
+	_, err = openSession(t, SessionConfig{User: cur.Username, Shell: "/tmp"})
 	if err == nil {
 		t.Fatal("expected error when shell is a directory")
 	}
@@ -108,12 +121,12 @@ func TestStart_ShellIsDirectory(t *testing.T) {
 	}
 }
 
-func TestStart_ShellNotAbsolute(t *testing.T) {
+func TestOpen_ShellNotAbsolute(t *testing.T) {
 	cur, err := user.Current()
 	if err != nil {
 		t.Skipf("user.Current() failed: %v", err)
 	}
-	_, err = Start(SessionConfig{User: cur.Username, Shell: "bash"})
+	_, err = openSession(t, SessionConfig{User: cur.Username, Shell: "bash"})
 	if err == nil {
 		t.Fatal("expected error for non-absolute shell path")
 	}
@@ -122,7 +135,7 @@ func TestStart_ShellNotAbsolute(t *testing.T) {
 	}
 }
 
-func TestStart_ShellNotExecutable(t *testing.T) {
+func TestOpen_ShellNotExecutable(t *testing.T) {
 	cur, err := user.Current()
 	if err != nil {
 		t.Skipf("user.Current() failed: %v", err)
@@ -133,12 +146,190 @@ func TestStart_ShellNotExecutable(t *testing.T) {
 	if err := os.WriteFile(notExec, []byte("#!/bin/sh\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err = Start(SessionConfig{User: cur.Username, Shell: notExec})
+	_, err = openSession(t, SessionConfig{User: cur.Username, Shell: notExec})
 	if err == nil {
 		t.Fatal("expected error for non-executable shell")
 	}
 	if !strings.Contains(err.Error(), "not executable") {
 		t.Errorf("expected not-executable error, got: %v", err)
+	}
+}
+
+// TestNew pins that the constructor returns a usable Manager and never
+// fails today (its error return exists only for forward-compatibility).
+func TestNew(t *testing.T) {
+	m, err := New()
+	if err != nil {
+		t.Fatalf("New() error = %v, want nil", err)
+	}
+	if m == nil {
+		t.Fatal("New() returned a nil Manager")
+	}
+}
+
+// TestOpen_ContextCancelled proves Open fails closed on an already-cancelled
+// context before it touches the user database, the filesystem, or forks a PTY —
+// the allocation gate. We pass an unknown user so that, were the ctx check
+// absent, the call would fail with a user-lookup error instead; observing
+// context.Canceled confirms the ctx short-circuit ran first.
+func TestOpen_ContextCancelled(t *testing.T) {
+	m, err := New()
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = m.Open(ctx, SessionConfig{User: "this-user-definitely-does-not-exist-pm-12345"})
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("Open(cancelled) error = %v, want context.Canceled", err)
+	}
+}
+
+// TestValidateDims covers the WS15 dimension contract: a zero in either axis is
+// rejected; any non-zero uint16 pair (including the type maximum) is accepted.
+// The invalid cases are sourced from the wire intent (gt=0), not from the
+// implementation under test.
+func TestValidateDims(t *testing.T) {
+	cases := []struct {
+		name       string
+		cols, rows uint16
+		wantErr    bool
+	}{
+		{"both valid", 80, 24, false},
+		{"max valid", 65535, 65535, false},
+		{"min valid", 1, 1, false},
+		{"zero cols", 0, 24, true},
+		{"zero rows", 80, 0, true},
+		{"both zero", 0, 0, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDims(tc.cols, tc.rows)
+			if tc.wantErr && err == nil {
+				t.Errorf("validateDims(%d,%d) = nil, want error", tc.cols, tc.rows)
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("validateDims(%d,%d) = %v, want nil", tc.cols, tc.rows, err)
+			}
+		})
+	}
+}
+
+// TestSession_ResizeRejectsZeroDims exercises the validation on a LIVE session:
+// a zero dimension is refused before the ioctl, and a subsequent valid resize
+// still works (the rejected call did not wedge the PTY).
+func TestSession_ResizeRejectsZeroDims(t *testing.T) {
+	cur := requireLinuxCurrentUser(t)
+
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
+	defer s.Close()
+
+	if err := s.Resize(0, 24); err == nil {
+		t.Error("Resize(0,24) accepted a zero dimension")
+	}
+	if err := s.Resize(80, 0); err == nil {
+		t.Error("Resize(80,0) accepted a zero dimension")
+	}
+	if err := s.Resize(100, 30); err != nil {
+		t.Errorf("Resize(100,30) after a rejected resize failed: %v", err)
+	}
+}
+
+// TestOpen_NonNumericUID drives the parse-uid failure path via the lookupUser
+// seam: a passwd entry whose Uid is not an integer is rejected before any PTY
+// is allocated. (A real passwd cannot carry a non-numeric uid, so the seam is
+// the only way to exercise the defensive parse.)
+func TestOpen_NonNumericUID(t *testing.T) {
+	restore := lookupUser
+	defer func() { lookupUser = restore }()
+	lookupUser = func(string) (*user.User, error) {
+		return &user.User{Username: "x", Uid: "not-a-number", Gid: "1000", HomeDir: "/tmp"}, nil
+	}
+	_, err := openSession(t, SessionConfig{User: "x"})
+	if err == nil || !strings.Contains(err.Error(), "parse uid") {
+		t.Errorf("Open with non-numeric uid: err = %v, want a parse-uid error", err)
+	}
+}
+
+// TestOpen_NonNumericGID is the gid twin of TestOpen_NonNumericUID.
+func TestOpen_NonNumericGID(t *testing.T) {
+	restore := lookupUser
+	defer func() { lookupUser = restore }()
+	lookupUser = func(string) (*user.User, error) {
+		return &user.User{Username: "x", Uid: "1000", Gid: "not-a-number", HomeDir: "/tmp"}, nil
+	}
+	_, err := openSession(t, SessionConfig{User: "x"})
+	if err == nil || !strings.Contains(err.Error(), "parse gid") {
+		t.Errorf("Open with non-numeric gid: err = %v, want a parse-gid error", err)
+	}
+}
+
+// TestOpen_DefaultShell covers the empty-Shell → DefaultShell defaulting branch
+// by opening a live session with no Shell set.
+func TestOpen_DefaultShell(t *testing.T) {
+	cur := requireLinuxCurrentUser(t)
+	info, err := os.Stat(DefaultShell)
+	if err != nil || info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+		t.Skipf("default shell %s not usable on this host", DefaultShell)
+	}
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username}) // Shell:"" → DefaultShell
+	defer s.Close()
+	if _, err := io.WriteString(s, "exit\n"); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	drain(t, s, 5*time.Second)
+}
+
+// TestOpen_SwitchesCredentialWhenUIDDiffers exercises the credential-switch
+// branch (uid/gid != process uid/gid) without root: the getgid seam reports a
+// gid different from the looked-up user's, so the branch is taken and the
+// child's Credential is set to the user's OWN uid/gid — a setres-to-self that
+// needs no privilege, so the session still starts.
+func TestOpen_SwitchesCredentialWhenUIDDiffers(t *testing.T) {
+	cur := requireLinuxCurrentUser(t)
+	restore := getgid
+	defer func() { getgid = restore }()
+	getgid = func() int { return os.Getgid() + 1 }
+
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
+	defer s.Close()
+	if _, err := io.WriteString(s, "exit\n"); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	drain(t, s, 5*time.Second)
+}
+
+// TestSession_ResizeAfterCloseFails covers the pty.Setsize error path: after
+// Close the PTY fd is gone, so a (valid-dimension) resize fails at the ioctl.
+func TestSession_ResizeAfterCloseFails(t *testing.T) {
+	cur := requireLinuxCurrentUser(t)
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
+	_ = s.Close()
+	<-s.Done()
+	if err := s.Resize(80, 24); err == nil {
+		t.Error("Resize after Close should fail (PTY closed)")
+	} else if !strings.Contains(err.Error(), "resize") {
+		t.Errorf("Resize after Close: err = %v, want a resize error", err)
+	}
+}
+
+// TestSession_CloseSurfacesPTYError covers the branch where pty.Close returns a
+// non-ErrClosed error: the ptyClose seam closes the fd (no leak) but returns a
+// synthetic error, which Close must surface as its result.
+func TestSession_CloseSurfacesPTYError(t *testing.T) {
+	cur := requireLinuxCurrentUser(t)
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
+
+	restore := ptyClose
+	defer func() { ptyClose = restore }()
+	sentinel := errors.New("synthetic pty close failure")
+	ptyClose = func(f *os.File) error {
+		_ = f.Close() // actually release the fd so the child/session is not leaked
+		return sentinel
+	}
+
+	if err := s.Close(); !errors.Is(err, sentinel) {
+		t.Errorf("Close() = %v, want the surfaced pty-close error %v", err, sentinel)
 	}
 }
 

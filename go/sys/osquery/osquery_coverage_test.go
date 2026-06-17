@@ -15,7 +15,7 @@ func TestListTables(t *testing.T) {
 	// Bare table names are kept; "=>"-prefixed lines, "+" header noise, and
 	// blanks are skipped.
 	r.Push(exec.Result{Stdout: "os_version\nuptime\n+ ignore me\n\n=> skip me\nsystem_info\n"}, nil)
-	c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	tables, err := c.ListTables(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +38,7 @@ func TestListTables(t *testing.T) {
 func TestListTables_ExecError(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{ExitCode: 1, Stderr: "boom"}, nil)
-	c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	if _, err := c.ListTables(context.Background()); err == nil {
 		t.Error("ListTables swallowed a query failure")
 	}
@@ -47,7 +47,7 @@ func TestListTables_ExecError(t *testing.T) {
 func TestQuery_CustomTableSQL(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: "[]"}, nil)
-	c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	res, err := c.Query(context.Background(), &pb.OSQuery{QueryId: "q", Table: "authorized_keys"})
 	if err != nil || !res.Success {
 		t.Fatalf("Query(authorized_keys) = (%+v,%v)", res, err)
@@ -60,7 +60,7 @@ func TestQuery_CustomTableSQL(t *testing.T) {
 func TestQuery_QuerySQLErrorSurfacesInResult(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: "not json"}, nil) // parse failure inside QuerySQL
-	c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	res, err := c.Query(context.Background(), &pb.OSQuery{QueryId: "q", Table: "os_version"})
 	if err != nil {
 		t.Fatalf("Query should fold the SQL error into the result, not return it: %v", err)
@@ -74,7 +74,7 @@ func TestQueryTable(t *testing.T) {
 	t.Run("benign", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
 		r.Push(exec.Result{Stdout: `[{"name":"x"}]`}, nil)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		rows, err := c.QueryTable(context.Background(), "os_version")
 		if err != nil || len(rows) != 1 {
 			t.Fatalf("QueryTable = (%v,%v), want one row", rows, err)
@@ -83,7 +83,7 @@ func TestQueryTable(t *testing.T) {
 	t.Run("custom tableSQL", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
 		r.Push(exec.Result{Stdout: "[]"}, nil)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		if _, err := c.QueryTable(context.Background(), "authorized_keys"); err != nil {
 			t.Fatal(err)
 		}
@@ -93,7 +93,7 @@ func TestQueryTable(t *testing.T) {
 	})
 	t.Run("invalid name rejected before exec", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		if _, err := c.QueryTable(context.Background(), "bad name!"); err == nil {
 			t.Error("QueryTable accepted an invalid name")
 		}
@@ -103,7 +103,7 @@ func TestQueryTable(t *testing.T) {
 	})
 	t.Run("sensitive table refused before exec", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		if _, err := c.QueryTable(context.Background(), "shadow"); err == nil {
 			t.Error("QueryTable returned a sensitive table")
 		}
