@@ -117,7 +117,9 @@ func New(runner pmexec.Runner, opts ...Option) (Manager, error) {
 	}
 	m := &manager{r: runner, homeRoot: defaultHomeRoot}
 	for _, opt := range opts {
-		opt(m)
+		if opt != nil { // tolerate a nil option rather than panicking the agent
+			opt(m)
+		}
 	}
 	return m, nil
 }

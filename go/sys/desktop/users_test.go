@@ -54,6 +54,11 @@ func TestHomeUsers_MissingHomeRoot(t *testing.T) {
 	if len(got) != 0 {
 		t.Errorf("expected zero users for missing /home, got %d", len(got))
 	}
+	// Contract: "empty slice — not an error". Pin non-nil so missing and empty
+	// home roots are indistinguishable to the caller (and JSON-marshal to []).
+	if got == nil {
+		t.Error("HomeUsers must return a non-nil empty slice for a missing home root")
+	}
 }
 
 func TestHomeUsers_UnreadableHomeRoot(t *testing.T) {

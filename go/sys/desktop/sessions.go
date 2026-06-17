@@ -50,12 +50,15 @@ type Session struct {
 // malformed or the per-session detail probe fails for a reason other
 // than the session disappearing mid-call.
 func (m *manager) ActiveSessions(ctx context.Context) ([]Session, error) {
-	if _, err := lookPath(loginctlPath); err != nil {
+	if _, pathErr := lookPath(loginctlPath); pathErr != nil {
 		// Host doesn't ship systemd-logind. Treat as "no sessions" so
 		// the caller's empty-set policy (skip-with-warn vs fail) drives
 		// the user-facing behavior consistently regardless of the
-		// underlying init system.
-		return nil, nil
+		// underlying init system. Return a non-nil empty slice to match
+		// the documented contract and the success path's make(). (pathErr
+		// is named distinctly from err so the nilerr linter sees this is
+		// an intentional "absent → empty, no error" mapping.)
+		return []Session{}, nil
 	}
 
 	ids, err := m.listSessionIDs(ctx)

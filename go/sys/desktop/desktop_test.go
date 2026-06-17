@@ -70,3 +70,16 @@ func TestNew_WithHomeRoot(t *testing.T) {
 		t.Errorf("WithHomeRoot homeRoot = %q, want /custom/home", m.homeRoot)
 	}
 }
+
+// TestNew_NilOptionIgnored pins that a nil entry in opts... is skipped rather
+// than panicking the constructor (and the agent process with it); a non-nil
+// option in the same call still applies.
+func TestNew_NilOptionIgnored(t *testing.T) {
+	m, err := New(exectest.New(exec.Direct), nil, WithHomeRoot("/custom/home"), nil)
+	if err != nil {
+		t.Fatalf("New with a nil option returned error: %v", err)
+	}
+	if m.(*manager).homeRoot != "/custom/home" {
+		t.Errorf("a nil option must be skipped and the real one applied; homeRoot = %q", m.(*manager).homeRoot)
+	}
+}

@@ -133,6 +133,11 @@ func TestActiveSessions_NoLoginctl(t *testing.T) {
 	if len(got) != 0 {
 		t.Errorf("want no sessions, got %v", got)
 	}
+	// Contract: "returns an empty slice" — pin non-nil so a caller comparing
+	// against nil, or marshalling to JSON, sees [] not null.
+	if got == nil {
+		t.Error("ActiveSessions must return a non-nil empty slice when loginctl is absent")
+	}
 	if n := len(r.Calls()); n != 0 {
 		t.Errorf("loginctl absent must run nothing, but %d calls ran", n)
 	}

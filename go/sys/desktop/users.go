@@ -42,7 +42,10 @@ func (m *manager) HomeUsers(ctx context.Context) ([]Session, error) {
 	entries, err := os.ReadDir(m.homeRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			// Missing home root is "no users", not a fault. Return a non-nil
+			// empty slice to match the documented contract and the success
+			// path below (which always make()s a slice).
+			return []Session{}, nil
 		}
 		return nil, fmt.Errorf("read %s: %w", m.homeRoot, err)
 	}
