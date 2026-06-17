@@ -50,10 +50,7 @@ func (d *dnf) Version(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if line, _, ok := strings.Cut(out, "\n"); ok || line != "" {
-		return strings.TrimSpace(line), nil
-	}
-	return "", nil
+	return strings.TrimSpace(strings.SplitN(out, "\n", 2)[0]), nil
 }
 
 // Install installs packages. opts.Version pins a single package (dnf name-version
@@ -330,11 +327,9 @@ func (d *dnf) Show(ctx context.Context, name string) (*Package, error) {
 	if installed, _ := d.IsInstalled(ctx, name); installed {
 		pkg.Status = "installed"
 	}
-	if pinned, err := d.IsPinned(ctx, name); err != nil {
-		slog.Debug("failed to check pin status", "package", name, "error", err)
-	} else {
-		pkg.Pinned = pinned
-	}
+	// IsPinned is tolerant of an absent versionlock plugin (never errors), so a
+	// failed check simply reports unpinned.
+	pkg.Pinned, _ = d.IsPinned(ctx, name)
 	return pkg, nil
 }
 

@@ -273,11 +273,9 @@ func (z *zypper) Show(ctx context.Context, name string) (*Package, error) {
 	if installed, _ := z.IsInstalled(ctx, name); installed {
 		pkg.Status = "installed"
 	}
-	if pinned, err := z.IsPinned(ctx, name); err != nil {
-		slog.Debug("failed to check pin status", "package", name, "error", err)
-	} else {
-		pkg.Pinned = pinned
-	}
+	// IsPinned is tolerant of a missing lock list (never errors), so a failed
+	// check simply reports unpinned.
+	pkg.Pinned, _ = z.IsPinned(ctx, name)
 	return pkg, nil
 }
 

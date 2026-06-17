@@ -251,11 +251,9 @@ func (f *flatpak) Show(ctx context.Context, name string) (*Package, error) {
 		}
 	}
 
-	if pinned, err := f.IsPinned(ctx, name); err != nil {
-		slog.Debug("failed to check pin status", "package", name, "error", err)
-	} else {
-		pkg.Pinned = pinned
-	}
+	// IsPinned is tolerant of an unreadable mask list (never errors), so a failed
+	// check simply reports unpinned.
+	pkg.Pinned, _ = f.IsPinned(ctx, name)
 	return pkg, nil
 }
 
