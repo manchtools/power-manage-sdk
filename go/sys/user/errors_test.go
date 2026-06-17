@@ -142,11 +142,9 @@ func TestSupplementaryGroups_PrimaryLookupFailsClosed(t *testing.T) {
 func TestCreate_ChownFailureSurfaces(t *testing.T) {
 	existing := t.TempDir()
 	f := exectest.New(exec.Direct)
-	restore := setOwnershipRecursive
-	setOwnershipRecursive = func(ctx context.Context, path, owner, group string) (*exec.Result, error) {
-		return nil, exec.ErrEscalationDenied
-	}
-	defer func() { setOwnershipRecursive = restore }()
+	f2 := newFakeFS()
+	f2.chownErr = exec.ErrEscalationDenied
+	f2.install(t)
 
 	err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{HomeDir: existing, CreateHome: true})
 	if err == nil || !strings.Contains(err.Error(), "ownership") {

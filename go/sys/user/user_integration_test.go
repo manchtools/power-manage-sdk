@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
-	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 	"github.com/manchtools/power-manage/sdk/go/sys/user"
 )
 
@@ -182,8 +181,8 @@ func TestDeleteWithHome_Integration(t *testing.T) {
 	if ok, err := m.Exists(ctx, name); err != nil || ok {
 		t.Error("user still exists after delete")
 	}
-	if fs.FileExists(ctx, homeDir) {
-		t.Error("home directory was not removed")
+	if _, err := os.Stat(homeDir); !os.IsNotExist(err) {
+		t.Errorf("home directory was not removed, stat err = %v", err)
 	}
 }
 

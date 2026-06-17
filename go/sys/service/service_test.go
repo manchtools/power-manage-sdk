@@ -272,12 +272,11 @@ func TestEveryMethodRejectsUnsafeUnitNameBeforeRunner(t *testing.T) {
 	}
 }
 
-// swapFSSeams replaces the fs seams with no-ops for the duration of a test,
+// swapFSSeams points the newFS seam at a no-op fake for the duration of a test,
 // returning a restore func. Keeps WriteUnit/RemoveUnit reflection cases hermetic.
 func swapFSSeams(t *testing.T) func() {
 	t.Helper()
-	w, r := writeFileAtomic, removeStrict
-	writeFileAtomic = func(context.Context, string, string, string, string, string) error { return nil }
-	removeStrict = func(context.Context, string) error { return nil }
-	return func() { writeFileAtomic, removeStrict = w, r }
+	prev := newFS
+	newFS = func(exec.Runner) (fsManager, error) { return &fakeFS{}, nil }
+	return func() { newFS = prev }
 }

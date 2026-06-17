@@ -27,7 +27,7 @@ import (
 //   - the final inode is a real regular file with the requested content
 //     and mode.
 func TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget(t *testing.T) {
-	useRootBackend(t)
+	m := directManager(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "managed.conf")
 
@@ -44,8 +44,8 @@ func TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget(t *testing.T) {
 	}
 
 	const content = "managed content\n"
-	if err := WriteFileAtomic(context.Background(), target, content, "0644", "", ""); err != nil {
-		t.Fatalf("WriteFileAtomic: %v", err)
+	if err := m.WriteFile(context.Background(), target, []byte(content), WriteOptions{Mode: 0o644}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
 
 	// The planted symlink target must be untouched — the write must not
@@ -93,7 +93,7 @@ func TestWriteFileAtomic_RefusesSymlinkPlantedTempTarget(t *testing.T) {
 // the symlink's victim. Pins that the new inode is real and the victim
 // is untouched.
 func TestWriteFileAtomic_TargetSymlinkNotDereferenced(t *testing.T) {
-	useRootBackend(t)
+	m := directManager(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "managed.conf")
 
@@ -106,8 +106,8 @@ func TestWriteFileAtomic_TargetSymlinkNotDereferenced(t *testing.T) {
 		t.Fatalf("plant target symlink: %v", err)
 	}
 
-	if err := WriteFileAtomic(context.Background(), target, "new\n", "0644", "", ""); err != nil {
-		t.Fatalf("WriteFileAtomic: %v", err)
+	if err := m.WriteFile(context.Background(), target, []byte("new\n"), WriteOptions{Mode: 0o644}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
 
 	if got, _ := os.ReadFile(victim); string(got) != "VICTIM" {
@@ -127,7 +127,7 @@ func TestWriteFileAtomic_TargetSymlinkNotDereferenced(t *testing.T) {
 // could follow a swapped symlink). Run against the current user so it
 // works without root.
 func TestWriteFileAtomic_AppliesOwnershipToSelf(t *testing.T) {
-	useRootBackend(t)
+	m := directManager(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "owned.conf")
 
@@ -140,8 +140,8 @@ func TestWriteFileAtomic_AppliesOwnershipToSelf(t *testing.T) {
 		t.Skipf("cannot resolve current group: %v", err)
 	}
 
-	if err := WriteFileAtomic(context.Background(), target, "x\n", "0640", u.Username, g.Name); err != nil {
-		t.Fatalf("WriteFileAtomic: %v", err)
+	if err := m.WriteFile(context.Background(), target, []byte("x\n"), WriteOptions{Mode: 0o640, Owner: u.Username, Group: g.Name}); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
 
 	info, err := os.Stat(target)

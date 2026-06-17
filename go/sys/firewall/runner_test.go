@@ -7,7 +7,33 @@ import (
 	"testing"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
+	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
+
+// fakeFS is a hermetic fsManager for the firewalld backend's service-XML writes,
+// installed via the newFS seam by useFS. nil closures default to a success no-op.
+type fakeFS struct {
+	writeFn  func(path string, data []byte, opts fs.WriteOptions) error
+	removeFn func(path string) error
+}
+
+func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
+	if f.writeFn != nil {
+		return f.writeFn(path, data, opts)
+	}
+	return nil
+}
+
+func (f *fakeFS) Remove(_ context.Context, path string) error {
+	if f.removeFn != nil {
+		return f.removeFn(path)
+	}
+	return nil
+}
+
+// useFS points the newFS seam at f for the rest of the test (paired with
+// swapFirewalldSeams, which restores newFS on cleanup).
+func useFS(f *fakeFS) { newFS = func(exec.Runner) (fsManager, error) { return f, nil } }
 
 // =============================================================================
 // nftables — apply/remove/list driven by a recordingRunner (no kernel).
@@ -170,17 +196,17 @@ func TestNftables_List(t *testing.T) {
 
 func swapFirewalldSeams(t *testing.T) {
 	t.Helper()
-	ow, or_, ord := writeFileAtomic, removeStrict, readFile
-	t.Cleanup(func() { writeFileAtomic, removeStrict, readFile = ow, or_, ord })
+	on, ord := newFS, readFile
+	t.Cleanup(func() { newFS, readFile = on, ord })
 }
 
 func TestFirewalld_ApplyRule_Happy(t *testing.T) {
 	swapFirewalldSeams(t)
 	var wrotePath, wroteBody string
-	writeFileAtomic = func(_ context.Context, path, content, _, _, _ string) error {
-		wrotePath, wroteBody = path, content
+	useFS(&fakeFS{writeFn: func(path string, data []byte, _ fs.WriteOptions) error {
+		wrotePath, wroteBody = path, string(data)
 		return nil
-	}
+	}})
 	r := &recordingRunner{}
 	r.pushOut("public\n") // --get-default-zone
 	r.pushOut("")         // --reload
@@ -248,9 +274,9 @@ func TestFirewalld_ApplyRule_Failures(t *testing.T) {
 	})
 	t.Run("writeFileAtomic fails", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		writeFileAtomic = func(context.Context, string, string, string, string, string) error {
+		useFS(&fakeFS{writeFn: func(string, []byte, fs.WriteOptions) error {
 			return errors.New("disk full")
-		}
+		}})
 		r := &recordingRunner{}
 		r.pushOut("public\n")
 		m := newMgr(t, Firewalld, "app", r)
@@ -261,7 +287,7 @@ func TestFirewalld_ApplyRule_Failures(t *testing.T) {
 	})
 	t.Run("reload fails", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		writeFileAtomic = func(context.Context, string, string, string, string, string) error { return nil }
+		useFS(&fakeFS{})
 		r := &recordingRunner{}
 		r.pushOut("public\n")                 // zone
 		r.push(exec.Result{ExitCode: 1}, nil) // reload fails
@@ -273,7 +299,7 @@ func TestFirewalld_ApplyRule_Failures(t *testing.T) {
 	})
 	t.Run("add-service fails", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		writeFileAtomic = func(context.Context, string, string, string, string, string) error { return nil }
+		useFS(&fakeFS{})
 		r := &recordingRunner{}
 		r.pushOut("public\n")                 // zone
 		r.pushOut("")                         // reload
@@ -286,7 +312,7 @@ func TestFirewalld_ApplyRule_Failures(t *testing.T) {
 	})
 	t.Run("post-enable reload fails", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		writeFileAtomic = func(context.Context, string, string, string, string, string) error { return nil }
+		useFS(&fakeFS{})
 		r := &recordingRunner{}
 		r.pushOut("public\n")                 // zone
 		r.pushOut("")                         // reload
@@ -304,7 +330,7 @@ func TestFirewalld_RemoveRule(t *testing.T) {
 	t.Run("enabled → removed", func(t *testing.T) {
 		swapFirewalldSeams(t)
 		var removed string
-		removeStrict = func(_ context.Context, path string) error { removed = path; return nil }
+		useFS(&fakeFS{removeFn: func(path string) error { removed = path; return nil }})
 		r := &recordingRunner{}
 		r.pushOut("public\n")        // zone
 		r.pushOut("app-https ssh\n") // list-services (svc enabled)
@@ -323,7 +349,7 @@ func TestFirewalld_RemoveRule(t *testing.T) {
 	})
 	t.Run("not enabled → skip remove, still cleans + reloads", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		removeStrict = func(context.Context, string) error { return nil }
+		useFS(&fakeFS{})
 		r := &recordingRunner{}
 		r.pushOut("public\n") // zone
 		r.pushOut("ssh\n")    // list-services (svc absent)
@@ -348,7 +374,7 @@ func TestFirewalld_RemoveRule(t *testing.T) {
 	})
 	t.Run("RemoveStrict hard failure", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		removeStrict = func(context.Context, string) error { return errors.New("permission denied") }
+		useFS(&fakeFS{removeFn: func(string) error { return errors.New("permission denied") }})
 		r := &recordingRunner{}
 		r.pushOut("public\n")
 		r.pushOut("ssh\n") // not enabled

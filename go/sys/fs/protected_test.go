@@ -39,6 +39,12 @@ func TestIsProtectedPath(t *testing.T) {
 		t.Error("IsProtectedPath(/usr/) = false, want true")
 	}
 
+	// A relative path is resolved to an absolute one before the check; it can
+	// never equal a top-level protected dir, so it is deterministically false.
+	if IsProtectedPath("relative/work/dir") {
+		t.Error("IsProtectedPath(relative/work/dir) = true, want false")
+	}
+
 	notProtected := []string{
 		"/opt/myapp",
 		"/home/user",

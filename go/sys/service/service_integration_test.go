@@ -59,14 +59,15 @@ func TestWriteUnit_Integration(t *testing.T) {
 		t.Fatalf("WriteUnit: %v", err)
 	}
 	path := "/etc/systemd/system/" + testUnitName
-	if !fs.FileExists(ctx, path) {
-		t.Fatal("unit file should exist after WriteUnit")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("unit file should exist after WriteUnit: %v", err)
 	}
-	content, err := fs.ReadFile(ctx, path)
+	// The unit file is mode 0644 (world-readable), so a plain read suffices.
+	content, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("ReadFile: %v", err)
 	}
-	if content != testUnitContent {
+	if string(content) != testUnitContent {
 		t.Errorf("content mismatch:\n want %q\n  got %q", testUnitContent, content)
 	}
 }
@@ -102,8 +103,8 @@ func TestRemoveUnit_Integration(t *testing.T) {
 	if err := m.RemoveUnit(ctx, testUnitName); err != nil {
 		t.Fatalf("RemoveUnit: %v", err)
 	}
-	if fs.FileExists(ctx, "/etc/systemd/system/"+testUnitName) {
-		t.Error("unit file should be gone after RemoveUnit")
+	if _, err := os.Stat("/etc/systemd/system/" + testUnitName); !os.IsNotExist(err) {
+		t.Errorf("unit file should be gone after RemoveUnit, stat err = %v", err)
 	}
 }
 

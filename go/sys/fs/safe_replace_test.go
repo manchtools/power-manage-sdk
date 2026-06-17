@@ -16,7 +16,7 @@ func TestSafeReplaceFile_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "creds")
 
-	if err := SafeReplaceFile(target, []byte("hello"), 0o600, true); err != nil {
+	if err := safeReplaceFile(target, []byte("hello"), 0o600, true); err != nil {
 		t.Fatalf("SafeReplaceFile: %v", err)
 	}
 	got, err := os.ReadFile(target)
@@ -42,7 +42,7 @@ func TestSafeReplaceFile_OverwritesExisting(t *testing.T) {
 	if err := os.WriteFile(target, []byte("old"), 0o644); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	if err := SafeReplaceFile(target, []byte("new"), 0o600, true); err != nil {
+	if err := safeReplaceFile(target, []byte("new"), 0o600, true); err != nil {
 		t.Fatalf("SafeReplaceFile: %v", err)
 	}
 	got, err := os.ReadFile(target)
@@ -64,7 +64,7 @@ func TestSafeReplaceFile_RefusesExistingWhenNoReplace(t *testing.T) {
 	if err := os.WriteFile(target, []byte("existing"), 0o644); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	err := SafeReplaceFile(target, []byte("new"), 0o600, false)
+	err := safeReplaceFile(target, []byte("new"), 0o600, false)
 	if err == nil {
 		t.Fatalf("SafeReplaceFile: want error, got nil")
 	}
@@ -90,7 +90,7 @@ func TestSafeBackupAndReplace_MovesExistingThenWrites(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	if err := SafeBackupAndReplace(bin, bak, []byte("new-binary"), 0o755, true); err != nil {
+	if err := safeBackupAndReplace(bin, bak, []byte("new-binary"), 0o755, true); err != nil {
 		t.Fatalf("SafeBackupAndReplace: %v", err)
 	}
 
@@ -118,7 +118,7 @@ func TestSafeBackupAndReplace_NoExistingFile(t *testing.T) {
 	bin := filepath.Join(dir, "agent")
 	bak := filepath.Join(dir, "agent.bak")
 
-	if err := SafeBackupAndReplace(bin, bak, []byte("first"), 0o755, false); err != nil {
+	if err := safeBackupAndReplace(bin, bak, []byte("first"), 0o755, false); err != nil {
 		t.Fatalf("SafeBackupAndReplace: %v", err)
 	}
 	got, err := os.ReadFile(bin)

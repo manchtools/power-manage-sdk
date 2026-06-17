@@ -392,7 +392,10 @@ non-priv `os.FileMode`, `SafeReplaceFile` symlink-safe) collapse into **one
 (drop string `"0644"`), options struct.
 
 ```go
-func New(runner exec.Runner, opts ...Option) (Manager, error) // single-impl-by-nature; runner required
+// Implemented as New(runner exec.Runner) (Manager, error): no fs option exists,
+// so the speculative variadic was dropped (YAGNI / clean-break). Add it back the
+// day a real Option lands.
+func New(runner exec.Runner) (Manager, error) // single-impl-by-nature; runner required
 
 type Manager interface {
     ReadFile(ctx context.Context, path string) ([]byte, error)

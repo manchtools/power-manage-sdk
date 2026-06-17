@@ -96,7 +96,7 @@ func (s *s3Source) fetchPrefix(ctx context.Context, dest string) (Result, error)
 		}
 	}
 
-	if err := applyMode(ctx, dest, s.cfg.Mode, s.cfg.Owner, s.cfg.Group); err != nil {
+	if err := applyMode(dest, s.cfg.Mode, s.cfg.Owner, s.cfg.Group); err != nil {
 		return Result{}, err
 	}
 

@@ -156,7 +156,7 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 		return Result{}, fmt.Errorf("swap staging → dest: %w", err)
 	}
 
-	if err := applyMode(ctx, dest, h.cfg.Mode, h.cfg.Owner, h.cfg.Group); err != nil {
+	if err := applyMode(dest, h.cfg.Mode, h.cfg.Owner, h.cfg.Group); err != nil {
 		return Result{}, err
 	}
 

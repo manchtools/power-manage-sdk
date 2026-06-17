@@ -105,7 +105,8 @@ type Manager interface {
 // injected exec.Runner (reads unescalated; writes and the shadow read with
 // Escalate), so the whole package is unit-testable with exectest.FakeRunner.
 type shadowUtils struct {
-	r exec.Runner
+	r   exec.Runner
+	fsm fsManager
 }
 
 // New returns a Manager for the named backend, driven by runner. It is pure:
@@ -118,7 +119,11 @@ func New(b Backend, runner exec.Runner, _ ...Option) (Manager, error) {
 	if runner == nil {
 		return nil, fmt.Errorf("user: runner is required")
 	}
-	return &shadowUtils{r: runner}, nil
+	fsm, err := newFS(runner)
+	if err != nil {
+		return nil, err
+	}
+	return &shadowUtils{r: runner, fsm: fsm}, nil
 }
 
 // Option is the functional-option type for backend-specific knobs. None are
@@ -222,7 +227,7 @@ func (u *shadowUtils) Create(ctx context.Context, name string, opts CreateOption
 		if group == "" {
 			group = name // useradd's matching-group default
 		}
-		if _, err := setOwnershipRecursive(ctx, homeDir, name, group); err != nil {
+		if err := u.fsm.SetOwnershipRecursive(ctx, homeDir, name, group); err != nil {
 			return fmt.Errorf("fix ownership of existing home %q: %w", homeDir, err)
 		}
 	}

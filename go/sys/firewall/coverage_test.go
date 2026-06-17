@@ -38,7 +38,7 @@ func TestFirewalld_RemoveRule_RemoveServiceFails(t *testing.T) {
 
 func TestFirewalld_RemoveRule_FinalReloadFails(t *testing.T) {
 	swapFirewalldSeams(t)
-	removeStrict = func(context.Context, string) error { return nil }
+	useFS(&fakeFS{})
 	r := &recordingRunner{}
 	r.pushOut("public\n")                 // zone
 	r.pushOut("app-https ssh\n")          // list-services (enabled)

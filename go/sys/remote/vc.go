@@ -28,7 +28,7 @@ type GitConfig struct {
 	Submodules bool
 
 	// Owner / Group — applied to the dest tree after CloneOrSync via
-	// sys/fs.SetPermissions. Empty strings leave the OS default.
+	// os.Chmod / sys/fs.FchownNoFollow. Empty strings leave the OS default.
 	Owner string
 	Group string
 

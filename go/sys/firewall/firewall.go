@@ -217,7 +217,11 @@ func New(b Backend, namespace string, runner exec.Runner, _ ...Option) (Manager,
 	if runner == nil {
 		return nil, fmt.Errorf("firewall: runner is required")
 	}
-	base := base{ns: namespace, cmd: cmd{r: runner}}
+	fsm, err := newFS(runner)
+	if err != nil {
+		return nil, err
+	}
+	base := base{ns: namespace, cmd: cmd{r: runner}, fsm: fsm}
 	switch b {
 	case Nftables:
 		return &nftables{base: base}, nil
@@ -281,10 +285,13 @@ func (c cmd) exec(ctx context.Context, spec exec.Command) (exec.Result, error) {
 	return res, nil
 }
 
-// base is embedded by each backend: the namespace plus the command runner.
+// base is embedded by each backend: the namespace, the command runner, and the
+// fs.Manager (over the same Runner) the firewalld backend writes service XML
+// through.
 type base struct {
 	ns string
 	cmd
+	fsm fsManager
 }
 
 // Namespace returns the namespace this Manager was constructed with.

@@ -63,7 +63,7 @@ type HTTPConfig struct {
 	MaxBytes int64
 
 	// Mode / Owner / Group — applied to the destination after a
-	// successful Fetch via sys/fs.SetPermissions / os.Chmod. Empty
+	// successful Fetch via os.Chmod / sys/fs.FchownNoFollow. Empty
 	// strings leave the OS default in place.
 	Mode  string
 	Owner string
@@ -129,7 +129,7 @@ func NewHTTP(cfg HTTPConfig) (Source, error) {
 //  5. Verify the optional sha256 pin.
 //  6. os.Rename to dest — gives the atomic-write guarantee.
 //  7. Apply mode (and, in real deployments, owner/group via
-//     sys/fs.SetPermissions when running with privilege).
+//     sys/fs.FchownNoFollow when running with privilege).
 //  8. RecordDest(dest) so a follow-up Wipe can reach it even when dest
 //     lives outside the project-managed prefixes.
 func (h *httpSource) Fetch(ctx context.Context, dest string) (Result, error) {
@@ -180,7 +180,7 @@ func (h *httpSource) Fetch(ctx context.Context, dest string) (Result, error) {
 		return Result{}, fmt.Errorf("rename to %s: %w", dest, err)
 	}
 
-	if err := applyMode(ctx, dest, h.cfg.Mode, h.cfg.Owner, h.cfg.Group); err != nil {
+	if err := applyMode(dest, h.cfg.Mode, h.cfg.Owner, h.cfg.Group); err != nil {
 		return Result{}, err
 	}
 
@@ -336,14 +336,16 @@ func tmpPathFor(dest string) string {
 	return dest + ".tmp." + hex.EncodeToString(b[:])
 }
 
-// applyMode wraps sys/fs.SetPermissions for the case where mode is set
-// without owner/group — local chmod is enough and avoids the sudo round
-// trip when running as a regular user (tests, CI).
-func applyMode(ctx context.Context, dest, mode, owner, group string) error {
+// applyMode sets mode and/or ownership on the freshly-written destination. Mode
+// is applied with a local chmod (no privilege needed). Ownership is applied
+// through sys/fs's fd-anchored, symlink-refusing FchownNoFollow — the
+// destination was just renamed into place, so this requires CAP_CHOWN (the root
+// agent has it). Empty fields are skipped.
+func applyMode(dest, mode, owner, group string) error {
 	if mode == "" && owner == "" && group == "" {
 		return nil
 	}
-	if owner == "" && group == "" {
+	if mode != "" {
 		bits, perr := strconv.ParseUint(strings.TrimPrefix(mode, "0"), 8, 32)
 		if perr != nil {
 			return fmt.Errorf("invalid mode %q: %w", mode, perr)
@@ -351,10 +353,15 @@ func applyMode(ctx context.Context, dest, mode, owner, group string) error {
 		if err := os.Chmod(dest, os.FileMode(bits)); err != nil {
 			return fmt.Errorf("chmod %s: %w", dest, err)
 		}
-		return nil
 	}
-	if err := sysfs.SetPermissions(ctx, dest, mode, owner, group); err != nil {
-		return fmt.Errorf("set permissions on %s: %w", dest, err)
+	if owner != "" || group != "" {
+		uid, gid, err := sysfs.ResolveOwnership(owner, group)
+		if err != nil {
+			return fmt.Errorf("resolve ownership for %s: %w", dest, err)
+		}
+		if err := sysfs.FchownNoFollow(dest, uid, gid); err != nil {
+			return fmt.Errorf("set ownership on %s: %w", dest, err)
+		}
 	}
 	return nil
 }
