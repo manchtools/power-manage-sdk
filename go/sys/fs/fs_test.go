@@ -6,12 +6,38 @@ import (
 	"context"
 	"fmt"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 	"github.com/manchtools/power-manage/sdk/go/sys/fs"
 )
+
+// foreignLocale returns an installed non-English UTF-8 locale (Japanese or
+// Chinese), or "" if none is present. Used to exercise the locale guard.
+func foreignLocale(t *testing.T) string {
+	t.Helper()
+	out, err := osexec.Command("locale", "-a").Output()
+	if err != nil {
+		return ""
+	}
+	installed := strings.Split(string(out), "\n")
+	for canonical, variants := range map[string][]string{
+		"ja_JP.UTF-8": {"ja_JP.utf8", "ja_JP.UTF-8"},
+		"zh_CN.UTF-8": {"zh_CN.utf8", "zh_CN.UTF-8"},
+	} {
+		for _, v := range variants {
+			for _, have := range installed {
+				if strings.EqualFold(strings.TrimSpace(have), v) {
+					return canonical
+				}
+			}
+		}
+	}
+	return ""
+}
 
 // missingPath returns a path guaranteed not to exist — a child of a fresh, empty
 // t.TempDir — so the missing-file tests can't flake on a reused/shared host that
@@ -260,5 +286,24 @@ func TestOwnershipHelper(t *testing.T) {
 func TestGetOwnershipMissing(t *testing.T) {
 	if owner, group := fs.GetOwnership(missingPath(t)); owner != "" || group != "" {
 		t.Errorf("GetOwnership(missing) = %q:%q, want empties", owner, group)
+	}
+}
+
+// TestReadFile_MissingUnderForeignLocale is the end-to-end locale guard: under a
+// non-English process locale, ReadFile of a missing file must still return
+// (nil,nil). It fails if the Runner stops forcing LC_ALL=C — cat's translated
+// "No such file" message would then be misread as a hard error. (The whole
+// integration suite also runs under ja_JP via the harness; this is the explicit,
+// self-contained pin that holds even when run under C.)
+func TestReadFile_MissingUnderForeignLocale(t *testing.T) {
+	loc := foreignLocale(t)
+	if loc == "" {
+		t.Skip("no ja/zh locale installed to exercise the locale guard")
+	}
+	t.Setenv("LANG", loc)
+	t.Setenv("LC_ALL", loc)
+	got, err := intManager(t).ReadFile(context.Background(), missingPath(t))
+	if err != nil || got != nil {
+		t.Fatalf("ReadFile(missing) under %s = (%q,%v), want (nil,nil) — the Runner must force LC_ALL=C", loc, got, err)
 	}
 }

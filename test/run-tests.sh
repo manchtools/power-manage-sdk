@@ -35,7 +35,14 @@ for i in $(seq 1 30); do
 done
 
 echo "==> Running integration tests..."
+# Run under a non-English locale (default Japanese) so locale-fragile parsing of
+# tool output is caught: any capability that matches an English error string
+# without forcing LC_ALL=C (Command.CLocale) fails here. Override with
+# PM_TEST_LOCALE=C (or zh_CN.UTF-8, etc.). The locale is generated in the image.
+TEST_LOCALE="${PM_TEST_LOCALE:-ja_JP.UTF-8}"
+echo "    (locale: ${TEST_LOCALE})"
 podman exec -w /workspace "$CONTAINER_NAME" \
-    runuser -u power-manage -- /usr/local/go/bin/go test \
+    runuser -u power-manage -- env "LANG=${TEST_LOCALE}" "LC_ALL=${TEST_LOCALE}" \
+        /usr/local/go/bin/go test \
         -v -tags=integration -count=1 -timeout=10m \
         ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/service/
