@@ -56,7 +56,13 @@ func removeStaleLock(ctx context.Context, r pmexec.Runner, path string) error {
 		return err
 	}
 	if _, err := statFile(path); err != nil {
-		return nil // file doesn't exist — nothing to remove
+		if os.IsNotExist(err) {
+			return nil // file doesn't exist — nothing to remove
+		}
+		// A permission/I/O stat failure is not proof of absence; leave the lock
+		// untouched rather than risk removing a live one, and surface it.
+		slog.Warn("failed to stat lock file; leaving it in place", "path", path, "error", err)
+		return nil
 	}
 
 	// fuser exits 0 if a process is using the file, 1 if not, and other codes

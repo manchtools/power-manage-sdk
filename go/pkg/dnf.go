@@ -3,8 +3,8 @@ package pkg
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -82,7 +82,11 @@ func (d *dnf) Install(ctx context.Context, opts InstallOptions, packages ...stri
 	}
 
 	err := d.write(ctx, args...)
-	if err != nil && opts.AllowDowngrade && opts.Version != "" {
+	// Only retry as an explicit downgrade when dnf itself rejected the install
+	// (a non-zero exit). An exec/escalation/context failure must not trigger a
+	// second escalated command.
+	var ce *pmexec.CommandError
+	if errors.As(err, &ce) && opts.AllowDowngrade && opts.Version != "" {
 		return d.write(ctx, "downgrade", "-y", pkgSpec)
 	}
 	return err
@@ -125,8 +129,11 @@ func (d *dnf) Upgrade(ctx context.Context, packages ...string) error {
 
 // ensureVersionLock installs the versionlock plugin if its subcommand is absent.
 func (d *dnf) ensureVersionLock(ctx context.Context) error {
-	res, err := runRead(ctx, d.r, "dnf", "versionlock", "--help")
-	if err == nil && res.ExitCode == 0 {
+	_, ok, err := probe(ctx, d.r, "dnf", "versionlock", "--help")
+	if err != nil {
+		return err // runner/context failure — do not escalate into a plugin install
+	}
+	if ok {
 		return nil // plugin already present
 	}
 	return d.write(ctx, "install", "-y", "python3-dnf-plugin-versionlock")
@@ -226,7 +233,10 @@ func (d *dnf) List(ctx context.Context) ([]Package, error) {
 		return nil, err
 	}
 
-	pinned, _ := d.getPinnedSet(ctx)
+	pinned, err := d.getPinnedSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var packages []Package
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -280,7 +290,10 @@ func (d *dnf) ListUpgradable(ctx context.Context) ([]PackageUpdate, error) {
 		if len(nameParts) > 1 {
 			arch = nameParts[len(nameParts)-1]
 		}
-		current, _ := d.InstalledVersion(ctx, name)
+		current, err := d.InstalledVersion(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 		updates = append(updates, PackageUpdate{
 			Name:           name,
 			Architecture:   arch,
@@ -324,12 +337,18 @@ func (d *dnf) Show(ctx context.Context, name string) (*Package, error) {
 		}
 	}
 
-	if installed, _ := d.IsInstalled(ctx, name); installed {
+	installed, err := d.IsInstalled(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if installed {
 		pkg.Status = "installed"
 	}
-	// IsPinned is tolerant of an absent versionlock plugin (never errors), so a
-	// failed check simply reports unpinned.
-	pkg.Pinned, _ = d.IsPinned(ctx, name)
+	pinned, err := d.IsPinned(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	pkg.Pinned = pinned
 	return pkg, nil
 }
 
@@ -344,11 +363,11 @@ func (d *dnf) ListVersions(ctx context.Context, name string) (*VersionInfo, erro
 	}
 
 	info := &VersionInfo{Name: name}
-	if installed, err := d.InstalledVersion(ctx, name); err != nil {
-		slog.Debug("failed to get installed version", "package", name, "error", err)
-	} else {
-		info.Installed = installed
+	installed, err := d.InstalledVersion(ctx, name)
+	if err != nil {
+		return nil, err
 	}
+	info.Installed = installed
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -420,7 +439,14 @@ func (d *dnf) HasUpdates(ctx context.Context, securityOnly bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return res.ExitCode == 100, nil
+	switch res.ExitCode {
+	case 0:
+		return false, nil
+	case 100:
+		return true, nil
+	default:
+		return false, asCommandError("dnf", res)
+	}
 }
 
 // IsPinned reports whether a package is versionlocked. Tolerant of an absent
@@ -429,11 +455,14 @@ func (d *dnf) IsPinned(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return false, err
 	}
-	res, err := runRead(ctx, d.r, "dnf", "versionlock", "list", "-q")
-	if err != nil || res.ExitCode != 0 {
-		return false, nil
+	out, ok, err := probe(ctx, d.r, "dnf", "versionlock", "list", "-q")
+	if err != nil {
+		return false, err
 	}
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	if !ok {
+		return false, nil // versionlock plugin absent → not pinned
+	}
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		if line := strings.TrimSpace(scanner.Text()); line != "" && parseNEVRAName(line) == name {
 			return true, nil
@@ -460,7 +489,10 @@ func (d *dnf) ListPinned(ctx context.Context) ([]Package, error) {
 			continue
 		}
 		name := parseNEVRAName(line)
-		version, _ := d.InstalledVersion(ctx, name)
+		version, err := d.InstalledVersion(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, Package{
 			Name:    name,
 			Version: version,
@@ -472,12 +504,15 @@ func (d *dnf) ListPinned(ctx context.Context) ([]Package, error) {
 }
 
 func (d *dnf) getPinnedSet(ctx context.Context) (map[string]bool, error) {
-	res, err := runRead(ctx, d.r, "dnf", "versionlock", "list", "-q")
-	if err != nil || res.ExitCode != 0 {
-		return nil, nil
+	out, ok, err := probe(ctx, d.r, "dnf", "versionlock", "list", "-q")
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil // versionlock plugin absent → nothing pinned
 	}
 	pinned := make(map[string]bool)
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		if line := strings.TrimSpace(scanner.Text()); line != "" {
 			pinned[parseNEVRAName(line)] = true

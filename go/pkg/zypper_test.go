@@ -301,6 +301,24 @@ func TestZypper_ListUpgradable(t *testing.T) {
 			t.Errorf("u=%+v", u)
 		}
 	})
+	t.Run("informational exit code (100) is parsed, not failed", func(t *testing.T) {
+		m, f := zypperM(t)
+		f.Push(pmexec.Result{ExitCode: 100, Stdout: "S | Repository | Name | Current Version | Available Version | Arch\n---+\nv | repo-oss | vim | 9.0-1 | 9.0-2 | x86_64\n"}, nil)
+		ups, err := m.ListUpgradable(ctx)
+		if err != nil {
+			t.Fatalf("informational exit 100 must not fail: %v", err)
+		}
+		if len(ups) != 1 || ups[0].Name != "vim" {
+			t.Fatalf("ups=%+v", ups)
+		}
+	})
+	t.Run("genuine failure exit code surfaces", func(t *testing.T) {
+		m, f := zypperM(t)
+		f.Push(pmexec.Result{ExitCode: 6, Stderr: "no repositories"}, nil)
+		if _, err := m.ListUpgradable(ctx); err == nil {
+			t.Fatal("a non-informational non-zero exit must surface as an error")
+		}
+	})
 	t.Run("exec error", func(t *testing.T) {
 		m, f := zypperM(t)
 		f.Push(pmexec.Result{}, errors.New("boom"))
@@ -368,13 +386,12 @@ func TestZypper_ListVersions(t *testing.T) {
 			t.Fatalf("info=%+v", info)
 		}
 	})
-	t.Run("installed-version failure tolerated", func(t *testing.T) {
+	t.Run("installed-version runner failure propagates", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "S | Name | Type | Version | Arch | Repository\n---\nv | vim | package | 9.0-2 | x86_64 | repo-oss\n")
 		f.Push(pmexec.Result{}, errors.New("rpm"))
-		info, err := m.ListVersions(ctx, "vim")
-		if err != nil || info.Installed != "" {
-			t.Fatalf("info=%+v err=%v", info, err)
+		if _, err := m.ListVersions(ctx, "vim"); err == nil {
+			t.Fatal("a runner failure in the installed-version lookup must propagate")
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -632,4 +649,41 @@ func TestZypper_ParseValueAndSize(t *testing.T) {
 			t.Errorf("parseZypperSize(%q)=%d want %d", in, got, want)
 		}
 	}
+}
+
+func TestZypper_EnrichmentRunnerFailuresPropagate(t *testing.T) {
+	ctx := context.Background()
+	t.Run("List: getPinnedSet runner failure", func(t *testing.T) {
+		m, f := zypperM(t)
+		ok(f, "vim\t9.0-1\tx86_64\t3000\tVi IMproved\n") // rpm -qa
+		f.Push(pmexec.Result{}, errors.New("locks"))     // getPinnedSet probe
+		if _, err := m.List(ctx); err == nil {
+			t.Fatal("a getPinnedSet runner failure must propagate")
+		}
+	})
+	t.Run("Show: IsInstalled runner failure", func(t *testing.T) {
+		m, f := zypperM(t)
+		ok(f, "Name : vim\nVersion : 9.0-2\n")     // info
+		f.Push(pmexec.Result{}, errors.New("rpm")) // IsInstalled
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("an IsInstalled runner failure must propagate")
+		}
+	})
+	t.Run("Show: IsPinned runner failure", func(t *testing.T) {
+		m, f := zypperM(t)
+		ok(f, "Name : vim\nVersion : 9.0-2\n")       // info
+		f.Push(pmexec.Result{ExitCode: 0}, nil)      // IsInstalled (installed)
+		f.Push(pmexec.Result{}, errors.New("locks")) // IsPinned probe
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("an IsPinned runner failure must propagate")
+		}
+	})
+	t.Run("ListPinned: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := zypperM(t)
+		ok(f, "# | Name |\n---+\n1 | vim | package |\n") // locks
+		f.Push(pmexec.Result{}, errors.New("rpm"))       // InstalledVersion
+		if _, err := m.ListPinned(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
+		}
+	})
 }

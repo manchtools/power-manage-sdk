@@ -174,7 +174,9 @@ func New(b Backend, runner pmexec.Runner, opts ...Option) (Manager, error) {
 	}
 	cfg := config{system: true}
 	for _, o := range opts {
-		o(&cfg)
+		if o != nil {
+			o(&cfg)
+		}
 	}
 	switch b {
 	case Apt:

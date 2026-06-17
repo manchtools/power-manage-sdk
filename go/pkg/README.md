@@ -202,4 +202,3 @@ m.Install(ctx, pkg.InstallOptions{}, "nginx")
   (e.g. `org.mozilla.firefox`) and has no version pin.
 - **Pinning setup**: dnf auto-installs `python3-dnf-plugin-versionlock` on first
   use; pacman edits `/etc/pacman.conf` (root). apt/zypper need no setup.
-```

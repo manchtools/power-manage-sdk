@@ -23,6 +23,13 @@ var _ Manager = (*zypper)(nil)
 // zypperLockRe matches a `zypper locks` table row, capturing the package name.
 var zypperLockRe = regexp.MustCompile(`^\s*\d+\s*\|\s*(\S+)`)
 
+// isZypperInfoExit reports whether code is a success or one of zypper's
+// informational exit codes (100 update-needed, 101 security, 102 reboot,
+// 103 restart) — none of which are failures.
+func isZypperInfoExit(code int) bool {
+	return code == 0 || (code >= 100 && code <= 103)
+}
+
 func (z *zypper) Backend() Backend { return Zypper }
 
 func (z *zypper) write(ctx context.Context, args ...string) error {
@@ -168,7 +175,10 @@ func (z *zypper) List(ctx context.Context) ([]Package, error) {
 		return nil, err
 	}
 
-	pinned, _ := z.getPinnedSet(ctx)
+	pinned, err := z.getPinnedSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var packages []Package
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -195,15 +205,20 @@ func (z *zypper) List(ctx context.Context) ([]Package, error) {
 	return packages, nil
 }
 
-// ListUpgradable lists packages with an available upgrade.
+// ListUpgradable lists packages with an available upgrade. zypper signals
+// "updates available" / "patches needed" with informational exit codes
+// (100–103) that are not failures, so those are accepted alongside 0.
 func (z *zypper) ListUpgradable(ctx context.Context) ([]PackageUpdate, error) {
-	out, err := readOut(ctx, z.r, "zypper", "--non-interactive", "list-updates")
+	res, err := runRead(ctx, z.r, "zypper", "--non-interactive", "list-updates")
 	if err != nil {
 		return nil, err
 	}
+	if !isZypperInfoExit(res.ExitCode) {
+		return nil, asCommandError("zypper", res)
+	}
 
 	var updates []PackageUpdate
-	scanner := bufio.NewScanner(strings.NewReader(out))
+	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
 	headerPassed := false
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -270,12 +285,18 @@ func (z *zypper) Show(ctx context.Context, name string) (*Package, error) {
 		}
 	}
 
-	if installed, _ := z.IsInstalled(ctx, name); installed {
+	installed, err := z.IsInstalled(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if installed {
 		pkg.Status = "installed"
 	}
-	// IsPinned is tolerant of a missing lock list (never errors), so a failed
-	// check simply reports unpinned.
-	pkg.Pinned, _ = z.IsPinned(ctx, name)
+	pinned, err := z.IsPinned(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	pkg.Pinned = pinned
 	return pkg, nil
 }
 
@@ -290,11 +311,11 @@ func (z *zypper) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 	}
 
 	info := &VersionInfo{Name: name}
-	if installed, err := z.InstalledVersion(ctx, name); err != nil {
-		slog.Debug("failed to get installed version", "package", name, "error", err)
-	} else {
-		info.Installed = installed
+	installed, err := z.InstalledVersion(ctx, name)
+	if err != nil {
+		return nil, err
 	}
+	info.Installed = installed
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -437,7 +458,10 @@ func (z *zypper) ListPinned(ctx context.Context) ([]Package, error) {
 		if len(m) < 2 {
 			continue
 		}
-		version, _ := z.InstalledVersion(ctx, m[1])
+		version, err := z.InstalledVersion(ctx, m[1])
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, Package{
 			Name:    m[1],
 			Version: version,
@@ -453,12 +477,15 @@ func (z *zypper) IsPinned(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return false, err
 	}
-	res, err := runRead(ctx, z.r, "zypper", "--non-interactive", "locks")
-	if err != nil || res.ExitCode != 0 {
+	out, ok, err := probe(ctx, z.r, "zypper", "--non-interactive", "locks")
+	if err != nil {
+		return false, err
+	}
+	if !ok {
 		return false, nil
 	}
 	re := regexp.MustCompile(`^\s*\d+\s*\|\s*` + regexp.QuoteMeta(name) + `\s*\|`)
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		if re.MatchString(scanner.Text()) {
 			return true, nil
@@ -468,12 +495,15 @@ func (z *zypper) IsPinned(ctx context.Context, name string) (bool, error) {
 }
 
 func (z *zypper) getPinnedSet(ctx context.Context) (map[string]bool, error) {
-	res, err := runRead(ctx, z.r, "zypper", "--non-interactive", "locks")
-	if err != nil || res.ExitCode != 0 {
+	out, ok, err := probe(ctx, z.r, "zypper", "--non-interactive", "locks")
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
 		return nil, nil
 	}
 	pinned := make(map[string]bool)
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		if m := zypperLockRe.FindStringSubmatch(scanner.Text()); len(m) >= 2 {
 			pinned[m[1]] = true

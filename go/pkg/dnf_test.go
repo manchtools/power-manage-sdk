@@ -77,6 +77,17 @@ func TestDnf_Install(t *testing.T) {
 			t.Errorf("retry argv=%q", a)
 		}
 	})
+	t.Run("downgrade NOT retried after a runner/exec failure", func(t *testing.T) {
+		m, f := dnfM(t)
+		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // install fails to even run
+		err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim")
+		if !errors.Is(err, pmexec.ErrEscalationDenied) {
+			t.Fatalf("err=%v, want the original escalation error", err)
+		}
+		if len(f.Calls()) != 1 {
+			t.Errorf("a non-exit failure must not trigger a second (downgrade) command, ran %d", len(f.Calls()))
+		}
+	})
 	t.Run("install failure without downgrade is returned", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "no package"}, nil)
@@ -256,6 +267,16 @@ func TestDnf_PinUnpin(t *testing.T) {
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "no plugin"}, nil) // install fails
 		if err := m.Pin(ctx, "vim"); err == nil {
 			t.Fatal("want plugin-install failure")
+		}
+	})
+	t.Run("probe runner failure does not trigger a plugin install", func(t *testing.T) {
+		m, f := dnfM(t)
+		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // versionlock --help can't run
+		if err := m.Pin(ctx, "vim"); !errors.Is(err, pmexec.ErrEscalationDenied) {
+			t.Fatalf("err=%v, want the probe's runner error", err)
+		}
+		if len(f.Calls()) != 1 {
+			t.Errorf("a probe runner failure must not escalate into a plugin install, ran %d", len(f.Calls()))
 		}
 	})
 	t.Run("unpin surfaces plugin install failure", func(t *testing.T) {
@@ -449,17 +470,26 @@ func TestDnf_Show(t *testing.T) {
 			t.Fatalf("p=%+v", p)
 		}
 	})
-	t.Run("available not installed, pin-check failure tolerated", func(t *testing.T) {
+	t.Run("available not installed, versionlock plugin absent tolerated", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "Version : 8.2\n")
-		f.Push(pmexec.Result{ExitCode: 1}, nil)            // not installed
-		f.Push(pmexec.Result{}, errors.New("versionlock")) // IsPinned errors -> tolerated (false)
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // rpm -q: not installed
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // versionlock list: plugin absent -> not pinned
 		p, err := m.Show(ctx, "vim")
 		if err != nil {
 			t.Fatal(err)
 		}
 		if p.Status != "available" || p.Pinned {
 			t.Fatalf("p=%+v", p)
+		}
+	})
+	t.Run("pin-check runner failure propagates", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "Version : 8.2\n")
+		f.Push(pmexec.Result{ExitCode: 0}, nil)            // installed
+		f.Push(pmexec.Result{}, errors.New("versionlock")) // IsPinned runner failure
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("a runner failure in the pin check must propagate")
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -491,13 +521,12 @@ func TestDnf_ListVersions(t *testing.T) {
 			t.Fatalf("info=%+v", info)
 		}
 	})
-	t.Run("installed-version failure tolerated", func(t *testing.T) {
+	t.Run("installed-version runner failure propagates", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "vim.x86_64 8.2-2 updates\n")
 		f.Push(pmexec.Result{}, errors.New("rpm"))
-		info, err := m.ListVersions(ctx, "vim")
-		if err != nil || info.Installed != "" {
-			t.Fatalf("info=%+v err=%v", info, err)
+		if _, err := m.ListVersions(ctx, "vim"); err == nil {
+			t.Fatal("a runner failure in the installed-version lookup must propagate")
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -608,6 +637,13 @@ func TestDnf_HasUpdates(t *testing.T) {
 		f.Push(pmexec.Result{ExitCode: 0}, nil)
 		if got, err := m.HasUpdates(ctx, false); err != nil || got {
 			t.Fatalf("got=%v err=%v", got, err)
+		}
+	})
+	t.Run("unexpected exit code surfaces as an error", func(t *testing.T) {
+		m, f := dnfM(t)
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "metadata problem"}, nil)
+		if _, err := m.HasUpdates(ctx, false); err == nil {
+			t.Fatal("a non-0/100 check-update exit must be surfaced, not reported as 'no updates'")
 		}
 	})
 	t.Run("security flag added", func(t *testing.T) {
@@ -729,4 +765,41 @@ func TestDnf_ParseSize(t *testing.T) {
 			t.Errorf("parseSize(%q) = %d, want %d", in, got, want)
 		}
 	}
+}
+
+func TestDnf_EnrichmentRunnerFailuresPropagate(t *testing.T) {
+	ctx := context.Background()
+	t.Run("List: getPinnedSet runner failure", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "vim\t8.2-1\tx86_64\t3000\tVi IMproved\n")   // rpm -qa
+		f.Push(pmexec.Result{}, errors.New("versionlock")) // getPinnedSet probe
+		if _, err := m.List(ctx); err == nil {
+			t.Fatal("a getPinnedSet runner failure must propagate")
+		}
+	})
+	t.Run("ListUpgradable: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := dnfM(t)
+		f.Push(pmexec.Result{ExitCode: 100, Stdout: "vim.x86_64 8.2-2 updates\n"}, nil) // check-update
+		f.Push(pmexec.Result{}, errors.New("rpm"))                                      // InstalledVersion
+		if _, err := m.ListUpgradable(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
+		}
+	})
+	t.Run("Show: IsInstalled runner failure", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "Version : 8.2\n")                   // dnf info
+		f.Push(pmexec.Result{}, errors.New("rpm")) // IsInstalled
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("an IsInstalled runner failure must propagate")
+		}
+	})
+	t.Run("ListPinned: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := dnfM(t)
+		f.Push(pmexec.Result{ExitCode: 0}, nil)    // ensureVersionLock help
+		ok(f, "vim-8.2-1.x86_64\n")                // versionlock list
+		f.Push(pmexec.Result{}, errors.New("rpm")) // InstalledVersion
+		if _, err := m.ListPinned(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
+		}
+	})
 }

@@ -367,7 +367,9 @@ func TestApt_Repair(t *testing.T) {
 // --- reads -----------------------------------------------------------------
 
 func TestApt_Search(t *testing.T) {
-	t.Run("apt path parses 'name - desc'", func(t *testing.T) {
+	t.Run("always uses apt-cache search (parsable single-line format)", func(t *testing.T) {
+		// Even when apt is present, Search must use `apt-cache search`: `apt search`
+		// emits a multi-line presentation format that would not parse on " - ".
 		m, f := aptM(t)
 		ok(f, "vim - Vi IMproved\nneovim - heavily refactored vim fork\nnot-a-result\n")
 		res, err := m.Search(context.Background(), "vim")
@@ -377,19 +379,8 @@ func TestApt_Search(t *testing.T) {
 		if len(res) != 2 || res[0].Name != "vim" || res[0].Description != "Vi IMproved" {
 			t.Fatalf("results = %+v", res)
 		}
-		if a := argv(f.Calls()[0]); a != "apt search --names-only vim" {
-			t.Errorf("argv = %q", a)
-		}
-	})
-	t.Run("apt-cache path when apt absent", func(t *testing.T) {
-		stubLookPath(t) // no apt
-		m, f := mustNew(t, Apt)
-		ok(f, "vim - Vi IMproved\n")
-		if _, err := m.Search(context.Background(), "vim"); err != nil {
-			t.Fatal(err)
-		}
 		if a := argv(f.Calls()[0]); a != "apt-cache search vim" {
-			t.Errorf("argv = %q, want apt-cache", a)
+			t.Errorf("argv = %q, want apt-cache search", a)
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -420,16 +411,12 @@ func TestApt_List(t *testing.T) {
 			t.Errorf("package = %+v", p)
 		}
 	})
-	t.Run("pin-set lookup failure leaves packages unpinned", func(t *testing.T) {
+	t.Run("pin-set lookup runner failure propagates", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "vim\t2:8.2\tamd64\tinstall ok installed\t3000\tVi IMproved\n")
-		f.Push(pmexec.Result{}, errors.New("apt-mark missing")) // getPinnedSet fails
-		pkgs, err := m.List(context.Background())
-		if err != nil {
-			t.Fatalf("List must tolerate a pin-set lookup failure, got %v", err)
-		}
-		if len(pkgs) != 1 || pkgs[0].Pinned {
-			t.Errorf("packages = %+v, want one unpinned package", pkgs)
+		f.Push(pmexec.Result{}, errors.New("apt-mark missing")) // getPinnedSet runner failure
+		if _, err := m.List(context.Background()); err == nil {
+			t.Fatal("a runner failure in the pin-set lookup must propagate, not be swallowed")
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -496,17 +483,13 @@ func TestApt_Show(t *testing.T) {
 			t.Errorf("pkg = %+v", p)
 		}
 	})
-	t.Run("pin-check failure is tolerated", func(t *testing.T) {
+	t.Run("pin-check runner failure propagates", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "Package: vim\nVersion: 2:8.2\n")
 		f.Push(pmexec.Result{ExitCode: 0}, nil)             // IsInstalled -> installed
-		f.Push(pmexec.Result{}, errors.New("apt-mark err")) // IsPinned errors
-		p, err := m.Show(ctx, "vim")
-		if err != nil {
-			t.Fatalf("Show must tolerate a pin-check failure, got %v", err)
-		}
-		if p.Pinned {
-			t.Error("a failed pin check must leave Pinned false")
+		f.Push(pmexec.Result{}, errors.New("apt-mark err")) // IsPinned runner failure
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("a runner failure in the pin check must propagate")
 		}
 	})
 	t.Run("exec error on show", func(t *testing.T) {
@@ -541,16 +524,12 @@ func TestApt_ListVersions(t *testing.T) {
 			t.Fatalf("info = %+v", info)
 		}
 	})
-	t.Run("installed-version lookup failure is tolerated", func(t *testing.T) {
+	t.Run("installed-version runner failure propagates", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "  vim | 2:8.2 | http://archive jammy/main amd64\n")
-		f.Push(pmexec.Result{}, errors.New("dpkg-query err")) // InstalledVersion fails
-		info, err := m.ListVersions(ctx, "vim")
-		if err != nil {
-			t.Fatalf("ListVersions must tolerate an installed-version lookup failure, got %v", err)
-		}
-		if info.Installed != "" || len(info.Versions) != 1 {
-			t.Errorf("info = %+v", info)
+		f.Push(pmexec.Result{}, errors.New("dpkg-query err")) // InstalledVersion runner failure
+		if _, err := m.ListVersions(ctx, "vim"); err == nil {
+			t.Fatal("a runner failure in the installed-version lookup must propagate")
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -609,7 +588,15 @@ func TestApt_InstalledVersion(t *testing.T) {
 			t.Fatalf("v=%q err=%v", v, err)
 		}
 	})
-	t.Run("exec error", func(t *testing.T) {
+	t.Run("absent package returns empty, not error", func(t *testing.T) {
+		// dpkg-query exits non-zero for an unknown package — a benign miss.
+		m, f := aptM(t)
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "no packages found matching ghost"}, nil)
+		if v, err := m.InstalledVersion(ctx, "ghost"); err != nil || v != "" {
+			t.Fatalf("v=%q err=%v, want \"\",nil for an absent package", v, err)
+		}
+	})
+	t.Run("runner error propagates", func(t *testing.T) {
 		m, f := aptM(t)
 		f.Push(pmexec.Result{}, errors.New("boom"))
 		if _, err := m.InstalledVersion(ctx, "vim"); err == nil {
@@ -716,6 +703,28 @@ func TestApt_ListPinned(t *testing.T) {
 		f.Push(pmexec.Result{}, errors.New("boom"))
 		if _, err := m.ListPinned(context.Background()); err == nil {
 			t.Fatal("want error")
+		}
+	})
+}
+
+// Each enrichment/secondary lookup must propagate a runner failure rather than
+// swallow it (fail-closed; CodeRabbit review).
+func TestApt_EnrichmentRunnerFailuresPropagate(t *testing.T) {
+	ctx := context.Background()
+	t.Run("Show: IsInstalled runner failure", func(t *testing.T) {
+		m, f := aptM(t)
+		ok(f, "Package: vim\nVersion: 2:8.2\n")               // show
+		f.Push(pmexec.Result{}, errors.New("dpkg -s failed")) // IsInstalled
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("an IsInstalled runner failure must propagate")
+		}
+	})
+	t.Run("ListPinned: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := aptM(t)
+		ok(f, "vim\n")                                           // apt-mark showhold
+		f.Push(pmexec.Result{}, errors.New("dpkg-query failed")) // InstalledVersion
+		if _, err := m.ListPinned(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
 		}
 	})
 }

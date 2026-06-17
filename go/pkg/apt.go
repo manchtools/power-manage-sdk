@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -68,7 +67,7 @@ func (a *apt) write(ctx context.Context, cmd string, args ...string) error {
 
 // Version returns the apt version string.
 func (a *apt) Version(ctx context.Context) (string, error) {
-	out, err := readOut(ctx, a.r, "apt", "--version")
+	out, err := readOut(ctx, a.r, a.aptCommand(), "--version")
 	if err != nil {
 		return "", err
 	}
@@ -201,15 +200,12 @@ func (a *apt) Repair(ctx context.Context) error {
 	return nil
 }
 
-// Search searches package names.
+// Search searches package names. It always uses `apt-cache search`, which emits
+// the stable single-line "name - description" format the parser expects; `apt
+// search` produces a multi-line, presentation-oriented format that would not
+// parse, and `--names-only` would drop the description (and the separator).
 func (a *apt) Search(ctx context.Context, query string) ([]SearchResult, error) {
-	var out string
-	var err error
-	if a.hasApt() {
-		out, err = readOut(ctx, a.r, "apt", "search", "--names-only", query)
-	} else {
-		out, err = readOut(ctx, a.r, "apt-cache", "search", query)
-	}
+	out, err := readOut(ctx, a.r, "apt-cache", "search", query)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +233,10 @@ func (a *apt) List(ctx context.Context) ([]Package, error) {
 		return nil, err
 	}
 
-	pinned, _ := a.getPinnedSet(ctx)
+	pinned, err := a.getPinnedSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var packages []Package
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -269,9 +268,10 @@ func (a *apt) List(ctx context.Context) ([]Package, error) {
 
 var aptUpgradableRe = regexp.MustCompile(`^([^/]+)/(\S+)\s+(\S+)\s+(\S+)\s+\[upgradable from: ([^\]]+)\]`)
 
-// ListUpgradable lists packages with an available upgrade.
+// ListUpgradable lists packages with an available upgrade. `list --upgradable`
+// is an apt-CLI subcommand, so it uses the resolved apt command.
 func (a *apt) ListUpgradable(ctx context.Context) ([]PackageUpdate, error) {
-	out, err := readOut(ctx, a.r, "apt", "list", "--upgradable")
+	out, err := readOut(ctx, a.r, a.aptCommand(), "list", "--upgradable")
 	if err != nil {
 		return nil, err
 	}
@@ -327,16 +327,20 @@ func (a *apt) Show(ctx context.Context, name string) (*Package, error) {
 		}
 	}
 
-	if installed, _ := a.IsInstalled(ctx, name); installed {
+	installed, err := a.IsInstalled(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if installed {
 		pkg.Status = "installed"
 	} else {
 		pkg.Status = "available"
 	}
-	if pinned, err := a.IsPinned(ctx, name); err != nil {
-		slog.Debug("failed to check pin status", "package", name, "error", err)
-	} else {
-		pkg.Pinned = pinned
+	pinned, err := a.IsPinned(ctx, name)
+	if err != nil {
+		return nil, err
 	}
+	pkg.Pinned = pinned
 	return pkg, nil
 }
 
@@ -351,11 +355,11 @@ func (a *apt) ListVersions(ctx context.Context, name string) (*VersionInfo, erro
 	}
 
 	info := &VersionInfo{Name: name}
-	if installed, err := a.InstalledVersion(ctx, name); err != nil {
-		slog.Debug("failed to get installed version", "package", name, "error", err)
-	} else {
-		info.Installed = installed
+	installed, err := a.InstalledVersion(ctx, name)
+	if err != nil {
+		return nil, err
 	}
+	info.Installed = installed
 
 	seen := make(map[string]bool)
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -389,14 +393,18 @@ func (a *apt) IsInstalled(ctx context.Context, name string) (bool, error) {
 	return res.ExitCode == 0, nil
 }
 
-// InstalledVersion returns the installed version of a package, or "" if absent.
+// InstalledVersion returns the installed version of a package, or "" if absent
+// (dpkg-query exits non-zero for an unknown package — a benign miss, not an error).
 func (a *apt) InstalledVersion(ctx context.Context, name string) (string, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return "", err
 	}
-	out, err := readOut(ctx, a.r, "dpkg-query", "-W", "-f=${Version}", name)
+	out, ok, err := probe(ctx, a.r, "dpkg-query", "-W", "-f=${Version}", name)
 	if err != nil {
 		return "", err
+	}
+	if !ok {
+		return "", nil
 	}
 	return strings.TrimSpace(out), nil
 }
@@ -453,7 +461,10 @@ func (a *apt) ListPinned(ctx context.Context) ([]Package, error) {
 		if name == "" {
 			continue
 		}
-		version, _ := a.InstalledVersion(ctx, name)
+		version, err := a.InstalledVersion(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, Package{
 			Name:    name,
 			Version: version,

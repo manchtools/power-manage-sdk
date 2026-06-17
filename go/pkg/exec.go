@@ -20,6 +20,20 @@ func runRead(ctx context.Context, r pmexec.Runner, name string, args ...string) 
 	return r.Run(ctx, pmexec.Command{Name: name, Args: args, CLocale: true})
 }
 
+// probe runs an unprivileged read whose non-zero exit is a benign domain signal
+// — "not installed" / "not pinned" / "not in repo" / "no such subcommand" —
+// rather than a failure, while a runner error (binary missing, blocked env,
+// context cancellation) propagates. It returns (stdout, ok, err): ok is true
+// only on a clean (exit 0) run. This is the seam that keeps tolerant lookups
+// from masking cancellations and executor failures as a benign miss.
+func probe(ctx context.Context, r pmexec.Runner, name string, args ...string) (string, bool, error) {
+	res, err := runRead(ctx, r, name, args...)
+	if err != nil {
+		return "", false, err
+	}
+	return res.Stdout, res.ExitCode == 0, nil
+}
+
 // runPriv executes a privileged write-side command (Install / Remove / Update /
 // …) through the Runner. escalate is true for every native-manager mutation and
 // for system-scope flatpak; it is false for user-scope flatpak. env carries any

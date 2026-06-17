@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 
@@ -158,7 +157,10 @@ func (f *flatpak) List(ctx context.Context) ([]Package, error) {
 		return nil, err
 	}
 
-	pinned, _ := f.getPinnedSet(ctx)
+	pinned, err := f.getPinnedSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var packages []Package
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -208,7 +210,10 @@ func (f *flatpak) ListUpgradable(ctx context.Context) ([]PackageUpdate, error) {
 		if len(fields) > 2 {
 			repo = fields[2]
 		}
-		current, _ := f.InstalledVersion(ctx, fields[0])
+		current, err := f.InstalledVersion(ctx, fields[0])
+		if err != nil {
+			return nil, err
+		}
 		updates = append(updates, PackageUpdate{
 			Name:           fields[0],
 			NewVersion:     fields[1],
@@ -225,16 +230,18 @@ func (f *flatpak) Show(ctx context.Context, name string) (*Package, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return nil, err
 	}
-	res, err := runRead(ctx, f.r, "flatpak", "info", name, f.scope())
+	// A non-zero `flatpak info` exit means the bundle is not installed locally —
+	// fall back to the remote. A runner/context failure propagates.
+	out, ok, err := probe(ctx, f.r, "flatpak", "info", name, f.scope())
 	if err != nil {
 		return nil, err
 	}
-	if res.ExitCode != 0 {
+	if !ok {
 		return f.showFromRemote(ctx, name)
 	}
 
 	pkg := &Package{Name: name, Status: "installed"}
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch {
@@ -251,15 +258,22 @@ func (f *flatpak) Show(ctx context.Context, name string) (*Package, error) {
 		}
 	}
 
-	// IsPinned is tolerant of an unreadable mask list (never errors), so a failed
-	// check simply reports unpinned.
-	pkg.Pinned, _ = f.IsPinned(ctx, name)
+	pinned, err := f.IsPinned(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	pkg.Pinned = pinned
 	return pkg, nil
 }
 
 func (f *flatpak) showFromRemote(ctx context.Context, name string) (*Package, error) {
-	out, err := readOut(ctx, f.r, "flatpak", "remote-info", "flathub", name)
+	// A runner/context failure propagates; a non-zero exit means the bundle is
+	// not offered by the remote.
+	out, ok, err := probe(ctx, f.r, "flatpak", "remote-info", "flathub", name)
 	if err != nil {
+		return nil, err
+	}
+	if !ok {
 		return nil, fmt.Errorf("package not found: %s", name)
 	}
 
@@ -287,14 +301,17 @@ func (f *flatpak) ListVersions(ctx context.Context, name string) (*VersionInfo, 
 		return nil, err
 	}
 	info := &VersionInfo{Name: name}
-	if installed, err := f.InstalledVersion(ctx, name); err != nil {
-		slog.Debug("failed to get installed version", "package", name, "error", err)
-	} else {
-		info.Installed = installed
-	}
-
-	out, err := readOut(ctx, f.r, "flatpak", "remote-info", "flathub", name)
+	installed, err := f.InstalledVersion(ctx, name)
 	if err != nil {
+		return nil, err
+	}
+	info.Installed = installed
+
+	out, ok, err := probe(ctx, f.r, "flatpak", "remote-info", "flathub", name)
+	if err != nil {
+		return nil, err // runner/context failure
+	}
+	if !ok {
 		return info, nil // not available on flathub
 	}
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -400,7 +417,10 @@ func (f *flatpak) ListPinned(ctx context.Context) ([]Package, error) {
 		if name == "" {
 			continue
 		}
-		version, _ := f.InstalledVersion(ctx, name)
+		version, err := f.InstalledVersion(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, Package{
 			Name:    name,
 			Version: version,
@@ -416,11 +436,14 @@ func (f *flatpak) IsPinned(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return false, err
 	}
-	res, err := runRead(ctx, f.r, "flatpak", "mask", f.scope())
-	if err != nil || res.ExitCode != 0 {
+	out, ok, err := probe(ctx, f.r, "flatpak", "mask", f.scope())
+	if err != nil {
+		return false, err
+	}
+	if !ok {
 		return false, nil
 	}
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		if strings.TrimSpace(scanner.Text()) == name {
 			return true, nil
@@ -430,12 +453,15 @@ func (f *flatpak) IsPinned(ctx context.Context, name string) (bool, error) {
 }
 
 func (f *flatpak) getPinnedSet(ctx context.Context) (map[string]bool, error) {
-	res, err := runRead(ctx, f.r, "flatpak", "mask", f.scope())
-	if err != nil || res.ExitCode != 0 {
+	out, ok, err := probe(ctx, f.r, "flatpak", "mask", f.scope())
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
 		return nil, nil
 	}
 	pinned := make(map[string]bool)
-	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
+	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		if name := strings.TrimSpace(scanner.Text()); name != "" {
 			pinned[name] = true

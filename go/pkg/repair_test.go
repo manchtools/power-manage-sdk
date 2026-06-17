@@ -105,6 +105,21 @@ func TestRemoveStaleLock_RmExecErrorTolerated(t *testing.T) {
 	}
 }
 
+// A stat failure that is NOT "file does not exist" (e.g. permission denied) is
+// not proof of absence: leave the lock untouched and run nothing.
+func TestRemoveStaleLock_StatErrorLeavesLock(t *testing.T) {
+	orig := statFile
+	statFile = func(string) (fs.FileInfo, error) { return nil, fs.ErrPermission }
+	t.Cleanup(func() { statFile = orig })
+	f := newFake()
+	if err := removeStaleLock(context.Background(), f, "/lock"); err != nil {
+		t.Fatalf("a non-not-exist stat error is best-effort, got %v", err)
+	}
+	if n := len(f.Calls()); n != 0 {
+		t.Errorf("a stat error must leave the lock untouched (no probe/rm), ran %d", n)
+	}
+}
+
 func TestRemoveStaleLock_CtxCancelledAtEntry(t *testing.T) {
 	stubStatFile(t, nil, "/lock")
 	ctx, cancel := context.WithCancel(context.Background())

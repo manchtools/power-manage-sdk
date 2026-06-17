@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -70,12 +69,12 @@ func (p *pacman) Install(ctx context.Context, opts InstallOptions, packages ...s
 	if opts.Version == "" {
 		return p.write(ctx, append([]string{"-S", "--noconfirm", "--needed"}, packages...)...)
 	}
-	args := []string{"-S", "--noconfirm"}
-	if opts.AllowDowngrade {
-		args = append(args, "--overwrite", "*")
-	}
-	args = append(args, fmt.Sprintf("%s=%s", packages[0], opts.Version))
-	return p.write(ctx, args...)
+	// A pinned `name=version` install also performs a downgrade when the target
+	// version is lower and still available in a sync repo, so AllowDowngrade
+	// needs no extra flag. We deliberately do NOT pass `--overwrite '*'`: it
+	// force-overwrites every conflicting file on disk (data-loss risk) and is not
+	// a correct downgrade mechanism.
+	return p.write(ctx, "-S", "--noconfirm", fmt.Sprintf("%s=%s", packages[0], opts.Version))
 }
 
 // Remove removes packages; opts.Purge uses -Rns (with deps + config files).
@@ -194,7 +193,10 @@ func (p *pacman) List(ctx context.Context) ([]Package, error) {
 		return nil, err
 	}
 
-	pinned, _ := p.getPinnedSet(ctx)
+	pinned, err := p.getPinnedSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var packages []Package
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -238,7 +240,10 @@ func (p *pacman) ListUpgradable(ctx context.Context) ([]PackageUpdate, error) {
 				NewVersion:     fields[3],
 			})
 		case len(fields) >= 2: // name new
-			current, _ := p.InstalledVersion(ctx, fields[0])
+			current, err := p.InstalledVersion(ctx, fields[0])
+			if err != nil {
+				return nil, err
+			}
 			updates = append(updates, PackageUpdate{
 				Name:           fields[0],
 				CurrentVersion: current,
@@ -254,18 +259,20 @@ func (p *pacman) Show(ctx context.Context, name string) (*Package, error) {
 	if err := ValidatePackageName(name); err != nil {
 		return nil, err
 	}
-	var out string
-	status := "installed"
-	res, err := runRead(ctx, p.r, "pacman", "-Qi", name)
+	// -Qi reports an installed package; a non-zero exit means "not installed"
+	// (try the sync DB), while a runner/context failure propagates.
+	out, ok, err := probe(ctx, p.r, "pacman", "-Qi", name)
 	if err != nil {
 		return nil, err
 	}
-	if res.ExitCode == 0 {
-		out = res.Stdout
-	} else {
-		out, err = readOut(ctx, p.r, "pacman", "-Si", name)
+	status := "installed"
+	if !ok {
+		out, ok, err = probe(ctx, p.r, "pacman", "-Si", name)
 		if err != nil {
 			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("package not found: %s", name)
 		}
 		status = "available"
 	}
@@ -288,11 +295,11 @@ func (p *pacman) Show(ctx context.Context, name string) (*Package, error) {
 		}
 	}
 
-	if pinned, err := p.IsPinned(ctx, name); err != nil {
-		slog.Debug("failed to check pin status", "package", name, "error", err)
-	} else {
-		pkg.Pinned = pinned
+	pinned, err := p.IsPinned(ctx, name)
+	if err != nil {
+		return nil, err
 	}
+	pkg.Pinned = pinned
 	return pkg, nil
 }
 
@@ -302,33 +309,35 @@ func (p *pacman) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 		return nil, err
 	}
 	info := &VersionInfo{Name: name}
-	if installed, err := p.InstalledVersion(ctx, name); err != nil {
-		slog.Debug("failed to get installed version", "package", name, "error", err)
-	} else {
-		info.Installed = installed
-	}
-
-	out, err := readOut(ctx, p.r, "pacman", "-Si", name)
+	installed, err := p.InstalledVersion(ctx, name)
 	if err != nil {
+		return nil, err
+	}
+	info.Installed = installed
+
+	out, ok, err := probe(ctx, p.r, "pacman", "-Si", name)
+	if err != nil {
+		return nil, err // runner/context failure
+	}
+	if !ok {
 		return info, nil // not in any sync repo
 	}
 
+	// Parse Version and Repository order-independently (do not assume Repository
+	// follows Version in the -Si output).
+	var version, repo string
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "Version") {
-			continue
+		switch {
+		case strings.HasPrefix(line, "Version"):
+			version = parsePacmanValue(line)
+		case strings.HasPrefix(line, "Repository"):
+			repo = parsePacmanValue(line)
 		}
-		version := parsePacmanValue(line)
-		repo := ""
-		for scanner.Scan() {
-			if l := scanner.Text(); strings.HasPrefix(l, "Repository") {
-				repo = parsePacmanValue(l)
-				break
-			}
-		}
+	}
+	if version != "" {
 		info.Versions = append(info.Versions, AvailableVersion{Version: version, Repository: repo})
-		break
 	}
 	return info, nil
 }
@@ -449,7 +458,10 @@ func (p *pacman) ListPinned(ctx context.Context) ([]Package, error) {
 	}
 	var packages []Package
 	for _, name := range getIgnoredPackages(conf) {
-		version, _ := p.InstalledVersion(ctx, name)
+		version, err := p.InstalledVersion(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 		packages = append(packages, Package{
 			Name:    name,
 			Version: version,

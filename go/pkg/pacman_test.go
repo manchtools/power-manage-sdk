@@ -69,14 +69,18 @@ func TestPacman_Install(t *testing.T) {
 			t.Errorf("argv=%q", a)
 		}
 	})
-	t.Run("allow downgrade adds --overwrite", func(t *testing.T) {
+	t.Run("allow downgrade does not force-overwrite", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
 		if err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
-		if a := argv(f.Calls()[0]); !strings.Contains(a, "--overwrite *") {
-			t.Errorf("argv=%q want --overwrite *", a)
+		a := argv(f.Calls()[0])
+		if strings.Contains(a, "--overwrite") {
+			t.Errorf("must not pass the data-loss-prone --overwrite: %q", a)
+		}
+		if !strings.Contains(a, "vim=1.0") {
+			t.Errorf("argv=%q want version-pinned install", a)
 		}
 	})
 	t.Run("empty no-op", func(t *testing.T) {
@@ -331,13 +335,12 @@ func TestPacman_List(t *testing.T) {
 			t.Errorf("linux should be pinned via IgnorePkg: %+v", pkgs)
 		}
 	})
-	t.Run("pin-set failure tolerated", func(t *testing.T) {
+	t.Run("pin-set lookup failure propagates", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "vim 9.0-1\n")
-		f.Push(pmexec.Result{}, errors.New("cat failed")) // getPinnedSet errors
-		pkgs, err := m.List(context.Background())
-		if err != nil || len(pkgs) != 1 || pkgs[0].Pinned {
-			t.Fatalf("pkgs=%+v err=%v", pkgs, err)
+		f.Push(pmexec.Result{}, errors.New("cat failed")) // reading pacman.conf fails
+		if _, err := m.List(context.Background()); err == nil {
+			t.Fatal("an unreadable pacman.conf must propagate, not be swallowed")
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
@@ -420,16 +423,12 @@ func TestPacman_Show(t *testing.T) {
 			t.Fatalf("p=%+v", p)
 		}
 	})
-	t.Run("pin-check failure logged, not fatal", func(t *testing.T) {
+	t.Run("pin-check failure propagates", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{ExitCode: 0, Stdout: installedInfo}, nil) // -Qi
 		f.Push(pmexec.Result{}, errors.New("cat failed"))              // IsPinned -> readConf error
-		p, err := m.Show(ctx, "vim")
-		if err != nil {
-			t.Fatalf("Show must tolerate a pin-check failure, got %v", err)
-		}
-		if p.Pinned {
-			t.Error("failed pin-check must leave Pinned false")
+		if _, err := m.Show(ctx, "vim"); err == nil {
+			t.Fatal("a pin-check failure must propagate")
 		}
 	})
 	t.Run("-Qi exec error", func(t *testing.T) {
@@ -439,12 +438,20 @@ func TestPacman_Show(t *testing.T) {
 			t.Fatal("want error")
 		}
 	})
-	t.Run("-Si error when not installed", func(t *testing.T) {
+	t.Run("not installed and not in any repo -> package not found", func(t *testing.T) {
 		m, f := pacmanM(t)
-		f.Push(pmexec.Result{ExitCode: 1}, nil)                // -Qi not installed
-		f.Push(pmexec.Result{}, errors.New("no such package")) // -Si fails
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // -Qi: not installed
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // -Si: not in any sync repo
+		if _, err := m.Show(ctx, "ghost"); err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Fatalf("err=%v, want a 'package not found' error", err)
+		}
+	})
+	t.Run("-Si runner error propagates", func(t *testing.T) {
+		m, f := pacmanM(t)
+		f.Push(pmexec.Result{ExitCode: 1}, nil)           // -Qi not installed
+		f.Push(pmexec.Result{}, errors.New("db corrupt")) // -Si runner failure
 		if _, err := m.Show(ctx, "ghost"); err == nil {
-			t.Fatal("want error")
+			t.Fatal("a -Si runner failure must propagate")
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
@@ -469,22 +476,28 @@ func TestPacman_ListVersions(t *testing.T) {
 			t.Fatalf("info=%+v", info)
 		}
 	})
-	t.Run("installed-version failure tolerated", func(t *testing.T) {
+	t.Run("installed-version runner failure propagates", func(t *testing.T) {
 		m, f := pacmanM(t)
-		f.Push(pmexec.Result{}, errors.New("pacman -Q failed")) // InstalledVersion errors
-		ok(f, "Name : vim\nVersion : 9.0-2\n")
-		info, err := m.ListVersions(ctx, "vim")
-		if err != nil || info.Installed != "" {
-			t.Fatalf("info=%+v err=%v", info, err)
+		f.Push(pmexec.Result{}, errors.New("pacman -Q failed")) // InstalledVersion runner failure
+		if _, err := m.ListVersions(ctx, "vim"); err == nil {
+			t.Fatal("a runner failure in the installed-version lookup must propagate")
 		}
 	})
-	t.Run("-Si missing returns info without versions", func(t *testing.T) {
+	t.Run("not in any repo returns info without versions", func(t *testing.T) {
 		m, f := pacmanM(t)
-		ok(f, "vim 9.0-1\n")                      // InstalledVersion
-		f.Push(pmexec.Result{}, errors.New("no")) // -Si fails
+		ok(f, "vim 9.0-1\n")                    // InstalledVersion
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // -Si: not in any sync repo (benign)
 		info, err := m.ListVersions(ctx, "vim")
 		if err != nil || len(info.Versions) != 0 {
 			t.Fatalf("info=%+v err=%v", info, err)
+		}
+	})
+	t.Run("-Si runner failure propagates", func(t *testing.T) {
+		m, f := pacmanM(t)
+		ok(f, "vim 9.0-1\n")                      // InstalledVersion
+		f.Push(pmexec.Result{}, errors.New("db")) // -Si runner failure
+		if _, err := m.ListVersions(ctx, "vim"); err == nil {
+			t.Fatal("a -Si runner failure must propagate")
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
@@ -874,4 +887,24 @@ func readAll(t *testing.T, c pmexec.Command) string {
 		}
 	}
 	return b.String()
+}
+
+func TestPacman_EnrichmentRunnerFailuresPropagate(t *testing.T) {
+	ctx := context.Background()
+	t.Run("ListUpgradable: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := pacmanM(t)
+		ok(f, "git 2.39-1\n")                     // -Qu (simple format triggers InstalledVersion)
+		f.Push(pmexec.Result{}, errors.New("-Q")) // InstalledVersion
+		if _, err := m.ListUpgradable(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
+		}
+	})
+	t.Run("ListPinned: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := pacmanM(t)
+		ok(f, "[options]\nIgnorePkg = linux\n")   // readConf
+		f.Push(pmexec.Result{}, errors.New("-Q")) // InstalledVersion
+		if _, err := m.ListPinned(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
+		}
+	})
 }

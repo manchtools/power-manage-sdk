@@ -357,12 +357,20 @@ func TestFlatpak_Show(t *testing.T) {
 			t.Fatalf("p=%+v", p)
 		}
 	})
-	t.Run("not installed and not on remote", func(t *testing.T) {
+	t.Run("not installed and not on remote -> package not found", func(t *testing.T) {
+		m, f := flatpakM(t)
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // info: not installed
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // remote-info: not offered by flathub
+		if _, err := m.Show(ctx, "org.ghost.App"); err == nil || !strings.Contains(err.Error(), "package not found") {
+			t.Fatalf("err=%v, want 'package not found'", err)
+		}
+	})
+	t.Run("remote-info runner error propagates", func(t *testing.T) {
 		m, f := flatpakM(t)
 		f.Push(pmexec.Result{ExitCode: 1}, nil)          // info: not installed
-		f.Push(pmexec.Result{}, errors.New("not found")) // remote-info fails
-		if _, err := m.Show(ctx, "org.ghost.App"); err == nil || !strings.Contains(err.Error(), "package not found") {
-			t.Fatalf("err=%v", err)
+		f.Push(pmexec.Result{}, errors.New("transport")) // remote-info runner failure
+		if _, err := m.Show(ctx, "org.ghost.App"); err == nil {
+			t.Fatal("a remote-info runner failure must propagate, not become 'package not found'")
 		}
 	})
 	t.Run("info exec error", func(t *testing.T) {
@@ -394,22 +402,28 @@ func TestFlatpak_ListVersions(t *testing.T) {
 			t.Fatalf("info=%+v", info)
 		}
 	})
-	t.Run("installed-version failure tolerated", func(t *testing.T) {
+	t.Run("installed-version runner failure propagates", func(t *testing.T) {
 		m, f := flatpakM(t)
-		f.Push(pmexec.Result{}, errors.New("flatpak info err")) // InstalledVersion errors
-		ok(f, "Version: 9.2\n")
-		info, err := m.ListVersions(ctx, "org.vim.Vim")
-		if err != nil || info.Installed != "" {
-			t.Fatalf("info=%+v err=%v", info, err)
+		f.Push(pmexec.Result{}, errors.New("flatpak info err")) // InstalledVersion runner failure
+		if _, err := m.ListVersions(ctx, "org.vim.Vim"); err == nil {
+			t.Fatal("a runner failure in the installed-version lookup must propagate")
 		}
 	})
-	t.Run("remote-info missing returns info without versions", func(t *testing.T) {
+	t.Run("not on remote returns info without versions", func(t *testing.T) {
 		m, f := flatpakM(t)
-		ok(f, "9.0\n")                            // InstalledVersion
-		f.Push(pmexec.Result{}, errors.New("no")) // remote-info fails
+		ok(f, "9.0\n")                          // InstalledVersion
+		f.Push(pmexec.Result{ExitCode: 1}, nil) // remote-info: not offered by flathub (benign)
 		info, err := m.ListVersions(ctx, "org.vim.Vim")
 		if err != nil || len(info.Versions) != 0 {
 			t.Fatalf("info=%+v err=%v", info, err)
+		}
+	})
+	t.Run("remote-info runner failure propagates", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "9.0\n")                                   // InstalledVersion
+		f.Push(pmexec.Result{}, errors.New("transport")) // remote-info runner failure
+		if _, err := m.ListVersions(ctx, "org.vim.Vim"); err == nil {
+			t.Fatal("a remote-info runner failure must propagate")
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
@@ -724,6 +738,42 @@ func TestFlatpak_ParseHelpers(t *testing.T) {
 			if got := parseFlatpakSize(in); got != want {
 				t.Errorf("parseFlatpakSize(%q)=%d want %d", in, got, want)
 			}
+		}
+	})
+}
+
+func TestFlatpak_EnrichmentRunnerFailuresPropagate(t *testing.T) {
+	ctx := context.Background()
+	t.Run("List: getPinnedSet runner failure", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "org.vim.Vim\t9.0\tx86_64\t3.0 MB\tVi IMproved\tflathub\n") // list
+		f.Push(pmexec.Result{}, errors.New("mask"))                       // getPinnedSet probe
+		if _, err := m.List(ctx); err == nil {
+			t.Fatal("a getPinnedSet runner failure must propagate")
+		}
+	})
+	t.Run("ListUpgradable: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "org.vim.Vim\t9.1\tflathub\n")        // remote-ls
+		f.Push(pmexec.Result{}, errors.New("info")) // InstalledVersion
+		if _, err := m.ListUpgradable(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
+		}
+	})
+	t.Run("Show: IsPinned runner failure", func(t *testing.T) {
+		m, f := flatpakM(t)
+		f.Push(pmexec.Result{ExitCode: 0, Stdout: "Version: 9.0\n"}, nil) // info (installed)
+		f.Push(pmexec.Result{}, errors.New("mask"))                       // IsPinned probe
+		if _, err := m.Show(ctx, "org.vim.Vim"); err == nil {
+			t.Fatal("an IsPinned runner failure must propagate")
+		}
+	})
+	t.Run("ListPinned: InstalledVersion runner failure", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "org.vim.Vim\n")                      // mask
+		f.Push(pmexec.Result{}, errors.New("info")) // InstalledVersion
+		if _, err := m.ListPinned(ctx); err == nil {
+			t.Fatal("an InstalledVersion runner failure must propagate")
 		}
 	})
 }
