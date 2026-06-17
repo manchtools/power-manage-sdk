@@ -1,7 +1,4 @@
-// Package pkg provides package manager abstractions for Linux systems.
 package pkg
-
-import "time"
 
 // Package represents an installed or available package.
 type Package struct {
@@ -46,71 +43,19 @@ type AvailableVersion struct {
 	Size       int64
 }
 
-// CommandResult represents the result of a package manager command.
-type CommandResult struct {
-	Success  bool
-	ExitCode int
-	Stdout   string
-	Stderr   string
-	Duration time.Duration
-}
-
-// InstallOptions configures package installation behavior.
+// InstallOptions configures an Install call.
 type InstallOptions struct {
-	Version        string // specific version to install (empty for latest)
-	AllowDowngrade bool   // allow downgrading if installed version is higher
+	// Version pins the install to a specific version. When set, exactly one
+	// package name must be given (a version applies to a single package).
+	Version string
+	// AllowDowngrade permits installing a lower version than the one installed.
+	AllowDowngrade bool
 }
 
-// Manager defines the interface for package managers.
-type Manager interface {
-	// Info returns the package manager name and version.
-	Info() (name, version string, err error)
-
-	// Install installs one or more packages (latest version).
-	Install(packages ...string) (*CommandResult, error)
-
-	// InstallVersion installs a package with specific version options.
-	InstallVersion(name string, opts InstallOptions) (*CommandResult, error)
-
-	// Remove removes one or more packages.
-	Remove(packages ...string) (*CommandResult, error)
-
-	// Update updates the package database.
-	Update() (*CommandResult, error)
-
-	// Upgrade upgrades all packages or specific packages.
-	Upgrade(packages ...string) (*CommandResult, error)
-
-	// Search searches for packages matching a query.
-	Search(query string) ([]SearchResult, error)
-
-	// List lists installed packages.
-	List() ([]Package, error)
-
-	// ListUpgradable lists packages with available upgrades.
-	ListUpgradable() ([]PackageUpdate, error)
-
-	// Show returns detailed information about a package.
-	Show(name string) (*Package, error)
-
-	// ListVersions lists all available versions of a package.
-	ListVersions(name string) (*VersionInfo, error)
-
-	// IsInstalled checks if a package is installed.
-	IsInstalled(name string) (bool, error)
-
-	// GetInstalledVersion returns the installed version of a package.
-	GetInstalledVersion(name string) (string, error)
-
-	// Pin prevents a package from being upgraded.
-	Pin(packages ...string) (*CommandResult, error)
-
-	// Unpin allows a package to be upgraded again.
-	Unpin(packages ...string) (*CommandResult, error)
-
-	// ListPinned lists all pinned packages.
-	ListPinned() ([]Package, error)
-
-	// IsPinned checks if a package is pinned.
-	IsPinned(name string) (bool, error)
+// RemoveOptions configures a Remove call.
+type RemoveOptions struct {
+	// Purge also removes configuration/data where the backend distinguishes it
+	// (apt purge / pacman -Rns / flatpak --delete-data). On backends with no
+	// such distinction it is equivalent to a plain remove.
+	Purge bool
 }
