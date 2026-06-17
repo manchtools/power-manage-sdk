@@ -10,14 +10,14 @@ import (
 )
 
 // runRead executes an unprivileged read-side query (Info / Search / List /
-// Show / version + status probes) through the injected Runner. CLocale forces
-// LANG=C / LC_ALL=C so the output parser sees the stable English form
-// regardless of the host locale. A non-zero exit is reported in Result.ExitCode
-// (NOT as an error) — read callers branch on specific codes (e.g. dnf
-// check-update's 100, dpkg -s's 1) — so the returned error is non-nil only when
-// the command could not be executed at all.
+// Show / version + status probes) through the injected Runner. The Runner forces
+// the C locale on every command, so the output parser always sees the stable
+// English form regardless of the host locale. A non-zero exit is reported in
+// Result.ExitCode (NOT as an error) — read callers branch on specific codes (e.g.
+// dnf check-update's 100, dpkg -s's 1) — so the returned error is non-nil only
+// when the command could not be executed at all.
 func runRead(ctx context.Context, r pmexec.Runner, name string, args ...string) (pmexec.Result, error) {
-	return r.Run(ctx, pmexec.Command{Name: name, Args: args, CLocale: true})
+	return r.Run(ctx, pmexec.Command{Name: name, Args: args})
 }
 
 // probe runs an unprivileged read whose non-zero exit is a benign domain signal
@@ -46,7 +46,6 @@ func runPriv(ctx context.Context, r pmexec.Runner, escalate bool, env []string, 
 		Name:     name,
 		Args:     args,
 		Env:      env,
-		CLocale:  true,
 		Escalate: escalate,
 	})
 }
@@ -79,7 +78,6 @@ func runPrivStdin(ctx context.Context, r pmexec.Runner, escalate bool, env []str
 		Args:     args,
 		Env:      env,
 		Stdin:    in,
-		CLocale:  true,
 		Escalate: escalate,
 	})
 }

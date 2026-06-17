@@ -45,8 +45,8 @@ func TestDnf_Install(t *testing.T) {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
-		if argv(c) != "dnf install -y vim git" || !c.Escalate || !c.CLocale {
-			t.Errorf("argv=%q escalate=%v clocale=%v", argv(c), c.Escalate, c.CLocale)
+		if argv(c) != "dnf install -y vim git" || !c.Escalate {
+			t.Errorf("argv=%q escalate=%v", argv(c), c.Escalate)
 		}
 	})
 	t.Run("pinned version uses name-version", func(t *testing.T) {
