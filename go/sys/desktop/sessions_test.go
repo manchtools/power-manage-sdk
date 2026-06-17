@@ -1,9 +1,13 @@
 package desktop
 
 import (
-	"os/exec"
+	"context"
+	"errors"
+	"os/user"
 	"strings"
 	"testing"
+
+	"github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 func TestParseLoginctlProperties(t *testing.T) {
@@ -110,37 +114,237 @@ func TestIsLoginctlNoLogindStderr(t *testing.T) {
 	}
 }
 
-func TestActiveSessions_NoLogindReturnsEmpty(t *testing.T) {
-	// End-to-end: when loginctl is on PATH but reports no logind,
-	// ActiveSessions must return ([], nil) so the caller's
-	// empty-set policy fires. This is the regression fix for the
-	// agent CI containers (debian/arch/fedora/opensuse) where
-	// loginctl is installed but PID 1 isn't systemd. The detector
-	// lives in isLoginctlNoLogindStderr; this test pins the wiring
-	// from listSessionIDs back up to ActiveSessions so a future
-	// refactor doesn't drop the empty-on-no-logind contract.
-	//
-	// Skipped if loginctl IS available and reports a real session
-	// list — that means the test host has a working logind and
-	// can't exercise the empty path here. The negative case above
-	// already exercises the matcher in isolation.
-	if _, err := exec.LookPath(loginctlPath); err != nil {
-		t.Skipf("loginctl not on PATH (%v) — covered by the missing-binary branch instead", err)
+// liveResultUser is the passwd fixture loadSession resolves the kept session
+// against. Returned by the stubbed lookupID in the build/append tests.
+var liveResultUser = &user.User{Uid: "1000", Gid: "1000", Username: "alice", HomeDir: "/home/alice"}
+
+// graphicalSessionProps is the loginctl show-session output for a kept session.
+const graphicalSessionProps = "Name=alice\nUser=1000\nType=wayland\nActive=yes\nRemote=no\n"
+
+func TestActiveSessions_NoLoginctl(t *testing.T) {
+	// Host without systemd-logind: lookPath fails → ([], nil), and the Runner
+	// is never invoked.
+	stubLookPath(t, false)
+	m, r := newManager(t)
+	got, err := m.ActiveSessions(context.Background())
+	if err != nil {
+		t.Fatalf("ActiveSessions: %v", err)
 	}
-	sessions, err := ActiveSessions(t.Context())
-	if err == nil {
-		// Either we're on a host without logind (sessions == nil,
-		// the contract pin) or we're on a host WITH logind (any
-		// number of sessions). Either way, a successful call with
-		// no error is fine — the load-bearing assertion is "no
-		// error from the no-logind path."
-		_ = sessions
-		return
+	if len(got) != 0 {
+		t.Errorf("want no sessions, got %v", got)
 	}
-	// If err is non-nil the agent CI would now fail. That's the
-	// regression we're guarding against. Surface the stderr so a
-	// future flavor of "no logind" we missed is visible.
-	t.Errorf("ActiveSessions returned error on no-logind host (regression #88): %v", err)
+	if n := len(r.Calls()); n != 0 {
+		t.Errorf("loginctl absent must run nothing, but %d calls ran", n)
+	}
+}
+
+func TestActiveSessions_NoLogind(t *testing.T) {
+	// loginctl present but no logind bus → ([], nil) so the caller's empty-set
+	// policy fires (the agent-CI-container regression).
+	stubLookPath(t, true)
+	m, r := newManager(t)
+	r.Push(exec.Result{ExitCode: 1, Stderr: "Failed to connect to bus: No such file or directory"}, nil)
+	got, err := m.ActiveSessions(context.Background())
+	if err != nil {
+		t.Fatalf("ActiveSessions: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("no-logind must yield zero sessions, got %v", got)
+	}
+}
+
+func TestActiveSessions_ListError(t *testing.T) {
+	// A non-zero exit whose stderr is NOT a no-logind fingerprint is a genuine
+	// fault and must surface.
+	stubLookPath(t, true)
+	m, r := newManager(t)
+	r.Push(exec.Result{ExitCode: 1, Stderr: "Permission denied"}, nil)
+	if _, err := m.ActiveSessions(context.Background()); err == nil {
+		t.Error("ActiveSessions swallowed a genuine list-sessions failure")
+	}
+}
+
+func TestActiveSessions_ListRunError(t *testing.T) {
+	// The Runner itself failing (binary vanished mid-call, escalation error) is
+	// surfaced, not silently treated as "no sessions".
+	stubLookPath(t, true)
+	m, r := newManager(t)
+	r.Push(exec.Result{}, errors.New("boom"))
+	if _, err := m.ActiveSessions(context.Background()); err == nil {
+		t.Error("ActiveSessions swallowed a Runner error")
+	}
+}
+
+func TestActiveSessions_FiltersAndBuilds(t *testing.T) {
+	// End-to-end: two sessions listed; one graphical+active+local is kept and
+	// fully built, one remote is filtered out.
+	stubLookPath(t, true)
+	stubLookupID(t, func(string) (*user.User, error) { return liveResultUser, nil })
+	m, r := newManager(t)
+	r.Push(exec.Result{Stdout: "c1 1000 alice seat0\nc2 1001 bob\n"}, nil)                      // list-sessions
+	r.Push(exec.Result{Stdout: graphicalSessionProps}, nil)                                     // show-session c1 (kept)
+	r.Push(exec.Result{Stdout: "Name=bob\nUser=1001\nType=x11\nActive=yes\nRemote=yes\n"}, nil) // c2 (remote, skipped)
+
+	got, err := m.ActiveSessions(context.Background())
+	if err != nil {
+		t.Fatalf("ActiveSessions: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("want exactly the one local graphical session, got %d: %v", len(got), got)
+	}
+	s := got[0]
+	want := Session{ID: "c1", Username: "alice", UID: 1000, GID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000", Type: "wayland"}
+	if s != want {
+		t.Errorf("built session = %+v, want %+v", s, want)
+	}
+	// The probe is unescalated (loginctl needs no root) — pin it so a refactor
+	// doesn't start running it through sudo.
+	for _, c := range r.Calls() {
+		if c.Escalate {
+			t.Errorf("loginctl probe must not escalate: %+v", c)
+		}
+		if c.Name != loginctlPath {
+			t.Errorf("probe ran %q, want %q", c.Name, loginctlPath)
+		}
+	}
+}
+
+func TestActiveSessions_LoadErrorPropagates(t *testing.T) {
+	// A non-skippable per-session probe failure aborts the whole call.
+	stubLookPath(t, true)
+	m, r := newManager(t)
+	r.Push(exec.Result{Stdout: "c1 1000 alice\n"}, nil)                // list
+	r.Push(exec.Result{ExitCode: 1, Stderr: "Permission denied"}, nil) // show-session c1 → hard error
+	if _, err := m.ActiveSessions(context.Background()); err == nil {
+		t.Error("a hard show-session failure must propagate")
+	}
+}
+
+// loadSession branch coverage — driven directly (one Run each) so each filter /
+// rejection path is isolated.
+func TestLoadSession_Branches(t *testing.T) {
+	props := func(name, uid, typ, active, remote string) string {
+		return "Name=" + name + "\nUser=" + uid + "\nType=" + typ + "\nActive=" + active + "\nRemote=" + remote + "\n"
+	}
+
+	t.Run("run error", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{}, errors.New("boom"))
+		if _, _, err := m.loadSession(context.Background(), "c1"); err == nil {
+			t.Error("want error on Runner failure")
+		}
+	})
+	t.Run("no session race skipped", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{ExitCode: 1, Stderr: "Failed to get session: No session 'c1'."}, nil)
+		_, ok, err := m.loadSession(context.Background(), "c1")
+		if err != nil || ok {
+			t.Errorf("a logged-out session must skip cleanly: ok=%v err=%v", ok, err)
+		}
+	})
+	t.Run("other non-zero exit errors", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{ExitCode: 1, Stderr: "Permission denied"}, nil)
+		if _, _, err := m.loadSession(context.Background(), "c1"); err == nil {
+			t.Error("a non-race non-zero exit must error")
+		}
+	})
+	t.Run("remote skipped", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "1000", "wayland", "yes", "yes")}, nil)
+		if _, ok, _ := m.loadSession(context.Background(), "c1"); ok {
+			t.Error("remote session must be filtered out")
+		}
+	})
+	t.Run("inactive skipped", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "1000", "wayland", "no", "no")}, nil)
+		if _, ok, _ := m.loadSession(context.Background(), "c1"); ok {
+			t.Error("inactive session must be filtered out")
+		}
+	})
+	t.Run("non-graphical skipped", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "1000", "tty", "yes", "no")}, nil)
+		if _, ok, _ := m.loadSession(context.Background(), "c1"); ok {
+			t.Error("tty session must be filtered out")
+		}
+	})
+	t.Run("non-numeric user errors", func(t *testing.T) {
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "notanumber", "wayland", "yes", "no")}, nil)
+		if _, _, err := m.loadSession(context.Background(), "c1"); err == nil {
+			t.Error("a non-numeric User= must error")
+		}
+	})
+	t.Run("passwd miss skipped", func(t *testing.T) {
+		stubLookupID(t, func(string) (*user.User, error) { return nil, errors.New("no such user") })
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "1000", "wayland", "yes", "no")}, nil)
+		_, ok, err := m.loadSession(context.Background(), "c1")
+		if err != nil || ok {
+			t.Errorf("a uid in logind but not passwd must skip: ok=%v err=%v", ok, err)
+		}
+	})
+	t.Run("non-numeric gid errors", func(t *testing.T) {
+		stubLookupID(t, func(uid string) (*user.User, error) {
+			return &user.User{Uid: uid, Gid: "notanumber", Username: "alice", HomeDir: "/home/alice"}, nil
+		})
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "1000", "wayland", "yes", "no")}, nil)
+		if _, _, err := m.loadSession(context.Background(), "c1"); err == nil {
+			t.Error("a passwd entry with a non-numeric gid must error")
+		}
+	})
+	t.Run("success builds session", func(t *testing.T) {
+		stubLookupID(t, func(string) (*user.User, error) { return liveResultUser, nil })
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("alice", "1000", "x11", "yes", "no")}, nil)
+		s, ok, err := m.loadSession(context.Background(), "c9")
+		if err != nil || !ok {
+			t.Fatalf("loadSession = (%+v,%v,%v), want a built session", s, ok, err)
+		}
+		want := Session{ID: "c9", Username: "alice", UID: 1000, GID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000", Type: "x11"}
+		if s != want {
+			t.Errorf("session = %+v, want %+v", s, want)
+		}
+	})
+}
+
+func TestListSessionIDs_ParsesAndSkipsBlankLines(t *testing.T) {
+	m, r := newManager(t)
+	r.Push(exec.Result{Stdout: "c1 1000 alice seat0\n\n  c2 1001 bob \n"}, nil)
+	ids, err := m.listSessionIDs(context.Background())
+	if err != nil {
+		t.Fatalf("listSessionIDs: %v", err)
+	}
+	if len(ids) != 2 || ids[0] != "c1" || ids[1] != "c2" {
+		t.Errorf("ids = %v, want [c1 c2]", ids)
+	}
+}
+
+// TestActiveSessions_RealLoginctl is the integration leg: it builds a Manager
+// over a REAL runner and runs the actual loginctl. On a host without logind
+// (the agent's CI containers) it must return ([], nil) — the regression fix for
+// manchtools/power-manage-sdk#88. On a host WITH logind any count is fine; the
+// load-bearing assertion is "no error from the no-logind path".
+func TestActiveSessions_RealLoginctl(t *testing.T) {
+	if _, err := lookPath(loginctlPath); err != nil {
+		t.Skipf("loginctl not on PATH (%v) — the missing-binary branch covers this", err)
+	}
+	r, err := exec.NewRunner(exec.Direct)
+	if err != nil {
+		t.Fatalf("NewRunner: %v", err)
+	}
+	m, err := New(r)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	sessions, err := m.ActiveSessions(context.Background())
+	if err != nil {
+		t.Errorf("ActiveSessions returned error on this host (regression #88): %v", err)
+	}
+	_ = sessions
 }
 
 func TestEnvFor_HasMinimumDesktopEnv(t *testing.T) {

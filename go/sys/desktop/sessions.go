@@ -1,31 +1,12 @@
-// Package desktop discovers active graphical desktop sessions on the
-// host so user-scoped actions (Flatpak --user installs, shell scripts
-// that need a real $HOME and DBus session bus, etc.) can fan out to
-// every currently-signed-in user instead of running under the agent's
-// own root context.
-//
-// The discovery contract is intentionally narrow: only sessions that
-//   - are local (Remote=no)
-//   - are graphical (Type ∈ {x11, wayland, mir})
-//   - are active (Active=yes)
-//
-// count. SSH sessions, getty TTYs, headless sessions, and inactive
-// graphical sessions are filtered out — they don't have a usable
-// XDG_RUNTIME_DIR / DBus session bus that user-scoped commands need.
-//
-// All discovery goes through systemd-logind (`loginctl`). Hosts
-// without systemd return an empty list with no error so callers can
-// uniformly treat "no signed-in users" as a no-op.
 package desktop
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os/exec"
-	"os/user"
 	"strconv"
 	"strings"
+
+	pmexec "github.com/manchtools/power-manage/sdk/go/sys/exec"
 )
 
 // Session is a single active graphical desktop session.
@@ -57,12 +38,6 @@ type Session struct {
 	Type string
 }
 
-// loginctlPath is the absolute path to the loginctl binary. Pinned to
-// /usr/bin/loginctl because that's where systemd installs it on every
-// supported distro and absolute paths sidestep PATH-injection
-// concerns when the agent runs as root.
-const loginctlPath = "/usr/bin/loginctl"
-
 // ActiveSessions returns every active local graphical session on the
 // host, ready for fanning a user-scoped command out to each.
 //
@@ -74,8 +49,8 @@ const loginctlPath = "/usr/bin/loginctl"
 // Returns an error only when loginctl is present but its output is
 // malformed or the per-session detail probe fails for a reason other
 // than the session disappearing mid-call.
-func ActiveSessions(ctx context.Context) ([]Session, error) {
-	if _, err := exec.LookPath(loginctlPath); err != nil {
+func (m *manager) ActiveSessions(ctx context.Context) ([]Session, error) {
+	if _, err := lookPath(loginctlPath); err != nil {
 		// Host doesn't ship systemd-logind. Treat as "no sessions" so
 		// the caller's empty-set policy (skip-with-warn vs fail) drives
 		// the user-facing behavior consistently regardless of the
@@ -83,14 +58,14 @@ func ActiveSessions(ctx context.Context) ([]Session, error) {
 		return nil, nil
 	}
 
-	ids, err := listSessionIDs(ctx)
+	ids, err := m.listSessionIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	out := make([]Session, 0, len(ids))
 	for _, id := range ids {
-		s, ok, err := loadSession(ctx, id)
+		s, ok, err := m.loadSession(ctx, id)
 		if err != nil {
 			return nil, fmt.Errorf("loginctl show-session %q: %w", id, err)
 		}
@@ -102,89 +77,86 @@ func ActiveSessions(ctx context.Context) ([]Session, error) {
 	return out, nil
 }
 
-// listSessionIDs runs `loginctl list-sessions --no-legend` and returns
-// the bare session IDs from the first column. The --no-legend flag
-// suppresses the trailing "N sessions listed" line which would
-// otherwise leak into the parse loop on older systemd builds.
+// listSessionIDs runs `loginctl list-sessions --no-legend` through the Runner
+// and returns the bare session IDs from the first column. The --no-legend flag
+// suppresses the trailing "N sessions listed" line which would otherwise leak
+// into the parse loop on older systemd builds.
 //
-// Returns ([], nil) — not an error — when systemd-logind isn't
-// running on the host. Loginctl reports this in two distinct ways
-// depending on the underlying failure mode:
+// The command runs through the Runner (no escalation needed for loginctl), so it
+// inherits the forced C locale — the no-logind stderr fingerprints below are
+// therefore matched against stable English text regardless of the host locale.
+//
+// Returns ([], nil) — not an error — when systemd-logind isn't running on the
+// host. Loginctl reports this in two distinct ways depending on the underlying
+// failure mode:
 //
 //   - "System has not been booted with systemd as init system (PID 1).
-//     Can't operate." — typical inside docker/podman containers, CI
-//     runners, and minimal Linux setups using SysV/OpenRC. The binary
-//     is on PATH but logind has nothing to connect to.
-//   - "Failed to connect to bus: ..." — loginctl is present and
-//     systemd is PID 1, but the user dbus / system bus path is
-//     unavailable (sandbox restrictions, namespace gaps).
+//     Can't operate." — typical inside docker/podman containers, CI runners, and
+//     minimal Linux setups using SysV/OpenRC. The binary is on PATH but logind
+//     has nothing to connect to.
+//   - "Failed to connect to bus: ..." — loginctl is present and systemd is
+//     PID 1, but the user dbus / system bus path is unavailable (sandbox
+//     restrictions, namespace gaps).
 //
-// Either case is "no usable logind, no sessions to report" rather
-// than a true probe failure — the caller's empty-set policy
-// (skip-with-Warn for installs, no-op for uninstalls) gives the
-// right end-user behavior. Only loginctl errors that AREN'T one of
-// those two patterns get surfaced as an actual error so genuine
-// permission/IO faults still page operators.
-func listSessionIDs(ctx context.Context) ([]string, error) {
-	cmd := exec.CommandContext(ctx, loginctlPath, "list-sessions", "--no-legend")
-	stdout, err := cmd.Output()
+// Either case is "no usable logind, no sessions to report" rather than a true
+// probe failure — the caller's empty-set policy (skip-with-Warn for installs,
+// no-op for uninstalls) gives the right end-user behavior. Only loginctl errors
+// that AREN'T one of those two patterns get surfaced as an actual error so
+// genuine permission/IO faults still page operators.
+func (m *manager) listSessionIDs(ctx context.Context) ([]string, error) {
+	res, err := m.r.Run(ctx, pmexec.Command{Name: loginctlPath, Args: []string{"list-sessions", "--no-legend"}})
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			if isLoginctlNoLogindStderr(string(exitErr.Stderr)) {
-				return nil, nil
-			}
-			return nil, fmt.Errorf("loginctl list-sessions failed: %w (stderr: %s)", err, string(exitErr.Stderr))
-		}
 		return nil, fmt.Errorf("loginctl list-sessions: %w", err)
 	}
+	if res.ExitCode != 0 {
+		if isLoginctlNoLogindStderr(res.Stderr) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loginctl list-sessions failed (exit %d): %s", res.ExitCode, strings.TrimSpace(res.Stderr))
+	}
 	var ids []string
-	for _, line := range strings.Split(string(stdout), "\n") {
+	for _, line := range strings.Split(res.Stdout, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		fields := strings.Fields(line)
-		if len(fields) == 0 {
-			continue
-		}
-		ids = append(ids, fields[0])
+		// A non-empty trimmed line always has a first field; take it as the ID.
+		ids = append(ids, strings.Fields(line)[0])
 	}
 	return ids, nil
 }
 
-// loadSession runs `loginctl show-session <id> -p ...` and returns a
-// fully-populated Session if the session passes the active+local+
+// loadSession runs `loginctl show-session <id> -p ...` through the Runner and
+// returns a fully-populated Session if the session passes the active+local+
 // graphical filter, or (zero, false, nil) if it should be skipped.
 //
-// Returns an error only on truly-broken probes: a missing session
-// (race with logout) is treated as "skip" rather than failing the
-// whole ActiveSessions call.
-func loadSession(ctx context.Context, id string) (Session, bool, error) {
-	cmd := exec.CommandContext(ctx, loginctlPath, "show-session", id,
+// Returns an error only on truly-broken probes: a missing session (race with
+// logout) is treated as "skip" rather than failing the whole ActiveSessions
+// call.
+func (m *manager) loadSession(ctx context.Context, id string) (Session, bool, error) {
+	res, err := m.r.Run(ctx, pmexec.Command{Name: loginctlPath, Args: []string{
+		"show-session", id,
 		"--property=Name",
 		"--property=User",
 		"--property=Type",
 		"--property=Active",
 		"--property=Remote",
-	)
-	stdout, err := cmd.Output()
+	}})
 	if err != nil {
-		// Session disappeared between list-sessions and show-session
-		// — common when a user logs out concurrently with our probe.
-		// loginctl exits 1 with "Failed to get session: No session
-		// 'X'." on stderr in that case. Skip rather than fail.
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			if strings.Contains(string(exitErr.Stderr), "No session") {
-				return Session{}, false, nil
-			}
-			return Session{}, false, fmt.Errorf("%w (stderr: %s)", err, string(exitErr.Stderr))
+		return Session{}, false, fmt.Errorf("loginctl show-session: %w", err)
+	}
+	if res.ExitCode != 0 {
+		// Session disappeared between list-sessions and show-session — common
+		// when a user logs out concurrently with our probe. loginctl exits
+		// non-zero with "Failed to get session: No session 'X'." on stderr in
+		// that case. Skip rather than fail.
+		if strings.Contains(res.Stderr, "No session") {
+			return Session{}, false, nil
 		}
-		return Session{}, false, err
+		return Session{}, false, fmt.Errorf("exit %d: %s", res.ExitCode, strings.TrimSpace(res.Stderr))
 	}
 
-	props := parseLoginctlProperties(string(stdout))
+	props := parseLoginctlProperties(res.Stdout)
 	if props["Remote"] != "no" {
 		return Session{}, false, nil
 	}
@@ -201,15 +173,14 @@ func loadSession(ctx context.Context, id string) (Session, bool, error) {
 		return Session{}, false, fmt.Errorf("loginctl returned non-numeric User=%q for session %q", uidStr, id)
 	}
 
-	// passwd lookup for Home + GID. Username from logind is
-	// authoritative for "who's signed in," but we still need the
-	// passwd entry for $HOME — logind's session metadata doesn't
-	// carry it.
-	u, err := user.LookupId(uidStr)
+	// passwd lookup for Home + GID. Username from logind is authoritative for
+	// "who's signed in," but we still need the passwd entry for $HOME — logind's
+	// session metadata doesn't carry it.
+	u, err := lookupID(uidStr)
 	if err != nil {
-		// Account exists in logind but not in passwd — extremely
-		// unusual (would mean the user was deleted while logged in).
-		// Skip rather than synthesize a fake $HOME.
+		// Account exists in logind but not in passwd — extremely unusual (would
+		// mean the user was deleted while logged in). Skip rather than
+		// synthesize a fake $HOME.
 		return Session{}, false, nil
 	}
 	gid, err := strconv.Atoi(u.Gid)
@@ -266,10 +237,11 @@ func isGraphicalType(t string) bool {
 // which should still surface to the caller.
 //
 // Match on substrings rather than exact equality so the helper
-// survives a localised systemd build (rare on the agent's target
-// distros but cheap to be tolerant of) or a future systemd that
-// rewords the message slightly. The substrings chosen are stable
-// across every systemd version since v220 (2015) on Linux.
+// survives a future systemd that rewords the message slightly. The
+// substrings chosen are stable across every systemd version since v220
+// (2015) on Linux. The loginctl probe runs under the forced C locale
+// (it goes through the Runner), so these English fingerprints are not
+// defeated by the host's configured language.
 func isLoginctlNoLogindStderr(stderr string) bool {
 	switch {
 	case strings.Contains(stderr, "has not been booted with systemd"):

@@ -55,8 +55,9 @@ func TestUserPath(t *testing.T) {
 // commands ran with no PATH / runuser's compiled-in default rather than
 // the user's, and ~/.local/bin was never on PATH.
 func TestRunAsCommand_SetsCuratedUserPath(t *testing.T) {
+	m, _ := newManager(t)
 	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
-	cmd, err := RunAsCommand(context.Background(), s, nil, "true")
+	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{}, "true")
 	if err != nil {
 		t.Fatalf("RunAsCommand: %v", err)
 	}
@@ -70,8 +71,9 @@ func TestRunAsCommand_SetsCuratedUserPath(t *testing.T) {
 // user PATH — the curated value is applied last so it wins, matching the
 // streaming path which refuses a caller-supplied PATH outright.
 func TestRunAsCommand_CuratedPathWinsOverExtraEnv(t *testing.T) {
+	m, _ := newManager(t)
 	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
-	cmd, err := RunAsCommand(context.Background(), s, []string{"PATH=/attacker/bin"}, "true")
+	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{ExtraEnv: []string{"PATH=/attacker/bin"}}, "true")
 	if err != nil {
 		t.Fatalf("RunAsCommand: %v", err)
 	}

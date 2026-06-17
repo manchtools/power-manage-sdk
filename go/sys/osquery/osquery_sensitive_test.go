@@ -19,7 +19,7 @@ import (
 func TestQuery_DeniesSensitiveTables(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: "[]"}, nil) // consumed only by the benign os_version run
-	c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	ctx := context.Background()
 
 	// present-but-wrong: each sensitive table is regex-valid but policy-forbidden.
@@ -72,7 +72,7 @@ func TestQuery_DeniesSensitiveTables(t *testing.T) {
 func TestQuery_RawSqlBypassesDenyList(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: `[{"hash":"x"}]`}, nil)
-	c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	res, err := c.Query(context.Background(), &pb.OSQuery{QueryId: "q", RawSql: "SELECT * FROM shadow"})
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +89,7 @@ func TestExecQuery_Failures(t *testing.T) {
 	t.Run("exec error", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
 		r.Push(exec.Result{}, errors.New("sudo: a password is required"))
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		if _, err := c.QuerySQL(context.Background(), "SELECT 1"); !errors.Is(err, ErrQueryFailed) {
 			t.Errorf("err = %v, want ErrQueryFailed", err)
 		}
@@ -97,7 +97,7 @@ func TestExecQuery_Failures(t *testing.T) {
 	t.Run("non-zero exit with stderr", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
 		r.Push(exec.Result{ExitCode: 1, Stderr: "no such table: bogus"}, nil)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		_, err := c.QuerySQL(context.Background(), "SELECT * FROM bogus")
 		if !errors.Is(err, ErrQueryFailed) || !strings.Contains(err.Error(), "no such table") {
 			t.Errorf("err = %v, want ErrQueryFailed naming the stderr", err)
@@ -106,7 +106,7 @@ func TestExecQuery_Failures(t *testing.T) {
 	t.Run("non-zero exit no stderr", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
 		r.Push(exec.Result{ExitCode: 2}, nil)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		if _, err := c.QuerySQL(context.Background(), "SELECT 1"); !errors.Is(err, ErrQueryFailed) {
 			t.Errorf("err = %v, want ErrQueryFailed", err)
 		}
@@ -114,7 +114,7 @@ func TestExecQuery_Failures(t *testing.T) {
 	t.Run("unparseable JSON", func(t *testing.T) {
 		r := exectest.New(exec.Direct)
 		r.Push(exec.Result{Stdout: "not json"}, nil)
-		c := &Client{binaryPath: "/usr/bin/osqueryi", r: r}
+		c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 		if _, err := c.QuerySQL(context.Background(), "SELECT 1"); err == nil ||
 			!strings.Contains(err.Error(), "parse osquery output") {
 			t.Errorf("err = %v, want a parse failure", err)

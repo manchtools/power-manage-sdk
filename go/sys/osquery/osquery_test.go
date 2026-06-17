@@ -1,6 +1,7 @@
 package osquery
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -83,32 +84,33 @@ func TestFindOsqueryBinary_DiscoveryOrder(t *testing.T) {
 	}
 }
 
-// TestNewClient_NotInstalled covers the lazy-init failure path: when
-// no osqueryi binary is reachable, NewClient must return ErrNotInstalled
-// rather than a half-constructed Client.
-func TestNewClient_NotInstalled(t *testing.T) {
+// TestNew_NotInstalled covers the eager fail-closed probe: when no
+// osqueryi binary is reachable, New must return ErrNotInstalled rather
+// than a half-constructed Querier, so a caller learns at construction
+// that osquery is unavailable.
+func TestNew_NotInstalled(t *testing.T) {
 	restore := lookPath
 	defer func() { lookPath = restore }()
 	lookPath = func(string) (string, error) {
 		return "", errors.New("not found")
 	}
 
-	c, err := NewClient(exectest.New(exec.Direct))
+	q, err := New(exectest.New(exec.Direct))
 	if !errors.Is(err, ErrNotInstalled) {
-		t.Errorf("NewClient: want ErrNotInstalled, got %v", err)
+		t.Errorf("New: want ErrNotInstalled, got %v", err)
 	}
-	if c != nil {
-		t.Errorf("NewClient: want nil client on failure, got %+v", c)
-	}
-}
-
-func TestNewClient_NilRunner(t *testing.T) {
-	if _, err := NewClient(nil); err == nil {
-		t.Error("NewClient(nil) returned nil error")
+	if q != nil {
+		t.Errorf("New: want nil Querier on failure, got %+v", q)
 	}
 }
 
-func TestNewClient_Success(t *testing.T) {
+func TestNew_NilRunner(t *testing.T) {
+	if _, err := New(nil); err == nil {
+		t.Error("New(nil) returned nil error")
+	}
+}
+
+func TestNew_Success(t *testing.T) {
 	restore := lookPath
 	defer func() { lookPath = restore }()
 	lookPath = func(name string) (string, error) {
@@ -117,27 +119,36 @@ func TestNewClient_Success(t *testing.T) {
 		}
 		return "", errors.New("not found")
 	}
-	c, err := NewClient(exectest.New(exec.Direct))
-	if err != nil || c == nil {
-		t.Fatalf("NewClient = (%v,%v), want a client", c, err)
+	q, err := New(exectest.New(exec.Direct))
+	if err != nil || q == nil {
+		t.Fatalf("New = (%v,%v), want a Querier", q, err)
+	}
+	c, ok := q.(*client)
+	if !ok {
+		t.Fatalf("New returned %T, want *client", q)
 	}
 	if c.binaryPath != "/usr/bin/osqueryi" {
 		t.Errorf("binaryPath = %q", c.binaryPath)
 	}
 }
 
-// TestIsInstalled mirrors NewClient_NotInstalled but exercises the
-// pure-bool entry point that callers (e.g. inventory collectors) use
-// to gate optional osquery features without paying for client init.
+// TestIsInstalled exercises the live re-probe contract: IsInstalled
+// re-resolves the binary on every call (it does NOT trust the path
+// captured at New), so a binary removed during the agent's lifetime is
+// reported as absent and a later re-install is picked up.
 func TestIsInstalled(t *testing.T) {
 	restore := lookPath
 	defer func() { lookPath = restore }()
+	// Construct directly so the test can drive IsInstalled across both
+	// states without New's eager probe gating construction.
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: exectest.New(exec.Direct)}
+	ctx := context.Background()
 
 	lookPath = func(string) (string, error) {
 		return "", errors.New("not found")
 	}
-	if IsInstalled() {
-		t.Errorf("IsInstalled() = true with no installed paths")
+	if c.IsInstalled(ctx) {
+		t.Errorf("IsInstalled() = true with no installed paths (removal not detected)")
 	}
 
 	lookPath = func(name string) (string, error) {
@@ -146,7 +157,7 @@ func TestIsInstalled(t *testing.T) {
 		}
 		return "", errors.New("not found")
 	}
-	if !IsInstalled() {
+	if !c.IsInstalled(ctx) {
 		t.Errorf("IsInstalled() = false with /usr/bin/osqueryi installed")
 	}
 }

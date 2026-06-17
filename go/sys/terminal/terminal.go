@@ -6,9 +6,23 @@
 // This package is the SDK foundation for the remote terminal feature; the
 // agent is responsible for wiring it to the bidirectional gateway stream
 // and enforcing authentication, audit, and session limits.
+//
+//	m, _ := terminal.New()
+//	sess, err := m.Open(ctx, terminal.SessionConfig{User: "alice"})
+//	if err != nil { ... }
+//	defer sess.Close()
+//
+// terminal is a single-implementation capability (design §3.8): it exposes the
+// Manager interface for shape-uniformity with the rest of the SDK. Unlike the
+// other capabilities it takes NO exec.Runner — a PTY session is a long-lived,
+// bidirectional stream, not a captured one-shot command, so the Runner
+// abstraction (which returns a completed Result) cannot model it. The privilege
+// to switch UID comes from the agent already running as root, applied via the
+// child's syscall.Credential.
 package terminal
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +37,38 @@ import (
 
 	"github.com/creack/pty"
 )
+
+// Manager constructs PTY shell sessions. See the package doc for why it carries
+// no Runner.
+type Manager interface {
+	// Open allocates a PTY and spawns a login shell as cfg.User. ctx governs the
+	// allocation only: the returned Session OUTLIVES ctx, so cancelling ctx
+	// after Open returns does NOT stop the session — terminate it with Close.
+	Open(ctx context.Context, cfg SessionConfig) (*Session, error)
+}
+
+// Test seams. These default to the real syscalls/lookups and are overridden
+// only by tests to exercise branches that are otherwise unreachable without
+// root or a malformed passwd entry (the parse-uid/gid errors, the
+// credential-switch branch, and the rare pty-close error). Production never
+// reassigns them.
+var (
+	lookupUser = user.Lookup
+	getuid     = os.Getuid
+	getgid     = os.Getgid
+	ptyClose   = func(f *os.File) error { return f.Close() }
+)
+
+// manager is the single Manager implementation. It is stateless.
+type manager struct{}
+
+// New returns a terminal Manager. It takes no arguments — no Runner (see the
+// package doc), no backend — and does not fail today; the error return matches
+// the SDK's uniform New(...) (T, error) shape so a future fallible option is
+// additive rather than a breaking signature change.
+func New() (Manager, error) {
+	return &manager{}, nil
+}
 
 // Defaults applied when SessionConfig fields are zero.
 const (
@@ -55,7 +101,7 @@ type SessionConfig struct {
 }
 
 // Session represents a running PTY shell session. The zero value is not
-// usable; obtain a Session via Start.
+// usable; obtain a Session via Manager.Open.
 //
 // Read, Write, and Resize are safe for concurrent use from independent
 // goroutines (the typical reader+writer pattern). Close, Wait, and Done
@@ -74,15 +120,25 @@ type Session struct {
 	done chan struct{}
 }
 
-// Start allocates a PTY, spawns a shell as cfg.User, and returns a Session.
+// Open allocates a PTY, spawns a shell as cfg.User, and returns a Session.
 // The caller must call Close (or Wait followed by reaping done) to release
-// resources. Start returns an error if the user cannot be looked up, the
-// shell binary is missing, or the PTY cannot be allocated.
-func Start(cfg SessionConfig) (*Session, error) {
+// resources. Open returns an error if the context is already cancelled, the
+// user cannot be looked up, the shell binary is missing, or the PTY cannot be
+// allocated.
+//
+// ctx governs allocation only. The returned Session is detached from ctx and
+// outlives it; cancelling ctx after Open returns does not terminate the
+// session — use Close.
+func (m *manager) Open(ctx context.Context, cfg SessionConfig) (*Session, error) {
+	// Fail closed on an already-cancelled context — never allocate a PTY for a
+	// dead request.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if cfg.User == "" {
 		return nil, errors.New("terminal: user is required")
 	}
-	u, err := user.Lookup(cfg.User)
+	u, err := lookupUser(cfg.User)
 	if err != nil {
 		return nil, fmt.Errorf("terminal: lookup user %q: %w", cfg.User, err)
 	}
@@ -140,7 +196,7 @@ func Start(cfg SessionConfig) (*Session, error) {
 	// reject it. Skipping the call when not needed avoids that and
 	// matches the common case where the caller is already the target
 	// user (e.g., agent running as the TTY user directly).
-	if uint32(uid) != uint32(os.Getuid()) || uint32(gid) != uint32(os.Getgid()) {
+	if uint32(uid) != uint32(getuid()) || uint32(gid) != uint32(getgid()) {
 		cmd.SysProcAttr.Credential = &syscall.Credential{
 			Uid: uint32(uid),
 			Gid: uint32(gid),
@@ -192,9 +248,29 @@ func (s *Session) Write(data []byte) (int, error) {
 
 // Resize changes the window size of the PTY. The shell receives SIGWINCH
 // and applications using ncurses (vim, top, etc.) re-render accordingly.
+//
+// The dimensions are validated before the ioctl (WS15): a zero cols or rows is
+// rejected rather than passed to TIOCSWINSZ — a zero-size window confuses
+// curses applications and is never a legitimate request. The wire-level upper
+// bound (<= 65535) is already enforced by the uint16 type at this boundary; the
+// agent additionally rejects out-of-range uint32 values before narrowing, so a
+// truncated value can never reach here.
 func (s *Session) Resize(cols, rows uint16) error {
+	if err := validateDims(cols, rows); err != nil {
+		return err
+	}
 	if err := pty.Setsize(s.pty, &pty.Winsize{Cols: cols, Rows: rows}); err != nil {
 		return fmt.Errorf("terminal: resize: %w", err)
+	}
+	return nil
+}
+
+// validateDims rejects a zero terminal dimension. Sourced from the wire intent
+// (proto's gt=0), not from any artifact. It is the SDK's defence-in-depth
+// alongside the agent's own boundary check.
+func validateDims(cols, rows uint16) error {
+	if cols == 0 || rows == 0 {
+		return fmt.Errorf("terminal: invalid dimensions cols=%d rows=%d (both must be > 0)", cols, rows)
 	}
 	return nil
 }
@@ -229,7 +305,7 @@ func (s *Session) Close() error {
 		// Closing the master also sends SIGHUP to the group, which is
 		// the polite shell-termination signal. ErrClosed is expected if
 		// the reaper or a concurrent caller already closed it.
-		if err := s.pty.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+		if err := ptyClose(s.pty); err != nil && !errors.Is(err, os.ErrClosed) {
 			s.closeErr = err
 		}
 	})
@@ -293,3 +369,6 @@ func buildEnv(extra []string, u *user.User, shell string) []string {
 
 // ensure io.ReadWriter compliance — Session embeds plumbing for both.
 var _ io.ReadWriter = (*Session)(nil)
+
+// ensure the single implementation satisfies the interface.
+var _ Manager = (*manager)(nil)

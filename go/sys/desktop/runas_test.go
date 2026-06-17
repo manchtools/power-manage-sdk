@@ -7,27 +7,30 @@ import (
 )
 
 func TestRunAsCommand_RequiresName(t *testing.T) {
+	m, _ := newManager(t)
 	s := Session{Username: "alice", UID: 1000, Home: "/home/alice"}
-	if _, err := RunAsCommand(context.Background(), s, nil, ""); err == nil {
+	if _, err := m.RunAsCommand(context.Background(), s, RunAsOptions{}, ""); err == nil {
 		t.Fatal("expected error for empty name — caller bug, runuser would fail with a confusing message")
 	}
 }
 
 func TestRunAsCommand_RequiresUsername(t *testing.T) {
+	m, _ := newManager(t)
 	s := Session{UID: 1000, Home: "/home/alice"}
-	if _, err := RunAsCommand(context.Background(), s, nil, "/bin/true"); err == nil {
+	if _, err := m.RunAsCommand(context.Background(), s, RunAsOptions{}, "/bin/true"); err == nil {
 		t.Fatal("expected error for session with empty Username — would silently run as the agent's own UID")
 	}
 }
 
 func TestRunAsCommand_BuildsRunuserInvocation(t *testing.T) {
+	m, _ := newManager(t)
 	s := Session{
 		Username:   "alice",
 		UID:        1000,
 		Home:       "/home/alice",
 		RuntimeDir: "/run/user/1000",
 	}
-	cmd, err := RunAsCommand(context.Background(), s, nil, "/usr/bin/flatpak", "--user", "info", "org.example.App")
+	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{}, "/usr/bin/flatpak", "--user", "info", "org.example.App")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,13 +61,14 @@ func TestRunAsCommand_BuildsRunuserInvocation(t *testing.T) {
 }
 
 func TestRunAsCommand_EnvIsolatesAgentEnvironment(t *testing.T) {
+	m, _ := newManager(t)
 	s := Session{
 		Username:   "alice",
 		UID:        1000,
 		Home:       "/home/alice",
 		RuntimeDir: "/run/user/1000",
 	}
-	cmd, err := RunAsCommand(context.Background(), s, []string{"PATH=/usr/bin:/bin", "FLATPAK_USER_DIR=/foo"}, "/bin/true")
+	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{ExtraEnv: []string{"PATH=/usr/bin:/bin", "FLATPAK_USER_DIR=/foo"}}, "/bin/true")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -112,11 +116,12 @@ func TestRunAsCommand_EnvIsolatesAgentEnvironment(t *testing.T) {
 
 func TestRunAsCommand_ExtraEnvWinsOnDuplicateKey(t *testing.T) {
 	// Pin Go's exec.Cmd contract: when cmd.Env contains duplicate
-	// keys, the *last* occurrence wins. Our wrapper appends extraEnv
-	// after EnvFor, so an extraEnv override (e.g. a custom HOME for
+	// keys, the *last* occurrence wins. Our wrapper appends ExtraEnv
+	// after EnvFor, so an ExtraEnv override (e.g. a custom HOME for
 	// a specific action) reliably beats the desktop default.
+	m, _ := newManager(t)
 	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
-	cmd, err := RunAsCommand(context.Background(), s, []string{"HOME=/var/empty"}, "/bin/true")
+	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{ExtraEnv: []string{"HOME=/var/empty"}}, "/bin/true")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -127,6 +132,6 @@ func TestRunAsCommand_ExtraEnvWinsOnDuplicateKey(t *testing.T) {
 		}
 	}
 	if lastHome != "HOME=/var/empty" {
-		t.Errorf("last HOME entry: got %q, want %q (extraEnv must win on duplicate keys)", lastHome, "HOME=/var/empty")
+		t.Errorf("last HOME entry: got %q, want %q (ExtraEnv must win on duplicate keys)", lastHome, "HOME=/var/empty")
 	}
 }
