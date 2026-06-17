@@ -55,7 +55,11 @@ func TestApplyMode_RegularFileOwnership(t *testing.T) {
 	if err := applyMode(f, "0600", owner, group); err != nil {
 		t.Fatalf("applyMode on a regular file: %v", err)
 	}
-	if info, _ := os.Stat(f); info.Mode().Perm() != 0o600 {
+	info, err := os.Stat(f)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
 		t.Errorf("file mode = %v, want 0600", info.Mode().Perm())
 	}
 }
