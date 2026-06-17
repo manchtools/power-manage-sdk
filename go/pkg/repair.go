@@ -13,6 +13,23 @@ import (
 // can be exercised hermetically in tests.
 var statFile = os.Stat
 
+// bestEffortStep classifies the outcome of one best-effort repair step. A nil
+// err means success. A cancelled context returns ctx.Err() so the caller stops
+// the chain; any other failure is logged and swallowed (returns nil) so a single
+// wedged step does not abort the whole repair. The step is run by the caller
+// (its err is passed in), so a cancelled context still fails the step closed —
+// runPriv refuses to spawn — and is reported here as the cancellation.
+func bestEffortStep(ctx context.Context, what string, err error) error {
+	if err == nil {
+		return nil
+	}
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	slog.Warn(what+" failed", "error", err)
+	return nil
+}
+
 // repairErr returns ctx.Err() when the context has been cancelled, otherwise it
 // wraps err with msg. err is typically an *exec.CommandError, which already
 // carries the subprocess stderr. The returned error stays detectable via
@@ -61,13 +78,11 @@ func removeStaleLock(ctx context.Context, r pmexec.Runner, path string) error {
 		return nil
 	}
 
-	if err := ctx.Err(); err != nil {
-		return err
-	}
+	// rm is best-effort. A cancelled context makes runPriv fail closed with
+	// ctx.Err(); we log and return nil — the caller's own ctx check (the Repair
+	// loop re-enters here, or the backend checks before its refresh) propagates
+	// the cancellation, so we don't need to special-case it.
 	if _, err := runPriv(ctx, r, true, nil, "rm", "-f", path); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
 		slog.Warn("failed to remove stale lock", "path", path, "error", err)
 	}
 	return nil

@@ -172,34 +172,18 @@ func (d *dnf) Autoremove(ctx context.Context) error {
 // the rpm database. Every step is best-effort (logged, not fatal) except a
 // context cancellation, which short-circuits.
 func (d *dnf) Repair(ctx context.Context) error {
-	if err := ctx.Err(); err != nil {
-		return err
+	steps := []struct {
+		what string
+		run  func() error
+	}{
+		{"dnf history redo last", func() error { return d.write(ctx, "history", "redo", "last", "-y") }},
+		{"dnf remove --duplicates", func() error { return d.write(ctx, "remove", "--duplicates", "-y") }},
+		{"rpm --verifydb", func() error { _, err := readOut(ctx, d.r, "rpm", "--verifydb"); return err }},
 	}
-	if err := d.write(ctx, "history", "redo", "last", "-y"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
+	for _, s := range steps {
+		if err := bestEffortStep(ctx, s.what, s.run()); err != nil {
+			return err
 		}
-		slog.Warn("dnf history redo last failed", "error", err)
-	}
-
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if err := d.write(ctx, "remove", "--duplicates", "-y"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("dnf remove --duplicates failed", "error", err)
-	}
-
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if _, err := readOut(ctx, d.r, "rpm", "--verifydb"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("rpm --verifydb failed", "error", err)
 	}
 	return nil
 }

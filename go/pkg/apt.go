@@ -182,29 +182,18 @@ func (a *apt) Repair(ctx context.Context) error {
 		}
 	}
 
-	if err := ctx.Err(); err != nil {
-		return err
+	fixArgs := append([]string{"--fix-broken", "install", "-y"}, dpkgConfOptions...)
+	steps := []struct {
+		what string
+		run  func() error
+	}{
+		{"dpkg --configure -a", func() error { return a.write(ctx, "dpkg", "--configure", "-a") }},
+		{"apt --fix-broken install", func() error { return a.write(ctx, "apt", fixArgs...) }},
 	}
-	if err := a.write(ctx, "dpkg", "--configure", "-a"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
+	for _, s := range steps {
+		if err := bestEffortStep(ctx, s.what, s.run()); err != nil {
+			return err
 		}
-		slog.Warn("dpkg --configure -a failed", "error", err)
-	}
-
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	args := append([]string{"--fix-broken", "install", "-y"}, dpkgConfOptions...)
-	if err := a.write(ctx, "apt", args...); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		slog.Warn("apt --fix-broken install failed", "error", err)
-	}
-
-	if err := ctx.Err(); err != nil {
-		return err
 	}
 	if err := a.write(ctx, "apt", "update"); err != nil {
 		return repairErr(ctx, "apt update failed", err)

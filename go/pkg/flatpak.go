@@ -112,9 +112,6 @@ func (f *flatpak) Autoremove(ctx context.Context) error {
 
 // Repair runs `flatpak repair`, restoring a consistent installation state.
 func (f *flatpak) Repair(ctx context.Context) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
 	if err := f.write(ctx, "repair", f.scope()); err != nil {
 		return repairErr(ctx, "flatpak repair failed", err)
 	}

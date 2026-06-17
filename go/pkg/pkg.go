@@ -208,7 +208,7 @@ func Detect(ctx context.Context) []Backend {
 		{"zypper", Zypper},
 		{"flatpak", Flatpak},
 	} {
-		if _, err := exec.LookPath(c.bin); err == nil {
+		if _, err := lookPath(c.bin); err == nil {
 			found = append(found, c.b)
 		}
 	}

@@ -138,9 +138,6 @@ func (p *pacman) Repair(ctx context.Context) error {
 	if err := removeStaleLock(ctx, p.r, "/var/lib/pacman/db.lck"); err != nil {
 		return err
 	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
 	if err := p.write(ctx, "-Syy", "--noconfirm"); err != nil {
 		return repairErr(ctx, "pacman -Syy failed", err)
 	}

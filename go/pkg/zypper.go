@@ -113,9 +113,6 @@ func (z *zypper) Repair(ctx context.Context) error {
 	if err := removeStaleLock(ctx, z.r, "/run/zypp.pid"); err != nil {
 		return err
 	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
 	if err := z.write(ctx, "--non-interactive", "refresh"); err != nil {
 		return repairErr(ctx, "zypper refresh failed", err)
 	}
