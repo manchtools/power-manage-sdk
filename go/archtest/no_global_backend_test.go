@@ -18,8 +18,10 @@ var noGlobalBackendVarAllowlist = map[string]string{}
 
 // global-backend setter/getter API names: SetPrivilegeBackend,
 // CurrentPrivilegeBackend, SetBackend, CurrentBackend, GetBackend, … — the
-// legacy process-global escalation surface this rework removed.
-var backendFuncRe = regexp.MustCompile(`^(Set|Get|Current)[A-Za-z0-9_]*Backend$`)
+// legacy process-global escalation surface this rework removed. Case-insensitive
+// so an UNEXPORTED selector (e.g. setBackend / currentBackend) that would still
+// reintroduce global state cannot slip past on capitalization alone.
+var backendFuncRe = regexp.MustCompile(`(?i)^(set|get|current)[A-Za-z0-9_]*backend$`)
 
 // package-level vars that store "the backend" globally (e.g. the deleted
 // `var backend atomic.Int32`). Tightly anchored so it matches a global SELECTOR

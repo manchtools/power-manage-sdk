@@ -22,6 +22,12 @@ func sudoRunner(t *testing.T) pmexec.Runner {
 	if _, err := exec.LookPath("sudo"); err != nil {
 		t.Skip("sudo not on PATH; escalation integration leg not exercisable here")
 	}
+	// Presence isn't enough: gate on non-interactive escalation actually working,
+	// so a host with sudo but no NOPASSWD rule SKIPS (unmet prerequisite) rather
+	// than fails with ErrEscalationDenied.
+	if err := exec.Command("sudo", "-n", "true").Run(); err != nil {
+		t.Skipf("sudo present but non-interactive escalation is unavailable: %v", err)
+	}
 	r, err := pmexec.NewRunner(pmexec.Sudo)
 	if err != nil {
 		t.Fatalf("NewRunner(Sudo): %v", err)
