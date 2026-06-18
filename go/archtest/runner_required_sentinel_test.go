@@ -107,6 +107,8 @@ func TestNoPerPackageRunnerRequiredSentinel(t *testing.T) {
 
 	inspected := 0
 	for _, gf := range files {
+		errorsName := importLocalName(gf, "errors")
+		fmtName := importLocalName(gf, "fmt")
 		for _, decl := range gf.ast.Decls {
 			gd, ok := decl.(*ast.GenDecl)
 			if !ok || gd.Tok != token.VAR {
@@ -122,7 +124,7 @@ func TestNoPerPackageRunnerRequiredSentinel(t *testing.T) {
 					// A var named like a runner-required error...
 					if !strings.Contains(strings.ToLower(name.Name), "runnerrequired") {
 						// ...or one whose errors.New/fmt.Errorf literal says so.
-						if i < len(vs.Values) && constructsRunnerRequired(vs.Values[i]) {
+						if i < len(vs.Values) && constructsRunnerRequired(vs.Values[i], errorsName, fmtName) {
 							t.Errorf("%s:%d: %s constructs a 'runner is required' error — use the shared exec.ErrRunnerRequired instead of a per-package sentinel",
 								gf.rel, gf.line(name), name.Name)
 						}
@@ -223,7 +225,11 @@ func blockReferences(block *ast.BlockStmt, want string) bool {
 
 // constructsRunnerRequired reports whether expr is an errors.New / fmt.Errorf
 // call whose first string-literal argument mentions "runner is required".
-func constructsRunnerRequired(expr ast.Expr) bool {
+// errorsName/fmtName are the LOCAL names the "errors" and "fmt" packages are
+// imported under in this file (resolved from imports, so an aliased import like
+// `goerrors "errors"` cannot bypass the guard); "" means the package is not
+// imported, so the corresponding constructor cannot be called here.
+func constructsRunnerRequired(expr ast.Expr, errorsName, fmtName string) bool {
 	call, ok := expr.(*ast.CallExpr)
 	if !ok || len(call.Args) == 0 {
 		return false
@@ -238,7 +244,9 @@ func constructsRunnerRequired(expr ast.Expr) bool {
 	if !ok {
 		return false
 	}
-	if !((pkg.Name == "errors" && sel.Sel.Name == "New") || (pkg.Name == "fmt" && sel.Sel.Name == "Errorf")) {
+	isErrorsNew := errorsName != "" && pkg.Name == errorsName && sel.Sel.Name == "New"
+	isFmtErrorf := fmtName != "" && pkg.Name == fmtName && sel.Sel.Name == "Errorf"
+	if !isErrorsNew && !isFmtErrorf {
 		return false
 	}
 	lit, ok := call.Args[0].(*ast.BasicLit)
@@ -246,4 +254,23 @@ func constructsRunnerRequired(expr ast.Expr) bool {
 		return false
 	}
 	return strings.Contains(strings.ToLower(lit.Value), "runner is required")
+}
+
+// importLocalName returns the local name an exact import path is bound to in gf
+// (its alias, or the path's last segment by default), or "" if gf does not
+// import it.
+func importLocalName(gf *goFile, fullPath string) string {
+	for _, imp := range gf.ast.Imports {
+		if strings.Trim(imp.Path.Value, `"`) != fullPath {
+			continue
+		}
+		if imp.Name != nil {
+			return imp.Name.Name
+		}
+		if i := strings.LastIndex(fullPath, "/"); i >= 0 {
+			return fullPath[i+1:]
+		}
+		return fullPath
+	}
+	return ""
 }
