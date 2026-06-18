@@ -103,9 +103,14 @@ func (p *pacman) Upgrade(ctx context.Context, packages ...string) error {
 		return err
 	}
 	if len(packages) == 0 {
-		return p.write(ctx, "-Syu", "--noconfirm")
+		return nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	return p.write(ctx, append([]string{"-S", "--noconfirm"}, packages...)...)
+}
+
+// UpgradeAll performs a full system upgrade (pacman -Syu).
+func (p *pacman) UpgradeAll(ctx context.Context) error {
+	return p.write(ctx, "-Syu", "--noconfirm")
 }
 
 // Autoremove removes orphaned packages (installed as deps, no longer required).

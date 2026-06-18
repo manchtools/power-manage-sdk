@@ -100,8 +100,16 @@ func (f *flatpak) Upgrade(ctx context.Context, packages ...string) error {
 	if err := ValidatePackageNames(packages); err != nil {
 		return err
 	}
+	if len(packages) == 0 {
+		return nil // empty is a no-op; UpgradeAll updates everything (flatpak update with no refs)
+	}
 	args := append([]string{"update", "-y", "--noninteractive", f.scope()}, packages...)
 	return f.write(ctx, args...)
+}
+
+// UpgradeAll updates every installed app/runtime (flatpak update with no refs).
+func (f *flatpak) UpgradeAll(ctx context.Context) error {
+	return f.write(ctx, "update", "-y", "--noninteractive", f.scope())
 }
 
 // Autoremove removes unused runtimes/extensions (flatpak uninstall --unused).

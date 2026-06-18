@@ -122,9 +122,14 @@ func (d *dnf) Upgrade(ctx context.Context, packages ...string) error {
 		return err
 	}
 	if len(packages) == 0 {
-		return d.write(ctx, "upgrade", "-y")
+		return nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	return d.write(ctx, append([]string{"upgrade", "-y"}, packages...)...)
+}
+
+// UpgradeAll performs a full system upgrade (dnf upgrade).
+func (d *dnf) UpgradeAll(ctx context.Context) error {
+	return d.write(ctx, "upgrade", "-y")
 }
 
 // ensureVersionLock installs the versionlock plugin if its subcommand is absent.

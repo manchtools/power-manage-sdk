@@ -118,9 +118,13 @@ type Manager interface {
 	Remove(ctx context.Context, opts RemoveOptions, packages ...string) error
 	// Update refreshes the package metadata/database.
 	Update(ctx context.Context) error
-	// Upgrade upgrades the named packages; with no names it performs a full
-	// system upgrade (apt dist-upgrade / pacman -Syu / zypper dist-upgrade / …).
+	// Upgrade upgrades the named packages. With NO names it is a no-op (not a
+	// full upgrade) — an accidentally-empty list must never upgrade the whole
+	// system. Use UpgradeAll for that.
 	Upgrade(ctx context.Context, packages ...string) error
+	// UpgradeAll performs a full system upgrade (apt dist-upgrade / dnf upgrade /
+	// pacman -Syu / zypper dist-upgrade / flatpak update).
+	UpgradeAll(ctx context.Context) error
 	// Pin holds the named packages back from upgrades.
 	Pin(ctx context.Context, packages ...string) error
 	// Unpin releases the named packages so they upgrade again.

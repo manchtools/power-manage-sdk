@@ -157,14 +157,23 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 			t.Errorf("argv=%q", argv(f.Calls()[0]))
 		}
 	})
-	t.Run("upgrade all -Syu", func(t *testing.T) {
+	t.Run("UpgradeAll -Syu", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx); err != nil {
+		if err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -Syu --noconfirm" {
 			t.Errorf("argv=%q", argv(f.Calls()[0]))
+		}
+	})
+	t.Run("empty Upgrade is a no-op", func(t *testing.T) {
+		m, f := pacmanM(t)
+		if err := m.Upgrade(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if len(f.Calls()) != 0 {
+			t.Errorf("empty Upgrade ran %d commands, want 0", len(f.Calls()))
 		}
 	})
 	t.Run("upgrade specific", func(t *testing.T) {
