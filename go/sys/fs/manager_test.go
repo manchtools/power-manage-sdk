@@ -76,7 +76,7 @@ func stdinOf(t *testing.T, c pmexec.Command) string {
 
 func TestNew_NilRunnerRejected(t *testing.T) {
 	if _, err := New(nil); !errors.Is(err, pmexec.ErrRunnerRequired) {
-		t.Fatal("New(nil) = nil error, want a fail-closed rejection")
+		t.Fatalf("New(nil) error = %v, want ErrRunnerRequired", err)
 	}
 	if _, err := New(exectest.New(pmexec.Sudo)); err != nil {
 		t.Fatalf("New(runner) = %v, want nil", err)

@@ -11,7 +11,7 @@ import (
 
 func TestNew_NilRunner(t *testing.T) {
 	if _, err := New(Chrony, nil); !errors.Is(err, exec.ErrRunnerRequired) {
-		t.Error("New(_, nil) returned nil error")
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

@@ -79,7 +79,7 @@ func TestNew_RejectsUnknownBackend(t *testing.T) {
 func TestNew_RejectsNilRunner(t *testing.T) {
 	_, err := New(Apt, nil)
 	if !errors.Is(err, pmexec.ErrRunnerRequired) {
-		t.Errorf("New(Apt, nil) error = %v, want exec.ErrRunnerRequired", err)
+		t.Errorf("New(Apt, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

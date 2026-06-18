@@ -34,7 +34,7 @@ func argv(c exec.Command) string { return c.Name + " " + strings.Join(c.Args, " 
 
 func TestNew_NilRunner(t *testing.T) {
 	if _, err := New(nil); !errors.Is(err, exec.ErrRunnerRequired) {
-		t.Error("New(nil) returned nil error")
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

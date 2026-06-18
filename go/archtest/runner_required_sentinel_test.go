@@ -228,6 +228,19 @@ func constructsRunnerRequired(expr ast.Expr) bool {
 	if !ok || len(call.Args) == 0 {
 		return false
 	}
+	// Restrict to the error constructors so an unrelated helper that merely takes
+	// such a string (e.g. a log call) is not flagged.
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	pkg, ok := sel.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+	if !((pkg.Name == "errors" && sel.Sel.Name == "New") || (pkg.Name == "fmt" && sel.Sel.Name == "Errorf")) {
+		return false
+	}
 	lit, ok := call.Args[0].(*ast.BasicLit)
 	if !ok || lit.Kind != token.STRING {
 		return false

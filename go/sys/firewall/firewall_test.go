@@ -92,7 +92,7 @@ func TestNew_FailClosed(t *testing.T) {
 		}
 	}
 	if _, err := New(Nftables, "app", nil); !errors.Is(err, exec.ErrRunnerRequired) {
-		t.Error("New with nil runner returned nil error")
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 	for _, b := range []Backend{Nftables, Firewalld, UFW} {
 		m, err := New(b, "app", r)
