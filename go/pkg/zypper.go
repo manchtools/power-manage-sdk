@@ -103,9 +103,14 @@ func (z *zypper) Upgrade(ctx context.Context, packages ...string) error {
 		return err
 	}
 	if len(packages) == 0 {
-		return z.write(ctx, "--non-interactive", "dist-upgrade")
+		return nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	return z.write(ctx, append([]string{"--non-interactive", "update"}, packages...)...)
+}
+
+// UpgradeAll performs a full distribution upgrade (zypper dist-upgrade).
+func (z *zypper) UpgradeAll(ctx context.Context) error {
+	return z.write(ctx, "--non-interactive", "dist-upgrade")
 }
 
 // Autoremove is a no-op: zypper has no single-shot unneeded-package removal

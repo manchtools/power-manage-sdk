@@ -132,11 +132,16 @@ func (a *apt) Upgrade(ctx context.Context, packages ...string) error {
 		return err
 	}
 	if len(packages) == 0 {
-		args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
-		return a.write(ctx, "apt", args...)
+		return nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	args := append([]string{"install", "-y", "--only-upgrade"}, dpkgConfOptions...)
 	args = append(args, packages...)
+	return a.write(ctx, "apt", args...)
+}
+
+// UpgradeAll performs a full distribution upgrade (apt dist-upgrade).
+func (a *apt) UpgradeAll(ctx context.Context) error {
+	args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
 	return a.write(ctx, "apt", args...)
 }
 

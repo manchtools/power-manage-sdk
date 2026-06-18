@@ -191,14 +191,23 @@ func TestApt_Update(t *testing.T) {
 
 func TestApt_Upgrade(t *testing.T) {
 	ctx := context.Background()
-	t.Run("all -> dist-upgrade", func(t *testing.T) {
+	t.Run("UpgradeAll -> dist-upgrade", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx); err != nil {
+		if err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.HasPrefix(a, "apt dist-upgrade -y") {
 			t.Errorf("argv = %q, want dist-upgrade", a)
+		}
+	})
+	t.Run("empty Upgrade is a no-op (not a full upgrade)", func(t *testing.T) {
+		m, f := aptM(t)
+		if err := m.Upgrade(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if len(f.Calls()) != 0 {
+			t.Errorf("empty Upgrade ran %d commands, want 0", len(f.Calls()))
 		}
 	})
 	t.Run("specific -> only-upgrade", func(t *testing.T) {

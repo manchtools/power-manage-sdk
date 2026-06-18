@@ -190,14 +190,23 @@ func TestDnf_Update(t *testing.T) {
 
 func TestDnf_Upgrade(t *testing.T) {
 	ctx := context.Background()
-	t.Run("all", func(t *testing.T) {
+	t.Run("UpgradeAll", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx); err != nil {
+		if err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "dnf upgrade -y" {
 			t.Errorf("argv=%q", argv(f.Calls()[0]))
+		}
+	})
+	t.Run("empty Upgrade is a no-op", func(t *testing.T) {
+		m, f := dnfM(t)
+		if err := m.Upgrade(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if len(f.Calls()) != 0 {
+			t.Errorf("empty Upgrade ran %d commands, want 0", len(f.Calls()))
 		}
 	})
 	t.Run("specific", func(t *testing.T) {
