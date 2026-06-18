@@ -179,4 +179,7 @@ func TestGet_ShadowUnreadableLeavesUnlocked(t *testing.T) {
 	if info.Locked {
 		t.Error("Locked = true, want false when shadow is unreadable")
 	}
+	if info.LockedKnown {
+		t.Error("LockedKnown = true, want false when the shadow read failed — unknown must not look unlocked")
+	}
 }
