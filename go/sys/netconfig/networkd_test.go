@@ -85,6 +85,25 @@ func TestNetworkd_ApplyDHCP(t *testing.T) {
 	}
 }
 
+// Routes (and DNS/MTU) are independent of the addressing mode: a DHCP interface
+// with a static route emits the [Route] alongside DHCP=yes.
+func TestNetworkd_ApplyDHCPWithRoute(t *testing.T) {
+	ff := &fakeFS{}
+	m, r := newNetworkd(t, ff)
+	r.Push(exec.Result{}, nil)
+	err := m.Apply(context.Background(), InterfaceConfig{
+		Name: "eth0", Mode: DHCP,
+		Routes: []Route{{Destination: "10.0.0.0/8", Gateway: "192.0.2.254"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(ff.writes[0].data)
+	if !strings.Contains(body, "DHCP=yes") || !strings.Contains(body, "[Route]\nDestination=10.0.0.0/8\nGateway=192.0.2.254") {
+		t.Errorf("DHCP + static route must emit both DHCP=yes and the [Route]:\n%s", body)
+	}
+}
+
 func TestNetworkd_ApplyRejectsInvalidConfig(t *testing.T) {
 	m, r := newNetworkd(t, &fakeFS{})
 	if err := m.Apply(context.Background(), InterfaceConfig{Name: "eth0", Mode: Static}); !errors.Is(err, ErrInvalidConfig) {

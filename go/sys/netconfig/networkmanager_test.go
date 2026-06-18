@@ -100,6 +100,26 @@ func TestNM_ApplyDHCPClearsManual(t *testing.T) {
 	}
 }
 
+// Routes are independent of addressing mode: a DHCP interface with a static
+// route still emits ipv4.routes.
+func TestNM_ApplyDHCPWithRoute(t *testing.T) {
+	m, r := newNM(t)
+	r.Push(exec.Result{Stdout: "conn\n"}, nil)
+	r.Push(exec.Result{}, nil)
+	r.Push(exec.Result{}, nil)
+	err := m.Apply(context.Background(), InterfaceConfig{
+		Name: "eth0", Mode: DHCP,
+		Routes: []Route{{Destination: "10.0.0.0/8", Gateway: "192.0.2.254"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mod := strings.Join(r.Calls()[1].Args, " ")
+	if !strings.Contains(mod, "ipv4.method auto") || !strings.Contains(mod, "ipv4.routes 10.0.0.0/8 192.0.2.254") {
+		t.Errorf("DHCP + static route must emit auto method AND ipv4.routes:\n%q", mod)
+	}
+}
+
 func TestNM_ApplyV4OnlyStatic(t *testing.T) {
 	m, r := newNM(t)
 	r.Push(exec.Result{Stdout: "conn\n"}, nil)

@@ -40,13 +40,32 @@ func validateInterfaceConfig(cfg InterfaceConfig) error {
 	if cfg.Mode == Static && len(cfg.Addresses) == 0 {
 		return fmt.Errorf("%w: static mode requires at least one address", ErrInvalidConfig)
 	}
+	var hasV4, hasV6 bool
 	for _, a := range cfg.Addresses {
-		if _, _, err := net.ParseCIDR(a); err != nil {
+		ip, _, err := net.ParseCIDR(a)
+		if err != nil {
 			return fmt.Errorf("%w: address %q is not valid CIDR", ErrInvalidConfig, a)
 		}
+		if ip.To4() != nil {
+			hasV4 = true
+		} else {
+			hasV6 = true
+		}
 	}
-	if cfg.Gateway != "" && net.ParseIP(cfg.Gateway) == nil {
-		return fmt.Errorf("%w: gateway %q is not a valid IP address", ErrInvalidConfig, cfg.Gateway)
+	if cfg.Gateway != "" {
+		gwIP := net.ParseIP(cfg.Gateway)
+		if gwIP == nil {
+			return fmt.Errorf("%w: gateway %q is not a valid IP address", ErrInvalidConfig, cfg.Gateway)
+		}
+		// In static mode a gateway must share a family with a configured
+		// address, otherwise it would be silently dropped (a v6 gateway with
+		// only v4 addresses has nowhere to attach). Fail closed rather than
+		// quietly ignore it. (DHCP ignores Gateway entirely, so skip the check.)
+		if cfg.Mode == Static {
+			if gwV4 := gwIP.To4() != nil; (gwV4 && !hasV4) || (!gwV4 && !hasV6) {
+				return fmt.Errorf("%w: gateway %q family does not match any configured address", ErrInvalidConfig, cfg.Gateway)
+			}
+		}
 	}
 	for _, d := range cfg.DNS {
 		if net.ParseIP(d) == nil {

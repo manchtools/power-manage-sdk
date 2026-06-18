@@ -40,6 +40,9 @@ func TestValidateInterfaceConfig(t *testing.T) {
 		{"route negative metric", base(func(c *InterfaceConfig) {
 			c.Routes = []Route{{Destination: "10.0.0.0/8", Gateway: "192.0.2.1", Metric: -1}}
 		}), true},
+		{"gateway family mismatch", base(func(c *InterfaceConfig) { c.Gateway = "2001:db8::1" }), true}, // v6 gw, v4-only address
+		{"gateway family match v6", InterfaceConfig{Name: "eth0", Mode: Static, Addresses: []string{"2001:db8::10/64"}, Gateway: "2001:db8::1"}, false},
+		{"gateway family match dual-stack", InterfaceConfig{Name: "eth0", Mode: Static, Addresses: []string{"192.0.2.10/24", "2001:db8::10/64"}, Gateway: "2001:db8::1"}, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

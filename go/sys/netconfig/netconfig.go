@@ -80,17 +80,22 @@ type Route struct {
 	Metric int
 }
 
-// InterfaceConfig is the desired state of a network interface. Addresses,
-// Gateway, and Routes are honoured only when Mode is Static; they are validated
-// regardless (a malformed value is always rejected) but not emitted under DHCP.
+// InterfaceConfig is the desired state of a network interface.
+//
+// Mode governs ADDRESSING only: Addresses and Gateway are honoured solely in
+// Static mode (under DHCP the server supplies them, so they are not emitted —
+// though still validated if present). DNS, MTU, and Routes are independent of the
+// addressing mode and ARE applied in both modes — a common, valid setup is a
+// DHCP address plus a static route to a management subnet, or a static DNS
+// override on a DHCP link.
 type InterfaceConfig struct {
 	Name      string      // interface name, e.g. eth0
-	Mode      AddressMode // DHCP or Static (required)
-	Addresses []string    // CIDR list for static, e.g. ["192.0.2.10/24"]
-	Gateway   string      // default gateway (optional)
-	DNS       []string    // resolver IPs (optional; sys/dns is DNS policy's proper home)
-	MTU       int         // 0 = backend default
-	Routes    []Route     // additional static routes
+	Mode      AddressMode // DHCP or Static (required) — governs addressing only
+	Addresses []string    // CIDR list, static mode only, e.g. ["192.0.2.10/24"]
+	Gateway   string      // default gateway, static mode only (family must match an address)
+	DNS       []string    // resolver IPs (applied in both modes; sys/dns is DNS policy's proper home)
+	MTU       int         // 0 = backend default (applied in both modes)
+	Routes    []Route     // additional static routes (applied in both modes)
 }
 
 // Manager is the interface-configuration surface.
