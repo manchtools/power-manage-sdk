@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -400,6 +401,25 @@ func TestSession_ResizeBeforeExit(t *testing.T) {
 		t.Errorf("write after resize: %v", err)
 	}
 	drain(t, s, 5*time.Second)
+}
+
+// TestSession_ConcurrentResizeAndClose pins the fd-race fix: Resize (which reads
+// the raw fd via pty.Setsize) running concurrently with Close + the reaper (which
+// close the PTY) must be data-race-free. Meaningful only under `go test -race`.
+func TestSession_ConcurrentResizeAndClose(t *testing.T) {
+	cur := requireLinuxCurrentUser(t)
+	s := startSessionOrSkip(t, SessionConfig{User: cur.Username, Shell: pickShell(t)})
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			_ = s.Resize(80, 24) // an error after Close is fine; a data race is not
+		}
+	}()
+	_ = s.Close() // races the resizes and the reaper's pty.Close
+	wg.Wait()
 }
 
 func TestSession_CloseUnblocksWait(t *testing.T) {
