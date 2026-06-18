@@ -165,6 +165,44 @@ func TestVersion_Errors(t *testing.T) {
 	}
 }
 
+func TestParseClamscanVersion(t *testing.T) {
+	// Contract: accept ONLY the canonical "ClamAV <engine>/<sig>[/<date>]" line —
+	// the literal "ClamAV " prefix is required and BOTH engine and signature must
+	// be present and non-empty. The rejection cases are derived from that contract
+	// (a version line must carry the prefix + both fields), not from the parser's
+	// current behaviour, so an under-specified parser is caught.
+	valid := map[string]Version{
+		"ClamAV 1.0.1/27000/Wed Jun 18 09:00:00 2025\n": {Engine: "1.0.1", Signature: "27000"},
+		"  ClamAV 1.0.1/27000  ":                        {Engine: "1.0.1", Signature: "27000"}, // no date, surrounding whitespace
+	}
+	for in, want := range valid {
+		got, err := parseClamscanVersion(in)
+		if err != nil {
+			t.Errorf("parseClamscanVersion(%q) unexpected err: %v", in, err)
+			continue
+		}
+		if got != want {
+			t.Errorf("parseClamscanVersion(%q) = %+v, want %+v", in, got, want)
+		}
+	}
+	reject := []string{
+		"",                   // empty
+		"garbage",            // no prefix, no slash
+		"1.0.1/27000",        // missing "ClamAV " prefix entirely
+		"1.0.1/27000/date",   // missing prefix, otherwise full shape
+		"ClamXV 1.0.1/27000", // wrong prefix
+		"ClamAV ",            // prefix only, nothing after
+		"ClamAV 1.0.1",       // engine but no signature field
+		"ClamAV 1.0.1//date", // empty signature
+		"ClamAV /27000/date", // empty engine
+	}
+	for _, in := range reject {
+		if v, err := parseClamscanVersion(in); err == nil {
+			t.Errorf("parseClamscanVersion(%q) = %+v, want error", in, v)
+		}
+	}
+}
+
 func TestParseClamscanInfected_SkipsNoise(t *testing.T) {
 	// Summary/blank lines and malformed FOUND lines are ignored.
 	inf := parseClamscanInfected("\n----------- SCAN SUMMARY -----------\nInfected files: 1\nFOUND\nnoColonButEndsWith FOUND\n/a/b: Sig FOUND\n")

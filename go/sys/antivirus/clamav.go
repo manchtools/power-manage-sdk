@@ -82,9 +82,12 @@ func parseClamscanInfected(out string) []Infection {
 // parseClamscanVersion parses the "ClamAV <engine>/<sig>/<date>" version line.
 func parseClamscanVersion(out string) (Version, error) {
 	line := strings.TrimSpace(out)
+	if !strings.HasPrefix(line, "ClamAV ") {
+		return Version{}, fmt.Errorf("antivirus: unexpected clamscan --version output: %q", out)
+	}
 	line = strings.TrimPrefix(line, "ClamAV ")
 	parts := strings.SplitN(line, "/", 3)
-	if len(parts) < 2 || parts[0] == "" {
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
 		return Version{}, fmt.Errorf("antivirus: unexpected clamscan --version output: %q", out)
 	}
 	return Version{Engine: parts[0], Signature: parts[1]}, nil
