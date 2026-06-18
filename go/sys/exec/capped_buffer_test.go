@@ -87,6 +87,36 @@ func TestCappedBuffer_MultiWriteCumulativeCap(t *testing.T) {
 	}
 }
 
+// A negative cap clamps to zero (retain nothing); Bytes returns a copy with the
+// truncation marker when input was dropped, and a non-aliasing copy otherwise.
+func TestCappedBuffer_NegativeCapAndBytes(t *testing.T) {
+	b := NewCappedBuffer(-5) // clamps to 0
+	n, err := b.Write([]byte("x"))
+	if err != nil || n != 1 {
+		t.Fatalf("Write = (%d,%v), want (1,nil)", n, err)
+	}
+	if !b.Truncated() {
+		t.Error("a zero-cap buffer must mark truncated on any write")
+	}
+	if got := string(b.Bytes()); !strings.HasSuffix(got, "[output truncated]") || strings.Contains(got, "x") {
+		t.Errorf("Bytes() = %q, want only the truncation marker (nothing retained)", got)
+	}
+
+	// Non-truncated Bytes() returns a COPY of the retained content (no marker).
+	b2 := NewCappedBuffer(100)
+	if _, err := b2.Write([]byte("hello")); err != nil {
+		t.Fatal(err)
+	}
+	out := b2.Bytes()
+	if string(out) != "hello" {
+		t.Errorf("Bytes() = %q, want hello", out)
+	}
+	out[0] = 'X' // must not alias the internal buffer
+	if b2.String() != "hello" {
+		t.Errorf("Bytes() aliased the internal buffer; String() = %q, want hello", b2.String())
+	}
+}
+
 // CappedBuffer is written from os/exec's stdout/stderr copy goroutines;
 // it must be safe under concurrent writers.
 func TestCappedBuffer_ConcurrentWritesSafe(t *testing.T) {

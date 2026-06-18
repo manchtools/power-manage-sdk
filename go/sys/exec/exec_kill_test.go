@@ -10,15 +10,17 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/go-cmd/cmd"
 )
 
-// WS16 finding #6: on ctx cancel/timeout both exec wrappers SIGTERM'd the
-// child's process group but never escalated to SIGKILL, and then blocked
-// reading the status channel. A SIGTERM-ignoring child therefore pinned the
-// reaping goroutine until the child exited on its own (or forever). These
-// tests pin that a cancelled, SIGTERM-ignoring child is SIGKILLed after a
-// bounded grace and the call returns promptly — for BOTH wrappers
-// (runStreamingWithEnv via RunStreaming, runWithOptions via Run).
+// WS16 finding #6: on ctx cancel/timeout the exec core SIGTERM'd the child's
+// process group but never escalated to SIGKILL, then blocked reading the status
+// channel — a SIGTERM-ignoring child therefore pinned the reaping goroutine
+// until it exited on its own (or forever). The SIGKILL-escalation path is now
+// exercised through the Runner in runner_test.go
+// (TestRunner_SIGKILLsChildThatIgnoresSIGTERM), which reuses the three helpers
+// below. This file keeps those helpers and the well-behaved control case.
 
 // readChildPID reads the pgid-leader PID the child shell wrote ($$).
 func readChildPID(t *testing.T, pidFile string) int {
@@ -65,79 +67,37 @@ func sigtermIgnoringScript(pidFile string) string {
 	return fmt.Sprintf(`echo $$ > %s; trap "" TERM; while true; do sleep 30; done`, pidFile)
 }
 
-func TestRunStreaming_SIGKILLsChildThatIgnoresSIGTERM(t *testing.T) {
+// TestAwaitStatusOrKill_DStateFallback covers the last-resort branch: if a child
+// cannot be reaped even after SIGKILL within the grace (e.g. an uninterruptible
+// D-state), awaitStatusOrKill must return a best-effort status snapshot rather
+// than block forever. We force the branch deterministically by passing a status
+// channel that NEVER delivers, so both timers fire; the real child started here
+// is still SIGTERM'd (Stop) and SIGKILL'd by the function, so nothing leaks.
+func TestAwaitStatusOrKill_DStateFallback(t *testing.T) {
 	restore := killGrace
-	killGrace = 200 * time.Millisecond
+	killGrace = 50 * time.Millisecond
 	defer func() { killGrace = restore }()
 
-	pidFile := t.TempDir() + "/pid"
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-	defer cancel()
+	c := cmd.NewCmd("sleep", "60")
+	_ = c.Start() // real status channel intentionally discarded
+	never := make(chan cmd.Status)
 
-	type res struct{ err error }
-	done := make(chan res, 1)
 	start := time.Now()
-	go func() {
-		_, err := RunStreaming(ctx, "sh", []string{"-c", sigtermIgnoringScript(pidFile)}, nil, "", nil)
-		done <- res{err}
-	}()
-
-	select {
-	case r := <-done:
-		if elapsed := time.Since(start); elapsed > 5*time.Second {
-			t.Errorf("RunStreaming took %v; SIGTERM-ignoring child was not SIGKILLed after grace", elapsed)
-		}
-		if !errors.Is(r.err, context.DeadlineExceeded) {
-			t.Errorf("err = %v, want context.DeadlineExceeded on cancel", r.err)
-		}
-	case <-time.After(8 * time.Second):
-		t.Fatal("RunStreaming pinned on a SIGTERM-ignoring child — finding #6 (no SIGKILL escalation)")
+	_ = awaitStatusOrKill(c, never) // returns c.Status() after both grace timers fire
+	if elapsed := time.Since(start); elapsed > 3*time.Second {
+		t.Errorf("awaitStatusOrKill blocked %v; the bounded D-state fallback did not fire", elapsed)
 	}
-
-	assertProcessGroupGone(t, readChildPID(t, pidFile))
 }
 
-func TestRun_SIGKILLsChildThatIgnoresSIGTERM(t *testing.T) {
-	restore := killGrace
-	killGrace = 200 * time.Millisecond
-	defer func() { killGrace = restore }()
-
-	pidFile := t.TempDir() + "/pid"
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-	defer cancel()
-
-	type res struct{ err error }
-	done := make(chan res, 1)
-	start := time.Now()
-	go func() {
-		_, err := Run(ctx, "sh", "-c", sigtermIgnoringScript(pidFile))
-		done <- res{err}
-	}()
-
-	select {
-	case r := <-done:
-		if elapsed := time.Since(start); elapsed > 5*time.Second {
-			t.Errorf("Run took %v; SIGTERM-ignoring child was not SIGKILLed after grace", elapsed)
-		}
-		if !errors.Is(r.err, context.DeadlineExceeded) {
-			t.Errorf("err = %v, want context.DeadlineExceeded on cancel", r.err)
-		}
-	case <-time.After(8 * time.Second):
-		t.Fatal("Run pinned on a SIGTERM-ignoring child — finding #6 (no SIGKILL escalation)")
-	}
-
-	assertProcessGroupGone(t, readChildPID(t, pidFile))
-}
-
-// TestRun_WellBehavedChildReapsOnSIGTERM is the correct-path control: a child
+// TestRunner_WellBehavedChildReapsOnSIGTERM is the correct-path control: a child
 // that honors SIGTERM reaps at cancel, well before the SIGKILL grace, and the
-// call still returns ctx.Err().
-func TestRun_WellBehavedChildReapsOnSIGTERM(t *testing.T) {
+// Runner still returns ctx.Err().
+func TestRunner_WellBehavedChildReapsOnSIGTERM(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 	defer cancel()
 
 	start := time.Now()
-	_, err := Run(ctx, "sleep", "30") // default disposition: dies on SIGTERM
+	_, err := directRunner(t).Run(ctx, Command{Name: "sleep", Args: []string{"30"}}) // default disposition: dies on SIGTERM
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("err = %v, want context.DeadlineExceeded", err)
 	}

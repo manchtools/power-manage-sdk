@@ -79,6 +79,13 @@ func walkGoFiles(t *testing.T, root string, keep func(rel string) bool) []*goFil
 			case "vendor", "testdata", ".git":
 				return filepath.SkipDir
 			}
+			// Mirror the go tool: directories whose name begins with "_" or "."
+			// are not part of any buildable package (e.g. go/sys/_planned/*
+			// scaffolds awaiting their capability PR). A guard must not flag
+			// code the compiler never sees.
+			if name := d.Name(); name != "." && (strings.HasPrefix(name, "_") || strings.HasPrefix(name, ".")) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if !strings.HasSuffix(path, ".go") {

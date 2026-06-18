@@ -363,3 +363,50 @@ func TestRunner_StreamDeliversLines(t *testing.T) {
 		t.Errorf("streamed lines = %v, want [a b c]", got)
 	}
 }
+
+// Command.Dir runs the child in the requested working directory.
+func TestRunner_RunInDir(t *testing.T) {
+	dir := t.TempDir()
+	res, err := directRunner(t).Run(context.Background(), Command{Name: "pwd", Dir: dir})
+	if err != nil {
+		t.Fatalf("Run err = %v", err)
+	}
+	if got := strings.TrimSpace(res.Stdout); got != dir {
+		t.Errorf("pwd in Dir=%q = %q, want %q", dir, got, dir)
+	}
+}
+
+// Stderr lines are captured and delivered through the callback (the stderr arm
+// of the streaming core).
+func TestRunner_StreamDeliversStderr(t *testing.T) {
+	var got []string
+	res, err := directRunner(t).Stream(context.Background(),
+		Command{Name: "sh", Args: []string{"-c", "printf 'e1\\ne2\\n' >&2"}},
+		func(s StreamType, line string, _ int64) {
+			if s == StreamStderr {
+				got = append(got, strings.TrimSpace(line))
+			}
+		})
+	if err != nil {
+		t.Fatalf("Stream err = %v", err)
+	}
+	if strings.Join(got, ",") != "e1,e2" {
+		t.Errorf("streamed stderr = %v, want [e1 e2]", got)
+	}
+	if !strings.Contains(res.Stderr, "e1") {
+		t.Errorf("captured Stderr = %q, want it to contain e1", res.Stderr)
+	}
+}
+
+// The per-stream output cap also applies to stderr.
+func TestRunner_StderrOutputCapped(t *testing.T) {
+	res, err := directRunner(t).Run(context.Background(), Command{
+		Name: "sh", Args: []string{"-c", "yes aaaaaaaaaaaaaaaa | head -c 2000000 1>&2"},
+	})
+	if err != nil {
+		t.Fatalf("Run err = %v", err)
+	}
+	if !strings.Contains(res.Stderr, "[output truncated]") {
+		t.Error("Stderr missing the [output truncated] marker after exceeding the cap")
+	}
+}

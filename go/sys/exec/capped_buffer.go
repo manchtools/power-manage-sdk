@@ -6,8 +6,8 @@ import (
 )
 
 // truncationMarker is appended once to a CappedBuffer's rendered output
-// when input exceeded the cap. It matches the marker exec.Run uses for
-// its own captured streams so downstream consumers see one convention.
+// when input exceeded the cap. It matches the marker the streaming exec core
+// uses for its own captured streams so downstream consumers see one convention.
 const truncationMarker = "\n[output truncated]"
 
 // CappedBuffer is a concurrency-safe io.Writer that accumulates at most

@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// ErrInvalidEnvVar is returned when an env entry passed to RunStreaming
-// is not in the canonical KEY=VALUE form. Surfaced as a programmer
-// error so the bad value isn't silently dropped before the child runs.
+// ErrInvalidEnvVar is returned when an env entry in Command.Env is not in the
+// canonical KEY=VALUE form. Surfaced as a programmer error so the bad value
+// isn't silently dropped before the child runs.
 var ErrInvalidEnvVar = errors.New("invalid env entry")
 
 // ErrBlockedEnvVar is returned when an env entry's KEY is on the
 // hijack-blocklist (LD_PRELOAD, PATH override, BASH_ENV, GCONV_PATH,
 // etc.). Catches CVE-class injections at the SDK boundary so every
-// RunStreaming caller doesn't have to remember the check.
+// Command.Env passed to the Runner inherits the check in one place.
 var ErrBlockedEnvVar = errors.New("env var blocked by hijack-prevention allowlist")
 
 // ErrReservedEnvVar is returned when an env entry tries to set a variable the
