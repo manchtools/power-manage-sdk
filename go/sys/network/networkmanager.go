@@ -48,6 +48,9 @@ func (m *networkManager) nmcliWrite(ctx context.Context, args ...string) error {
 // that real failures (NetworkManager not running, nmcli missing, ctx cancelled)
 // propagate as errors instead of collapsing into "not found".
 func (m *networkManager) ConnectionExists(ctx context.Context, name string) (bool, error) {
+	if err := validateConnName(name); err != nil {
+		return false, err
+	}
 	out, err := m.nmcliRead(ctx, "-t", "-f", "NAME", "con", "show")
 	if err != nil {
 		return false, fmt.Errorf("list connections: %w", err)
@@ -65,6 +68,9 @@ func (m *networkManager) ConnectionExists(ctx context.Context, name string) (boo
 // Settings retrieves a connection's current settings as a key-value map. Values
 // are unescaped from nmcli terse-mode encoding (\: -> :, \\ -> \).
 func (m *networkManager) Settings(ctx context.Context, name string) (map[string]string, error) {
+	if err := validateConnName(name); err != nil {
+		return nil, err
+	}
 	out, err := m.nmcliRead(ctx, "-t", "-f", "all", "con", "show", name)
 	if err != nil {
 		return nil, fmt.Errorf("get settings for %s: %w", name, err)

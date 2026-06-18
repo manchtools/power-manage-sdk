@@ -122,20 +122,35 @@ func New(b Backend, runner exec.Runner, _ ...Option) (Manager, error) {
 // validateProfile checks required fields based on auth type. PSK/ClientKey are
 // Secrets; an empty Secret counts as absent.
 func validateProfile(p Profile) error {
-	if p.Name == "" {
-		return fmt.Errorf("connection name is required")
+	if err := validateConnName(p.Name); err != nil {
+		return err
 	}
 	if p.SSID == "" {
 		return fmt.Errorf("SSID is required")
+	}
+	// Name, SSID and PSK are rendered into the .nmconnection keyfile as
+	// `id=`/`ssid=`/`psk=` lines; a control character (notably a newline) would
+	// inject additional INI lines or sections (config injection).
+	if containsControl(p.SSID) {
+		return fmt.Errorf("invalid SSID: must not contain control characters")
 	}
 	switch p.AuthType {
 	case AuthPSK:
 		if p.PSK.IsZero() {
 			return fmt.Errorf("PSK is required for WPA authentication")
 		}
+		// The PSK is rendered into the keyfile psk= line. A NewSecret PSK can't
+		// hold a newline, but a NewMultilineSecret one can — reject that here
+		// (checked without revealing the plaintext) so it can't split the line.
+		if p.PSK.HasNewline() {
+			return fmt.Errorf("invalid PSK: must not contain a newline or carriage return")
+		}
 	case AuthEAPTLS:
 		if p.Identity == "" {
 			return fmt.Errorf("identity is required for EAP-TLS authentication")
+		}
+		if containsControl(p.Identity) {
+			return fmt.Errorf("invalid identity: must not contain control characters")
 		}
 		if p.CertDir == "" {
 			return fmt.Errorf("cert directory is required for EAP-TLS authentication")
@@ -151,6 +166,34 @@ func validateProfile(p Profile) error {
 		}
 	default:
 		return fmt.Errorf("unknown auth type: %d", p.AuthType)
+	}
+	return nil
+}
+
+// containsControl reports whether s holds any control character (NUL, newline,
+// CR, tab, …) — bytes that would corrupt the line-oriented .nmconnection keyfile
+// or nmcli's terse output.
+func containsControl(s string) bool {
+	for _, r := range s {
+		if r < 0x20 || r == 0x7f {
+			return true
+		}
+	}
+	return false
+}
+
+// validateConnName validates a connection name. It is rendered into the keyfile
+// (`id=`) and passed to nmcli as an argument, so it must be non-empty, free of
+// control characters, and not start with '-' (which nmcli would read as a flag).
+func validateConnName(name string) error {
+	if name == "" {
+		return fmt.Errorf("connection name is required")
+	}
+	if containsControl(name) {
+		return fmt.Errorf("invalid connection name: must not contain control characters")
+	}
+	if strings.HasPrefix(name, "-") {
+		return fmt.Errorf("invalid connection name %q: must not start with '-'", name)
 	}
 	return nil
 }

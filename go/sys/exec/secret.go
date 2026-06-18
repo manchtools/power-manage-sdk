@@ -55,3 +55,11 @@ func (s Secret) Reveal() string { return s.v }
 
 // IsZero reports whether the secret is empty.
 func (s Secret) IsZero() bool { return s.v == "" }
+
+// HasNewline reports whether the secret contains a newline or carriage return —
+// without exposing the plaintext (it returns only a bool, so it is not a Reveal
+// sink). A NewSecret value never does; a NewMultilineSecret one may, and such a
+// value must not be interpolated into a line-oriented sink (a tool's stdin
+// record, or an nmcli keyfile `psk=` line). Callers validate with this instead
+// of revealing the secret to inspect it.
+func (s Secret) HasNewline() bool { return strings.ContainsAny(s.v, "\n\r") }
