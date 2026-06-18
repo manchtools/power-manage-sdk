@@ -164,13 +164,16 @@ func TestSyslog_QueryValidationRejects(t *testing.T) {
 }
 
 // A grep pattern that passes the structural guard but is not valid RE2 surfaces
-// as ErrInvalidQuery from the syslog compile (e.g. an unclosed class).
+// as ErrInvalidQuery from the syslog compile — and must do so BEFORE any
+// escalated tail runs (compile-before-privileged-read).
 func TestSyslog_QueryBadRegexCompile(t *testing.T) {
 	withSyslogFixture(t, true)
 	r := exectest.New(exec.Direct)
-	r.Push(exec.Result{Stdout: "x\n"}, nil)
 	s, _ := New(Syslog, r)
 	if _, err := s.Query(context.Background(), Query{Grep: "[unclosed"}); !errors.Is(err, ErrInvalidQuery) {
 		t.Errorf("err = %v, want ErrInvalidQuery for an uncompilable pattern", err)
+	}
+	if len(r.Calls()) != 0 {
+		t.Error("a malformed grep must fail before any escalated tail runs")
 	}
 }

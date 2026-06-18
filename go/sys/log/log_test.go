@@ -120,10 +120,10 @@ func TestRunEscalated(t *testing.T) {
 
 func TestDetect(t *testing.T) {
 	cases := []struct {
-		name      string
-		journalct bool
-		syslog    bool
-		want      []Backend
+		name       string
+		journalctl bool
+		syslog     bool
+		want       []Backend
 	}{
 		{"none", false, false, nil},
 		{"journald only", true, false, []Backend{Journald}},
@@ -135,7 +135,7 @@ func TestDetect(t *testing.T) {
 			prevLP, prevStat := lookPath, statFile
 			t.Cleanup(func() { lookPath, statFile = prevLP, prevStat })
 			lookPath = func(string) (string, error) {
-				if tc.journalct {
+				if tc.journalctl {
 					return "/usr/bin/journalctl", nil
 				}
 				return "", errors.New("nope")

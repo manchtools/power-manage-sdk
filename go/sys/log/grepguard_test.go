@@ -26,6 +26,11 @@ func TestIsPathologicalGrepPattern(t *testing.T) {
 		{"six unbounded too many", "a*b*c*d*e*f*", true},
 		{"bounded repeat of unbounded group", "(.*a){11}", true},
 		{"bounded range repeat of unbounded group", "(.*a){1,11}", true},
+		// Nested-group bypasses: an inner group's quantifier/alternation must
+		// propagate to a quantified outer group (else these slip through).
+		{"nested-group nested quant", "((a+))+", true},
+		{"nested-group alternation under quant", "((a|ab))+", true},
+		{"nested-group bounded repeat of unbounded", "((.*a)){2}", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

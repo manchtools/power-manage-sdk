@@ -31,6 +31,16 @@ func (s *syslogSource) Query(ctx context.Context, q Query) ([]string, error) {
 	if err := validateQuery(q); err != nil {
 		return nil, err
 	}
+	// Compile the grep pattern BEFORE any privileged read, so a malformed
+	// pattern fails closed without triggering an escalated tail. The structural
+	// guard already ran in validateQuery; RE2 is linear-time, so this is DoS-safe.
+	var re *regexp.Regexp
+	if q.Grep != "" {
+		var err error
+		if re, err = regexp.Compile(q.Grep); err != nil {
+			return nil, fmt.Errorf("%w: grep pattern: %v", ErrInvalidQuery, err)
+		}
+	}
 	path, err := syslogPath()
 	if err != nil {
 		return nil, err
@@ -42,14 +52,8 @@ func (s *syslogSource) Query(ctx context.Context, q Query) ([]string, error) {
 		return nil, err
 	}
 	lines := splitLines(out)
-	if q.Grep == "" {
+	if re == nil {
 		return lines, nil
-	}
-	// The structural guard already ran in validateQuery; RE2 is linear-time, so
-	// this compile is DoS-safe. A compile error is a malformed pattern.
-	re, err := regexp.Compile(q.Grep)
-	if err != nil {
-		return nil, fmt.Errorf("%w: grep pattern: %v", ErrInvalidQuery, err)
 	}
 	matched := make([]string, 0, len(lines))
 	for _, l := range lines {
