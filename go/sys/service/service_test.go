@@ -45,8 +45,8 @@ func TestNew_FailClosed(t *testing.T) {
 			t.Errorf("New(%d) err = %v, want ErrUnknownBackend", b, err)
 		}
 	}
-	if _, err := New(Systemd, nil); err == nil {
-		t.Error("New with nil runner returned nil error")
+	if _, err := New(Systemd, nil); !errors.Is(err, exec.ErrRunnerRequired) {
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 	if _, err := New(Systemd, f); err != nil {
 		t.Errorf("New(Systemd, runner) err = %v, want nil", err)

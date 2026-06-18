@@ -33,8 +33,8 @@ func seamPresent(t *testing.T) {
 func argv(c exec.Command) string { return c.Name + " " + strings.Join(c.Args, " ") }
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(nil); err == nil {
-		t.Error("New(nil) returned nil error")
+	if _, err := New(nil); !errors.Is(err, exec.ErrRunnerRequired) {
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

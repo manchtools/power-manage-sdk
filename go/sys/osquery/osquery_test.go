@@ -105,8 +105,8 @@ func TestNew_NotInstalled(t *testing.T) {
 }
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(nil); err == nil {
-		t.Error("New(nil) returned nil error")
+	if _, err := New(nil); !errors.Is(err, exec.ErrRunnerRequired) {
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

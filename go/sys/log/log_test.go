@@ -11,8 +11,8 @@ import (
 )
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(Journald, nil); err == nil {
-		t.Error("New(_, nil) returned nil error")
+	if _, err := New(Journald, nil); !errors.Is(err, exec.ErrRunnerRequired) {
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

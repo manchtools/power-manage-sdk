@@ -69,7 +69,7 @@ type Manager interface {
 // rejected.
 func New(b Backend, runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("timesync: runner is required")
+		return nil, fmt.Errorf("timesync: %w", exec.ErrRunnerRequired)
 	}
 	switch b {
 	case Timedatectl:

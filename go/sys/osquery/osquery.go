@@ -112,7 +112,7 @@ type client struct {
 // at construction that osquery is unavailable), and an error when runner is nil.
 func New(runner exec.Runner) (Querier, error) {
 	if runner == nil {
-		return nil, errors.New("osquery: runner is required")
+		return nil, fmt.Errorf("osquery: %w", exec.ErrRunnerRequired)
 	}
 	path := findOsqueryBinary()
 	if path == "" {

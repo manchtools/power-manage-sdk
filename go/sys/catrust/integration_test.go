@@ -28,16 +28,24 @@ var bundlePath = map[catrust.Backend]string{
 	catrust.P11Kit:         "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
 }
 
-// genCA returns a self-signed CA as (PEM, DER) so the test can match the exact
-// certificate inside the system bundle.
-func genCA(t *testing.T) (pemBytes, der []byte) {
+// genCA returns a self-signed CA as (PEM, DER) plus the cert's parsed Subject
+// DN string so the test can match both the exact certificate inside the system
+// bundle and the Subject/Issuer reported by List. The CA is self-signed, so its
+// Issuer equals its Subject.
+func genCA(t *testing.T) (pemBytes, der []byte, subject string) {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// RFC 5280 §5.1.2.2: serial numbers should be large random values, not
+	// derived from a clock (which can collide). 128 random bits is conventional.
+	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tmpl := &x509.Certificate{
-		SerialNumber:          big.NewInt(time.Now().UnixNano()),
+		SerialNumber:          serial,
 		Subject:               pkix.Name{CommonName: "PM Integration Test CA", Organization: []string{"power-manage-test"}},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(24 * time.Hour),
@@ -49,7 +57,11 @@ func genCA(t *testing.T) (pemBytes, der []byte) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), der
+	cert, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), der, cert.Subject.String()
 }
 
 // bundleContainsDER reports whether the consolidated bundle holds a cert with
@@ -110,7 +122,7 @@ func TestRoundTrip_Integration(t *testing.T) {
 				t.Fatalf("New(%v): %v", b, err)
 			}
 			const name = "pm-integration-test-ca"
-			pemBytes, der := genCA(t)
+			pemBytes, der, subject := genCA(t)
 			t.Cleanup(func() { _ = m.Remove(ctx, name) })
 
 			if err := m.Install(ctx, name, pemBytes); err != nil {
@@ -126,6 +138,13 @@ func TestRoundTrip_Integration(t *testing.T) {
 			for _, a := range anchors {
 				if a.Name == name {
 					found = true
+					// Self-signed: Subject and Issuer both equal the CA's subject.
+					if a.Subject != subject {
+						t.Errorf("anchor Subject = %q, want %q", a.Subject, subject)
+					}
+					if a.Issuer != subject {
+						t.Errorf("anchor Issuer = %q, want %q (self-signed)", a.Issuer, subject)
+					}
 				}
 			}
 			if !found {

@@ -78,8 +78,8 @@ func TestNew_RejectsUnknownBackend(t *testing.T) {
 
 func TestNew_RejectsNilRunner(t *testing.T) {
 	_, err := New(Apt, nil)
-	if err == nil || !strings.Contains(err.Error(), "runner is required") {
-		t.Errorf("New(Apt, nil) error = %v, want 'runner is required'", err)
+	if !errors.Is(err, pmexec.ErrRunnerRequired) {
+		t.Errorf("New(Apt, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 

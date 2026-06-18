@@ -10,7 +10,6 @@ package notify
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -50,7 +49,7 @@ type Manager interface {
 // New returns a Manager driven by runner. A nil runner is rejected.
 func New(runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("notify: runner is required")
+		return nil, fmt.Errorf("notify: %w", exec.ErrRunnerRequired)
 	}
 	return &notifier{r: runner}, nil
 }

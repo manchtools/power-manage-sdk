@@ -132,7 +132,7 @@ type base struct {
 // rejected.
 func New(b Backend, runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("netconfig: runner is required")
+		return nil, fmt.Errorf("netconfig: %w", exec.ErrRunnerRequired)
 	}
 	switch b {
 	case NetworkManager:

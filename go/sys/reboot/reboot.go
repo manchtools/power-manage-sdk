@@ -48,7 +48,7 @@ type Manager interface {
 // New returns a Manager driven by runner. A nil runner is rejected.
 func New(runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("reboot: runner is required")
+		return nil, fmt.Errorf("reboot: %w", exec.ErrRunnerRequired)
 	}
 	return &rebooter{r: runner}, nil
 }

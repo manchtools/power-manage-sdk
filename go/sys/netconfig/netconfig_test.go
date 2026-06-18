@@ -36,8 +36,8 @@ func withFakeFS(t *testing.T, ff *fakeFS) {
 }
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(NetworkManager, nil); err == nil {
-		t.Error("New(_, nil) returned nil error; a nil runner must be rejected")
+	if _, err := New(NetworkManager, nil); !errors.Is(err, exec.ErrRunnerRequired) {
+		t.Errorf("New(_, nil) error = %v, want ErrRunnerRequired", err)
 	}
 }
 
