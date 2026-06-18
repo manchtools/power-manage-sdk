@@ -199,6 +199,24 @@ func TestParseResolvConf_LastSearchWins(t *testing.T) {
 	}
 }
 
+// parseResolvConf strips inline comments so a hand-edited line like
+// `search corp.example # note` does not leak comment tokens into the State.
+func TestParseResolvConf_StripsInlineComments(t *testing.T) {
+	st := parseResolvConf([]byte("nameserver 1.1.1.1 # primary\nsearch corp.example lan ; trailing\n"))
+	if strings.Join(st.Nameservers, ",") != "1.1.1.1" {
+		t.Errorf("nameservers = %v, want [1.1.1.1] (inline comment stripped)", st.Nameservers)
+	}
+	if strings.Join(st.SearchDomains, ",") != "corp.example,lan" {
+		t.Errorf("search domains = %v, want [corp.example lan] (inline comment stripped)", st.SearchDomains)
+	}
+	// A line that is only a keyword followed immediately by a comment yields no
+	// values (and must not panic).
+	st = parseResolvConf([]byte("search # nothing here\n"))
+	if len(st.SearchDomains) != 0 {
+		t.Errorf("search-only-comment domains = %v, want empty", st.SearchDomains)
+	}
+}
+
 func TestRenderResolvedDropIn_NewlineGuard(t *testing.T) {
 	// Defense-in-depth: a value carrying a newline is refused (validateConfig
 	// already prevents this, but the renderer fails closed regardless).

@@ -130,6 +130,16 @@ func parseResolvConf(data []byte) State {
 			continue
 		}
 		fields := strings.Fields(line)
+		// Drop an inline comment: everything from the first token that begins a
+		// "#"/";" comment (a hand-edited resolv.conf may carry one). The keyword
+		// (fields[0]) is never a comment — full-comment lines are skipped above —
+		// so the cut is always at index >= 1 and fields stays non-empty.
+		for i, f := range fields {
+			if strings.HasPrefix(f, "#") || strings.HasPrefix(f, ";") {
+				fields = fields[:i]
+				break
+			}
+		}
 		switch fields[0] {
 		case "nameserver":
 			if len(fields) >= 2 {
