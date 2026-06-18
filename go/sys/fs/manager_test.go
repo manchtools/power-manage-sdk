@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -86,156 +87,94 @@ func TestNew_NilRunnerRejected(t *testing.T) {
 // --- WriteFile (escalated path) -------------------------------------------
 
 func TestWriteFile_Escalated_HappyWithOwnership(t *testing.T) {
+	// /etc is root-owned and not group/other-writable, so escalatedParentSafe
+	// admits it and the write proceeds to the (faked) root shell.
 	f, m := sudoMgr(t)
 	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("body\n"),
 		WriteOptions{Mode: 0o640, Owner: "root", Group: "staff"}); err != nil {
 		t.Fatal(err)
 	}
 	calls := f.Calls()
-	if len(calls) != 4 {
-		t.Fatalf("ran %d commands, want 4 (tee, chmod, chown, mv); got %v", len(calls), calls)
+	if len(calls) != 1 {
+		t.Fatalf("ran %d commands, want 1 (a single root sh -c); got %v", len(calls), callNames(calls))
 	}
-	if got := argv(calls[0]); got != "tee -- /etc/app.conf.pm-tmp" {
-		t.Errorf("tee argv = %q", got)
+	c := calls[0]
+	if !c.Escalate {
+		t.Error("the escalated write must run escalated")
 	}
-	if body := stdinOf(t, calls[0]); body != "body\n" {
-		t.Errorf("tee stdin = %q", body)
+	// args: -c <script> sh <target> <mode> <owner:group> <backup>
+	want := []string{"-c", escalatedWriteScript, "sh", "/etc/app.conf", "0640", "root:staff", ""}
+	if c.Name != "sh" || strings.Join(c.Args, "\x00") != strings.Join(want, "\x00") {
+		t.Errorf("command = %s %q\nwant   = sh %q", c.Name, c.Args, want)
 	}
-	if got := argv(calls[1]); got != "chmod 0640 -- /etc/app.conf.pm-tmp" {
-		t.Errorf("chmod argv = %q", got)
-	}
-	if got := argv(calls[2]); got != "chown -- root:staff /etc/app.conf.pm-tmp" {
-		t.Errorf("chown argv = %q", got)
-	}
-	if got := argv(calls[3]); got != "mv -f -- /etc/app.conf.pm-tmp /etc/app.conf" {
-		t.Errorf("mv argv = %q", got)
-	}
-	for i, c := range calls {
-		if !c.Escalate {
-			t.Errorf("call %d (%s) not escalated", i, c.Name)
-		}
+	if body := stdinOf(t, c); body != "body\n" {
+		t.Errorf("stdin = %q, want the file content (read by `cat` in the script)", body)
 	}
 }
 
-func TestWriteFile_Escalated_DefaultsModeAndSkipsChownWhenNoOwner(t *testing.T) {
+func TestWriteFile_Escalated_DefaultModeNoOwner(t *testing.T) {
 	f, m := sudoMgr(t)
 	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"), WriteOptions{}); err != nil {
 		t.Fatal(err)
 	}
-	calls := f.Calls()
-	if len(calls) != 3 {
-		t.Fatalf("ran %d commands, want 3 (tee, chmod, mv) when no owner/group", len(calls))
+	c := f.Calls()[0]
+	if c.Args[4] != "0644" {
+		t.Errorf("mode arg = %q, want default 0644", c.Args[4])
 	}
-	if got := argv(calls[1]); got != "chmod 0644 -- /etc/app.conf.pm-tmp" {
-		t.Errorf("chmod argv = %q, want default 0644", got)
+	if c.Args[5] != "" {
+		t.Errorf("owner arg = %q, want empty (script skips chown)", c.Args[5])
+	}
+	if c.Args[6] != "" {
+		t.Errorf("backup arg = %q, want empty", c.Args[6])
 	}
 }
 
-func TestWriteFile_Escalated_TeeFailureCleansUp(t *testing.T) {
+func TestWriteFile_Escalated_WithBackupArg(t *testing.T) {
+	f, m := sudoMgr(t)
+	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("new"),
+		WriteOptions{Backup: "/etc/app.conf.bak"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := f.Calls()[0].Args[6]; got != "/etc/app.conf.bak" {
+		t.Errorf("backup arg = %q, want the backup path (the root script does the copy)", got)
+	}
+}
+
+func TestWriteFile_Escalated_ScriptFailure(t *testing.T) {
 	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{ExitCode: 1, Stderr: "tee: No such file or directory"}, nil) // tee
+	f.Push(pmexec.Result{ExitCode: 1, Stderr: "mktemp: cannot create"}, nil)
 	m := mustManager(t, f)
 	err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"), WriteOptions{})
 	if err == nil || !strings.Contains(err.Error(), "write file") {
-		t.Fatalf("err = %v, want a wrapped tee failure", err)
-	}
-	calls := f.Calls()
-	if len(calls) != 2 || calls[1].Name != "rm" {
-		t.Fatalf("want [tee, rm] cleanup, got %v", calls)
+		t.Fatalf("err = %v, want a wrapped write-file failure", err)
 	}
 }
 
-func TestWriteFile_Escalated_ChmodFailureCleansUp(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{ExitCode: 0}, nil)                  // tee ok
-	f.Push(pmexec.Result{ExitCode: 1, Stderr: "chmod"}, nil) // chmod fails
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"), WriteOptions{}); err == nil ||
-		!strings.Contains(err.Error(), "chmod") {
-		t.Fatalf("err = %v, want a wrapped chmod failure", err)
+// TestWriteFile_Escalated_RefusesUnsafeParent: a parent directory a non-root user
+// could write to (here world-writable and not sticky) is refused BEFORE any
+// escalation, so the symlink-plant window never opens. The 0777-non-sticky perms
+// are unsafe whether or not the test runs as root.
+func TestWriteFile_Escalated_RefusesUnsafeParent(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0o777); err != nil {
+		t.Fatal(err)
 	}
-	if calls := f.Calls(); calls[len(calls)-1].Name != "rm" {
-		t.Errorf("temp not cleaned up after chmod failure: %v", calls)
+	f, m := sudoMgr(t)
+	err := m.WriteFile(context.Background(), filepath.Join(dir, "f"), []byte("x"), WriteOptions{})
+	if !errors.Is(err, ErrUnsafeParentDir) {
+		t.Fatalf("err = %v, want ErrUnsafeParentDir", err)
 	}
-}
-
-func TestWriteFile_Escalated_ChownFailureCleansUp(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{}, nil)                             // tee
-	f.Push(pmexec.Result{}, nil)                             // chmod
-	f.Push(pmexec.Result{ExitCode: 1, Stderr: "chown"}, nil) // chown fails
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"),
-		WriteOptions{Owner: "root"}); err == nil || !strings.Contains(err.Error(), "chown") {
-		t.Fatalf("err = %v, want a wrapped chown failure", err)
-	}
-}
-
-func TestWriteFile_Escalated_MvFailureCleansUp(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{}, nil)                          // tee
-	f.Push(pmexec.Result{}, nil)                          // chmod
-	f.Push(pmexec.Result{ExitCode: 1, Stderr: "mv"}, nil) // mv fails
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"), WriteOptions{}); err == nil ||
-		!strings.Contains(err.Error(), "move file into place") {
-		t.Fatalf("err = %v, want a wrapped mv failure", err)
-	}
-	if calls := f.Calls(); calls[len(calls)-1].Name != "rm" {
-		t.Errorf("temp not cleaned up after mv failure: %v", calls)
+	if n := len(f.Calls()); n != 0 {
+		t.Errorf("ran %d commands; an unsafe parent must be refused before escalating", n)
 	}
 }
 
 func TestWriteFile_Escalated_RunnerErrorPropagates(t *testing.T) {
 	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // tee can't escalate
+	f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // the root shell can't escalate
 	m := mustManager(t, f)
 	if err := m.WriteFile(context.Background(), "/etc/app.conf", []byte("x"), WriteOptions{}); !errors.Is(err, pmexec.ErrEscalationDenied) {
 		t.Fatalf("err = %v, want ErrEscalationDenied", err)
-	}
-}
-
-func TestWriteFile_Escalated_WithBackup_CopiesExisting(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{ExitCode: 0}, nil) // test -e (exists)
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/usr/local/bin/app", []byte("new"),
-		WriteOptions{Backup: "/usr/local/bin/app.bak"}); err != nil {
-		t.Fatal(err)
-	}
-	calls := f.Calls()
-	// test -e, cp, tee, chmod, mv
-	if len(calls) != 5 {
-		t.Fatalf("ran %d commands, want 5 (test, cp, tee, chmod, mv): %v", len(calls), callNames(calls))
-	}
-	if got := argv(calls[1]); got != "cp -f -- /usr/local/bin/app /usr/local/bin/app.bak" {
-		t.Errorf("cp argv = %q", got)
-	}
-}
-
-func TestWriteFile_Escalated_WithBackup_AbsentSkipsCopy(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{ExitCode: 1}, nil) // test -e (absent)
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/usr/local/bin/app", []byte("new"),
-		WriteOptions{Backup: "/usr/local/bin/app.bak"}); err != nil {
-		t.Fatal(err)
-	}
-	for _, c := range f.Calls() {
-		if c.Name == "cp" {
-			t.Fatal("cp ran for a backup of a non-existent file")
-		}
-	}
-}
-
-func TestWriteFile_Escalated_WithBackup_CopyFailure(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{ExitCode: 0}, nil)               // test -e (exists)
-	f.Push(pmexec.Result{ExitCode: 1, Stderr: "cp"}, nil) // cp fails
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/usr/local/bin/app", []byte("new"),
-		WriteOptions{Backup: "/usr/local/bin/app.bak"}); err == nil || !strings.Contains(err.Error(), "backup") {
-		t.Fatalf("err = %v, want a wrapped backup failure", err)
 	}
 }
 
@@ -746,16 +685,6 @@ func TestWriteFile_Direct_SafeReplaceError(t *testing.T) {
 	if err := m.WriteFile(context.Background(), dest, []byte("x"), WriteOptions{}); err == nil ||
 		!strings.Contains(err.Error(), "write file") {
 		t.Fatalf("err = %v, want a wrapped write failure", err)
-	}
-}
-
-func TestWriteFile_Escalated_BackupExistsProbeError(t *testing.T) {
-	f := exectest.New(pmexec.Sudo)
-	f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // test -e cannot run
-	m := mustManager(t, f)
-	if err := m.WriteFile(context.Background(), "/usr/local/bin/app", []byte("x"),
-		WriteOptions{Backup: "/usr/local/bin/app.bak"}); !errors.Is(err, pmexec.ErrEscalationDenied) {
-		t.Fatalf("err = %v, want the probe's runner error to propagate", err)
 	}
 }
 

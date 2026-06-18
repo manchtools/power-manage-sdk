@@ -146,6 +146,46 @@ func TestWriteFileWithModeAndOwnership(t *testing.T) {
 	}
 }
 
+// TestWriteFile_ReplacesSymlinkTargetNotFollowed is the real-system proof of the
+// symlink-safety fix: when the target path is a pre-planted symlink, the write
+// must REPLACE the symlink with a regular file (rename, via mv -T on the
+// escalated path / O_NOFOLLOW rename on the Direct path) and must NOT follow it
+// to clobber the symlink's destination. /tmp is sticky+root-owned, so the
+// escalated path's parent check admits it.
+func TestWriteFile_ReplacesSymlinkTargetNotFollowed(t *testing.T) {
+	ctx := context.Background()
+	m := intManager(t)
+
+	sentinel := tmpPath(t, "sym-sentinel")
+	link := tmpPath(t, "sym-link")
+	defer cleanup(t, m, sentinel)
+	defer cleanup(t, m, link)
+
+	if err := m.WriteFile(ctx, sentinel, []byte("SENTINEL\n"), fs.WriteOptions{}); err != nil {
+		t.Fatalf("seed sentinel: %v", err)
+	}
+	_ = os.Remove(link)
+	if err := os.Symlink(sentinel, link); err != nil {
+		t.Fatalf("plant symlink: %v", err)
+	}
+
+	if err := m.WriteFile(ctx, link, []byte("newcontent\n"), fs.WriteOptions{}); err != nil {
+		t.Fatalf("WriteFile(symlinked target): %v", err)
+	}
+
+	// The symlink's destination must be untouched (the write did not follow it).
+	if got, _ := m.ReadFile(ctx, sentinel); string(got) != "SENTINEL\n" {
+		t.Errorf("sentinel was clobbered through the symlink: %q", got)
+	}
+	// The target path is now a regular file holding the new content.
+	if fi, err := os.Lstat(link); err != nil || fi.Mode()&os.ModeSymlink != 0 {
+		t.Errorf("target is still a symlink (err=%v, mode=%v); the symlink was followed, not replaced", err, fi.Mode())
+	}
+	if got, _ := m.ReadFile(ctx, link); string(got) != "newcontent\n" {
+		t.Errorf("target content = %q, want the new content", got)
+	}
+}
+
 func TestSetModeAndOwnership(t *testing.T) {
 	ctx := context.Background()
 	m := intManager(t)
