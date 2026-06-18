@@ -114,3 +114,24 @@ func TestSecret_RedactsWhenNestedInStruct(t *testing.T) {
 		t.Fatalf("nested Secret not redacted: %q", out)
 	}
 }
+
+// HasNewline reports a newline/CR without revealing the plaintext — the safe
+// predicate validators use for line-oriented sinks (keyfile psk=, stdin records).
+func TestSecret_HasNewline(t *testing.T) {
+	clean, err := NewSecret("Hunter2-no-newlines")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clean.HasNewline() {
+		t.Error("a clean secret reported a newline")
+	}
+	if NewMultilineSecret("a\nb").HasNewline() != true {
+		t.Error("a \\n multiline secret must report HasNewline")
+	}
+	if NewMultilineSecret("a\rb").HasNewline() != true {
+		t.Error("a \\r multiline secret must report HasNewline")
+	}
+	if (Secret{}).HasNewline() {
+		t.Error("the zero secret has no newline")
+	}
+}
