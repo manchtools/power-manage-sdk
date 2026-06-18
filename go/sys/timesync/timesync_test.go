@@ -47,32 +47,35 @@ func TestBackendString(t *testing.T) {
 
 func TestDetect(t *testing.T) {
 	cases := []struct {
+		name    string
 		present map[string]bool
 		want    []Backend
 	}{
-		{map[string]bool{}, nil},
-		{map[string]bool{"timedatectl": true}, []Backend{Timedatectl}},
-		{map[string]bool{"chronyc": true}, []Backend{Chrony}},
-		{map[string]bool{"timedatectl": true, "chronyc": true}, []Backend{Timedatectl, Chrony}},
+		{"none", map[string]bool{}, nil},
+		{"timedatectl only", map[string]bool{"timedatectl": true}, []Backend{Timedatectl}},
+		{"chronyc only", map[string]bool{"chronyc": true}, []Backend{Chrony}},
+		{"both", map[string]bool{"timedatectl": true, "chronyc": true}, []Backend{Timedatectl, Chrony}},
 	}
 	for _, tc := range cases {
-		prev := lookPath
-		lookPath = func(name string) (string, error) {
-			if tc.present[name] {
-				return "/usr/bin/" + name, nil
+		t.Run(tc.name, func(t *testing.T) {
+			prev := lookPath
+			t.Cleanup(func() { lookPath = prev }) // restored even if an assertion fails
+			lookPath = func(name string) (string, error) {
+				if tc.present[name] {
+					return "/usr/bin/" + name, nil
+				}
+				return "", errors.New("not found")
 			}
-			return "", errors.New("not found")
-		}
-		got := Detect(context.Background())
-		lookPath = prev
-		if len(got) != len(tc.want) {
-			t.Fatalf("Detect(%v) = %v, want %v", tc.present, got, tc.want)
-		}
-		for i := range got {
-			if got[i] != tc.want[i] {
-				t.Errorf("Detect[%d] = %v, want %v", i, got[i], tc.want[i])
+			got := Detect(context.Background())
+			if len(got) != len(tc.want) {
+				t.Fatalf("Detect(%v) = %v, want %v", tc.present, got, tc.want)
 			}
-		}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Errorf("Detect[%d] = %v, want %v", i, got[i], tc.want[i])
+				}
+			}
+		})
 	}
 }
 
