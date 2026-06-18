@@ -3,6 +3,7 @@ package reboot
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"strings"
@@ -59,23 +60,43 @@ func TestIsRequired_MarkerStatError(t *testing.T) {
 func TestIsRequired_NeedsRestarting(t *testing.T) {
 	withStat(t, func(string) (os.FileInfo, error) { return nil, os.ErrNotExist })
 	cases := []struct {
-		name   string
-		res    exec.Result
-		runErr error
-		want   bool
+		name    string
+		res     exec.Result
+		runErr  error
+		want    bool
+		wantErr bool
 	}{
-		{"reboot needed (exit 1)", exec.Result{ExitCode: 1}, nil, true},
-		{"no reboot (exit 0)", exec.Result{ExitCode: 0}, nil, false},
-		{"indeterminate (exit 2)", exec.Result{ExitCode: 2}, nil, false},
-		{"not installed (run error)", exec.Result{}, errors.New("exec: needs-restarting not found"), false},
+		{"reboot needed (exit 1)", exec.Result{ExitCode: 1}, nil, true, false},
+		{"no reboot (exit 0)", exec.Result{ExitCode: 0}, nil, false, false},
+		{"indeterminate (exit 2)", exec.Result{ExitCode: 2}, nil, false, false},
+		// Tool absent (the exec layer wraps ErrBackendUnavailable for a missing
+		// binary) → no detection available here, a graceful (false, nil).
+		{
+			"not installed (ErrBackendUnavailable)",
+			exec.Result{},
+			fmt.Errorf("%w: command not found: needs-restarting", exec.ErrBackendUnavailable),
+			false, false,
+		},
+		// A genuine run failure (NOT a missing tool) must surface — we were asked
+		// and couldn't answer for an unexpected reason; swallowing it as
+		// "no reboot needed" hides the failure from the caller.
+		{
+			"genuine run error surfaces",
+			exec.Result{},
+			context.DeadlineExceeded,
+			false, true,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := exectest.New(exec.Direct)
 			r.Push(c.res, c.runErr)
 			need, err := mgr(t, r).IsRequired(context.Background())
-			if err != nil || need != c.want {
-				t.Fatalf("IsRequired = (%v,%v), want (%v,nil)", need, err, c.want)
+			if (err != nil) != c.wantErr {
+				t.Fatalf("IsRequired error = %v, wantErr = %v", err, c.wantErr)
+			}
+			if need != c.want {
+				t.Fatalf("IsRequired need = %v, want %v", need, c.want)
 			}
 			cmd := r.Calls()[0]
 			if cmd.Name != "needs-restarting" || cmd.Escalate || strings.Join(cmd.Args, " ") != "-r" {
@@ -86,9 +107,22 @@ func TestIsRequired_NeedsRestarting(t *testing.T) {
 }
 
 func TestSchedule(t *testing.T) {
+	t.Run("zero options: default delay, no message, escalated", func(t *testing.T) {
+		r := exectest.New(exec.Sudo)
+		if err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		cmd := r.Calls()[0]
+		if cmd.Name != "shutdown" || !cmd.Escalate {
+			t.Fatalf("command = %+v, want escalated shutdown", cmd)
+		}
+		if strings.Join(cmd.Args, " ") != "-r +1" {
+			t.Errorf("argv = %q, want `-r +1`", strings.Join(cmd.Args, " "))
+		}
+	})
 	t.Run("default delay + message, escalated", func(t *testing.T) {
 		r := exectest.New(exec.Sudo)
-		if err := mgr(t, r).Schedule(context.Background(), "", "patching now"); err != nil {
+		if err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{Message: "patching now"}); err != nil {
 			t.Fatal(err)
 		}
 		cmd := r.Calls()[0]
@@ -101,24 +135,33 @@ func TestSchedule(t *testing.T) {
 	})
 	t.Run("explicit delay, no message", func(t *testing.T) {
 		r := exectest.New(exec.Sudo)
-		if err := mgr(t, r).Schedule(context.Background(), "+5", ""); err != nil {
+		if err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{Delay: "+5"}); err != nil {
 			t.Fatal(err)
 		}
 		if got := strings.Join(r.Calls()[0].Args, " "); got != "-r +5" {
 			t.Errorf("argv = %q, want `-r +5`", got)
 		}
 	})
+	t.Run("explicit delay + message", func(t *testing.T) {
+		r := exectest.New(exec.Sudo)
+		if err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{Delay: "+5", Message: "patching"}); err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Join(r.Calls()[0].Args, " "); got != "-r +5 patching" {
+			t.Errorf("argv = %q, want `-r +5 patching`", got)
+		}
+	})
 	t.Run("non-zero exit is an error", func(t *testing.T) {
 		r := exectest.New(exec.Sudo)
 		r.Push(exec.Result{ExitCode: 1, Stderr: "Failed to schedule"}, nil)
-		if err := mgr(t, r).Schedule(context.Background(), "+1", ""); err == nil {
+		if err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{Delay: "+1"}); err == nil {
 			t.Error("Schedule swallowed a non-zero exit")
 		}
 	})
 	t.Run("exec failure is an error", func(t *testing.T) {
 		r := exectest.New(exec.Sudo)
 		r.Push(exec.Result{}, errors.New("sudo: a password is required"))
-		if err := mgr(t, r).Schedule(context.Background(), "+1", ""); err == nil {
+		if err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{Delay: "+1"}); err == nil {
 			t.Error("Schedule swallowed an exec failure")
 		}
 	})
