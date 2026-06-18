@@ -110,6 +110,14 @@ type Session struct {
 	cmd *exec.Cmd
 	pty *os.File
 
+	// fdMu serialises operations that read the raw fd via (*os.File).Fd()
+	// (Resize → pty.Setsize) against the two sites that close the PTY (reap and
+	// Close). os.File.Fd() concurrent with Close() is an unsynchronised access to
+	// the file's internal fd state — a data race the -race detector flags.
+	// Read/Write are NOT guarded: they go through the os poll runtime, which is
+	// already safe against a concurrent Close.
+	fdMu sync.Mutex
+
 	closeOnce sync.Once
 	closeErr  error
 
@@ -230,7 +238,9 @@ func (s *Session) reap() {
 			s.exitCode = s.cmd.ProcessState.ExitCode()
 		}
 	})
+	s.fdMu.Lock()
 	_ = s.pty.Close()
+	s.fdMu.Unlock()
 	close(s.done)
 }
 
@@ -259,6 +269,10 @@ func (s *Session) Resize(cols, rows uint16) error {
 	if err := validateDims(cols, rows); err != nil {
 		return err
 	}
+	// pty.Setsize reads the raw fd via (*os.File).Fd(); hold fdMu so it cannot
+	// race the reaper/Close closing the PTY out from under it.
+	s.fdMu.Lock()
+	defer s.fdMu.Unlock()
 	if err := pty.Setsize(s.pty, &pty.Winsize{Cols: cols, Rows: rows}); err != nil {
 		return fmt.Errorf("terminal: resize: %w", err)
 	}
@@ -304,8 +318,12 @@ func (s *Session) Close() error {
 		}
 		// Closing the master also sends SIGHUP to the group, which is
 		// the polite shell-termination signal. ErrClosed is expected if
-		// the reaper or a concurrent caller already closed it.
-		if err := ptyClose(s.pty); err != nil && !errors.Is(err, os.ErrClosed) {
+		// the reaper or a concurrent caller already closed it. fdMu serialises
+		// this against a concurrent Resize (which reads the fd via Setsize).
+		s.fdMu.Lock()
+		err := ptyClose(s.pty)
+		s.fdMu.Unlock()
+		if err != nil && !errors.Is(err, os.ErrClosed) {
 			s.closeErr = err
 		}
 	})
