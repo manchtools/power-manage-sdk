@@ -18,9 +18,11 @@ import (
 // attacker redirect the root agent's write to an arbitrary file.
 //
 // Under Sudo/Doas (a non-root caller, e.g. CI or a dev tool) the escalated path
-// is used: it cannot openat as root, so it shells the write through the
-// privilege backend (tee → chmod → chown → mv). That path is NOT symlink-safe,
-// but the security-relevant consumer — the root agent — never takes it.
+// is used: it cannot openat as root, so it is also made symlink-safe by refusing
+// any target whose parent directory a non-root user could write to (the only
+// place a symlink could be planted) and then writing atomically in a single root
+// shell — mktemp + write + `mv -T` over the target (a rename replaces a symlinked
+// target, never follows it). See writeEscalated.
 func (m *manager) WriteFile(ctx context.Context, path string, data []byte, opts WriteOptions) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -72,73 +74,56 @@ func writeDirect(path string, data []byte, opts WriteOptions) error {
 }
 
 // writeEscalated is the privilege-backend (sudo/doas) path for non-root callers.
-// Predictable temp + tee/mv; not symlink-safe (see WriteFile's doc for why that
-// is acceptable).
+// It is symlink-safe. First it refuses, unprivileged, any target whose parent
+// directory a non-root user could write to (escalatedParentSafe) — the only
+// place an attacker could plant a symlink. Then it performs the entire write in
+// a SINGLE root shell: mktemp a random temp in the target's directory (O_EXCL,
+// nothing to follow), write it from stdin, set mode/owner, and atomically
+// `mv -T` it over the target (a rename REPLACES a symlinked target, it does not
+// follow it). The Direct/root path (writeDirect) is fd-anchored and is preferred
+// for security-sensitive writes; this shell path serves non-root callers that
+// cannot openat the target as root.
 func (m *manager) writeEscalated(ctx context.Context, path string, data []byte, opts WriteOptions) error {
 	perm := opts.Mode
 	if perm == 0 {
 		perm = 0o644
 	}
-	if opts.Backup != "" {
-		if err := m.backupEscalated(ctx, path, opts.Backup); err != nil {
-			return err
-		}
-	}
-	tmpPath := path + ".pm-tmp"
-	if err := m.writeTee(ctx, tmpPath, data); err != nil {
-		m.bestEffortRemove(ctx, tmpPath)
-		return fmt.Errorf("write file %s: %w", tmpPath, err)
-	}
-	if err := m.applyModeOwner(ctx, tmpPath, perm, opts.Owner, opts.Group); err != nil {
-		m.bestEffortRemove(ctx, tmpPath)
+	if err := escalatedParentSafe(filepath.Dir(path)); err != nil {
 		return err
 	}
-	if err := m.runChecked(ctx, "mv", "-f", "--", tmpPath, path); err != nil {
-		m.bestEffortRemove(ctx, tmpPath)
-		return fmt.Errorf("move file into place: %w", err)
-	}
-	return nil
-}
-
-// writeTee streams data to path through an escalated `tee`. A non-zero tee exit
-// (e.g. the parent directory does not exist) is surfaced as an error.
-func (m *manager) writeTee(ctx context.Context, path string, data []byte) error {
-	res, err := m.runPrivStdin(ctx, string(data), "tee", "--", path)
+	res, err := m.runPrivStdin(ctx, string(data), "sh", "-c", escalatedWriteScript,
+		"sh", path, modeArg(perm), Ownership(opts.Owner, opts.Group), opts.Backup)
 	if err != nil {
-		return err
+		return fmt.Errorf("write file %s: %w", path, err)
 	}
-	return cmdError("tee", res)
-}
-
-// applyModeOwner chmods (always) and chowns (when owner/group set) a path
-// through the escalated backend.
-func (m *manager) applyModeOwner(ctx context.Context, path string, perm os.FileMode, owner, group string) error {
-	if err := m.runChecked(ctx, "chmod", modeArg(perm), "--", path); err != nil {
-		return fmt.Errorf("chmod: %w", err)
-	}
-	if owner != "" || group != "" {
-		if err := m.runChecked(ctx, "chown", "--", Ownership(owner, group), path); err != nil {
-			return fmt.Errorf("chown: %w", err)
-		}
+	if cerr := cmdError("write file", res); cerr != nil {
+		return fmt.Errorf("write file %s: %w", path, cerr)
 	}
 	return nil
 }
 
-// backupEscalated copies the existing file at path to backup before it is
-// replaced. A path that does not yet exist is a no-op (nothing to back up).
-func (m *manager) backupEscalated(ctx context.Context, path, backup string) error {
-	exists, err := m.Exists(ctx, path)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return nil
-	}
-	if err := m.runChecked(ctx, "cp", "-f", "--", path, backup); err != nil {
-		return fmt.Errorf("backup %s to %s: %w", path, backup, err)
-	}
-	return nil
-}
+// escalatedWriteScript performs an atomic, symlink-safe write entirely as root in
+// one process, so there is no cross-process TOCTOU window. Positional args:
+// $1=target, $2=chmod mode, $3=chown owner (":group" form, "" to skip),
+// $4=backup path ("" to skip). The file content is read from stdin. The parent
+// directory's safety is vetted in Go (escalatedParentSafe) before this runs, so
+// only root can have influenced the directory this writes into.
+const escalatedWriteScript = `set -eu
+target=$1; mode=$2; owner=$3; backup=$4
+dir=$(dirname -- "$target")
+if [ -n "$backup" ] && [ -e "$target" ]; then
+	cp -f -- "$target" "$backup"
+fi
+tmp=$(mktemp "$dir/.pm-XXXXXXXXXX")
+trap 'rm -f -- "$tmp"' EXIT
+cat > "$tmp"
+chmod "$mode" -- "$tmp"
+if [ -n "$owner" ]; then
+	chown "$owner" -- "$tmp"
+fi
+mv -T -- "$tmp" "$target"
+trap - EXIT
+`
 
 // runChecked runs an escalated command and folds a runner error and a non-zero
 // exit into a single error (nil only on a clean exit).
@@ -148,12 +133,6 @@ func (m *manager) runChecked(ctx context.Context, name string, args ...string) e
 		return err
 	}
 	return cmdError(name, res)
-}
-
-// bestEffortRemove deletes path through the escalated backend, ignoring the
-// outcome — used to clean up a temp file on a failure path.
-func (m *manager) bestEffortRemove(ctx context.Context, path string) {
-	_, _ = m.runPriv(ctx, "rm", "-f", "--", path)
 }
 
 // Copy copies src to dst (plain cp, no -p) and applies opts to dst. opts.Mode of

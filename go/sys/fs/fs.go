@@ -41,6 +41,14 @@ import (
 // contains a NUL byte, or starts with `-` and would be interpreted as a flag).
 var ErrInvalidPath = errors.New("invalid filesystem path")
 
+// ErrUnsafeParentDir is returned by the escalated (sudo/doas) WriteFile when the
+// target's parent directory is writable by a non-root user — a directory where
+// an attacker could plant a symlink and redirect a root write. The escalated
+// path fails closed rather than write into such a directory. (The Direct/root
+// path is fd-anchored and does not need this; it is only the shell-based
+// escalated path, used by non-root callers, that cannot openat the target.)
+var ErrUnsafeParentDir = errors.New("parent directory is writable by non-root")
+
 // WriteOptions configures a Manager.WriteFile (or Copy) call.
 type WriteOptions struct {
 	// Mode is the file mode applied before the file is reachable by name. Zero
