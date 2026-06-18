@@ -13,7 +13,10 @@ import (
 // ExampleNew installs an org CA into the system trust store, then lists the
 // managed anchors.
 func ExampleNew() {
-	r, err := exec.NewRunner(exec.Direct) // writing trust anchors needs root
+	// Writing trust anchors requires root: exec.Direct assumes the process is
+	// already root; from an unprivileged process use exec.NewRunner(exec.Sudo)
+	// (or exec.Doas) so the writes and update-ca-trust refresh are escalated.
+	r, err := exec.NewRunner(exec.Direct)
 	if err != nil {
 		log.Fatal(err)
 	}

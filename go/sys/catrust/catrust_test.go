@@ -90,7 +90,7 @@ func newMgr(t *testing.T, b Backend, ff *fakeFS) (*manager, *exectest.FakeRunner
 }
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(CaCertificates, nil); err == nil {
+	if _, err := New(CaCertificates, nil); !errors.Is(err, exec.ErrRunnerRequired) {
 		t.Error("New(_, nil) returned nil error")
 	}
 }
@@ -254,10 +254,10 @@ func TestInstall_WriteAndRefreshErrors(t *testing.T) {
 func TestRemove_Success(t *testing.T) {
 	ff := &fakeFS{}
 	m, r := newMgr(t, CaCertificates, ff)
-	prev := readFile
-	t.Cleanup(func() { readFile = prev })
-	readFile = func(string) ([]byte, error) { return []byte("present"), nil } // exists
-	r.Push(exec.Result{}, nil)                                                // update-ca-certificates --fresh
+	prev := stat
+	t.Cleanup(func() { stat = prev })
+	stat = func(string) (os.FileInfo, error) { return nil, nil } // exists
+	r.Push(exec.Result{}, nil)                                   // update-ca-certificates --fresh
 	if err := m.Remove(context.Background(), "acme-root"); err != nil {
 		t.Fatal(err)
 	}
@@ -273,9 +273,9 @@ func TestRemove_Success(t *testing.T) {
 func TestRemove_IdempotentWhenAbsent(t *testing.T) {
 	ff := &fakeFS{}
 	m, r := newMgr(t, CaCertificates, ff)
-	prev := readFile
-	t.Cleanup(func() { readFile = prev })
-	readFile = func(string) ([]byte, error) { return nil, os.ErrNotExist }
+	prev := stat
+	t.Cleanup(func() { stat = prev })
+	stat = func(string) (os.FileInfo, error) { return nil, os.ErrNotExist }
 	if err := m.Remove(context.Background(), "absent"); err != nil {
 		t.Errorf("removing an absent anchor must be a no-op success, got %v", err)
 	}
@@ -285,19 +285,19 @@ func TestRemove_IdempotentWhenAbsent(t *testing.T) {
 }
 
 func TestRemove_Errors(t *testing.T) {
-	prev := readFile
-	t.Cleanup(func() { readFile = prev })
+	prev := stat
+	t.Cleanup(func() { stat = prev })
 
 	// stat error other than not-exist
 	ff := &fakeFS{}
 	m, _ := newMgr(t, CaCertificates, ff)
-	readFile = func(string) ([]byte, error) { return nil, errors.New("permission denied") }
+	stat = func(string) (os.FileInfo, error) { return nil, errors.New("permission denied") }
 	if err := m.Remove(context.Background(), "x"); err == nil {
 		t.Error("a non-notexist stat error must propagate")
 	}
 
 	// remove error
-	readFile = func(string) ([]byte, error) { return []byte("x"), nil }
+	stat = func(string) (os.FileInfo, error) { return nil, nil } // exists
 	ff2 := &fakeFS{removeErr: errors.New("rm failed")}
 	m2, _ := newMgr(t, CaCertificates, ff2)
 	if err := m2.Remove(context.Background(), "x"); err == nil {

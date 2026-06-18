@@ -92,7 +92,7 @@ type Source interface {
 // rejected.
 func New(b Backend, runner exec.Runner) (Source, error) {
 	if runner == nil {
-		return nil, errors.New("log: runner is required")
+		return nil, fmt.Errorf("log: %w", exec.ErrRunnerRequired)
 	}
 	switch b {
 	case Journald:

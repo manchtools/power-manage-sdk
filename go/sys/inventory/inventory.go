@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -85,7 +84,7 @@ type Collector interface {
 // New returns a Collector driven by runner. A nil runner is rejected.
 func New(runner exec.Runner) (Collector, error) {
 	if runner == nil {
-		return nil, errors.New("inventory: runner is required")
+		return nil, fmt.Errorf("inventory: %w", exec.ErrRunnerRequired)
 	}
 	return &collector{r: runner}, nil
 }

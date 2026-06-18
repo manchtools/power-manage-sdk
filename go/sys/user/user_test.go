@@ -48,7 +48,7 @@ func TestNew_FailClosed(t *testing.T) {
 			t.Errorf("New(%d) err = %v, want ErrUnknownBackend", b, err)
 		}
 	}
-	if _, err := New(ShadowUtils, nil); err == nil {
+	if _, err := New(ShadowUtils, nil); !errors.Is(err, exec.ErrRunnerRequired) {
 		t.Error("New with nil runner returned nil error, want a required-runner error")
 	}
 	if _, err := New(ShadowUtils, f); err != nil {

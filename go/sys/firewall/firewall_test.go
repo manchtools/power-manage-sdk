@@ -91,7 +91,7 @@ func TestNew_FailClosed(t *testing.T) {
 			t.Errorf("New(%d) err = %v, want ErrUnknownBackend", b, err)
 		}
 	}
-	if _, err := New(Nftables, "app", nil); err == nil {
+	if _, err := New(Nftables, "app", nil); !errors.Is(err, exec.ErrRunnerRequired) {
 		t.Error("New with nil runner returned nil error")
 	}
 	for _, b := range []Backend{Nftables, Firewalld, UFW} {

@@ -61,7 +61,7 @@ type collector struct {
 // pure — it does not probe for smartctl (a missing binary surfaces at call time).
 func New(runner exec.Runner) (Collector, error) {
 	if runner == nil {
-		return nil, errors.New("smart: runner is required")
+		return nil, fmt.Errorf("smart: %w", exec.ErrRunnerRequired)
 	}
 	return &collector{r: runner}, nil
 }

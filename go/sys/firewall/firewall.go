@@ -215,7 +215,7 @@ func New(b Backend, namespace string, runner exec.Runner, _ ...Option) (Manager,
 		return nil, err
 	}
 	if runner == nil {
-		return nil, fmt.Errorf("firewall: runner is required")
+		return nil, fmt.Errorf("firewall: %w", exec.ErrRunnerRequired)
 	}
 	fsm, err := newFS(runner)
 	if err != nil {

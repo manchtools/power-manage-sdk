@@ -34,7 +34,7 @@ package desktop
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	osexec "os/exec"
 	"os/user"
 
@@ -113,7 +113,7 @@ func WithHomeRoot(dir string) Option {
 // (fail-closed). New is pure — it does not probe the host.
 func New(runner pmexec.Runner, opts ...Option) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("desktop: runner is required")
+		return nil, fmt.Errorf("desktop: %w", pmexec.ErrRunnerRequired)
 	}
 	m := &manager{r: runner, homeRoot: defaultHomeRoot}
 	for _, opt := range opts {

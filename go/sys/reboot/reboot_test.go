@@ -30,7 +30,7 @@ func withStat(t *testing.T, fn func(string) (os.FileInfo, error)) {
 }
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(nil); err == nil {
+	if _, err := New(nil); !errors.Is(err, exec.ErrRunnerRequired) {
 		t.Error("New(nil) returned nil error")
 	}
 }

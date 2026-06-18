@@ -112,7 +112,7 @@ func TestNew_FailClosed(t *testing.T) {
 			t.Errorf("New(%d) err = %v, want ErrUnknownBackend", b, err)
 		}
 	}
-	if _, err := New(LUKS, nil); err == nil {
+	if _, err := New(LUKS, nil); !errors.Is(err, exec.ErrRunnerRequired) {
 		t.Error("New with nil runner returned nil error")
 	}
 	if _, err := New(LUKS, r); err != nil {

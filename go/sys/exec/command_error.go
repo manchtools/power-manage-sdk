@@ -22,6 +22,12 @@ var (
 	// password (no NOPASSWD rule) — the agent never has a terminal to type one,
 	// so this fails closed rather than hanging.
 	ErrEscalationDenied = errors.New("escalation requires a password")
+
+	// ErrRunnerRequired is returned by a capability constructor (New) when the
+	// caller passes a nil Runner. It is shared by every capability package so a
+	// nil runner is rejected identically everywhere and callers can match it with
+	// errors.Is regardless of which capability they constructed.
+	ErrRunnerRequired = errors.New("runner is required")
 )
 
 // CommandError is the typed error the capability layer wraps a failed command

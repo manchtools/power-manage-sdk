@@ -88,7 +88,7 @@ type Manager interface {
 // the backend; nil runner and unknown backend are rejected.
 func New(b Backend, runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("antivirus: runner is required")
+		return nil, fmt.Errorf("antivirus: %w", exec.ErrRunnerRequired)
 	}
 	switch b {
 	case ClamAV:

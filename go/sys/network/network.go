@@ -114,7 +114,7 @@ func New(b Backend, runner exec.Runner, _ ...Option) (Manager, error) {
 		return nil, fmt.Errorf("%w: %d", ErrUnknownBackend, int(b))
 	}
 	if runner == nil {
-		return nil, fmt.Errorf("network: runner is required")
+		return nil, fmt.Errorf("network: %w", exec.ErrRunnerRequired)
 	}
 	return &networkManager{r: runner}, nil
 }

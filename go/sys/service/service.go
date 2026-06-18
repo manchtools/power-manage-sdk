@@ -76,7 +76,7 @@ func New(b Backend, runner exec.Runner, _ ...Option) (Manager, error) {
 		return nil, fmt.Errorf("%w: %d", ErrUnknownBackend, int(b))
 	}
 	if runner == nil {
-		return nil, fmt.Errorf("service: runner is required")
+		return nil, fmt.Errorf("service: %w", exec.ErrRunnerRequired)
 	}
 	fsm, err := newFS(runner)
 	if err != nil {

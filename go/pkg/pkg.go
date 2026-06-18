@@ -170,7 +170,7 @@ func WithUserScope() Option {
 // the host; use Detect to learn which backends are installed.
 func New(b Backend, runner pmexec.Runner, opts ...Option) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("pkg: runner is required")
+		return nil, fmt.Errorf("pkg: %w", pmexec.ErrRunnerRequired)
 	}
 	cfg := config{system: true}
 	for _, o := range opts {

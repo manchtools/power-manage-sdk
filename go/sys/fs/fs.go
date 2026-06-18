@@ -119,7 +119,7 @@ type manager struct {
 // (fail-closed). New is pure — it does not probe the host.
 func New(runner pmexec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("fs: runner is required")
+		return nil, fmt.Errorf("fs: %w", pmexec.ErrRunnerRequired)
 	}
 	return &manager{r: runner}, nil
 }

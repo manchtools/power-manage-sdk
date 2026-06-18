@@ -21,7 +21,7 @@ func newClam(t *testing.T) (*clamavManager, *exectest.FakeRunner) {
 }
 
 func TestNew_NilRunner(t *testing.T) {
-	if _, err := New(ClamAV, nil); err == nil {
+	if _, err := New(ClamAV, nil); !errors.Is(err, exec.ErrRunnerRequired) {
 		t.Error("New(_, nil) returned nil error")
 	}
 }

@@ -106,7 +106,7 @@ var newFS = func(r exec.Runner) (fsManager, error) { return fs.New(r) }
 // a nil runner is rejected.
 func New(b Backend, runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("dns: runner is required")
+		return nil, fmt.Errorf("dns: %w", exec.ErrRunnerRequired)
 	}
 	switch b {
 	case Resolved:

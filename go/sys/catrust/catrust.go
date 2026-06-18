@@ -113,6 +113,7 @@ var newFS = func(r exec.Runner) (fsManager, error) { return fs.New(r) }
 var (
 	readDir  = os.ReadDir
 	readFile = os.ReadFile
+	stat     = os.Stat
 )
 
 type manager struct {
@@ -125,7 +126,7 @@ type manager struct {
 // runner and unknown backend are rejected.
 func New(b Backend, runner exec.Runner) (Manager, error) {
 	if runner == nil {
-		return nil, errors.New("catrust: runner is required")
+		return nil, fmt.Errorf("catrust: %w", exec.ErrRunnerRequired)
 	}
 	cfg, ok := backends[b]
 	if !ok {
@@ -169,7 +170,7 @@ func (m *manager) Remove(ctx context.Context, name string) error {
 		return err
 	}
 	path := m.anchorPath(name)
-	if _, err := readFile(path); err != nil {
+	if _, err := stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return nil // already absent — nothing to do
 		}
