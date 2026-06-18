@@ -482,29 +482,33 @@ func New(b Backend, namespace string, opts ...Option) (Manager, error)
 
 ### 3.7 `sys/dns` & `sys/netconfig` *(planned — define the contract now)*
 
+As shipped (sdk #151 / #152) — each takes the required Runner and exposes only
+its implemented backends (Decision 5); both retired their `_planned/` stubs:
+
 ```go
-// dns — systemd-resolved is the only value today; passed explicitly.
+// dns — Resolved (resolvectl + resolved.conf.d drop-in) + NetworkManager (nmcli).
 type Manager interface {
-    Get(ctx context.Context) (Config, error)
+    Get(ctx context.Context) (State, error)
     Apply(ctx context.Context, c Config) error
 }
-type Backend int
-const Resolved Backend = iota + 1
-func New(b Backend, opts ...Option) (Manager, error)
+const ( Resolved Backend = iota + 1; NetworkManager )
+func New(b Backend, runner exec.Runner) (Manager, error)
 
-// netconfig — NetworkManager is the only value today; passed explicitly.
+// netconfig — NetworkManager (nmcli) + SystemdNetworkd (.network via fs.Manager).
+// Apply is DECLARATIVE: routes are folded into InterfaceConfig and applied
+// atomically (matches both backends' models; no imperative AddRoute/RemoveRoute).
+// Get reads EFFECTIVE kernel state via `ip -j` (backend-agnostic).
 type Manager interface {
-    Interfaces(ctx context.Context) ([]Interface, error)
-    Apply(ctx context.Context, i Interface) error
+    Apply(ctx context.Context, cfg InterfaceConfig) error
+    Get(ctx context.Context, name string) (InterfaceConfig, error)
 }
-type Backend int
-const NetworkManager Backend = iota + 1
-func New(b Backend, opts ...Option) (Manager, error)
+const ( NetworkManager Backend = iota + 1; SystemdNetworkd )
+func New(b Backend, runner exec.Runner) (Manager, error)
 ```
 
-These move out of `_planned/` into real packages, each exposing only the one
-backend it actually implements (resolved / NetworkManager), passed explicitly.
-A new enum value is appended if and when a real second implementation is written.
+A new enum value is appended if and when a real second implementation is written
+(resolvconf/dnsmasq for dns; netplan/dhcpcd/ifupdown for netconfig were deleted,
+not stubbed).
 
 ### 3.8 Single-implementation packages — interfaces too (uniformity) — **RATIFIED**
 
