@@ -119,8 +119,46 @@ func TestRunner_RejectsEmptyNameAndUnknownBinary(t *testing.T) {
 	if _, err := directRunner(t).Run(context.Background(), Command{Name: ""}); err == nil {
 		t.Error("Run with empty Name returned nil error, want a failure-to-execute error")
 	}
-	if _, err := directRunner(t).Run(context.Background(), Command{Name: "definitely-not-a-real-binary-xyz"}); err == nil {
-		t.Error("Run with a nonexistent binary returned nil error, want command-not-found")
+	if _, err := directRunner(t).Run(context.Background(), Command{Name: "definitely-not-a-real-binary-xyz"}); !errors.Is(err, ErrBackendUnavailable) {
+		t.Errorf("Run with a nonexistent binary err = %v, want ErrBackendUnavailable (errors.Is-matchable)", err)
+	}
+}
+
+// TestBuildChildEnv_DefaultBranchDropsHijackVars pins that the inherit-the-parent
+// branch (no ChildPath, no Command.Env) does NOT leak a hijack variable from the
+// SDK's OWN process environment into a child (which may be escalated to root).
+// Command.Env is already filtered; the inherited env must be filtered the same
+// way. Benign inherited vars are kept, and the forced locale still wins.
+func TestBuildChildEnv_DefaultBranchDropsHijackVars(t *testing.T) {
+	t.Setenv("LD_PRELOAD", "/tmp/evil.so")    // a classic injection var
+	t.Setenv("BASH_ENV", "/tmp/evil.sh")      // another
+	t.Setenv("PM_BENIGN_TEST_VAR", "keep-me") // a normal var that must survive
+	t.Setenv("LANG", "de_DE.UTF-8")           // reserved; forced LANG=C must win
+
+	env, err := buildChildEnv(Command{}) // default branch: inherit parent
+	if err != nil {
+		t.Fatalf("buildChildEnv: %v", err)
+	}
+	has := func(prefix string) bool {
+		for _, e := range env {
+			if strings.HasPrefix(e, prefix) {
+				return true
+			}
+		}
+		return false
+	}
+	if has("LD_PRELOAD=") {
+		t.Error("LD_PRELOAD leaked from the parent env into the child")
+	}
+	if has("BASH_ENV=") {
+		t.Error("BASH_ENV leaked from the parent env into the child")
+	}
+	if !has("PM_BENIGN_TEST_VAR=keep-me") {
+		t.Error("a benign inherited var was dropped; the default branch must still inherit safe vars")
+	}
+	// forcedEnv is appended last, so the deterministic locale wins over inherited LANG.
+	if got := env[len(env)-3:]; got[0] != "LC_ALL=C" || got[1] != "LANG=C" || got[2] != "NO_COLOR=1" {
+		t.Errorf("tail = %v, want forcedEnv last (LC_ALL=C, LANG=C, NO_COLOR=1)", got)
 	}
 }
 

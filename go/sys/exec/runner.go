@@ -108,7 +108,7 @@ func (r *runner) exec(ctx context.Context, c Command, onLine OutputCallback) (Re
 	// deterministic regardless of the child's PATH.
 	absPath, err := resolveAbsolute(c.Name)
 	if err != nil {
-		return Result{}, fmt.Errorf("command not found: %s", c.Name)
+		return Result{}, fmt.Errorf("%w: command not found: %s", ErrBackendUnavailable, c.Name)
 	}
 	// When escalating through a wrapper, the wrapper itself must be installed —
 	// fail closed with ErrEscalationUnavailable rather than running unescalated.
@@ -242,8 +242,18 @@ func buildChildEnv(c Command) ([]string, error) {
 		// Sanitized parent PATH + caller Env + forced (the env-only contract).
 		return append(composeEnv(os.Getenv("PATH"), c.Env), forcedEnv...), nil
 	default:
-		// Inherit the parent fully, then force the deterministic vars on top.
-		env := append([]string(nil), os.Environ()...)
+		// Inherit the parent env, but DROP hijack vars (LD_PRELOAD, BASH_ENV, …)
+		// exactly as Command.Env is filtered — the SDK's own process environment
+		// must not leak a library/path injection into a child that may be
+		// escalated to root. forcedEnv is appended last so the deterministic
+		// locale still wins over any inherited value.
+		var env []string
+		for _, e := range os.Environ() {
+			if key, _, ok := strings.Cut(e, "="); !ok || !IsAllowedEnvVar(key) {
+				continue
+			}
+			env = append(env, e)
+		}
 		return append(env, forcedEnv...), nil
 	}
 }
