@@ -1,0 +1,7 @@
+# docref keeps the prose in docs/ honest against the code it describes.
+# `docref check` (run in CI) fails when an anchored snippet or claim drifts
+# from the symbol/region it points at. The authoring + docref workflow is in
+# AGENTS.md (repo root); that file is the copied open-docs spec, not live docs,
+# so it is intentionally outside this scan.
+[scan]
+include = ["docs/**/*.md"]

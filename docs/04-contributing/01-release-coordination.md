@@ -1,3 +1,9 @@
+---
+title: Release coordination
+label: Releases
+description: How SDK changes propagate to the agent and server without breaking them — pinning, bumping, the workspace trick, and tag conventions.
+---
+
 # Release coordination
 
 This document explains how SDK changes propagate to downstream repos
@@ -158,10 +164,9 @@ the semver tag, release notes reference the calendar one.
 ### The pre-v1.0.0 contract
 
 The SDK is currently on a `v0.x.x` line, which per semver means the
-API is not yet stable. **Minor bumps (`v0.1.0` → `v0.2.0`) may carry
-breaking changes.** Expect each bump to ship with migration notes in
-the release body, and for downstream bump PRs to absorb the required
-API edits in the same commit.
+API is not yet stable. **Minor bumps (`v0.1.0` → `v0.2.0`) may carry breaking changes.** Expect each bump to ship with migration notes in the
+release body, and for downstream bump PRs to absorb the required API
+edits in the same commit.
 
 A move to `v1.x.x` is a deliberate decision to freeze the public
 surface. Don't tag `v1.0.0` until the API has settled — once it's

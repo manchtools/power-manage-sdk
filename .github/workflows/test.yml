@@ -324,3 +324,13 @@ jobs:
           echo ""
           echo "=== DNF Coverage ==="
           go tool cover -func=coverage/coverage-dnf.out | tail -1
+
+  docref-check:
+    name: docref (docs anchored to code)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Purpose-built docref CI image (docref + git on Alpine); nothing to build.
+      - name: docref check (docs match the code they describe)
+        run: docker run --rm -v "${{ github.workspace }}:/repo" ghcr.io/manchtools/open-docref:v0.1.0 check
