@@ -46,6 +46,9 @@ func TestGet_StarLockedIsDetected(t *testing.T) {
 	if !info.Locked {
 		t.Error("'*'-prefixed shadow entry not detected as locked")
 	}
+	if !info.LockedKnown {
+		t.Error("LockedKnown = false after a successful shadow read; Locked is authoritative here")
+	}
 }
 
 // Get tolerates extra surrounding whitespace / CR in getent output.

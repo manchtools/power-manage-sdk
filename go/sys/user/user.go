@@ -38,6 +38,12 @@ type Info struct {
 	Shell   string
 	Groups  []string // supplementary groups (excluding the primary)
 	Locked  bool
+	// LockedKnown reports whether Locked is authoritative. The locked state lives
+	// in the root-only shadow file; if reading it failed or escalation was not
+	// authorized, Locked is left false and LockedKnown is false — so a caller can
+	// tell "not locked" (Locked=false, LockedKnown=true) apart from "unknown"
+	// (Locked=false, LockedKnown=false) and not treat unknown as unlocked.
+	LockedKnown bool
 }
 
 // CreateOptions configures Create. The zero value creates a normal interactive
@@ -176,6 +182,12 @@ func (u *shadowUtils) Create(ctx context.Context, name string, opts CreateOption
 	if err := validateUsername(name); err != nil {
 		return err
 	}
+	if opts.UID < 0 {
+		return fmt.Errorf("invalid UID %d: must be >= 0 (0 = auto-assign)", opts.UID)
+	}
+	if err := validateAccountFields(opts.Comment, opts.HomeDir, opts.Shell, opts.PrimaryGroup, opts.Groups); err != nil {
+		return err
+	}
 
 	args := make([]string, 0, 16)
 	if opts.UID > 0 {
@@ -238,6 +250,9 @@ func (u *shadowUtils) Create(ctx context.Context, name string, opts CreateOption
 // nothing is set it is a no-op (no usermod run).
 func (u *shadowUtils) Modify(ctx context.Context, name string, opts ModifyOptions) error {
 	if err := validateUsername(name); err != nil {
+		return err
+	}
+	if err := validateAccountFields(opts.Comment, opts.HomeDir, opts.Shell, opts.PrimaryGroup, nil); err != nil {
 		return err
 	}
 	args := make([]string, 0, 8)
@@ -334,6 +349,7 @@ func (u *shadowUtils) Get(ctx context.Context, name string) (Info, error) {
 		sf := strings.Split(strings.TrimSpace(res.Stdout), ":")
 		if len(sf) >= 2 {
 			info.Locked = strings.HasPrefix(sf[1], "!") || strings.HasPrefix(sf[1], "*")
+			info.LockedKnown = true // the shadow read succeeded; Locked is authoritative
 		}
 	}
 	return info, nil
@@ -432,3 +448,44 @@ func validateName(kind, name string) error {
 }
 
 func validateUsername(name string) error { return validateName("username", name) }
+
+// validateField rejects values that would corrupt /etc/passwd or inject extra
+// fields/records when written via useradd/usermod. Every free-form account field
+// (Comment/HomeDir/Shell, and group references) must contain no control
+// character (NUL, newline, CR, …) and none of the separators in `reject` — ':'
+// is the passwd field separator; ',' is the -G group-list separator. An empty
+// value is the "unchanged"/"default" sentinel and is allowed.
+func validateField(kind, val, reject string) error {
+	for _, r := range val {
+		if r < 0x20 || r == 0x7f {
+			return fmt.Errorf("invalid %s: must not contain control characters", kind)
+		}
+		if strings.ContainsRune(reject, r) {
+			return fmt.Errorf("invalid %s: must not contain %q", kind, r)
+		}
+	}
+	return nil
+}
+
+// validateAccountFields validates the free-form fields shared by Create/Modify.
+// reject for a passwd field is ":"; group references also reject ",".
+func validateAccountFields(comment, homeDir, shell, primaryGroup string, groups []string) error {
+	if err := validateField("comment", comment, ":"); err != nil {
+		return err
+	}
+	if err := validateField("home directory", homeDir, ":"); err != nil {
+		return err
+	}
+	if err := validateField("shell", shell, ":"); err != nil {
+		return err
+	}
+	if err := validateField("primary group", primaryGroup, ":,"); err != nil {
+		return err
+	}
+	for _, g := range groups {
+		if err := validateField("supplementary group", g, ":,"); err != nil {
+			return err
+		}
+	}
+	return nil
+}

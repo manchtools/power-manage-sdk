@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -80,6 +81,9 @@ func (u *shadowUtils) GroupMembers(ctx context.Context, name string) ([]string, 
 func (u *shadowUtils) GroupCreate(ctx context.Context, name string, opts GroupCreateOptions) error {
 	if err := validateName("group name", name); err != nil {
 		return err
+	}
+	if opts.GID < 0 {
+		return fmt.Errorf("invalid GID %d: must be >= 0 (0 = auto-assign)", opts.GID)
 	}
 	args := make([]string, 0, 4)
 	if opts.GID > 0 {
