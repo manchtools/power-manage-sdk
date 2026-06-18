@@ -14,6 +14,7 @@ var (
 	// default escalation).
 	ErrUnknownBackend = errors.New("unknown privilege backend")
 
+	// docref: begin escalation-sentinels
 	// ErrEscalationUnavailable is returned when the chosen escalation tool
 	// (sudo/doas) is not installed on this host.
 	ErrEscalationUnavailable = errors.New("escalation tool not installed")
@@ -22,12 +23,20 @@ var (
 	// password (no NOPASSWD rule) — the agent never has a terminal to type one,
 	// so this fails closed rather than hanging.
 	ErrEscalationDenied = errors.New("escalation requires a password")
+	// docref: end escalation-sentinels
 
 	// ErrRunnerRequired is returned by a capability constructor (New) when the
 	// caller passes a nil Runner. It is shared by every capability package so a
 	// nil runner is rejected identically everywhere and callers can match it with
 	// errors.Is regardless of which capability they constructed.
 	ErrRunnerRequired = errors.New("runner is required")
+
+	// ErrBackendUnavailable is returned when the command/tool a capability needs
+	// is not available on this host — the Runner cannot resolve the binary on
+	// PATH. It is errors.Is-matchable so a caller can treat "tool not installed"
+	// distinctly from a real failure (e.g. IsRequired-style probes report a
+	// missing tool as "no, and that's fine" rather than an error).
+	ErrBackendUnavailable = errors.New("backend unavailable")
 )
 
 // CommandError is the typed error the capability layer wraps a failed command

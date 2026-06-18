@@ -23,7 +23,7 @@ if errors.Is(err, svc.ErrUnknownBackend) {
 
 Each multi-backend package exports `ErrUnknownBackend`.
 
-<!-- docref: begin src=go/sys/exec/command_error.go#ErrEscalationUnavailable:851a220b,go/sys/exec/command_error.go#ErrEscalationDenied:851a220b -->
+<!-- docref: begin src=go/sys/exec/command_error.go#@escalation-sentinels:89446e95 -->
 The `exec` package adds sentinels for the escalation path —
 `ErrEscalationUnavailable` (sudo/doas not installed) and `ErrEscalationDenied`
 (escalation would need a password, which the agent can't supply) — so a runner
