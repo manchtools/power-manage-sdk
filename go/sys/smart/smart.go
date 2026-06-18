@@ -66,10 +66,14 @@ func New(runner exec.Runner) (Collector, error) {
 	return &collector{r: runner}, nil
 }
 
-// validateDevice rejects a device path that is unsafe as a positional argument.
+// validateDevice rejects a device path that is unsafe to pass to escalated
+// smartctl. It must be under /dev/ (smartctl inspects block devices; restricting
+// to /dev keeps the privileged probe off arbitrary files like /etc/passwd),
+// contain no ".." traversal, and no NUL. The /dev/ prefix also rules out a
+// flag-shaped argument.
 func validateDevice(dev string) error {
-	if dev == "" || !strings.HasPrefix(dev, "/") || strings.HasPrefix(dev, "-") || strings.Contains(dev, "..") || strings.ContainsRune(dev, 0) {
-		return fmt.Errorf("%w: %q (must be an absolute /dev path, no '..' or flag prefix)", ErrInvalidDevice, dev)
+	if !strings.HasPrefix(dev, "/dev/") || strings.Contains(dev, "..") || strings.ContainsRune(dev, 0) {
+		return fmt.Errorf("%w: %q (must be a /dev/* path with no '..')", ErrInvalidDevice, dev)
 	}
 	return nil
 }

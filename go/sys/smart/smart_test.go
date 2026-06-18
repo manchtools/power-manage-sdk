@@ -33,6 +33,7 @@ func TestValidateDevice(t *testing.T) {
 		"":             false,
 		"sda":          false, // not absolute
 		"-rf":          false, // flag-shaped
+		"/etc/passwd":  false, // absolute but NOT under /dev — escalated probe must not reach it
 		"/dev/../etc":  false, // dotdot
 		"/dev/s\x00a":  false, // NUL
 	}

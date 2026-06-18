@@ -97,6 +97,21 @@ func TestChrony_StatusNotSynchronised(t *testing.T) {
 	}
 }
 
+func TestChrony_UnknownLeapStatus(t *testing.T) {
+	// An unrecognised leap status means the CSV schema drifted → fail closed,
+	// don't silently report synchronized.
+	csv := `id,src,3,t,0.0,0,0,0,0,0,0,0,64,Bogus`
+	if _, err := parseChronyTracking(csv); err == nil {
+		t.Error("an unrecognised leap status must error (schema-drift guard)")
+	}
+	// A leap-second variant still counts as synchronized.
+	csv = `id,src,3,t,0.0,0,0,0,0,0,0,0,64,Insert second`
+	st, err := parseChronyTracking(csv)
+	if err != nil || !st.Synchronized {
+		t.Errorf("'Insert second' must be synchronized: st=%+v err=%v", st, err)
+	}
+}
+
 func TestChrony_StatusRunError(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{}, errors.New("chronyc gone"))
