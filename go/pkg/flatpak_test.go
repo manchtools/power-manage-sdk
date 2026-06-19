@@ -58,7 +58,7 @@ func TestFlatpak_Install(t *testing.T) {
 	t.Run("system scope, escalated", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{}, "org.vim.Vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}, "org.vim.Vim"); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -71,7 +71,7 @@ func TestFlatpak_Install(t *testing.T) {
 		ok(f, "")
 		// flatpak cannot pin a version, but multiple packages with a version are
 		// allowed here (version is ignored, not one-package-enforced).
-		if err := m.Install(ctx, InstallOptions{Version: "1.0"}, "org.vim.Vim", "org.gnu.emacs"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0"}, "org.vim.Vim", "org.gnu.emacs"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); strings.Contains(a, "1.0") {
@@ -81,7 +81,7 @@ func TestFlatpak_Install(t *testing.T) {
 	t.Run("user scope is unprivileged", func(t *testing.T) {
 		m, f := flatpakM(t, WithUserScope())
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{}, "org.vim.Vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}, "org.vim.Vim"); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -91,19 +91,19 @@ func TestFlatpak_Install(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Install(ctx, InstallOptions{}, "org.vim.Vim;rm"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}, "org.vim.Vim;rm"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("bad version", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1;0"}, "org.vim.Vim"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1;0"}, "org.vim.Vim"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -114,7 +114,7 @@ func TestFlatpak_Remove(t *testing.T) {
 	t.Run("remove", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{}, "org.vim.Vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "org.vim.Vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "flatpak uninstall -y --noninteractive --system org.vim.Vim" {
@@ -124,7 +124,7 @@ func TestFlatpak_Remove(t *testing.T) {
 	t.Run("purge adds --delete-data", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{Purge: true}, "org.vim.Vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{Purge: true}, "org.vim.Vim"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.Contains(a, "--delete-data") {
@@ -133,13 +133,13 @@ func TestFlatpak_Remove(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -150,7 +150,7 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 	t.Run("update --appstream", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Update(ctx); err != nil {
+		if _, err := m.Update(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "flatpak update --appstream -y --noninteractive --system" {
@@ -160,7 +160,7 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 	t.Run("UpgradeAll", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "flatpak update -y --noninteractive --system" {
@@ -169,7 +169,7 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 	})
 	t.Run("empty Upgrade is a no-op", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Upgrade(ctx); err != nil {
+		if _, err := m.Upgrade(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 0 {
@@ -179,7 +179,7 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 	t.Run("upgrade specific", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx, "org.vim.Vim"); err != nil {
+		if _, err := m.Upgrade(ctx, "org.vim.Vim"); err != nil {
 			t.Fatal(err)
 		}
 		if !strings.HasSuffix(argv(f.Calls()[0]), "--system org.vim.Vim") {
@@ -188,14 +188,14 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 	})
 	t.Run("upgrade bad name", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Upgrade(ctx, "a;b"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Upgrade(ctx, "a;b"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("write exec error surfaced", func(t *testing.T) {
 		m, f := flatpakM(t)
 		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied)
-		if err := m.Update(ctx); !errors.Is(err, pmexec.ErrEscalationDenied) {
+		if _, err := m.Update(ctx); !errors.Is(err, pmexec.ErrEscalationDenied) {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -204,7 +204,7 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 func TestFlatpak_Autoremove(t *testing.T) {
 	m, f := flatpakM(t)
 	ok(f, "")
-	if err := m.Autoremove(context.Background()); err != nil {
+	if _, err := m.Autoremove(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if a := argv(f.Calls()[0]); a != "flatpak uninstall --unused -y --noninteractive --system" {
@@ -217,7 +217,7 @@ func TestFlatpak_Repair(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Repair(ctx); err != nil {
+		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "flatpak repair --system" {
@@ -227,7 +227,7 @@ func TestFlatpak_Repair(t *testing.T) {
 	t.Run("failure returned", func(t *testing.T) {
 		m, f := flatpakM(t)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "repair failed"}, nil)
-		if err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "flatpak repair failed") {
+		if _, err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "flatpak repair failed") {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -546,7 +546,7 @@ func TestFlatpak_PinUnpin(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "") // mask org.vim.Vim
 		ok(f, "") // mask org.gnu.emacs
-		if err := m.Pin(ctx, "org.vim.Vim", "org.gnu.emacs"); err != nil {
+		if _, err := m.Pin(ctx, "org.vim.Vim", "org.gnu.emacs"); err != nil {
 			t.Fatal(err)
 		}
 		calls := f.Calls()
@@ -557,7 +557,7 @@ func TestFlatpak_PinUnpin(t *testing.T) {
 	t.Run("unpin removes the mask", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if err := m.Unpin(ctx, "org.vim.Vim"); err != nil {
+		if _, err := m.Unpin(ctx, "org.vim.Vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "flatpak mask --remove org.vim.Vim --system" {
@@ -568,7 +568,7 @@ func TestFlatpak_PinUnpin(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")                                            // first unmask ok
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "x"}, nil) // second unmask fails
-		if err := m.Unpin(ctx, "org.a.A", "org.b.B"); err == nil {
+		if _, err := m.Unpin(ctx, "org.a.A", "org.b.B"); err == nil {
 			t.Fatal("want last error")
 		}
 		if len(f.Calls()) != 2 {
@@ -579,7 +579,7 @@ func TestFlatpak_PinUnpin(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")                                            // first mask ok
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "x"}, nil) // second mask fails
-		err := m.Pin(ctx, "org.a.A", "org.b.B")
+		_, err := m.Pin(ctx, "org.a.A", "org.b.B")
 		if err == nil {
 			t.Fatal("want last error")
 		}
@@ -589,13 +589,13 @@ func TestFlatpak_PinUnpin(t *testing.T) {
 	})
 	t.Run("pin bad name", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Pin(ctx, "a;b"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx, "a;b"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("unpin bad name", func(t *testing.T) {
 		m, f := flatpakM(t)
-		if err := m.Unpin(ctx, "a;b"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx, "a;b"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})

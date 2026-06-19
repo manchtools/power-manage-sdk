@@ -53,16 +53,18 @@ func (a *apt) hasApt() bool { return a.aptCommand() == "apt" }
 
 // write runs a privileged apt-family command and maps a non-zero exit to an
 // *exec.CommandError. "apt"/"apt-get" are resolved to the preferred binary;
-// other commands (dpkg, apt-mark) run as named.
-func (a *apt) write(ctx context.Context, cmd string, args ...string) error {
+// other commands (dpkg, apt-mark) run as named. The command's Result (stdout,
+// stderr, exit code) is returned on both the success and non-zero-exit paths;
+// only an unrunnable command yields the zero Result.
+func (a *apt) write(ctx context.Context, cmd string, args ...string) (pmexec.Result, error) {
 	if cmd == "apt" || cmd == "apt-get" {
 		cmd = a.aptCommand()
 	}
 	res, err := runPriv(ctx, a.r, true, aptWriteEnv, cmd, args...)
 	if err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
-	return asCommandError(cmd, res)
+	return res, asCommandError(cmd, res)
 }
 
 // Version returns the apt version string.
@@ -79,18 +81,18 @@ func (a *apt) Version(ctx context.Context) (string, error) {
 }
 
 // Install installs packages, using --fix-broken to resolve dependency issues.
-func (a *apt) Install(ctx context.Context, opts InstallOptions, packages ...string) error {
+func (a *apt) Install(ctx context.Context, opts InstallOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if err := ValidatePackageVersion(opts.Version); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if opts.Version != "" && len(packages) != 1 {
-		return fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
+		return pmexec.Result{}, fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	args := []string{"install", "-y", "--fix-broken"}
 	if opts.AllowDowngrade {
@@ -105,12 +107,12 @@ func (a *apt) Install(ctx context.Context, opts InstallOptions, packages ...stri
 }
 
 // Remove removes packages; opts.Purge deletes configuration files too.
-func (a *apt) Remove(ctx context.Context, opts RemoveOptions, packages ...string) error {
+func (a *apt) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	verb := "remove"
 	if opts.Purge {
@@ -121,18 +123,18 @@ func (a *apt) Remove(ctx context.Context, opts RemoveOptions, packages ...string
 }
 
 // Update refreshes the package index.
-func (a *apt) Update(ctx context.Context) error {
+func (a *apt) Update(ctx context.Context) (pmexec.Result, error) {
 	return a.write(ctx, "apt", "update")
 }
 
 // Upgrade upgrades the named packages; with no names it runs a full
 // dist-upgrade (which can add/remove packages to satisfy held-back deps).
-func (a *apt) Upgrade(ctx context.Context, packages ...string) error {
+func (a *apt) Upgrade(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil // empty is a no-op; UpgradeAll does a full upgrade
+		return pmexec.Result{}, nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	args := append([]string{"install", "-y", "--only-upgrade"}, dpkgConfOptions...)
 	args = append(args, packages...)
@@ -140,41 +142,43 @@ func (a *apt) Upgrade(ctx context.Context, packages ...string) error {
 }
 
 // UpgradeAll performs a full distribution upgrade (apt dist-upgrade).
-func (a *apt) UpgradeAll(ctx context.Context) error {
+func (a *apt) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
 	args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
 	return a.write(ctx, "apt", args...)
 }
 
 // Pin holds packages (apt-mark hold).
-func (a *apt) Pin(ctx context.Context, packages ...string) error {
+func (a *apt) Pin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	return a.write(ctx, "apt-mark", append([]string{"hold"}, packages...)...)
 }
 
 // Unpin releases held packages (apt-mark unhold).
-func (a *apt) Unpin(ctx context.Context, packages ...string) error {
+func (a *apt) Unpin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	return a.write(ctx, "apt-mark", append([]string{"unhold"}, packages...)...)
 }
 
 // Autoremove removes packages installed only as now-unneeded dependencies.
-func (a *apt) Autoremove(ctx context.Context) error {
+func (a *apt) Autoremove(ctx context.Context) (pmexec.Result, error) {
 	return a.write(ctx, "apt", "autoremove", "-y")
 }
 
 // Repair clears stale dpkg/apt locks, reconfigures interrupted packages, fixes
-// broken dependencies, and refreshes the index.
-func (a *apt) Repair(ctx context.Context) error {
+// broken dependencies, and refreshes the index. The returned Result is that of
+// the final `apt update` step (or the step that failed hard); best-effort steps
+// whose failures are swallowed do not change the returned Result.
+func (a *apt) Repair(ctx context.Context) (pmexec.Result, error) {
 	for _, lf := range []string{
 		"/var/lib/dpkg/lock",
 		"/var/lib/dpkg/lock-frontend",
@@ -182,27 +186,29 @@ func (a *apt) Repair(ctx context.Context) error {
 		"/var/cache/apt/archives/lock",
 	} {
 		if err := removeStaleLock(ctx, a.r, lf); err != nil {
-			return err
+			return pmexec.Result{}, err
 		}
 	}
 
 	fixArgs := append([]string{"--fix-broken", "install", "-y"}, dpkgConfOptions...)
 	steps := []struct {
 		what string
-		run  func() error
+		run  func() (pmexec.Result, error)
 	}{
-		{"dpkg --configure -a", func() error { return a.write(ctx, "dpkg", "--configure", "-a") }},
-		{"apt --fix-broken install", func() error { return a.write(ctx, "apt", fixArgs...) }},
+		{"dpkg --configure -a", func() (pmexec.Result, error) { return a.write(ctx, "dpkg", "--configure", "-a") }},
+		{"apt --fix-broken install", func() (pmexec.Result, error) { return a.write(ctx, "apt", fixArgs...) }},
 	}
 	for _, s := range steps {
-		if err := bestEffortStep(ctx, s.what, s.run()); err != nil {
-			return err
+		res, err := s.run()
+		if err := bestEffortStep(ctx, s.what, err); err != nil {
+			return res, err
 		}
 	}
-	if err := a.write(ctx, "apt", "update"); err != nil {
-		return repairErr(ctx, "apt update failed", err)
+	res, err := a.write(ctx, "apt", "update")
+	if err != nil {
+		return res, repairErr(ctx, "apt update failed", err)
 	}
-	return nil
+	return res, nil
 }
 
 // Search searches package names. It always uses `apt-cache search`, which emits

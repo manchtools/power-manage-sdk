@@ -72,8 +72,14 @@ func (b Backend) String() string {
 
 // Manager is the uniform package-manager surface. Every method takes a context
 // so the caller controls timeout/cancellation. Query methods return typed
-// results; mutating methods return error only — a non-zero exit becomes an
-// *exec.CommandError carrying the exit code and stderr.
+// results; mutating methods return the command's output (an exec.Result carrying
+// exit code, stdout and stderr) so callers can surface what the package manager
+// actually did, plus an error — a non-zero exit becomes an *exec.CommandError
+// carrying the exit code and stderr while the Result still carries the full
+// stdout/stderr. The Result is populated on both the success and non-zero-exit
+// paths; it is the zero Result only when the command could not be run at all
+// (the error is then a plain runner error) or when the call is a validated
+// no-op (e.g. an empty package list).
 type Manager interface {
 	// Backend reports which package-manager backend this Manager drives.
 	Backend() Backend
@@ -111,30 +117,31 @@ type Manager interface {
 	// Install installs the named packages. opts.Version pins a single package
 	// (exactly one name required when set); opts.AllowDowngrade permits a lower
 	// version than installed.
-	Install(ctx context.Context, opts InstallOptions, packages ...string) error
+	Install(ctx context.Context, opts InstallOptions, packages ...string) (pmexec.Result, error)
 	// Remove removes the named packages. opts.Purge also deletes configuration
 	// where the backend distinguishes it (apt/pacman/flatpak); elsewhere Purge
 	// is equivalent to a plain remove.
-	Remove(ctx context.Context, opts RemoveOptions, packages ...string) error
+	Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error)
 	// Update refreshes the package metadata/database.
-	Update(ctx context.Context) error
+	Update(ctx context.Context) (pmexec.Result, error)
 	// Upgrade upgrades the named packages. With NO names it is a no-op (not a
 	// full upgrade) — an accidentally-empty list must never upgrade the whole
 	// system. Use UpgradeAll for that.
-	Upgrade(ctx context.Context, packages ...string) error
+	Upgrade(ctx context.Context, packages ...string) (pmexec.Result, error)
 	// UpgradeAll performs a full system upgrade (apt dist-upgrade / dnf upgrade /
 	// pacman -Syu / zypper dist-upgrade / flatpak update).
-	UpgradeAll(ctx context.Context) error
+	UpgradeAll(ctx context.Context) (pmexec.Result, error)
 	// Pin holds the named packages back from upgrades.
-	Pin(ctx context.Context, packages ...string) error
+	Pin(ctx context.Context, packages ...string) (pmexec.Result, error)
 	// Unpin releases the named packages so they upgrade again.
-	Unpin(ctx context.Context, packages ...string) error
+	Unpin(ctx context.Context, packages ...string) (pmexec.Result, error)
 	// Repair attempts to fix a wedged package-manager state (stale locks,
-	// interrupted transactions, broken dependencies).
-	Repair(ctx context.Context) error
+	// interrupted transactions, broken dependencies). It runs several recovery
+	// commands; the returned Result is that of the final (or first failing) step.
+	Repair(ctx context.Context) (pmexec.Result, error)
 	// Autoremove removes packages installed only as now-unneeded dependencies.
-	// It is a no-op (returns nil) on backends with no native equivalent.
-	Autoremove(ctx context.Context) error
+	// It is a no-op (zero Result, nil error) on backends with no native equivalent.
+	Autoremove(ctx context.Context) (pmexec.Result, error)
 }
 
 // FlatpakManager is the Manager returned by New(Flatpak, …); it adds remote

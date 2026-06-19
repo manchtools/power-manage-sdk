@@ -32,12 +32,12 @@ func isZypperInfoExit(code int) bool {
 
 func (z *zypper) Backend() Backend { return Zypper }
 
-func (z *zypper) write(ctx context.Context, args ...string) error {
+func (z *zypper) write(ctx context.Context, args ...string) (pmexec.Result, error) {
 	res, err := runPriv(ctx, z.r, true, nil, "zypper", args...)
 	if err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
-	return asCommandError("zypper", res)
+	return res, asCommandError("zypper", res)
 }
 
 // Version returns the zypper version string.
@@ -55,18 +55,18 @@ func (z *zypper) Version(ctx context.Context) (string, error) {
 
 // Install installs packages. opts.Version pins a single package (name=version);
 // opts.AllowDowngrade adds --oldpackage.
-func (z *zypper) Install(ctx context.Context, opts InstallOptions, packages ...string) error {
+func (z *zypper) Install(ctx context.Context, opts InstallOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if err := ValidatePackageVersion(opts.Version); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if opts.Version != "" && len(packages) != 1 {
-		return fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
+		return pmexec.Result{}, fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	args := []string{"--non-interactive", "install"}
 	if opts.AllowDowngrade {
@@ -82,53 +82,54 @@ func (z *zypper) Install(ctx context.Context, opts InstallOptions, packages ...s
 
 // Remove removes packages. zypper does not distinguish purge from remove, so
 // opts.Purge is a no-op.
-func (z *zypper) Remove(ctx context.Context, _ RemoveOptions, packages ...string) error {
+func (z *zypper) Remove(ctx context.Context, _ RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	return z.write(ctx, append([]string{"--non-interactive", "remove"}, packages...)...)
 }
 
 // Update refreshes the repositories.
-func (z *zypper) Update(ctx context.Context) error {
+func (z *zypper) Update(ctx context.Context) (pmexec.Result, error) {
 	return z.write(ctx, "--non-interactive", "refresh")
 }
 
 // Upgrade upgrades the named packages, or runs a full dist-upgrade with no names.
-func (z *zypper) Upgrade(ctx context.Context, packages ...string) error {
+func (z *zypper) Upgrade(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil // empty is a no-op; UpgradeAll does a full upgrade
+		return pmexec.Result{}, nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	return z.write(ctx, append([]string{"--non-interactive", "update"}, packages...)...)
 }
 
 // UpgradeAll performs a full distribution upgrade (zypper dist-upgrade).
-func (z *zypper) UpgradeAll(ctx context.Context) error {
+func (z *zypper) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
 	return z.write(ctx, "--non-interactive", "dist-upgrade")
 }
 
 // Autoremove is a no-op: zypper has no single-shot unneeded-package removal
 // matching apt/dnf autoremove semantics.
-func (z *zypper) Autoremove(ctx context.Context) error {
+func (z *zypper) Autoremove(ctx context.Context) (pmexec.Result, error) {
 	slog.Debug("zypper has no native autoremove; skipping")
-	return nil
+	return pmexec.Result{}, nil
 }
 
 // Repair clears a stale zypp lock and refreshes the repositories.
-func (z *zypper) Repair(ctx context.Context) error {
+func (z *zypper) Repair(ctx context.Context) (pmexec.Result, error) {
 	if err := removeStaleLock(ctx, z.r, "/run/zypp.pid"); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
-	if err := z.write(ctx, "--non-interactive", "refresh"); err != nil {
-		return repairErr(ctx, "zypper refresh failed", err)
+	res, err := z.write(ctx, "--non-interactive", "refresh")
+	if err != nil {
+		return res, repairErr(ctx, "zypper refresh failed", err)
 	}
-	return nil
+	return res, nil
 }
 
 // Search searches packages (exit 104 = no matches).
@@ -428,23 +429,23 @@ func (z *zypper) HasUpdates(ctx context.Context, securityOnly bool) (bool, error
 }
 
 // Pin holds packages back (zypper addlock).
-func (z *zypper) Pin(ctx context.Context, packages ...string) error {
+func (z *zypper) Pin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	return z.write(ctx, append([]string{"--non-interactive", "addlock"}, packages...)...)
 }
 
 // Unpin releases held packages (zypper removelock).
-func (z *zypper) Unpin(ctx context.Context, packages ...string) error {
+func (z *zypper) Unpin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	return z.write(ctx, append([]string{"--non-interactive", "removelock"}, packages...)...)
 }

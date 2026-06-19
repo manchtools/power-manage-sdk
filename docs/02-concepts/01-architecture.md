@@ -35,7 +35,10 @@ m, err := pkg.New(pkg.Apt, r)
 if err != nil {
     return err
 }
-err = m.Install(ctx, pkg.InstallOptions{}, "vim", "git")
+// Mutations return the command output (exec.Result: exit code, stdout, stderr)
+// so the caller can surface what the package manager actually did.
+res, err := m.Install(ctx, pkg.InstallOptions{}, "vim", "git")
+_ = res
 ```
 
 ## Why it's shaped this way

@@ -35,13 +35,15 @@ func parseNEVRAName(nevra string) string {
 
 func (d *dnf) Backend() Backend { return Dnf }
 
-// write runs a privileged dnf command and maps a non-zero exit to an error.
-func (d *dnf) write(ctx context.Context, args ...string) error {
+// write runs a privileged dnf command and maps a non-zero exit to an error,
+// returning the command Result (stdout/stderr/exit) on both the success and
+// non-zero-exit paths.
+func (d *dnf) write(ctx context.Context, args ...string) (pmexec.Result, error) {
 	res, err := runPriv(ctx, d.r, true, nil, "dnf", args...)
 	if err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
-	return asCommandError("dnf", res)
+	return res, asCommandError("dnf", res)
 }
 
 // Version returns the dnf version string.
@@ -56,18 +58,18 @@ func (d *dnf) Version(ctx context.Context) (string, error) {
 // Install installs packages. opts.Version pins a single package (dnf name-version
 // form); opts.AllowDowngrade adds --allowerasing and, on failure, retries an
 // explicit `dnf downgrade`.
-func (d *dnf) Install(ctx context.Context, opts InstallOptions, packages ...string) error {
+func (d *dnf) Install(ctx context.Context, opts InstallOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if err := ValidatePackageVersion(opts.Version); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if opts.Version != "" && len(packages) != 1 {
-		return fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
+		return pmexec.Result{}, fmt.Errorf("pkg: InstallOptions.Version requires exactly one package, got %d", len(packages))
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	args := []string{"install", "-y"}
 	if opts.AllowDowngrade {
@@ -81,7 +83,7 @@ func (d *dnf) Install(ctx context.Context, opts InstallOptions, packages ...stri
 		args = append(args, packages...)
 	}
 
-	err := d.write(ctx, args...)
+	res, err := d.write(ctx, args...)
 	// Only retry as an explicit downgrade when dnf itself rejected the install
 	// (a non-zero exit). An exec/escalation/context failure must not trigger a
 	// second escalated command.
@@ -89,46 +91,46 @@ func (d *dnf) Install(ctx context.Context, opts InstallOptions, packages ...stri
 	if errors.As(err, &ce) && opts.AllowDowngrade && opts.Version != "" {
 		return d.write(ctx, "downgrade", "-y", pkgSpec)
 	}
-	return err
+	return res, err
 }
 
 // Remove removes packages. dnf has no purge concept, so opts.Purge is a no-op.
-func (d *dnf) Remove(ctx context.Context, _ RemoveOptions, packages ...string) error {
+func (d *dnf) Remove(ctx context.Context, _ RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	return d.write(ctx, append([]string{"remove", "-y"}, packages...)...)
 }
 
 // Update refreshes metadata via `dnf check-update` (exit 100 = updates available
 // is a success, not an error).
-func (d *dnf) Update(ctx context.Context) error {
+func (d *dnf) Update(ctx context.Context) (pmexec.Result, error) {
 	res, err := runPriv(ctx, d.r, true, nil, "dnf", "check-update")
 	if err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if res.ExitCode == 0 || res.ExitCode == 100 {
-		return nil
+		return res, nil
 	}
-	return asCommandError("dnf", res)
+	return res, asCommandError("dnf", res)
 }
 
 // Upgrade upgrades the named packages, or all packages with no names.
-func (d *dnf) Upgrade(ctx context.Context, packages ...string) error {
+func (d *dnf) Upgrade(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil // empty is a no-op; UpgradeAll does a full upgrade
+		return pmexec.Result{}, nil // empty is a no-op; UpgradeAll does a full upgrade
 	}
 	return d.write(ctx, append([]string{"upgrade", "-y"}, packages...)...)
 }
 
 // UpgradeAll performs a full system upgrade (dnf upgrade).
-func (d *dnf) UpgradeAll(ctx context.Context) error {
+func (d *dnf) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
 	return d.write(ctx, "upgrade", "-y")
 }
 
@@ -141,60 +143,71 @@ func (d *dnf) ensureVersionLock(ctx context.Context) error {
 	if ok {
 		return nil // plugin already present
 	}
-	return d.write(ctx, "install", "-y", "python3-dnf-plugin-versionlock")
+	_, err = d.write(ctx, "install", "-y", "python3-dnf-plugin-versionlock")
+	return err
 }
 
 // Pin holds packages back (dnf versionlock add), installing the plugin if needed.
-func (d *dnf) Pin(ctx context.Context, packages ...string) error {
+func (d *dnf) Pin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	if err := d.ensureVersionLock(ctx); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	return d.write(ctx, append([]string{"versionlock", "add"}, packages...)...)
 }
 
 // Unpin releases held packages (dnf versionlock delete).
-func (d *dnf) Unpin(ctx context.Context, packages ...string) error {
+func (d *dnf) Unpin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	if err := d.ensureVersionLock(ctx); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	return d.write(ctx, append([]string{"versionlock", "delete"}, packages...)...)
 }
 
 // Autoremove removes packages installed only as now-unneeded dependencies.
-func (d *dnf) Autoremove(ctx context.Context) error {
+func (d *dnf) Autoremove(ctx context.Context) (pmexec.Result, error) {
 	return d.write(ctx, "autoremove", "-y")
 }
 
 // Repair re-runs the last transaction, drops duplicate packages, and verifies
 // the rpm database. Every step is best-effort (logged, not fatal) except a
-// context cancellation, which short-circuits.
-func (d *dnf) Repair(ctx context.Context) error {
+// context cancellation, which short-circuits. The returned Result is that of the
+// last step run (or the step that cancelled).
+func (d *dnf) Repair(ctx context.Context) (pmexec.Result, error) {
 	steps := []struct {
 		what string
-		run  func() error
+		run  func() (pmexec.Result, error)
 	}{
-		{"dnf history redo last", func() error { return d.write(ctx, "history", "redo", "last", "-y") }},
-		{"dnf remove --duplicates", func() error { return d.write(ctx, "remove", "--duplicates", "-y") }},
-		{"rpm --verifydb", func() error { _, err := readOut(ctx, d.r, "rpm", "--verifydb"); return err }},
+		{"dnf history redo last", func() (pmexec.Result, error) { return d.write(ctx, "history", "redo", "last", "-y") }},
+		{"dnf remove --duplicates", func() (pmexec.Result, error) { return d.write(ctx, "remove", "--duplicates", "-y") }},
+		{"rpm --verifydb", func() (pmexec.Result, error) {
+			res, err := runRead(ctx, d.r, "rpm", "--verifydb")
+			if err != nil {
+				return res, err
+			}
+			return res, asCommandError("rpm", res)
+		}},
 	}
+	var last pmexec.Result
 	for _, s := range steps {
-		if err := bestEffortStep(ctx, s.what, s.run()); err != nil {
-			return err
+		res, err := s.run()
+		last = res
+		if err := bestEffortStep(ctx, s.what, err); err != nil {
+			return res, err
 		}
 	}
-	return nil
+	return last, nil
 }
 
 // Search searches package names/summaries (exit 1 = no matches).

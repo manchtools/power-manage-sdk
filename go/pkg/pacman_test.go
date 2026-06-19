@@ -50,7 +50,7 @@ func TestPacman_Install(t *testing.T) {
 	t.Run("latest with --needed", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -61,7 +61,7 @@ func TestPacman_Install(t *testing.T) {
 	t.Run("pinned version (no --needed)", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "9.0-1"}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "9.0-1"}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		a := argv(f.Calls()[0])
@@ -72,7 +72,7 @@ func TestPacman_Install(t *testing.T) {
 	t.Run("allow downgrade does not force-overwrite", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		a := argv(f.Calls()[0])
@@ -85,25 +85,25 @@ func TestPacman_Install(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Install(ctx, InstallOptions{}, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("bad version", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1;0"}, "vim"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1;0"}, "vim"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("version with multiple packages rejected", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want one-package rejection")
 		}
 	})
@@ -114,7 +114,7 @@ func TestPacman_Remove(t *testing.T) {
 	t.Run("remove (-R)", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{}, "vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -R --noconfirm vim" {
@@ -124,7 +124,7 @@ func TestPacman_Remove(t *testing.T) {
 	t.Run("purge (-Rns)", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -Rns --noconfirm vim" {
@@ -133,13 +133,13 @@ func TestPacman_Remove(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -150,7 +150,7 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 	t.Run("update -Sy", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Update(ctx); err != nil {
+		if _, err := m.Update(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -Sy --noconfirm" {
@@ -160,7 +160,7 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 	t.Run("UpgradeAll -Syu", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -Syu --noconfirm" {
@@ -169,7 +169,7 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 	})
 	t.Run("empty Upgrade is a no-op", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Upgrade(ctx); err != nil {
+		if _, err := m.Upgrade(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 0 {
@@ -179,7 +179,7 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 	t.Run("upgrade specific", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx, "vim"); err != nil {
+		if _, err := m.Upgrade(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -S --noconfirm vim" {
@@ -188,14 +188,14 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 	})
 	t.Run("upgrade bad name", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Upgrade(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Upgrade(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("write exec error surfaced", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied)
-		if err := m.Update(ctx); !errors.Is(err, pmexec.ErrEscalationDenied) {
+		if _, err := m.Update(ctx); !errors.Is(err, pmexec.ErrEscalationDenied) {
 			t.Fatalf("err=%v want ErrEscalationDenied", err)
 		}
 	})
@@ -207,7 +207,7 @@ func TestPacman_Autoremove(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "orphan1\norphan2\n") // -Qtdq
 		ok(f, "")                   // -Rns
-		if err := m.Autoremove(ctx); err != nil {
+		if _, err := m.Autoremove(ctx); err != nil {
 			t.Fatal(err)
 		}
 		calls := f.Calls()
@@ -218,7 +218,7 @@ func TestPacman_Autoremove(t *testing.T) {
 	t.Run("no orphans (exit 1)", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{ExitCode: 1}, nil)
-		if err := m.Autoremove(ctx); err != nil {
+		if _, err := m.Autoremove(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 1 {
@@ -228,7 +228,7 @@ func TestPacman_Autoremove(t *testing.T) {
 	t.Run("blank query output is a no-op", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "  \n\n") // exit 0 but only blank lines
-		if err := m.Autoremove(ctx); err != nil {
+		if _, err := m.Autoremove(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 1 {
@@ -238,14 +238,14 @@ func TestPacman_Autoremove(t *testing.T) {
 	t.Run("query failure surfaced", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{ExitCode: 2, Stderr: "db error"}, nil)
-		if err := m.Autoremove(ctx); err == nil {
+		if _, err := m.Autoremove(ctx); err == nil {
 			t.Fatal("want error")
 		}
 	})
 	t.Run("query exec error", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{}, errors.New("boom"))
-		if err := m.Autoremove(ctx); err == nil {
+		if _, err := m.Autoremove(ctx); err == nil {
 			t.Fatal("want error")
 		}
 	})
@@ -257,7 +257,7 @@ func TestPacman_Repair(t *testing.T) {
 		stubStatFile(t, nil) // db.lck absent
 		m, f := pacmanM(t)
 		ok(f, "") // -Syy
-		if err := m.Repair(ctx); err != nil {
+		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -Syy --noconfirm" {
@@ -268,7 +268,7 @@ func TestPacman_Repair(t *testing.T) {
 		stubStatFile(t, nil)
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "sync failed"}, nil)
-		if err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "pacman -Syy failed") {
+		if _, err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "pacman -Syy failed") {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -277,7 +277,7 @@ func TestPacman_Repair(t *testing.T) {
 		cctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		m, f := pacmanM(t)
-		if err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
+		if _, err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
 			t.Fatalf("err=%v", err)
 		}
 		if len(f.Calls()) != 0 {
@@ -644,7 +644,7 @@ func TestPacman_Pin(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, samplePacmanConf) // readConf
 		ok(f, "")               // tee
-		if err := m.Pin(ctx, "vim"); err != nil {
+		if _, err := m.Pin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		tee := f.Calls()[1]
@@ -660,7 +660,7 @@ func TestPacman_Pin(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, samplePacmanConf) // linux already ignored
 		ok(f, "")
-		if err := m.Pin(ctx, "linux"); err != nil {
+		if _, err := m.Pin(ctx, "linux"); err != nil {
 			t.Fatal(err)
 		}
 		body := readAll(t, f.Calls()[1])
@@ -671,26 +671,26 @@ func TestPacman_Pin(t *testing.T) {
 	t.Run("config-injection name rejected by stricter gate", func(t *testing.T) {
 		m, f := pacmanM(t)
 		// passes ValidatePackageName (':' allowed) but fails validPacmanPkgName
-		if err := m.Pin(ctx, "vim:amd64"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx, "vim:amd64"); err == nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d, want stricter-gate rejection with no exec", err, len(f.Calls()))
 		}
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Pin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("readConf failure surfaced", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{}, errors.New("cat failed"))
-		if err := m.Pin(ctx, "vim"); err == nil || !strings.Contains(err.Error(), "pacman.conf") {
+		if _, err := m.Pin(ctx, "vim"); err == nil || !strings.Contains(err.Error(), "pacman.conf") {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -698,7 +698,7 @@ func TestPacman_Pin(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, samplePacmanConf)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "permission denied"}, nil)
-		if err := m.Pin(ctx, "vim"); err == nil {
+		if _, err := m.Pin(ctx, "vim"); err == nil {
 			t.Fatal("want tee failure")
 		}
 	})
@@ -706,7 +706,7 @@ func TestPacman_Pin(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, samplePacmanConf)
 		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied)
-		if err := m.Pin(ctx, "vim"); !errors.Is(err, pmexec.ErrEscalationDenied) {
+		if _, err := m.Pin(ctx, "vim"); !errors.Is(err, pmexec.ErrEscalationDenied) {
 			t.Fatalf("err=%v want ErrEscalationDenied", err)
 		}
 	})
@@ -718,7 +718,7 @@ func TestPacman_Unpin(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "[options]\nIgnorePkg = linux vim\n") // readConf
 		ok(f, "")                                   // tee
-		if err := m.Unpin(ctx, "vim"); err != nil {
+		if _, err := m.Unpin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		body := readAll(t, f.Calls()[1])
@@ -728,20 +728,20 @@ func TestPacman_Unpin(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := pacmanM(t)
-		if err := m.Unpin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("readConf failure surfaced", func(t *testing.T) {
 		m, f := pacmanM(t)
 		f.Push(pmexec.Result{}, errors.New("cat failed"))
-		if err := m.Unpin(ctx, "vim"); err == nil {
+		if _, err := m.Unpin(ctx, "vim"); err == nil {
 			t.Fatal("want error")
 		}
 	})

@@ -41,7 +41,7 @@ func TestDnf_Install(t *testing.T) {
 	t.Run("multiple latest", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -52,7 +52,7 @@ func TestDnf_Install(t *testing.T) {
 	t.Run("pinned version uses name-version", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "8.2.3"}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "8.2.3"}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.Contains(a, "vim-8.2.3") {
@@ -63,7 +63,7 @@ func TestDnf_Install(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "newer already installed"}, nil) // install fails
 		ok(f, "")                                                                  // downgrade succeeds
-		if err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
 			t.Fatalf("downgrade retry should succeed, got %v", err)
 		}
 		calls := f.Calls()
@@ -80,7 +80,7 @@ func TestDnf_Install(t *testing.T) {
 	t.Run("downgrade NOT retried after a runner/exec failure", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // install fails to even run
-		err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim")
+		_, err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim")
 		if !errors.Is(err, pmexec.ErrEscalationDenied) {
 			t.Fatalf("err=%v, want the original escalation error", err)
 		}
@@ -91,7 +91,7 @@ func TestDnf_Install(t *testing.T) {
 	t.Run("install failure without downgrade is returned", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "no package"}, nil)
-		err := m.Install(ctx, InstallOptions{}, "ghost")
+		_, err := m.Install(ctx, InstallOptions{}, "ghost")
 		var ce *pmexec.CommandError
 		if !errors.As(err, &ce) || ce.ExitCode != 1 {
 			t.Fatalf("err=%v want CommandError", err)
@@ -102,25 +102,25 @@ func TestDnf_Install(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Install(ctx, InstallOptions{}, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection, no exec")
 		}
 	})
 	t.Run("bad version", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1;0"}, "vim"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1;0"}, "vim"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want version rejection, no exec")
 		}
 	})
 	t.Run("version with multiple packages rejected", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want one-package rejection")
 		}
 	})
@@ -131,7 +131,7 @@ func TestDnf_Remove(t *testing.T) {
 	t.Run("remove (purge ignored)", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "dnf remove -y vim" {
@@ -140,13 +140,13 @@ func TestDnf_Remove(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -157,7 +157,7 @@ func TestDnf_Update(t *testing.T) {
 	t.Run("exit 0 is success", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 0}, nil)
-		if err := m.Update(ctx); err != nil {
+		if _, err := m.Update(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if c := f.Calls()[0]; argv(c) != "dnf check-update" || !c.Escalate {
@@ -167,7 +167,7 @@ func TestDnf_Update(t *testing.T) {
 	t.Run("exit 100 (updates available) is success", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 100}, nil)
-		if err := m.Update(ctx); err != nil {
+		if _, err := m.Update(ctx); err != nil {
 			t.Fatalf("exit 100 must be success, got %v", err)
 		}
 	})
@@ -175,14 +175,14 @@ func TestDnf_Update(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 5, Stderr: "metadata error"}, nil)
 		var ce *pmexec.CommandError
-		if err := m.Update(ctx); !errors.As(err, &ce) || ce.ExitCode != 5 {
+		if _, err := m.Update(ctx); !errors.As(err, &ce) || ce.ExitCode != 5 {
 			t.Fatalf("err=%v want CommandError(5)", err)
 		}
 	})
 	t.Run("exec error", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{}, errors.New("boom"))
-		if err := m.Update(ctx); err == nil {
+		if _, err := m.Update(ctx); err == nil {
 			t.Fatal("want error")
 		}
 	})
@@ -193,7 +193,7 @@ func TestDnf_Upgrade(t *testing.T) {
 	t.Run("UpgradeAll", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "dnf upgrade -y" {
@@ -202,7 +202,7 @@ func TestDnf_Upgrade(t *testing.T) {
 	})
 	t.Run("empty Upgrade is a no-op", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Upgrade(ctx); err != nil {
+		if _, err := m.Upgrade(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 0 {
@@ -212,7 +212,7 @@ func TestDnf_Upgrade(t *testing.T) {
 	t.Run("specific", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx, "vim"); err != nil {
+		if _, err := m.Upgrade(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "dnf upgrade -y vim" {
@@ -221,7 +221,7 @@ func TestDnf_Upgrade(t *testing.T) {
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Upgrade(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Upgrade(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -234,7 +234,7 @@ func TestDnf_PinUnpin(t *testing.T) {
 		f.Push(pmexec.Result{ExitCode: 1}, nil) // versionlock --help: plugin absent
 		ok(f, "")                               // install plugin
 		ok(f, "")                               // versionlock add
-		if err := m.Pin(ctx, "vim"); err != nil {
+		if _, err := m.Pin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		calls := f.Calls()
@@ -252,7 +252,7 @@ func TestDnf_PinUnpin(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 0}, nil) // versionlock --help ok
 		ok(f, "")                               // versionlock add
-		if err := m.Pin(ctx, "vim"); err != nil {
+		if _, err := m.Pin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 2 {
@@ -263,7 +263,7 @@ func TestDnf_PinUnpin(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 0}, nil) // help ok
 		ok(f, "")                               // versionlock delete
-		if err := m.Unpin(ctx, "vim"); err != nil {
+		if _, err := m.Unpin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[1]) != "dnf versionlock delete vim" {
@@ -274,14 +274,14 @@ func TestDnf_PinUnpin(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 1}, nil)                      // help: absent
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "no plugin"}, nil) // install fails
-		if err := m.Pin(ctx, "vim"); err == nil {
+		if _, err := m.Pin(ctx, "vim"); err == nil {
 			t.Fatal("want plugin-install failure")
 		}
 	})
 	t.Run("probe runner failure does not trigger a plugin install", func(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied) // versionlock --help can't run
-		if err := m.Pin(ctx, "vim"); !errors.Is(err, pmexec.ErrEscalationDenied) {
+		if _, err := m.Pin(ctx, "vim"); !errors.Is(err, pmexec.ErrEscalationDenied) {
 			t.Fatalf("err=%v, want the probe's runner error", err)
 		}
 		if len(f.Calls()) != 1 {
@@ -292,31 +292,31 @@ func TestDnf_PinUnpin(t *testing.T) {
 		m, f := dnfM(t)
 		f.Push(pmexec.Result{ExitCode: 1}, nil)                      // help: absent
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "no plugin"}, nil) // install fails
-		if err := m.Unpin(ctx, "vim"); err == nil {
+		if _, err := m.Unpin(ctx, "vim"); err == nil {
 			t.Fatal("want plugin-install failure")
 		}
 	})
 	t.Run("pin empty no-op", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("unpin empty no-op", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("pin bad name", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Pin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("unpin bad name", func(t *testing.T) {
 		m, f := dnfM(t)
-		if err := m.Unpin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -325,7 +325,7 @@ func TestDnf_PinUnpin(t *testing.T) {
 func TestDnf_Autoremove(t *testing.T) {
 	m, f := dnfM(t)
 	ok(f, "")
-	if err := m.Autoremove(context.Background()); err != nil {
+	if _, err := m.Autoremove(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if c := f.Calls()[0]; argv(c) != "dnf autoremove -y" || !c.Escalate {
@@ -340,7 +340,7 @@ func TestDnf_Repair(t *testing.T) {
 		ok(f, "") // history redo
 		ok(f, "") // remove --duplicates
 		ok(f, "") // rpm --verifydb
-		if err := m.Repair(ctx); err != nil {
+		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 3 {
@@ -352,7 +352,7 @@ func TestDnf_Repair(t *testing.T) {
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "x"}, nil)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "y"}, nil)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "z"}, nil)
-		if err := m.Repair(ctx); err != nil {
+		if _, err := m.Repair(ctx); err != nil {
 			t.Fatalf("best-effort repair must not fail, got %v", err)
 		}
 	})
@@ -360,8 +360,17 @@ func TestDnf_Repair(t *testing.T) {
 		cctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		m, _ := dnfM(t)
-		if err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
+		if _, err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
 			t.Fatalf("err=%v want context.Canceled", err)
+		}
+	})
+	t.Run("rpm --verifydb runner error is swallowed (best-effort)", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "")                                       // history redo
+		ok(f, "")                                       // remove --duplicates
+		f.Push(pmexec.Result{}, errors.New("rpm gone")) // rpm --verifydb: runner error, not just non-zero exit
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatalf("a non-cancellation verifydb runner error must be swallowed, got %v", err)
 		}
 	})
 }
