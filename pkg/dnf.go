@@ -130,8 +130,12 @@ func (d *dnf) Upgrade(ctx context.Context, packages ...string) (pmexec.Result, e
 }
 
 // UpgradeAll performs a full system upgrade (dnf upgrade).
-func (d *dnf) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
-	return d.write(ctx, "upgrade", "-y")
+func (d *dnf) UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Result, error) {
+	args := []string{"upgrade", "-y"}
+	if opts.SecurityOnly {
+		args = append(args, "--security")
+	}
+	return d.write(ctx, args...)
 }
 
 // ensureVersionLock installs the versionlock plugin if its subcommand is absent.

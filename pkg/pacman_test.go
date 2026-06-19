@@ -160,7 +160,7 @@ func TestPacman_UpdateUpgrade(t *testing.T) {
 	t.Run("UpgradeAll -Syu", func(t *testing.T) {
 		m, f := pacmanM(t)
 		ok(f, "")
-		if _, err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx, UpgradeOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "pacman -Syu --noconfirm" {

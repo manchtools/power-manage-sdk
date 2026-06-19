@@ -31,6 +31,22 @@ import (
 // (including the zero value). Fail-closed: no silent default.
 var ErrUnknownBackend = errors.New("pkg: unknown package-manager backend")
 
+// ErrSecurityOnlyUnsupported is returned by UpgradeAll when UpgradeOptions.
+// SecurityOnly is set on a backend that has no security-only upgrade path:
+// pacman (a rolling release with no security/non-security distinction) and
+// flatpak (no security channel). Fail-closed: the SDK never silently performs a
+// full upgrade when only security updates were requested.
+var ErrSecurityOnlyUnsupported = errors.New("pkg: security-only upgrade not supported by this backend")
+
+// UpgradeOptions configures UpgradeAll.
+type UpgradeOptions struct {
+	// SecurityOnly restricts the upgrade to security updates. Supported on apt
+	// (simulate dist-upgrade, then upgrade only packages from a security suite),
+	// dnf (--security) and zypper (patch --category security). pacman and flatpak
+	// return ErrSecurityOnlyUnsupported.
+	SecurityOnly bool
+}
+
 // lookPath is the exec.LookPath seam used by Detect and apt's apt/apt-get
 // resolution so binary discovery can be stubbed in tests.
 var lookPath = exec.LookPath
@@ -129,8 +145,11 @@ type Manager interface {
 	// system. Use UpgradeAll for that.
 	Upgrade(ctx context.Context, packages ...string) (pmexec.Result, error)
 	// UpgradeAll performs a full system upgrade (apt dist-upgrade / dnf upgrade /
-	// pacman -Syu / zypper dist-upgrade / flatpak update).
-	UpgradeAll(ctx context.Context) (pmexec.Result, error)
+	// pacman -Syu / zypper dist-upgrade / flatpak update). With
+	// opts.SecurityOnly it upgrades only security updates where the backend
+	// supports it (apt/dnf/zypper); pacman and flatpak return
+	// ErrSecurityOnlyUnsupported.
+	UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Result, error)
 	// Pin holds the named packages back from upgrades.
 	Pin(ctx context.Context, packages ...string) (pmexec.Result, error)
 	// Unpin releases the named packages so they upgrade again.

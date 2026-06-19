@@ -109,7 +109,12 @@ func (f *flatpak) Upgrade(ctx context.Context, packages ...string) (pmexec.Resul
 }
 
 // UpgradeAll updates every installed app/runtime (flatpak update with no refs).
-func (f *flatpak) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
+func (f *flatpak) UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Result, error) {
+	if opts.SecurityOnly {
+		// flatpak has no security/non-security update distinction — it updates
+		// apps/runtimes to latest. Fail closed rather than do a full update.
+		return pmexec.Result{}, ErrSecurityOnlyUnsupported
+	}
 	return f.write(ctx, "update", "-y", "--noninteractive", f.scope())
 }
 

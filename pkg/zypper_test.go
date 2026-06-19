@@ -143,7 +143,7 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 	t.Run("UpgradeAll -> dist-upgrade", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if _, err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx, UpgradeOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive dist-upgrade" {

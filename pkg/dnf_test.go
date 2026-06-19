@@ -193,7 +193,7 @@ func TestDnf_Upgrade(t *testing.T) {
 	t.Run("UpgradeAll", func(t *testing.T) {
 		m, f := dnfM(t)
 		ok(f, "")
-		if _, err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx, UpgradeOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "dnf upgrade -y" {
