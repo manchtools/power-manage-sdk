@@ -69,12 +69,16 @@
 //
 // # Safety
 //
-// Every destination flows through sys/fs.ResolveAndValidatePath plus
-// the sys/fs.IsProtectedPath check. Wipe additionally requires the
-// path to live under one of the managed roots (/var/lib/power-manage/,
-// /etc/power-manage/) OR to have been seen by a successful Fetch
-// (RecordDest); a hostile actor with action-creation rights can't
-// instruct an agent to rm-rf /etc by guessing a clever URL.
+// Every destination flows through sys/fs.ResolveAndValidatePath plus a
+// deny-by-default subtree check (sys/fs.IsUnderProtectedPrefix): any path at
+// or under a protected system root — /etc/cron.d/x, /usr/bin/x,
+// /home/<u>/.ssh/x, /var/lib/x — is refused at ANY depth, not just the exact
+// top-level dir. The only exemptions are the agent-owned managed roots
+// (/var/lib/power-manage/, /etc/power-manage/). Wipe additionally requires the
+// path to live under one of those managed roots OR to have been seen by a
+// successful Fetch (RecordDest), and refuses a protected subtree even if it
+// was somehow recorded; a hostile actor with action-creation rights can't
+// instruct an agent to write or rm-rf /etc/cron.d by guessing a clever URL.
 //
 // Archive extraction (HTTP Extract=true) refuses entries that contain
 // "..", absolute paths, escape symlinks, NUL bytes, or anything that

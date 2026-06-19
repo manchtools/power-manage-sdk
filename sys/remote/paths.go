@@ -14,9 +14,11 @@ import (
 // Path-safety helpers shared by every Source. Two layers:
 //
 //   - validateDestination — used by Fetch. Refuses relative paths,
-//     `/` and the empty string, sys/fs.IsProtectedPath matches, and any
-//     symlink-rewritten destination (parent chain OR final component)
-//     that lands on a protected path.
+//     `/` and the empty string, any path at or under a protected system
+//     subtree (sys/fs.IsUnderProtectedPrefix — deny-by-default at ANY depth,
+//     not just an exact top-level match), and any symlink-rewritten
+//     destination (parent chain OR final component) that lands on one. The
+//     agent-owned managed roots are the sole exemption.
 //   - canWipe — used by Wipe. Strict allow-list on top of the
 //     destination check: `/var/lib/power-manage/...`,
 //     `/etc/power-manage/...`, or any path previously seen by a
@@ -41,6 +43,26 @@ var wipeAllowedRoots = []string{
 	"/etc/power-manage/",
 }
 
+// isManagedRoot reports whether clean is at or under one of the agent-owned
+// managed roots. These live UNDER protected system prefixes (/etc/power-manage
+// is under /etc, /var/lib/power-manage under /var/lib), so the deny-by-default
+// subtree check would otherwise refuse the agent's own state dirs. The match is
+// lexical with a trailing-slash boundary (so a hostile sibling like
+// /etc/power-manage-evil is NOT mistaken for the managed root) — see the file
+// header for why agent-owned roots are intentionally not symlink-resolved.
+func isManagedRoot(clean string) bool {
+	for _, root := range wipeAllowedRoots {
+		// Normalise to a trailing-slash boundary regardless of how the entry is
+		// written, so a hostile sibling (/etc/power-manage-evil) can never be
+		// mistaken for the managed root /etc/power-manage.
+		root = strings.TrimSuffix(root, "/") + "/"
+		if strings.HasPrefix(clean+"/", root) {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	recordedDestsMu sync.RWMutex
 	recordedDests   = make(map[string]struct{})
@@ -61,8 +83,20 @@ func validateDestination(path string) error {
 	if clean == "/" {
 		return fmt.Errorf("%w: %s resolves to /", ErrUnsafeDestination, path)
 	}
-	if sysfs.IsProtectedPath(clean) {
-		return fmt.Errorf("%w: %s is a protected system path", ErrUnsafeDestination, path)
+	// Agent-owned managed roots are accepted lexically and early — before the
+	// deny-by-default subtree check (which would refuse them, as they live
+	// under /etc and /var/lib) and before symlink resolution (which can hit
+	// permission-denied on a root-owned managed dir). See the file header.
+	if isManagedRoot(clean) {
+		return nil
+	}
+	// Deny-by-default: refuse any destination at or under a protected system
+	// subtree at ANY depth (sys/fs.IsUnderProtectedPrefix), not just the exact
+	// top-level dir. The old exact-match IsProtectedPath accepted /etc/cron.d/x,
+	// /usr/bin/sshd, /home/<u>/.ssh/... — writing remote content there is root
+	// code-exec / privesc, which doc.go promises is impossible.
+	if sysfs.IsUnderProtectedPrefix(clean) {
+		return fmt.Errorf("%w: %s is under a protected system path", ErrUnsafeDestination, path)
 	}
 
 	// Resolve symlinks in the parent chain so a tampered intermediate
@@ -71,7 +105,7 @@ func validateDestination(path string) error {
 	// caution rather than write through an opaque ACL.
 	if resolved, err := sysfs.ResolveAndValidatePath(trim); err != nil {
 		return fmt.Errorf("%w: %s: %v", ErrUnsafeDestination, path, err)
-	} else if sysfs.IsProtectedPath(resolved) {
+	} else if sysfs.IsUnderProtectedPrefix(resolved) {
 		return fmt.Errorf("%w: %s resolves to protected path %s", ErrUnsafeDestination, path, resolved)
 	}
 
@@ -80,7 +114,7 @@ func validateDestination(path string) error {
 	// above. Lstat + EvalSymlinks closes that gap for the case where the
 	// leaf already exists.
 	if fi, lerr := os.Lstat(trim); lerr == nil && fi.Mode()&os.ModeSymlink != 0 {
-		if target, terr := filepath.EvalSymlinks(trim); terr == nil && sysfs.IsProtectedPath(target) {
+		if target, terr := filepath.EvalSymlinks(trim); terr == nil && sysfs.IsUnderProtectedPrefix(target) {
 			return fmt.Errorf("%w: %s is a symlink to protected path %s", ErrUnsafeDestination, path, target)
 		}
 	}
@@ -103,17 +137,19 @@ func canWipe(path string) error {
 	if clean == "/" {
 		return fmt.Errorf("%w: %s resolves to /", ErrUnsafeDestination, path)
 	}
-	if sysfs.IsProtectedPath(clean) {
-		return fmt.Errorf("%w: %s is a protected system path", ErrUnsafeDestination, path)
+	// Managed roots are agent-owned; accept them lexically and skip resolution
+	// so the check doesn't fail on hosts where those dirs are owned by another
+	// uid (e.g. a dev machine post-install).
+	if isManagedRoot(clean) {
+		return nil
 	}
-
-	// Lexical allow-list — managed roots are agent-owned; skip resolution
-	// so the check doesn't fail on hosts where those dirs are owned by
-	// another uid (e.g. a dev machine post-install).
-	for _, root := range wipeAllowedRoots {
-		if strings.HasPrefix(clean+"/", root) {
-			return nil
-		}
+	// Deny-by-default subtree refusal comes BEFORE the recorded-set check, so a
+	// recorded protected path can never jailbreak the guard: a Fetch→RecordDest
+	// →Wipe round-trip cannot rm -rf /etc/cron.d/x even if it were somehow
+	// recorded (the WS0 fail-open: old exact-match IsProtectedPath let subpaths
+	// through here and at the recorded check below).
+	if sysfs.IsUnderProtectedPrefix(clean) {
+		return fmt.Errorf("%w: %s is under a protected system path", ErrUnsafeDestination, path)
 	}
 
 	// Outside the managed roots — require resolution AND prior recording.
@@ -127,7 +163,7 @@ func canWipe(path string) error {
 		return nil
 	}
 	if resolved, err := sysfs.ResolveAndValidatePath(trim); err == nil {
-		if sysfs.IsProtectedPath(resolved) {
+		if sysfs.IsUnderProtectedPrefix(resolved) {
 			return fmt.Errorf("%w: %s resolves to protected path %s", ErrUnsafeDestination, path, resolved)
 		}
 		recordedDestsMu.RLock()

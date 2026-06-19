@@ -1340,11 +1340,15 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		c.deliverPending(msg)
 
 	case *pm.ServerMessage_RequestInventory:
+		if p.RequestInventory == nil {
+			c.logger.Warn("dropping RequestInventory with nil payload", "message_id", msg.Id)
+			return nil
+		}
+		if err := c.validateInbound(p.RequestInventory); err != nil {
+			c.logger.Warn("dropping invalid RequestInventory", "message_id", msg.Id, "error", err)
+			return nil
+		}
 		if invHandler, ok := handler.(InventoryHandler); ok {
-			if p.RequestInventory == nil {
-				c.logger.Warn("dropping RequestInventory with nil payload", "message_id", msg.Id)
-				return nil
-			}
 			req := p.RequestInventory
 			// Bound concurrency: drop (don't queue) when already at
 			// capacity so a flood cannot spawn unbounded osquery forks.
@@ -1375,6 +1379,10 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			c.logger.Warn("dropping LogQuery with nil payload", "message_id", msg.Id)
 			return nil
 		}
+		if err := c.validateInbound(p.LogQuery); err != nil {
+			c.logger.Warn("dropping invalid LogQuery", "message_id", msg.Id, "error", err)
+			return nil
+		}
 		if lqHandler, ok := handler.(LogQueryHandler); ok {
 			result, err := lqHandler.OnLogQuery(ctx, p.LogQuery)
 			if err != nil {
@@ -1388,15 +1396,22 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_RevokeLuksDeviceKey:
+		if p.RevokeLuksDeviceKey == nil {
+			// A compromised/buggy gateway could deliver a nil payload;
+			// dropping it avoids a nil dereference and is harmless (a
+			// real revocation always carries action_id + signature).
+			c.logger.Warn("dropping RevokeLuksDeviceKey with nil payload", "message_id", msg.Id)
+			return nil
+		}
+		// Defence-in-depth before the irreversible LUKS slot-7 wipe: reject a
+		// malformed action_id at the SDK boundary (the handler still verifies
+		// the CA signature that binds it).
+		if err := c.validateInbound(p.RevokeLuksDeviceKey); err != nil {
+			c.logger.Warn("dropping invalid RevokeLuksDeviceKey", "message_id", msg.Id, "error", err)
+			return nil
+		}
 		if luksHandler, ok := handler.(LuksHandler); ok {
 			req := p.RevokeLuksDeviceKey
-			if req == nil {
-				// A compromised/buggy gateway could deliver a nil payload;
-				// dropping it avoids a nil dereference and is harmless (a
-				// real revocation always carries action_id + signature).
-				c.logger.Warn("dropping RevokeLuksDeviceKey with nil payload", "message_id", msg.Id)
-				return nil
-			}
 			actionID := req.ActionId
 			// Run in goroutine: the handler calls GetLuksKey which sends
 			// a request on the stream and waits for a response. Processing
