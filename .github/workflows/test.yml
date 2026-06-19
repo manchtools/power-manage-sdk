@@ -47,8 +47,8 @@ jobs:
   # Go test sweep across every SDK package whose tests don't require
   # systemd / privileged operations (those run in test-sys below). The
   # job is split out from test-unit so the existing pkg-only job stays
-  # untouched while we add coverage for go/, go/verify/, go/crypto/,
-  # go/sys/{exec,fs,network,firewall,inventory,osquery,notify,...} —
+  # untouched while we add coverage for the root package, verify/, crypto/,
+  # sys/{exec,fs,network,firewall,inventory,osquery,notify,...} —
   # anything that compiles without an integration build tag.
   test-go-all:
     name: Go unit sweep (race, all SDK packages)
@@ -196,10 +196,10 @@ jobs:
 
       - name: Run pkg unit tests
         run: go test -v -race -short ./...
-        working-directory: go/pkg
+        working-directory: pkg
 
       - name: Run sys unit tests
-        run: go test -v -race ./go/sys/user/ -run TestGeneratePassword
+        run: go test -v -race ./sys/user/ -run TestGeneratePassword
 
   test-sys:
     name: Integration Tests (sys/)
@@ -233,7 +233,7 @@ jobs:
             runuser -u power-manage -- env LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8 \
               /usr/local/go/bin/go test \
               -v -tags=integration -count=1 -timeout=10m \
-              ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/service/
+              ./sdk/sys/exec/ ./sdk/sys/fs/ ./sdk/sys/user/ ./sdk/sys/service/
 
       - name: Cleanup
         if: always()
@@ -254,17 +254,17 @@ jobs:
 
       - name: Run integration tests
         run: go test -v -race ./...
-        working-directory: go/pkg
+        working-directory: pkg
 
       - name: Run tests with coverage
         run: go test -coverprofile=coverage-apt.out ./...
-        working-directory: go/pkg
+        working-directory: pkg
 
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
           name: coverage-apt
-          path: go/pkg/coverage-apt.out
+          path: pkg/coverage-apt.out
 
   test-dnf:
     name: Integration Tests (dnf)
@@ -282,17 +282,17 @@ jobs:
 
       - name: Run integration tests
         run: go test -v ./...
-        working-directory: go/pkg
+        working-directory: pkg
 
       - name: Run tests with coverage
         run: go test -coverprofile=coverage-dnf.out ./...
-        working-directory: go/pkg
+        working-directory: pkg
 
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
           name: coverage-dnf
-          path: go/pkg/coverage-dnf.out
+          path: pkg/coverage-dnf.out
 
   coverage-report:
     name: Coverage Report

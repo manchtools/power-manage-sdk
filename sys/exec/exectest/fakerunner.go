@@ -1,0 +1,123 @@
+// Package exectest provides a fake exec.Runner for unit-testing capability
+// packages with no host, no sudo, and no container. It is the keystone of the
+// additive unit tier in the SDK rework (sdk/docs/sdk-rework-design.md §6):
+// because every capability handle is built with an explicit Runner, a test
+// passes a FakeRunner and asserts on the exact Commands the capability built.
+package exectest
+
+import (
+	"context"
+	"strings"
+	"sync"
+
+	"github.com/manchtools/power-manage-sdk/sys/exec"
+)
+
+// FakeRunner is a drop-in exec.Runner.
+var _ exec.Runner = (*FakeRunner)(nil)
+
+type scripted struct {
+	res exec.Result
+	err error
+}
+
+// FakeRunner is an exec.Runner that records every Command it receives and
+// returns scripted Results in FIFO order. An unscripted call returns a clean
+// success (zero Result, nil error). Safe for concurrent use.
+type FakeRunner struct {
+	mu      sync.Mutex
+	backend exec.PrivilegeBackend
+	calls   []exec.Command
+	queue   []scripted
+}
+
+// New returns a FakeRunner that reports the given privilege backend. The zero
+// value defaults to exec.Direct (the common unit-test runner).
+func New(backend exec.PrivilegeBackend) *FakeRunner {
+	if backend == 0 {
+		backend = exec.Direct
+	}
+	return &FakeRunner{backend: backend}
+}
+
+// Backend reports the configured privilege backend, so a capability under test
+// can branch on Runner.Backend() (e.g. fs's fd-safe vs sudo path).
+func (f *FakeRunner) Backend() exec.PrivilegeBackend { return f.backend }
+
+// Push scripts the next Run/Stream outcome (FIFO).
+func (f *FakeRunner) Push(r exec.Result, err error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.queue = append(f.queue, scripted{res: r, err: err})
+}
+
+// Calls returns every Command received, in order.
+func (f *FakeRunner) Calls() []exec.Command {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]exec.Command(nil), f.calls...)
+}
+
+// record appends the attempted Command to the call log.
+func (f *FakeRunner) record(c exec.Command) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, c)
+}
+
+// pop returns the next scripted outcome (FIFO), or a clean success if none.
+func (f *FakeRunner) pop() (exec.Result, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.queue) == 0 {
+		return exec.Result{}, nil
+	}
+	s := f.queue[0]
+	f.queue = f.queue[1:]
+	return s.res, s.err
+}
+
+// Run records the Command and returns the next scripted Result. An
+// already-cancelled context short-circuits with ctx.Err() WITHOUT consuming a
+// scripted result — mirroring the real Runner, so a capability's ctx handling
+// can be unit-tested faithfully.
+func (f *FakeRunner) Run(ctx context.Context, c exec.Command) (exec.Result, error) {
+	f.record(c)
+	if err := ctx.Err(); err != nil {
+		return exec.Result{}, err
+	}
+	return f.pop()
+}
+
+// Stream records the Command, returns the next scripted Result, and replays the
+// scripted stdout/stderr to onLine line-by-line so streaming capabilities can
+// be exercised without a real process. A cancelled context short-circuits as in
+// Run (no scripted result consumed, no replay).
+func (f *FakeRunner) Stream(ctx context.Context, c exec.Command, onLine exec.OutputCallback) (exec.Result, error) {
+	f.record(c)
+	if err := ctx.Err(); err != nil {
+		return exec.Result{}, err
+	}
+	res, err := f.pop()
+	if onLine != nil {
+		replay(res.Stdout, exec.StreamStdout, onLine)
+		replay(res.Stderr, exec.StreamStderr, onLine)
+	}
+	return res, err
+}
+
+// replay delivers buf to onLine one line at a time. Every delivered line is
+// newline-terminated — INCLUDING an unterminated final line — because that is
+// exactly what the real Runner does (its streaming path appends "\n" to every
+// callback line; verified: `printf 'a\nb'` delivers "a\n" then "b\n").
+// Preserving a missing final newline here would make the fake LESS faithful.
+func replay(buf string, stream exec.StreamType, onLine exec.OutputCallback) {
+	if buf == "" {
+		return
+	}
+	var seq int64
+	for _, line := range strings.Split(strings.TrimSuffix(buf, "\n"), "\n") {
+		onLine(stream, line+"\n", seq)
+		seq++
+	}
+}

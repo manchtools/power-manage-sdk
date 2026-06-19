@@ -13,7 +13,7 @@ at construction.
 
 ## One backend per host, chosen explicitly
 
-<!-- docref: begin src=go/sys/catrust/catrust.go#CaCertificates:15a42eb7 -->
+<!-- docref: begin src=sys/catrust/catrust.go#CaCertificates:15a42eb7 -->
 A `Backend` is a small enum whose first real value is one (`iota + 1`), so its
 zero value is intentionally invalid — there is no implicit default, and a
 caller must name the backend it wants:
@@ -33,7 +33,7 @@ a no-op.
 You usually know the target platform, but when you don't, `Detect` reports the
 backends usable on *this* host so the caller can pick one:
 
-<!-- docref: begin src=go/sys/catrust/detect.go#Detect:047f0669 -->
+<!-- docref: begin src=sys/catrust/detect.go#Detect:047f0669 -->
 `Detect` probes the host (typically by looking for each backend's tools on
 `PATH`) and returns the list of backends that are usable here. It reports what
 is available; it does not choose or activate anything — the caller passes one

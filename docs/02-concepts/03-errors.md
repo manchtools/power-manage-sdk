@@ -23,7 +23,7 @@ if errors.Is(err, svc.ErrUnknownBackend) {
 
 Each multi-backend package exports `ErrUnknownBackend`.
 
-<!-- docref: begin src=go/sys/exec/command_error.go#@escalation-sentinels:89446e95 -->
+<!-- docref: begin src=sys/exec/command_error.go#@escalation-sentinels:89446e95 -->
 The `exec` package adds sentinels for the escalation path —
 `ErrEscalationUnavailable` (sudo/doas not installed) and `ErrEscalationDenied`
 (escalation would need a password, which the agent can't supply) — so a runner
@@ -38,7 +38,7 @@ because some non-zero codes are meaningful answers (a `cryptsetup` probe
 returning "not a LUKS device", for example). When a capability does decide a
 command failed, it wraps the details in a typed error:
 
-<!-- docref: begin src=go/sys/exec/command_error.go#CommandError:c48644e3 -->
+<!-- docref: begin src=sys/exec/command_error.go#CommandError:c48644e3 -->
 `CommandError` is the typed error the capability layer wraps a failed command
 in. It carries the command name, the exit code, and the captured stderr, so a
 caller can branch on the specific code via `errors.As` without importing any

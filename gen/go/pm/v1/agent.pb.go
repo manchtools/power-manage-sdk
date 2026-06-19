@@ -3294,7 +3294,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\fAgentService\x127\n" +
 	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12D\n" +
 	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12V\n" +
-	"\x11ValidateLuksToken\x12\x1f.pm.v1.ValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x11ValidateLuksToken\x12\x1f.pm.v1.ValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_agent_proto_rawDescOnce sync.Once

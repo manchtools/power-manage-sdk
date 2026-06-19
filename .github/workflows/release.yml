@@ -107,7 +107,7 @@ jobs:
           ## Go SDK
 
           ```go
-          go get github.com/manchtools/power-manage/sdk@${{ github.ref_name }}
+          go get github.com/manchtools/power-manage-sdk@${{ github.ref_name }}
           ```
 
           ## Assets

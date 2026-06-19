@@ -1244,7 +1244,7 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x19COMPLIANCE_STATUS_UNKNOWN\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
 	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02\x12%\n" +
-	"!COMPLIANCE_STATUS_IN_GRACE_PERIOD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"!COMPLIANCE_STATUS_IN_GRACE_PERIOD\x10\x03B:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_common_proto_rawDescOnce sync.Once

@@ -42,11 +42,11 @@ Proto definitions are in `proto/pm/v1/`. Generated Go code lives in `gen/`. Go l
 
 ## Guardrails (architectural fitness functions)
 
-`go/archtest/` holds build-failing invariant tests that run in the normal
+`archtest/` holds build-failing invariant tests that run in the normal
 `go test ./...` path:
 
 - **`TestSecretComparesAreConstantTime`** — the SDK is the action-signing and
-  encryption boundary (`go/verify`, `go/crypto`). Compare secrets/MACs/
+  encryption boundary (`verify`, `crypto`). Compare secrets/MACs/
   tokens/signatures/fingerprints with `subtle.ConstantTimeCompare`/
   `hmac.Equal`, never `==`/`bytes.Equal`.
 

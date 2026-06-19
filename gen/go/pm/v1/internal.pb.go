@@ -1129,7 +1129,7 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\x1aProxyValidateTerminalToken\x12+.pm.v1.InternalValidateTerminalTokenRequest\x1a,.pm.v1.InternalValidateTerminalTokenResponse2\x89\x02\n" +
 	"\x0eGatewayService\x12t\n" +
 	"\x1bListGatewayTerminalSessions\x12).pm.v1.ListGatewayTerminalSessionsRequest\x1a*.pm.v1.ListGatewayTerminalSessionsResponse\x12\x80\x01\n" +
-	"\x1fTerminateGatewayTerminalSession\x12-.pm.v1.TerminateGatewayTerminalSessionRequest\x1a..pm.v1.TerminateGatewayTerminalSessionResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x1fTerminateGatewayTerminalSession\x12-.pm.v1.TerminateGatewayTerminalSessionRequest\x1a..pm.v1.TerminateGatewayTerminalSessionResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_internal_proto_rawDescOnce sync.Once

@@ -59,7 +59,7 @@ model fixes that, and the shape is deliberate:
 - **Uniform.** A reader who understands one capability understands them all;
   adding a capability is a copy of the same small shape.
 
-<!-- docref: begin src=go/archtest/no_global_backend_test.go#TestNoGlobalBackendState:5d31bd6e -->
+<!-- docref: begin src=archtest/no_global_backend_test.go#TestNoGlobalBackendState:65a4d3bf -->
 The no-global-state rule is enforced by an architectural test, not just
 convention: the build fails if any capability reintroduces a process-global
 backend selector or setter.
@@ -73,7 +73,7 @@ model; the reference lists the surface.
 
 ## Construction validates before it works
 
-<!-- docref: begin src=go/sys/catrust/catrust.go#New:987cc8b3 -->
+<!-- docref: begin src=sys/catrust/catrust.go#New:987cc8b3 -->
 `New` is pure and fail-closed: it rejects a nil Runner and an unrecognized
 Backend, returning an error, before constructing a usable handle. A successful
 call gives you a Manager that is ready to use.

@@ -1,4 +1,4 @@
-module github.com/manchtools/power-manage/sdk
+module github.com/manchtools/power-manage-sdk
 
 go 1.25.11
 

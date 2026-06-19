@@ -277,7 +277,7 @@ const file_pm_v1_device_auth_proto_rawDesc = "" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId2\xa8\x01\n" +
 	"\x11DeviceAuthService\x125\n" +
 	"\x06Enroll\x12\x14.pm.v1.EnrollRequest\x1a\x15.pm.v1.EnrollResponse\x12\\\n" +
-	"\x13GetEnrollmentStatus\x12!.pm.v1.GetEnrollmentStatusRequest\x1a\".pm.v1.GetEnrollmentStatusResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x13GetEnrollmentStatus\x12!.pm.v1.GetEnrollmentStatusRequest\x1a\".pm.v1.GetEnrollmentStatusResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_device_auth_proto_rawDescOnce sync.Once
