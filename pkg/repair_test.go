@@ -42,34 +42,17 @@ func TestRemoveStaleLock_FileAbsent(t *testing.T) {
 	}
 }
 
-func TestRemoveStaleLock_InUse(t *testing.T) {
-	stubStatFile(t, nil, "/lock")
-	f := newFake()
-	f.Push(pmexec.Result{ExitCode: 0}, nil) // fuser: a process holds it
-	if err := removeStaleLock(context.Background(), f, "/lock"); err != nil {
-		t.Fatal(err)
-	}
-	if n := len(f.Calls()); n != 1 {
-		t.Fatalf("in-use lock must probe but not remove, ran %d", n)
-	}
-}
-
-func TestRemoveStaleLock_StaleRemoved(t *testing.T) {
-	stubStatFile(t, nil, "/lock")
-	f := newFake()
-	f.Push(pmexec.Result{ExitCode: 1}, nil) // fuser: nobody holds it (stale)
-	f.Push(pmexec.Result{ExitCode: 0}, nil) // rm -f
-	if err := removeStaleLock(context.Background(), f, "/lock"); err != nil {
-		t.Fatal(err)
-	}
-	calls := f.Calls()
-	if len(calls) != 2 {
-		t.Fatalf("stale lock must probe then remove, ran %d", len(calls))
-	}
-	if argv(calls[1]) != "rm -f /lock" || !calls[1].Escalate {
-		t.Errorf("removal call = %q (escalate=%v), want escalated rm -f", argv(calls[1]), calls[1].Escalate)
-	}
-}
+// NOTE: the in-use ("fuser reports a holder → keep") and stale-removed
+// ("fuser reports no holder → escalated rm") behaviours were previously
+// asserted here by FEEDING the FakeRunner a fabricated fuser exit code — i.e.
+// the test scripted the exact tool behaviour it then "verified", proving only
+// that the Go branch on a hand-chosen exit code works, never that real fuser
+// emits that code for a real held/unheld fd. Those two cases now run against
+// the REAL fuser binary on a REAL lock file in pkg/repair_container_test.go
+// (build tag `container`), so they are removed here as the first step of the
+// container-only migration. The fake-runner tests BELOW are kept: they cover
+// error/edge LOGIC (inconclusive probe, exec failure, stat error, context
+// cancellation) that is about the Go code path, not fabricated tool behaviour.
 
 func TestRemoveStaleLock_InconclusiveProbeKeepsLock(t *testing.T) {
 	stubStatFile(t, nil, "/lock")

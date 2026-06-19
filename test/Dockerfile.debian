@@ -1,0 +1,46 @@
+# Container-based real-execution test image for the SDK (Debian/apt family).
+#
+# Tests run INSIDE the container (`go test -tags=container`), so the SDK's
+# direct os.* filesystem access and its Runner-driven exec hit the SAME
+# filesystem — the only model that is faithful for capabilities (like
+# pkg/repair) that mix os.Stat with real tool exec.
+#
+# Multi-stage: `base` installs the toolchain + tool surface once; each
+# `state-*` stage bakes one known system state and asserts its precondition at
+# BUILD time (a mis-built state fails the BUILD, not the test). The test then
+# self-skips when its precondition is absent, so adding a state is a new stage +
+# a new test file — no CI wiring change.
+
+# The toolchain (1.26) is newer than the module's `go` directive (1.25.11, the
+# SDK's go.mod version mirrored into go.work below); a newer toolchain building
+# an older go-directive module is standard Go behaviour. Matches the pinning in
+# test/Dockerfile.integration so both images move together.
+FROM golang:1.26-bookworm AS base
+
+# psmisc provides `fuser`, the read-side lock probe in pkg/repair.go's
+# removeStaleLock; ca-certificates for `apt update` during Repair.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    psmisc \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Copy only the SDK module and pin it into a minimal workspace (standalone
+# resolution; mirrors test/Dockerfile.integration).
+COPY sdk/ ./sdk/
+RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN cd sdk && go mod download
+
+# --- bad-state stages -------------------------------------------------------
+
+# state-locked-apt: a STALE (unheld) set of apt/dpkg lock files. The build-time
+# `test -f` asserts the precondition exists, so a future base change that moves
+# the lock paths fails the build instead of silently skipping the test.
+FROM base AS state-locked-apt
+RUN touch /var/lib/dpkg/lock \
+          /var/lib/dpkg/lock-frontend \
+          /var/lib/apt/lists/lock \
+          /var/cache/apt/archives/lock \
+    && test -f /var/lib/dpkg/lock \
+       || (echo "PRECONDITION FAILED: /var/lib/dpkg/lock not created" && exit 1)
