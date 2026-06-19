@@ -160,7 +160,7 @@ func TestFlatpak_UpdateUpgrade(t *testing.T) {
 	t.Run("UpgradeAll", func(t *testing.T) {
 		m, f := flatpakM(t)
 		ok(f, "")
-		if _, err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx, UpgradeOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "flatpak update -y --noninteractive --system" {

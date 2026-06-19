@@ -141,10 +141,27 @@ func (a *apt) Upgrade(ctx context.Context, packages ...string) (pmexec.Result, e
 	return a.write(ctx, "apt", args...)
 }
 
-// UpgradeAll performs a full distribution upgrade (apt dist-upgrade).
-func (a *apt) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
+// UpgradeAll performs a full distribution upgrade (apt dist-upgrade), or — with
+// opts.SecurityOnly — applies only security updates via unattended-upgrade.
+func (a *apt) UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Result, error) {
+	if opts.SecurityOnly {
+		return a.securityUpgrade(ctx)
+	}
 	args := append([]string{"dist-upgrade", "-y"}, dpkgConfOptions...)
 	return a.write(ctx, "apt", args...)
+}
+
+// securityUpgrade applies only security updates via unattended-upgrade — Debian/
+// Ubuntu's canonical security-upgrade tool. It matches the exact security
+// origins from its Allowed-Origins config (rather than a fragile origin-name
+// heuristic) and handles holds, kernel transitions and conffile prompts. It
+// requires the unattended-upgrades package; if absent it fails closed with an
+// actionable error rather than silently performing a full upgrade.
+func (a *apt) securityUpgrade(ctx context.Context) (pmexec.Result, error) {
+	if _, err := lookPath("unattended-upgrade"); err != nil {
+		return pmexec.Result{}, fmt.Errorf("%w: unattended-upgrade not found — install the unattended-upgrades package for apt security-only upgrades", pmexec.ErrBackendUnavailable)
+	}
+	return a.write(ctx, "unattended-upgrade", "-v")
 }
 
 // Pin holds packages (apt-mark hold).

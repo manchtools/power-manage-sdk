@@ -109,7 +109,12 @@ func (z *zypper) Upgrade(ctx context.Context, packages ...string) (pmexec.Result
 }
 
 // UpgradeAll performs a full distribution upgrade (zypper dist-upgrade).
-func (z *zypper) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
+func (z *zypper) UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Result, error) {
+	if opts.SecurityOnly {
+		// zypper patches are security-categorised; patch --category security
+		// applies only the security patches.
+		return z.write(ctx, "--non-interactive", "patch", "--category", "security")
+	}
 	return z.write(ctx, "--non-interactive", "dist-upgrade")
 }
 

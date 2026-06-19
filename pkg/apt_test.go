@@ -194,7 +194,7 @@ func TestApt_Upgrade(t *testing.T) {
 	t.Run("UpgradeAll -> dist-upgrade", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if _, err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx, UpgradeOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.HasPrefix(a, "apt dist-upgrade -y") {

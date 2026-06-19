@@ -109,7 +109,13 @@ func (p *pacman) Upgrade(ctx context.Context, packages ...string) (pmexec.Result
 }
 
 // UpgradeAll performs a full system upgrade (pacman -Syu).
-func (p *pacman) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
+func (p *pacman) UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Result, error) {
+	if opts.SecurityOnly {
+		// Arch is a rolling release with no security/non-security split — there
+		// is no way to apply only security updates. Fail closed rather than
+		// silently run a full upgrade.
+		return pmexec.Result{}, ErrSecurityOnlyUnsupported
+	}
 	return p.write(ctx, "-Syu", "--noconfirm")
 }
 
