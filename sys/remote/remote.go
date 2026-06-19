@@ -12,10 +12,11 @@
 // per agent run and the choice is per call, not per startup.
 //
 // Safety surface: every destination is run through
-// sys/fs.ResolveAndValidatePath and the IsProtectedPath check before any
-// filesystem mutation, archive entries are guarded against ../, absolute
-// paths, and escape-symlinks, and HTTP fetches are size-capped to defeat
-// zip-bomb-style inputs.
+// sys/fs.ResolveAndValidatePath and a deny-by-default protected-subtree check
+// (sys/fs.IsUnderProtectedPrefix, exempting only the agent-owned managed roots)
+// before any filesystem mutation, archive entries are guarded against ../,
+// absolute paths, and escape-symlinks, and HTTP fetches are size-capped to
+// defeat zip-bomb-style inputs.
 package remote
 
 import (
