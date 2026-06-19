@@ -34,13 +34,14 @@ func (f *flatpak) scope() string {
 }
 
 // write runs a privileged flatpak command. It escalates only in system scope;
-// --user operations run unprivileged.
-func (f *flatpak) write(ctx context.Context, args ...string) error {
+// --user operations run unprivileged. The command Result is returned on both
+// the success and non-zero-exit paths.
+func (f *flatpak) write(ctx context.Context, args ...string) (pmexec.Result, error) {
 	res, err := runPriv(ctx, f.r, f.system, nil, "flatpak", args...)
 	if err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
-	return asCommandError("flatpak", res)
+	return res, asCommandError("flatpak", res)
 }
 
 // Version returns the flatpak version string ("Flatpak 1.14.4").
@@ -59,27 +60,27 @@ func (f *flatpak) Version(ctx context.Context) (string, error) {
 // Install installs application bundles. Flatpak does not support traditional
 // version pinning, so opts.Version is validated but ignored (use commits/refs
 // for exact version control). All named bundles are installed at latest.
-func (f *flatpak) Install(ctx context.Context, opts InstallOptions, packages ...string) error {
+func (f *flatpak) Install(ctx context.Context, opts InstallOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if err := ValidatePackageVersion(opts.Version); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	args := append([]string{"install", "-y", "--noninteractive", f.scope()}, packages...)
 	return f.write(ctx, args...)
 }
 
 // Remove uninstalls bundles; opts.Purge also deletes per-app data (--delete-data).
-func (f *flatpak) Remove(ctx context.Context, opts RemoveOptions, packages ...string) error {
+func (f *flatpak) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil
+		return pmexec.Result{}, nil
 	}
 	args := []string{"uninstall", "-y", "--noninteractive"}
 	if opts.Purge {
@@ -91,38 +92,39 @@ func (f *flatpak) Remove(ctx context.Context, opts RemoveOptions, packages ...st
 }
 
 // Update refreshes appstream metadata for the configured remotes.
-func (f *flatpak) Update(ctx context.Context) error {
+func (f *flatpak) Update(ctx context.Context) (pmexec.Result, error) {
 	return f.write(ctx, "update", "--appstream", "-y", "--noninteractive", f.scope())
 }
 
 // Upgrade updates the named bundles, or all installed bundles with no names.
-func (f *flatpak) Upgrade(ctx context.Context, packages ...string) error {
+func (f *flatpak) Upgrade(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
 	if len(packages) == 0 {
-		return nil // empty is a no-op; UpgradeAll updates everything (flatpak update with no refs)
+		return pmexec.Result{}, nil // empty is a no-op; UpgradeAll updates everything (flatpak update with no refs)
 	}
 	args := append([]string{"update", "-y", "--noninteractive", f.scope()}, packages...)
 	return f.write(ctx, args...)
 }
 
 // UpgradeAll updates every installed app/runtime (flatpak update with no refs).
-func (f *flatpak) UpgradeAll(ctx context.Context) error {
+func (f *flatpak) UpgradeAll(ctx context.Context) (pmexec.Result, error) {
 	return f.write(ctx, "update", "-y", "--noninteractive", f.scope())
 }
 
 // Autoremove removes unused runtimes/extensions (flatpak uninstall --unused).
-func (f *flatpak) Autoremove(ctx context.Context) error {
+func (f *flatpak) Autoremove(ctx context.Context) (pmexec.Result, error) {
 	return f.write(ctx, "uninstall", "--unused", "-y", "--noninteractive", f.scope())
 }
 
 // Repair runs `flatpak repair`, restoring a consistent installation state.
-func (f *flatpak) Repair(ctx context.Context) error {
-	if err := f.write(ctx, "repair", f.scope()); err != nil {
-		return repairErr(ctx, "flatpak repair failed", err)
+func (f *flatpak) Repair(ctx context.Context) (pmexec.Result, error) {
+	res, err := f.write(ctx, "repair", f.scope())
+	if err != nil {
+		return res, repairErr(ctx, "flatpak repair failed", err)
 	}
-	return nil
+	return res, nil
 }
 
 // Search searches configured remotes (exit 1 = no matches).
@@ -383,32 +385,39 @@ func (f *flatpak) HasUpdates(ctx context.Context, securityOnly bool) (bool, erro
 }
 
 // Pin masks bundles so they are held back from updates. Best-effort across the
-// set: every bundle is attempted and the last error (if any) is returned.
-func (f *flatpak) Pin(ctx context.Context, packages ...string) error {
+// set: every bundle is attempted and the last error (if any) is returned, along
+// with the last command's Result.
+func (f *flatpak) Pin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
+	var last pmexec.Result
 	var lastErr error
 	for _, name := range packages {
-		if err := f.write(ctx, "mask", name, f.scope()); err != nil {
+		res, err := f.write(ctx, "mask", name, f.scope())
+		last = res
+		if err != nil {
 			lastErr = err
 		}
 	}
-	return lastErr
+	return last, lastErr
 }
 
 // Unpin removes the mask so bundles update again.
-func (f *flatpak) Unpin(ctx context.Context, packages ...string) error {
+func (f *flatpak) Unpin(ctx context.Context, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
-		return err
+		return pmexec.Result{}, err
 	}
+	var last pmexec.Result
 	var lastErr error
 	for _, name := range packages {
-		if err := f.write(ctx, "mask", "--remove", name, f.scope()); err != nil {
+		res, err := f.write(ctx, "mask", "--remove", name, f.scope())
+		last = res
+		if err != nil {
 			lastErr = err
 		}
 	}
-	return lastErr
+	return last, lastErr
 }
 
 // ListPinned lists masked bundles.
@@ -488,7 +497,10 @@ func (f *flatpak) AddRemote(ctx context.Context, name, url string) error {
 	if err := ValidateRepoBaseURL(url); err != nil {
 		return err
 	}
-	return f.write(ctx, "remote-add", "--if-not-exists", name, url, f.scope())
+	// Remote management is configuration, not a package transaction, so it keeps
+	// the error-only contract; the command output is not surfaced as an action.
+	_, err := f.write(ctx, "remote-add", "--if-not-exists", name, url, f.scope())
+	return err
 }
 
 // RemoveRemote deletes a flatpak remote.
@@ -496,7 +508,8 @@ func (f *flatpak) RemoveRemote(ctx context.Context, name string) error {
 	if err := ValidateRemoteName(name); err != nil {
 		return err
 	}
-	return f.write(ctx, "remote-delete", "--force", name, f.scope())
+	_, err := f.write(ctx, "remote-delete", "--force", name, f.scope())
+	return err
 }
 
 // ListRemotes returns the configured flatpak remote names.

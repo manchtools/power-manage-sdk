@@ -48,7 +48,7 @@ func TestZypper_Install(t *testing.T) {
 	t.Run("latest", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -59,7 +59,7 @@ func TestZypper_Install(t *testing.T) {
 	t.Run("pinned version", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "9.0-1"}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "9.0-1"}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.Contains(a, "vim=9.0-1") {
@@ -69,7 +69,7 @@ func TestZypper_Install(t *testing.T) {
 	t.Run("allow downgrade adds --oldpackage", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.Contains(a, "--oldpackage") {
@@ -78,25 +78,25 @@ func TestZypper_Install(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Install(ctx, InstallOptions{}, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{}, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("bad version", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1;0"}, "vim"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1;0"}, "vim"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("version with multiple packages rejected", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want one-package rejection")
 		}
 	})
@@ -107,7 +107,7 @@ func TestZypper_Remove(t *testing.T) {
 	t.Run("remove (purge ignored)", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive remove vim" {
@@ -116,13 +116,13 @@ func TestZypper_Remove(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "--x"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
@@ -133,7 +133,7 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 	t.Run("update refresh", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Update(ctx); err != nil {
+		if _, err := m.Update(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive refresh" {
@@ -143,7 +143,7 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 	t.Run("UpgradeAll -> dist-upgrade", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive dist-upgrade" {
@@ -152,7 +152,7 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 	})
 	t.Run("empty Upgrade is a no-op", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Upgrade(ctx); err != nil {
+		if _, err := m.Upgrade(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 0 {
@@ -162,7 +162,7 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 	t.Run("upgrade specific -> update", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx, "vim"); err != nil {
+		if _, err := m.Upgrade(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive update vim" {
@@ -171,14 +171,14 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 	})
 	t.Run("upgrade bad name", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Upgrade(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Upgrade(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("write exec error surfaced", func(t *testing.T) {
 		m, f := zypperM(t)
 		f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied)
-		if err := m.Update(ctx); !errors.Is(err, pmexec.ErrEscalationDenied) {
+		if _, err := m.Update(ctx); !errors.Is(err, pmexec.ErrEscalationDenied) {
 			t.Fatalf("err=%v want ErrEscalationDenied", err)
 		}
 	})
@@ -186,7 +186,7 @@ func TestZypper_UpdateUpgrade(t *testing.T) {
 
 func TestZypper_Autoremove(t *testing.T) {
 	m, f := zypperM(t)
-	if err := m.Autoremove(context.Background()); err != nil {
+	if _, err := m.Autoremove(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if len(f.Calls()) != 0 {
@@ -200,7 +200,7 @@ func TestZypper_Repair(t *testing.T) {
 		stubStatFile(t, nil)
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Repair(ctx); err != nil {
+		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive refresh" {
@@ -211,7 +211,7 @@ func TestZypper_Repair(t *testing.T) {
 		stubStatFile(t, nil)
 		m, f := zypperM(t)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "refresh failed"}, nil)
-		if err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "zypper refresh failed") {
+		if _, err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "zypper refresh failed") {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -220,7 +220,7 @@ func TestZypper_Repair(t *testing.T) {
 		cctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		m, _ := zypperM(t)
-		if err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
+		if _, err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
 			t.Fatalf("err=%v", err)
 		}
 	})
@@ -564,7 +564,7 @@ func TestZypper_PinUnpin(t *testing.T) {
 	t.Run("pin addlock", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Pin(ctx, "vim"); err != nil {
+		if _, err := m.Pin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if c := f.Calls()[0]; argv(c) != "zypper --non-interactive addlock vim" || !c.Escalate {
@@ -574,7 +574,7 @@ func TestZypper_PinUnpin(t *testing.T) {
 	t.Run("unpin removelock", func(t *testing.T) {
 		m, f := zypperM(t)
 		ok(f, "")
-		if err := m.Unpin(ctx, "vim"); err != nil {
+		if _, err := m.Unpin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "zypper --non-interactive removelock vim" {
@@ -583,25 +583,25 @@ func TestZypper_PinUnpin(t *testing.T) {
 	})
 	t.Run("pin empty no-op", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("unpin empty no-op", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("pin bad name", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Pin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})
 	t.Run("unpin bad name", func(t *testing.T) {
 		m, f := zypperM(t)
-		if err := m.Unpin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx, "v;m"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection")
 		}
 	})

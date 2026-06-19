@@ -50,7 +50,7 @@ func TestApt_AptGetFallback(t *testing.T) {
 	stubLookPath(t) // neither apt nor apt-get on PATH -> resolves to apt-get
 	m, f := mustNew(t, Apt)
 	ok(f, "")
-	if err := m.Update(context.Background()); err != nil {
+	if _, err := m.Update(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if c := f.Calls()[0]; c.Name != "apt-get" {
@@ -63,7 +63,7 @@ func TestApt_Install(t *testing.T) {
 	t.Run("multiple packages, latest", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}, "vim", "git"); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -77,7 +77,7 @@ func TestApt_Install(t *testing.T) {
 	t.Run("pinned version", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "2:8.2.3995-1ubuntu2"}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "2:8.2.3995-1ubuntu2"}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.Contains(a, "vim=2:8.2.3995-1ubuntu2") {
@@ -87,7 +87,7 @@ func TestApt_Install(t *testing.T) {
 	t.Run("allow downgrade", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0", AllowDowngrade: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.Contains(a, "--allow-downgrades") {
@@ -96,7 +96,7 @@ func TestApt_Install(t *testing.T) {
 	})
 	t.Run("empty is a no-op", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Install(ctx, InstallOptions{}); err != nil {
+		if _, err := m.Install(ctx, InstallOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 0 {
@@ -105,7 +105,7 @@ func TestApt_Install(t *testing.T) {
 	})
 	t.Run("bad name rejected before exec", func(t *testing.T) {
 		m, f := aptM(t)
-		err := m.Install(ctx, InstallOptions{}, "vim;rm -rf /")
+		_, err := m.Install(ctx, InstallOptions{}, "vim;rm -rf /")
 		if err == nil || !strings.Contains(err.Error(), "invalid package name") {
 			t.Fatalf("err = %v, want validation rejection", err)
 		}
@@ -115,7 +115,7 @@ func TestApt_Install(t *testing.T) {
 	})
 	t.Run("bad version rejected before exec", func(t *testing.T) {
 		m, f := aptM(t)
-		err := m.Install(ctx, InstallOptions{Version: "1.0;evil"}, "vim")
+		_, err := m.Install(ctx, InstallOptions{Version: "1.0;evil"}, "vim")
 		if err == nil || !strings.Contains(err.Error(), "version") {
 			t.Fatalf("err = %v, want version rejection", err)
 		}
@@ -125,7 +125,7 @@ func TestApt_Install(t *testing.T) {
 	})
 	t.Run("version with multiple packages rejected", func(t *testing.T) {
 		m, f := aptM(t)
-		err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git")
+		_, err := m.Install(ctx, InstallOptions{Version: "1.0"}, "vim", "git")
 		if err == nil || !strings.Contains(err.Error(), "exactly one package") {
 			t.Fatalf("err = %v, want one-package rejection", err)
 		}
@@ -135,7 +135,7 @@ func TestApt_Install(t *testing.T) {
 	})
 	t.Run("version with zero packages rejected", func(t *testing.T) {
 		m, _ := aptM(t)
-		if err := m.Install(ctx, InstallOptions{Version: "1.0"}); err == nil {
+		if _, err := m.Install(ctx, InstallOptions{Version: "1.0"}); err == nil {
 			t.Fatal("version with no package must be rejected")
 		}
 	})
@@ -146,7 +146,7 @@ func TestApt_Remove(t *testing.T) {
 	t.Run("remove", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{}, "vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "apt remove -y vim" {
@@ -156,7 +156,7 @@ func TestApt_Remove(t *testing.T) {
 	t.Run("purge", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
+		if _, err := m.Remove(ctx, RemoveOptions{Purge: true}, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "apt purge -y vim" {
@@ -165,13 +165,13 @@ func TestApt_Remove(t *testing.T) {
 	})
 	t.Run("empty no-op", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Remove(ctx, RemoveOptions{}, "--force"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Remove(ctx, RemoveOptions{}, "--force"); err == nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d, want rejection", err, len(f.Calls()))
 		}
 	})
@@ -180,7 +180,7 @@ func TestApt_Remove(t *testing.T) {
 func TestApt_Update(t *testing.T) {
 	m, f := aptM(t)
 	ok(f, "")
-	if err := m.Update(context.Background()); err != nil {
+	if _, err := m.Update(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	c := f.Calls()[0]
@@ -194,7 +194,7 @@ func TestApt_Upgrade(t *testing.T) {
 	t.Run("UpgradeAll -> dist-upgrade", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.UpgradeAll(ctx); err != nil {
+		if _, err := m.UpgradeAll(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if a := argv(f.Calls()[0]); !strings.HasPrefix(a, "apt dist-upgrade -y") {
@@ -203,7 +203,7 @@ func TestApt_Upgrade(t *testing.T) {
 	})
 	t.Run("empty Upgrade is a no-op (not a full upgrade)", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Upgrade(ctx); err != nil {
+		if _, err := m.Upgrade(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if len(f.Calls()) != 0 {
@@ -213,7 +213,7 @@ func TestApt_Upgrade(t *testing.T) {
 	t.Run("specific -> only-upgrade", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Upgrade(ctx, "vim"); err != nil {
+		if _, err := m.Upgrade(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		a := argv(f.Calls()[0])
@@ -223,7 +223,7 @@ func TestApt_Upgrade(t *testing.T) {
 	})
 	t.Run("bad name", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Upgrade(ctx, "vim|sh"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Upgrade(ctx, "vim|sh"); err == nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
@@ -234,7 +234,7 @@ func TestApt_PinUnpin(t *testing.T) {
 	t.Run("pin", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Pin(ctx, "vim"); err != nil {
+		if _, err := m.Pin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if c := f.Calls()[0]; argv(c) != "apt-mark hold vim" || !c.Escalate {
@@ -244,7 +244,7 @@ func TestApt_PinUnpin(t *testing.T) {
 	t.Run("unpin", func(t *testing.T) {
 		m, f := aptM(t)
 		ok(f, "")
-		if err := m.Unpin(ctx, "vim"); err != nil {
+		if _, err := m.Unpin(ctx, "vim"); err != nil {
 			t.Fatal(err)
 		}
 		if argv(f.Calls()[0]) != "apt-mark unhold vim" {
@@ -253,25 +253,25 @@ func TestApt_PinUnpin(t *testing.T) {
 	})
 	t.Run("pin empty no-op", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("unpin empty no-op", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx); err != nil || len(f.Calls()) != 0 {
 			t.Fatalf("err=%v calls=%d", err, len(f.Calls()))
 		}
 	})
 	t.Run("pin bad name", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Pin(ctx, "a b"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Pin(ctx, "a b"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection, no exec")
 		}
 	})
 	t.Run("unpin bad name", func(t *testing.T) {
 		m, f := aptM(t)
-		if err := m.Unpin(ctx, "a b"); err == nil || len(f.Calls()) != 0 {
+		if _, err := m.Unpin(ctx, "a b"); err == nil || len(f.Calls()) != 0 {
 			t.Fatal("want rejection, no exec")
 		}
 	})
@@ -280,7 +280,7 @@ func TestApt_PinUnpin(t *testing.T) {
 func TestApt_Autoremove(t *testing.T) {
 	m, f := aptM(t)
 	ok(f, "")
-	if err := m.Autoremove(context.Background()); err != nil {
+	if _, err := m.Autoremove(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if c := f.Calls()[0]; argv(c) != "apt autoremove -y" || !c.Escalate {
@@ -291,7 +291,7 @@ func TestApt_Autoremove(t *testing.T) {
 func TestApt_WriteFailure(t *testing.T) {
 	m, f := aptM(t)
 	f.Push(pmexec.Result{ExitCode: 100, Stderr: "E: Unable to locate package ghost"}, nil)
-	err := m.Install(context.Background(), InstallOptions{}, "ghost")
+	_, err := m.Install(context.Background(), InstallOptions{}, "ghost")
 	var ce *pmexec.CommandError
 	if !errors.As(err, &ce) || ce.ExitCode != 100 {
 		t.Fatalf("err = %v, want CommandError(exit 100)", err)
@@ -304,7 +304,7 @@ func TestApt_WriteFailure(t *testing.T) {
 func TestApt_WriteExecError(t *testing.T) {
 	m, f := aptM(t)
 	f.Push(pmexec.Result{}, pmexec.ErrEscalationDenied)
-	if err := m.Update(context.Background()); !errors.Is(err, pmexec.ErrEscalationDenied) {
+	if _, err := m.Update(context.Background()); !errors.Is(err, pmexec.ErrEscalationDenied) {
 		t.Fatalf("err = %v, want ErrEscalationDenied", err)
 	}
 }
@@ -318,7 +318,7 @@ func TestApt_Repair(t *testing.T) {
 		ok(f, "") // dpkg --configure -a
 		ok(f, "") // apt --fix-broken install
 		ok(f, "") // apt update
-		if err := m.Repair(ctx); err != nil {
+		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
 		var got []string
@@ -336,7 +336,7 @@ func TestApt_Repair(t *testing.T) {
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "dpkg busy"}, nil)     // configure fails (warn)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "still broken"}, nil)  // fix-broken fails (warn)
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "update failed"}, nil) // update fails (returned)
-		err := m.Repair(ctx)
+		_, err := m.Repair(ctx)
 		if err == nil || !strings.Contains(err.Error(), "apt update failed") {
 			t.Fatalf("err = %v, want apt update failure", err)
 		}
@@ -347,7 +347,7 @@ func TestApt_Repair(t *testing.T) {
 		cctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		m, f := mustNew(t, Apt)
-		if err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
+		if _, err := m.Repair(cctx); !errors.Is(err, context.Canceled) {
 			t.Fatalf("err = %v, want context.Canceled", err)
 		}
 		if len(f.Calls()) != 0 {
@@ -368,7 +368,7 @@ func TestApt_Repair(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := m.Repair(ctx2); !errors.Is(err, context.Canceled) {
+		if _, err := m.Repair(ctx2); !errors.Is(err, context.Canceled) {
 			t.Fatalf("err = %v, want context.Canceled", err)
 		}
 	})

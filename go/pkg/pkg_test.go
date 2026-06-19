@@ -54,6 +54,51 @@ func mustNew(t *testing.T, b Backend, opts ...Option) (Manager, *exectest.FakeRu
 // ok scripts the next runner call as a clean success with the given stdout.
 func ok(f *exectest.FakeRunner, stdout string) { f.Push(pmexec.Result{Stdout: stdout}, nil) }
 
+// TestMutationsReturnCommandOutput pins the contract that a Manager mutation
+// returns the package manager's command output (exec.Result), not just an error
+// — operators need to see what an install/remove/update actually did. On a clean
+// exit the Result carries stdout; on a non-zero exit it carries stdout + stderr
+// + exit code AND a typed *exec.CommandError. Driven by the agent migration:
+// the agent maps this Result into the pb.CommandOutput it returns to control.
+func TestMutationsReturnCommandOutput(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("install surfaces stdout on success", func(t *testing.T) {
+		m, f := mustNew(t, Apt)
+		f.Push(pmexec.Result{Stdout: "Setting up vim ...\n", ExitCode: 0}, nil)
+		res, err := m.Install(ctx, InstallOptions{}, "vim")
+		if err != nil {
+			t.Fatalf("Install err = %v", err)
+		}
+		if res.Stdout != "Setting up vim ...\n" {
+			t.Errorf("Result.Stdout = %q, want the command stdout", res.Stdout)
+		}
+		if res.ExitCode != 0 {
+			t.Errorf("Result.ExitCode = %d, want 0", res.ExitCode)
+		}
+	})
+
+	t.Run("install surfaces stdout+stderr+exit AND CommandError on failure", func(t *testing.T) {
+		m, f := mustNew(t, Apt)
+		f.Push(pmexec.Result{
+			Stdout:   "Reading package lists...\n",
+			Stderr:   "E: Unable to locate package vim\n",
+			ExitCode: 100,
+		}, nil)
+		res, err := m.Install(ctx, InstallOptions{}, "vim")
+		if err == nil {
+			t.Fatal("Install err = nil, want a non-zero-exit error")
+		}
+		var ce *pmexec.CommandError
+		if !errors.As(err, &ce) {
+			t.Fatalf("err = %v, want *exec.CommandError", err)
+		}
+		if res.ExitCode != 100 || res.Stdout != "Reading package lists...\n" || res.Stderr != "E: Unable to locate package vim\n" {
+			t.Errorf("Result = %+v, want stdout+stderr+exit preserved", res)
+		}
+	})
+}
+
 // --- New -------------------------------------------------------------------
 
 func TestNew_AllBackends(t *testing.T) {
@@ -111,7 +156,7 @@ func TestNew_FlatpakScopeOption(t *testing.T) {
 	t.Run("default is system + escalated", func(t *testing.T) {
 		m, f := mustNew(t, Flatpak)
 		ok(f, "")
-		if err := m.Update(context.Background()); err != nil {
+		if _, err := m.Update(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -125,7 +170,7 @@ func TestNew_FlatpakScopeOption(t *testing.T) {
 	t.Run("WithUserScope is user + unescalated", func(t *testing.T) {
 		m, f := mustNew(t, Flatpak, WithUserScope())
 		ok(f, "")
-		if err := m.Update(context.Background()); err != nil {
+		if _, err := m.Update(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 		c := f.Calls()[0]
@@ -144,7 +189,7 @@ func TestNew_UserScopeIgnoredByNativeBackends(t *testing.T) {
 	m, f := mustNew(t, Apt, WithUserScope())
 	stubLookPath(t, "apt")
 	ok(f, "")
-	if err := m.Update(context.Background()); err != nil {
+	if _, err := m.Update(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if c := f.Calls()[0]; !c.Escalate {
