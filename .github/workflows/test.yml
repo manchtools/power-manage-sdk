@@ -239,6 +239,39 @@ jobs:
         if: always()
         run: docker rm -f pm-sdk-test 2>/dev/null || true
 
+  # Container-based real-execution tests (`//go:build container`). Each cell
+  # builds one immutable bad-state image stage (the precondition is asserted at
+  # BUILD time) and runs the container-tagged tests INSIDE it, against the real
+  # tool binaries. Adding a distro or a state is a new matrix row + a Dockerfile
+  # stage + a `container`-tagged test file; the tests self-skip when their baked
+  # precondition is absent, so no other wiring changes.
+  container-tests:
+    name: Container Tests (${{ matrix.distro }}/${{ matrix.state }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: debian
+            state: state-locked-apt
+            path: ./sdk/pkg/
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: sdk
+
+      - name: Build ${{ matrix.distro }}/${{ matrix.state }} image
+        run: |
+          docker build \
+            -f sdk/test/Dockerfile.${{ matrix.distro }} \
+            --target ${{ matrix.state }} \
+            -t pm-sdk-container .
+
+      - name: Run container tests
+        run: |
+          docker run --rm pm-sdk-container \
+            go test -tags=container -count=1 -v ${{ matrix.path }} -run Container
+
   test-apt:
     name: Integration Tests (apt)
     runs-on: ubuntu-latest
