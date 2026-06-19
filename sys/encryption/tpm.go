@@ -50,6 +50,11 @@ func (t *tpmEnroller) Wipe(ctx context.Context, dev string, existing exec.Secret
 // run executes an escalated systemd-cryptenroll command with the passphrase on
 // stdin. Reveal() here is the single sanctioned TPM-stdin sink.
 func (t *tpmEnroller) run(ctx context.Context, op string, args []string, key exec.Secret) error {
+	// Both Enroll and Wipe authenticate with the existing passphrase; an empty
+	// one is never a legitimate request, so refuse before any cryptenroll exec.
+	if key.IsZero() {
+		return fmt.Errorf("%w: empty authenticating passphrase", ErrEmptyKeyMaterial)
+	}
 	res, err := t.r.Run(ctx, exec.Command{
 		Name:     "systemd-cryptenroll",
 		Args:     args,

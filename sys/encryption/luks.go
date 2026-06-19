@@ -30,6 +30,14 @@ const (
 // ErrInvalidKeySlot is returned for a slot index outside [LuksMinKeySlot, LuksMaxKeySlot].
 var ErrInvalidKeySlot = errors.New("invalid LUKS keyslot")
 
+// ErrEmptyKeyMaterial is returned by a mutating LUKS/TPM operation given an
+// empty passphrase/key. It is refused before any cryptsetup/cryptenroll exec:
+// an empty NEW key would enroll a slot that unlocks with no passphrase, and an
+// empty AUTHENTICATING key for a mutating op is never a legitimate request.
+// (VerifyPassphrase is intentionally exempt — probing an empty passphrase is a
+// legitimate read-only query.)
+var ErrEmptyKeyMaterial = errors.New("encryption: empty key material not permitted")
+
 func validateKeySlot(slot int) error {
 	if slot < LuksMinKeySlot || slot > LuksMaxKeySlot {
 		return fmt.Errorf("%w: slot %d outside valid range %d..%d", ErrInvalidKeySlot, slot, LuksMinKeySlot, LuksMaxKeySlot)
@@ -68,6 +76,15 @@ func (l *luks) AddKey(ctx context.Context, dev string, existing, newKey exec.Sec
 			return err
 		}
 	}
+	// Refuse before any cryptsetup exec: an empty NEW key would enroll a slot
+	// that unlocks with no passphrase; an empty authenticating key is never a
+	// legitimate add request.
+	if newKey.IsZero() {
+		return fmt.Errorf("%w: refusing to add an empty new key (would create an empty-passphrase unlock slot)", ErrEmptyKeyMaterial)
+	}
+	if existing.IsZero() {
+		return fmt.Errorf("%w: empty authenticating passphrase", ErrEmptyKeyMaterial)
+	}
 	existingFile, err := writeKeyFile(existing)
 	if err != nil {
 		return err
@@ -94,6 +111,9 @@ func (l *luks) RemoveKey(ctx context.Context, dev string, key exec.Secret) error
 	if err := validateDevicePath(dev); err != nil {
 		return err
 	}
+	if key.IsZero() {
+		return fmt.Errorf("%w: empty passphrase", ErrEmptyKeyMaterial)
+	}
 	keyFile, err := writeKeyFile(key)
 	if err != nil {
 		return err
@@ -110,6 +130,9 @@ func (l *luks) KillSlot(ctx context.Context, dev string, slot int, existing exec
 	}
 	if err := validateKeySlot(slot); err != nil {
 		return err
+	}
+	if existing.IsZero() {
+		return fmt.Errorf("%w: empty authenticating passphrase", ErrEmptyKeyMaterial)
 	}
 	keyFile, err := writeKeyFile(existing)
 	if err != nil {
@@ -222,7 +245,11 @@ var (
 	createKeyFile = func(dir string) (keyFileHandle, error) { return os.CreateTemp(dir, "key-*") }
 	removeFile    = os.Remove
 	openKeyFile   = func(path string) (scrubFile, error) {
-		return os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW, 0)
+		// O_NOFOLLOW refuses a symlink swap; O_NONBLOCK refuses to BLOCK on a
+		// FIFO swap (O_WRONLY on a readerless FIFO hangs forever otherwise — a
+		// FIFO is not a symlink, so O_NOFOLLOW alone does not help). A regular
+		// file ignores O_NONBLOCK.
+		return os.OpenFile(path, os.O_WRONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	}
 )
 
@@ -268,7 +295,12 @@ func cleanupKeyFile(path string) {
 		}
 		return
 	}
-	if info, err := f.Stat(); err == nil && info.Size() > 0 {
+	if info, err := f.Stat(); err == nil && !info.Mode().IsRegular() {
+		// A non-regular fd (FIFO with a reader, device node) must never be
+		// written to — zeroing it would push bytes into a pipe/device, not
+		// scrub a file. Refuse the scrub; the unlink below still proceeds.
+		slog.Warn("luks: refusing to scrub a non-regular key file (possible TOCTOU swap)", "path", path, "mode", info.Mode().String())
+	} else if err == nil && info.Size() > 0 {
 		zeros := make([]byte, info.Size())
 		if _, werr := f.WriteAt(zeros, 0); werr != nil {
 			slog.Warn("luks: scrubbing key file before unlink failed; passphrase bytes may persist", "path", path, "error", werr)
