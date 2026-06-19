@@ -22,12 +22,12 @@ jobs:
 
       - name: gofmt
         run: |
-          dirty=$(gofmt -l ./go)
+          dirty=$(gofmt -l .)
           if [ -n "$dirty" ]; then
             echo "The following files are not gofmt-clean:"
             echo "$dirty"
             echo "---- diff ----"
-            gofmt -d ./go
+            gofmt -d .
             exit 1
           fi
 
