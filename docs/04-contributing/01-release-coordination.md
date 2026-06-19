@@ -12,17 +12,19 @@ failure mode.
 
 ## The problem it solves
 
-Until recently every downstream Go consumer pinned the SDK to a
-placeholder `v0.0.0` with a `replace github.com/manchtools/power-manage/sdk => ../sdk`
-directive. CI rewrote the replace to point at SDK `main`. That meant
-the moment a breaking SDK change landed on main, every open PR across
-agent and server that didn't have a same-named SDK branch broke
-immediately — the `replace` picked up the new API, the old agent/server
-source no longer compiled, and you'd see red CI on a PR that hadn't
-changed since yesterday.
+Downstream builds pin a *specific* SDK commit or tag, so SDK main can
+move freely and downstream bumps are explicit. The moment a breaking SDK
+change lands on main, open agent/server PRs keep compiling against their
+pinned SDK version until their author opens an explicit bump PR — main
+never breaks a PR that hasn't changed.
 
-The fix is to make downstream builds pin a *specific* SDK commit or
-tag, so SDK main can move freely and downstream bumps are explicit.
+> **History.** The module used to be named
+> `github.com/manchtools/power-manage/sdk` (packages under `go/`) while
+> the repo URL is `github.com/manchtools/power-manage-sdk`, so every
+> consumer carried a `replace` mapping the import path to the repo URL.
+> The module was renamed to `github.com/manchtools/power-manage-sdk`
+> (matching the repo, packages at the module root), so the `replace` is
+> gone — consumers `require` the module directly.
 
 ## How it works now
 
@@ -32,24 +34,17 @@ Agent and server `go.mod` look like this:
 
 ```go
 require (
-    github.com/manchtools/power-manage/sdk v0.1.0
+    github.com/manchtools/power-manage-sdk v0.1.0
     // ...
 )
-
-replace github.com/manchtools/power-manage/sdk => github.com/manchtools/power-manage-sdk v0.1.0
 ```
 
-Two things of note:
-
-1. The version is a proper Go-compatible semver tag (`v0.x.x` or
-   `v1.x.x`). Pseudo-versions (`v0.0.0-TIMESTAMP-SHORTSHA`) are also
-   accepted when you need to pin an untagged commit, but prefer a
-   tagged release whenever one exists — `go.mod` stays readable.
-2. The `replace` directive maps the in-repo import path
-   (`github.com/manchtools/power-manage/sdk`) to the actual GitHub repo
-   URL (`github.com/manchtools/power-manage-sdk`), because the module
-   was laid out as monorepo-style imports on a polyrepo-style git
-   layout. Without the replace, `go get` can't find the repo.
+The module path now equals the repo URL, so `go get` resolves it
+directly — no `replace` directive needed. The version is a Go-compatible
+semver tag (`v0.x.x` / `v1.x.x`); pseudo-versions
+(`v0.0.0-TIMESTAMP-SHORTSHA`) are accepted for pinning an untagged
+commit, but prefer a tagged release when one exists — `go.mod` stays
+readable.
 
 `go build` fetches the pinned version from GitHub. Nothing looks at
 SDK main unless someone explicitly bumps the pin.
@@ -75,7 +70,8 @@ migration.
 When you're iterating on an SDK change and the matching agent or server
 migration at the same time, pinning gets in the way. Fix: use a Go
 workspace (`go.work`) at the parent directory that contains all the
-repo checkouts. `go.work` overrides `replace` directives.
+repo checkouts. `go.work` overrides the pinned `require` versions, so all
+three modules build against your local checkouts.
 
 ```bash
 # At the workspace root (e.g., ~/code/power-manage/):

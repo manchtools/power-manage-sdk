@@ -4424,7 +4424,7 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x1bWIFI_BACKEND_NETWORKMANAGER\x10\x00\x12\x18\n" +
 	"\x14WIFI_BACKEND_CONNMAN\x10\x01\x12\x1f\n" +
 	"\x1bWIFI_BACKEND_WPA_SUPPLICANT\x10\x02\x12\x14\n" +
-	"\x10WIFI_BACKEND_IWD\x10\x03B:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x10WIFI_BACKEND_IWD\x10\x03B:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_actions_proto_rawDescOnce sync.Once

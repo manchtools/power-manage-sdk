@@ -24,7 +24,7 @@ the upstream spec — the exact thing docref exists to prevent.)
   pkg.go.dev; this site is narrative — concepts, recipes, contributing. Don't
   mirror method signatures into prose.
 - **Anchor Go code with docref.** A claim or snippet points at a symbol
-  (`go/sys/<pkg>/<file>.go#Symbol`) or a marked region (`<file>.go#@name`).
+  (`sys/<pkg>/<file>.go#Symbol`) or a marked region (`<file>.go#@name`).
   `src=` paths are relative to the repo root, where `docref.toml` lives.
 - **After changing anchored code:** `docref refresh <doc>` for snippets; read
   the prose and `docref approve <doc>` for claims (never approve unread); then

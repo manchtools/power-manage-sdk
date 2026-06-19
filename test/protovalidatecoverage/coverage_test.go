@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	_ "github.com/manchtools/power-manage/sdk/gen/go/pm/v1"
+	_ "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
 )
 
 // TestEveryBoundableRequestFieldCarriesValidateTag is the hard CI gate (it

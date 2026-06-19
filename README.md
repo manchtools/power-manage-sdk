@@ -81,7 +81,7 @@ Six proto files define the entire API surface:
 `go/client.go` provides the agent-side streaming client:
 
 ```go
-import sdk "github.com/manchtools/power-manage/sdk/go"
+import sdk "github.com/manchtools/power-manage-sdk"
 
 client, _ := sdk.NewClient(gatewayURL,
     sdk.WithMTLS(certFile, keyFile, caFile),
@@ -118,7 +118,7 @@ The agent presents its current (still valid) certificate and a new CSR. The Cont
 
 **Bootstrap transport hardening.** `RegisterAgent` and `RenewCertificate` are the unauthenticated bootstrap calls; their default HTTP client is bounded (request timeout + TLS 1.3 floor) so a hung or malicious control endpoint cannot wedge enrollment/renewal. Proxy support is retained for enterprise deployments (the channel is TLS-authenticated and the optional enrollment CA-pin catches a wrong-CA outcome). A `ClientOption` (the mTLS variants) overrides the client entirely.
 
-**Enrollment trust helpers** (`go/crypto`):
+**Enrollment trust helpers** (`crypto`):
 
 ```go
 fp, _ := crypto.CAFingerprintFromPEM(caPEM)        // lowercase-hex SHA-256 of the CA DER
@@ -129,26 +129,26 @@ err := crypto.VerifyCAContinuity(oldCAPEM, newCAPEM) // accept only an identical
 
 ### Package Manager Library
 
-`go/pkg/` abstracts five Linux package managers behind a unified interface with a builder API:
+`pkg/` abstracts five Linux package managers behind a unified interface with a builder API:
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/pkg"
+import "github.com/manchtools/power-manage-sdk/pkg"
 
 pm, _ := pkg.New()                          // auto-detect
 pm.Install("nginx").Version("1.24.0").Run() // fluent builder
 updates, _ := pm.ListUpgradable()           // query methods
 ```
 
-See the [package manager README](go/pkg/README.md) for the full API.
+See the [package manager README](pkg/README.md) for the full API.
 
 ### System Management Libraries
 
-`go/sys/` provides opinionated Linux system management utilities. All privileged operations run through the configured privilege backend (sudo or doas, see `exec.SetPrivilegeBackend`), so the calling process does not need to be root.
+`sys/` provides opinionated Linux system management utilities. All privileged operations run through the configured privilege backend (sudo or doas, see `exec.SetPrivilegeBackend`), so the calling process does not need to be root.
 
 #### `sys/exec` — Command Execution
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/exec"
+import "github.com/manchtools/power-manage-sdk/sys/exec"
 
 result, err := exec.Run(ctx, "ls", "-la")                               // basic command
 result, err := exec.Privileged(ctx, "systemctl", "restart", "nginx")     // through sudo/doas
@@ -164,7 +164,7 @@ Key features:
 #### `sys/fs` — Filesystem Operations
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/fs"
+import "github.com/manchtools/power-manage-sdk/sys/fs"
 
 content, err := fs.ReadFile(ctx, "/etc/hostname")
 err := fs.WriteFileAtomic(ctx, "/etc/nginx/nginx.conf", content, "0644", "root", "root")
@@ -177,7 +177,7 @@ All operations escalate via the configured privilege backend (sudo or doas). `Wr
 #### `sys/user` — User & Group Management
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/user"
+import "github.com/manchtools/power-manage-sdk/sys/user"
 
 info, err := user.Get("deploy")              // get user info (UID, GID, shell, groups, locked)
 err := user.Create(ctx, "deploy", "-m", "-s", "/bin/bash")
@@ -190,7 +190,7 @@ err := user.SetPassword(ctx, "deploy", password)
 #### `sys/osquery` — OS Query Integration
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/osquery"
+import "github.com/manchtools/power-manage-sdk/sys/osquery"
 
 oq := osquery.New()                                // lazy-init, detects installs without restart
 rows, err := oq.Query(ctx, "os_version", nil, 0)   // query a table
@@ -207,7 +207,7 @@ intentionally **not** gated.
 #### `sys/encryption` — Disk Encryption
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/encryption"
+import "github.com/manchtools/power-manage-sdk/sys/encryption"
 
 err := encryption.AddKey(ctx, devicePath, existingKey, newKey)
 err := encryption.AddKeyToSlot(ctx, devicePath, slot, existingKey, newKey)
@@ -218,7 +218,7 @@ err := encryption.AddKeyToSlot(ctx, devicePath, slot, existingKey, newKey)
 #### `sys/service` — Service Manager
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/sys/service"
+import "github.com/manchtools/power-manage-sdk/sys/service"
 
 status, err := service.Status("nginx.service")  // {Enabled, Active, Masked, Static}
 err := service.EnableNow(ctx, "nginx.service")
@@ -230,10 +230,10 @@ err := service.DaemonReload(ctx)
 
 ### Action Signature Verification
 
-`go/verify/` provides action payload signature verification for agents:
+`verify/` provides action payload signature verification for agents:
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/verify"
+import "github.com/manchtools/power-manage-sdk/verify"
 
 signer := verify.NewActionSigner(caKey)        // server-side signing
 verifier := verify.NewActionVerifier(caCert)   // agent-side verification
@@ -254,10 +254,10 @@ err     := verifier.VerifyDomain(verify.OSQuerySignatureDomain, canonical, sig)
 
 ### Input Validation
 
-`go/validate/` wraps the [go-playground/validator](https://github.com/go-playground/validator) library with the project's custom rules (today: a `ulid` tag for ULID identifiers). RPC handlers and other server code use it via:
+`validate/` wraps the [go-playground/validator](https://github.com/go-playground/validator) library with the project's custom rules (today: a `ulid` tag for ULID identifiers). RPC handlers and other server code use it via:
 
 ```go
-import "github.com/manchtools/power-manage/sdk/go/validate"
+import "github.com/manchtools/power-manage-sdk/validate"
 
 v := validate.NewValidator()                       // returns a *validator.Validate with rules registered
 msg, ok := validate.Struct(v, request)             // returns a formatted error message

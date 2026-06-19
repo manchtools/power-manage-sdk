@@ -6,7 +6,7 @@ import "google/protobuf/duration.proto";
 import "pm/v1/actions.proto";
 import "pm/v1/common.proto";
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
 
 // ============================================================================
 // Agent Service

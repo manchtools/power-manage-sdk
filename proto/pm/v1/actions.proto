@@ -5,7 +5,7 @@ package pm.v1;
 import "google/protobuf/timestamp.proto";
 import "pm/v1/common.proto";
 
-option go_package = "github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
 
 // ============================================================================
 // Action Types

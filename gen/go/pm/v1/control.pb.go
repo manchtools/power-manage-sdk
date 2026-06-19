@@ -23091,7 +23091,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rStartTerminal\x12\x1b.pm.v1.StartTerminalRequest\x1a\x1c.pm.v1.StartTerminalResponse\x12G\n" +
 	"\fStopTerminal\x12\x1a.pm.v1.StopTerminalRequest\x1a\x1b.pm.v1.StopTerminalResponse\x12q\n" +
 	"\x1aListActiveTerminalSessions\x12(.pm.v1.ListActiveTerminalSessionsRequest\x1a).pm.v1.ListActiveTerminalSessionsResponse\x12k\n" +
-	"\x18TerminateTerminalSession\x12&.pm.v1.TerminateTerminalSessionRequest\x1a'.pm.v1.TerminateTerminalSessionResponseB:Z8github.com/manchtools/power-manage/sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x18TerminateTerminalSession\x12&.pm.v1.TerminateTerminalSessionRequest\x1a'.pm.v1.TerminateTerminalSessionResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
 
 var (
 	file_pm_v1_control_proto_rawDescOnce sync.Once
