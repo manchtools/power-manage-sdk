@@ -246,31 +246,45 @@ jobs:
   # stage + a `container`-tagged test file; the tests self-skip when their baked
   # precondition is absent, so no other wiring changes.
   container-tests:
-    name: Container Tests (${{ matrix.distro }}/${{ matrix.state }})
+    name: Container Tests (${{ matrix.label }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - distro: debian
+          - label: pkg/repair (debian/state-locked-apt)
+            distro: debian
             state: state-locked-apt
             path: ./sdk/pkg/
           # LUKS Manager against real cryptsetup. No bad-state needed (each test
           # formats its own LUKS2 container on a /dev/shm file), so it runs on
           # the clean `base` stage. --shm-size gives /dev/shm headroom for the
           # 64 MiB container files.
-          - distro: debian
+          - label: sys/encryption (debian/base)
+            distro: debian
             state: base
             path: ./sdk/sys/encryption/
           # nftables round-trip + iproute2 read path. Run on the clean `base`
           # stage; the tests load real kernel netfilter / interface state in the
           # container's own network namespace (CAP_NET_ADMIN, added below).
-          - distro: debian
+          - label: sys/firewall (debian/base)
+            distro: debian
             state: base
             path: ./sdk/sys/firewall/
-          - distro: debian
+          - label: sys/netconfig (debian/base)
+            distro: debian
             state: base
             path: ./sdk/sys/netconfig/
+          # /proc + os-release + lsblk + ip parsers against the real container.
+          - label: sys/inventory (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/inventory/
+          # update-ca-certificates round-trip into the real system trust bundle.
+          - label: sys/catrust (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/catrust/
     steps:
       - uses: actions/checkout@v5
         with:
