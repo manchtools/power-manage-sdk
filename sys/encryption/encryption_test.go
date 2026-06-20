@@ -133,20 +133,12 @@ func TestIsEncrypted(t *testing.T) {
 			t.Errorf("command = %+v, want escalated `cryptsetup isLuks /dev/sda2`", c)
 		}
 	})
-	t.Run("not luks (exit 1)", func(t *testing.T) {
-		r := &recordingRunner{}
-		r.push(exec.Result{ExitCode: 1}, nil)
-		if ok, err := mgr(t, r).IsEncrypted(context.Background(), "/dev/sda2"); err != nil || ok {
-			t.Errorf("IsEncrypted = (%v,%v), want (false,nil)", ok, err)
-		}
-	})
-	t.Run("error (exit 4)", func(t *testing.T) {
-		r := &recordingRunner{}
-		r.push(exec.Result{ExitCode: 4}, nil)
-		if _, err := mgr(t, r).IsEncrypted(context.Background(), "/dev/sda2"); err == nil {
-			t.Error("IsEncrypted(exit 4) returned nil error")
-		}
-	})
+	// The exit-code → result mapping (exit 1 → not-LUKS, exit 4 → error) is no
+	// longer asserted here against a FABRICATED exit code: TestIsEncrypted_Container
+	// (build tag `container`) now proves it against REAL cryptsetup, which is the
+	// only thing that establishes a real LUKS / non-LUKS / missing device actually
+	// yields exit 0 / 1 / 4. This subtest keeps only the argv-shape pin (above) and
+	// the path-validation pin (below) — both unobservable through real cryptsetup.
 	t.Run("invalid device path rejected before runner", func(t *testing.T) {
 		r := &recordingRunner{}
 		if _, err := mgr(t, r).IsEncrypted(context.Background(), "-rf"); err == nil {
