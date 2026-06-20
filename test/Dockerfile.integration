@@ -1,4 +1,4 @@
-FROM golang:1.26-bookworm
+FROM golang:1.26-bookworm AS systemd
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -109,3 +109,19 @@ RUN chown -R power-manage:power-manage /workspace /home/power-manage
 # Use systemd as PID 1 for systemctl daemon-reload, enable, start, etc.
 STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT ["/sbin/init"]
+
+# with-networkmanager: the `systemd` image plus a real NetworkManager daemon, for
+# the dedicated network CI job (the sys/network keyfile-based WiFi provisioning
+# runs `nmcli connection reload` against a live NM and writes a root-owned 0600
+# keyfile, so it needs both a running daemon and root — hence its own job rather
+# than the power-manage test-sys lane). `unmanaged-devices=*` keeps NM from
+# touching the container's eth0 / DNS, so it manages profile config only and
+# never disrupts the container's own networking. Inherits ENTRYPOINT/STOPSIGNAL
+# from `systemd`.
+FROM systemd AS with-networkmanager
+RUN apt-get update && apt-get install -y --no-install-recommends network-manager \
+    && rm -rf /var/lib/apt/lists/* \
+    && systemctl enable NetworkManager \
+    && mkdir -p /etc/NetworkManager/conf.d \
+    && printf '[keyfile]\nunmanaged-devices=*\n' > /etc/NetworkManager/conf.d/90-pm-test-unmanaged.conf \
+    && nmcli --version
