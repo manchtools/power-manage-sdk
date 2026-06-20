@@ -337,12 +337,42 @@ func applyExprToRule(expr []json.RawMessage, out *Rule) {
 			} `json:"match"`
 		}
 		if err := json.Unmarshal(e, &match); err == nil && match.Match != nil {
-			if pl := match.Match.Left.Payload; pl != nil && pl.Field == "dport" {
-				out.Protocol = Protocol(pl.Protocol)
-				var port int
-				_ = json.Unmarshal(match.Match.Right, &port)
-				out.Port = port
+			if pl := match.Match.Left.Payload; pl != nil {
+				switch pl.Field {
+				case "dport":
+					out.Protocol = Protocol(pl.Protocol)
+					var port int
+					_ = json.Unmarshal(match.Match.Right, &port)
+					out.Port = port
+				case "saddr":
+					out.Source = nftDecodeAddr(match.Match.Right)
+				case "daddr":
+					out.Dest = nftDecodeAddr(match.Match.Right)
+				}
 			}
 		}
 	}
+}
+
+// nftDecodeAddr renders an nft match right-hand side back to the SDK's
+// address/CIDR string. nft emits a bare address as a JSON string
+// ("10.0.0.1") and a network as {"prefix":{"addr":"10.0.0.0","len":24}}.
+// Without this, List dropped a rule's Source/Dest (returned ""), so a rule
+// that filters on an address round-tripped as "any" — a real fidelity bug the
+// fake-runner tests missed and the real-nft container round-trip caught.
+func nftDecodeAddr(raw json.RawMessage) string {
+	var bare string
+	if err := json.Unmarshal(raw, &bare); err == nil {
+		return bare
+	}
+	var p struct {
+		Prefix *struct {
+			Addr string `json:"addr"`
+			Len  int    `json:"len"`
+		} `json:"prefix"`
+	}
+	if err := json.Unmarshal(raw, &p); err == nil && p.Prefix != nil {
+		return fmt.Sprintf("%s/%d", p.Prefix.Addr, p.Prefix.Len)
+	}
+	return ""
 }

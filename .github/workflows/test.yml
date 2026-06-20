@@ -262,6 +262,15 @@ jobs:
           - distro: debian
             state: base
             path: ./sdk/sys/encryption/
+          # nftables round-trip + iproute2 read path. Run on the clean `base`
+          # stage; the tests load real kernel netfilter / interface state in the
+          # container's own network namespace (CAP_NET_ADMIN, added below).
+          - distro: debian
+            state: base
+            path: ./sdk/sys/firewall/
+          - distro: debian
+            state: base
+            path: ./sdk/sys/netconfig/
     steps:
       - uses: actions/checkout@v5
         with:
@@ -274,9 +283,12 @@ jobs:
             --target ${{ matrix.state }} \
             -t pm-sdk-container .
 
+      # --cap-add NET_ADMIN: the firewall/netconfig tests load real netfilter and
+      # interface state in the container's own network namespace. It is harmless
+      # for the other cells. --shm-size gives /dev/shm headroom for the LUKS cell.
       - name: Run container tests
         run: |
-          docker run --rm --shm-size=512m pm-sdk-container \
+          docker run --rm --shm-size=512m --cap-add NET_ADMIN pm-sdk-container \
             go test -tags=container -count=1 -v ${{ matrix.path }} -run Container
 
   test-apt:
