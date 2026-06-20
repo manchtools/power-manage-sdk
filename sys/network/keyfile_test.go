@@ -38,7 +38,7 @@ func TestBuildPSKKeyfile(t *testing.T) {
 
 func TestBuildPSKKeyfile_AutoConnectFalseNoHidden(t *testing.T) {
 	body := string(buildPSKKeyfile(Profile{
-		Name: "pm-wifi-2", SSID: "OpenNet", AuthType: AuthPSK, PSK: mustSecret(t, "p"),
+		Name: "pm-wifi-2", SSID: "OpenNet", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk"),
 	}))
 	if !strings.Contains(body, "autoconnect=false") {
 		t.Errorf("expected autoconnect=false:\n%s", body)

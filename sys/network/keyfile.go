@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/manchtools/power-manage-sdk/sys/exec"
 )
 
 // NetworkManager keyfile-based PSK provisioning.
@@ -35,6 +37,56 @@ var nmKeyfileDir = "/etc/NetworkManager/system-connections"
 func keyfilePath(name string) string {
 	safe := strings.ReplaceAll(name, string(filepath.Separator), "_")
 	return filepath.Join(nmKeyfileDir, safe+".nmconnection")
+}
+
+// validatePSK enforces the WPA-PSK key contract before the secret is rendered
+// into the keyfile `psk=` line: a WPA2/WPA3 pre-shared key is either an 8–63
+// character passphrase of printable ASCII (0x20–0x7e), or the raw 256-bit PMK
+// written as exactly 64 hexadecimal digits. Anything shorter, longer, or a
+// 64-character value that is not valid hex is malformed and rejected here, before
+// provisionPSK writes the keyfile or runs `nmcli connection reload`.
+//
+// The PSK is revealed locally to measure its length and character class; this is
+// the same sanctioned [wifi-security] PSK sink as buildPSKKeyfile (it never
+// reaches argv, a log, or the returned error — the error reports only the
+// failure mode, never the value). Callers reach this only through
+// validateProfile, so the check precedes any Runner command.
+func validatePSK(psk exec.Secret) error {
+	v := psk.Reveal()
+	n := len(v)
+	// A 64-character value is treated as a raw PMK and must be valid hex; a value
+	// of any other length must be an 8–63 char printable-ASCII passphrase.
+	if n == 64 && isHex(v) {
+		return nil
+	}
+	if n < 8 || n > 63 {
+		return fmt.Errorf("invalid PSK: a WPA pre-shared key must be 8–63 characters (or a 64-hex-digit raw PMK)")
+	}
+	for i := 0; i < n; i++ {
+		c := v[i]
+		if c < 0x20 || c > 0x7e {
+			return fmt.Errorf("invalid PSK: must contain only printable ASCII characters")
+		}
+	}
+	return nil
+}
+
+// isHex reports whether s consists solely of hexadecimal digits (used to tell a
+// raw 64-octet PMK apart from a malformed 64-character passphrase).
+func isHex(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		isDigit := c >= '0' && c <= '9'
+		isLower := c >= 'a' && c <= 'f'
+		isUpper := c >= 'A' && c <= 'F'
+		if !isDigit && !isLower && !isUpper {
+			return false
+		}
+	}
+	return true
 }
 
 // buildPSKKeyfile builds a NetworkManager keyfile body for a PSK profile, ready

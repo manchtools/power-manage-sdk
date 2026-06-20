@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -476,7 +477,13 @@ func validateAccountFields(comment, homeDir, shell, primaryGroup string, groups 
 	if err := validateField("home directory", homeDir, ":"); err != nil {
 		return err
 	}
+	if err := validateHomeDir(homeDir); err != nil {
+		return err
+	}
 	if err := validateField("shell", shell, ":"); err != nil {
+		return err
+	}
+	if err := validateShell(shell); err != nil {
 		return err
 	}
 	if err := validateField("primary group", primaryGroup, ":,"); err != nil {
@@ -488,4 +495,97 @@ func validateAccountFields(comment, homeDir, shell, primaryGroup string, groups 
 		}
 	}
 	return nil
+}
+
+// worldWritablePersistenceRoots are directories any unprivileged user can write
+// to (or that are otherwise unsafe to anchor an account in). A home or login
+// shell placed DIRECTLY under one of these is an attacker-seedable persistence
+// point — a backdoor account whose home or shell an unprivileged process already
+// controls — so such paths are refused before useradd/usermod/chown runs.
+// Membership is by the path's PARENT being exactly one of these (a home like
+// /tmp/deploy), not a prefix match: a legitimately nested path such as a test's
+// /tmp/<suite>/<n> temp dir is two levels down and is not anchored here.
+var worldWritablePersistenceRoots = map[string]bool{
+	"/tmp":     true,
+	"/var/tmp": true,
+	"/dev/shm": true,
+}
+
+// shellMetacharacters are bytes that have no place in an absolute executable
+// path and that would be dangerous if the value were ever re-expanded by a
+// shell. A login shell is passed to useradd/usermod as an argv argument (no
+// shell interpretation), but rejecting these is cheap defense-in-depth and keeps
+// the value to a plain pathname.
+const shellMetacharacters = " \t$&|;<>()`\\\"'*?!{}[]~#"
+
+// validateHomeDir rejects an unsafe home directory before it reaches
+// useradd/usermod (and, for an existing home, before the recursive chown). An
+// empty value is the "default"/"unchanged" sentinel and is allowed. The contract:
+// a home must be an absolute path, contain no ".." traversal component, and not
+// be a sensitive system directory (the filesystem root or a top-level system
+// dir) or an attacker-seedable persistence point (a path anchored directly under
+// a world-writable directory). Control characters and ':' are already rejected by
+// validateField.
+func validateHomeDir(homeDir string) error {
+	if homeDir == "" {
+		return nil
+	}
+	if !strings.HasPrefix(homeDir, "/") {
+		return fmt.Errorf("invalid home directory %q: must be an absolute path", homeDir)
+	}
+	if hasDotDot(homeDir) {
+		return fmt.Errorf("invalid home directory %q: must not contain a %q traversal component", homeDir, "..")
+	}
+	clean := path.Clean(homeDir)
+	// The filesystem root and a bare top-level directory (/, /etc, /usr, …) are
+	// never a legitimate per-account home; anchoring a home there would hand the
+	// account ownership of a system directory (and a recursive chown over it).
+	if clean == "/" || path.Dir(clean) == "/" {
+		return fmt.Errorf("invalid home directory %q: must not be the filesystem root or a top-level system directory", homeDir)
+	}
+	if worldWritablePersistenceRoots[path.Dir(clean)] {
+		return fmt.Errorf("invalid home directory %q: must not be anchored directly under a world-writable directory", homeDir)
+	}
+	return nil
+}
+
+// validateShell rejects an unsafe login shell before it reaches useradd/usermod.
+// An empty value is the "default" sentinel (Create fills in DefaultShell) and is
+// allowed. The contract: a shell must be an absolute path, contain no ".."
+// traversal component, no shell metacharacters, and must not live in a
+// world-writable directory tree (a /tmp, /var/tmp, /dev/shm executable an
+// unprivileged attacker can replace). Control characters and ':' are already
+// rejected by validateField.
+func validateShell(shell string) error {
+	if shell == "" {
+		return nil
+	}
+	if !strings.HasPrefix(shell, "/") {
+		return fmt.Errorf("invalid shell %q: must be an absolute path", shell)
+	}
+	if hasDotDot(shell) {
+		return fmt.Errorf("invalid shell %q: must not contain a %q traversal component", shell, "..")
+	}
+	if strings.ContainsAny(shell, shellMetacharacters) {
+		return fmt.Errorf("invalid shell %q: must not contain shell metacharacters", shell)
+	}
+	clean := path.Clean(shell)
+	for root := range worldWritablePersistenceRoots {
+		if clean == root || strings.HasPrefix(clean, root+"/") {
+			return fmt.Errorf("invalid shell %q: must not live in a world-writable directory", shell)
+		}
+	}
+	return nil
+}
+
+// hasDotDot reports whether an absolute path contains a ".." path component
+// (".."-anywhere, including a trailing or interior one). It splits on '/' so a
+// filename that merely contains the bytes ".." (e.g. "/bin/a..b") is not flagged.
+func hasDotDot(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if seg == ".." {
+			return true
+		}
+	}
+	return false
 }

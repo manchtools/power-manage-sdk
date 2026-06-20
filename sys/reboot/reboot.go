@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
 )
@@ -105,17 +107,72 @@ func (rb *rebooter) IsRequired(ctx context.Context) (bool, error) {
 	return res.ExitCode == 1, nil
 }
 
+// minRebootGraceMinutes is the smallest accepted grace window. A reboot must
+// give logged-in users at least one minute of warning — "now"/"+0" would reboot
+// instantly, which is a denial-of-service against active sessions and exactly
+// what this Manager exists to schedule *around*, not trigger.
+const minRebootGraceMinutes = 1
+
 // Schedule schedules a system reboot via shutdown -r (escalated).
 func (rb *rebooter) Schedule(ctx context.Context, opts ScheduleOptions) error {
 	delay := opts.Delay
 	if delay == "" {
 		delay = "+1"
 	}
+	if err := validateDelay(delay); err != nil {
+		return err
+	}
+	if err := validateMessage(opts.Message); err != nil {
+		return err
+	}
 	args := []string{"-r", delay}
 	if opts.Message != "" {
 		args = append(args, opts.Message)
 	}
 	return rb.shutdown(ctx, "schedule reboot", args...)
+}
+
+// validateDelay constrains the shutdown TIME spec to a positive relative
+// minute offset ("+N", N >= minRebootGraceMinutes). This is deliberately
+// narrower than shutdown(8)'s full grammar: "now", "+0", a negative offset, an
+// absolute clock time, or any control-character-bearing value is rejected
+// BEFORE the escalated shutdown runs. The reboot must always leave a grace
+// window for logged-in users, and a control character (e.g. "+5\nnow") must
+// never reach the privileged command line.
+func validateDelay(delay string) error {
+	digits, ok := strings.CutPrefix(delay, "+")
+	if !ok || digits == "" {
+		return fmt.Errorf("invalid reboot delay %q: must be a relative offset of the form \"+N\" minutes", delay)
+	}
+	// strconv.Atoi accepts a leading sign, so an all-digits check is required
+	// to reject smuggled forms like "++5" or "+-1" before parsing.
+	for _, r := range digits {
+		if r < '0' || r > '9' {
+			return fmt.Errorf("invalid reboot delay %q: must be a relative offset of the form \"+N\" minutes", delay)
+		}
+	}
+	n, err := strconv.Atoi(digits)
+	if err != nil {
+		return fmt.Errorf("invalid reboot delay %q: must be a relative offset of the form \"+N\" minutes", delay)
+	}
+	if n < minRebootGraceMinutes {
+		return fmt.Errorf("invalid reboot delay %q: grace window must be at least %d minute(s)", delay, minRebootGraceMinutes)
+	}
+	return nil
+}
+
+// validateMessage rejects a wall message carrying a control character before it
+// reaches the escalated shutdown command. shutdown broadcasts the message
+// verbatim to every logged-in user's terminal, so a newline or ESC sequence
+// could inject terminal-control codes into other users' sessions. A space is
+// fine; only control characters and DEL are refused.
+func validateMessage(message string) error {
+	for _, r := range message {
+		if r < 0x20 || r == 0x7f {
+			return fmt.Errorf("invalid reboot message: must not contain control characters")
+		}
+	}
+	return nil
 }
 
 // Cancel cancels a pending scheduled reboot (escalated).

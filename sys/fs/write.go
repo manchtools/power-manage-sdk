@@ -30,6 +30,9 @@ func (m *manager) WriteFile(ctx context.Context, path string, data []byte, opts 
 	if err := ValidatePath(path); err != nil {
 		return err
 	}
+	if err := validateMode(opts.Mode); err != nil {
+		return err
+	}
 	if opts.Backup != "" {
 		if err := ValidatePath(opts.Backup); err != nil {
 			return err
@@ -146,6 +149,9 @@ func (m *manager) Copy(ctx context.Context, src, dst string, opts WriteOptions) 
 	if err := ValidatePath(dst); err != nil {
 		return err
 	}
+	if err := validateMode(opts.Mode); err != nil {
+		return err
+	}
 	if err := m.runChecked(ctx, "cp", "--", src, dst); err != nil {
 		return fmt.Errorf("copy file: %w", err)
 	}
@@ -167,6 +173,9 @@ func (m *manager) Copy(ctx context.Context, src, dst string, opts WriteOptions) 
 // WriteOptions.Mode, which defaults 0 to 0644.
 func (m *manager) SetMode(ctx context.Context, path string, mode os.FileMode) error {
 	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	if err := validateMode(mode); err != nil {
 		return err
 	}
 	return m.runChecked(ctx, "chmod", modeArg(mode), "--", path)
@@ -194,6 +203,14 @@ func (m *manager) SetOwnershipRecursive(ctx context.Context, path, owner, group 
 	}
 	if err := ValidatePath(path); err != nil {
 		return err
+	}
+	// A recursive chown of a whole system tree (`/`, `/etc`, `/usr`, `/home`,
+	// `/root`, …) hands an attacker ownership of every file beneath it — a
+	// privilege-escalation and data-destruction vector. Refuse any top-level
+	// system directory (the same set RemoveDir protects) before chown. A managed
+	// subdirectory (e.g. /home/alice, /var/lib/app) remains re-ownable.
+	if IsProtectedPath(path) {
+		return fmt.Errorf("%w: %s", ErrProtectedTarget, filepath.Clean(path))
 	}
 	return m.runChecked(ctx, "chown", "-R", "--", ownership, path)
 }

@@ -19,7 +19,7 @@ func TestApply_PSK_KeyfileWriteFails(t *testing.T) {
 	r := &recordingRunner{}
 	r.push(exec.Result{Stdout: ""}, nil) // not found → create → provisionPSK → writeKeyfile
 	_, err := mgr(t, r).Apply(context.Background(), Profile{
-		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "p"),
+		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk"),
 	})
 	if err == nil || !strings.Contains(err.Error(), "create PSK connection") {
 		t.Errorf("err = %v, want a wrapped keyfile-write failure", err)
@@ -32,7 +32,7 @@ func TestApply_PSK_UpdateReloadFails(t *testing.T) {
 	r.push(exec.Result{Stdout: "pm-wifi\n"}, nil)                  // exists → update
 	r.push(exec.Result{ExitCode: 2, Stderr: "reload failed"}, nil) // reload fails
 	_, err := mgr(t, r).Apply(context.Background(), Profile{
-		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "p"),
+		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk"),
 	})
 	if err == nil || !strings.Contains(err.Error(), "update PSK connection") {
 		t.Errorf("err = %v, want a wrapped update-reload failure", err)
@@ -61,7 +61,7 @@ func TestNmcliWrite_ExecError(t *testing.T) {
 	r.push(exec.Result{Stdout: ""}, nil)                              // not found
 	r.push(exec.Result{}, errors.New("sudo: a password is required")) // reload can't execute
 	_, err := mgr(t, r).Apply(context.Background(), Profile{
-		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "p"),
+		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk"),
 	})
 	if err == nil || !strings.Contains(err.Error(), "create PSK connection") {
 		t.Errorf("err = %v, want the exec-error path wrapped", err)

@@ -40,6 +40,14 @@ func validateCACert(certPEM []byte) error {
 	if !cert.IsCA {
 		return fmt.Errorf("%w: certificate %q is not a CA (BasicConstraints CA=false)", ErrInvalidCert, cert.Subject.CommonName)
 	}
+	// A real CA signs other certificates, so it must carry the keyCertSign key
+	// usage. A cert without it (e.g. a leaf or a deliberately weakened anchor) is
+	// not usable for path validation as a trust anchor and must never enter the
+	// system trust store — installing it would let any host it trusts MITM TLS
+	// without the cert even being a valid issuer. Fail closed.
+	if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
+		return fmt.Errorf("%w: certificate %q lacks the keyCertSign key usage (not a usable CA)", ErrInvalidCert, cert.Subject.CommonName)
+	}
 	now := time.Now()
 	if now.Before(cert.NotBefore) {
 		return fmt.Errorf("%w: certificate is not valid until %s", ErrInvalidCert, cert.NotBefore.UTC())
