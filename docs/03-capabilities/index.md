@@ -12,9 +12,10 @@ The groups below are the areas the SDK covers.
 
 {% callout type="info" title="Reference vs. recipes" %}
 Per-package **method signatures** are generated API docs on
-[pkg.go.dev](https://pkg.go.dev/) — this site does not duplicate them.
-Task-oriented **recipes** for each capability are being written; for now this
-page is the map of what exists.
+[pkg.go.dev](https://pkg.go.dev/) — this site does not duplicate them. Each
+capability below has a task-oriented **recipe** page (in the sidebar); the
+behavioural claims on them are anchored to the code with
+[docref](/contributing), so they fail CI if the code drifts.
 {% /callout %}
 
 {% cards %}

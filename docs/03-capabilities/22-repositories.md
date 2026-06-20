@@ -1,0 +1,59 @@
+---
+title: Repositories
+label: Repositories
+description: Configure the package repositories a host installs from — apt, dnf, pacman, zypper — idempotently, with the right file format per backend.
+icon: "🗄️"
+---
+
+# Repositories
+
+`sys/repo` configures the external package repositories a host installs from. It
+owns the per-backend file format (apt deb822 `.sources` + keyrings, dnf `.repo`,
+pacman.conf sections, `zypper addrepo`), GPG public-key handling, and the
+idempotency comparison — so you never hand-write a `.repo` file.
+
+## Construct a manager
+
+```go
+r, err := exec.NewRunner(exec.Sudo) // writing repo config needs root
+if err != nil {
+    return err
+}
+m, err := repo.New(pkg.Dnf, r) // pkg.Apt / pkg.Dnf / pkg.Pacman / pkg.Zypper
+if err != nil {
+    return err
+}
+```
+
+## Apply and remove
+
+```go
+out, err := m.Apply(ctx, repo.Repository{Name: "corp", Dnf: &repo.DnfConfig{
+    BaseURL:  "https://packages.example.com/el9",
+    GPGCheck: true,
+    GPGKey:   "https://packages.example.com/RPM-GPG-KEY",
+    Enabled:  true,
+}})
+// out.Changed is false on an idempotent no-op (the config already matched).
+
+_, err = m.Remove(ctx, "corp") // idempotent: removing an absent repo is a no-op
+```
+
+<!-- docref: begin src=sys/repo/repo.go#manager.Apply:b7a6f4f5 -->
+`Apply` validates the repository (name and the backend's config) before touching
+the system, then writes the backend's native format and refreshes the index. It
+is idempotent — an unchanged config reports `Changed: false` — so re-applying the
+same desired state is safe and produces no spurious change events.
+<!-- docref: end -->
+
+{% callout type="info" title="GPG keys are public material" %}
+The signing keys here are *public* repository keys, not secrets. apt receives the
+key bytes (dearmored into `/etc/apt/keyrings`); dnf and zypper take a key
+reference (URL or path) the package manager imports.
+{% /callout %}
+
+## Related
+
+- [Packages](/capabilities/packages) — install software from the repositories
+  configured here.
+- [Backends](/concepts/backends) — the `pkg.Backend` enum shared with `pkg`.
