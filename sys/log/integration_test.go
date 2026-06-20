@@ -4,6 +4,7 @@ package log_test
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -11,8 +12,15 @@ import (
 	syslog "github.com/manchtools/power-manage-sdk/sys/log"
 )
 
-// READ-ONLY: Detect + a small real Query against journald if present. Skips when
-// the tool/privilege is unavailable (common in unprivileged CI).
+func systemdRunning() bool {
+	_, err := os.Stat("/run/systemd/system")
+	return err == nil
+}
+
+// READ-ONLY: Detect + a small real Query against journald. Under a real systemd
+// (the test-sys container, where power-manage is in the systemd-journal group)
+// the Query MUST succeed and return real journal lines — the drift guard against
+// a journalctl output change. Elsewhere it skips gracefully.
 func TestQuery_Integration(t *testing.T) {
 	for _, b := range syslog.Detect(context.Background()) {
 		if b != syslog.Journald && b != syslog.Syslog {
@@ -30,7 +38,18 @@ func TestQuery_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	if _, err := s.Query(context.Background(), syslog.Query{Lines: 5}); err != nil {
+	lines, err := s.Query(context.Background(), syslog.Query{Lines: 5})
+	if systemdRunning() {
+		if err != nil {
+			t.Fatalf("journalctl Query under systemd: %v", err)
+		}
+		if len(lines) == 0 {
+			t.Fatal("journalctl returned no lines under systemd (journal-group access missing, or empty journal)")
+		}
+		t.Logf("journalctl returned %d line(s)", len(lines))
+		return
+	}
+	if err != nil {
 		t.Skipf("journalctl read unusable here (no privilege/journal): %v", err)
 	}
 }
