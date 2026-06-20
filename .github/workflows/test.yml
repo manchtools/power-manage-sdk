@@ -297,10 +297,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: pkg/repair (debian/state-locked-apt)
+          - label: pkg (debian/state-locked-apt)
             distro: debian
             state: state-locked-apt
             path: ./sdk/pkg/
+            expect: apt-get fuser
           # LUKS Manager against real cryptsetup. No bad-state needed (each test
           # formats its own LUKS2 container on a /dev/shm file), so it runs on
           # the clean `base` stage. --shm-size gives /dev/shm headroom for the
@@ -309,6 +310,7 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/encryption/
+            expect: cryptsetup
           # nftables round-trip + iproute2 read path. Run on the clean `base`
           # stage; the tests load real kernel netfilter / interface state in the
           # container's own network namespace (CAP_NET_ADMIN, added below).
@@ -316,30 +318,36 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/firewall/
+            expect: nft
           - label: sys/netconfig (debian/base)
             distro: debian
             state: base
             path: ./sdk/sys/netconfig/
+            expect: ip
           # /proc + os-release + lsblk + ip parsers against the real container.
           - label: sys/inventory (debian/base)
             distro: debian
             state: base
             path: ./sdk/sys/inventory/
+            expect: lsblk ip
           # update-ca-certificates round-trip into the real system trust bundle.
           - label: sys/catrust (debian/base)
             distro: debian
             state: base
             path: ./sdk/sys/catrust/
+            expect: update-ca-certificates
           # Real PTY + setresuid privilege drop (creates an unprivileged user).
           - label: sys/terminal (debian/base)
             distro: debian
             state: base
             path: ./sdk/sys/terminal/
+            expect: useradd
           # Real `wall` broadcast.
           - label: sys/notify (debian/base)
             distro: debian
             state: base
             path: ./sdk/sys/notify/
+            expect: wall
           # Real `osqueryi --json` queries + the sensitive-table deny-list
           # against the actual binary (pinned osquery .deb in the with-osquery
           # stage).
@@ -347,12 +355,14 @@ jobs:
             distro: debian
             state: with-osquery
             path: ./sdk/sys/osquery/
+            expect: osqueryi
           # Real clamscan detection (custom .ndb marker) + freshclam error path
           # against the actual ClamAV binaries (with-clamav stage).
           - label: sys/antivirus (debian/with-clamav)
             distro: debian
             state: with-clamav
             path: ./sdk/sys/antivirus/
+            expect: clamscan
           # repo Manager apt backend: real `gpg --dearmor` + deb822 .sources
           # write/idempotency/remove (base + gnupg). The dnf/pacman/zypper repo
           # cells run in their distro jobs below; each test self-skips when its
@@ -361,6 +371,7 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/repo/
+            expect: apt-get gpg
           # desktop: real runuser privilege-drop + HomeUsers passwd enumeration +
           # per-user Flatpak-install probe (creates real accounts → needs root).
           # The graphical ActiveSessions path runs against real loginctl in the
@@ -369,12 +380,14 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/desktop/
+            expect: useradd runuser
           # smartctl --scan parse + validation + fatal-exit-status-bit path
           # (real passing-SMART-health needs hardware — residual).
           - label: sys/smart (debian/base)
             distro: debian
             state: base
             path: ./sdk/sys/smart/
+            expect: smartctl
           # reboot-required marker detection (Schedule/Cancel drive real shutdown
           # — residual).
           - label: sys/reboot (debian/base)
@@ -396,6 +409,16 @@ jobs:
       # --cap-add NET_ADMIN: the firewall/netconfig tests load real netfilter and
       # interface state in the container's own network namespace. It is harmless
       # for the other cells. --shm-size gives /dev/shm headroom for the LUKS cell.
+      - name: Assert expected tools present (no vacuous skip)
+        if: matrix.expect != ''
+        run: |
+          for tool in ${{ matrix.expect }}; do
+            if ! docker run --rm pm-sdk-container sh -c "command -v $tool >/dev/null 2>&1"; then
+              echo "::error::expected tool '$tool' absent from '${{ matrix.label }}' image — its container test would skip VACUOUSLY instead of running"
+              exit 1
+            fi
+          done
+
       - name: Run container tests
         run: |
           docker run --rm --shm-size=512m --cap-add NET_ADMIN pm-sdk-container \
