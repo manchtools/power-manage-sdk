@@ -369,6 +369,18 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/desktop/
+          # smartctl --scan parse + validation + fatal-exit-status-bit path
+          # (real passing-SMART-health needs hardware — residual).
+          - label: sys/smart (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/smart/
+          # reboot-required marker detection (Schedule/Cancel drive real shutdown
+          # — residual).
+          - label: sys/reboot (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/reboot/
     steps:
       - uses: actions/checkout@v5
         with:
