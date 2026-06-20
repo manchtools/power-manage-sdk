@@ -24,6 +24,7 @@ FROM golang:1.26-bookworm AS base
 #   nftables        — `nft` for the sys/firewall round-trip tests (CAP_NET_ADMIN)
 #   iproute2        — `ip` for the sys/netconfig read-path tests (CAP_NET_ADMIN)
 #   gnupg           — `gpg --dearmor` for the sys/repo apt keyring tests
+#   smartmontools   — `smartctl` for the sys/smart scan + fatal-bits tests
 RUN apt-get update && apt-get install -y --no-install-recommends \
     psmisc \
     ca-certificates \
@@ -31,6 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nftables \
     iproute2 \
     gnupg \
+    smartmontools \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
