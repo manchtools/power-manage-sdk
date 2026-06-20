@@ -403,12 +403,56 @@ func chownNoFollow(dest string, uid, gid int) error {
 func defaultHTTPClient() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Minute,
+		// Refuse any redirect that changes host:port. A download is pinned to a
+		// URL; letting a redirect choose a different host lets a compromised
+		// origin substitute the bytes (and is an SSRF vector toward internal
+		// services). Same-host path redirects are allowed but bounded.
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) > 0 && req.URL.Host != via[0].URL.Host {
+				return fmt.Errorf("%w: refusing cross-host redirect %s -> %s", ErrInvalidConfig, via[0].URL.Host, req.URL.Host)
+			}
+			if len(via) >= 10 {
+				return fmt.Errorf("%w: stopped after 10 redirects", ErrInvalidConfig)
+			}
+			return nil
+		},
 	}
 }
 
 func validateHTTPConfig(cfg *HTTPConfig) error {
 	if cfg.Prune && !cfg.Extract {
 		return fmt.Errorf("%w: prune requires extract", ErrInvalidConfig)
+	}
+	// extract+prune DELETES pre-existing files in the destination tree, so a
+	// poisoned origin could weaponize it; require an integrity pin so the bytes
+	// that drive the prune are verified before anything is removed.
+	if cfg.Extract && cfg.Prune && cfg.ChecksumSHA256 == "" {
+		return fmt.Errorf("%w: extract+prune requires a checksum_sha256 (the prune deletes files; the payload must be integrity-pinned)", ErrInvalidConfig)
+	}
+	// A negative byte cap is a caller error; never silently fall back to the
+	// default (which would lift the intended limit).
+	if cfg.MaxBytes < 0 {
+		return fmt.Errorf("%w: max_bytes must not be negative", ErrInvalidConfig)
+	}
+	if err := validateModeBits(cfg.Mode); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateModeBits rejects a Mode that sets the setuid/setgid/sticky bits on a
+// downloaded artifact — a downloaded setuid-root helper is a privilege-escalation
+// dropper. Empty Mode is allowed (no chmod). The octal parsing mirrors applyMode.
+func validateModeBits(mode string) error {
+	if mode == "" {
+		return nil
+	}
+	bits, err := strconv.ParseUint(strings.TrimPrefix(mode, "0"), 8, 32)
+	if err != nil {
+		return fmt.Errorf("%w: invalid mode %q", ErrInvalidConfig, mode)
+	}
+	if bits&0o7000 != 0 { // setuid(4000) | setgid(2000) | sticky(1000)
+		return fmt.Errorf("%w: mode %q sets privileged bits (setuid/setgid/sticky), refused for a downloaded artifact", ErrInvalidConfig, mode)
 	}
 	return nil
 }
