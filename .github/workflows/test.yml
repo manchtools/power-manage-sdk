@@ -370,6 +370,45 @@ jobs:
           name: coverage-dnf
           path: pkg/coverage-dnf.out
 
+  # pacman/zypper are the two package managers with zero real-tool coverage
+  # before this. The pkg integration tests (TestIntegration_Pacman/_Zypper)
+  # auto-detect the backend and run read-only ops (List / IsInstalled / Search)
+  # against the REAL binary, so an output-format / exit-code change across distro
+  # or tool versions is caught.
+  test-pacman:
+    name: Integration Tests (pacman)
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Go + sync pacman db
+        run: pacman -Sy --noconfirm go git
+
+      - name: Run integration tests
+        run: go test -v ./...
+        working-directory: pkg
+
+  test-zypper:
+    name: Integration Tests (zypper)
+    runs-on: ubuntu-latest
+    container:
+      image: opensuse/leap:latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Leap ships an older Go; GOTOOLCHAIN=auto (default) fetches the go.mod
+      # toolchain (go 1.25.11) on first `go` invocation.
+      - name: Install Go + refresh zypper
+        run: |
+          zypper --non-interactive --gpg-auto-import-keys refresh
+          zypper --non-interactive install go git tar gzip
+
+      - name: Run integration tests
+        run: go test -v ./...
+        working-directory: pkg
+
   coverage-report:
     name: Coverage Report
     needs: [test-apt, test-dnf]
