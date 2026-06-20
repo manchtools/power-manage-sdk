@@ -35,7 +35,7 @@ if err != nil {
 err := m.ApplyRule(ctx, firewall.Rule{
     ID:       "allow-ssh",
     Allow:    true,
-    Protocol: firewall.TCP,
+    Protocol: firewall.ProtocolTCP,
     Port:     22,
     Source:   "10.0.0.0/8", // empty = any
 })

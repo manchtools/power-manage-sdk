@@ -7,9 +7,11 @@ icon: "⚙️"
 
 # Services
 
-`sys/service` manages init units through `systemctl` behind a `Manager`. It
-covers the full lifecycle: query state, enable/start, write and remove unit
-files, and mask a unit so nothing can start it.
+`sys/service` manages init units behind a `Manager`. The init system is a
+`Backend` you name explicitly — systemd (driven through `systemctl`) is the one
+implemented today, but the model isn't limited to it. It covers the full
+lifecycle: query state, enable/start, write and remove unit files, and mask a
+unit so nothing can start it.
 
 ## Construct a manager
 
