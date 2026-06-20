@@ -7,8 +7,8 @@ icon: "⌨️"
 
 # Terminal
 
-`sys/terminal` opens an interactive pseudo-terminal session as a target user —
-the building block for a remote shell into a managed host. It allocates a real
+`sys/terminal` opens an interactive pseudo-terminal session as a target user.
+It is what a remote shell into a managed host is built on: it allocates a real
 PTY and drops privilege to the requested account.
 
 ## Open a session

@@ -51,7 +51,7 @@ action cannot override it. The agent's own environment is replaced wholesale —
 `LD_PRELOAD` and friends never leak into a user-scoped command.
 <!-- docref: end -->
 
-{% callout type="info" title="Why build, not run" %}
+{% callout type="info" title="It returns a command, doesn't run it" %}
 `RunAsCommand` returns an `*exec.Cmd` you run yourself, so you control streaming,
 stdin, and output capture. The privilege drop and environment are already wired
 in.

@@ -7,10 +7,9 @@ icon: "📶"
 
 # Wi-Fi
 
-`sys/network` manages NetworkManager Wi-Fi connection *profiles* — WPA-PSK and
-EAP-TLS. Its defining property: the credential (the WPA passphrase, the EAP-TLS
-private key) is an [`exec.Secret`](/concepts/architecture) and is **never** put
-on a command line.
+`sys/network` manages NetworkManager Wi-Fi connection *profiles*, both WPA-PSK
+and EAP-TLS. The credential (the WPA passphrase, the EAP-TLS private key) is an
+[`exec.Secret`](/concepts/architecture), so it never reaches a command line.
 
 ## Construct a manager
 
@@ -47,9 +46,9 @@ changed, err := m.Apply(ctx, network.Profile{
 <!-- docref: begin src=sys/network/keyfile.go#buildPSKKeyfile:c291b90a -->
 The PSK is written into a NetworkManager *keyfile* — a `0600` file under
 `/etc/NetworkManager/system-connections/` with the `psk=` line — and never
-passed as an `nmcli` argument. `nmcli connection modify wifi-sec.psk <value>` would put
-the passphrase on the argv where any process could read it from `/proc`; the
-keyfile path is the one sanctioned place the secret is revealed.
+passed as an `nmcli` argument. Running `nmcli connection modify wifi-sec.psk
+<value>` would put the passphrase on the argv, where any process could read it
+from `/proc`. Writing the keyfile is the only place the SDK reveals the secret.
 <!-- docref: end -->
 
 ## Inspect, update, remove

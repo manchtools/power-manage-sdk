@@ -1,14 +1,14 @@
 ---
 title: DNS
 label: DNS
-description: Read and apply a host's resolver configuration — nameservers and search domains — via systemd-resolved or NetworkManager.
+description: Read and apply a host's resolver configuration (nameservers and search domains) via systemd-resolved or NetworkManager.
 icon: "🧭"
 ---
 
 # DNS
 
-`sys/dns` reads and configures the host resolver — nameservers and search
-domains — through systemd-resolved or NetworkManager.
+`sys/dns` reads and configures the host resolver (nameservers and search
+domains) through systemd-resolved or NetworkManager.
 
 ## Construct a manager
 
@@ -29,7 +29,7 @@ if err != nil {
 
 <!-- docref: begin src=sys/dns/dns.go#New:36342405 -->
 `New` validates the backend and rejects a nil Runner up front; the zero-value
-and any unimplemented backend are `ErrUnknownBackend`. It is pure — it does not
+and any unimplemented backend are `ErrUnknownBackend`. It is pure: it does not
 probe the host, so use `Detect` to learn which backends are usable here.
 <!-- docref: end -->
 
@@ -51,8 +51,8 @@ err := m.Apply(ctx, dns.Config{
 ```
 
 <!-- docref: begin src=sys/dns/resolved.go#resolvedManager.Apply:8a4c7c2d -->
-`Apply` validates the whole `Config` — rejecting non-IP nameservers, malformed
-or flag-shaped search domains, and bad interface names — *before* it touches any
+`Apply` validates the whole `Config` (rejecting non-IP nameservers, malformed or
+flag-shaped search domains, and bad interface names) *before* it touches any
 backend, so an invalid configuration has no side effects. On the Resolved
 backend a host-global apply (empty `Interface`) writes the managed
 `resolved.conf.d` drop-in and restarts the service; a set `Interface` uses

@@ -45,7 +45,7 @@ encodes failure in an exit-status *bitmask*, not just a non-zero exit, so
 an error rather than a bogus "healthy" reading.
 <!-- docref: end -->
 
-{% callout type="info" title="Needs real hardware to be interesting" %}
+{% callout type="info" title="Needs real hardware" %}
 A VM or container usually has no SMART-capable disk, so `Scan` returns an empty
 list there. On real hardware you get the health bit (`smart_status.passed`),
 temperature, and power-on hours.

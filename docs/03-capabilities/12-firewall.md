@@ -53,7 +53,7 @@ are scoped to the manager's own namespace, so listing and removal never touch
 the host's other firewall state.
 <!-- docref: end -->
 
-{% callout type="info" title="Round-trip fidelity" %}
+{% callout type="info" title="List reflects what was applied" %}
 `List` decodes each rule's full match — protocol, port, **and** source/destination
 address — back out of the live ruleset, so what you read reflects exactly what
 was applied. (An earlier nftables decoder dropped the source/destination on

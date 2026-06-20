@@ -78,11 +78,11 @@ the secret, enforced by a fitness function.
 <!-- docref: end -->
 
 <!-- docref: begin src=sys/exec/secret.go#Secret:0e14e52a -->
-An `exec.Secret` wraps sensitive material so it cannot leak by accident: its
+An `exec.Secret` wraps sensitive material so it cannot leak by accident. Its
 `String`/`GoString` render as `[REDACTED]`, so it never appears in logs, panics,
-or `%v` formatting — the real value is reachable only through an explicit
-`Reveal`, at the one sanctioned sink (here, fed to `chpasswd` on stdin, never on
-argv where another process could read it from `/proc`).
+or `%v` formatting; the real value is reachable only through an explicit
+`Reveal`. For a password that means one call site (here, fed to `chpasswd` on
+stdin, never on argv where another process could read it from `/proc`).
 <!-- docref: end -->
 
 Other account-state operations:

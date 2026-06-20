@@ -9,8 +9,8 @@ icon: "🔎"
 
 `sys/osquery` exposes the host as SQL through `osqueryi`: list tables, query a
 table, or run raw SQL. It is a single-tool capability, so `New` takes only a
-Runner, no Backend. Its defining feature is a **deny-list** that refuses
-credential-bearing tables on the convenience path.
+Runner, no Backend. A **deny-list** refuses credential-bearing tables on the
+convenience path, which is the part to pay attention to.
 
 ## Construct a querier
 
