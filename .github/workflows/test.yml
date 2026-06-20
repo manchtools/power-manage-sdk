@@ -210,7 +210,7 @@ jobs:
           path: sdk
 
       - name: Build test image
-        run: docker build -f sdk/test/Dockerfile.integration -t pm-sdk-test .
+        run: docker build -f sdk/test/Dockerfile.integration --target systemd -t pm-sdk-test .
 
       - name: Start systemd container
         run: docker run -d --privileged --name pm-sdk-test pm-sdk-test
@@ -239,6 +239,50 @@ jobs:
       - name: Cleanup
         if: always()
         run: docker rm -f pm-sdk-test 2>/dev/null || true
+
+  # Dedicated job for sys/network: the keyfile-based WiFi provisioning needs BOTH
+  # a live NetworkManager daemon (`nmcli connection reload`) and root (the 0600
+  # keyfile write into /etc/NetworkManager/system-connections) — neither fits the
+  # power-manage test-sys lane. Its own systemd+NM image (`with-networkmanager`,
+  # NM configured to manage no devices) keeps NM out of the test-sys container so
+  # the other integration tests are unaffected.
+  test-network:
+    name: Integration Tests (NetworkManager)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: sdk
+
+      - name: Build systemd + NetworkManager image
+        run: docker build -f sdk/test/Dockerfile.integration --target with-networkmanager -t pm-sdk-nm .
+
+      - name: Start systemd + NM container
+        run: docker run -d --privileged --name pm-sdk-nm pm-sdk-nm
+
+      - name: Wait for NetworkManager
+        run: |
+          # The container reports "degraded" (a hardware-bound unit can't start in
+          # a container) yet NM itself comes up active — wait on NM directly.
+          for i in $(seq 1 60); do
+            if docker exec pm-sdk-nm systemctl is-active NetworkManager >/dev/null 2>&1; then
+              break
+            fi
+            sleep 0.5
+          done
+          docker exec pm-sdk-nm systemctl is-active NetworkManager
+
+      - name: Run network integration tests (root, real NetworkManager)
+        run: |
+          # PM_NM_REQUIRED=1 makes the test FAIL (not skip) if NM is somehow
+          # unavailable — this job guarantees it, so a skip would pass vacuously.
+          docker exec -w /workspace -e PM_NM_REQUIRED=1 pm-sdk-nm \
+            /usr/local/go/bin/go test -tags=integration -count=1 -v -timeout=5m \
+              -run Integration ./sdk/sys/network/
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f pm-sdk-nm 2>/dev/null || true
 
   # Container-based real-execution tests (`//go:build container`). Each cell
   # builds one immutable bad-state image stage (the precondition is asserted at
