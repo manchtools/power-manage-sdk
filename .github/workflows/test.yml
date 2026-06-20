@@ -234,7 +234,7 @@ jobs:
               /usr/local/go/bin/go test \
               -v -tags=integration -count=1 -timeout=10m \
               ./sdk/sys/exec/ ./sdk/sys/fs/ ./sdk/sys/user/ ./sdk/sys/service/ \
-              ./sdk/sys/timesync/ ./sdk/sys/log/
+              ./sdk/sys/timesync/ ./sdk/sys/log/ ./sdk/sys/dns/
 
       - name: Cleanup
         if: always()
