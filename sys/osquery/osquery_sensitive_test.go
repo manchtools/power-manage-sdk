@@ -67,9 +67,11 @@ func TestQuery_DeniesSensitiveTables(t *testing.T) {
 	}
 }
 
-// The RawSql escape hatch is intentionally NOT gated by the deny-list — it is the
-// operator's explicit, CA-signed path. A raw query naming a sensitive table runs.
-func TestQuery_RawSqlBypassesDenyList(t *testing.T) {
+// RawSql is gated against the deny-list too: a raw query naming a sensitive
+// table is refused (folded into the result) BEFORE osqueryi runs — there is no
+// escape hatch around the credential-table policy. (Supersedes the prior WS4
+// behaviour where signed RawSql bypassed the gate.)
+func TestQuery_RawSqlGatedByDenyList(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: `[{"hash":"x"}]`}, nil)
 	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
@@ -77,11 +79,11 @@ func TestQuery_RawSqlBypassesDenyList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.Success {
-		t.Errorf("RawSql must bypass the deny-list, got %+v", res)
+	if res.Success || res.Error == "" {
+		t.Errorf("RawSql naming `shadow` must be refused by the deny-list, got %+v", res)
 	}
-	if argv := strings.Join(r.Calls()[0].Args, " "); !strings.Contains(argv, "SELECT * FROM shadow") {
-		t.Errorf("raw SQL not passed through: %q", argv)
+	if n := len(r.Calls()); n != 0 {
+		t.Errorf("refused RawSql ran %d command(s) before the policy gate; want 0", n)
 	}
 }
 

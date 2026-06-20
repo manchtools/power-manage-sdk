@@ -2,9 +2,10 @@
 // injected exec.Runner.
 //
 // Build a Querier with a Runner and call its methods; every query is escalated
-// through the Runner. The convenience table path refuses a curated deny-list of
-// credential-bearing tables before running anything; the signed RawSql escape
-// hatch is the operator's explicit path and is intentionally not gated.
+// through the Runner. Both the convenience table path AND the RawSql path refuse
+// a curated deny-list of credential-bearing tables before running anything — a
+// raw query that references a deny-listed table (in any clause) is rejected, so
+// there is no path to read shadow/sudoers/… via osquery.
 //
 //	r, _ := exec.NewRunner(exec.Sudo)
 //	q, err := osquery.New(r) // ErrNotInstalled if osqueryi is absent
@@ -38,10 +39,10 @@ var validTableName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 // high-value secrets — password-hash metadata (shadow), secrets in process
 // environments (process_envs), scheduled commands (crontab), shell history
 // (shell_history), and sudoers policy (sudoers). They all pass validTableName, so
-// the shape-only check is not enough: the convenience table path refuses them so a
-// compromised control server cannot exfiltrate them through the agent's
-// privileged osquery. The signed RawSql escape hatch is intentionally NOT gated
-// here — it is the operator's explicit, CA-signed path.
+// the shape-only check is not enough: BOTH the convenience table path and the
+// RawSql path refuse them (sensitiveTableRefIn scans raw SQL for any deny-listed
+// table as a whole-word identifier) so a compromised control server cannot
+// exfiltrate them through the agent's privileged osquery by any path.
 var sensitiveTables = map[string]bool{
 	"shadow":        true,
 	"process_envs":  true,
@@ -54,6 +55,47 @@ var sensitiveTables = map[string]bool{
 // case- and whitespace-insensitive so trivial variants cannot slip past.
 func isSensitiveTable(name string) bool {
 	return sensitiveTables[strings.ToLower(strings.TrimSpace(name))]
+}
+
+// sensitiveTableRefIn returns the first deny-listed table name that appears as a
+// whole-word identifier anywhere in sql (case-insensitive), or "" if none. Raw
+// SQL is operator-supplied and osquery's grammar is rich (quoting, aliases,
+// subqueries, JOINs), so rather than parse it this gate FAILS CLOSED: any token
+// equal to a sensitive table name — even in a column, alias, or string position
+// — is treated as a reference and refused. Over-refusal is the safe direction
+// for a credential-table gate; under-refusal would leak shadow/sudoers/…
+func sensitiveTableRefIn(sql string) string {
+	lower := strings.ToLower(sql)
+	for name := range sensitiveTables {
+		if containsWord(lower, name) {
+			return name
+		}
+	}
+	return ""
+}
+
+// containsWord reports whether word occurs in s delimited by non-identifier
+// characters (so "shadow" matches `FROM shadow` / `from shadow s` but not
+// `shadowed`). Both arguments must already be lowercase.
+func containsWord(s, word string) bool {
+	for from := 0; ; {
+		i := strings.Index(s[from:], word)
+		if i < 0 {
+			return false
+		}
+		i += from
+		leftOK := i == 0 || !isIdentByte(s[i-1])
+		rightOK := i+len(word) >= len(s) || !isIdentByte(s[i+len(word)])
+		if leftOK && rightOK {
+			return true
+		}
+		from = i + 1
+	}
+}
+
+// isIdentByte reports whether b is a SQL identifier character ([A-Za-z0-9_]).
+func isIdentByte(b byte) bool {
+	return b == '_' || (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 var (
@@ -87,14 +129,14 @@ type Querier interface {
 	IsInstalled(ctx context.Context) bool
 	// ListTables returns the names of the available osquery tables.
 	ListTables(ctx context.Context) ([]string, error)
-	// Query runs a structured query. The RawSql escape hatch (the operator's
-	// CA-signed path) is NOT gated by the deny-list; the table path refuses the
-	// credential-bearing deny-list before building any SQL. A query failure is
-	// folded into the returned *pb.OSQueryResult (Success=false), not returned
-	// as a Go error.
+	// Query runs a structured query. BOTH the table path and the RawSql path are
+	// gated by the credential-bearing deny-list before any SQL is built or run —
+	// a raw query referencing a deny-listed table is refused. A query failure
+	// (or a policy refusal) is folded into the returned *pb.OSQueryResult
+	// (Success=false), not returned as a Go error.
 	Query(ctx context.Context, query *pb.OSQuery) (*pb.OSQueryResult, error)
 	// QueryTable runs SELECT * FROM <table> after the same validity + deny-list
-	// checks as Query's table path; there is no RawSql bypass here.
+	// checks as Query's table path.
 	QueryTable(ctx context.Context, tableName string) ([]*pb.OSQueryRow, error)
 	// QuerySQL runs raw SQL and parses the JSON result rows.
 	QuerySQL(ctx context.Context, sql string) ([]*pb.OSQueryRow, error)
@@ -188,6 +230,17 @@ var tableSQL = map[string]string{
 func (c *client) Query(ctx context.Context, query *pb.OSQuery) (*pb.OSQueryResult, error) {
 	var sql string
 	if query.RawSql != "" {
+		// RawSql is gated against the same credential-table deny-list as the
+		// table path: a raw query that references a sensitive table is refused
+		// BEFORE osqueryi runs. RawSql is no longer an escape hatch around the
+		// deny-list — there is no path to read shadow/sudoers/… via osquery.
+		if name := sensitiveTableRefIn(query.RawSql); name != "" {
+			return &pb.OSQueryResult{
+				QueryId: query.QueryId,
+				Success: false,
+				Error:   fmt.Sprintf("table %q is not permitted", name),
+			}, nil
+		}
 		sql = query.RawSql
 	} else if custom, ok := tableSQL[query.Table]; ok {
 		sql = custom
