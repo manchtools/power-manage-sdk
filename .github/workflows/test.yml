@@ -303,6 +303,12 @@ jobs:
             distro: debian
             state: with-osquery
             path: ./sdk/sys/osquery/
+          # Real clamscan detection (custom .ndb marker) + freshclam error path
+          # against the actual ClamAV binaries (with-clamav stage).
+          - label: sys/antivirus (debian/with-clamav)
+            distro: debian
+            state: with-clamav
+            path: ./sdk/sys/antivirus/
     steps:
       - uses: actions/checkout@v5
         with:
