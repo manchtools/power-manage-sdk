@@ -5,6 +5,8 @@ import (
 	"fmt"
 	osexec "os/exec"
 	"strings"
+
+	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
 )
 
 // EnvFor builds the minimum environment a user-scoped command needs
@@ -79,6 +81,18 @@ func (m *manager) RunAsCommand(ctx context.Context, s Session, opts RunAsOptions
 	if s.Username == "" {
 		return nil, fmt.Errorf("desktop.RunAsCommand: session has empty Username")
 	}
+	// opts.ExtraEnv is merged into the child environment, so it is an injection
+	// surface exactly like Command.Env on the Runner path: a caller-supplied
+	// LD_PRELOAD / LD_LIBRARY_PATH / GCONV_PATH would load attacker-controlled
+	// code into the user-scoped command and anything it execs. Gate it through the
+	// SAME hijack-blocklist the Runner enforces (exec.ValidateCommandEnv), failing
+	// closed BEFORE the *exec.Cmd is built. PATH is exempt from the gate here
+	// because RunAsCommand never forwards a caller PATH — it always re-applies the
+	// curated UserPath last (see below), so a "PATH=" entry is inert by design and
+	// must not be treated as a rejection.
+	if err := validateExtraEnv(opts.ExtraEnv); err != nil {
+		return nil, err
+	}
 	full := append([]string{"-u", s.Username, "--", name}, args...)
 	cmd := osexec.CommandContext(ctx, runuserPath, full...)
 	// Replace inherited env wholesale — agent's env (LD_PRELOAD,
@@ -92,4 +106,22 @@ func (m *manager) RunAsCommand(ctx context.Context, s Session, opts RunAsOptions
 	cmd.Env = env
 	cmd.Dir = s.Home
 	return cmd, nil
+}
+
+// validateExtraEnv runs the caller's ExtraEnv through the Runner's env hijack
+// gate (exec.ValidateCommandEnv) so a desktop run-as inherits the same
+// LD_PRELOAD/LD_LIBRARY_PATH/GCONV_PATH refusal as every Runner-driven command.
+// PATH entries are dropped before the gate: RunAsCommand always overrides PATH
+// with the curated UserPath, so a caller "PATH=" value is inert and is not a
+// hijack — exec.ValidateCommandEnv would otherwise reject it (PATH is on the
+// blocklist) and break the documented PATH-is-re-applied contract.
+func validateExtraEnv(extraEnv []string) error {
+	filtered := make([]string, 0, len(extraEnv))
+	for _, e := range extraEnv {
+		if key, _, ok := strings.Cut(e, "="); ok && key == "PATH" {
+			continue // overridden by UserPath; never forwarded, so never a hijack
+		}
+		filtered = append(filtered, e)
+	}
+	return pmexec.ValidateCommandEnv(filtered)
 }

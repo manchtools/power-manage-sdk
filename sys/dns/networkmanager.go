@@ -77,6 +77,14 @@ func (m *nmManager) Apply(ctx context.Context, cfg Config) error {
 
 // activeConnection resolves the connection name bound to iface. Returns an error
 // if the interface has no active connection (nothing to modify).
+//
+// The resolved name comes from `nmcli ... device show` — UNTRUSTED host output —
+// and is then placed on the argv of an escalated `connection modify` / `connection
+// up`. A hostile or compromised NetworkManager (or a connection an attacker named)
+// could emit a value that, fed back verbatim, smuggles a flag (a leading '-') or
+// splits into extra tokens (an embedded newline/control char). The name is
+// re-validated here, before any mutation, so host output can never become a
+// privileged argv injection.
 func (m *nmManager) activeConnection(ctx context.Context, iface string) (string, error) {
 	out, err := runRead(ctx, m.r, "nmcli", "-g", "GENERAL.CONNECTION", "device", "show", iface)
 	if err != nil {
@@ -86,5 +94,26 @@ func (m *nmManager) activeConnection(ctx context.Context, iface string) (string,
 	if conn == "" || conn == "--" {
 		return "", fmt.Errorf("%w: interface %q has no active NetworkManager connection to configure", ErrInvalidConfig, iface)
 	}
+	if err := validateConnName(conn); err != nil {
+		return "", err
+	}
 	return conn, nil
+}
+
+// validateConnName re-validates an nmcli connection name read back from untrusted
+// host output before it is used in an escalated mutation. A legitimate connection
+// name may contain spaces ("Wired connection 1"), so spaces are allowed; but the
+// name must not contain control characters (an embedded newline/CR/tab/NUL would
+// split into extra argv tokens or corrupt line-oriented output) and must not begin
+// with '-' (which nmcli would parse as a flag rather than a connection name).
+func validateConnName(name string) error {
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f {
+			return fmt.Errorf("%w: connection name %q from host output contains a control character", ErrInvalidConfig, name)
+		}
+	}
+	if strings.HasPrefix(name, "-") {
+		return fmt.Errorf("%w: connection name %q from host output is flag-shaped (leading '-')", ErrInvalidConfig, name)
+	}
+	return nil
 }
