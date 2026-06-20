@@ -86,6 +86,11 @@ func (m *manager) applyPacman(ctx context.Context, name string, c *PacmanConfig)
 // removePacman removes the repository's section from /etc/pacman.conf. Removing
 // an absent section is an idempotent no-op.
 func (m *manager) removePacman(ctx context.Context, name string) (Outcome, error) {
+	// Refuse to operate on the reserved [options] section: removePacmanSection
+	// would strip pacman.conf's global settings block, not a repository.
+	if err := validatePacmanName(name); err != nil {
+		return Outcome{}, err
+	}
 	var log strings.Builder
 	confBytes, err := m.fsm.ReadFile(ctx, pacmanConf)
 	if err != nil {

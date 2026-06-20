@@ -50,31 +50,15 @@ func TestAdversarialSupplyChainTrustMachine(t *testing.T) {
 func repositoryTrustDowngradeProgram() attackProgram {
 	return attackProgram{
 		name: "repository trust downgrade",
+		// NOTE: apt `Trusted: yes` and dnf `gpgcheck=false` (signature
+		// verification disabled) are explicit, documented OPERATOR CHOICES, kept
+		// per the 2026-06 policy decision (same as WS8). They are allowed by
+		// design and pinned by repo's TestApt_Apply_TrustedNoKey /
+		// TestDnf_Apply_GPGCheckFalseIgnoresKey, so they are NOT adversary cases
+		// here. The downgrades that ARE refused — pacman SigLevel Never (no valid
+		// per-invocation operator semantics) and an unpinned destructive remote
+		// mirror — remain below.
 		steps: []programStep{
-			{
-				name:   "APT Trusted=yes repository is rejected before apply",
-				oracle: mustReject | noPrivilegedMutation,
-				run: func(t *testing.T, _ *attackEnv) observation {
-					r := exectest.New(sdkexec.Sudo)
-					m, err := repo.New(pkg.Apt, r)
-					if err == nil {
-						err = m.Validate(repo.Repository{Name: "corp", Apt: &repo.AptConfig{URL: "https://repo.example/deb", Trusted: true}})
-					}
-					return observation{err: err, commands: r.Calls()}
-				},
-			},
-			{
-				name:   "DNF gpgcheck=false with key is rejected before import",
-				oracle: mustReject | noPrivilegedMutation,
-				run: func(t *testing.T, _ *attackEnv) observation {
-					r := exectest.New(sdkexec.Sudo)
-					m, err := repo.New(pkg.Dnf, r)
-					if err == nil {
-						err = m.Validate(repo.Repository{Name: "corp", Dnf: &repo.DnfConfig{BaseURL: "https://repo.example/rpm", GPGCheck: false, GPGKey: "https://repo.example/RPM-GPG-KEY"}})
-					}
-					return observation{err: err, commands: r.Calls()}
-				},
-			},
 			{
 				name:   "Pacman SigLevel Never is rejected before config write",
 				oracle: mustReject | noPrivilegedMutation,
