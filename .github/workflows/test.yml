@@ -234,7 +234,7 @@ jobs:
               /usr/local/go/bin/go test \
               -v -tags=integration -count=1 -timeout=10m \
               ./sdk/sys/exec/ ./sdk/sys/fs/ ./sdk/sys/user/ ./sdk/sys/service/ \
-              ./sdk/sys/timesync/ ./sdk/sys/log/ ./sdk/sys/dns/
+              ./sdk/sys/timesync/ ./sdk/sys/log/ ./sdk/sys/dns/ ./sdk/sys/desktop/
 
       - name: Cleanup
         if: always()
@@ -317,6 +317,14 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/repo/
+          # desktop: real runuser privilege-drop + HomeUsers passwd enumeration +
+          # per-user Flatpak-install probe (creates real accounts → needs root).
+          # The graphical ActiveSessions path runs against real loginctl in the
+          # systemd job; here ActiveSessions covers the loginctl-absent path.
+          - label: sys/desktop (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/desktop/
     steps:
       - uses: actions/checkout@v5
         with:
