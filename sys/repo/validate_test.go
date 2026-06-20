@@ -57,20 +57,33 @@ func TestValidate_Apt(t *testing.T) {
 	m, _, _ := newTestManager(t, pkg.Apt)
 	base := func() *AptConfig { return &AptConfig{URL: "https://packages.example.com/apt"} }
 
-	// apt is intentionally exempt from the https requirement (trust = signed Release).
-	if err := m.Validate(Repository{Name: "r", Apt: &AptConfig{URL: "http://old.example.com/apt"}}); err != nil {
-		t.Errorf("Validate(apt http url) = %v, want nil (apt is http-exempt)", err)
+	// apt is intentionally exempt from the https requirement (trust = signed
+	// Release), so BOTH http and https are accepted.
+	for _, u := range []string{"http://old.example.com/apt", "https://packages.example.com/apt"} {
+		if err := m.Validate(Repository{Name: "r", Apt: &AptConfig{URL: u}}); err != nil {
+			t.Errorf("Validate(apt url %q) = %v, want nil", u, err)
+		}
 	}
 
 	reject := map[string]*AptConfig{
-		"missing url":          {URL: ""},
-		"control in url":       {URL: "https://h/a\nDeb-Src: x"},
-		"control in dist":      mut(base(), func(c *AptConfig) { c.Distribution = "bad\nline" }),
-		"bad dist shape":       mut(base(), func(c *AptConfig) { c.Distribution = "-bad" }),
-		"control in component": mut(base(), func(c *AptConfig) { c.Components = []string{"main", "x\ny"} }),
-		"bad component shape":  mut(base(), func(c *AptConfig) { c.Components = []string{"@bad"} }),
-		"control in arch":      mut(base(), func(c *AptConfig) { c.Arch = "amd64\n" }),
-		"bad arch shape":       mut(base(), func(c *AptConfig) { c.Arch = "AMD64" }), // arch is lowercase
+		"missing url":    {URL: ""},
+		"control in url": {URL: "https://h/a\nDeb-Src: x"},
+		// A raw space splits the deb822 URIs field into a SECOND URI — the
+		// injection the old control-only check let through.
+		"space (second-URI injection)": {URL: "https://h/a https://evil/"},
+		"tab in url":                   {URL: "https://h/a\tb"},
+		"non-http scheme (ftp)":        {URL: "ftp://h/a"},
+		"file scheme":                  {URL: "file:///etc/passwd"},
+		"not a url (no scheme/host)":   {URL: "packages.example.com/apt"},
+		"unparseable (bad host)":       {URL: "http://[oops"}, // url.Parse: missing ']'
+		"no host":                      {URL: "https:///path"},
+		"embedded credentials":         {URL: "https://user:pass@h/a"},
+		"control in dist":              mut(base(), func(c *AptConfig) { c.Distribution = "bad\nline" }),
+		"bad dist shape":               mut(base(), func(c *AptConfig) { c.Distribution = "-bad" }),
+		"control in component":         mut(base(), func(c *AptConfig) { c.Components = []string{"main", "x\ny"} }),
+		"bad component shape":          mut(base(), func(c *AptConfig) { c.Components = []string{"@bad"} }),
+		"control in arch":              mut(base(), func(c *AptConfig) { c.Arch = "amd64\n" }),
+		"bad arch shape":               mut(base(), func(c *AptConfig) { c.Arch = "AMD64" }), // arch is lowercase
 	}
 	for label, c := range reject {
 		err := m.Validate(Repository{Name: "r", Apt: c})

@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 
 	"github.com/manchtools/power-manage-sdk/pkg"
@@ -97,13 +98,41 @@ func (m *manager) Validate(r Repository) error {
 	return nil
 }
 
-func validateApt(c *AptConfig) error {
-	if c.URL == "" {
+// validateAptURL checks an apt repository URL. apt is exempt from the https
+// requirement (its trust anchor is the gpg-signed Release file), so http is
+// accepted alongside https — but the value must still be a real URL. It is
+// written into a deb822 "URIs:" field, so a raw space (which hasControl allows)
+// or a control character would smuggle a SECOND URI/field into the line
+// ("https://h/a https://evil/" → two URIs); a non-URL, a non-http(s) scheme
+// (file://, ftp://), a host-less URL, or embedded credentials (which would leak
+// into the on-disk config) have no place there either.
+func validateAptURL(rawURL string) error {
+	if rawURL == "" {
 		return fmt.Errorf("%w: field %q is required", ErrInvalidConfig, "apt.url")
 	}
-	// apt is exempt from the https requirement (its trust is the signed Release);
-	// reject only control characters / argument confusion.
-	if err := rejectControl("apt.url", c.URL); err != nil {
+	for _, r := range rawURL {
+		if r <= ' ' || r == 0x7f { // any whitespace (incl. space) or control char
+			return badShape("apt.url")
+		}
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return badShape("apt.url")
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return badShape("apt.url")
+	}
+	if u.Host == "" {
+		return badShape("apt.url")
+	}
+	if u.User != nil {
+		return badShape("apt.url")
+	}
+	return nil
+}
+
+func validateApt(c *AptConfig) error {
+	if err := validateAptURL(c.URL); err != nil {
 		return err
 	}
 	if err := rejectControl("apt.distribution", c.Distribution); err != nil {
