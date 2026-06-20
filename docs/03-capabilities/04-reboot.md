@@ -7,8 +7,8 @@ icon: "🔁"
 
 # Reboot
 
-`sys/reboot` answers two questions a patching workflow needs: *does this host
-need a reboot?* and *schedule one (politely) when it does.*
+`sys/reboot` answers two questions a patching workflow needs — does this host
+need a reboot, and how to schedule one (politely) when it does.
 
 ## Construct a manager
 

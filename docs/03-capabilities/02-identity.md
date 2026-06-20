@@ -115,5 +115,5 @@ The full method set and option fields are generated API docs on
 
 - [Architecture](/concepts/architecture) — Runner / Backend / Manager, and why
   passwords are injected as `exec.Secret`.
-- [Desktop & sessions](/capabilities/desktop) — run a command as one of these
-  users in their desktop session.
+- Desktop & sessions (`sys/desktop`) — run a command as one of these users in
+  their desktop session.

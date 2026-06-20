@@ -109,7 +109,7 @@ This page is the task-oriented recipe; the reference lists the surface.
 
 ## Related
 
-- [Repositories](/capabilities/repositories) — configure the repositories these
-  package managers install from.
+- Repositories (`sys/repo`) — configure the repositories these package managers
+  install from.
 - [Architecture](/concepts/architecture) — the Runner / Backend / Manager model.
 - [Errors](/concepts/errors) — how failures are reported.

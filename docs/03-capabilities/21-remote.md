@@ -76,5 +76,5 @@ Runner/Backend model the other capabilities use.
 
 - [Backends](/concepts/backends) — why `remote` is per-call `Source` rather than
   a Runner-driven Manager.
-- [Packages](/capabilities/packages) / [Repositories](/capabilities/repositories)
-  — install software from a managed source rather than fetching raw artifacts.
+- [Packages](/capabilities/packages) — install software from a managed source
+  rather than fetching raw artifacts.
