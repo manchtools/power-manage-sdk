@@ -25,6 +25,11 @@ import (
 // window — the fixture for the validation matrix and the List parse.
 func genCert(t *testing.T, cn string, isCA bool, notBefore, notAfter time.Time) []byte {
 	t.Helper()
+	return genCertWithKeyUsage(t, cn, isCA, notBefore, notAfter, x509.KeyUsageCertSign|x509.KeyUsageDigitalSignature)
+}
+
+func genCertWithKeyUsage(t *testing.T, cn string, isCA bool, notBefore, notAfter time.Time, usage x509.KeyUsage) []byte {
+	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +41,7 @@ func genCert(t *testing.T, cn string, isCA bool, notBefore, notAfter time.Time) 
 		NotAfter:              notAfter,
 		IsCA:                  isCA,
 		BasicConstraintsValid: true,
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+		KeyUsage:              usage,
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
 	if err != nil {
@@ -162,6 +167,7 @@ func TestValidateCACert(t *testing.T) {
 	}{
 		{"valid CA", genCert(t, "CA", true, now.Add(-time.Hour), now.Add(time.Hour)), false},
 		{"not a CA (leaf)", genCert(t, "leaf", false, now.Add(-time.Hour), now.Add(time.Hour)), true},
+		{"CA without keyCertSign usage", genCertWithKeyUsage(t, "ca-no-sign", true, now.Add(-time.Hour), now.Add(time.Hour), x509.KeyUsageDigitalSignature), true},
 		{"expired", genCert(t, "old", true, now.Add(-48*time.Hour), now.Add(-time.Hour)), true},
 		{"not yet valid", genCert(t, "future", true, now.Add(time.Hour), now.Add(48*time.Hour)), true},
 		{"garbage", []byte("not a pem"), true},

@@ -571,9 +571,18 @@ func TestRemountRW(t *testing.T) {
 	if err := m.RemountRW(context.Background(), "/"); err != nil {
 		t.Fatal(err)
 	}
-	if got := argv(f.Calls()[0]); got != "mount -o remount,rw /" {
-		t.Errorf("argv = %q", got)
+	if got := argv(f.Calls()[0]); got != "mount -o remount,rw -- /" {
+		t.Errorf("argv = %q, want mount target after --", got)
 	}
+
+	fInvalid := exectest.New(pmexec.Sudo)
+	if err := mustManager(t, fInvalid).RemountRW(context.Background(), "-O"); !errors.Is(err, ErrInvalidPath) {
+		t.Errorf("RemountRW(flag-shaped path) err = %v, want ErrInvalidPath", err)
+	}
+	if n := len(fInvalid.Calls()); n != 0 {
+		t.Errorf("RemountRW(flag-shaped path) ran %d command(s) before validation; want 0", n)
+	}
+
 	f2 := exectest.New(pmexec.Sudo)
 	f2.Push(pmexec.Result{ExitCode: 1, Stderr: "mount: ro"}, nil)
 	if err := mustManager(t, f2).RemountRW(context.Background(), "/"); err == nil ||

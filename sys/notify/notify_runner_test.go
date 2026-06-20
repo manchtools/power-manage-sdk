@@ -38,6 +38,44 @@ func TestNew_NilRunner(t *testing.T) {
 	}
 }
 
+func TestNotifyAll_RejectsControlCharactersBeforeRunner(t *testing.T) {
+	cases := []struct {
+		name    string
+		title   string
+		message string
+	}{
+		{name: "newline in title", title: "Maint\nenance", message: "reboot soon"},
+		{name: "escape in message", title: "Maintenance", message: "reboot \x1b[2Jsoon"},
+		{name: "nul in message", title: "Maintenance", message: "reboot\x00soon"},
+		{name: "del in title", title: "Maint\x7fenance", message: "reboot soon"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			seamPresent(t)
+			r := exectest.New(exec.Sudo)
+			err := mgr(t, r).NotifyAll(context.Background(), tc.title, tc.message)
+			if err == nil {
+				t.Fatal("NotifyAll error = nil, want a validation error")
+			}
+			if calls := r.Calls(); len(calls) != 0 {
+				t.Fatalf("NotifyAll ran %d command(s) before rejecting invalid message: %+v", len(calls), calls)
+			}
+		})
+	}
+}
+
+func TestNotifyUsers_RejectsControlCharactersBeforeRunner(t *testing.T) {
+	seamPresent(t)
+	r := exectest.New(exec.Sudo)
+	err := mgr(t, r).NotifyUsers(context.Background(), []string{"alice"}, "Maintenance", "line1\nline2")
+	if err == nil {
+		t.Fatal("NotifyUsers error = nil, want a validation error")
+	}
+	if calls := r.Calls(); len(calls) != 0 {
+		t.Fatalf("NotifyUsers ran %d command(s) before rejecting invalid message: %+v", len(calls), calls)
+	}
+}
+
 func TestNotifyAll_FullGraphicalPath(t *testing.T) {
 	seamPresent(t)
 	r := exectest.New(exec.Sudo)
