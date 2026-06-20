@@ -74,6 +74,18 @@ func (f *flatpak) Install(ctx context.Context, opts InstallOptions, packages ...
 	return f.write(ctx, args...)
 }
 
+// InstallLocal installs a local flatpak bundle (a single-file .flatpak) or a
+// .flatpakref. A bundle has no version-ordering concept, so opts.AllowDowngrade
+// is ignored; system scope escalates, --user does not. ValidateLocalPackagePath
+// requires an absolute path, so the operand can never be flag-shaped.
+func (f *flatpak) InstallLocal(ctx context.Context, path string, _ InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	flags := []string{"install", "-y", "--noninteractive", f.scope()}
+	return f.write(ctx, append(flags, path)...)
+}
+
 // Remove uninstalls bundles; opts.Purge also deletes per-app data (--delete-data).
 func (f *flatpak) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
@@ -134,6 +146,9 @@ func (f *flatpak) Repair(ctx context.Context) (pmexec.Result, error) {
 
 // Search searches configured remotes (exit 1 = no matches).
 func (f *flatpak) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	res, err := runRead(ctx, f.r, "flatpak", "search", query)
 	if err != nil {
 		return nil, err

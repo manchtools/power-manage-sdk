@@ -128,6 +128,76 @@ func ValidateRpmPackageName(name string) error {
 	return nil
 }
 
+// ValidateLocalPackagePath validates a filesystem path before it reaches a
+// package manager as the operand of a local-file install (apt-get install
+// <file>, dnf install <file>, pacman -U <file>, zypper install <file>, flatpak
+// install <bundle>). It is NOT a package name, so the package-name grammar does
+// not apply; what matters is that the path cannot masquerade as an option and
+// cannot smuggle a config/log-injecting control character:
+//
+//   - absolute (a leading '/'): a relative path is ambiguous w.r.t. the
+//     privileged process's working directory, and an absolute path can never be
+//     flag-shaped. Callers pass a concrete file location (typically a temp file
+//     they downloaded and checksum-verified), so this costs them nothing.
+//   - no ".." segment: defence-in-depth against a traversing path, mirroring
+//     ValidateGpgKeyRef.
+//   - no control characters (incl. NUL, newline, tab) or DEL: a space is left
+//     alone (it is argv-safe and legal in a path), but control characters are
+//     refused so a crafted path can neither break a log line nor confuse a tool.
+//
+// Existence is NOT checked: the Manager has no host access (it drives an
+// injected Runner), and a missing file surfaces cleanly as the tool's own
+// non-zero exit. The absolute-path requirement — not a "--" end-of-options
+// separator — is what keeps the path from being read as an option, because some
+// tools (dnf5) reject "--" for their install/search subcommands entirely.
+func ValidateLocalPackagePath(path string) error {
+	if path == "" {
+		return fmt.Errorf("local package path is empty")
+	}
+	if hasControlChar(path) {
+		return fmt.Errorf("local package path contains control characters")
+	}
+	if !strings.HasPrefix(path, "/") {
+		return fmt.Errorf("local package path %q must be an absolute path", path)
+	}
+	if strings.Contains(path, "..") {
+		return fmt.Errorf("local package path %q must not contain '..'", path)
+	}
+	return nil
+}
+
+// ValidateSearchQuery guards the free-text query passed to a package-manager
+// search. A search term is not a fixed grammar (it may carry '+', '.', glob
+// characters, etc.), so it is deliberately NOT run through validPackageName;
+// the one thing that must be refused is a value that could be reparsed as an
+// OPTION. A leading '-' is rejected — a search term never legitimately starts
+// with a dash, and a "--" end-of-options separator is NOT portable here (dnf5's
+// `search` subcommand rejects "--"), so validation is the honest defense. Control
+// characters are rejected too. An empty query is allowed (a backend may list
+// everything).
+func ValidateSearchQuery(query string) error {
+	if strings.HasPrefix(query, "-") {
+		return fmt.Errorf("invalid search query %q: must not start with '-'", query)
+	}
+	if hasControlChar(query) {
+		return fmt.Errorf("search query contains control characters")
+	}
+	return nil
+}
+
+// hasControlChar reports whether s contains any ASCII control character (NUL
+// through US, including newline and tab) or DEL. Unlike hasCtrlOrSpace it does
+// NOT reject a plain space (0x20), which is a legal, argv-safe character in a
+// filesystem path.
+func hasControlChar(s string) bool {
+	for _, r := range s {
+		if r < ' ' || r == 0x7f {
+			return true
+		}
+	}
+	return false
+}
+
 // validRemoteName matches a flatpak remote alias (e.g. "flathub",
 // "gnome-nightly"). Same leading-alphanumeric anti-option-injection
 // rule; remote aliases never contain a path separator or whitespace.

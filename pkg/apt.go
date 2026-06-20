@@ -106,6 +106,23 @@ func (a *apt) Install(ctx context.Context, opts InstallOptions, packages ...stri
 	return a.write(ctx, "apt", args...)
 }
 
+// InstallLocal installs a local .deb file through apt-get install, which —
+// unlike a bare `dpkg -i` — resolves the package's dependencies from the
+// configured repositories. ValidateLocalPackagePath requires an absolute path,
+// so the operand can never be flag-shaped; the conffile-default options keep a
+// postinst that touches a conffile non-interactive.
+func (a *apt) InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	flags := []string{"install", "-y"}
+	flags = append(flags, dpkgConfOptions...)
+	if opts.AllowDowngrade {
+		flags = append(flags, "--allow-downgrades")
+	}
+	return a.write(ctx, "apt", append(flags, path)...)
+}
+
 // Remove removes packages; opts.Purge deletes configuration files too.
 func (a *apt) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
@@ -233,6 +250,9 @@ func (a *apt) Repair(ctx context.Context) (pmexec.Result, error) {
 // search` produces a multi-line, presentation-oriented format that would not
 // parse, and `--names-only` would drop the description (and the separator).
 func (a *apt) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	out, err := readOut(ctx, a.r, "apt-cache", "search", query)
 	if err != nil {
 		return nil, err

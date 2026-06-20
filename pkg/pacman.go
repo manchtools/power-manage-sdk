@@ -77,6 +77,18 @@ func (p *pacman) Install(ctx context.Context, opts InstallOptions, packages ...s
 	return p.write(ctx, "-S", "--noconfirm", fmt.Sprintf("%s=%s", packages[0], opts.Version))
 }
 
+// InstallLocal installs a local package file through `pacman -U`, which resolves
+// its dependencies from the sync repositories and downgrades naturally when the
+// file is older than the installed version — so opts.AllowDowngrade needs no
+// extra flag and is ignored. ValidateLocalPackagePath requires an absolute path,
+// so the operand can never be flag-shaped.
+func (p *pacman) InstallLocal(ctx context.Context, path string, _ InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	return p.write(ctx, "-U", "--noconfirm", path)
+}
+
 // Remove removes packages; opts.Purge uses -Rns (with deps + config files).
 func (p *pacman) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
@@ -157,6 +169,9 @@ func (p *pacman) Repair(ctx context.Context) (pmexec.Result, error) {
 
 // Search searches packages (-Ss; exit 1 = no matches).
 func (p *pacman) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	res, err := runRead(ctx, p.r, "pacman", "-Ss", query)
 	if err != nil {
 		return nil, err
