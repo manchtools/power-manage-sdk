@@ -7,8 +7,8 @@ icon: "🧰"
 # Capabilities
 
 Each capability is a package that follows the [architecture](/concepts/architecture):
-build a Runner, choose a Backend where there's more than one implementation,
-get a Manager. The groups below are the areas the SDK covers.
+build a Runner, choose a `Backend` where the capability takes one, get a Manager.
+The groups below are the areas the SDK covers.
 
 {% callout type="info" title="Reference vs. recipes" %}
 Per-package **method signatures** are generated API docs on

@@ -15,9 +15,11 @@ Every system-management capability follows the same three-part shape:
   and inject it everywhere.
   {% /step %}
   {% step title="Choose a Backend" %}
-  Capabilities with more than one real implementation (package managers,
-  service managers, disk-encryption tools, …) take an explicit `Backend`
-  value. There is no runtime guessing.
+  Capabilities that drive a *family* of tools (package managers, init systems,
+  encryption tools) take an explicit `Backend` value — the caller always names
+  it, even when only one backend is implemented today (`service.Systemd`,
+  `user.ShadowUtils`), and the SDK never auto-detects. Single-tool capabilities
+  (`smartctl`, `osqueryi`) take only a Runner.
   {% /step %}
   {% step title="Get a Manager" %}
   `New` returns a handle whose methods do the work. The handle holds the
