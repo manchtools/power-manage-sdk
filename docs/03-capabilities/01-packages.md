@@ -70,8 +70,11 @@ _, err = m.Upgrade(ctx, "openssl")
 _, err = m.Autoremove(ctx)
 ```
 
+<!-- docref: begin src=pkg/dnf.go#dnf.Install:24ff67e3 -->
 Package names are passed as operands after a `--` separator, so a name that
-begins with `-` can never be reinterpreted as a flag.
+begins with `-` can never be reinterpreted as a flag, and every mutation returns
+the package manager's `exec.Result`.
+<!-- docref: end -->
 
 ## Query installed state
 
@@ -82,6 +85,12 @@ ok, err := m.IsInstalled(ctx, "curl")
 ver, err := m.InstalledVersion(ctx, "curl") // "" when absent
 n, err := m.InstalledCount(ctx)             // total installed packages
 ```
+
+<!-- docref: begin src=pkg/dnf.go#dnf.IsInstalled:28231b96,pkg/dnf.go#dnf.InstalledVersion:f0b1ff2e -->
+The queries are unprivileged: `IsInstalled` reports whether a package is present,
+and `InstalledVersion` returns its version or an empty string when it isn't
+installed.
+<!-- docref: end -->
 
 ## Backends
 

@@ -34,6 +34,11 @@ cfg, err := m.Get(ctx, "eth0")
 fmt.Println(cfg.Addresses, cfg.Gateway, cfg.Routes)
 ```
 
+<!-- docref: begin src=sys/netconfig/ip.go#base.Get:19ab7d19 -->
+`Get` parses `ip -j addr`/`route` JSON for the interface, so the read path is the
+same unprivileged iproute2 query regardless of which write backend you chose.
+<!-- docref: end -->
+
 ## Apply addressing
 
 ```go

@@ -32,6 +32,11 @@ ok, err := m.VerifyPassphrase(ctx, "/dev/sda2", existing) // existing is an exec
 vol, err := m.DetectVolume(ctx)                            // the system's LUKS volume
 ```
 
+<!-- docref: begin src=sys/encryption/luks.go#luks.VerifyPassphrase:55af258e -->
+`VerifyPassphrase` is a read-only probe: a wrong passphrase returns
+`(false, nil)`, not an error, so testing a guess never looks like a failure.
+<!-- docref: end -->
+
 ## Manage key slots
 
 ```go

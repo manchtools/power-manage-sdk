@@ -37,6 +37,12 @@ ok, err := m.Exists(ctx, "/etc/power-manage")
 entries, err := m.ReadDir(ctx, "/etc/power-manage")
 ```
 
+<!-- docref: begin src=sys/fs/write.go#manager.WriteFile:117bc452 -->
+`WriteFile` creates or replaces the file and applies the requested mode, owner,
+and group in one call, through the same privilege-keyed safe backend described
+below.
+<!-- docref: end -->
+
 ## Directories, permissions, ownership
 
 ```go

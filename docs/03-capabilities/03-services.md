@@ -62,9 +62,11 @@ err = m.Stop(ctx, "nginx.service")
 err = m.DisableNow(ctx, "nginx.service")  // disable + stop
 ```
 
+<!-- docref: begin src=sys/service/systemd.go#systemd.EnableNow:a4971314,sys/service/systemd.go#systemd.DisableNow:ae65bab2 -->
 `EnableNow`/`DisableNow` fold the boot-time setting and the running state into a
 single call so the unit's "should it run now" and "should it run at boot" never
 drift apart in your code.
+<!-- docref: end -->
 
 ## Install a unit file
 
@@ -88,8 +90,11 @@ err := m.Mask(ctx, "bluetooth.service")   // symlink to /dev/null — cannot sta
 err = m.Unmask(ctx, "bluetooth.service")
 ```
 
-Masking is stronger than disabling: a masked unit cannot be started at all, even
-as a dependency of another unit.
+<!-- docref: begin src=sys/service/systemd.go#systemd.Mask:3c1e097a -->
+Masking is stronger than disabling: `Mask` symlinks the unit to `/dev/null`, so
+it cannot be started at all, even as a dependency of another unit. `Unmask`
+reverses it.
+<!-- docref: end -->
 
 {% callout type="info" title="Reference" %}
 The full method set is generated API docs on

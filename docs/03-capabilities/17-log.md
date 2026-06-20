@@ -27,6 +27,12 @@ if err != nil {
 }
 ```
 
+<!-- docref: begin src=sys/log/detect.go#Detect:462234b3 -->
+`Detect` reports `Journald` when `journalctl` is on `PATH` and `Syslog` when a
+classic log file exists; it lists what's usable and the caller picks, rather than
+the SDK choosing silently.
+<!-- docref: end -->
+
 ## Query
 
 ```go

@@ -33,6 +33,12 @@ tables, err := q.ListTables(ctx)
 result, err := q.Query(ctx, &pb.OSQuery{Table: "processes"})
 ```
 
+<!-- docref: begin src=sys/osquery/osquery.go#client.QueryTable:5586f365 -->
+`QueryTable` validates the table name (alphanumeric + underscore) and applies the
+deny-list before building `SELECT * FROM <table>`, so an invalid or forbidden
+name is rejected without running anything.
+<!-- docref: end -->
+
 ## The sensitive-table deny-list
 
 <!-- docref: begin src=sys/osquery/osquery.go#sensitiveTables:1054224b -->

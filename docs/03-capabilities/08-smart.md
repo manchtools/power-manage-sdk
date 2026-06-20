@@ -37,6 +37,11 @@ for _, d := range devs {
 }
 ```
 
+<!-- docref: begin src=sys/smart/smart.go#collector.Scan:5e620d4e -->
+`Scan` runs `smartctl --scan -j` and decodes the device list from its JSON; it
+returns an empty list (not an error) on a host with no SMART-capable disk.
+<!-- docref: end -->
+
 <!-- docref: begin src=sys/smart/smart.go#collector.Device:7abe0da4 -->
 `Device` validates the device path (it must be a `/dev/*` path with no `..`
 traversal) before running `smartctl`, then reads `smartctl -j -a`. smartctl

@@ -50,6 +50,12 @@ info, err := m.Get(ctx, "deploy") // uid, gid, home, shell, …
 err = m.Delete(ctx, "deploy", user.DeleteOptions{RemoveHome: true})
 ```
 
+<!-- docref: begin src=sys/user/user.go#shadowUtils.Create:e0468cf4 -->
+`Create` drives `useradd` through the escalated Runner. A system account
+(`System: true`) defaults to a `nologin` shell, so a service account can't be
+logged into by accident.
+<!-- docref: end -->
+
 ## Passwords are secrets, not arguments
 
 `SetPassword` takes an `exec.Secret`, not a string:
@@ -105,6 +111,11 @@ members, err := m.GroupMembers(ctx, "docker")
 primary, err := m.PrimaryGroup(ctx, "deploy")
 groups, err := m.SupplementaryGroups(ctx, "deploy")
 ```
+
+<!-- docref: begin src=sys/user/group.go#shadowUtils.GroupEnsure:b1136668 -->
+`GroupEnsure` is idempotent: it creates the group only if it isn't already
+present, so it is safe to call on every reconcile.
+<!-- docref: end -->
 
 {% callout type="info" title="Reference" %}
 The full method set and option fields are generated API docs on

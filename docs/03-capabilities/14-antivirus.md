@@ -55,6 +55,11 @@ ver, err := m.Version(ctx)          // engine + signature-DB versions
 fmt.Println(ver.Engine, ver.Signature)
 ```
 
+<!-- docref: begin src=sys/antivirus/clamav.go#clamavManager.UpdateSignatures:72c8afac -->
+`UpdateSignatures` runs `freshclam` to refresh the signature database; a non-zero
+exit surfaces as an error rather than being swallowed.
+<!-- docref: end -->
+
 {% callout type="info" title="Version needs a signature DB" %}
 `Version` reports the engine *and* signature-database version, so it expects a
 real ClamAV signature DB to be present. A freshly-installed ClamAV that has never

@@ -33,6 +33,11 @@ st, err := m.Status(ctx)
 fmt.Println(st.Synchronized) // is the clock in sync?
 ```
 
+<!-- docref: begin src=sys/timesync/timedatectl.go#timedatectlManager.Status:b7492022 -->
+On the Timedatectl backend, `Status` parses `timedatectl show` into whether the
+clock is `Synchronized` and whether a time service is `Enabled`.
+<!-- docref: end -->
+
 <!-- docref: begin src=sys/timesync/timesync.go#New:021d678b -->
 `New` validates the backend and rejects a nil Runner. The two backends report
 slightly different things: Timedatectl reports synchronized plus whether the

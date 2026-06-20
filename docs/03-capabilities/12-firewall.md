@@ -45,6 +45,12 @@ err = m.RemoveRule(ctx, "allow-ssh")
 rules, err := m.List(ctx) // only rules in this manager's namespace
 ```
 
+<!-- docref: begin src=sys/firewall/nftables.go#nftables.List:015a86b3 -->
+`List` decodes each rule's full match — protocol, port, **and** source/destination
+address — back out of the live nftables ruleset, so what you read reflects
+exactly what was applied.
+<!-- docref: end -->
+
 <!-- docref: begin src=sys/firewall/firewall.go#Rule:ca82cb6a -->
 A `Rule` is identified by a stable `ID` (used to remove or replace it), and is
 either allow (`Allow: true`) or deny. `Protocol`/`Port`/`Source`/`Dest` narrow
@@ -52,13 +58,6 @@ what it matches; an empty `Source`/`Dest` or a zero `Port` means "any". Rules
 are scoped to the manager's own namespace, so listing and removal never touch
 the host's other firewall state.
 <!-- docref: end -->
-
-{% callout type="info" title="List reflects what was applied" %}
-`List` decodes each rule's full match — protocol, port, **and** source/destination
-address — back out of the live ruleset, so what you read reflects exactly what
-was applied. (An earlier nftables decoder dropped the source/destination on
-read; that's covered now by a real-`nft` round-trip test.)
-{% /callout %}
 
 ## Related
 

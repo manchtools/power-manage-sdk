@@ -39,6 +39,12 @@ out, err := m.Apply(ctx, repo.Repository{Name: "corp", Dnf: &repo.DnfConfig{
 _, err = m.Remove(ctx, "corp") // idempotent: removing an absent repo is a no-op
 ```
 
+<!-- docref: begin src=sys/repo/zypper.go#manager.removeZypper:1fdcf57a -->
+`Remove` is idempotent even where the tool makes it tricky: `zypper removerepo`
+exits 0 whether or not the alias existed, so the absent-repo no-op is detected
+from its "not found" message rather than the exit code (`Changed: false`).
+<!-- docref: end -->
+
 <!-- docref: begin src=sys/repo/repo.go#manager.Apply:b7a6f4f5 -->
 `Apply` validates the repository (name and the backend's config) before touching
 the system, then writes the backend's native format and refreshes the index. It

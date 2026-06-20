@@ -64,6 +64,12 @@ changed, err := m.Apply(ctx, profile)
 err = m.Delete(ctx, "corp-wifi", network.DeleteOptions{})
 ```
 
+<!-- docref: begin src=sys/network/networkmanager.go#networkManager.Settings:4dadc963 -->
+`Settings` returns the connection's settings as a key-value map, unescaped from
+`nmcli`'s terse-mode encoding, so a caller reads clean values rather than
+`nmcli`'s colon-delimited escaping.
+<!-- docref: end -->
+
 <!-- docref: begin src=sys/network/network.go#validateProfile:44f2efac -->
 `Apply` validates the profile before doing anything: a PSK profile must carry a
 non-empty PSK with no embedded newline (which would corrupt the keyfile), and an

@@ -40,6 +40,12 @@ st, err := m.Get(ctx)
 fmt.Println(st.Nameservers, st.SearchDomains)
 ```
 
+<!-- docref: begin src=sys/dns/resolved.go#resolvedManager.Get:e72d8b51 -->
+`Get` reads systemd-resolved's generated `resolv.conf` and parses the active
+nameservers and search domains out of it, so it reflects what the resolver is
+actually using, not just what was last applied.
+<!-- docref: end -->
+
 ## Apply a configuration
 
 ```go

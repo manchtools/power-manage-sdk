@@ -33,6 +33,11 @@ disks, err := c.Disks(ctx)            // block devices (lsblk)
 ifaces, err := c.NetworkInterfaces(ctx) // interfaces + addresses (ip -j)
 ```
 
+<!-- docref: begin src=sys/inventory/inventory.go#collector.OS:9401e3ac -->
+`OS` parses `/etc/os-release` into the distro ID, name, version, and
+architecture — the facts a compliance policy keys "which platform is this?" on.
+<!-- docref: end -->
+
 <!-- docref: begin src=sys/inventory/inventory.go#New:5a179869 -->
 `New` returns the Collector over the injected Runner; a nil Runner is rejected.
 The collectors read the host directly — `/proc/cpuinfo` and `/proc/meminfo`,
