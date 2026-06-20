@@ -52,6 +52,16 @@ type InstallOptions struct {
 	AllowDowngrade bool
 }
 
+// InstallLocalOptions configures an InstallLocal call.
+type InstallLocalOptions struct {
+	// AllowDowngrade permits installing a package file whose version is lower
+	// than the one currently installed. Honored on apt (--allow-downgrades),
+	// dnf (retried as an explicit downgrade when the install is rejected) and
+	// zypper (--oldpackage). pacman -U downgrades regardless, and a flatpak
+	// bundle has no version-ordering concept, so it is a no-op on those two.
+	AllowDowngrade bool
+}
+
 // RemoveOptions configures a Remove call.
 type RemoveOptions struct {
 	// Purge also removes configuration/data where the backend distinguishes it
