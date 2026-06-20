@@ -85,6 +85,11 @@ type Manager interface {
 	// (nil, nil) — absence is not an error, matching the "read whatever is
 	// there, empty if nothing" contract callers depend on.
 	ReadFile(ctx context.Context, path string) ([]byte, error)
+	// ReadDir lists the immediate entries of a directory (no recursion). A path
+	// that does not exist yields (nil, nil) — absence is an empty listing, the
+	// same "absent is empty" contract as ReadFile — so a caller enumerating a
+	// managed config directory that has never been created treats it as empty.
+	ReadDir(ctx context.Context, path string) ([]DirEntry, error)
 	// WriteFile writes data to path atomically. When the Runner's backend is
 	// Direct the write is also symlink-safe (fd-anchored); see the package doc.
 	WriteFile(ctx context.Context, path string, data []byte, opts WriteOptions) error
