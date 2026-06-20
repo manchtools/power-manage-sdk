@@ -86,6 +86,62 @@ func TestJournald_QueryRunError(t *testing.T) {
 	}
 }
 
+// journalctl prints status MARKERS wrapped in "-- ... --" on stdout (e.g.
+// "-- Boot <id> --", "-- No entries --", "-- Reboot --"). These are NOT log
+// entries and must not be returned as if they were — in the default short
+// output every real entry begins with a timestamp, so a "-- ... --" line is
+// always a marker.
+func TestJournald_QueryDropsStatusMarkers(t *testing.T) {
+	r := exectest.New(exec.Direct)
+	r.Push(exec.Result{Stdout: "-- Boot a1b2c3d4 --\n" +
+		"Jun 20 10:59:41 host app[1]: real one\n" +
+		"-- Reboot --\n" +
+		"Jun 20 10:59:42 host app[2]: -- not a marker, real two\n"}, nil)
+	s, _ := New(Journald, r)
+	got, err := s.Query(context.Background(), Query{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"Jun 20 10:59:41 host app[1]: real one",
+		"Jun 20 10:59:42 host app[2]: -- not a marker, real two",
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("Query kept the wrong lines:\n got  %v\n want %v", got, want)
+	}
+}
+
+func TestJournald_QueryNoMatchReturnsEmpty(t *testing.T) {
+	r := exectest.New(exec.Direct)
+	r.Push(exec.Result{Stdout: "-- No entries --\n"}, nil)
+	s, _ := New(Journald, r)
+	got, err := s.Query(context.Background(), Query{Grep: "nope"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Errorf("a no-match query must return zero entries, got %v", got)
+	}
+}
+
+// journalctl --grep exits 1 (grep-like) when nothing matches, writing only
+// "-- No entries --" to stdout and NOTHING to stderr. That is an empty result,
+// not a failure — a filter matching nothing must return [], not an error, so a
+// caller can tell "no logs matched" from "journalctl broke" (a real fault writes
+// a diagnostic to stderr; see TestJournald_QueryRunError).
+func TestJournald_QueryGrepNoMatchExit1IsEmpty(t *testing.T) {
+	r := exectest.New(exec.Direct)
+	r.Push(exec.Result{ExitCode: 1, Stdout: "-- No entries --\n", Stderr: ""}, nil)
+	s, _ := New(Journald, r)
+	got, err := s.Query(context.Background(), Query{Grep: "nope"})
+	if err != nil {
+		t.Fatalf("no-match (exit 1, empty stderr) must not error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("no-match must return zero entries, got %v", got)
+	}
+}
+
 // withSyslogFixture points syslogPaths + statFile at a fake existing file.
 func withSyslogFixture(t *testing.T, exists bool) {
 	t.Helper()
