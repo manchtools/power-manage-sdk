@@ -12,22 +12,31 @@ import (
 
 func TestListTables(t *testing.T) {
 	r := exectest.New(exec.Direct)
-	// Bare table names are kept; "=>"-prefixed lines, "+" header noise, and
-	// blanks are skipped.
-	r.Push(exec.Result{Stdout: "os_version\nuptime\n+ ignore me\n\n=> skip me\nsystem_info\n"}, nil)
+	// REAL `osqueryi .tables` format: one table per line as "  => <name>"
+	// (leading whitespace + "=> " prefix). The "=> " lines ARE the data — they
+	// are the table names, not noise to skip. Blank lines are ignored. This
+	// mirrors the captured real output the sys/osquery container test asserts
+	// live; an earlier fake fed bare names + treated "=>" lines as skippable,
+	// which inverted the contract and hid that the parser dropped every real
+	// table.
+	r.Push(exec.Result{Stdout: "  => os_version\n  => uptime\n\n  => system_info\n"}, nil)
 	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
 	tables, err := c.ListTables(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := map[string]bool{"os_version": true, "uptime": true, "system_info": true}
-	if len(tables) != 3 {
-		t.Fatalf("tables = %v, want 3 entries", tables)
+	if len(tables) != len(want) {
+		t.Fatalf("tables = %v, want %d entries", tables, len(want))
 	}
 	for _, tb := range tables {
 		if !want[tb] {
 			t.Errorf("unexpected table %q", tb)
 		}
+		delete(want, tb)
+	}
+	if len(want) != 0 {
+		t.Errorf("parser dropped tables: %v", want)
 	}
 	// `.tables` is a dot-command — passed bare, not via --json.
 	if argv := strings.Join(r.Calls()[0].Args, " "); argv != ".tables" {

@@ -296,6 +296,13 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/notify/
+          # Real `osqueryi --json` queries + the sensitive-table deny-list
+          # against the actual binary (pinned osquery .deb in the with-osquery
+          # stage).
+          - label: sys/osquery (debian/with-osquery)
+            distro: debian
+            state: with-osquery
+            path: ./sdk/sys/osquery/
     steps:
       - uses: actions/checkout@v5
         with:
