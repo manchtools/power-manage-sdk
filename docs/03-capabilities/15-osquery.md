@@ -60,5 +60,4 @@ signed command in the agent), because it can read anything osquery can.
 ## Related
 
 - [Antivirus](/capabilities/antivirus) — malware scanning alongside host queries.
-- [Inventory](/capabilities/inventory) — structured hardware/software facts
-  without SQL.
+- Inventory (`sys/inventory`) — structured hardware/software facts without SQL.
