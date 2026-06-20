@@ -18,10 +18,13 @@
 FROM golang:1.26-bookworm AS base
 
 # psmisc provides `fuser`, the read-side lock probe in pkg/repair.go's
-# removeStaleLock; ca-certificates for `apt update` during Repair.
+# removeStaleLock; ca-certificates for `apt update` during Repair;
+# cryptsetup-bin provides `cryptsetup` for the sys/encryption LUKS tests
+# (header-only ops on a /dev/shm file — no loop device / privilege needed).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     psmisc \
     ca-certificates \
+    cryptsetup-bin \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

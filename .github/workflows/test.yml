@@ -255,6 +255,13 @@ jobs:
           - distro: debian
             state: state-locked-apt
             path: ./sdk/pkg/
+          # LUKS Manager against real cryptsetup. No bad-state needed (each test
+          # formats its own LUKS2 container on a /dev/shm file), so it runs on
+          # the clean `base` stage. --shm-size gives /dev/shm headroom for the
+          # 64 MiB container files.
+          - distro: debian
+            state: base
+            path: ./sdk/sys/encryption/
     steps:
       - uses: actions/checkout@v5
         with:
@@ -269,7 +276,7 @@ jobs:
 
       - name: Run container tests
         run: |
-          docker run --rm pm-sdk-container \
+          docker run --rm --shm-size=512m pm-sdk-container \
             go test -tags=container -count=1 -v ${{ matrix.path }} -run Container
 
   test-apt:
