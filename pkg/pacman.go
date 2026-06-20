@@ -80,8 +80,11 @@ func (p *pacman) Install(ctx context.Context, opts InstallOptions, packages ...s
 // InstallLocal installs a local package file through `pacman -U`, which resolves
 // its dependencies from the sync repositories and downgrades naturally when the
 // file is older than the installed version — so opts.AllowDowngrade needs no
-// extra flag and is ignored. ValidateLocalPackagePath requires an absolute path,
-// so the operand can never be flag-shaped.
+// extra flag and is ignored. opts.AllowUnsigned is NOT honored either: `pacman
+// -U` enforces the repo SigLevel and has no per-invocation signature bypass, so
+// the install stays signature-checked (a relaxed SigLevel is a pacman.conf
+// concern, out of scope here). ValidateLocalPackagePath requires an absolute
+// path, so the operand can never be flag-shaped.
 func (p *pacman) InstallLocal(ctx context.Context, path string, _ InstallLocalOptions) (pmexec.Result, error) {
 	if err := ValidateLocalPackagePath(path); err != nil {
 		return pmexec.Result{}, err

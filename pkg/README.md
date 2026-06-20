@@ -124,6 +124,14 @@ type InstallOptions struct {
     AllowDowngrade bool
 }
 
+type InstallLocalOptions struct {
+    AllowDowngrade bool // install a file older than the installed version
+    AllowUnsigned  bool // skip the backend GPG check (dnf --nogpgcheck / zypper
+                        // --allow-unsigned-rpm) for an out-of-band-verified file;
+                        // secure-default-off. apt/flatpak: no-op; pacman: NOT
+                        // honored (pacman -U always enforces SigLevel).
+}
+
 type RemoveOptions struct {
     Purge bool // also remove config/data (apt purge / pacman -Rns / flatpak --delete-data)
 }

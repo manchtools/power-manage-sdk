@@ -60,6 +60,20 @@ type InstallLocalOptions struct {
 	// zypper (--oldpackage). pacman -U downgrades regardless, and a flatpak
 	// bundle has no version-ordering concept, so it is a no-op on those two.
 	AllowDowngrade bool
+	// AllowUnsigned skips the backend's GPG signature check for the local file.
+	// It is secure-default-OFF: with the default (false) an unsigned local .rpm
+	// is rejected by dnf/zypper. Set it ONLY when the file's authenticity is
+	// established out of band — e.g. an HTTPS transport plus a verified SHA256
+	// checksum — so the package manager's per-file GPG check is redundant. Per
+	// backend:
+	//   - dnf:    adds --nogpgcheck
+	//   - zypper: adds --allow-unsigned-rpm (per-package; never the global
+	//             --no-gpg-checks, which would also drop repo-metadata checks)
+	//   - apt:    no-op — a local .deb carries no per-file signature to skip
+	//   - pacman: NOT honored — `pacman -U` enforces the repo SigLevel and has no
+	//             per-invocation bypass; the install stays signature-checked
+	//   - flatpak: no-op — a bundle's signing is not a per-file GPG check
+	AllowUnsigned bool
 }
 
 // RemoveOptions configures a Remove call.

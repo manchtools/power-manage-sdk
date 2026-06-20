@@ -142,7 +142,9 @@ type Manager interface {
 	// pacman). path must be an ABSOLUTE filesystem path to the package file;
 	// fetching and verifying the artifact (https transport, checksum) is the
 	// caller's responsibility. opts.AllowDowngrade permits a lower version than
-	// the one currently installed.
+	// the one currently installed; opts.AllowUnsigned skips the backend's GPG
+	// check (dnf --nogpgcheck / zypper --allow-unsigned-rpm) for a file whose
+	// authenticity is established out of band — secure-default-off.
 	InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error)
 	// Remove removes the named packages. opts.Purge also deletes configuration
 	// where the backend distinguishes it (apt/pacman/flatpak); elsewhere Purge
