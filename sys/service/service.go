@@ -58,6 +58,11 @@ type Manager interface {
 	Start(ctx context.Context, unit string) error
 	Stop(ctx context.Context, unit string) error
 	Restart(ctx context.Context, unit string) error
+	// Reload asks a running unit to re-read its configuration via its
+	// ExecReload command, without restarting it (so it keeps open connections
+	// and child processes). A unit that defines no ExecReload makes systemctl
+	// exit non-zero, returned as a *exec.CommandError — use Restart for those.
+	Reload(ctx context.Context, unit string) error
 	Mask(ctx context.Context, unit string) error
 	Unmask(ctx context.Context, unit string) error
 	DaemonReload(ctx context.Context) error

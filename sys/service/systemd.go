@@ -203,6 +203,13 @@ func (s *systemd) Restart(ctx context.Context, unit string) error {
 	return s.mutate(ctx, "restart", "--", unit)
 }
 
+func (s *systemd) Reload(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
+		return err
+	}
+	return s.mutate(ctx, "reload", "--", unit)
+}
+
 func (s *systemd) Mask(ctx context.Context, unit string) error {
 	if err := ValidateUnitName(unit); err != nil {
 		return err

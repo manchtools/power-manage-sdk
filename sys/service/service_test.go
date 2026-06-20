@@ -68,6 +68,7 @@ func TestMutations_GoldenArgv(t *testing.T) {
 		{"Start", func(m Manager) error { return m.Start(context.Background(), unit) }, []string{"start", "--", unit}},
 		{"Stop", func(m Manager) error { return m.Stop(context.Background(), unit) }, []string{"stop", "--", unit}},
 		{"Restart", func(m Manager) error { return m.Restart(context.Background(), unit) }, []string{"restart", "--", unit}},
+		{"Reload", func(m Manager) error { return m.Reload(context.Background(), unit) }, []string{"reload", "--", unit}},
 		{"Mask", func(m Manager) error { return m.Mask(context.Background(), unit) }, []string{"mask", "--", unit}},
 		{"Unmask", func(m Manager) error { return m.Unmask(context.Background(), unit) }, []string{"unmask", "--", unit}},
 		{"DaemonReload", func(m Manager) error { return m.DaemonReload(context.Background()) }, []string{"daemon-reload"}},
@@ -81,6 +82,43 @@ func TestMutations_GoldenArgv(t *testing.T) {
 			wantOneCmd(t, f, tc.args, true)
 		})
 	}
+}
+
+// TestReload pins the per-unit reload contract added so a caller (the agent's
+// user/SSH action: `systemctl reload sshd`) can ask a running unit to re-read
+// its config WITHOUT a restart through the SDK. It must run the `reload` verb
+// (not `restart` — a restart drops connections a reload preserves), escalated,
+// with the "--" separator; and a unit that defines no ExecReload makes
+// systemctl exit non-zero, which must surface as a typed *exec.CommandError
+// rather than a silent success.
+func TestReload(t *testing.T) {
+	t.Run("reloads via the reload verb, escalated", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Reload(context.Background(), "nginx.service"); err != nil {
+			t.Fatalf("Reload: %v", err)
+		}
+		wantOneCmd(t, f, []string{"reload", "--", "nginx.service"}, true)
+	})
+
+	t.Run("unit without ExecReload surfaces a CommandError", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{ExitCode: 1, Stderr: "Failed to reload nginx.service: Job type reload is not applicable for unit nginx.service."}, nil)
+		err := mgr(t, f).Reload(context.Background(), "nginx.service")
+		var ce *exec.CommandError
+		if !errors.As(err, &ce) || ce.ExitCode != 1 {
+			t.Errorf("Reload err = %v, want *exec.CommandError exit 1", err)
+		}
+	})
+
+	t.Run("rejects an unsafe unit name before the Runner", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		if err := mgr(t, f).Reload(context.Background(), "evil.txt"); err == nil {
+			t.Error("Reload accepted a non-unit name; want a validation error")
+		}
+		if n := len(f.Calls()); n != 0 {
+			t.Errorf("Reload ran %d command(s) on an invalid unit name; want 0", n)
+		}
+	})
 }
 
 // Queries run UNescalated as `systemctl <verb> -- <unit>`.
