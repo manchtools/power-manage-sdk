@@ -9,7 +9,8 @@ icon: "🔌"
 
 `sys/netconfig` configures a single interface's addressing: DHCP or static IPs,
 a gateway, extra routes, MTU, and per-interface DNS. The read path parses real
-`ip -j` (iproute2) JSON; the write path drives NetworkManager.
+`ip -j` (iproute2) JSON; the write path uses the `Backend` you name (currently
+NetworkManager or systemd-networkd).
 
 ## Construct a manager
 

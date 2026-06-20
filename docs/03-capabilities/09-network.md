@@ -7,8 +7,9 @@ icon: "📶"
 
 # Wi-Fi
 
-`sys/network` manages NetworkManager Wi-Fi connection *profiles*, both WPA-PSK
-and EAP-TLS. The credential (the WPA passphrase, the EAP-TLS private key) is an
+`sys/network` manages Wi-Fi connection *profiles* (currently through the
+NetworkManager `Backend`), both WPA-PSK and EAP-TLS. The credential (the WPA
+passphrase, the EAP-TLS private key) is an
 [`exec.Secret`](/concepts/architecture), so it never reaches a command line.
 
 ## Construct a manager
