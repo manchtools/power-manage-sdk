@@ -179,6 +179,115 @@ func TestInstallLocal_AllowDowngrade(t *testing.T) {
 	})
 }
 
+// TestInstallLocal_AllowUnsigned pins the opt-in GPG-skip knob. The agent
+// establishes a local artifact's authenticity out of band (HTTPS + a mandatory
+// SHA256 checksum), so the file is typically unsigned and dnf/zypper would
+// refuse it; AllowUnsigned says "the checksum is the verification, skip the GPG
+// check". It is secure-default-OFF — when false every backend's GPG check stays
+// in force.
+func TestInstallLocal_AllowUnsigned(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("dnf adds --nogpgcheck", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "")
+		if _, err := m.InstallLocal(ctx, "/opt/app.rpm", InstallLocalOptions{AllowUnsigned: true}); err != nil {
+			t.Fatal(err)
+		}
+		if a := argv(f.Calls()[0]); a != "dnf install -y --nogpgcheck /opt/app.rpm" {
+			t.Errorf("argv = %q, want --nogpgcheck", a)
+		}
+	})
+
+	t.Run("zypper adds --allow-unsigned-rpm (per-package, not global)", func(t *testing.T) {
+		m, f := zypperM(t)
+		ok(f, "")
+		if _, err := m.InstallLocal(ctx, "/opt/app.rpm", InstallLocalOptions{AllowUnsigned: true}); err != nil {
+			t.Fatal(err)
+		}
+		a := argv(f.Calls()[0])
+		if a != "zypper --non-interactive install --allow-unsigned-rpm /opt/app.rpm" {
+			t.Errorf("argv = %q, want --allow-unsigned-rpm", a)
+		}
+		if strings.Contains(a, "--no-gpg-checks") {
+			t.Error("must use per-package --allow-unsigned-rpm, never the global --no-gpg-checks")
+		}
+	})
+
+	t.Run("dnf carries --nogpgcheck into the downgrade retry too", func(t *testing.T) {
+		m, f := dnfM(t)
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "package app-1.0 is already installed"}, nil)
+		ok(f, "")
+		if _, err := m.InstallLocal(ctx, "/opt/app.rpm", InstallLocalOptions{AllowUnsigned: true, AllowDowngrade: true}); err != nil {
+			t.Fatal(err)
+		}
+		calls := f.Calls()
+		if len(calls) != 2 {
+			t.Fatalf("got %d calls, want 2", len(calls))
+		}
+		if argv(calls[0]) != "dnf install -y --nogpgcheck --allowerasing /opt/app.rpm" {
+			t.Errorf("install argv = %q", argv(calls[0]))
+		}
+		if argv(calls[1]) != "dnf downgrade -y --nogpgcheck /opt/app.rpm" {
+			t.Errorf("downgrade retry argv = %q, want --nogpgcheck carried through", argv(calls[1]))
+		}
+	})
+
+	t.Run("apt is a no-op (a local .deb has no per-file signature)", func(t *testing.T) {
+		m, f := aptM(t)
+		ok(f, "")
+		if _, err := m.InstallLocal(ctx, "/opt/app.deb", InstallLocalOptions{AllowUnsigned: true}); err != nil {
+			t.Fatal(err)
+		}
+		want := "apt install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold /opt/app.deb"
+		if a := argv(f.Calls()[0]); a != want {
+			t.Errorf("argv = %q, want the UNCHANGED apt form (no GPG flag)", a)
+		}
+	})
+
+	t.Run("pacman is unaffected (pacman -U enforces SigLevel; no per-invocation bypass)", func(t *testing.T) {
+		m, f := pacmanM(t)
+		ok(f, "")
+		if _, err := m.InstallLocal(ctx, "/opt/app.pkg.tar.zst", InstallLocalOptions{AllowUnsigned: true}); err != nil {
+			t.Fatal(err)
+		}
+		if a := argv(f.Calls()[0]); a != "pacman -U --noconfirm /opt/app.pkg.tar.zst" {
+			t.Errorf("argv = %q, want the unchanged -U form", a)
+		}
+	})
+
+	t.Run("flatpak is a no-op", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "")
+		if _, err := m.InstallLocal(ctx, "/opt/app.flatpak", InstallLocalOptions{AllowUnsigned: true}); err != nil {
+			t.Fatal(err)
+		}
+		if a := argv(f.Calls()[0]); a != "flatpak install -y --noninteractive --system /opt/app.flatpak" {
+			t.Errorf("argv = %q, want the unchanged bundle-install form", a)
+		}
+	})
+
+	t.Run("default OFF keeps every backend's GPG check (no skip flag)", func(t *testing.T) {
+		for _, tc := range []struct {
+			b    Backend
+			path string
+			skip string
+		}{
+			{Dnf, "/opt/app.rpm", "--nogpgcheck"},
+			{Zypper, "/opt/app.rpm", "--allow-unsigned-rpm"},
+		} {
+			m, f := mustNew(t, tc.b)
+			ok(f, "")
+			if _, err := m.InstallLocal(ctx, tc.path, InstallLocalOptions{}); err != nil {
+				t.Fatal(err)
+			}
+			if a := argv(f.Calls()[0]); strings.Contains(a, tc.skip) {
+				t.Errorf("%s: default argv %q must NOT contain %q", tc.b, a, tc.skip)
+			}
+		}
+	})
+}
+
 // TestInstallLocal_RejectsUnsafePathBeforeRunner is the rejection half of the
 // contract: an absent, relative, traversing, flag-shaped, or control-bearing
 // path is refused BEFORE any escalated command runs, on every backend.

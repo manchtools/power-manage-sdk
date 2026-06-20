@@ -76,8 +76,10 @@ func (f *flatpak) Install(ctx context.Context, opts InstallOptions, packages ...
 
 // InstallLocal installs a local flatpak bundle (a single-file .flatpak) or a
 // .flatpakref. A bundle has no version-ordering concept, so opts.AllowDowngrade
-// is ignored; system scope escalates, --user does not. ValidateLocalPackagePath
-// requires an absolute path, so the operand can never be flag-shaped.
+// is ignored; opts.AllowUnsigned is a no-op (a bundle's signing is not a
+// per-file GPG check). System scope escalates, --user does not.
+// ValidateLocalPackagePath requires an absolute path, so the operand can never
+// be flag-shaped.
 func (f *flatpak) InstallLocal(ctx context.Context, path string, _ InstallLocalOptions) (pmexec.Result, error) {
 	if err := ValidateLocalPackagePath(path); err != nil {
 		return pmexec.Result{}, err

@@ -83,6 +83,8 @@ func (z *zypper) Install(ctx context.Context, opts InstallOptions, packages ...s
 // InstallLocal installs a local .rpm file through zypper, resolving its
 // dependencies from the configured repositories. opts.AllowDowngrade adds
 // --oldpackage so a file older than the installed version is accepted.
+// opts.AllowUnsigned adds the per-package --allow-unsigned-rpm (NOT the global
+// --no-gpg-checks, which would also drop repository-metadata verification).
 // ValidateLocalPackagePath requires an absolute path, so the operand can never
 // be flag-shaped.
 func (z *zypper) InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error) {
@@ -90,6 +92,9 @@ func (z *zypper) InstallLocal(ctx context.Context, path string, opts InstallLoca
 		return pmexec.Result{}, err
 	}
 	flags := []string{"--non-interactive", "install"}
+	if opts.AllowUnsigned {
+		flags = append(flags, "--allow-unsigned-rpm")
+	}
 	if opts.AllowDowngrade {
 		flags = append(flags, "--oldpackage")
 	}

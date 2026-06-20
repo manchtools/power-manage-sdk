@@ -110,7 +110,8 @@ func (a *apt) Install(ctx context.Context, opts InstallOptions, packages ...stri
 // unlike a bare `dpkg -i` — resolves the package's dependencies from the
 // configured repositories. ValidateLocalPackagePath requires an absolute path,
 // so the operand can never be flag-shaped; the conffile-default options keep a
-// postinst that touches a conffile non-interactive.
+// postinst that touches a conffile non-interactive. opts.AllowUnsigned is a
+// no-op here — a local .deb carries no per-file signature to skip.
 func (a *apt) InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error) {
 	if err := ValidateLocalPackagePath(path); err != nil {
 		return pmexec.Result{}, err

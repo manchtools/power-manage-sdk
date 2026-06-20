@@ -98,24 +98,33 @@ func (d *dnf) Install(ctx context.Context, opts InstallOptions, packages ...stri
 // dependencies from the configured repositories (unlike a bare `rpm -i`). When
 // the file is OLDER than the installed version dnf refuses to "install" it; with
 // opts.AllowDowngrade that rejection is retried as an explicit `dnf downgrade`.
-// dnf5 rejects a "--" end-of-options separator, so it is NOT used; the path is
-// kept safe by ValidateLocalPackagePath, which requires an absolute path that
-// can never be flag-shaped.
+// opts.AllowUnsigned adds --nogpgcheck so an out-of-band-verified unsigned rpm is
+// accepted (it is carried into the downgrade retry too). dnf5 rejects a "--"
+// end-of-options separator, so it is NOT used; the path is kept safe by
+// ValidateLocalPackagePath, which requires an absolute path that can never be
+// flag-shaped.
 func (d *dnf) InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error) {
 	if err := ValidateLocalPackagePath(path); err != nil {
 		return pmexec.Result{}, err
 	}
 	flags := []string{"install", "-y"}
+	if opts.AllowUnsigned {
+		flags = append(flags, "--nogpgcheck")
+	}
 	if opts.AllowDowngrade {
 		flags = append(flags, "--allowerasing")
 	}
 	res, err := d.write(ctx, append(flags, path)...)
 	// Retry as an explicit downgrade ONLY when dnf itself rejected the install
 	// (a non-zero exit); an exec/escalation/context failure must not trigger a
-	// second escalated command.
+	// second escalated command. The downgrade carries the same GPG policy.
 	var ce *pmexec.CommandError
 	if errors.As(err, &ce) && opts.AllowDowngrade {
-		return d.write(ctx, "downgrade", "-y", path)
+		dargs := []string{"downgrade", "-y"}
+		if opts.AllowUnsigned {
+			dargs = append(dargs, "--nogpgcheck")
+		}
+		return d.write(ctx, append(dargs, path)...)
 	}
 	return res, err
 }
