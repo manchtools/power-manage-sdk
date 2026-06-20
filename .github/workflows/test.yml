@@ -285,6 +285,16 @@ jobs:
             distro: debian
             state: base
             path: ./sdk/sys/catrust/
+          # Real PTY + setresuid privilege drop (creates an unprivileged user).
+          - label: sys/terminal (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/terminal/
+          # Real `wall` broadcast.
+          - label: sys/notify (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/notify/
     steps:
       - uses: actions/checkout@v5
         with:
