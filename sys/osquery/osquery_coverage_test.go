@@ -66,6 +66,21 @@ func TestQuery_CustomTableSQL(t *testing.T) {
 	}
 }
 
+func TestQuery_RawSQLRefusesSensitiveTablesBeforeExec(t *testing.T) {
+	r := exectest.New(exec.Direct)
+	c := &client{binaryPath: "/usr/bin/osqueryi", r: r}
+	res, err := c.Query(context.Background(), &pb.OSQuery{QueryId: "q", RawSql: "SELECT * FROM shadow"})
+	if err != nil {
+		t.Fatalf("Query returned Go error = %v, want folded result", err)
+	}
+	if res.GetSuccess() || res.GetError() == "" {
+		t.Fatalf("Query(RawSql shadow) = %+v, want Success=false with a policy error", res)
+	}
+	if calls := r.Calls(); len(calls) != 0 {
+		t.Fatalf("RawSql sensitive query ran %d command(s) before policy rejection: %+v", len(calls), calls)
+	}
+}
+
 func TestQuery_QuerySQLErrorSurfacesInResult(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: "not json"}, nil) // parse failure inside QuerySQL

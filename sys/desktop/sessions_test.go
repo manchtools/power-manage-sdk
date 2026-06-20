@@ -301,6 +301,16 @@ func TestLoadSession_Branches(t *testing.T) {
 			t.Error("a passwd entry with a non-numeric gid must error")
 		}
 	})
+	t.Run("logind name must match passwd uid", func(t *testing.T) {
+		stubLookupID(t, func(uid string) (*user.User, error) {
+			return &user.User{Uid: uid, Gid: "1000", Username: "alice", HomeDir: "/home/alice"}, nil
+		})
+		m, r := newManager(t)
+		r.Push(exec.Result{Stdout: props("mallory", "1000", "wayland", "yes", "no")}, nil)
+		if _, _, err := m.loadSession(context.Background(), "c1"); err == nil {
+			t.Error("mismatched logind Name and passwd username must fail closed")
+		}
+	})
 	t.Run("success builds session", func(t *testing.T) {
 		stubLookupID(t, func(string) (*user.User, error) { return liveResultUser, nil })
 		m, r := newManager(t)

@@ -40,6 +40,21 @@ func TestValidateProfile_RejectsControlChars(t *testing.T) {
 	}
 }
 
+func TestValidateProfile_RejectsWeakOrMalformedPSK(t *testing.T) {
+	cases := map[string]string{
+		"too short":    "short7!",
+		"too long":     strings.Repeat("a", 65),
+		"bad 64-octet": strings.Repeat("z", 64),
+	}
+	for name, psk := range cases {
+		t.Run(name, func(t *testing.T) {
+			if err := validateProfile(Profile{Name: "pm-wifi-1", SSID: "CorpNet", AuthType: AuthPSK, PSK: mustSecret(t, psk)}); err == nil {
+				t.Fatalf("validateProfile accepted malformed WPA-PSK case %q", name)
+			}
+		})
+	}
+}
+
 // TestApply_RejectsInjectionBeforeAnyCommand: Apply validates the profile first,
 // so an injectable field is refused before any nmcli runs or keyfile is written.
 func TestApply_RejectsInjectionBeforeAnyCommand(t *testing.T) {
@@ -56,7 +71,7 @@ func TestApply_RejectsInjectionBeforeAnyCommand(t *testing.T) {
 }
 
 func TestConnectionNameMethods_RejectInvalidName(t *testing.T) {
-	for _, name := range []string{"-x", "a\nb", "", "x\x00y"} {
+	for _, name := range []string{"-x", "a\nb", "", "x\x00y", "tenant/prod"} {
 		t.Run(name, func(t *testing.T) {
 			r := &recordingRunner{}
 			m := mgr(t, r)
