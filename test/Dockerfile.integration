@@ -17,10 +17,13 @@ RUN apt-get update && apt-get install -y \
 # LC_ALL=C (via Command.CLocale) fails here. ja_JP/zh_CN translate the strings
 # the SDK parses (e.g. cat's "No such file or directory").
 
-# Create power-manage user (matches production setup)
+# Create power-manage user (matches production setup). Add it to systemd-journal
+# so the sys/log integration test can read the real system journal via journalctl
+# (a non-member only sees its own, empty, user journal).
 RUN useradd --system --no-create-home --shell /usr/sbin/nologin power-manage && \
     mkdir -p /home/power-manage && \
-    chown power-manage:power-manage /home/power-manage
+    chown power-manage:power-manage /home/power-manage && \
+    usermod -aG systemd-journal power-manage
 
 # sshd host keys (needed for systemd tests that reference ssh.service)
 RUN ssh-keygen -A

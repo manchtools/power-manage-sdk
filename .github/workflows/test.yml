@@ -233,7 +233,8 @@ jobs:
             runuser -u power-manage -- env LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8 \
               /usr/local/go/bin/go test \
               -v -tags=integration -count=1 -timeout=10m \
-              ./sdk/sys/exec/ ./sdk/sys/fs/ ./sdk/sys/user/ ./sdk/sys/service/
+              ./sdk/sys/exec/ ./sdk/sys/fs/ ./sdk/sys/user/ ./sdk/sys/service/ \
+              ./sdk/sys/timesync/ ./sdk/sys/log/
 
       - name: Cleanup
         if: always()
