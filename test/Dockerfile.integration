@@ -5,11 +5,21 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     systemd \
     systemd-sysv \
+    systemd-resolved \
     procps \
     locales \
     && sed -i 's/^# *ja_JP.UTF-8 UTF-8/ja_JP.UTF-8 UTF-8/; s/^# *zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen \
     && locale-gen \
     && rm -rf /var/lib/apt/lists/*
+
+# Enable systemd-resolved so the sys/dns Resolved-backend integration test can
+# exercise the real Apply round-trip: write the managed resolved.conf.d drop-in,
+# restart the service, and read back the generated /run/systemd/resolve/resolv.conf.
+# `systemctl enable` works offline at build time (it only creates the wants/
+# symlinks); the unit actually starts when systemd boots as PID 1. Installing the
+# package also puts `resolvectl` on PATH, so dns.Detect reports the Resolved
+# backend in-container.
+RUN systemctl enable systemd-resolved
 
 # Non-English locales so the integration suite runs under a foreign locale (see
 # run-tests.sh / CI). Standing guard against locale-fragile parsing of tool
@@ -87,6 +97,8 @@ power-manage ALL=(root) NOPASSWD: /bin/sh *\n\
 power-manage ALL=(root) NOPASSWD: /usr/bin/sh *\n\
 power-manage ALL=(root) NOPASSWD: /usr/bin/test *\n\
 power-manage ALL=(root) NOPASSWD: /bin/test *\n\
+power-manage ALL=(root) NOPASSWD: /usr/bin/resolvectl *\n\
+power-manage ALL=(root) NOPASSWD: /bin/resolvectl *\n\
 ' > /etc/sudoers.d/power-manage && \
     chmod 0440 /etc/sudoers.d/power-manage && \
     visudo -c -f /etc/sudoers.d/power-manage
