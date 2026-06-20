@@ -447,7 +447,9 @@ func isPrivilegedMutation(c sdkexec.Command) bool {
 		return containsArg(c.Args, "-f")
 	case "nmcli":
 		return len(c.Args) >= 2 && c.Args[0] == "connection" && (c.Args[1] == "modify" || c.Args[1] == "up")
-	case "resolvectl", "systemctl", "shutdown", "wall", "useradd", "usermod", "userdel", "chpasswd", "chage", "chown", "chmod", "cp", "rm", "mkdir", "sh", "ufw", "firewall-cmd", "cryptsetup":
+	case "firewall-cmd":
+		return containsArg(c.Args, "--reload") || containsPrefixedArg(c.Args, "--add-service=") || containsPrefixedArg(c.Args, "--remove-service=")
+	case "resolvectl", "systemctl", "shutdown", "wall", "useradd", "usermod", "userdel", "chpasswd", "chage", "chown", "chmod", "cp", "rm", "mkdir", "sh", "ufw", "cryptsetup":
 		return true
 	default:
 		return false
@@ -457,6 +459,15 @@ func isPrivilegedMutation(c sdkexec.Command) bool {
 func containsArg(args []string, want string) bool {
 	for _, arg := range args {
 		if arg == want {
+			return true
+		}
+	}
+	return false
+}
+
+func containsPrefixedArg(args []string, prefix string) bool {
+	for _, arg := range args {
+		if strings.HasPrefix(arg, prefix) {
 			return true
 		}
 	}
