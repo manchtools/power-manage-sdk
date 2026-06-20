@@ -309,6 +309,14 @@ jobs:
             distro: debian
             state: with-clamav
             path: ./sdk/sys/antivirus/
+          # repo Manager apt backend: real `gpg --dearmor` + deb822 .sources
+          # write/idempotency/remove (base + gnupg). The dnf/pacman/zypper repo
+          # cells run in their distro jobs below; each test self-skips when its
+          # backend is absent.
+          - label: sys/repo apt (debian/base)
+            distro: debian
+            state: base
+            path: ./sdk/sys/repo/
     steps:
       - uses: actions/checkout@v5
         with:
@@ -384,6 +392,13 @@ jobs:
           name: coverage-dnf
           path: pkg/coverage-dnf.out
 
+      # repo Manager dnf backend: real .repo write/idempotency/remove against the
+      # actual dnf (root container). Run from the module root (pkg/ is the same
+      # module but `./...` there does not reach sys/repo). The apt/pacman/zypper
+      # repo tests self-skip here.
+      - name: Run repo Manager container tests (real dnf)
+        run: go test -tags=container -count=1 -v -run Container ./sys/repo/
+
   # pacman/zypper are the two package managers with zero real-tool coverage
   # before this. The pkg integration tests (TestIntegration_Pacman/_Zypper)
   # auto-detect the backend and run read-only ops (List / IsInstalled / Search)
@@ -404,6 +419,11 @@ jobs:
         run: go test -v ./...
         working-directory: pkg
 
+      # repo Manager pacman backend: real /etc/pacman.conf [section] write/remove
+      # against the actual pacman (root container).
+      - name: Run repo Manager container tests (real pacman)
+        run: go test -tags=container -count=1 -v -run Container ./sys/repo/
+
   test-zypper:
     name: Integration Tests (zypper)
     runs-on: ubuntu-latest
@@ -423,6 +443,13 @@ jobs:
       - name: Run integration tests
         run: go test -v ./...
         working-directory: pkg
+        env:
+          GOTOOLCHAIN: auto
+
+      # repo Manager zypper backend: real `zypper addrepo`/`lr`/`removerepo`
+      # round-trip (root container). GOTOOLCHAIN=auto for Leap's go 1.25.10.
+      - name: Run repo Manager container tests (real zypper)
+        run: go test -tags=container -count=1 -v -run Container ./sys/repo/
         env:
           GOTOOLCHAIN: auto
 

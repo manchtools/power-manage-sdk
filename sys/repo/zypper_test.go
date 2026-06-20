@@ -158,7 +158,12 @@ func TestZypper_Remove(t *testing.T) {
 	})
 	t.Run("not found is idempotent", func(t *testing.T) {
 		m, _, fr := newTestManager(t, pkg.Zypper)
-		fr.Push(pmexec.Result{ExitCode: 1, Stderr: "Repository 'corp' not found by alias."}, nil)
+		// REAL zypper behaviour: `removerepo` of an absent alias EXITS 0 and
+		// reports the absence with a "not found" message on stderr — it does NOT
+		// exit non-zero. So idempotency must be keyed off the message, not the
+		// exit code (the earlier fake scripted exit 1, hiding that removing an
+		// absent repo wrongly reported Changed=true against real zypper).
+		fr.Push(pmexec.Result{ExitCode: 0, Stderr: "Repository 'corp' not found by alias, number or URI."}, nil)
 		out, err := m.Remove(context.Background(), "corp")
 		if err != nil {
 			t.Fatalf("a 'not found' removerepo must be a no-op, got %v", err)

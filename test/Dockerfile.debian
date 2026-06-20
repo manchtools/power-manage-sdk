@@ -23,12 +23,14 @@ FROM golang:1.26-bookworm AS base
 #   cryptsetup-bin  — `cryptsetup` for the sys/encryption LUKS tests
 #   nftables        — `nft` for the sys/firewall round-trip tests (CAP_NET_ADMIN)
 #   iproute2        — `ip` for the sys/netconfig read-path tests (CAP_NET_ADMIN)
+#   gnupg           — `gpg --dearmor` for the sys/repo apt keyring tests
 RUN apt-get update && apt-get install -y --no-install-recommends \
     psmisc \
     ca-certificates \
     cryptsetup-bin \
     nftables \
     iproute2 \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

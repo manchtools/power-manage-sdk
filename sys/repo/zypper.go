@@ -92,17 +92,21 @@ func (m *manager) applyZypper(ctx context.Context, name string, c *ZypperConfig)
 	return out(log.String(), true), nil
 }
 
-// removeZypper removes a zypper repository by alias. A "not found" failure is the
-// idempotent no-op case (Changed=false); any other failure is an error.
+// removeZypper removes a zypper repository by alias. zypper `removerepo` EXITS 0
+// whether or not the alias existed — it reports an absent repo with a "not found"
+// message on stderr rather than a non-zero exit. So idempotency is keyed off that
+// message (a no-op → Changed=false), NOT the exit code; a genuine failure still
+// exits non-zero and surfaces as an error. The Runner forces LC_ALL=C, so the
+// English "not found" match is locale-stable.
 func (m *manager) removeZypper(ctx context.Context, name string) (Outcome, error) {
 	var log strings.Builder
 	res, err := m.runPriv(ctx, "zypper", "--non-interactive", "removerepo", name)
 	if err != nil {
-		if strings.Contains(res.Stderr, "not found") {
-			fmt.Fprintf(&log, "repository %s not found, nothing to remove\n", name)
-			return out(log.String(), false), nil
-		}
 		return Outcome{}, fmt.Errorf("remove repository: %w", err)
+	}
+	if strings.Contains(res.Stdout+res.Stderr, "not found") {
+		fmt.Fprintf(&log, "repository %s not found, nothing to remove\n", name)
+		return out(log.String(), false), nil
 	}
 	fmt.Fprintf(&log, "removed repository: %s\n", name)
 	return out(log.String(), true), nil

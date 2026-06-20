@@ -14,14 +14,23 @@ refresh, so a consumer never shells out to write a `.sources`/`.repo` file,
 
 ```go
 import (
+    "context"
+    "log"
+
     "github.com/manchtools/power-manage-sdk/pkg"
     "github.com/manchtools/power-manage-sdk/sys/exec"
     "github.com/manchtools/power-manage-sdk/sys/repo"
 )
 
-r, _ := exec.NewRunner(exec.Direct) // the agent runs as root; elsewhere Sudo/Doas
-m, err := repo.New(pkg.Dnf, r)      // pkg.Apt / pkg.Dnf / pkg.Pacman / pkg.Zypper
-if err != nil { /* unsupported backend (flatpak/unknown) or nil runner */ }
+ctx := context.Background()
+r, err := exec.NewRunner(exec.Direct) // the agent runs as root; elsewhere Sudo/Doas
+if err != nil {
+    log.Fatalf("new runner: %v", err)
+}
+m, err := repo.New(pkg.Dnf, r) // pkg.Apt / pkg.Dnf / pkg.Pacman / pkg.Zypper
+if err != nil {
+    log.Fatalf("new repo manager: %v", err) // unsupported backend (flatpak/unknown) or nil runner
+}
 
 out, err := m.Apply(ctx, repo.Repository{Name: "corp", Dnf: &repo.DnfConfig{
     BaseURL:  "https://packages.example.com/el9",
