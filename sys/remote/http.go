@@ -280,7 +280,10 @@ func (h *httpSource) openBody(ctx context.Context, etag string) (io.ReadCloser, 
 // the returned tmpPath is empty in that case so the caller can't
 // accidentally reference a non-existent path.
 func streamToTmp(dest string, body io.Reader, maxBytes int64) (string, int64, []byte, error) {
-	tmp := tmpPathFor(dest)
+	tmp, err := tmpPathFor(dest)
+	if err != nil {
+		return "", 0, nil, err
+	}
 	if err := os.MkdirAll(filepath.Dir(tmp), 0o755); err != nil {
 		return "", 0, nil, fmt.Errorf("mkdir %s: %w", filepath.Dir(tmp), err)
 	}
@@ -326,14 +329,18 @@ func streamToTmp(dest string, body io.Reader, maxBytes int64) (string, int64, []
 	return tmp, n, h.Sum(nil), nil
 }
 
-// tmpPathFor builds a deterministic-within-process sibling tmp filename.
-// Sixteen random hex chars keep collisions astronomically unlikely while
-// keeping the suffix short enough that ext4's 255-char filename limit
-// doesn't bite.
-func tmpPathFor(dest string) string {
+// tmpPathFor builds an unpredictable sibling tmp filename. Sixteen random hex
+// chars keep collisions astronomically unlikely while keeping the suffix short
+// enough that ext4's 255-char filename limit doesn't bite. The entropy read is
+// fail-closed: if crypto/rand cannot produce randomness the suffix would be
+// predictable, letting an attacker pre-create a symlink at the staging path, so
+// the error is propagated rather than discarded.
+func tmpPathFor(dest string) (string, error) {
 	var b [8]byte
-	_, _ = rand.Read(b[:])
-	return dest + ".tmp." + hex.EncodeToString(b[:])
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("generate staging-file suffix: %w", err)
+	}
+	return dest + ".tmp." + hex.EncodeToString(b[:]), nil
 }
 
 // applyMode sets mode and/or ownership on the freshly-written destination, which
