@@ -36,5 +36,5 @@ echo "==> Building ${DISTRO}:${STATE} test image..."
 echo "==> Running container tests (${TEST_PATH}) inside ${STATE}..."
 # --shm-size gives /dev/shm headroom for tests that stage container files there
 # (e.g. the LUKS Manager's 64 MiB LUKS2 containers).
-"$ENGINE" run --rm --shm-size=512m "${IMAGE}" \
+"$ENGINE" run --rm --shm-size=512m --cap-add NET_ADMIN "${IMAGE}" \
     go test -tags=container -count=1 -v "${TEST_PATH}" -run Container

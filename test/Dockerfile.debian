@@ -17,14 +17,18 @@
 # test/Dockerfile.integration so both images move together.
 FROM golang:1.26-bookworm AS base
 
-# psmisc provides `fuser`, the read-side lock probe in pkg/repair.go's
-# removeStaleLock; ca-certificates for `apt update` during Repair;
-# cryptsetup-bin provides `cryptsetup` for the sys/encryption LUKS tests
-# (header-only ops on a /dev/shm file — no loop device / privilege needed).
+# Tool surface for the container tests:
+#   psmisc          — `fuser`, the read-side lock probe in pkg/repair.go
+#   ca-certificates — `apt update` during pkg.Repair
+#   cryptsetup-bin  — `cryptsetup` for the sys/encryption LUKS tests
+#   nftables        — `nft` for the sys/firewall round-trip tests (CAP_NET_ADMIN)
+#   iproute2        — `ip` for the sys/netconfig read-path tests (CAP_NET_ADMIN)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     psmisc \
     ca-certificates \
     cryptsetup-bin \
+    nftables \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
