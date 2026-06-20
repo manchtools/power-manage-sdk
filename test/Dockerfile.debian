@@ -60,6 +60,41 @@ RUN touch /var/lib/dpkg/lock \
 # --version` asserts the binary is installed and runnable, so a bad URL / moved
 # install path fails the BUILD, not the container test (which would otherwise
 # New() -> ErrNotInstalled and skip).
+# with-clamav: the real ClamAV scanner (clamscan + freshclam) from the Debian
+# archive, plus a tiny STATIC seed signature database (two loose text files) so
+# clamscan detects real threats WITHOUT freshclam's ~300 MB official DB download.
+# The seed carries two real signatures of two different kinds:
+#   - pm-seed.hdb — the canonical EICAR test file, by its well-known MD5 hash
+#     (44d88612fea8a8f36de82e1278abb02f) + size (68). EICAR is the industry's
+#     standard AV smoke test, so this is a genuine, recognizable detection.
+#   - pm-seed.ndb — our own marker string ("PM-CLAMAV-TEST-MARKER") as a byte
+#     pattern, exercising clamscan's pattern-signature path too.
+# Detection is deterministic and hermetic; the network is never touched.
+#
+# NOTE on Version: clamscan reports an engine/signature/date version ONLY from a
+# cryptographically SIGNED official DB (daily.cvd/main.cvd). An unsigned custom
+# DB either loads-and-scans but is ignored by `--version` (.cud), or reports a
+# version but is refused at load ("Digital signature not found", .cld/.cvd). So a
+# reported signature version cannot be forged — the happy-format Version() parse
+# is unit-tested and its real-binary form is a documented residual (needs the
+# signed network DB).
+#
+# freshclam.conf is removed so UpdateSignatures (bare `freshclam`) fails fast on
+# a missing config — a deterministic, network-free exercise of the error-mapping
+# path. The build-time `clamscan --version` asserts the binary is runnable, so a
+# packaging change fails the BUILD not the test.
+FROM base AS with-clamav
+RUN apt-get update && apt-get install -y --no-install-recommends clamav \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/lib/clamav \
+    && printf '44d88612fea8a8f36de82e1278abb02f:68:PM.Eicar.Test\n' \
+       > /var/lib/clamav/pm-seed.hdb \
+    && printf 'PM.Marker.Test:0:*:504d2d434c414d41562d544553542d4d41524b4552\n' \
+       > /var/lib/clamav/pm-seed.ndb \
+    && rm -f /etc/clamav/freshclam.conf \
+    && clamscan --version \
+       || (echo "PRECONDITION FAILED: clamscan not installed/runnable" && exit 1)
+
 FROM base AS with-osquery
 # Pin the version AND its SHA-256 together — bump both in lockstep (the checksum
 # is version-specific, so a version bump without a matching checksum fails the
