@@ -41,8 +41,28 @@ echo "==> Running integration tests..."
 # PM_TEST_LOCALE=C (or zh_CN.UTF-8, etc.). The locale is generated in the image.
 TEST_LOCALE="${PM_TEST_LOCALE:-ja_JP.UTF-8}"
 echo "    (locale: ${TEST_LOCALE})"
+
+# Integration-tagged packages that run in THIS systemd container — the set whose
+# //go:build integration tests need systemd as PID 1. Kept explicit (it is an
+# intentional subset of sys/, not every package), but each path is existence-
+# checked below so a module rename/move can never again silently drop a package
+# from the run (the paths read ./sdk/go/sys/... until the go/*→root move, and the
+# stale list passed `go test` vacuously). Paths are relative to /workspace.
+INTEGRATION_PKGS=(
+    sdk/sys/exec
+    sdk/sys/fs
+    sdk/sys/user
+    sdk/sys/service
+)
+for p in "${INTEGRATION_PKGS[@]}"; do
+    if [ ! -d "$p" ]; then
+        echo "ERROR: integration package path '$p' does not exist (stale after a rename/move?)" >&2
+        exit 1
+    fi
+done
+
 podman exec -w /workspace "$CONTAINER_NAME" \
     runuser -u power-manage -- env "LANG=${TEST_LOCALE}" "LC_ALL=${TEST_LOCALE}" \
         /usr/local/go/bin/go test \
         -v -tags=integration -count=1 -timeout=10m \
-        ./sdk/go/sys/exec/ ./sdk/go/sys/fs/ ./sdk/go/sys/user/ ./sdk/go/sys/service/
+        "${INTEGRATION_PKGS[@]/#/./}"

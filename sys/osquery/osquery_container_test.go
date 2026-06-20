@@ -123,6 +123,56 @@ func TestDenyList_RefusedBeforeExec_Container(t *testing.T) {
 	}
 }
 
+// mustDenyTables is the TEST-OWNED threat model: osquery tables that expose
+// credential material or secrets and MUST be refused by the table path. It is
+// listed here INDEPENDENTLY of the implementation's sensitiveTables map — that
+// is the whole point. The map-driven test above proves "every denied table is
+// refused"; it cannot prove "every table that SHOULD be denied is", because it
+// reads the same map the implementation does, so dropping a table from the
+// deny-list would silently drop it from the test too. This list is the fixed
+// expectation that catches such a regression. Each entry is justified:
+//   - shadow:        password hashes
+//   - process_envs:  a process environment can carry secrets / tokens
+//   - shell_history: pasted passwords / tokens land in command history
+//   - crontab:       scheduled commands can embed credentials
+//   - sudoers:       privilege policy; can name secret-bearing commands
+var mustDenyTables = []string{"shadow", "process_envs", "shell_history", "crontab", "sudoers"}
+
+// TestDenyList_ThreatModelComplete_Container is the INDEPENDENT companion to the
+// map-driven deny-list test: every threat-model-sensitive table that the real
+// osqueryi actually ships MUST be on the deny-list (isSensitiveTable) AND refused
+// before exec. Because the expectation comes from the threat model rather than
+// from sensitiveTables, this fails if the deny-list is regressed or
+// under-specified — the case the map-driven test is structurally blind to.
+func TestDenyList_ThreatModelComplete_Container(t *testing.T) {
+	q := realQuerier(t)
+	ctx := osqCtx(t)
+	tables, err := q.ListTables(ctx)
+	if err != nil {
+		t.Fatalf("ListTables: %v", err)
+	}
+
+	checked := 0
+	for _, want := range mustDenyTables {
+		if !containsTable(tables, want) {
+			// A given osqueryi build may not ship every table; only assert on
+			// the ones actually present so the intersection is real, not vacuous.
+			t.Logf("threat-model table %q absent from this osqueryi build; skipping", want)
+			continue
+		}
+		if !isSensitiveTable(want) {
+			t.Errorf("table %q is threat-model-sensitive but NOT on the deny-list (sensitiveTables) — deny-list regressed/under-specified", want)
+		}
+		if _, err := q.QueryTable(ctx, want); err == nil || !strings.Contains(err.Error(), "not permitted") {
+			t.Errorf("QueryTable(%q): want a 'not permitted' refusal before exec, got %v", want, err)
+		}
+		checked++
+	}
+	if checked == 0 {
+		t.Fatal("matches-zero: no threat-model table was present in the real .tables listing — the completeness check is vacuous (osquery build/parse problem?)")
+	}
+}
+
 // TestRawSqlEscapeHatch_Container proves the documented asymmetry against the
 // real binary: the CA-signed RawSql path is NOT gated by the deny-list, so the
 // very same table the table path refuses (`shadow`) is queryable via RawSql. A

@@ -23,6 +23,12 @@ import (
 // not installed. Reads do not escalate, so Direct is sufficient.
 func realManager(t *testing.T, b Backend) Manager {
 	t.Helper()
+	// These hit the real package manager. `go test -short` (the unit sweep and
+	// the per-package Unit Tests job) must stay hermetic, so skip there; the
+	// dedicated apt/dnf integration jobs run without -short and exercise them.
+	if testing.Short() {
+		t.Skip("-short: skipping real package-manager integration read")
+	}
 	if !slices.Contains(Detect(context.Background()), b) {
 		t.Skipf("%s not available on this host", b)
 	}
