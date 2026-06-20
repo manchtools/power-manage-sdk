@@ -161,14 +161,19 @@ func (c *client) ListTables(ctx context.Context) ([]string, error) {
 	var tables []string
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
-		// Skip empty lines and header lines
-		if line == "" || strings.HasPrefix(line, "=>") || strings.HasPrefix(line, "+") {
+		if line == "" {
 			continue
 		}
-		// Remove leading "=>" if present
-		line = strings.TrimPrefix(line, "=> ")
-		if line != "" {
-			tables = append(tables, line)
+		// osqueryi `.tables` prints one table per line as "=> <name>" (with
+		// leading indentation, already trimmed above). The "=> " lines ARE the
+		// data; strip the marker and keep the name. Any line without the marker
+		// is decoration/noise and is ignored.
+		name, ok := strings.CutPrefix(line, "=>")
+		if !ok {
+			continue
+		}
+		if name = strings.TrimSpace(name); name != "" {
+			tables = append(tables, name)
 		}
 	}
 	return tables, nil

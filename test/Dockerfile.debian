@@ -51,3 +51,34 @@ RUN touch /var/lib/dpkg/lock \
           /var/cache/apt/archives/lock \
     && test -f /var/lib/dpkg/lock \
        || (echo "PRECONDITION FAILED: /var/lib/dpkg/lock not created" && exit 1)
+
+# with-osquery: the real osqueryi binary, installed from the upstream release
+# .deb (pinned for reproducibility — add a row with a different version to test
+# drift across osquery releases). osquery is NOT in the Debian archive, so it
+# gets its own stage instead of bloating `base` and every base-stage cell with
+# the ~30 MB binary + its build-time apt deps. The build-time `osqueryi
+# --version` asserts the binary is installed and runnable, so a bad URL / moved
+# install path fails the BUILD, not the container test (which would otherwise
+# New() -> ErrNotInstalled and skip).
+FROM base AS with-osquery
+# Pin the version AND its SHA-256 together — bump both in lockstep (the checksum
+# is version-specific, so a version bump without a matching checksum fails the
+# build, which is the intended fail-closed behaviour). osquery publishes no
+# checksums/signature asset, so this is pin-on-first-use over TLS-authenticated
+# github.com: it makes the build reproducible and tamper-evident — if the
+# release URL's content ever changes, `sha256sum -c` fails the build.
+ARG OSQUERY_VERSION=5.23.0
+ARG OSQUERY_SHA256=8938e83d71c6e668f24648b4fb612581db30f95cd31bf76a86c3ba4a6680a7dc
+RUN arch="$(dpkg --print-architecture)" \
+    && if [ "$arch" != "amd64" ]; then \
+         echo "with-osquery only pins an amd64 .deb; build arch is $arch" && exit 1; \
+       fi \
+    && apt-get update && apt-get install -y --no-install-recommends curl \
+    && curl -fsSL --max-time 300 -o /tmp/osquery.deb \
+       "https://github.com/osquery/osquery/releases/download/${OSQUERY_VERSION}/osquery_${OSQUERY_VERSION}-1.linux_amd64.deb" \
+    && echo "${OSQUERY_SHA256}  /tmp/osquery.deb" | sha256sum -c - \
+    && apt-get install -y --no-install-recommends /tmp/osquery.deb \
+    && rm -f /tmp/osquery.deb \
+    && rm -rf /var/lib/apt/lists/* \
+    && osqueryi --version \
+       || (echo "PRECONDITION FAILED: osqueryi not installed/runnable" && exit 1)
