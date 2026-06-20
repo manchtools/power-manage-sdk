@@ -398,16 +398,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Leap ships an older Go; GOTOOLCHAIN=auto (default) fetches the go.mod
-      # toolchain (go 1.25.11) on first `go` invocation.
       - name: Install Go + refresh zypper
         run: |
           zypper --non-interactive --gpg-auto-import-keys refresh
           zypper --non-interactive install go git tar gzip
 
+      # Leap's `go` package pins GOTOOLCHAIN=local and ships go 1.25.10, one
+      # patch below the go.mod requirement (1.25.11). GOTOOLCHAIN=auto lets the
+      # first `go` invocation fetch the exact toolchain the module declares.
       - name: Run integration tests
         run: go test -v ./...
         working-directory: pkg
+        env:
+          GOTOOLCHAIN: auto
 
   coverage-report:
     name: Coverage Report
