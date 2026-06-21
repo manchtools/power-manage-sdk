@@ -178,6 +178,78 @@ func TestWriteFile_Escalated_RunnerErrorPropagates(t *testing.T) {
 	}
 }
 
+func TestWriteReader_Escalated_StreamsStdinThroughTheRootShell(t *testing.T) {
+	f, m := sudoMgr(t)
+	body := "an-appimage-sized-payload-streamed-not-buffered\n"
+	if err := m.WriteReader(context.Background(), "/etc/app.bin", strings.NewReader(body),
+		WriteOptions{Mode: 0o755, Owner: "root", Group: "root"}); err != nil {
+		t.Fatal(err)
+	}
+	calls := f.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("ran %d commands, want 1 (a single root sh -c); got %v", len(calls), callNames(calls))
+	}
+	c := calls[0]
+	if !c.Escalate {
+		t.Error("the escalated streaming write must run escalated")
+	}
+	// Same script + arg shape as WriteFile, but the backup arg is ALWAYS empty
+	// (WriteReader rejects Backup), and the payload arrives via stdin.
+	want := []string{"-c", escalatedWriteScript, "sh", "/etc/app.bin", "0755", "root:root", ""}
+	if c.Name != "sh" || strings.Join(c.Args, "\x00") != strings.Join(want, "\x00") {
+		t.Errorf("command = %s %q\nwant   = sh %q", c.Name, c.Args, want)
+	}
+	if got := stdinOf(t, c); got != body {
+		t.Errorf("stdin = %q, want the streamed payload (read by `cat` in the script)", got)
+	}
+}
+
+func TestWriteReader_RejectsBackup(t *testing.T) {
+	_, m := sudoMgr(t)
+	err := m.WriteReader(context.Background(), "/etc/app.bin", strings.NewReader("x"),
+		WriteOptions{Backup: "/etc/app.bin.bak"})
+	if !errors.Is(err, ErrInvalidPath) {
+		t.Fatalf("err = %v, want ErrInvalidPath — WriteReader does not support Backup", err)
+	}
+}
+
+func TestWriteReader_RejectsInvalidPath(t *testing.T) {
+	_, m := sudoMgr(t)
+	if err := m.WriteReader(context.Background(), "-rf", strings.NewReader("x"), WriteOptions{}); !errors.Is(err, ErrInvalidPath) {
+		t.Errorf("WriteReader(bad path) err = %v, want ErrInvalidPath", err)
+	}
+}
+
+// A nil reader is rejected rather than panicking the io.Copy on the Direct path
+// or writing an empty file on the escalated one.
+func TestWriteReader_RejectsNilReader(t *testing.T) {
+	for _, b := range []pmexec.PrivilegeBackend{pmexec.Direct, pmexec.Sudo} {
+		f := exectest.New(b)
+		m := mustManager(t, f)
+		if err := m.WriteReader(context.Background(), "/etc/app.bin", nil, WriteOptions{}); !errors.Is(err, ErrInvalidPath) {
+			t.Errorf("backend %v: WriteReader(nil reader) err = %v, want ErrInvalidPath", b, err)
+		}
+		if n := len(f.Calls()); n != 0 {
+			t.Errorf("backend %v: a nil reader reached exec (%d calls)", b, n)
+		}
+	}
+}
+
+func TestWriteReader_Escalated_RefusesUnsafeParent(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	f, m := sudoMgr(t)
+	err := m.WriteReader(context.Background(), filepath.Join(dir, "f"), strings.NewReader("x"), WriteOptions{})
+	if !errors.Is(err, ErrUnsafeParentDir) {
+		t.Fatalf("err = %v, want ErrUnsafeParentDir", err)
+	}
+	if n := len(f.Calls()); n != 0 {
+		t.Errorf("ran %d commands; an unsafe parent must be refused before escalating", n)
+	}
+}
+
 func TestWriteFile_RejectsInvalidPathAndBackup(t *testing.T) {
 	f, m := sudoMgr(t)
 	if err := m.WriteFile(context.Background(), "-rf", []byte("x"), WriteOptions{}); !errors.Is(err, ErrInvalidPath) {
@@ -443,6 +515,68 @@ func TestCopy(t *testing.T) {
 		}
 		if err := m.Copy(context.Background(), "/a", "-b", WriteOptions{}); !errors.Is(err, ErrInvalidPath) {
 			t.Errorf("Copy(bad dst) err = %v", err)
+		}
+	})
+}
+
+func TestCopyTree(t *testing.T) {
+	t.Run("archive merge into target", func(t *testing.T) {
+		f, m := sudoMgr(t)
+		if err := m.CopyTree(context.Background(), "/etc/skel", "/home/alice", WriteOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		calls := f.Calls()
+		// cp -a preserves metadata; -T treats dst as the literal target so the
+		// tree merges INTO /home/alice rather than nesting at /home/alice/skel.
+		if len(calls) != 1 || argv(calls[0]) != "cp -a -T -- /etc/skel /home/alice" {
+			t.Fatalf("calls = %v, want a single archive `cp -a -T`", callNames(calls))
+		}
+		if !calls[0].Escalate {
+			t.Error("CopyTree must escalate")
+		}
+	})
+	t.Run("mode chmods root, ownership is recursive", func(t *testing.T) {
+		f, m := sudoMgr(t)
+		if err := m.CopyTree(context.Background(), "/etc/skel", "/home/alice", WriteOptions{Mode: 0o700, Owner: "alice", Group: "alice"}); err != nil {
+			t.Fatal(err)
+		}
+		calls := f.Calls()
+		if names := callNames(calls); strings.Join(names, ",") != "cp,chmod,chown" {
+			t.Fatalf("calls = %v, want cp,chmod,chown", names)
+		}
+		var chmod, chown pmexec.Command
+		for _, c := range calls {
+			switch c.Name {
+			case "chmod":
+				chmod = c
+			case "chown":
+				chown = c
+			}
+		}
+		// Mode applies to the dst ROOT only (archive per-file modes are kept).
+		if argv(chmod) != "chmod 0700 -- /home/alice" {
+			t.Errorf("chmod argv = %q, want the dst root only", argv(chmod))
+		}
+		// Ownership is recursive: re-homing a tree copied as root.
+		if argv(chown) != "chown -R -- alice:alice /home/alice" {
+			t.Errorf("chown argv = %q, want a recursive chown", argv(chown))
+		}
+	})
+	t.Run("cp failure wrapped", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "cp: cannot stat"}, nil)
+		if err := mustManager(t, f).CopyTree(context.Background(), "/a", "/b", WriteOptions{}); err == nil ||
+			!strings.Contains(err.Error(), "copy tree") {
+			t.Errorf("err = %v, want a wrapped cp failure", err)
+		}
+	})
+	t.Run("validates both paths", func(t *testing.T) {
+		_, m := sudoMgr(t)
+		if err := m.CopyTree(context.Background(), "-a", "/b", WriteOptions{}); !errors.Is(err, ErrInvalidPath) {
+			t.Errorf("CopyTree(bad src) err = %v", err)
+		}
+		if err := m.CopyTree(context.Background(), "/a", "-b", WriteOptions{}); !errors.Is(err, ErrInvalidPath) {
+			t.Errorf("CopyTree(bad dst) err = %v", err)
 		}
 	})
 }

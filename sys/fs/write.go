@@ -3,8 +3,11 @@ package fs
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+
+	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
 )
 
 // WriteFile writes data to path atomically, applying opts (mode/ownership, and
@@ -105,6 +108,97 @@ func (m *manager) writeEscalated(ctx context.Context, path string, data []byte, 
 	return nil
 }
 
+// WriteReader streams the bytes from r to path, applying opts, WITHOUT buffering
+// the whole payload in memory — for a large artifact (e.g. a downloaded AppImage
+// of tens-to-hundreds of MB) that WriteFile([]byte) would risk OOM on. The stream
+// lands in a same-directory temp file that is renamed into place only after it is
+// written, so at no instant does a crash or power-loss leave the destination
+// holding a partial file: it always holds either the prior content or the new
+// content in full. On the Direct backend the temp open is O_NOFOLLOW (symlink-
+// safe) and an io.Copy error aborts BEFORE the rename, so a mid-stream READER
+// error also leaves the destination untouched. Under Sudo/Doas the stream is
+// piped through a single root shell that `cat`s stdin into the temp and `mv -T`s
+// it over the target; a reader that errors mid-stream is surfaced as an error,
+// but because the shell renames on its own stdin-EOF the truncated temp may
+// already have been placed — so callers stream a COMPLETE source (the AppImage
+// flow streams a checksum-verified file, where a read error means disk failure).
+//
+// opts.Backup is NOT supported (WriteReader targets a fresh large artifact, not an
+// in-place config edit with a kept backup); setting it is an error. A zero
+// opts.Mode defaults to 0644, as WriteFile does.
+func (m *manager) WriteReader(ctx context.Context, path string, r io.Reader, opts WriteOptions) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	if err := validateMode(opts.Mode); err != nil {
+		return err
+	}
+	if r == nil {
+		return fmt.Errorf("%w: WriteReader requires a non-nil reader", ErrInvalidPath)
+	}
+	if opts.Backup != "" {
+		return fmt.Errorf("%w: WriteReader does not support a backup (use WriteFile for in-place edits)", ErrInvalidPath)
+	}
+	if m.direct() {
+		return writeReaderDirect(path, r, opts)
+	}
+	return m.writeReaderEscalated(ctx, path, r, opts)
+}
+
+// writeReaderDirect is the fd-anchored streaming path (root agent): it streams r
+// into an O_NOFOLLOW temp and atomically renames into place, then chowns through
+// an O_NOFOLLOW fd — the symlink-safe Direct write, sourced from a reader.
+func writeReaderDirect(path string, r io.Reader, opts WriteOptions) error {
+	perm := opts.Mode
+	if perm == 0 {
+		perm = 0o644
+	}
+	if err := safeReplaceFromReader(path, r, perm, true); err != nil {
+		return fmt.Errorf("write file %s: %w", path, err)
+	}
+	if opts.Owner != "" || opts.Group != "" {
+		uid, gid, err := ResolveOwnership(opts.Owner, opts.Group)
+		if err != nil {
+			return err
+		}
+		if err := FchownNoFollow(path, uid, gid); err != nil {
+			return fmt.Errorf("set ownership on %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// writeReaderEscalated streams r through the escalatedWriteScript: the root shell
+// `cat`s stdin into a same-directory temp and `mv -T`s it over the target, so the
+// payload never lands in this (non-root) process's memory. Same parent-safety
+// vetting and single-root-shell atomicity as writeEscalated; backup is always
+// empty (WriteReader rejects Backup up front).
+func (m *manager) writeReaderEscalated(ctx context.Context, path string, r io.Reader, opts WriteOptions) error {
+	perm := opts.Mode
+	if perm == 0 {
+		perm = 0o644
+	}
+	if err := escalatedParentSafe(filepath.Dir(path)); err != nil {
+		return err
+	}
+	res, err := m.r.Run(ctx, pmexec.Command{
+		Name:     "sh",
+		Args:     []string{"-c", escalatedWriteScript, "sh", path, modeArg(perm), Ownership(opts.Owner, opts.Group), ""},
+		Stdin:    r,
+		Escalate: true,
+	})
+	if err != nil {
+		return fmt.Errorf("write file %s: %w", path, err)
+	}
+	if cerr := cmdError("write file", res); cerr != nil {
+		return fmt.Errorf("write file %s: %w", path, cerr)
+	}
+	return nil
+}
+
 // escalatedWriteScript performs an atomic, symlink-safe write entirely as root in
 // one process, so there is no cross-process TOCTOU window. Positional args:
 // $1=target, $2=chmod mode, $3=chown owner (":group" form, "" to skip),
@@ -162,6 +256,46 @@ func (m *manager) Copy(ctx context.Context, src, dst string, opts WriteOptions) 
 	}
 	if opts.Owner != "" || opts.Group != "" {
 		if err := m.SetOwnership(ctx, dst, opts.Owner, opts.Group); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CopyTree recursively copies the tree at src to dst, preserving mode, ownership,
+// and timestamps (cp -a), and merges into dst rather than nesting under it: it
+// runs `cp -a -T -- src dst`, where -T (--no-target-directory) makes cp treat dst
+// as the literal destination. So `CopyTree(ctx, "/etc/skel", "/home/alice", …)`
+// makes /home/alice a copy of skel's contents whether or not /home/alice already
+// exists — never /home/alice/skel. cp -a OVERWRITES files that already exist at
+// dst (it does not delete dst-only files); a caller that must not clobber existing
+// content (e.g. a user's customised dotfiles) checks Exists first.
+//
+// opts applies to dst AFTER the copy: a non-zero Mode chmods the destination ROOT
+// only (not recursively — the per-file modes from the archive copy are kept),
+// while Owner/Group, if set, are applied RECURSIVELY (the common intent when
+// re-homing a tree copied as root — e.g. skel → a user's home). Both are skipped
+// when unset, leaving the archive-preserved metadata.
+func (m *manager) CopyTree(ctx context.Context, src, dst string, opts WriteOptions) error {
+	if err := ValidatePath(src); err != nil {
+		return err
+	}
+	if err := ValidatePath(dst); err != nil {
+		return err
+	}
+	if err := validateMode(opts.Mode); err != nil {
+		return err
+	}
+	if err := m.runChecked(ctx, "cp", "-a", "-T", "--", src, dst); err != nil {
+		return fmt.Errorf("copy tree: %w", err)
+	}
+	if opts.Mode != 0 {
+		if err := m.SetMode(ctx, dst, opts.Mode); err != nil {
+			return err
+		}
+	}
+	if opts.Owner != "" || opts.Group != "" {
+		if err := m.SetOwnershipRecursive(ctx, dst, opts.Owner, opts.Group); err != nil {
 			return err
 		}
 	}

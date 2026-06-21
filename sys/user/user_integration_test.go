@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"syscall"
 	"testing"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
@@ -319,5 +320,52 @@ func TestSupplementaryGroups_Integration(t *testing.T) {
 		if g == primary {
 			t.Errorf("primary group %q must not appear in supplementary list", primary)
 		}
+	}
+}
+
+func TestEnsureHome_Integration(t *testing.T) {
+	ctx := context.Background()
+	m := newManager(t)
+	name := testUsername("eh")
+	defer cleanupUser(t, m, name)
+
+	// Create the account with NO home (-M), simulating a home that is missing.
+	homeDir := "/home/" + name
+	if err := m.Create(ctx, name, user.CreateOptions{HomeDir: homeDir, CreateHome: false}); err != nil {
+		t.Fatalf("Create (-M, no home): %v", err)
+	}
+	if _, err := os.Stat(homeDir); !os.IsNotExist(err) {
+		t.Fatalf("home %q must be absent after a -M create (stat err = %v)", homeDir, err)
+	}
+
+	// EnsureHome must create it, own it by the user, and set 0700.
+	if err := m.EnsureHome(ctx, name, user.EnsureHomeOptions{}); err != nil {
+		t.Fatalf("EnsureHome: %v", err)
+	}
+	fi, err := os.Stat(homeDir)
+	if err != nil {
+		t.Fatalf("EnsureHome did not create the home: %v", err)
+	}
+	if !fi.IsDir() {
+		t.Fatalf("%q is not a directory", homeDir)
+	}
+	if fi.Mode().Perm() != 0o700 {
+		t.Errorf("home mode = %v, want 0700", fi.Mode().Perm())
+	}
+	info, err := m.Get(ctx, name)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if st, ok := fi.Sys().(*syscall.Stat_t); ok {
+		if int(st.Uid) != info.UID {
+			t.Errorf("home owner uid = %d, want the user's uid %d", st.Uid, info.UID)
+		}
+	} else {
+		t.Skip("no syscall.Stat_t on this platform to verify ownership")
+	}
+
+	// Idempotent: a second EnsureHome over the now-existing home must not error.
+	if err := m.EnsureHome(ctx, name, user.EnsureHomeOptions{}); err != nil {
+		t.Fatalf("EnsureHome (idempotent re-run): %v", err)
 	}
 }
