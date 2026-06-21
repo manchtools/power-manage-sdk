@@ -111,7 +111,7 @@ func (m *manager) applyApt(ctx context.Context, name string, c *AptConfig) (Outc
 	desired := buildAptSources(name, c, keyFile)
 
 	existingBytes, err := m.fsm.ReadFile(ctx, repoFile)
-	if err != nil {
+	if err != nil && !isReadAbsent(err) {
 		return Outcome{}, fmt.Errorf("read existing repo file: %w", err)
 	}
 	existing := string(existingBytes)
@@ -179,7 +179,7 @@ func (m *manager) updateAptKey(ctx context.Context, keyFile string, key []byte, 
 	newKey := []byte(res.Stdout)
 
 	existing, err := m.fsm.ReadFile(ctx, keyFile)
-	if err != nil {
+	if err != nil && !isReadAbsent(err) {
 		return false, fmt.Errorf("read existing GPG key: %w", err)
 	}
 	if existing != nil && bytes.Equal(existing, newKey) {
@@ -204,6 +204,9 @@ func (m *manager) updateAptKey(ctx context.Context, keyFile string, key []byte, 
 // the whole Apply.
 func (m *manager) cleanupConflictingApt(ctx context.Context, url, skipRepoFile, skipKeyFile string, log *strings.Builder) bool {
 	entries, err := m.fsm.ReadDir(ctx, aptSourcesDir)
+	if isReadAbsent(err) {
+		return false // no sources.list.d yet → nothing to clean up
+	}
 	if err != nil {
 		fmt.Fprintf(log, "warning: could not scan %s for conflicts: %v\n", aptSourcesDir, err)
 		return false

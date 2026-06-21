@@ -48,7 +48,7 @@ func (m *manager) applyDnf(ctx context.Context, name string, c *DnfConfig) (Outc
 
 	// Idempotency: a byte-identical file means nothing to do.
 	existing, err := m.fsm.ReadFile(ctx, repoFile)
-	if err != nil {
+	if err != nil && !isReadAbsent(err) {
 		return Outcome{}, fmt.Errorf("read existing repo file: %w", err)
 	}
 	if string(existing) == desired {
