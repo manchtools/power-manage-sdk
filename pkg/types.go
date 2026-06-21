@@ -12,6 +12,18 @@ type Package struct {
 	Pinned       bool // whether the package is pinned (hold)
 }
 
+// LocalPackage is the identity read out of a LOCAL package file (a .deb, .rpm or
+// pacman package on disk) by Manager.LocalPackageInfo. Name is the canonical
+// package name — validated against the backend's package-name grammar before it
+// is returned, because the value is read out of an attacker-influenced file.
+// Version and Arch are best-effort extra fields (a backend that cannot report
+// one leaves it empty).
+type LocalPackage struct {
+	Name    string
+	Version string
+	Arch    string
+}
+
 // PackageUpdate represents an available update for a package.
 type PackageUpdate struct {
 	Name           string

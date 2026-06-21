@@ -373,6 +373,93 @@ func TestDnf_Repair(t *testing.T) {
 			t.Fatalf("a non-cancellation verifydb runner error must be swallowed, got %v", err)
 		}
 	})
+
+	// Gap #5: when `rpm --verifydb` reports CORRUPTION (a non-zero exit), Repair
+	// escalates to `rpm --rebuilddb` to rebuild the rpm database — the recovery
+	// step the agent's UPDATE action used to shell itself. The rebuild is itself
+	// best-effort (a wedged rebuild is logged, not fatal), mirroring every other
+	// repair step.
+	t.Run("verifydb corruption escalates to rpm --rebuilddb", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "")                                                        // history redo
+		ok(f, "")                                                        // remove --duplicates
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "rpmdb corrupt"}, nil) // rpm --verifydb: corruption
+		ok(f, "")                                                        // rpm --rebuilddb
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatalf("rebuilddb is best-effort, must not fail: %v", err)
+		}
+		calls := f.Calls()
+		if len(calls) != 4 {
+			t.Fatalf("want 4 steps (…verifydb, rebuilddb), got %d: %v", len(calls), calls)
+		}
+		last := calls[3]
+		if last.Name != "rpm" || len(last.Args) != 1 || last.Args[0] != "--rebuilddb" {
+			t.Errorf("4th step = %s %v, want rpm --rebuilddb", last.Name, last.Args)
+		}
+		if !last.Escalate {
+			t.Error("rpm --rebuilddb mutates the rpmdb; it must escalate")
+		}
+	})
+
+	// The corollary: a CLEAN verifydb (exit 0) does NOT rebuild — the costly
+	// rebuild only runs when corruption is actually reported.
+	t.Run("clean verifydb does NOT rebuild", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "") // history redo
+		ok(f, "") // remove --duplicates
+		ok(f, "") // rpm --verifydb: clean
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range f.Calls() {
+			for _, a := range c.Args {
+				if a == "--rebuilddb" {
+					t.Fatal("a clean verifydb must NOT trigger rpm --rebuilddb")
+				}
+			}
+		}
+		if len(f.Calls()) != 3 {
+			t.Fatalf("clean verifydb → 3 steps, got %d", len(f.Calls()))
+		}
+	})
+
+	// A verifydb RUNNER error (binary gone) is not "corruption reported" — there
+	// is no rpmdb verdict to act on, so no rebuild is attempted.
+	t.Run("verifydb runner error does NOT rebuild", func(t *testing.T) {
+		m, f := dnfM(t)
+		ok(f, "")
+		ok(f, "")
+		f.Push(pmexec.Result{}, errors.New("rpm gone")) // verifydb: runner failure, not a corruption verdict
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatalf("swallowed best-effort, got %v", err)
+		}
+		for _, c := range f.Calls() {
+			for _, a := range c.Args {
+				if a == "--rebuilddb" {
+					t.Fatal("a verifydb runner error must NOT trigger a rebuild (no corruption verdict)")
+				}
+			}
+		}
+	})
+
+	// rebuilddb after corruption respects cancellation: a context cancelled before
+	// the rebuild stops the chain rather than running an escalated command.
+	t.Run("cancellation before rebuild stops the chain", func(t *testing.T) {
+		cctx, cancel := context.WithCancel(context.Background())
+		f := newFake()
+		ok(f, "") // history redo
+		ok(f, "") // remove --duplicates
+		// verifydb reports corruption, then the context is cancelled before rebuild.
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "corrupt"}, nil)
+		r := &cancelAfterRunner{inner: f, n: 3, cancel: cancel}
+		dm, err := New(Dnf, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := dm.Repair(cctx); !errors.Is(err, context.Canceled) {
+			t.Fatalf("err = %v, want context.Canceled from the cancelled rebuild", err)
+		}
+	})
 }
 
 func TestDnf_Search(t *testing.T) {

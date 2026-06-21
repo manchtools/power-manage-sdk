@@ -97,6 +97,7 @@ type Manager interface {
 	PrimaryGroup(ctx context.Context, name string) (string, error)
 	SupplementaryGroups(ctx context.Context, name string) ([]string, error)
 	KillSessions(ctx context.Context, name string) error
+	LastLogin(ctx context.Context, name string) (time.Time, error)
 	SetHiddenOnLoginScreen(ctx context.Context, name string, hidden bool) error
 	// Groups
 	GroupExists(ctx context.Context, name string) (bool, error)

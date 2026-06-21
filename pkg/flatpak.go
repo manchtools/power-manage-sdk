@@ -359,6 +359,14 @@ func (f *flatpak) ListVersions(ctx context.Context, name string) (*VersionInfo, 
 	return info, nil
 }
 
+// LocalPackageInfo is not supported for flatpak: a .flatpak bundle has no clean,
+// non-installing name-introspection command (its ref must be trusted from the
+// bundle metadata, which `flatpak install` itself reads), so rather than guess a
+// name from an attacker-influenced bundle this fails closed with a clear error.
+func (f *flatpak) LocalPackageInfo(_ context.Context, _ string) (*LocalPackage, error) {
+	return nil, fmt.Errorf("pkg: LocalPackageInfo is not supported for flatpak (a bundle has no introspectable local package name)")
+}
+
 // IsInstalled reports whether a bundle is installed (flatpak info exits 0).
 func (f *flatpak) IsInstalled(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {

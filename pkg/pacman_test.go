@@ -256,17 +256,55 @@ func TestPacman_Repair(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
 		stubStatFile(t, nil) // db.lck absent
 		m, f := pacmanM(t)
+		ok(f, "") // pacman-key --init
+		ok(f, "") // pacman-key --populate archlinux
 		ok(f, "") // -Syy
 		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
-		if argv(f.Calls()[0]) != "pacman -Syy --noconfirm" {
-			t.Errorf("argv=%q", argv(f.Calls()[0]))
+		// Gap #5: keyring bootstrap (pacman-key --init then --populate <keyring>)
+		// runs before the database refresh, then -Syy as before.
+		got := []string{argv(f.Calls()[0]), argv(f.Calls()[1]), argv(f.Calls()[2])}
+		want := []string{
+			"pacman-key --init",
+			"pacman-key --populate archlinux",
+			"pacman -Syy --noconfirm",
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Errorf("step %d argv=%q, want %q", i, got[i], want[i])
+			}
+		}
+		for _, c := range f.Calls() {
+			if !c.Escalate {
+				t.Errorf("repair step %q must escalate", argv(c))
+			}
 		}
 	})
+
+	// The keyring init steps are best-effort: a failing `pacman-key --init` (e.g.
+	// already initialized, or a transient gpg hiccup) is logged, not fatal, and
+	// the repair proceeds to populate + refresh — matching every other best-effort
+	// repair step.
+	t.Run("keyring init failure is best-effort, repair continues", func(t *testing.T) {
+		stubStatFile(t, nil)
+		m, f := pacmanM(t)
+		f.Push(pmexec.Result{ExitCode: 2, Stderr: "gpg: keyring already initialized"}, nil) // --init fails
+		ok(f, "")                                                                           // --populate
+		ok(f, "")                                                                           // -Syy
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatalf("a failed keyring --init must be swallowed, got %v", err)
+		}
+		if len(f.Calls()) != 3 {
+			t.Fatalf("want 3 steps even when --init fails, got %d", len(f.Calls()))
+		}
+	})
+
 	t.Run("refresh failure returned", func(t *testing.T) {
 		stubStatFile(t, nil)
 		m, f := pacmanM(t)
+		ok(f, "") // pacman-key --init
+		ok(f, "") // pacman-key --populate
 		f.Push(pmexec.Result{ExitCode: 1, Stderr: "sync failed"}, nil)
 		if _, err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "pacman -Syy failed") {
 			t.Fatalf("err=%v", err)
@@ -282,6 +320,23 @@ func TestPacman_Repair(t *testing.T) {
 		}
 		if len(f.Calls()) != 0 {
 			t.Error("cancelled repair must run nothing")
+		}
+	})
+
+	// Cancellation mid-keyring (after --init, before --populate) stops the chain
+	// rather than running the next escalated command.
+	t.Run("cancellation after keyring --init stops the chain", func(t *testing.T) {
+		stubStatFile(t, nil)
+		cctx, cancel := context.WithCancel(context.Background())
+		f := newFake()
+		ok(f, "") // pacman-key --init
+		r := &cancelAfterRunner{inner: f, n: 1, cancel: cancel}
+		pm, err := New(Pacman, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pm.Repair(cctx); !errors.Is(err, context.Canceled) {
+			t.Fatalf("err=%v, want context.Canceled", err)
 		}
 	})
 }

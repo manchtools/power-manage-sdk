@@ -430,6 +430,38 @@ func (a *apt) ListVersions(ctx context.Context, name string) (*VersionInfo, erro
 	return info, nil
 }
 
+// LocalPackageInfo reads the canonical Package/Version/Architecture out of a
+// local .deb via `dpkg-deb -f` (an unprivileged read). The Package field a
+// crafted .deb embeds is untrusted, so it is re-validated with
+// ValidatePackageName — the same grammar Remove/IsInstalled would feed it
+// to — before being returned; a flag-shaped or metacharacter-bearing name is
+// rejected here rather than surfacing as a package-manager flag downstream.
+func (a *apt) LocalPackageInfo(ctx context.Context, path string) (*LocalPackage, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return nil, err
+	}
+	out, err := readOut(ctx, a.r, "dpkg-deb", "-f", path, "Package", "Version", "Architecture")
+	if err != nil {
+		return nil, err
+	}
+	lines := splitPositionalFields(out)
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("pkg: dpkg-deb reported no Package field for %q", path)
+	}
+	name := lines[0]
+	if err := ValidatePackageName(name); err != nil {
+		return nil, fmt.Errorf("pkg: local .deb reports an unsafe package name: %w", err)
+	}
+	info := &LocalPackage{Name: name}
+	if len(lines) > 1 {
+		info.Version = lines[1]
+	}
+	if len(lines) > 2 {
+		info.Arch = lines[2]
+	}
+	return info, nil
+}
+
 // IsInstalled reports whether a package is installed (dpkg -s exits 0).
 func (a *apt) IsInstalled(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {
