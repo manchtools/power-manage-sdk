@@ -33,8 +33,10 @@ import (
 // name, version, and architecture, via an UNPRIVILEGED dpkg-deb read.
 func TestLocalPackageInfo_AptHappyPath(t *testing.T) {
 	m, f := aptM(t)
-	// dpkg-deb -f emits each requested field on its own line, in order.
-	ok(f, "nginx\n1.24.0-1ubuntu1\namd64\n")
+	// dpkg-deb -f with MULTIPLE fields emits a labeled "Field: value" stanza (NOT
+	// bare values — that is only the single-field shape). The parse must read the
+	// value, not the "Package:" label.
+	ok(f, "Package: nginx\nVersion: 1.24.0-1ubuntu1\nArchitecture: amd64\n")
 	info, err := m.LocalPackageInfo(context.Background(), "/tmp/nginx.deb")
 	if err != nil {
 		t.Fatalf("LocalPackageInfo err = %v", err)
