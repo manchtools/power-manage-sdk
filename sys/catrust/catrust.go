@@ -35,10 +35,17 @@ import (
 type Backend int
 
 const (
-	// CaCertificates is the Debian/Ubuntu update-ca-certificates flow.
+	// CaCertificates is the Debian/Ubuntu update-ca-certificates flow
+	// (anchors in /usr/local/share/ca-certificates).
 	CaCertificates Backend = iota + 1
-	// P11Kit is the Fedora/RHEL/SUSE p11-kit update-ca-trust flow.
+	// P11Kit is the Fedora/RHEL/EL/Arch p11-kit update-ca-trust flow
+	// (anchors in /etc/pki/ca-trust/source/anchors).
 	P11Kit
+	// SuseCaCertificates is the openSUSE/SLES update-ca-certificates flow. SUSE
+	// ships a tool of the SAME name as Debian's but reads anchors from
+	// /etc/pki/trust/anchors, so it needs its own backend (Detect disambiguates
+	// the two by which anchors dir exists).
+	SuseCaCertificates
 )
 
 // String renders the backend as its canonical name.
@@ -48,6 +55,8 @@ func (b Backend) String() string {
 		return "ca-certificates"
 	case P11Kit:
 		return "p11-kit"
+	case SuseCaCertificates:
+		return "suse-ca-certificates"
 	default:
 		return fmt.Sprintf("Backend(%d)", int(b))
 	}
@@ -96,6 +105,15 @@ var backends = map[Backend]backendConfig{
 		anchorsDir:     "/etc/pki/ca-trust/source/anchors",
 		installRefresh: []string{"update-ca-trust", "extract"},
 		removeRefresh:  []string{"update-ca-trust", "extract"},
+	},
+	// SUSE's update-ca-certificates regenerates the consolidated bundle from the
+	// anchors dir on every run, so a plain run both adds (install) and drops a
+	// removed file (remove) — no Debian-style "--fresh" flag (which SUSE's tool
+	// does not accept).
+	SuseCaCertificates: {
+		anchorsDir:     "/etc/pki/trust/anchors",
+		installRefresh: []string{"update-ca-certificates"},
+		removeRefresh:  []string{"update-ca-certificates"},
 	},
 }
 

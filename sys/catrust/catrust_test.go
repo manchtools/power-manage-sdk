@@ -110,10 +110,31 @@ func TestNew_UnknownBackend(t *testing.T) {
 
 func TestNew_Backends(t *testing.T) {
 	withFakeFS(t, &fakeFS{})
-	for _, b := range []Backend{CaCertificates, P11Kit} {
+	for _, b := range []Backend{CaCertificates, P11Kit, SuseCaCertificates} {
 		if _, err := New(b, exectest.New(exec.Direct)); err != nil {
 			t.Errorf("New(%v): %v", b, err)
 		}
+	}
+}
+
+// TestInstall_SuseWritesToTrustAnchors pins the SUSE backend's distinct anchors
+// dir + refresh command — SUSE's update-ca-certificates reads /etc/pki/trust/anchors,
+// NOT Debian's /usr/local/share/ca-certificates.
+func TestInstall_SuseWritesToTrustAnchors(t *testing.T) {
+	ff := &fakeFS{}
+	m, r := newMgr(t, SuseCaCertificates, ff)
+	if err := m.Install(context.Background(), "corp-root", validCAPEM(t)); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if len(ff.writes) != 1 || ff.writes[0].path != "/etc/pki/trust/anchors/corp-root.crt" {
+		t.Fatalf("anchor written to %v, want /etc/pki/trust/anchors/corp-root.crt", ff.writes)
+	}
+	calls := r.Calls()
+	if len(calls) != 1 || calls[0].Name != "update-ca-certificates" {
+		t.Fatalf("refresh = %+v, want a single `update-ca-certificates`", calls)
+	}
+	if !calls[0].Escalate {
+		t.Error("trust-store refresh must escalate")
 	}
 }
 
@@ -136,7 +157,7 @@ func TestNew_PropagatesFSError(t *testing.T) {
 }
 
 func TestBackendString(t *testing.T) {
-	cases := map[Backend]string{CaCertificates: "ca-certificates", P11Kit: "p11-kit", Backend(0): "Backend(0)"}
+	cases := map[Backend]string{CaCertificates: "ca-certificates", P11Kit: "p11-kit", SuseCaCertificates: "suse-ca-certificates", Backend(0): "Backend(0)"}
 	for b, want := range cases {
 		if got := b.String(); got != want {
 			t.Errorf("Backend(%d).String() = %q, want %q", int(b), got, want)
@@ -410,22 +431,29 @@ func TestDetect(t *testing.T) {
 	cases := []struct {
 		name    string
 		present map[string]bool
+		suseDir bool // /etc/pki/trust/anchors exists → SUSE, not Debian
 		want    []Backend
 	}{
-		{"none", map[string]bool{}, nil},
-		{"debian", map[string]bool{"update-ca-certificates": true}, []Backend{CaCertificates}},
-		{"fedora", map[string]bool{"update-ca-trust": true}, []Backend{P11Kit}},
-		{"both", map[string]bool{"update-ca-certificates": true, "update-ca-trust": true}, []Backend{CaCertificates, P11Kit}},
+		{"none", map[string]bool{}, false, nil},
+		// Debian and SUSE both ship `update-ca-certificates`; the anchors dir
+		// disambiguates them.
+		{"debian", map[string]bool{"update-ca-certificates": true}, false, []Backend{CaCertificates}},
+		{"suse", map[string]bool{"update-ca-certificates": true}, true, []Backend{SuseCaCertificates}},
+		{"fedora", map[string]bool{"update-ca-trust": true}, false, []Backend{P11Kit}},
+		{"both-debian", map[string]bool{"update-ca-certificates": true, "update-ca-trust": true}, false, []Backend{CaCertificates, P11Kit}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			prev := lookPath
-			t.Cleanup(func() { lookPath = prev })
+			prevLook, prevDir := lookPath, anchorsDirExists
+			t.Cleanup(func() { lookPath, anchorsDirExists = prevLook, prevDir })
 			lookPath = func(name string) (string, error) {
 				if tc.present[name] {
 					return "/usr/sbin/" + name, nil
 				}
 				return "", errors.New("no")
+			}
+			anchorsDirExists = func(path string) bool {
+				return tc.suseDir && path == "/etc/pki/trust/anchors"
 			}
 			got := Detect(context.Background())
 			if len(got) != len(tc.want) {

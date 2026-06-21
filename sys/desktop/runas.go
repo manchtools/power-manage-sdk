@@ -93,7 +93,13 @@ func (m *manager) RunAsCommand(ctx context.Context, s Session, opts RunAsOptions
 	if err := validateExtraEnv(opts.ExtraEnv); err != nil {
 		return nil, err
 	}
-	full := append([]string{"-u", s.Username, "--", name}, args...)
+	// Wrap the command in `env PATH=<curated>`: runuser's PAM session can reset
+	// PATH from /etc/login.defs (openSUSE sets ALWAYS_SET_PATH), which would strip
+	// the curated PATH we put in cmd.Env. The env wrapper re-applies it AFTER the
+	// session is set up, running as the target user, so the curated UserPath always
+	// wins regardless of the distro's login.defs. (cmd.Env still carries PATH for
+	// distros that don't reset it; the wrapper is the portable guarantee.)
+	full := append([]string{"-u", s.Username, "--", envPath, "PATH=" + UserPath(s), name}, args...)
 	cmd := osexec.CommandContext(ctx, runuserPath, full...)
 	// Replace inherited env wholesale — agent's env (LD_PRELOAD,
 	// LD_LIBRARY_PATH, etc.) must not leak into a user-scoped command.
