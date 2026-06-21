@@ -53,6 +53,39 @@ func TestFlatpak_Version(t *testing.T) {
 	})
 }
 
+func TestFlatpak_InstallFromRemote(t *testing.T) {
+	ctx := context.Background()
+	t.Run("explicit remote operand precedes the appid", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "")
+		if _, err := m.Install(ctx, InstallOptions{Remote: "flathub"}, "org.vim.Vim"); err != nil {
+			t.Fatal(err)
+		}
+		if a := argv(f.Calls()[0]); a != "flatpak install -y --noninteractive --system flathub org.vim.Vim" {
+			t.Errorf("argv=%q, want the remote operand before the appid", a)
+		}
+	})
+	t.Run("flag-shaped remote is rejected before running", func(t *testing.T) {
+		m, f := flatpakM(t)
+		if _, err := m.Install(ctx, InstallOptions{Remote: "-evil"}, "org.vim.Vim"); err == nil {
+			t.Fatal("want a validation error for a flag-shaped remote")
+		}
+		if len(f.Calls()) != 0 {
+			t.Error("a rejected remote must run nothing")
+		}
+	})
+	t.Run("empty remote keeps the existing no-remote behavior", func(t *testing.T) {
+		m, f := flatpakM(t)
+		ok(f, "")
+		if _, err := m.Install(ctx, InstallOptions{}, "org.vim.Vim"); err != nil {
+			t.Fatal(err)
+		}
+		if a := argv(f.Calls()[0]); a != "flatpak install -y --noninteractive --system org.vim.Vim" {
+			t.Errorf("argv=%q, want no remote operand", a)
+		}
+	})
+}
+
 func TestFlatpak_Install(t *testing.T) {
 	ctx := context.Background()
 	t.Run("system scope, escalated", func(t *testing.T) {

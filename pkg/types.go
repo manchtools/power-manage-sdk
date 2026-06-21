@@ -62,6 +62,12 @@ type InstallOptions struct {
 	Version string
 	// AllowDowngrade permits installing a lower version than the one installed.
 	AllowDowngrade bool
+	// Remote names the flatpak remote to install FROM (e.g. "flathub"). It is
+	// honored only by the flatpak backend — where it disambiguates which remote
+	// provides the app instead of relying on flatpak's auto-resolution — and is
+	// ignored by the native package managers. Empty selects flatpak's default
+	// resolution.
+	Remote string
 }
 
 // InstallLocalOptions configures an InstallLocal call.
