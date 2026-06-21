@@ -284,6 +284,40 @@ func TestHTTPFetch_RejectsCrossHostRedirect(t *testing.T) {
 	}
 }
 
+// TestDefaultHTTPClient_RejectsSchemeDowngradeRedirect pins the redirect-origin
+// guard at the function level: CheckRedirect must refuse a scheme change (an
+// https -> http TLS downgrade) and a host change, while allowing a same-origin
+// path redirect and bounding the redirect count. Exercised directly so the scheme
+// check is isolated from the host:port difference a real two-server test forces.
+func TestDefaultHTTPClient_RejectsSchemeDowngradeRedirect(t *testing.T) {
+	check := defaultHTTPClient().CheckRedirect
+	req := func(raw string) *http.Request {
+		r, err := http.NewRequest(http.MethodGet, raw, nil)
+		if err != nil {
+			t.Fatalf("build request %q: %v", raw, err)
+		}
+		return r
+	}
+	via := []*http.Request{req("https://host.example/a")}
+
+	if err := check(req("http://host.example/a"), via); err == nil {
+		t.Error("CheckRedirect allowed an https->http downgrade on the same host (TLS downgrade)")
+	}
+	if err := check(req("https://other.example/a"), via); err == nil {
+		t.Error("CheckRedirect allowed a cross-host redirect")
+	}
+	if err := check(req("https://host.example/b"), via); err != nil {
+		t.Errorf("CheckRedirect rejected a same-origin path redirect: %v", err)
+	}
+	long := make([]*http.Request, 10)
+	for i := range long {
+		long[i] = req("https://host.example/a")
+	}
+	if err := check(req("https://host.example/z"), long); err == nil {
+		t.Error("CheckRedirect allowed more than 10 redirects")
+	}
+}
+
 // TestHTTPFetch_RejectsUnsafeDest — dest validation is mandatory even
 // when the rest of the config is fine. A non-absolute path must fail
 // before any network traffic.

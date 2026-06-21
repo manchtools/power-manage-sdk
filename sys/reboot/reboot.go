@@ -56,9 +56,11 @@ type Manager interface {
 // can't transpose the (delay, message) pair, and so future knobs (e.g. a
 // kexec fast-reboot) can be added without breaking the signature.
 type ScheduleOptions struct {
-	// Delay is the shutdown(8) TIME spec (e.g. "+5", "now", "23:00"). Empty
-	// defaults to "+1" (one minute), matching shutdown's own grace default
-	// intent while never rebooting instantly by accident.
+	// Delay is the reboot grace time, constrained to a positive relative minute
+	// offset "+N" (N >= minRebootGraceMinutes). This is deliberately narrower
+	// than shutdown(8)'s full TIME grammar: "now", "+0", a negative offset, and
+	// absolute clock times (e.g. "23:00") are rejected so a reboot always leaves
+	// a grace window for logged-in users. Empty defaults to "+1" (one minute).
 	Delay string
 	// Message, when non-empty, is the wall message broadcast to logged-in
 	// users by shutdown.

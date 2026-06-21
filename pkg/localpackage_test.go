@@ -112,6 +112,33 @@ func TestLocalPackageInfo_PacmanHappyPath(t *testing.T) {
 	}
 }
 
+// TestLocalPackageInfo_PacmanRejectsNamelessOutput: malformed `-Qp` output with a
+// leading-whitespace version but no name token must be REJECTED (fail-closed
+// parse) — TrimSpace+Fields would otherwise promote the version to Name. Derived
+// from intent ("the first token IS the name; no name token => reject"), not from
+// the parser under test.
+func TestLocalPackageInfo_PacmanRejectsNamelessOutput(t *testing.T) {
+	cases := map[string]string{
+		"leading-space version": " 1.0-1\n",
+		"leading-tab version":   "\t1.0-1\n",
+		"whitespace only":       "   \n",
+		"empty":                 "\n",
+	}
+	for name, out := range cases {
+		t.Run(name, func(t *testing.T) {
+			m, f := pacmanM(t)
+			ok(f, out)
+			info, err := m.LocalPackageInfo(context.Background(), "/tmp/x.pkg.tar.zst")
+			if err == nil {
+				t.Fatalf("accepted nameless -Qp output %q as info=%+v; want a no-name rejection", out, info)
+			}
+			if info != nil {
+				t.Errorf("info = %+v, want nil on rejection", info)
+			}
+		})
+	}
+}
+
 // TestLocalPackageInfo_FlatpakUnsupported: a flatpak bundle has no clean local
 // name-introspection command, so the call returns a clear error and runs nothing.
 func TestLocalPackageInfo_FlatpakUnsupported(t *testing.T) {

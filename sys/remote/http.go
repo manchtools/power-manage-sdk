@@ -355,7 +355,10 @@ func applyMode(dest, mode, owner, group string) error {
 		return nil
 	}
 	if mode != "" {
-		bits, perr := strconv.ParseUint(strings.TrimPrefix(mode, "0"), 8, 32)
+		// ParseUint(base 8) handles octal mode strings with or without a leading
+		// zero ("755", "0755", "0"); do NOT strip a leading "0" first — that turns
+		// "0" into "" and wrongly rejects octal zero.
+		bits, perr := strconv.ParseUint(mode, 8, 32)
 		if perr != nil {
 			return fmt.Errorf("invalid mode %q: %w", mode, perr)
 		}
@@ -403,13 +406,16 @@ func chownNoFollow(dest string, uid, gid int) error {
 func defaultHTTPClient() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Minute,
-		// Refuse any redirect that changes host:port. A download is pinned to a
-		// URL; letting a redirect choose a different host lets a compromised
-		// origin substitute the bytes (and is an SSRF vector toward internal
-		// services). Same-host path redirects are allowed but bounded.
+		// Refuse any redirect that changes the origin (scheme OR host:port). A
+		// download is pinned to a URL; letting a redirect choose a different host
+		// lets a compromised origin substitute the bytes (and is an SSRF vector
+		// toward internal services), and a scheme change is a TLS downgrade
+		// (https -> http) that strips transport integrity from a pinned source.
+		// Same-origin path redirects are allowed but bounded.
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > 0 && req.URL.Host != via[0].URL.Host {
-				return fmt.Errorf("%w: refusing cross-host redirect %s -> %s", ErrInvalidConfig, via[0].URL.Host, req.URL.Host)
+			if len(via) > 0 && (req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host) {
+				return fmt.Errorf("%w: refusing cross-origin redirect %s://%s -> %s://%s", ErrInvalidConfig,
+					via[0].URL.Scheme, via[0].URL.Host, req.URL.Scheme, req.URL.Host)
 			}
 			if len(via) >= 10 {
 				return fmt.Errorf("%w: stopped after 10 redirects", ErrInvalidConfig)
@@ -447,7 +453,9 @@ func validateModeBits(mode string) error {
 	if mode == "" {
 		return nil
 	}
-	bits, err := strconv.ParseUint(strings.TrimPrefix(mode, "0"), 8, 32)
+	// ParseUint(base 8) accepts a leading zero; do NOT TrimPrefix "0" first (it
+	// turns "0" into "" and wrongly rejects octal zero). Mirrors applyMode.
+	bits, err := strconv.ParseUint(mode, 8, 32)
 	if err != nil {
 		return fmt.Errorf("%w: invalid mode %q", ErrInvalidConfig, mode)
 	}

@@ -421,10 +421,14 @@ func (p *pacman) LocalPackageInfo(ctx context.Context, path string) (*LocalPacka
 	if err != nil {
 		return nil, err
 	}
-	fields := strings.Fields(strings.TrimSpace(out))
-	if len(fields) == 0 {
+	// `pacman -Qp` prints "name version". Reject output with no leading name
+	// token: TrimSpace+Fields would otherwise collapse leading whitespace and
+	// promote the version of a malformed " 1.0-1" line to Name (fail-closed parse).
+	line := strings.TrimRight(out, "\r\n")
+	if strings.TrimSpace(line) == "" || line[0] == ' ' || line[0] == '\t' {
 		return nil, fmt.Errorf("pkg: pacman -Qp reported no name for %q", path)
 	}
+	fields := strings.Fields(line)
 	name := fields[0]
 	if err := ValidatePackageName(name); err != nil {
 		return nil, fmt.Errorf("pkg: local package reports an unsafe name: %w", err)

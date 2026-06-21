@@ -7,10 +7,19 @@ import (
 )
 
 // TestCryptoRandReadErrorsAreChecked locks the entropy boundary: any direct
-// crypto/rand.Read call must inspect its error. If entropy acquisition fails and
-// code silently proceeds with a zero/partial buffer, attacker-controlled names,
-// nonces, or keys can become predictable. Helpers that need randomness should
-// return the error or use APIs that already do.
+// crypto/rand.Read call must CAPTURE its error to a named (non-blank) identifier.
+// If entropy acquisition fails and code silently proceeds with a zero/partial
+// buffer, attacker-controlled names, nonces, or keys can become predictable.
+// Helpers that need randomness should return the error or use APIs that already do.
+//
+// Scope: this guard rejects the two discard shapes the Go compiler PERMITS — a
+// bare rand.Read(...) with no captured error, and capture-to-blank (`_`). The
+// remaining shape (capture to a named err that is then never read) is not a gap:
+// Go rejects an unused local at compile time, and staticcheck (SA4006/ineffassign,
+// run in CI) rejects an ineffectual reassignment — so "captured but unchecked"
+// cannot ship. The three gates together prove the error is handled; this one owns
+// the compiler-permitted discards. Deliberately pure-stdlib AST (no type/flow
+// analysis) to stay robust, consistent with the other fitness functions.
 func TestCryptoRandReadErrorsAreChecked(t *testing.T) {
 	root := moduleRoot(t)
 	files := walkGoFiles(t, root, func(rel string) bool {
