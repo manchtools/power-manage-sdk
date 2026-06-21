@@ -69,6 +69,9 @@ type Query struct {
 	// Grep keeps only entries matching this pattern. Capped at 256 chars and
 	// refused if it is a catastrophic-backtracking shape (ReDoS guard).
 	Grep string
+	// Kernel restricts the result to kernel-ring messages (journalctl -k;
+	// Journald only, ignored by Syslog).
+	Kernel bool
 	// Lines caps the number of entries returned. <=0 means 100; values above
 	// 10000 are clamped to 10000.
 	Lines int

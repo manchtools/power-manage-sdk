@@ -33,6 +33,9 @@ func (s *journaldSource) Query(ctx context.Context, q Query) ([]string, error) {
 	if q.Priority != "" {
 		args = append(args, "-p", q.Priority)
 	}
+	if q.Kernel {
+		args = append(args, "-k") // kernel-ring only (journalctl --dmesg)
+	}
 	if q.Grep != "" {
 		args = append(args, "--grep", q.Grep)
 	}

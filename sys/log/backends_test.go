@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -48,6 +49,30 @@ func TestJournald_QueryArgv(t *testing.T) {
 	}
 }
 
+// TestJournald_QueryKernel: Kernel=true emits journalctl's -k (kernel ring);
+// Kernel=false must NOT — the absent case proves the flag isn't always-on.
+func TestJournald_QueryKernel(t *testing.T) {
+	r := exectest.New(exec.Direct)
+	r.Push(exec.Result{Stdout: "kmsg\n"}, nil)
+	s, _ := New(Journald, r)
+	if _, err := s.Query(context.Background(), Query{Kernel: true, Lines: 50}); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(r.Calls()[0].Args, "-k") {
+		t.Errorf("Kernel=true must add -k; argv=%v", r.Calls()[0].Args)
+	}
+
+	r2 := exectest.New(exec.Direct)
+	r2.Push(exec.Result{Stdout: ""}, nil)
+	s2, _ := New(Journald, r2)
+	if _, err := s2.Query(context.Background(), Query{Kernel: false}); err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(r2.Calls()[0].Args, "-k") {
+		t.Errorf("Kernel=false must not add -k; argv=%v", r2.Calls()[0].Args)
+	}
+}
+
 func TestJournald_QueryDefaultsAndMinimal(t *testing.T) {
 	r := exectest.New(exec.Direct)
 	r.Push(exec.Result{Stdout: ""}, nil)
@@ -59,7 +84,7 @@ func TestJournald_QueryDefaultsAndMinimal(t *testing.T) {
 	if !strings.Contains(argv, "-n 100") { // default line cap
 		t.Errorf("default lines should be 100: %q", argv)
 	}
-	for _, absent := range []string{"-u ", "--since", "--until", "-p ", "--grep"} {
+	for _, absent := range []string{"-u ", "--since", "--until", "-p ", "--grep", "-k"} {
 		if strings.Contains(argv, absent) {
 			t.Errorf("minimal query must not emit %q: %q", absent, argv)
 		}
