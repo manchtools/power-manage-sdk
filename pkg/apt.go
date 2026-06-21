@@ -440,26 +440,38 @@ func (a *apt) LocalPackageInfo(ctx context.Context, path string) (*LocalPackage,
 	if err := ValidateLocalPackagePath(path); err != nil {
 		return nil, err
 	}
+	// dpkg-deb -f with MULTIPLE fields prints a labeled "Field: value" stanza (a
+	// SINGLE field would print the bare value). Parse by field name so the
+	// "Package:" label never leaks into the package name (which would then fail
+	// ValidatePackageName).
 	out, err := readOut(ctx, a.r, "dpkg-deb", "-f", path, "Package", "Version", "Architecture")
 	if err != nil {
 		return nil, err
 	}
-	lines := splitPositionalFields(out)
-	if len(lines) == 0 {
+	fields := parseControlFields(out)
+	name := fields["Package"]
+	if name == "" {
 		return nil, fmt.Errorf("pkg: dpkg-deb reported no Package field for %q", path)
 	}
-	name := lines[0]
 	if err := ValidatePackageName(name); err != nil {
 		return nil, fmt.Errorf("pkg: local .deb reports an unsafe package name: %w", err)
 	}
-	info := &LocalPackage{Name: name}
-	if len(lines) > 1 {
-		info.Version = lines[1]
+	return &LocalPackage{Name: name, Version: fields["Version"], Arch: fields["Architecture"]}, nil
+}
+
+// parseControlFields parses dpkg-deb -f's labeled "Field: value" stanza into a
+// field map. The value is taken after the FIRST ":" so an epoch'd version
+// ("1:2.0") survives intact, and the field LABEL never becomes part of a value.
+func parseControlFields(out string) map[string]string {
+	fields := make(map[string]string)
+	for _, line := range strings.Split(out, "\n") {
+		key, val, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		fields[strings.TrimSpace(key)] = strings.TrimSpace(val)
 	}
-	if len(lines) > 2 {
-		info.Arch = lines[2]
-	}
-	return info, nil
+	return fields
 }
 
 // IsInstalled reports whether a package is installed (dpkg -s exits 0).

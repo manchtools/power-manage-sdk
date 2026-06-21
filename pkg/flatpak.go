@@ -67,10 +67,22 @@ func (f *flatpak) Install(ctx context.Context, opts InstallOptions, packages ...
 	if err := ValidatePackageVersion(opts.Version); err != nil {
 		return pmexec.Result{}, err
 	}
+	if opts.Remote != "" {
+		if err := ValidateRemoteName(opts.Remote); err != nil {
+			return pmexec.Result{}, err
+		}
+	}
 	if len(packages) == 0 {
 		return pmexec.Result{}, nil
 	}
-	args := append([]string{"install", "-y", "--noninteractive", f.scope()}, packages...)
+	// An explicit remote is the operator's disambiguation of which remote provides
+	// the app; it precedes the app refs (`flatpak install <scope> <remote> <refs>`).
+	// ValidateRemoteName has rejected a flag-shaped value, so it is a safe operand.
+	args := []string{"install", "-y", "--noninteractive", f.scope()}
+	if opts.Remote != "" {
+		args = append(args, opts.Remote)
+	}
+	args = append(args, packages...)
 	return f.write(ctx, args...)
 }
 
