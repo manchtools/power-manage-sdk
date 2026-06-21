@@ -7,9 +7,17 @@ description: How a capability's backend is chosen explicitly, how to discover wh
 # Backends & detection
 
 A *backend* is one concrete way to do a job: `apt` vs `dnf` for packages,
-`systemd` vs another init for services, `ca-certificates` vs `p11-kit` for CA
-trust. Capabilities with more than one implementation take a `Backend` value
-at construction.
+`systemd` for services, `ca-certificates` vs `p11-kit` for CA trust. A
+capability that drives such a family takes a `Backend` value at construction —
+and it takes one **even when only one backend is implemented today** (services
+has just `systemd`; users just shadow-utils), so the choice is always explicit
+and never auto-detected.
+
+<!-- docref: begin src=sys/smart/smart.go#New:b54f2658,sys/osquery/osquery.go#New:dda636e8 -->
+A capability that is a single tool by nature — `smartctl` for SMART, `osqueryi`
+for queries — takes only a Runner; its `New` has no `Backend` parameter at all,
+because there is no family of alternatives to choose from.
+<!-- docref: end -->
 
 ## One backend per host, chosen explicitly
 
