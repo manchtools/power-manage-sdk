@@ -30,6 +30,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -96,18 +97,28 @@ type MkdirOptions struct {
 // the caller controls timeout/cancellation. A non-zero exit from a shelled
 // command becomes an *exec.CommandError carrying the exit code and stderr.
 type Manager interface {
-	// ReadFile returns the contents of path. A path that does not exist yields
-	// (nil, nil) — absence is not an error, matching the "read whatever is
-	// there, empty if nothing" contract callers depend on.
+	// ReadFile returns the contents of path. A path that does not exist yields a
+	// wrapped fs.ErrNotExist (not a silent empty result), so a caller can tell
+	// "absent" from "present but empty"; opt into absent-as-empty with
+	// errors.Is(err, fs.ErrNotExist). A present empty file returns (nil, nil).
 	ReadFile(ctx context.Context, path string) ([]byte, error)
-	// ReadDir lists the immediate entries of a directory (no recursion). A path
-	// that does not exist yields (nil, nil) — absence is an empty listing, the
-	// same "absent is empty" contract as ReadFile — so a caller enumerating a
-	// managed config directory that has never been created treats it as empty.
+	// ReadDir lists the immediate entries of a directory (no recursion). A
+	// missing directory yields a wrapped fs.ErrNotExist (the same explicit-
+	// absence contract as ReadFile); a non-directory target is an error too,
+	// never a silent empty listing.
 	ReadDir(ctx context.Context, path string) ([]DirEntry, error)
 	// WriteFile writes data to path atomically. When the Runner's backend is
 	// Direct the write is also symlink-safe (fd-anchored); see the package doc.
 	WriteFile(ctx context.Context, path string, data []byte, opts WriteOptions) error
+	// WriteReader streams r to path without buffering the whole payload — for a
+	// large artifact (e.g. a downloaded AppImage) WriteFile would risk OOM on. A
+	// crash/power-loss never leaves a partial file (temp + rename). On the Direct
+	// backend a reader error also aborts before the rename, so a truncated stream
+	// never clobbers the existing file; on escalated backends a reader error is
+	// surfaced but may occur after a truncated temp was already renamed, so stream
+	// a complete source. opts.Backup is unsupported (returns an error). See the
+	// method doc for detail.
+	WriteReader(ctx context.Context, path string, r io.Reader, opts WriteOptions) error
 	// Exists reports whether path exists. The probe runs through the privilege
 	// backend so it can see paths in directories the caller cannot traverse
 	// (e.g. /etc/sudoers.d, mode 0750). A runner/ctx failure is returned as an
@@ -123,6 +134,10 @@ type Manager interface {
 	RemoveDir(ctx context.Context, path string) error
 	// Copy copies src to dst and applies opts (mode/ownership) to dst.
 	Copy(ctx context.Context, src, dst string, opts WriteOptions) error
+	// CopyTree recursively copies the tree at src to dst (cp -a), merging into
+	// dst rather than nesting under it. A non-zero opts.Mode chmods the dst root;
+	// opts.Owner/Group, if set, are applied recursively.
+	CopyTree(ctx context.Context, src, dst string, opts WriteOptions) error
 	// SetMode sets the file mode (chmod).
 	SetMode(ctx context.Context, path string, mode os.FileMode) error
 	// SetOwnership sets the file owner and group (chown). Either may be empty;
@@ -135,6 +150,10 @@ type Manager interface {
 	IsReadOnly(ctx context.Context, path string) (bool, error)
 	// RemountRW remounts the filesystem at path read-write.
 	RemountRW(ctx context.Context, path string) error
+	// ListMounts enumerates every mounted filesystem (source/target/fstype/ro).
+	// The enumeration counterpart to IsReadOnly/RemountRW — for acting on every
+	// matching mount (e.g. remounting all read-only on-disk mounts).
+	ListMounts(ctx context.Context) ([]MountInfo, error)
 }
 
 // manager is the single Manager implementation; the privilege strategy is the

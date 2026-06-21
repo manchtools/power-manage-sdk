@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
@@ -9,8 +10,9 @@ import (
 )
 
 // fakeFS is a hermetic fsManager for user tests: it records the
-// AccountsService write/remove and the home-fixup recursive chown, and returns
-// scripted errors. install() points the newFS seam at it for the test.
+// AccountsService write/remove, the home-fixup recursive chown, and the
+// EnsureHome probe/create/seed/mode calls, and returns scripted errors.
+// install() points the newFS seam at it for the test.
 type fakeFS struct {
 	writes  map[string]string
 	removes []string
@@ -18,10 +20,44 @@ type fakeFS struct {
 		path, owner, group string
 		called             bool
 	}
-	writeErr, removeErr, chownErr error
+	// EnsureHome surface.
+	present map[string]bool // Exists() answers
+	mkdirs  []string
+	copies  []struct{ src, dst string }
+	chmods  struct {
+		path string
+		mode os.FileMode
+	}
+	existsErr, mkdirErr, copyErr, chmodErr error
+	writeErr, removeErr, chownErr          error
 }
 
-func newFakeFS() *fakeFS { return &fakeFS{writes: map[string]string{}} }
+func newFakeFS() *fakeFS {
+	return &fakeFS{writes: map[string]string{}, present: map[string]bool{}}
+}
+
+func (f *fakeFS) Exists(_ context.Context, path string) (bool, error) {
+	return f.present[path], f.existsErr
+}
+
+func (f *fakeFS) Mkdir(_ context.Context, path string, _ fs.MkdirOptions) error {
+	f.mkdirs = append(f.mkdirs, path)
+	if f.mkdirErr != nil {
+		return f.mkdirErr // a failed mkdir must NOT mark the dir present
+	}
+	f.present[path] = true
+	return nil
+}
+
+func (f *fakeFS) CopyTree(_ context.Context, src, dst string, _ fs.WriteOptions) error {
+	f.copies = append(f.copies, struct{ src, dst string }{src, dst})
+	return f.copyErr
+}
+
+func (f *fakeFS) SetMode(_ context.Context, path string, mode os.FileMode) error {
+	f.chmods.path, f.chmods.mode = path, mode
+	return f.chmodErr
+}
 
 func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, _ fs.WriteOptions) error {
 	f.writes[path] = string(data)

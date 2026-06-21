@@ -283,6 +283,136 @@ func TestCopy(t *testing.T) {
 	}
 }
 
+func TestCopyTree(t *testing.T) {
+	ctx := context.Background()
+	m := intManager(t)
+	src := tmpPath(t, "treesrc")
+	dst := tmpPath(t, "treedst")
+	defer func() { _ = m.RemoveDir(ctx, src); _ = m.RemoveDir(ctx, dst) }()
+
+	// A src tree with a regular file, a DOTFILE (proves -a copies hidden files),
+	// and a nested subdir (proves recursion). Setup via os.* (the test user owns
+	// /tmp); the subject under test is the privileged CopyTree.
+	if err := os.MkdirAll(filepath.Join(src, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for path, body := range map[string]string{
+		filepath.Join(src, ".bashrc"):      "export X=1\n",
+		filepath.Join(src, "sub", "f.txt"): "nested\n",
+	} {
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// dst does not exist yet: -T makes dst a copy of src's CONTENTS (the merge
+	// semantics), never dst/treesrc.
+	if err := m.CopyTree(ctx, src, dst, fs.WriteOptions{}); err != nil {
+		t.Fatalf("CopyTree: %v", err)
+	}
+	for _, rel := range []string{".bashrc", "sub/f.txt"} {
+		if ok, err := m.Exists(ctx, filepath.Join(dst, rel)); err != nil || !ok {
+			t.Errorf("dst is missing %q after CopyTree (Exists=%v, err=%v)", rel, ok, err)
+		}
+	}
+	if ok, _ := m.Exists(ctx, filepath.Join(dst, filepath.Base(src))); ok {
+		t.Error("CopyTree nested the source under dst (dst/<src> exists) — -T should merge into dst")
+	}
+
+	// Idempotent re-run into the now-existing dst must not error (merge).
+	if err := m.CopyTree(ctx, src, dst, fs.WriteOptions{Mode: 0o700}); err != nil {
+		t.Fatalf("CopyTree (re-run/merge): %v", err)
+	}
+	if mode := statMode(t, dst); mode != 0o700 {
+		t.Errorf("dst root mode = %v, want 0700 (Mode applies to the root)", mode)
+	}
+}
+
+func TestWriteReader_StreamsAndIsAtomic(t *testing.T) {
+	ctx := context.Background()
+	m := intManager(t)
+	path := tmpPath(t, "stream")
+	defer cleanup(t, m, path)
+
+	// A payload well past one io.Copy buffer, to exercise chunked streaming. It
+	// is intentionally newline-free and multi-megabyte — exactly the binary
+	// artifact WriteReader exists for. Verification reads the file back with a
+	// direct os.ReadFile (the file is written world-readable below), NOT
+	// m.ReadFile: the escalated ReadFile streams `cat` through the line-buffered
+	// Runner (1 MiB cap, output-oriented) and cannot faithfully return a large
+	// no-newline blob — a limitation of ReadFile, not of WriteReader.
+	payload := strings.Repeat("0123456789abcdef", 200000) // ~3 MB
+	if err := m.WriteReader(ctx, path, strings.NewReader(payload), fs.WriteOptions{Mode: 0o644}); err != nil {
+		t.Fatalf("WriteReader: %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if string(got) != payload {
+		t.Errorf("streamed content mismatch: got %d bytes, want %d", len(got), len(payload))
+	}
+	if mode := statMode(t, path); mode != 0o644 {
+		t.Errorf("mode = %v, want 0644", mode)
+	}
+
+	// Reader-error atomicity is guaranteed only on the Direct (root, fd-anchored)
+	// backend — io.Copy aborts before the rename. The escalated path pipes to a
+	// root shell that renames on stdin-EOF, so it intentionally does NOT promise
+	// non-clobber on a truncated reader (see WriteReader's doc); skip there.
+	if os.Geteuid() != 0 {
+		t.Skip("reader-error atomicity is a Direct-backend guarantee; run as root to exercise it")
+	}
+	if err := m.WriteReader(ctx, path, &failingReader{failAfter: 1024}, fs.WriteOptions{Mode: 0o644}); err == nil {
+		t.Fatal("WriteReader with a mid-stream failing reader should error")
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read back after failed stream: %v", err)
+	}
+	if string(after) != payload {
+		t.Errorf("a failed stream clobbered the existing file: got %d bytes, want the original %d", len(after), len(payload))
+	}
+}
+
+// failingReader yields failAfter bytes then errors, to drive WriteReader's
+// mid-stream failure path.
+type failingReader struct {
+	failAfter int
+	n         int
+}
+
+func (r *failingReader) Read(p []byte) (int, error) {
+	if r.n >= r.failAfter {
+		return 0, errors.New("simulated mid-stream read failure")
+	}
+	p[0] = 'x'
+	r.n++
+	return 1, nil
+}
+
+func TestListMounts_Integration(t *testing.T) {
+	mounts, err := intManager(t).ListMounts(context.Background())
+	if err != nil {
+		t.Fatalf("ListMounts: %v", err)
+	}
+	if len(mounts) == 0 {
+		t.Fatal("ListMounts returned nothing; at least / must be mounted")
+	}
+	var root *fs.MountInfo
+	for i := range mounts {
+		if mounts[i].Target == "/" {
+			root = &mounts[i]
+		}
+	}
+	if root == nil {
+		t.Fatalf("/ not present in enumerated mounts: %+v", mounts)
+	}
+	if root.Source == "" || root.FSType == "" {
+		t.Errorf("root mount under-populated: %+v", *root)
+	}
+}
+
 func TestMkdirAndRemoveDir(t *testing.T) {
 	ctx := context.Background()
 	m := intManager(t)

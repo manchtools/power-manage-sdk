@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
+	"github.com/manchtools/power-manage-sdk/sys/fs"
 )
 
 // queryTimeout caps a query op when the caller's context carries no deadline so
@@ -67,6 +68,19 @@ type CreateOptions struct {
 	CreateHome   bool     // -m; Create handles the "home already exists" -M/chown dance
 }
 
+// EnsureHomeOptions configures EnsureHome.
+type EnsureHomeOptions struct {
+	// Group owns the home tree (recursively). "" resolves to the user's actual
+	// primary group.
+	Group string
+	// Skel is the skeleton directory copied into a FRESHLY-created home. ""
+	// uses /etc/skel. Ignored when the home already exists — existing content is
+	// never clobbered.
+	Skel string
+	// Mode is the home directory's mode. Zero means 0700.
+	Mode os.FileMode
+}
+
 // ModifyOptions configures Modify. An empty string leaves that attribute
 // unchanged; if every field is empty Modify is a no-op (no usermod run).
 type ModifyOptions struct {
@@ -94,6 +108,7 @@ type Manager interface {
 	Get(ctx context.Context, name string) (Info, error)
 	Exists(ctx context.Context, name string) (bool, error)
 	Create(ctx context.Context, name string, opts CreateOptions) error
+	EnsureHome(ctx context.Context, name string, opts EnsureHomeOptions) error
 	Modify(ctx context.Context, name string, opts ModifyOptions) error
 	Delete(ctx context.Context, name string, opts DeleteOptions) error
 	Lock(ctx context.Context, name string) error
@@ -250,6 +265,76 @@ func (u *shadowUtils) Create(ctx context.Context, name string, opts CreateOption
 		if err := u.fsm.SetOwnershipRecursive(ctx, homeDir, name, group); err != nil {
 			return fmt.Errorf("fix ownership of existing home %q: %w", homeDir, err)
 		}
+	}
+	return nil
+}
+
+// EnsureHome idempotently ensures the existing user `name` has a correctly set
+// up home directory: it exists, is seeded from skel when freshly created, is
+// owned by the user (recursively), and carries the right mode. It is the repair
+// counterpart to Create's creation-time home handling (useradd -m) — for an
+// account whose home was created with -M, deleted, or left mis-owned.
+//
+// When the home is MISSING it is created and seeded from the skeleton (so no
+// existing user file can be clobbered — there are none). When the home already
+// EXISTS, EnsureHome re-asserts ownership and mode only; it does NOT re-copy
+// skel, so a user's customised dotfiles are preserved. The user must already
+// exist (use Create to make the account).
+func (u *shadowUtils) EnsureHome(ctx context.Context, name string, opts EnsureHomeOptions) error {
+	if err := validateUsername(name); err != nil {
+		return err
+	}
+	info, err := u.Get(ctx, name)
+	if err != nil {
+		return fmt.Errorf("ensure home for %q: %w", name, err)
+	}
+	home := info.HomeDir
+	if home == "" {
+		return fmt.Errorf("ensure home for %q: account has no home directory", name)
+	}
+
+	group := opts.Group
+	if group == "" {
+		group, err = u.PrimaryGroup(ctx, name)
+		if err != nil {
+			return fmt.Errorf("ensure home for %q: resolve primary group: %w", name, err)
+		}
+	}
+	mode := opts.Mode
+	if mode == 0 {
+		mode = 0o700
+	}
+	skel := opts.Skel
+	if skel == "" {
+		skel = "/etc/skel"
+	}
+
+	exists, err := u.fsm.Exists(ctx, home)
+	if err != nil {
+		return fmt.Errorf("ensure home for %q: %w", name, err)
+	}
+	if !exists {
+		if err := u.fsm.Mkdir(ctx, home, fs.MkdirOptions{Mode: mode, Recursive: true}); err != nil {
+			return fmt.Errorf("ensure home for %q: create %q: %w", name, home, err)
+		}
+		skelExists, serr := u.fsm.Exists(ctx, skel)
+		if serr != nil {
+			return fmt.Errorf("ensure home for %q: probe skeleton %q: %w", name, skel, serr)
+		}
+		if skelExists {
+			if err := u.fsm.CopyTree(ctx, skel, home, fs.WriteOptions{}); err != nil {
+				return fmt.Errorf("ensure home for %q: seed from skeleton %q: %w", name, skel, err)
+			}
+		}
+	}
+	// Re-assert ownership (recursive, to repair a partially mis-owned tree) and
+	// the home-root mode every call, so EnsureHome is idempotent and also fixes a
+	// home that exists but is wrong.
+	if err := u.fsm.SetOwnershipRecursive(ctx, home, name, group); err != nil {
+		return fmt.Errorf("ensure home for %q: %w", name, err)
+	}
+	if err := u.fsm.SetMode(ctx, home, mode); err != nil {
+		return fmt.Errorf("ensure home for %q: %w", name, err)
 	}
 	return nil
 }
