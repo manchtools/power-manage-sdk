@@ -5,6 +5,8 @@ import (
 	"fmt"
 	osexec "os/exec"
 	"strings"
+
+	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
 )
 
 // EnvFor builds the minimum environment a user-scoped command needs
@@ -79,7 +81,25 @@ func (m *manager) RunAsCommand(ctx context.Context, s Session, opts RunAsOptions
 	if s.Username == "" {
 		return nil, fmt.Errorf("desktop.RunAsCommand: session has empty Username")
 	}
-	full := append([]string{"-u", s.Username, "--", name}, args...)
+	// opts.ExtraEnv is merged into the child environment, so it is an injection
+	// surface exactly like Command.Env on the Runner path: a caller-supplied
+	// LD_PRELOAD / LD_LIBRARY_PATH / GCONV_PATH would load attacker-controlled
+	// code into the user-scoped command and anything it execs. Gate it through the
+	// SAME hijack-blocklist the Runner enforces (exec.ValidateCommandEnv), failing
+	// closed BEFORE the *exec.Cmd is built. PATH is exempt from the gate here
+	// because RunAsCommand never forwards a caller PATH — it always re-applies the
+	// curated UserPath last (see below), so a "PATH=" entry is inert by design and
+	// must not be treated as a rejection.
+	if err := validateExtraEnv(opts.ExtraEnv); err != nil {
+		return nil, err
+	}
+	// Wrap the command in `env PATH=<curated>`: runuser's PAM session can reset
+	// PATH from /etc/login.defs (openSUSE sets ALWAYS_SET_PATH), which would strip
+	// the curated PATH we put in cmd.Env. The env wrapper re-applies it AFTER the
+	// session is set up, running as the target user, so the curated UserPath always
+	// wins regardless of the distro's login.defs. (cmd.Env still carries PATH for
+	// distros that don't reset it; the wrapper is the portable guarantee.)
+	full := append([]string{"-u", s.Username, "--", envPath, "PATH=" + UserPath(s), name}, args...)
 	cmd := osexec.CommandContext(ctx, runuserPath, full...)
 	// Replace inherited env wholesale — agent's env (LD_PRELOAD,
 	// LD_LIBRARY_PATH, etc.) must not leak into a user-scoped command.
@@ -92,4 +112,22 @@ func (m *manager) RunAsCommand(ctx context.Context, s Session, opts RunAsOptions
 	cmd.Env = env
 	cmd.Dir = s.Home
 	return cmd, nil
+}
+
+// validateExtraEnv runs the caller's ExtraEnv through the Runner's env hijack
+// gate (exec.ValidateCommandEnv) so a desktop run-as inherits the same
+// LD_PRELOAD/LD_LIBRARY_PATH/GCONV_PATH refusal as every Runner-driven command.
+// PATH entries are dropped before the gate: RunAsCommand always overrides PATH
+// with the curated UserPath, so a caller "PATH=" value is inert and is not a
+// hijack — exec.ValidateCommandEnv would otherwise reject it (PATH is on the
+// blocklist) and break the documented PATH-is-re-applied contract.
+func validateExtraEnv(extraEnv []string) error {
+	filtered := make([]string, 0, len(extraEnv))
+	for _, e := range extraEnv {
+		if key, _, ok := strings.Cut(e, "="); ok && key == "PATH" {
+			continue // overridden by UserPath; never forwarded, so never a hijack
+		}
+		filtered = append(filtered, e)
+	}
+	return pmexec.ValidateCommandEnv(filtered)
 }

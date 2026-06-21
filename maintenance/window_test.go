@@ -77,6 +77,13 @@ func TestValidate(t *testing.T) {
 			true,
 		},
 		{
+			"signed hour rejected",
+			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+				{Days: []string{"mon"}, Allow: "+9:00-17:00"},
+			}},
+			true,
+		},
+		{
 			"missing dash",
 			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
 				{Days: []string{"mon"}, Allow: "09:0017:00X"},

@@ -234,6 +234,9 @@ func (s *systemd) WriteUnit(ctx context.Context, unit, content string) error {
 	if err := ValidateUnitName(unit); err != nil {
 		return err
 	}
+	if err := validateUnitContent(content); err != nil {
+		return err
+	}
 	return s.fsm.WriteFile(ctx, "/etc/systemd/system/"+unit, []byte(content), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"})
 }
 

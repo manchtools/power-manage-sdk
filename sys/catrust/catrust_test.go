@@ -25,6 +25,11 @@ import (
 // window — the fixture for the validation matrix and the List parse.
 func genCert(t *testing.T, cn string, isCA bool, notBefore, notAfter time.Time) []byte {
 	t.Helper()
+	return genCertWithKeyUsage(t, cn, isCA, notBefore, notAfter, x509.KeyUsageCertSign|x509.KeyUsageDigitalSignature)
+}
+
+func genCertWithKeyUsage(t *testing.T, cn string, isCA bool, notBefore, notAfter time.Time, usage x509.KeyUsage) []byte {
+	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +41,7 @@ func genCert(t *testing.T, cn string, isCA bool, notBefore, notAfter time.Time) 
 		NotAfter:              notAfter,
 		IsCA:                  isCA,
 		BasicConstraintsValid: true,
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+		KeyUsage:              usage,
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
 	if err != nil {
@@ -105,10 +110,31 @@ func TestNew_UnknownBackend(t *testing.T) {
 
 func TestNew_Backends(t *testing.T) {
 	withFakeFS(t, &fakeFS{})
-	for _, b := range []Backend{CaCertificates, P11Kit} {
+	for _, b := range []Backend{CaCertificates, P11Kit, SuseCaCertificates} {
 		if _, err := New(b, exectest.New(exec.Direct)); err != nil {
 			t.Errorf("New(%v): %v", b, err)
 		}
+	}
+}
+
+// TestInstall_SuseWritesToTrustAnchors pins the SUSE backend's distinct anchors
+// dir + refresh command — SUSE's update-ca-certificates reads /etc/pki/trust/anchors,
+// NOT Debian's /usr/local/share/ca-certificates.
+func TestInstall_SuseWritesToTrustAnchors(t *testing.T) {
+	ff := &fakeFS{}
+	m, r := newMgr(t, SuseCaCertificates, ff)
+	if err := m.Install(context.Background(), "corp-root", validCAPEM(t)); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if len(ff.writes) != 1 || ff.writes[0].path != "/etc/pki/trust/anchors/corp-root.crt" {
+		t.Fatalf("anchor written to %v, want /etc/pki/trust/anchors/corp-root.crt", ff.writes)
+	}
+	calls := r.Calls()
+	if len(calls) != 1 || calls[0].Name != "update-ca-certificates" {
+		t.Fatalf("refresh = %+v, want a single `update-ca-certificates`", calls)
+	}
+	if !calls[0].Escalate {
+		t.Error("trust-store refresh must escalate")
 	}
 }
 
@@ -131,7 +157,7 @@ func TestNew_PropagatesFSError(t *testing.T) {
 }
 
 func TestBackendString(t *testing.T) {
-	cases := map[Backend]string{CaCertificates: "ca-certificates", P11Kit: "p11-kit", Backend(0): "Backend(0)"}
+	cases := map[Backend]string{CaCertificates: "ca-certificates", P11Kit: "p11-kit", SuseCaCertificates: "suse-ca-certificates", Backend(0): "Backend(0)"}
 	for b, want := range cases {
 		if got := b.String(); got != want {
 			t.Errorf("Backend(%d).String() = %q, want %q", int(b), got, want)
@@ -162,6 +188,7 @@ func TestValidateCACert(t *testing.T) {
 	}{
 		{"valid CA", genCert(t, "CA", true, now.Add(-time.Hour), now.Add(time.Hour)), false},
 		{"not a CA (leaf)", genCert(t, "leaf", false, now.Add(-time.Hour), now.Add(time.Hour)), true},
+		{"CA without keyCertSign usage", genCertWithKeyUsage(t, "ca-no-sign", true, now.Add(-time.Hour), now.Add(time.Hour), x509.KeyUsageDigitalSignature), true},
 		{"expired", genCert(t, "old", true, now.Add(-48*time.Hour), now.Add(-time.Hour)), true},
 		{"not yet valid", genCert(t, "future", true, now.Add(time.Hour), now.Add(48*time.Hour)), true},
 		{"garbage", []byte("not a pem"), true},
@@ -202,6 +229,7 @@ func TestInstall_CaCertificates(t *testing.T) {
 }
 
 func TestInstall_P11Kit(t *testing.T) {
+	withAnchorsDirs(t, nil) // no candidate dir present → P11Kit defaults to the Fedora/EL dir
 	ff := &fakeFS{}
 	m, r := newMgr(t, P11Kit, ff)
 	r.Push(exec.Result{}, nil)
@@ -214,6 +242,35 @@ func TestInstall_P11Kit(t *testing.T) {
 	c := r.Calls()[0]
 	if strings.Join(append([]string{c.Name}, c.Args...), " ") != "update-ca-trust extract" {
 		t.Errorf("p11kit refresh = %v", append([]string{c.Name}, c.Args...))
+	}
+}
+
+// withAnchorsDirs fakes the dir-existence seam so anchors-dir resolution is
+// host-independent: only the listed dirs "exist".
+func withAnchorsDirs(t *testing.T, present []string) {
+	t.Helper()
+	prev := anchorsDirExists
+	t.Cleanup(func() { anchorsDirExists = prev })
+	set := make(map[string]bool, len(present))
+	for _, p := range present {
+		set[p] = true
+	}
+	anchorsDirExists = func(p string) bool { return set[p] }
+}
+
+// TestInstall_P11Kit_ResolvesArchAnchorsDir: Fedora/EL and Arch both use
+// update-ca-trust but read DIFFERENT anchors dirs. When only the Arch dir exists,
+// the P11Kit backend must write there (not the Fedora dir).
+func TestInstall_P11Kit_ResolvesArchAnchorsDir(t *testing.T) {
+	withAnchorsDirs(t, []string{"/etc/ca-certificates/trust-source/anchors"})
+	ff := &fakeFS{}
+	m, r := newMgr(t, P11Kit, ff)
+	r.Push(exec.Result{}, nil)
+	if err := m.Install(context.Background(), "acme-root", validCAPEM(t)); err != nil {
+		t.Fatal(err)
+	}
+	if ff.writes[0].path != "/etc/ca-certificates/trust-source/anchors/acme-root.crt" {
+		t.Errorf("p11kit Arch path = %q, want the Arch anchors dir", ff.writes[0].path)
 	}
 }
 
@@ -404,22 +461,29 @@ func TestDetect(t *testing.T) {
 	cases := []struct {
 		name    string
 		present map[string]bool
+		suseDir bool // /etc/pki/trust/anchors exists → SUSE, not Debian
 		want    []Backend
 	}{
-		{"none", map[string]bool{}, nil},
-		{"debian", map[string]bool{"update-ca-certificates": true}, []Backend{CaCertificates}},
-		{"fedora", map[string]bool{"update-ca-trust": true}, []Backend{P11Kit}},
-		{"both", map[string]bool{"update-ca-certificates": true, "update-ca-trust": true}, []Backend{CaCertificates, P11Kit}},
+		{"none", map[string]bool{}, false, nil},
+		// Debian and SUSE both ship `update-ca-certificates`; the anchors dir
+		// disambiguates them.
+		{"debian", map[string]bool{"update-ca-certificates": true}, false, []Backend{CaCertificates}},
+		{"suse", map[string]bool{"update-ca-certificates": true}, true, []Backend{SuseCaCertificates}},
+		{"fedora", map[string]bool{"update-ca-trust": true}, false, []Backend{P11Kit}},
+		{"both-debian", map[string]bool{"update-ca-certificates": true, "update-ca-trust": true}, false, []Backend{CaCertificates, P11Kit}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			prev := lookPath
-			t.Cleanup(func() { lookPath = prev })
+			prevLook, prevDir := lookPath, anchorsDirExists
+			t.Cleanup(func() { lookPath, anchorsDirExists = prevLook, prevDir })
 			lookPath = func(name string) (string, error) {
 				if tc.present[name] {
 					return "/usr/sbin/" + name, nil
 				}
 				return "", errors.New("no")
+			}
+			anchorsDirExists = func(path string) bool {
+				return tc.suseDir && path == "/etc/pki/trust/anchors"
 			}
 			got := Detect(context.Background())
 			if len(got) != len(tc.want) {

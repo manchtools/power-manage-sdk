@@ -31,7 +31,10 @@ func (m *manager) IsReadOnly(ctx context.Context, path string) (bool, error) {
 // RemountRW remounts the filesystem at path read-write through the privilege
 // backend: mount -o remount,rw.
 func (m *manager) RemountRW(ctx context.Context, path string) error {
-	if err := m.runChecked(ctx, "mount", "-o", "remount,rw", path); err != nil {
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	if err := m.runChecked(ctx, "mount", "-o", "remount,rw", "--", path); err != nil {
 		return fmt.Errorf("remount %s read-write: %w", path, err)
 	}
 	return nil

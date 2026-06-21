@@ -1,0 +1,44 @@
+# Container-based real-execution test image for the SDK (openSUSE / zypper family).
+#
+# openSUSE/SLES is its own trust-store and login.defs world: it ships
+# update-ca-certificates (same NAME as Debian's) but reads /etc/pki/trust/anchors,
+# and its login.defs resets PATH inside runuser. Running the matrix here is what
+# surfaced both — sys/catrust uses the SuseCaCertificates backend and sys/desktop
+# exercises the env-PATH-wrapper fix.
+#
+# No with-osquery stage: osquery is not packaged for openSUSE.
+FROM golang:1.26-bookworm AS go
+
+FROM opensuse/leap:latest AS base
+COPY --from=go /usr/local/go /usr/local/go
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOTOOLCHAIN=local
+
+# See Dockerfile.fedora for the per-tool capability mapping. On openSUSE lsblk and
+# wall live in util-linux-systemd (not the base util-linux), and update-ca-certificates
+# comes from ca-certificates (the SUSE trust flow → SuseCaCertificates backend).
+RUN zypper --non-interactive --gpg-auto-import-keys refresh \
+    && zypper --non-interactive install --no-recommends \
+    psmisc cryptsetup nftables iproute2 util-linux util-linux-systemd shadow \
+    gpg2 smartmontools openssl ca-certificates flatpak git \
+    && zypper clean --all
+
+WORKDIR /workspace
+COPY sdk/ ./sdk/
+RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN cd sdk && go mod download
+
+# with-clamav: clamav + the same static seed DB. openSUSE ships freshclam.conf at
+# /etc/freshclam.conf.
+FROM base AS with-clamav
+RUN zypper --non-interactive install --no-recommends clamav \
+    && zypper clean --all \
+    && rm -f /var/lib/clamav/*.cvd /var/lib/clamav/*.cld /var/lib/clamav/*.cud \
+    && mkdir -p /var/lib/clamav \
+    && printf '44d88612fea8a8f36de82e1278abb02f:68:PM.Eicar.Test\n' \
+       > /var/lib/clamav/pm-seed.hdb \
+    && printf 'PM.Marker.Test:0:*:504d2d434c414d41562d544553542d4d41524b4552\n' \
+       > /var/lib/clamav/pm-seed.ndb \
+    && rm -f /etc/freshclam.conf \
+    && clamscan --version \
+       || (echo "PRECONDITION FAILED: clamscan not installed/runnable" && exit 1)

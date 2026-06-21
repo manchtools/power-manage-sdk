@@ -64,6 +64,22 @@ func TestDnf_Apply_NoKeyDisabledNoGpgcheck(t *testing.T) {
 	}
 }
 
+func TestDnf_Apply_GPGCheckFalseIgnoresKey(t *testing.T) {
+	m, ff, fr := newTestManager(t, pkg.Dnf)
+	if _, err := m.Apply(context.Background(), Repository{Name: "r", Dnf: &DnfConfig{
+		BaseURL: "https://h/r", Enabled: true, GPGCheck: false, GPGKey: "https://h/KEY",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	body := ff.wrote("/etc/yum.repos.d/r.repo")
+	if strings.Contains(body, "gpgkey=") {
+		t.Fatalf("repo file contains gpgkey despite gpgcheck=0:\n%s", body)
+	}
+	if got := argvs(fr); len(got) != 1 || got[0] != "dnf -y makecache --repo r" {
+		t.Fatalf("commands = %v, want only makecache and no rpm import", got)
+	}
+}
+
 func TestDnf_Apply_Idempotent(t *testing.T) {
 	m, ff, fr := newTestManager(t, pkg.Dnf)
 	desired := "[r]\nname=r\nbaseurl=https://h/r\nenabled=1\ngpgcheck=0\n"

@@ -16,6 +16,7 @@ var revealSinkAllowlist = map[string]string{
 	"sys/encryption/luks.go :: key.Reveal()":       "LUKS key file in /dev/shm: cryptsetup --key-file sink (never argv)",
 	"sys/encryption/tpm.go :: key.Reveal()":        "systemd-cryptenroll stdin: the TPM-enrollment passphrase sink (never argv)",
 	"sys/network/keyfile.go :: p.PSK.Reveal()":     "NetworkManager keyfile [wifi-security] psk= line (0600 file, never argv)",
+	"sys/network/keyfile.go :: psk.Reveal()":       "validatePSK WPA2 length/charset gate before the keyfile write — same secret the psk= sink writes, never logged (errors omit the value) or argv",
 	"sys/network/certs.go :: p.ClientKey.Reveal()": "EAP-TLS client-key.pem (0600 file write + on-disk drift compare, never argv)",
 }
 

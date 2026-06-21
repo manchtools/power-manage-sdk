@@ -127,6 +127,27 @@ func validateAddr(field, addr string) error {
 	return fmt.Errorf("%w: %s %q is not a valid IP address or CIDR", ErrInvalidRule, field, addr)
 }
 
+// validateAllowScope refuses an "allow everything" rule — an allow rule that
+// constrains nothing: no protocol, no port, no source, and no dest. Such a rule
+// opens the host's ingress to every protocol/port from every address, which is
+// never a legitimate per-rule intent (it is a firewall-disable disguised as a
+// rule) and is a classic takeover primitive for an attacker who can drive
+// ApplyRule with remote-influenced input. An allow rule that constrains at least
+// one dimension (e.g. "allow this network full access" — Source set, the rest
+// open) stays accepted; only the fully-unconstrained allow is refused. Deny
+// rules are unaffected: an unconstrained deny ("drop everything") fails closed
+// and is a legitimate default-deny posture.
+func validateAllowScope(rule Rule) error {
+	if rule.Allow &&
+		rule.Protocol == ProtocolAny &&
+		rule.Port == 0 &&
+		rule.Source == "" &&
+		rule.Dest == "" {
+		return fmt.Errorf("%w: rule %q allows all ingress (no protocol, port, source, or dest constraint); an unconstrained allow opens the host and is refused", ErrInvalidRule, rule.ID)
+	}
+	return nil
+}
+
 // validateRule runs every backend-independent invariant a Rule must satisfy
 // before dispatch. Called at the top of every backend's ApplyRule so all three
 // inherit the same rejection contract. Backend-specific rejections (firewalld's
@@ -146,6 +167,9 @@ func validateRule(rule Rule) error {
 		return err
 	}
 	if err := validateAddr("dest", rule.Dest); err != nil {
+		return err
+	}
+	if err := validateAllowScope(rule); err != nil {
 		return err
 	}
 	return nil

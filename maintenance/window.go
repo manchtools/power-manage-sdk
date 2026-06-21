@@ -199,6 +199,16 @@ func parseClock(s string) (int, error) {
 	if len(s) != 5 || s[2] != ':' {
 		return 0, fmt.Errorf("clock %q must be HH:MM", s)
 	}
+	// strconv.Atoi accepts a leading sign ("+9", "-1"), so a signed hour or
+	// minute ("+9:00") would slip through the range check below. Require both
+	// fields to be exactly two ASCII digits before parsing — the wire format is
+	// fixed-width zero-padded HH:MM, never a signed integer.
+	if !isTwoDigits(s[:2]) {
+		return 0, fmt.Errorf("hour %q must be two digits", s[:2])
+	}
+	if !isTwoDigits(s[3:]) {
+		return 0, fmt.Errorf("minute %q must be two digits", s[3:])
+	}
 	h, err := strconv.Atoi(s[:2])
 	if err != nil || h < 0 || h > 23 {
 		return 0, fmt.Errorf("hour %q out of range 00-23", s[:2])
@@ -208,6 +218,16 @@ func parseClock(s string) (int, error) {
 		return 0, fmt.Errorf("minute %q out of range 00-59", s[3:])
 	}
 	return h*60 + m, nil
+}
+
+// isTwoDigits reports whether s is exactly two ASCII digits (0-9). Used to
+// reject signed/non-numeric clock fields that strconv.Atoi would otherwise
+// accept (a leading '+' or '-').
+func isTwoDigits(s string) bool {
+	if len(s) != 2 {
+		return false
+	}
+	return s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9'
 }
 
 // isWeekdayToken accepts only the canonical lowercase tokens the

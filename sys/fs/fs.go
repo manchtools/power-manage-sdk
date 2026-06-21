@@ -49,6 +49,21 @@ var ErrInvalidPath = errors.New("invalid filesystem path")
 // escalated path, used by non-root callers, that cannot openat the target.)
 var ErrUnsafeParentDir = errors.New("parent directory is writable by non-root")
 
+// ErrUnsafeMode is returned when a privileged file operation is asked to set a
+// setuid or setgid bit. A managed config write must never create a privileged
+// executable: a setuid-root binary the agent drops is a direct local-root
+// privilege-escalation primitive, so the operation fails closed before any
+// command runs. The sticky bit and ordinary permission bits are unaffected.
+var ErrUnsafeMode = errors.New("setuid/setgid mode is not permitted")
+
+// ErrProtectedTarget is returned when a recursive ownership change (chown -R)
+// targets a whole top-level system directory (`/`, `/etc`, `/usr`, `/home`,
+// `/root`, …). Recursively re-owning such a tree is a destructive
+// privilege-escalation vector (e.g. handing an attacker ownership of every file
+// under `/`), so it fails closed before chown runs. A managed subdirectory
+// (e.g. /home/alice) and single-file SetOwnership are unaffected.
+var ErrProtectedTarget = errors.New("recursive ownership change of a protected system tree is not permitted")
+
 // WriteOptions configures a Manager.WriteFile (or Copy) call.
 type WriteOptions struct {
 	// Mode is the file mode applied before the file is reachable by name. Zero
@@ -179,6 +194,20 @@ func cmdError(name string, res pmexec.Result) error {
 		return nil
 	}
 	return &pmexec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+}
+
+// validateMode rejects a requested file mode that would set the setuid or
+// setgid bit. Creating a setuid/setgid file through a privileged op is a
+// local-root privilege-escalation primitive (a setuid-root helper, or a
+// setgid binary that inherits a privileged group), so every mutation that
+// applies a mode (WriteFile, SetMode, Copy) refuses it before any command or
+// privileged side effect. The sticky bit and ordinary permission bits remain
+// allowed — only the privilege-conferring bits are refused.
+func validateMode(m os.FileMode) error {
+	if m&(os.ModeSetuid|os.ModeSetgid) != 0 {
+		return fmt.Errorf("%w: mode %s requests setuid/setgid", ErrUnsafeMode, modeArg(m))
+	}
+	return nil
 }
 
 // modeArg formats an os.FileMode as the octal string chmod expects, including

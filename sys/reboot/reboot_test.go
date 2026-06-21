@@ -106,6 +106,30 @@ func TestIsRequired_NeedsRestarting(t *testing.T) {
 	}
 }
 
+func TestSchedule_RejectsControlCharactersBeforeRunner(t *testing.T) {
+	cases := []struct {
+		name    string
+		message string
+	}{
+		{name: "newline", message: "line1\nline2"},
+		{name: "escape", message: "clear \x1b[2Jscreen"},
+		{name: "nul", message: "before\x00after"},
+		{name: "del", message: "before\x7fafter"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := exectest.New(exec.Sudo)
+			err := mgr(t, r).Schedule(context.Background(), ScheduleOptions{Message: tc.message})
+			if err == nil {
+				t.Fatal("Schedule error = nil, want a validation error")
+			}
+			if calls := r.Calls(); len(calls) != 0 {
+				t.Fatalf("Schedule ran %d command(s) before rejecting invalid message: %+v", len(calls), calls)
+			}
+		})
+	}
+}
+
 func TestSchedule(t *testing.T) {
 	t.Run("zero options: default delay, no message, escalated", func(t *testing.T) {
 		r := exectest.New(exec.Sudo)

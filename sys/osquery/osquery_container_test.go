@@ -173,26 +173,22 @@ func TestDenyList_ThreatModelComplete_Container(t *testing.T) {
 	}
 }
 
-// TestRawSqlEscapeHatch_Container proves the documented asymmetry against the
-// real binary: the CA-signed RawSql path is NOT gated by the deny-list, so the
-// very same table the table path refuses (`shadow`) is queryable via RawSql. A
-// `count(*)` keeps password-hash material out of the test output while still
-// proving the query ran and returned structured rows.
-func TestRawSqlEscapeHatch_Container(t *testing.T) {
+// TestRawSqlGated_Container proves against the real binary that RawSql is gated
+// by the same credential-table deny-list as the table path: a raw query naming
+// `shadow` is refused and osqueryi is never run. (Supersedes the prior WS4
+// escape-hatch behaviour where signed RawSql bypassed the deny-list.)
+func TestRawSqlGated_Container(t *testing.T) {
 	res, err := realQuerier(t).Query(osqCtx(t), &pb.OSQuery{
 		RawSql: "SELECT count(*) AS n FROM shadow",
 	})
 	if err != nil {
 		t.Fatalf("Query(RawSql shadow count): unexpected Go error: %v", err)
 	}
-	if !res.GetSuccess() {
-		t.Fatalf("RawSql against deny-listed `shadow` should bypass the gate and run; got error %q", res.GetError())
+	if res.GetSuccess() || !strings.Contains(res.GetError(), "not permitted") {
+		t.Fatalf("RawSql naming deny-listed `shadow` must be refused; got success=%v err=%q", res.GetSuccess(), res.GetError())
 	}
-	if len(res.GetRows()) != 1 {
-		t.Fatalf("count(*) returned %d rows, want 1", len(res.GetRows()))
-	}
-	if _, ok := res.GetRows()[0].Data["n"]; !ok {
-		t.Errorf("RawSql count row missing `n` column: %+v", res.GetRows()[0].Data)
+	if len(res.GetRows()) != 0 {
+		t.Fatalf("refused RawSql returned %d rows, want 0", len(res.GetRows()))
 	}
 }
 

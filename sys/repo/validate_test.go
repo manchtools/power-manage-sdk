@@ -137,6 +137,9 @@ func TestValidate_Dnf(t *testing.T) {
 
 func TestValidate_Pacman(t *testing.T) {
 	m, _, _ := newTestManager(t, pkg.Pacman)
+	if err := m.Validate(Repository{Name: "options", Pacman: &PacmanConfig{Server: "https://h/$repo/$arch"}}); err == nil {
+		t.Fatal("Validate(pacman reserved section name options) = nil, want rejection")
+	}
 	reject := map[string]*PacmanConfig{
 		"missing server":   {Server: ""},
 		"http server":      {Server: "http://h/r"},

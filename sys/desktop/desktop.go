@@ -56,6 +56,13 @@ const loginctlPath = "/usr/bin/loginctl"
 // every supported distro ships.
 const runuserPath = "/usr/sbin/runuser"
 
+// envPath pins the absolute path to env. RunAsCommand wraps the user command in
+// `env PATH=<curated>` so the curated PATH is re-applied AFTER runuser's PAM
+// session — some distros (openSUSE: login.defs ALWAYS_SET_PATH) reset PATH during
+// the session setup, which would otherwise strip the curated value we set in the
+// child env. Pinned absolute for the same PATH-injection reason as runuserPath.
+const envPath = "/usr/bin/env"
+
 // Test seams. They default to the real lookups and are overridden only by tests
 // to exercise branches that are otherwise host-dependent (loginctl absent, a
 // passwd entry that does not resolve or carries a non-numeric uid/gid).

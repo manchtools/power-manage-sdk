@@ -11,6 +11,7 @@ package inventory
 
 import (
 	"context"
+	"os"
 	osexec "os/exec"
 	"runtime"
 	"strings"
@@ -71,19 +72,44 @@ func TestSystem_ParsesRealProc_Container(t *testing.T) {
 // TestOS_ParsesRealOSRelease_Container pins the /etc/os-release parse against the
 // real (debian) file.
 func TestOS_ParsesRealOSRelease_Container(t *testing.T) {
-	os, err := realCollector(t).OS()
+	got, err := realCollector(t).OS()
 	if err != nil {
 		t.Fatalf("OS: %v", err)
 	}
-	if os.ID != "debian" {
-		t.Errorf("OS.ID = %q, want %q (the container distro)", os.ID, "debian")
+	// Independent verify: read the distro id from /etc/os-release ourselves (a
+	// minimal parse, NOT the code under test) and assert the parser extracted the
+	// SAME id. Distro-agnostic — no hardcoded "debian" — so it pins the real
+	// os-release parse on every container in the matrix.
+	wantID := osReleaseField(t, "ID")
+	if wantID == "" {
+		t.Fatal("could not read ID from /etc/os-release independently")
 	}
-	if os.Name == "" || os.VersionID == "" {
-		t.Errorf("OS Name/VersionID empty: %+v", os)
+	if got.ID != wantID {
+		t.Errorf("OS.ID = %q, want %q (independently read from /etc/os-release)", got.ID, wantID)
 	}
-	if os.Arch != runtime.GOARCH {
-		t.Errorf("OS.Arch = %q, want %q", os.Arch, runtime.GOARCH)
+	if got.Name == "" || got.VersionID == "" {
+		t.Errorf("OS Name/VersionID empty: %+v", got)
 	}
+	if got.Arch != runtime.GOARCH {
+		t.Errorf("OS.Arch = %q, want %q", got.Arch, runtime.GOARCH)
+	}
+}
+
+// osReleaseField reads one key from /etc/os-release with the test's own minimal
+// parse, independent of the production parser, so the comparison is a real
+// cross-check rather than echoing the code under test.
+func osReleaseField(t *testing.T, key string) string {
+	t.Helper()
+	data, err := os.ReadFile("/etc/os-release")
+	if err != nil {
+		t.Fatalf("read /etc/os-release: %v", err)
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if k, v, ok := strings.Cut(line, "="); ok && k == key {
+			return strings.Trim(v, `"'`)
+		}
+	}
+	return ""
 }
 
 // TestDisks_ParsesRealLsblk_Container pins the `lsblk --json` parse: it must

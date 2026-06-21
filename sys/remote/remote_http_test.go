@@ -68,6 +68,44 @@ func TestNewHTTP_RejectsPruneWithoutExtract(t *testing.T) {
 	}
 }
 
+func TestNewHTTP_RejectsExtractPruneWithoutChecksum(t *testing.T) {
+	_, err := NewHTTP(HTTPConfig{URL: "https://example.test/archive.tar.gz", Extract: true, Prune: true})
+	if !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("NewHTTP(Extract+Prune without checksum) = %v; want ErrInvalidConfig", err)
+	}
+}
+
+func TestNewHTTP_RejectsNegativeMaxBytes(t *testing.T) {
+	_, err := NewHTTP(HTTPConfig{URL: "https://example.test/file", MaxBytes: -1})
+	if !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("NewHTTP(MaxBytes=-1) = %v; want ErrInvalidConfig", err)
+	}
+}
+
+func TestNewHTTP_RejectsPrivilegedModeBits(t *testing.T) {
+	for _, mode := range []string{"4755", "2755", "1777"} {
+		t.Run(mode, func(t *testing.T) {
+			_, err := NewHTTP(HTTPConfig{URL: "https://example.test/file", Mode: mode})
+			if !errors.Is(err, ErrInvalidConfig) {
+				t.Fatalf("NewHTTP(Mode=%q) = %v; want ErrInvalidConfig", mode, err)
+			}
+		})
+	}
+}
+
+// TestNewHTTP_AcceptsOctalZeroAndLeadingZeroModes pins that valid octal modes —
+// including octal zero "0" and leading-zero forms — are NOT rejected by the mode
+// validator. (A naive TrimPrefix(mode,"0") turns "0" into "" and wrongly fails it.)
+func TestNewHTTP_AcceptsOctalZeroAndLeadingZeroModes(t *testing.T) {
+	for _, mode := range []string{"0", "0755", "755", "0644", "000"} {
+		t.Run(mode, func(t *testing.T) {
+			if _, err := NewHTTP(HTTPConfig{URL: "https://example.test/file", Mode: mode}); err != nil {
+				t.Fatalf("NewHTTP(Mode=%q) = %v; want nil (valid octal mode)", mode, err)
+			}
+		})
+	}
+}
+
 // TestNewHTTP_RejectsBadChecksum — partial / non-hex / wrong-length
 // checksum strings get rejected up front so a Fetch never silently runs
 // without integrity verification.

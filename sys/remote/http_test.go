@@ -251,6 +251,73 @@ func TestHTTPFetch_AppliesMode(t *testing.T) {
 	}
 }
 
+// TestHTTPFetch_RejectsCrossHostRedirect pins the SSRF boundary: a URL that
+// passed validation must not be allowed to bounce the agent to a different host
+// during Fetch.
+func TestHTTPFetch_RejectsCrossHostRedirect(t *testing.T) {
+	targetGets := atomic.Int32{}
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		targetGets.Add(1)
+		_, _ = w.Write([]byte("redirected payload"))
+	}))
+	t.Cleanup(target.Close)
+
+	redirector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/payload", http.StatusFound)
+	}))
+	t.Cleanup(redirector.Close)
+
+	dest := filepath.Join(t.TempDir(), "file")
+	recordDestUnder(t, dest)
+	src, err := NewHTTP(HTTPConfig{URL: redirector.URL + "/start"})
+	if err != nil {
+		t.Fatalf("NewHTTP: %v", err)
+	}
+	if _, err := src.Fetch(context.Background(), dest); err == nil {
+		t.Fatal("Fetch followed a cross-host redirect, want a validation error")
+	}
+	if got := targetGets.Load(); got != 0 {
+		t.Fatalf("redirect target received %d request(s); cross-host redirect should be refused before SSRF", got)
+	}
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		t.Fatalf("dest should not exist after refused redirect; stat err = %v", err)
+	}
+}
+
+// TestDefaultHTTPClient_RejectsSchemeDowngradeRedirect pins the redirect-origin
+// guard at the function level: CheckRedirect must refuse a scheme change (an
+// https -> http TLS downgrade) and a host change, while allowing a same-origin
+// path redirect and bounding the redirect count. Exercised directly so the scheme
+// check is isolated from the host:port difference a real two-server test forces.
+func TestDefaultHTTPClient_RejectsSchemeDowngradeRedirect(t *testing.T) {
+	check := defaultHTTPClient().CheckRedirect
+	req := func(raw string) *http.Request {
+		r, err := http.NewRequest(http.MethodGet, raw, nil)
+		if err != nil {
+			t.Fatalf("build request %q: %v", raw, err)
+		}
+		return r
+	}
+	via := []*http.Request{req("https://host.example/a")}
+
+	if err := check(req("http://host.example/a"), via); err == nil {
+		t.Error("CheckRedirect allowed an https->http downgrade on the same host (TLS downgrade)")
+	}
+	if err := check(req("https://other.example/a"), via); err == nil {
+		t.Error("CheckRedirect allowed a cross-host redirect")
+	}
+	if err := check(req("https://host.example/b"), via); err != nil {
+		t.Errorf("CheckRedirect rejected a same-origin path redirect: %v", err)
+	}
+	long := make([]*http.Request, 10)
+	for i := range long {
+		long[i] = req("https://host.example/a")
+	}
+	if err := check(req("https://host.example/z"), long); err == nil {
+		t.Error("CheckRedirect allowed more than 10 redirects")
+	}
+}
+
 // TestHTTPFetch_RejectsUnsafeDest — dest validation is mandatory even
 // when the rest of the config is fine. A non-absolute path must fail
 // before any network traffic.

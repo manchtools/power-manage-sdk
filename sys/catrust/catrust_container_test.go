@@ -1,15 +1,17 @@
 //go:build container
 
 // Container-based real-execution test for the CA trust-store flow. The fake-
-// runner unit tests assert the emitted update-ca-certificates argv and the file
-// written to the anchors dir; this runs the REAL update-ca-certificates and then
-// proves the installed CA actually appears in (and is removed from) the system
-// trust bundle — the security-relevant round-trip, since a trusted CA can MITM
-// any TLS connection. Anti-rot guard: a future update-ca-certificates that
-// changes its bundle path or behaviour is caught here.
+// runner unit tests assert the emitted refresh argv and the file written to the
+// anchors dir; this runs the REAL refresh tool (update-ca-certificates on
+// Debian/SUSE, update-ca-trust on Fedora/EL/Arch) and proves the installed CA
+// actually becomes trusted by — and is distrusted from — the system store. This
+// is the security-relevant round-trip: a trusted CA can MITM any TLS connection.
 //
-// Debian/CaCertificates backend only (the test image). Self-skips when
-// update-ca-certificates is absent.
+// Distro-aware: Detect() picks the backend this host provides, so the test runs
+// on EVERY supported distro with its native trust mechanism. Trust is verified
+// with `openssl verify` rather than a hardcoded bundle path — a self-signed root
+// verifies OK iff it is in the system trust store, and that probe is identical
+// across distros whose consolidated bundle paths all differ.
 package catrust
 
 import (
@@ -23,14 +25,13 @@ import (
 	"math/big"
 	"os"
 	osexec "os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
 )
-
-// debianBundle is where update-ca-certificates concatenates every trusted CA.
-const debianBundle = "/etc/ssl/certs/ca-certificates.crt"
 
 // selfSignedCA returns a PEM-encoded self-signed CA certificate with the given
 // CommonName, valid 2000-2100 (spans now without using the wall clock).
@@ -56,77 +57,80 @@ func selfSignedCA(t *testing.T, cn string) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 }
 
-// bundleHasCN parses the real system CA bundle and reports whether any cert in
-// it has the given CommonName.
-func bundleHasCN(t *testing.T, cn string) bool {
-	t.Helper()
-	raw, err := os.ReadFile(debianBundle)
-	if err != nil {
-		t.Fatalf("read system bundle %s: %v", debianBundle, err)
-	}
-	for block, rest := pem.Decode(raw); block != nil; block, rest = pem.Decode(rest) {
-		if block.Type != "CERTIFICATE" {
-			continue
-		}
-		c, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			continue
-		}
-		if c.Subject.CommonName == cn {
-			return true
-		}
-	}
-	return false
+// caTrusted reports whether the system trust store currently trusts the CA in
+// pemPath. It uses `openssl verify`, the portable, bundle-path-independent probe:
+// a self-signed root verifies OK iff it is in the system trust store. This works
+// uniformly across the Debian/SUSE update-ca-certificates and the Fedora/EL/Arch
+// update-ca-trust flows, whose consolidated bundle locations all differ.
+func caTrusted(pemPath string) bool {
+	out, err := osexec.Command("openssl", "verify", pemPath).CombinedOutput()
+	return err == nil && strings.Contains(string(out), ": OK")
 }
 
+// TestInstallRemove_RealTrustStore_Container drives the REAL trust-store flow on
+// whatever backend this distro provides, proving an installed CA actually becomes
+// trusted and that Remove distrusts it.
 func TestInstallRemove_RealTrustStore_Container(t *testing.T) {
-	if _, err := osexec.LookPath("update-ca-certificates"); err != nil {
-		t.Skip("update-ca-certificates not on PATH")
+	if _, err := osexec.LookPath("openssl"); err != nil {
+		t.Skip("openssl not on PATH — cannot probe the system trust store")
+	}
+	backends := Detect(context.Background())
+	if len(backends) == 0 {
+		t.Skip("no CA trust-store backend detected on this host")
 	}
 	r, err := exec.NewRunner(exec.Direct)
 	if err != nil {
 		t.Fatalf("NewRunner(Direct): %v", err)
 	}
-	m, err := New(CaCertificates, r)
-	if err != nil {
-		t.Fatalf("New(CaCertificates): %v", err)
-	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	for _, backend := range backends {
+		t.Run(backend.String(), func(t *testing.T) {
+			m, err := New(backend, r)
+			if err != nil {
+				t.Fatalf("New(%v): %v", backend, err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
 
-	const name = "pm-container-test-ca"
-	const cn = "pm container test root"
-	pemBytes := selfSignedCA(t, cn)
+			const name = "pm-container-test-ca"
+			const cn = "pm container test root"
+			pemBytes := selfSignedCA(t, cn)
+			pemPath := filepath.Join(t.TempDir(), "ca.pem")
+			if err := os.WriteFile(pemPath, pemBytes, 0o644); err != nil {
+				t.Fatalf("write CA pem: %v", err)
+			}
+			t.Cleanup(func() { _ = m.Remove(context.Background(), name) })
 
-	t.Cleanup(func() { _ = m.Remove(context.Background(), name) })
-
-	// Install → the CA must actually appear in the real system bundle.
-	if err := m.Install(ctx, name, pemBytes); err != nil {
-		t.Fatalf("Install: %v", err)
-	}
-	if !bundleHasCN(t, cn) {
-		t.Fatalf("after Install, CA %q is NOT in the real system bundle %s — not actually trusted", cn, debianBundle)
-	}
-	anchors, err := m.List(ctx)
-	if err != nil {
-		t.Fatalf("List: %v", err)
-	}
-	found := false
-	for _, a := range anchors {
-		if a.Name == name {
-			found = true
-		}
-	}
-	if !found {
-		t.Errorf("List does not report the installed anchor %q: %+v", name, anchors)
-	}
-
-	// Remove → the CA must be gone from the real bundle (distrust took effect).
-	if err := m.Remove(ctx, name); err != nil {
-		t.Fatalf("Remove: %v", err)
-	}
-	if bundleHasCN(t, cn) {
-		t.Errorf("after Remove, CA %q is STILL in the real system bundle %s — distrust failed", cn, debianBundle)
+			if caTrusted(pemPath) {
+				t.Fatalf("CA %q is already trusted before Install — dirty test environment", cn)
+			}
+			// Install → the CA must actually become trusted by the real system store.
+			if err := m.Install(ctx, name, pemBytes); err != nil {
+				t.Fatalf("Install: %v", err)
+			}
+			if !caTrusted(pemPath) {
+				t.Fatalf("after Install via %v, CA %q is NOT trusted by the real system store", backend, cn)
+			}
+			anchors, err := m.List(ctx)
+			if err != nil {
+				t.Fatalf("List: %v", err)
+			}
+			found := false
+			for _, a := range anchors {
+				if a.Name == name {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("List does not report the installed anchor %q: %+v", name, anchors)
+			}
+			// Remove → distrust must take effect.
+			if err := m.Remove(ctx, name); err != nil {
+				t.Fatalf("Remove: %v", err)
+			}
+			if caTrusted(pemPath) {
+				t.Errorf("after Remove via %v, CA %q is STILL trusted — distrust failed", backend, cn)
+			}
+		})
 	}
 }

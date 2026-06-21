@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/manchtools/power-manage-sdk/pkg"
 )
@@ -87,6 +88,9 @@ func (m *manager) Validate(r Repository) error {
 			return validateDnf(r.Dnf)
 		}
 	case pkg.Pacman:
+		if err := validatePacmanName(r.Name); err != nil {
+			return err
+		}
 		if r.Pacman != nil {
 			return validatePacman(r.Pacman)
 		}
@@ -189,10 +193,48 @@ func validatePacman(c *PacmanConfig) error {
 	if c.SigLevel != "" && !validPacmanSigLevel.MatchString(c.SigLevel) {
 		return badShape("pacman.sig_level")
 	}
+	// A "Never" SigLevel token disables signature verification entirely, so pacman
+	// would install unsigned/forged packages from this repo. Reject any
+	// signature-disabling level before it is written into pacman.conf. (Trust-DB
+	// relaxations like "TrustAll" still require a valid signature and stay allowed.)
+	if disablesPacmanSig(c.SigLevel) {
+		return fmt.Errorf("%w: field %q disables signature verification (Never)", ErrInvalidConfig, "pacman.sig_level")
+	}
 	if pkg.ValidateRepoBaseURL(c.Server) != nil {
 		return badShape("pacman.server")
 	}
 	return nil
+}
+
+// pacmanReserved is pacman.conf's global settings section, not a repository. A
+// repo named "options" would have its [name] section collide with [options] and
+// silently rewrite global pacman configuration, so it is reserved.
+const pacmanReserved = "options"
+
+// validatePacmanName rejects a pacman repository name that collides with the
+// reserved [options] section. The match is case-insensitive: pacman reads the
+// header literally, but accepting "Options"/"OPTIONS" would still let a section
+// land next to the real [options] block and tamper with global config.
+func validatePacmanName(name string) error {
+	if strings.EqualFold(name, pacmanReserved) {
+		return fmt.Errorf("%w: %q is the reserved pacman.conf section, not a repository", ErrInvalidConfig, name)
+	}
+	return nil
+}
+
+// disablesPacmanSig reports whether a SigLevel turns signature verification off.
+// SigLevel is a space-separated list of tokens; "Never" (and its Package/Database
+// scoped forms) disables checking — the trust downgrade we refuse. The match is
+// case-insensitive because pacman parses SigLevel keywords case-sensitively but an
+// operator typo'd casing must not slip an unsigned repo past this gate.
+func disablesPacmanSig(sigLevel string) bool {
+	for _, tok := range strings.Fields(sigLevel) {
+		switch strings.ToLower(tok) {
+		case "never", "packagenever", "databasenever":
+			return true
+		}
+	}
+	return false
 }
 
 func validateZypper(c *ZypperConfig) error {

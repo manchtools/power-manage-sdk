@@ -74,6 +74,27 @@ func validateEnvVars(envVars []string) error {
 	return nil
 }
 
+// ValidateCommandEnv checks a Command.Env slice with the EXACT rules the real
+// Runner enforces before it spawns any child: each entry must be KEY=VALUE
+// (ErrInvalidEnvVar), the key must not be a hijack-prone name on the blocklist
+// (ErrBlockedEnvVar — PATH/LD_PRELOAD/BASH_ENV/…), and the key must not be a
+// name the Runner reserves for deterministic output (ErrReservedEnvVar —
+// LC_ALL/LANG/NO_COLOR). It is exported so exectest.FakeRunner can apply the
+// identical gate, keeping the unit tier faithful to the real env boundary — an
+// adversarial Command.Env is rejected the same way against a fake as against a
+// real Runner.
+func ValidateCommandEnv(env []string) error {
+	if err := validateEnvVars(env); err != nil {
+		return err
+	}
+	for _, e := range env {
+		if key, _, _ := strings.Cut(e, "="); isReservedEnvVar(key) {
+			return fmt.Errorf("%w: %q is forced by the Runner (LC_ALL=C/LANG=C/NO_COLOR=1) and may not be set via Command.Env", ErrReservedEnvVar, key)
+		}
+	}
+	return nil
+}
+
 // composeEnv builds the child environment: a leading PATH=childPath (when
 // childPath is non-empty) followed by the caller's already-validated env
 // vars. PATH cannot appear in envVars (it is blocklisted), so the

@@ -394,6 +394,14 @@ func (z *zypper) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 	return info, nil
 }
 
+// LocalPackageInfo reads the canonical NAME/VERSION-RELEASE/ARCH out of a local
+// .rpm via the shared rpmLocalPackageInfo helper (an unprivileged `rpm -qp --qf`
+// read), re-validating the untrusted %{NAME} with ValidateRpmPackageName before
+// returning it.
+func (z *zypper) LocalPackageInfo(ctx context.Context, path string) (*LocalPackage, error) {
+	return rpmLocalPackageInfo(ctx, z.r, path)
+}
+
 // IsInstalled reports whether a package is installed (rpm -q exits 0).
 func (z *zypper) IsInstalled(ctx context.Context, name string) (bool, error) {
 	if err := ValidatePackageName(name); err != nil {

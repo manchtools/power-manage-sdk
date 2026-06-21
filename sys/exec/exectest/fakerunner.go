@@ -82,6 +82,13 @@ func (f *FakeRunner) pop() (exec.Result, error) {
 // scripted result — mirroring the real Runner, so a capability's ctx handling
 // can be unit-tested faithfully.
 func (f *FakeRunner) Run(ctx context.Context, c exec.Command) (exec.Result, error) {
+	// Apply the same env gate the real Runner enforces, BEFORE recording: a
+	// Command carrying a blocked/reserved/malformed env var is rejected and never
+	// recorded or "run", so a capability that builds an adversarial environment
+	// fails identically against the fake and a real Runner.
+	if err := exec.ValidateCommandEnv(c.Env); err != nil {
+		return exec.Result{}, err
+	}
 	f.record(c)
 	if err := ctx.Err(); err != nil {
 		return exec.Result{}, err
@@ -94,6 +101,9 @@ func (f *FakeRunner) Run(ctx context.Context, c exec.Command) (exec.Result, erro
 // be exercised without a real process. A cancelled context short-circuits as in
 // Run (no scripted result consumed, no replay).
 func (f *FakeRunner) Stream(ctx context.Context, c exec.Command, onLine exec.OutputCallback) (exec.Result, error) {
+	if err := exec.ValidateCommandEnv(c.Env); err != nil {
+		return exec.Result{}, err
+	}
 	f.record(c)
 	if err := ctx.Err(); err != nil {
 		return exec.Result{}, err

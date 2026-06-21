@@ -57,6 +57,31 @@ func TestFakeRunner_DefaultsToSuccessWhenUnscripted(t *testing.T) {
 	}
 }
 
+func TestFakeRunner_RejectsBlockedEnvLikeRealRunner(t *testing.T) {
+	cases := []struct {
+		name string
+		env  []string
+		want error
+	}{
+		{name: "LD_PRELOAD", env: []string{"LD_PRELOAD=/tmp/evil.so"}, want: exec.ErrBlockedEnvVar},
+		{name: "PATH override", env: []string{"PATH=/tmp/attacker"}, want: exec.ErrBlockedEnvVar},
+		{name: "reserved locale", env: []string{"LC_ALL=tr_TR.UTF-8"}, want: exec.ErrReservedEnvVar},
+		{name: "malformed", env: []string{"NOT_KEY_VALUE"}, want: exec.ErrInvalidEnvVar},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := exectest.New(exec.Direct)
+			_, err := f.Run(context.Background(), exec.Command{Name: "true", Env: tc.env})
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("FakeRunner.Run env %v error = %v, want %v", tc.env, err, tc.want)
+			}
+			if calls := f.Calls(); len(calls) != 0 {
+				t.Fatalf("FakeRunner recorded %d invalid command(s); validation should reject before recording/running: %+v", len(calls), calls)
+			}
+		})
+	}
+}
+
 func TestFakeRunner_BackendReported(t *testing.T) {
 	if got := exectest.New(exec.Sudo).Backend(); got != exec.Sudo {
 		t.Errorf("Backend() = %d, want Sudo", got)

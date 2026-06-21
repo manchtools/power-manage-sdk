@@ -145,6 +145,12 @@ func validateProfile(p Profile) error {
 		if p.PSK.HasNewline() {
 			return fmt.Errorf("invalid PSK: must not contain a newline or carriage return")
 		}
+		// Enforce the WPA-PSK key contract (8–63 printable-ASCII chars, or a
+		// 64-hex-digit raw PMK) before the keyfile is written or nmcli reloaded,
+		// so a weak/malformed key never reaches NetworkManager.
+		if err := validatePSK(p.PSK); err != nil {
+			return err
+		}
 	case AuthEAPTLS:
 		if p.Identity == "" {
 			return fmt.Errorf("identity is required for EAP-TLS authentication")
@@ -184,7 +190,11 @@ func containsControl(s string) bool {
 
 // validateConnName validates a connection name. It is rendered into the keyfile
 // (`id=`) and passed to nmcli as an argument, so it must be non-empty, free of
-// control characters, and not start with '-' (which nmcli would read as a flag).
+// control characters, not start with '-' (which nmcli would read as a flag), and
+// contain no '/' path separator. The name is also re-derived from untrusted host
+// `nmcli con show` output before it is fed back into a mutation (con mod / up /
+// delete), so the same rejection must hold when a name read back from the host is
+// re-validated — host output is not trusted.
 func validateConnName(name string) error {
 	if name == "" {
 		return fmt.Errorf("connection name is required")
@@ -194,6 +204,12 @@ func validateConnName(name string) error {
 	}
 	if strings.HasPrefix(name, "-") {
 		return fmt.Errorf("invalid connection name %q: must not start with '-'", name)
+	}
+	// A '/' would let a name escape the system-connections directory when used to
+	// derive the keyfile path; keyfilePath sanitizes it defensively, but the name
+	// itself is never legitimately path-shaped, so reject it outright.
+	if strings.ContainsRune(name, '/') {
+		return fmt.Errorf("invalid connection name %q: must not contain '/'", name)
 	}
 	return nil
 }

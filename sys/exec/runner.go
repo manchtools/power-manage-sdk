@@ -223,16 +223,11 @@ var forcedEnv = []string{"LC_ALL=C", "LANG=C", "NO_COLOR=1"}
 // (no ChildPath, no Env) inherits the parent fully; in every case forcedEnv is
 // appended last so the deterministic vars always win.
 func buildChildEnv(c Command) ([]string, error) {
-	if err := validateEnvVars(c.Env); err != nil {
+	// Identical gate the FakeRunner applies (ValidateCommandEnv): KEY=VALUE,
+	// hijack-blocklist, and the forced-locale/NO_COLOR reserved names a consumer
+	// may not set via Env.
+	if err := ValidateCommandEnv(c.Env); err != nil {
 		return nil, err
-	}
-	// The forced-locale/NO_COLOR names are the Runner's invariant — a consumer
-	// may not set them via Env (they'd be silently overridden anyway; reject
-	// explicitly so a mistake surfaces).
-	for _, e := range c.Env {
-		if key, _, _ := strings.Cut(e, "="); isReservedEnvVar(key) {
-			return nil, fmt.Errorf("%w: %q is forced by the Runner (LC_ALL=C/LANG=C/NO_COLOR=1) and may not be set via Command.Env", ErrReservedEnvVar, key)
-		}
 	}
 	switch {
 	case c.ChildPath != "":
