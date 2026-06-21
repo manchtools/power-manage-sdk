@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// OpenRealDir is the TOCTOU-closing replacement for "AssertRealDir then
-// path-based chmod/chown". It must accept a real directory and return a
+// OpenRealDir is the TOCTOU-closing alternative to a path-based "check then
+// chmod/chown". It must accept a real directory and return a
 // handle whose fd-based Chmod/Chown act on the opened inode; it must
 // reject a symlink (even one resolving to a valid dir — that dereference
 // is the privesc vector) and a non-directory, at open time, so there is

@@ -1,9 +1,6 @@
 package desktop
 
 import (
-	"context"
-	"fmt"
-	osexec "os/exec"
 	"strings"
 
 	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
@@ -17,9 +14,8 @@ import (
 // back to a fresh autolaunched bus).
 //
 // PATH is not added here — callers append it (via UserPath) so they can
-// pick a curated value rather than inherit the agent's PATH. RunAsCommand
-// does this for the non-streaming path; the streaming caller passes
-// UserPath(s) as the trusted child PATH.
+// pick a curated value rather than inherit the agent's PATH; RunAsRunner
+// passes UserPath(s) as the trusted child PATH.
 func EnvFor(s Session) []string {
 	return []string{
 		"HOME=" + s.Home,
@@ -51,74 +47,11 @@ func UserPath(s Session) string {
 	}, ":")
 }
 
-// RunAsCommand returns an *exec.Cmd that runs `name args...` as the
-// user owning the given session, with the per-user environment from
-// EnvFor plus the caller-supplied opts.ExtraEnv merged on top.
-//
-// The wrapper is `runuser -u <name> -- <name> <args...>`. We use
-// runuser rather than `sudo -u` because runuser doesn't go through
-// sudoers (no policy to misconfigure, no audit-noise from auth
-// failures) and has been part of util-linux on every supported
-// distro since well before the lowest target.
-//
-// This path does NOT go through the SDK Runner and does NOT force the C
-// locale: the command runs ON BEHALF OF a real user (a Flatpak install, a
-// user script) whose output the SDK never parses, so the user keeps their
-// own locale. The Runner's forced-C is for SDK-parsed probes only.
-//
-// opts.ExtraEnv may include anything action-specific; entries win over the
-// per-user defaults if both set the same key (Go's exec honors the last
-// occurrence) — except PATH, which is always re-applied last with the curated
-// UserPath so an action cannot override it.
-//
-// Returns an error if name is empty (programming bug — runuser's own error in
-// that case is a confusing "exec: required") or if the session has no Username
-// (would silently run as the agent's own UID).
-func (m *manager) RunAsCommand(ctx context.Context, s Session, opts RunAsOptions, name string, args ...string) (*osexec.Cmd, error) {
-	if name == "" {
-		return nil, fmt.Errorf("desktop.RunAsCommand: name is required")
-	}
-	if s.Username == "" {
-		return nil, fmt.Errorf("desktop.RunAsCommand: session has empty Username")
-	}
-	// opts.ExtraEnv is merged into the child environment, so it is an injection
-	// surface exactly like Command.Env on the Runner path: a caller-supplied
-	// LD_PRELOAD / LD_LIBRARY_PATH / GCONV_PATH would load attacker-controlled
-	// code into the user-scoped command and anything it execs. Gate it through the
-	// SAME hijack-blocklist the Runner enforces (exec.ValidateCommandEnv), failing
-	// closed BEFORE the *exec.Cmd is built. PATH is exempt from the gate here
-	// because RunAsCommand never forwards a caller PATH — it always re-applies the
-	// curated UserPath last (see below), so a "PATH=" entry is inert by design and
-	// must not be treated as a rejection.
-	if err := validateExtraEnv(opts.ExtraEnv); err != nil {
-		return nil, err
-	}
-	// Wrap the command in `env PATH=<curated>`: runuser's PAM session can reset
-	// PATH from /etc/login.defs (openSUSE sets ALWAYS_SET_PATH), which would strip
-	// the curated PATH we put in cmd.Env. The env wrapper re-applies it AFTER the
-	// session is set up, running as the target user, so the curated UserPath always
-	// wins regardless of the distro's login.defs. (cmd.Env still carries PATH for
-	// distros that don't reset it; the wrapper is the portable guarantee.)
-	full := append([]string{"-u", s.Username, "--", envPath, "PATH=" + UserPath(s), name}, args...)
-	cmd := osexec.CommandContext(ctx, runuserPath, full...)
-	// Replace inherited env wholesale — agent's env (LD_PRELOAD,
-	// LD_LIBRARY_PATH, etc.) must not leak into a user-scoped command.
-	// Caller's ExtraEnv is merged on top, then the curated user PATH is
-	// applied LAST so it wins under exec's last-occurrence semantics: an
-	// action must not be able to override PATH (parity with the
-	// streaming path, which refuses a caller-supplied PATH outright).
-	env := append(EnvFor(s), opts.ExtraEnv...)
-	env = append(env, "PATH="+UserPath(s))
-	cmd.Env = env
-	cmd.Dir = s.Home
-	return cmd, nil
-}
-
-// validateExtraEnv runs the caller's ExtraEnv through the Runner's env hijack
+// validateExtraEnv runs a caller's extra env through the Runner's env hijack
 // gate (exec.ValidateCommandEnv) so a desktop run-as inherits the same
 // LD_PRELOAD/LD_LIBRARY_PATH/GCONV_PATH refusal as every Runner-driven command.
-// PATH entries are dropped before the gate: RunAsCommand always overrides PATH
-// with the curated UserPath, so a caller "PATH=" value is inert and is not a
+// PATH entries are dropped before the gate: the per-user run-as always overrides
+// PATH with the curated UserPath, so a caller "PATH=" value is inert and is not a
 // hijack — exec.ValidateCommandEnv would otherwise reject it (PATH is on the
 // blocklist) and break the documented PATH-is-re-applied contract.
 func validateExtraEnv(extraEnv []string) error {

@@ -1,7 +1,6 @@
 package desktop
 
 import (
-	"context"
 	"slices"
 	"strings"
 	"testing"
@@ -50,41 +49,6 @@ func TestUserPath(t *testing.T) {
 	}
 }
 
-// RunAsCommand must set the curated user PATH on the child env — the
-// previous shape left PATH unset entirely (EnvFor omits it), so per-user
-// commands ran with no PATH / runuser's compiled-in default rather than
-// the user's, and ~/.local/bin was never on PATH.
-func TestRunAsCommand_SetsCuratedUserPath(t *testing.T) {
-	m, _ := newManager(t)
-	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
-	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{}, "true")
-	if err != nil {
-		t.Fatalf("RunAsCommand: %v", err)
-	}
-	want := "PATH=" + UserPath(s)
-	if !slices.Contains(cmd.Env, want) {
-		t.Errorf("RunAsCommand env must contain the curated %q; env=%v", want, cmd.Env)
-	}
-}
-
-// An action-supplied PATH in extraEnv must not override the curated
-// user PATH — the curated value is applied last so it wins, matching the
-// streaming path which refuses a caller-supplied PATH outright.
-func TestRunAsCommand_CuratedPathWinsOverExtraEnv(t *testing.T) {
-	m, _ := newManager(t)
-	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
-	cmd, err := m.RunAsCommand(context.Background(), s, RunAsOptions{ExtraEnv: []string{"PATH=/attacker/bin"}}, "true")
-	if err != nil {
-		t.Fatalf("RunAsCommand: %v", err)
-	}
-	// Last PATH entry wins under exec semantics; it must be the curated one.
-	var lastPath string
-	for _, e := range cmd.Env {
-		if strings.HasPrefix(e, "PATH=") {
-			lastPath = e
-		}
-	}
-	if lastPath != "PATH="+UserPath(s) {
-		t.Errorf("curated PATH must win over extraEnv PATH; effective=%q", lastPath)
-	}
-}
+// The PATH behaviours these tests pinned (curated PATH set, and a caller PATH
+// dropped/overridden) moved with the per-user exec path itself: see
+// TestRunAsRunner_WrapsCommandAsUser and TestRunAsRunner_CallerPathDropped.

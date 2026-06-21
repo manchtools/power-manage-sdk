@@ -16,7 +16,7 @@ import (
 // fchown(2) / fchmod(2) on the open descriptor — instead of path-based
 // chmod/chown.
 //
-// This is the TOCTOU-closing counterpart to AssertRealDir. A path-based
+// This closes the TOCTOU window of a path-based "check then act". A path-based
 // chmod/chown re-resolves the path on every call, so a user who controls
 // the directory (e.g. ~/.ssh, owned by the target user) can swap it for
 // a symlink between a prior check and the operation, redirecting a
@@ -29,7 +29,7 @@ import (
 //     component is a symlink — there is no window to swap one in, because
 //     the check and the handle are the same syscall.
 //   - O_DIRECTORY makes the open fail (ENOTDIR) if the path is not a
-//     directory, subsuming AssertRealDir's non-dir rejection.
+//     directory, so a non-directory target is rejected in the same syscall.
 //
 // The caller MUST Close the returned file.
 func OpenRealDir(path string) (*os.File, error) {

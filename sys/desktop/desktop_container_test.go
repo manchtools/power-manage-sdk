@@ -8,7 +8,7 @@
 // change or an os/user lookup behaviour change is caught here.
 //
 // Runs in the container-tests lane (root): HomeUsers/UsersWithFlatpakInstall need
-// to create accounts and RunAsCommand drops privilege to a *different* user, both
+// to create accounts and RunAsRunner drops privilege to a *different* user, both
 // of which require root. The Direct runner is correct (the lane is already root).
 //
 // ActiveSessions' populated GRAPHICAL path needs a real logind session of type
@@ -117,51 +117,59 @@ func TestHomeUsers_Container(t *testing.T) {
 	}
 }
 
-// TestRunAsCommand_Container is the security-critical real test: the built
-// command must actually run AS the target user (privilege dropped via runuser)
-// with the per-user HOME/USER and the curated PATH, in the user's home dir.
-func TestRunAsCommand_Container(t *testing.T) {
+// TestRunAsRunner_Container is the security-critical real test: a Runner built
+// with RunAsRunner must actually run AS the target user (privilege dropped via
+// runuser) with the per-user HOME/USER and the curated PATH.
+func TestRunAsRunner_Container(t *testing.T) {
 	requireUseradd(t)
 	home := filepath.Join(t.TempDir(), "pmrunas")
 	u := mkUser(t, "pmrunas", home)
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)
 	s := Session{Username: "pmrunas", UID: uid, GID: gid, Home: u.HomeDir, RuntimeDir: "/run/user/" + u.Uid}
-	m := realDesktop(t)
+	base, err := pmexec.NewRunner(pmexec.Direct)
+	if err != nil {
+		t.Fatalf("NewRunner(Direct): %v", err)
+	}
+	ru, err := RunAsRunner(base, s)
+	if err != nil {
+		t.Fatalf("RunAsRunner: %v", err)
+	}
 	ctx := deskCtx(t)
 
 	// Identity: `id -un` must print the target user — proves the real privilege drop.
-	cmd, err := m.RunAsCommand(ctx, s, RunAsOptions{}, "id", "-un")
-	if err != nil {
-		t.Fatalf("RunAsCommand(id): %v", err)
-	}
-	out, err := cmd.Output()
+	res, err := ru.Run(ctx, pmexec.Command{Name: "id", Args: []string{"-un"}})
 	if err != nil {
 		t.Fatalf("run id -un as pmrunas: %v", err)
 	}
-	if got := strings.TrimSpace(string(out)); got != "pmrunas" {
+	if got := strings.TrimSpace(res.Stdout); got != "pmrunas" {
 		t.Errorf("id -un = %q, want pmrunas (privilege was not dropped)", got)
 	}
 
 	// Environment: HOME/USER are the user's; PATH is the curated UserPath (the
 	// user's ~/.local/bin first), NOT root's inherited PATH.
-	cmd2, err := m.RunAsCommand(ctx, s, RunAsOptions{}, "sh", "-c", `printf '%s|%s|%s' "$HOME" "$USER" "$PATH"`)
-	if err != nil {
-		t.Fatalf("RunAsCommand(sh): %v", err)
-	}
-	out2, err := cmd2.Output()
+	res2, err := ru.Run(ctx, pmexec.Command{Name: "sh", Args: []string{"-c", `printf '%s|%s|%s' "$HOME" "$USER" "$PATH"`}})
 	if err != nil {
 		t.Fatalf("run env probe as pmrunas: %v", err)
 	}
-	parts := strings.SplitN(string(out2), "|", 3)
+	parts := strings.SplitN(strings.TrimRight(res2.Stdout, "\n"), "|", 3)
 	if len(parts) != 3 || parts[0] != u.HomeDir || parts[1] != "pmrunas" {
 		t.Errorf("env = %v, want HOME=%q USER=pmrunas", parts, u.HomeDir)
 	}
 	if !strings.HasPrefix(parts[2], u.HomeDir+"/.local/bin:") {
 		t.Errorf("PATH = %q, want it to start with the user's ~/.local/bin", parts[2])
 	}
-	if cmd2.Dir != u.HomeDir {
-		t.Errorf("cmd.Dir = %q, want the user's home %q", cmd2.Dir, u.HomeDir)
+
+	// Working dir: runuser (no -l) keeps the parent's cwd, so a `pwd` with Dir
+	// unset would print the test's cwd. Setting Command.Dir must make the real
+	// child run there — proving Dir survives the runuser wrap (the RunAsCommand
+	// parity that RunAsRunner now provides).
+	res3, err := ru.Run(ctx, pmexec.Command{Name: "pwd", Dir: u.HomeDir})
+	if err != nil {
+		t.Fatalf("run pwd as pmrunas with Dir: %v", err)
+	}
+	if got := strings.TrimSpace(res3.Stdout); got != u.HomeDir {
+		t.Errorf("pwd = %q, want %q (Command.Dir was not honored)", got, u.HomeDir)
 	}
 }
 

@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -34,6 +35,51 @@ func TestRunAsRunner_WrapsCommandAsUser(t *testing.T) {
 	}
 	if c.Escalate {
 		t.Error("runuser-from-root is a privilege DROP; the wrapped command must not also escalate")
+	}
+}
+
+// A caller-supplied PATH must NOT override the curated user PATH: the per-user
+// run-as drops the caller's PATH and re-applies UserPath last, so an action can't
+// point a user-scoped command at an attacker-controlled bin dir (parity with the
+// dropped RunAsCommand path this replaced).
+func TestRunAsRunner_CallerPathDropped(t *testing.T) {
+	base := exectest.New(pmexec.Direct)
+	base.Push(pmexec.Result{}, nil)
+	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
+	ra, _ := RunAsRunner(base, s)
+	if _, err := ra.Run(context.Background(), pmexec.Command{Name: "flatpak", Env: []string{"PATH=/attacker/bin"}}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	args := base.Calls()[0].Args
+	if slices.Contains(args, "PATH=/attacker/bin") {
+		t.Errorf("caller PATH must be dropped; args=%v", args)
+	}
+	var lastPath string
+	for _, a := range args {
+		if strings.HasPrefix(a, "PATH=") {
+			lastPath = a
+		}
+	}
+	if lastPath != "PATH="+UserPath(s) {
+		t.Errorf("curated PATH must win; effective=%q", lastPath)
+	}
+}
+
+// A per-user command's working directory must survive the runuser wrap. The
+// removed RunAsCommand set cmd.Dir (default: the user's home); RunAsRunner is
+// its replacement, so a caller that sets Command.Dir (e.g. a per-user script
+// run from the action's WorkingDirectory) must actually run there — not silently
+// in the agent's cwd.
+func TestRunAsRunner_PropagatesCallerDir(t *testing.T) {
+	base := exectest.New(pmexec.Direct)
+	base.Push(pmexec.Result{}, nil)
+	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
+	ra, _ := RunAsRunner(base, s)
+	if _, err := ra.Run(context.Background(), pmexec.Command{Name: "script.sh", Dir: "/home/alice/work"}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := base.Calls()[0].Dir; got != "/home/alice/work" {
+		t.Errorf("wrapped command Dir = %q, want /home/alice/work (caller working dir was dropped)", got)
 	}
 }
 
