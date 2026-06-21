@@ -194,28 +194,70 @@ func TestZypper_Autoremove(t *testing.T) {
 	}
 }
 
+// Repair mirrors dnf's best-effort recovery (both are rpm-based): clear a stale
+// zypp PID lock, then clean → refresh → verify → (rpmdb verify, rebuild only on
+// corruption). Every step is best-effort — a wedged step is logged, not fatal,
+// so e.g. a failed refresh does not skip the rpmdb rebuild — and only a
+// cancelled context aborts the chain.
 func TestZypper_Repair(t *testing.T) {
 	ctx := context.Background()
-	t.Run("happy", func(t *testing.T) {
-		stubStatFile(t, nil)
+	t.Run("runs the full best-effort sequence in order", func(t *testing.T) {
+		stubStatFile(t, nil) // no /run/zypp.pid → lock step is a no-op
 		m, f := zypperM(t)
-		ok(f, "")
+		ok(f, "") // zypper clean --all
+		ok(f, "") // zypper refresh
+		ok(f, "") // zypper verify --recommends
+		ok(f, "") // rpm --verifydb (clean)
 		if _, err := m.Repair(ctx); err != nil {
 			t.Fatal(err)
 		}
-		if argv(f.Calls()[0]) != "zypper --non-interactive refresh" {
-			t.Errorf("argv=%q", argv(f.Calls()[0]))
+		want := []string{
+			"zypper --non-interactive clean --all",
+			"zypper --non-interactive refresh",
+			"zypper --non-interactive verify --recommends",
+			"rpm --verifydb",
+		}
+		calls := f.Calls()
+		if len(calls) != len(want) {
+			t.Fatalf("ran %d steps, want %d: %v", len(calls), len(want), calls)
+		}
+		for i := range want {
+			if argv(calls[i]) != want[i] {
+				t.Errorf("step %d argv = %q, want %q", i, argv(calls[i]), want[i])
+			}
 		}
 	})
-	t.Run("refresh failure returned", func(t *testing.T) {
+	t.Run("a failed step is best-effort: the chain continues, no error", func(t *testing.T) {
 		stubStatFile(t, nil)
 		m, f := zypperM(t)
-		f.Push(pmexec.Result{ExitCode: 1, Stderr: "refresh failed"}, nil)
-		if _, err := m.Repair(ctx); err == nil || !strings.Contains(err.Error(), "zypper refresh failed") {
-			t.Fatalf("err=%v", err)
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "clean failed"}, nil) // clean fails
+		ok(f, "")                                                       // refresh
+		ok(f, "")                                                       // verify
+		ok(f, "")                                                       // verifydb clean
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatalf("a non-cancellation step failure must be swallowed, got %v", err)
+		}
+		if n := len(f.Calls()); n != 4 {
+			t.Errorf("the chain must continue past a failed step (4 calls), ran %d", n)
 		}
 	})
-	t.Run("cancellation", func(t *testing.T) {
+	t.Run("rpmdb corruption escalates to rpm --rebuilddb", func(t *testing.T) {
+		stubStatFile(t, nil)
+		m, f := zypperM(t)
+		ok(f, "")                                                        // clean
+		ok(f, "")                                                        // refresh
+		ok(f, "")                                                        // verify
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "rpmdb corrupt"}, nil) // verifydb: corruption
+		ok(f, "")                                                        // rebuilddb
+		if _, err := m.Repair(ctx); err != nil {
+			t.Fatal(err)
+		}
+		calls := f.Calls()
+		if len(calls) != 5 || argv(calls[4]) != "rpm --rebuilddb" {
+			t.Errorf("verifydb corruption must escalate to rpm --rebuilddb, calls=%v", calls)
+		}
+	})
+	t.Run("cancellation aborts", func(t *testing.T) {
 		stubStatFile(t, nil)
 		cctx, cancel := context.WithCancel(context.Background())
 		cancel()

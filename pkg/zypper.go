@@ -146,16 +146,35 @@ func (z *zypper) Autoremove(ctx context.Context) (pmexec.Result, error) {
 	return pmexec.Result{}, nil
 }
 
-// Repair clears a stale zypp lock and refreshes the repositories.
+// Repair recovers a wedged zypper/rpm state, mirroring dnf's best-effort
+// recovery (both are rpm-based). It clears a stale zypp PID lock, then runs
+// clean / refresh / verify and (only on rpmdb corruption) a rebuild. Every
+// package step is best-effort — a single wedged step is logged and the chain
+// continues, so e.g. a failed refresh does not skip the rpmdb rebuild — and only
+// a cancelled context aborts the chain (each step fails closed via runPriv). The
+// last step's Result is returned.
 func (z *zypper) Repair(ctx context.Context) (pmexec.Result, error) {
-	if err := removeStaleLock(ctx, z.r, "/run/zypp.pid"); err != nil {
+	if err := removeStaleZyppLock(ctx, z.r, "/run/zypp.pid"); err != nil {
 		return pmexec.Result{}, err
 	}
-	res, err := z.write(ctx, "--non-interactive", "refresh")
-	if err != nil {
-		return res, repairErr(ctx, "zypper refresh failed", err)
+	steps := []struct {
+		what string
+		run  func() (pmexec.Result, error)
+	}{
+		{"zypper clean --all", func() (pmexec.Result, error) { return z.write(ctx, "--non-interactive", "clean", "--all") }},
+		{"zypper refresh", func() (pmexec.Result, error) { return z.write(ctx, "--non-interactive", "refresh") }},
+		{"zypper verify", func() (pmexec.Result, error) { return z.write(ctx, "--non-interactive", "verify", "--recommends") }},
+		{"rpm --verifydb", func() (pmexec.Result, error) { return verifyOrRebuildRPMDB(ctx, z.r) }},
 	}
-	return res, nil
+	var last pmexec.Result
+	for _, s := range steps {
+		res, err := s.run()
+		last = res
+		if err := bestEffortStep(ctx, s.what, err); err != nil {
+			return res, err
+		}
+	}
+	return last, nil
 }
 
 // Search searches packages (exit 104 = no matches).
