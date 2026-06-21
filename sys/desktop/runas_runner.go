@@ -23,7 +23,7 @@ import (
 //
 // The base Runner MUST run as root: runuser performs the privilege DROP to the
 // target user, so the wrapped command is never escalated again. The caller's
-// command env is screened by the same hijack blocklist as RunAsCommand.
+// command env is screened by the same hijack blocklist the Runner enforces.
 func RunAsRunner(base pmexec.Runner, s Session) (pmexec.Runner, error) {
 	if base == nil {
 		return nil, fmt.Errorf("desktop.RunAsRunner: %w", pmexec.ErrRunnerRequired)
@@ -59,7 +59,7 @@ func (ra *runAsRunner) Stream(ctx context.Context, c pmexec.Command, onLine pmex
 
 // wrap rewrites c into `runuser -u <user> -- env <session-env> PATH=<curated>
 // <name> <args...>`, running it as the session user with that user's desktop
-// environment. PATH is forced last (a caller PATH is dropped, like RunAsCommand);
+// environment. PATH is forced last (a caller-supplied PATH is dropped);
 // the rest of the caller's env is screened through the hijack blocklist because
 // it is spliced into the inner env wrapper, which the base Runner does not screen.
 func (ra *runAsRunner) wrap(c pmexec.Command) (pmexec.Command, error) {

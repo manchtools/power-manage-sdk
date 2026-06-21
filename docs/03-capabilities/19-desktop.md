@@ -38,29 +38,34 @@ home root (default `/home`), confirming each against passwd — so a stale
 `userdel`-without-`-r` directory is skipped rather than treated as a user.
 <!-- docref: end -->
 
-## Run a command as a user
+## Run commands as a user
 
 ```go
-cmd, err := m.RunAsCommand(ctx, session, desktop.RunAsOptions{}, "flatpak", "update", "-y")
+ru, err := desktop.RunAsRunner(r, session) // r is the root Runner
 if err != nil {
     return err
 }
-out, err := cmd.Output() // runs as the session's user
+// ru is an exec.Runner that executes AS the session's user — compose it like any
+// other Runner, e.g. a per-user Flatpak manager:
+fp, _ := pkg.New(pkg.Flatpak, ru, pkg.WithUserScope())
+_, err = fp.Install(ctx, pkg.InstallOptions{Remote: "flathub"}, "org.x.App")
 ```
 
-<!-- docref: begin src=sys/desktop/runas.go#manager.RunAsCommand:73de35dd -->
-`RunAsCommand` builds (but does not run) a command that executes as the session's
-user via `runuser`, with a per-user environment: `HOME`, `USER`, `XDG_RUNTIME_DIR`,
-and the session bus address. `PATH` is always re-applied last with a curated
-per-user value (the user's `~/.local/bin` first, never root's `PATH`), so an
-action cannot override it. The agent's own environment is replaced wholesale —
-`LD_PRELOAD` and friends never leak into a user-scoped command.
+<!-- docref: begin src=sys/desktop/runas_runner.go#RunAsRunner:f70588a4 -->
+`RunAsRunner` wraps a base Runner so every command it runs executes as the
+session's user via `runuser`, with a per-user environment: `HOME`, `USER`,
+`XDG_RUNTIME_DIR`, and the session bus address. `PATH` is always re-applied last
+with a curated per-user value (the user's `~/.local/bin` first, never root's
+`PATH`), so an action cannot override it. The base Runner must run as root —
+`runuser` performs the privilege drop — and the caller's command env is screened
+through the same hijack blocklist, so `LD_PRELOAD` and friends never leak into a
+user-scoped command.
 <!-- docref: end -->
 
-{% callout type="info" title="It returns a command, doesn't run it" %}
-`RunAsCommand` returns an `*exec.Cmd` you run yourself, so you control streaming,
-stdin, and output capture. The privilege drop and environment are already wired
-in.
+{% callout type="info" title="It's a Runner, not a one-shot" %}
+`RunAsRunner` returns an `exec.Runner` you compose with any capability (a per-user
+Flatpak manager, a script exec), so the privilege drop and environment are wired
+in once and reused — no separate streaming pipeline to build.
 {% /callout %}
 
 ## Related

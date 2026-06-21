@@ -26,10 +26,8 @@
 // The loginctl PROBES (ActiveSessions and its helpers) run through the injected
 // Runner, which forces the C locale; this is deliberate — the SDK parses
 // loginctl's stderr to distinguish "no logind here" from a real fault, and that
-// matching must be locale-stable. RunAsCommand is the opposite case: it builds a
-// command that runs ON BEHALF OF a signed-in user (a Flatpak install, a user
-// script) whose output the SDK does NOT parse, so it does NOT go through the
-// Runner and does NOT force C — the user keeps their own locale.
+// matching must be locale-stable. User-scoped commands are fanned out with
+// desktop.RunAsRunner, which also runs through the Runner.
 package desktop
 
 import (
@@ -56,7 +54,7 @@ const loginctlPath = "/usr/bin/loginctl"
 // every supported distro ships.
 const runuserPath = "/usr/sbin/runuser"
 
-// envPath pins the absolute path to env. RunAsCommand wraps the user command in
+// envPath pins the absolute path to env. RunAsRunner wraps the user command in
 // `env PATH=<curated>` so the curated PATH is re-applied AFTER runuser's PAM
 // session — some distros (openSUSE: login.defs ALWAYS_SET_PATH) reset PATH during
 // the session setup, which would otherwise strip the curated value we set in the
@@ -73,15 +71,6 @@ var (
 	lookupUser = user.Lookup
 )
 
-// RunAsOptions carries the optional inputs to Manager.RunAsCommand.
-type RunAsOptions struct {
-	// ExtraEnv is merged on top of the per-user desktop environment. Entries win
-	// over the defaults on a duplicate key (Go's exec honours the last
-	// occurrence) — except PATH, which RunAsCommand always re-applies last with
-	// the curated UserPath so an action cannot override it.
-	ExtraEnv []string
-}
-
 // Manager is the desktop discovery + user-scoped-command surface.
 type Manager interface {
 	// ActiveSessions returns every active local graphical session on the host,
@@ -95,10 +84,6 @@ type Manager interface {
 	// UsersWithFlatpakInstall returns the subset of HomeUsers whose per-user
 	// Flatpak repository contains appID.
 	UsersWithFlatpakInstall(ctx context.Context, appID string) ([]Session, error)
-	// RunAsCommand builds (but does not run) an *exec.Cmd that runs name+args as
-	// the user owning s, with the per-user desktop environment. See the package
-	// doc for why this path keeps the user's locale rather than forcing C.
-	RunAsCommand(ctx context.Context, s Session, opts RunAsOptions, name string, args ...string) (*osexec.Cmd, error)
 }
 
 // manager is the single Manager implementation.

@@ -3,7 +3,6 @@
 package fs
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -39,16 +38,6 @@ import (
 // Returns the resolved temp path on failure so the caller can decide
 // whether to clean it up.
 func safeReplaceFile(path string, data []byte, perm os.FileMode, removeExisting bool) error {
-	return safeReplaceFromReader(path, bytes.NewReader(data), perm, removeExisting)
-}
-
-// safeReplaceFromReader is the streaming form of safeReplaceFile: it copies from
-// src into the same-directory temp file (io.Copy, no buffering of the whole
-// payload), keeping every symlink-aware defense — O_NOFOLLOW temp open,
-// fsync, atomic rename — so an arbitrarily large source (a downloaded AppImage)
-// is placed atomically without holding it all in memory. A failed or truncated
-// copy never clobbers the existing file: the rename is the final step.
-func safeReplaceFromReader(path string, src io.Reader, perm os.FileMode, removeExisting bool) error {
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
 
@@ -73,7 +62,7 @@ func safeReplaceFromReader(path string, src io.Reader, perm os.FileMode, removeE
 		return fmt.Errorf("reopen temp with O_NOFOLLOW: %w", err)
 	}
 
-	if _, err := io.Copy(f, src); err != nil {
+	if _, err := f.Write(data); err != nil {
 		_ = f.Close()
 		cleanup()
 		return fmt.Errorf("write temp: %w", err)

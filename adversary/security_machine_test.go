@@ -268,9 +268,9 @@ func accountAndDesktopPersistenceProgram() attackProgram {
 				oracle: mustReject,
 				run: func(t *testing.T, env *attackEnv) observation {
 					r := exectest.New(sdkexec.Direct)
-					m, err := desktop.New(r)
+					ru, err := desktop.RunAsRunner(r, desktop.Session{Username: "alice", UID: 1000, GID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"})
 					if err == nil {
-						_, err = m.RunAsCommand(env.ctx, desktop.Session{Username: "alice", UID: 1000, GID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}, desktop.RunAsOptions{ExtraEnv: []string{"LD_PRELOAD=/tmp/evil.so"}}, "/usr/bin/true")
+						_, err = ru.Run(env.ctx, sdkexec.Command{Name: "/usr/bin/true", Env: []string{"LD_PRELOAD=/tmp/evil.so"}})
 					}
 					return observation{err: err, commands: r.Calls()}
 				},

@@ -328,69 +328,6 @@ func TestCopyTree(t *testing.T) {
 	}
 }
 
-func TestWriteReader_StreamsAndIsAtomic(t *testing.T) {
-	ctx := context.Background()
-	m := intManager(t)
-	path := tmpPath(t, "stream")
-	defer cleanup(t, m, path)
-
-	// A payload well past one io.Copy buffer, to exercise chunked streaming. It
-	// is intentionally newline-free and multi-megabyte — exactly the binary
-	// artifact WriteReader exists for. Verification reads the file back with a
-	// direct os.ReadFile (the file is written world-readable below), NOT
-	// m.ReadFile: the escalated ReadFile streams `cat` through the line-buffered
-	// Runner (1 MiB cap, output-oriented) and cannot faithfully return a large
-	// no-newline blob — a limitation of ReadFile, not of WriteReader.
-	payload := strings.Repeat("0123456789abcdef", 200000) // ~3 MB
-	if err := m.WriteReader(ctx, path, strings.NewReader(payload), fs.WriteOptions{Mode: 0o644}); err != nil {
-		t.Fatalf("WriteReader: %v", err)
-	}
-	got, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read back: %v", err)
-	}
-	if string(got) != payload {
-		t.Errorf("streamed content mismatch: got %d bytes, want %d", len(got), len(payload))
-	}
-	if mode := statMode(t, path); mode != 0o644 {
-		t.Errorf("mode = %v, want 0644", mode)
-	}
-
-	// Reader-error atomicity is guaranteed only on the Direct (root, fd-anchored)
-	// backend — io.Copy aborts before the rename. The escalated path pipes to a
-	// root shell that renames on stdin-EOF, so it intentionally does NOT promise
-	// non-clobber on a truncated reader (see WriteReader's doc); skip there.
-	if os.Geteuid() != 0 {
-		t.Skip("reader-error atomicity is a Direct-backend guarantee; run as root to exercise it")
-	}
-	if err := m.WriteReader(ctx, path, &failingReader{failAfter: 1024}, fs.WriteOptions{Mode: 0o644}); err == nil {
-		t.Fatal("WriteReader with a mid-stream failing reader should error")
-	}
-	after, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read back after failed stream: %v", err)
-	}
-	if string(after) != payload {
-		t.Errorf("a failed stream clobbered the existing file: got %d bytes, want the original %d", len(after), len(payload))
-	}
-}
-
-// failingReader yields failAfter bytes then errors, to drive WriteReader's
-// mid-stream failure path.
-type failingReader struct {
-	failAfter int
-	n         int
-}
-
-func (r *failingReader) Read(p []byte) (int, error) {
-	if r.n >= r.failAfter {
-		return 0, errors.New("simulated mid-stream read failure")
-	}
-	p[0] = 'x'
-	r.n++
-	return 1, nil
-}
-
 func TestListMounts_Integration(t *testing.T) {
 	mounts, err := intManager(t).ListMounts(context.Background())
 	if err != nil {
