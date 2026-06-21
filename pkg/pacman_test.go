@@ -264,6 +264,9 @@ func TestPacman_Repair(t *testing.T) {
 		}
 		// Gap #5: keyring bootstrap (pacman-key --init then --populate <keyring>)
 		// runs before the database refresh, then -Syy as before.
+		if n := len(f.Calls()); n != 3 {
+			t.Fatalf("Repair ran %d commands, want 3 (keyring init, populate, -Syy)", n)
+		}
 		got := []string{argv(f.Calls()[0]), argv(f.Calls()[1]), argv(f.Calls()[2])}
 		want := []string{
 			"pacman-key --init",

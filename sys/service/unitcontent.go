@@ -58,7 +58,11 @@ var dangerousEnvVars = map[string]struct{}{
 // shells out, runs from a world-writable directory, or an Environment that
 // injects a dynamic-linker override fails closed.
 func validateUnitContent(content string) error {
-	for _, raw := range strings.Split(content, "\n") {
+	// Join systemd backslash line-continuations FIRST: a directive split across
+	// lines (`ExecStart=/bin/sh \` then `-c 'curl|sh'`) would otherwise parse as
+	// a harmless first line plus a "malformed" (no '=') second line, evading the
+	// per-line policy entirely.
+	for _, raw := range joinContinuationLines(content) {
 		line := strings.TrimSpace(raw)
 		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, ";") {
 			continue
@@ -70,19 +74,74 @@ func validateUnitContent(content string) error {
 		key := strings.ToLower(strings.TrimSpace(line[:eq]))
 		value := strings.TrimSpace(line[eq+1:])
 
-		if _, isExec := execDirectives[key]; isExec {
+		switch {
+		case isExecDirective(key):
 			if err := validateExecLine(key, value); err != nil {
 				return err
 			}
-			continue
-		}
-		if key == "environment" || key == "environmentfile" {
+		case key == "environmentfile":
+			// EnvironmentFile references an EXTERNAL file whose content cannot be
+			// validated here — an attacker who controls that file injects
+			// LD_PRELOAD (etc.) into the service. Refuse a reference into a
+			// world-writable directory, consistent with the Exec* policy. systemd
+			// allows a leading '-' (ignore-if-missing); strip it before the check.
+			p := strings.TrimSpace(strings.TrimPrefix(value, "-"))
+			for _, prefix := range untrustedExecPrefixes {
+				if strings.HasPrefix(p, prefix) {
+					return fmt.Errorf("%w: EnvironmentFile %q references a world-writable path", ErrUnsafeUnitContent, p)
+				}
+			}
+		case key == "environment":
 			if err := validateEnvLine(value); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func isExecDirective(key string) bool {
+	_, ok := execDirectives[key]
+	return ok
+}
+
+// joinContinuationLines merges systemd backslash line-continuations so the
+// content is policed as the single logical directive systemd will execute. A
+// trailing backslash continues the line UNLESS it is itself escaped (an even
+// number of trailing backslashes is a literal backslash, not a continuation).
+func joinContinuationLines(content string) []string {
+	var out []string
+	var pending strings.Builder
+	continuing := false
+	for _, l := range strings.Split(content, "\n") {
+		trimmed := strings.TrimRight(l, " \t")
+		if trailingBackslashes(trimmed)%2 == 1 {
+			pending.WriteString(strings.TrimSuffix(trimmed, `\`))
+			pending.WriteByte(' ') // systemd folds a continuation with whitespace
+			continuing = true
+			continue
+		}
+		if continuing {
+			pending.WriteString(l)
+			out = append(out, pending.String())
+			pending.Reset()
+			continuing = false
+		} else {
+			out = append(out, l)
+		}
+	}
+	if continuing {
+		out = append(out, pending.String())
+	}
+	return out
+}
+
+func trailingBackslashes(s string) int {
+	n := 0
+	for i := len(s) - 1; i >= 0 && s[i] == '\\'; i-- {
+		n++
+	}
+	return n
 }
 
 // validateExecLine rejects an Exec* command line that shells out to an inline
@@ -105,7 +164,7 @@ func validateExecLine(key, value string) error {
 	// curl|sh dropper and the authorized_keys writer both take this shape.
 	if _, isShell := shellInterpreters[base]; isShell {
 		for _, arg := range fields[1:] {
-			if arg == "-c" || strings.HasPrefix(arg, "-c") {
+			if isShellCFlag(arg) {
 				return fmt.Errorf("%w: %s shells out via %q -c (inline command execution)", ErrUnsafeUnitContent, key, base)
 			}
 		}
@@ -118,6 +177,17 @@ func validateExecLine(key, value string) error {
 		}
 	}
 	return nil
+}
+
+// isShellCFlag reports whether arg is a short-option form that includes the
+// shell's -c ("run this inline command string") flag: "-c", "-c<cmd>", or a
+// combined cluster like "-ec"/"-xc"/"-lc". A long option ("--config") is not a
+// short-option cluster and is not matched.
+func isShellCFlag(arg string) bool {
+	if !strings.HasPrefix(arg, "-") || strings.HasPrefix(arg, "--") {
+		return false
+	}
+	return strings.ContainsRune(arg[1:], 'c')
 }
 
 // validateEnvLine rejects an Environment/EnvironmentFile directive that sets a
