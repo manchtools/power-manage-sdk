@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -86,8 +87,10 @@ func (n *nftables) RemoveRule(ctx context.Context, id string) error {
 	}
 	raw, err := n.nftListJSON(ctx)
 	if err != nil {
-		// No table → nothing to remove.
-		return nil
+		if isNoTable(err) {
+			return nil // no table → nothing to remove (the "absent" post-condition already holds)
+		}
+		return err // a real failure (escalation denied, nft error) must NOT report a successful no-op
 	}
 	handle, ok := nftFindRuleHandle(raw, id)
 	if !ok {
@@ -97,12 +100,18 @@ func (n *nftables) RemoveRule(ctx context.Context, id string) error {
 	return n.nftRunScript(ctx, script)
 }
 
-// List returns every managed rule in this namespace's table.
+// List returns every managed rule in this namespace's table. A missing table is
+// an explicit absence: it returns a wrapped os.ErrNotExist rather than an empty
+// slice, so a caller can never confuse "this namespace was never provisioned"
+// with "provisioned, currently zero rules". Callers that want absent-as-empty
+// opt in with errors.Is(err, os.ErrNotExist).
 func (n *nftables) List(ctx context.Context) ([]Rule, error) {
 	raw, err := n.nftListJSON(ctx)
 	if err != nil {
-		// No table yet → no managed rules.
-		return nil, nil
+		if isNoTable(err) {
+			return nil, fmt.Errorf("list nftables rules: namespace %q has no table: %w", n.ns, os.ErrNotExist)
+		}
+		return nil, err // a real failure (escalation denied, nft error) must not read as "zero rules"
 	}
 	return nftParseRules(raw)
 }

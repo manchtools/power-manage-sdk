@@ -86,9 +86,19 @@
 //
 //   - [ErrInvalidNamespace] — the namespace passed to [New] fails validation.
 //
-// When a backend's CLI tool fails, the wrapped error carries an
-// exec.CommandError with the exit code and stderr — the operator's debugging
-// surface. Do not collapse these into a sentinel.
+// [Manager.List] additionally distinguishes absence from emptiness. When the
+// namespace was never provisioned (the nftables backend's table does not exist
+// yet) List returns a wrapped [io/fs.ErrNotExist], never an empty slice — so a
+// caller can never confuse "this namespace has never been set up" with
+// "set up, currently holding zero rules". Callers that want absent-treated-as-
+// empty opt in explicitly with errors.Is(err, fs.ErrNotExist). A backend whose
+// firewall is installed-but-empty (an inactive ufw, an empty firewalld zone)
+// returns a nil slice and nil error — that is genuine emptiness, not absence.
+//
+// When a backend's CLI tool fails for any other reason — escalation denied, the
+// tool absent, a crash — the wrapped error carries an exec.CommandError with the
+// exit code and stderr. List never reports such a failure as "zero managed
+// rules"; it propagates. Do not collapse these into a sentinel.
 //
 // # Concurrency
 //

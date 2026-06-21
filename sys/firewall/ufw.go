@@ -95,12 +95,15 @@ func (u *ufw) RemoveRule(ctx context.Context, id string) error {
 	return u.ufwDeleteByNumber(ctx, num)
 }
 
-// List returns every managed rule (comment prefix `<namespace>:`).
+// List returns every managed rule (comment prefix `<namespace>:`). An inactive
+// ufw exits 0 with "Status: inactive" and is parsed below into an empty rule set
+// (the firewall IS provisioned, it just holds no rules). Any error reaching here
+// is a genuine can't-determine-state failure — ufw absent, or escalation denied —
+// and propagates rather than being silently reported as "zero managed rules".
 func (u *ufw) List(ctx context.Context) ([]Rule, error) {
 	status, err := u.ufwStatusNumbered(ctx)
 	if err != nil {
-		// ufw not active → no managed rules.
-		return nil, nil
+		return nil, err
 	}
 	return ufwParseStatus(status, u.ns)
 }

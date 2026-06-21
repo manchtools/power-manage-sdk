@@ -45,10 +45,14 @@ err = m.RemoveRule(ctx, "allow-ssh")
 rules, err := m.List(ctx) // only rules in this manager's namespace
 ```
 
-<!-- docref: begin src=sys/firewall/nftables.go#nftables.List:015a86b3 -->
+<!-- docref: begin src=sys/firewall/nftables.go#nftables.List:6b96ce82 -->
 `List` decodes each rule's full match — protocol, port, **and** source/destination
 address — back out of the live nftables ruleset, so what you read reflects
-exactly what was applied.
+exactly what was applied. A namespace that was never provisioned (its table does
+not exist yet) is reported as an explicit absence: `List` returns a wrapped
+`fs.ErrNotExist`, never an empty slice, so you can't mistake "never set up" for
+"set up, currently empty". Branch on it with `errors.Is(err, fs.ErrNotExist)`
+when you want to treat a missing namespace as zero rules.
 <!-- docref: end -->
 
 <!-- docref: begin src=sys/firewall/firewall.go#Rule:ca82cb6a -->
