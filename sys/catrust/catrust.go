@@ -15,7 +15,9 @@
 // the request itself is the caller's concern (the agent gates it with a CA-signed
 // action, as for other sensitive ops).
 //
-// Two backends: CaCertificates (Debian/Ubuntu) and P11Kit (Fedora/RHEL/SUSE).
+// Three backends: CaCertificates (Debian/Ubuntu update-ca-certificates), P11Kit
+// (Fedora/RHEL/EL/Arch update-ca-trust), and SuseCaCertificates (openSUSE/SLES,
+// which ships a same-named update-ca-certificates but with different paths).
 // Distrusting a distro-shipped root (a separate blocklist mechanism) is out of
 // scope — this manages anchors WE add.
 package catrust

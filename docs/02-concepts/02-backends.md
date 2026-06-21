@@ -13,15 +13,16 @@ at construction.
 
 ## One backend per host, chosen explicitly
 
-<!-- docref: begin src=sys/catrust/catrust.go#CaCertificates:15a42eb7 -->
+<!-- docref: begin src=sys/catrust/catrust.go#CaCertificates:350dcebc -->
 A `Backend` is a small enum whose first real value is one (`iota + 1`), so its
 zero value is intentionally invalid — there is no implicit default, and a
 caller must name the backend it wants:
 <!-- docref: end -->
 
 ```go
-m, err := catrust.New(catrust.CaCertificates, r) // Debian/Ubuntu flow
-// catrust.New(catrust.P11Kit, r)                // Fedora/RHEL/SUSE flow
+m, err := catrust.New(catrust.CaCertificates, r)  // Debian/Ubuntu
+// catrust.New(catrust.P11Kit, r)                 // Fedora/RHEL/EL/Arch
+// catrust.New(catrust.SuseCaCertificates, r)     // openSUSE/SLES
 ```
 
 An unrecognized backend is rejected at `New` with `ErrUnknownBackend` rather
@@ -33,7 +34,7 @@ a no-op.
 You usually know the target platform, but when you don't, `Detect` reports the
 backends usable on *this* host so the caller can pick one:
 
-<!-- docref: begin src=sys/catrust/detect.go#Detect:047f0669 -->
+<!-- docref: begin src=sys/catrust/detect.go#Detect:0d85bd62 -->
 `Detect` probes the host (typically by looking for each backend's tools on
 `PATH`) and returns the list of backends that are usable here. It reports what
 is available; it does not choose or activate anything — the caller passes one
