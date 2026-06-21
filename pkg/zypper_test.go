@@ -533,11 +533,18 @@ func TestZypper_HasUpdates(t *testing.T) {
 			t.Fatalf("got=%v err=%v", got, err)
 		}
 	})
-	t.Run("other non-zero is inconclusive (false, no error)", func(t *testing.T) {
+	t.Run("a real-error exit fails closed, not silent 'no updates'", func(t *testing.T) {
 		m, f := zypperM(t)
-		f.Push(pmexec.Result{ExitCode: 6}, nil)
-		if got, err := m.HasUpdates(ctx, false); err != nil || got {
-			t.Fatalf("got=%v err=%v", got, err)
+		f.Push(pmexec.Result{ExitCode: 6}, nil) // 6 = no repositories: a real failure
+		got, err := m.HasUpdates(ctx, false)
+		// A failed update check must surface as an error — reporting "no updates"
+		// would tell a patch/compliance caller it is up to date when the check broke.
+		// Matches dnf.HasUpdates, which returns a CommandError on its default branch.
+		if err == nil {
+			t.Fatal("a failed check must error, not report 'no updates' (compliance fail-open)")
+		}
+		if got {
+			t.Errorf("got=%v, want false on a failed check", got)
 		}
 	})
 	t.Run("security flag added", func(t *testing.T) {
