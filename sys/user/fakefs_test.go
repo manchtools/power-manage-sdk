@@ -42,8 +42,11 @@ func (f *fakeFS) Exists(_ context.Context, path string) (bool, error) {
 
 func (f *fakeFS) Mkdir(_ context.Context, path string, _ fs.MkdirOptions) error {
 	f.mkdirs = append(f.mkdirs, path)
+	if f.mkdirErr != nil {
+		return f.mkdirErr // a failed mkdir must NOT mark the dir present
+	}
 	f.present[path] = true
-	return f.mkdirErr
+	return nil
 }
 
 func (f *fakeFS) CopyTree(_ context.Context, src, dst string, _ fs.WriteOptions) error {

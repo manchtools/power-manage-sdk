@@ -110,10 +110,14 @@ type Manager interface {
 	// WriteFile writes data to path atomically. When the Runner's backend is
 	// Direct the write is also symlink-safe (fd-anchored); see the package doc.
 	WriteFile(ctx context.Context, path string, data []byte, opts WriteOptions) error
-	// WriteReader streams r to path atomically without buffering the whole
-	// payload — for a large artifact (e.g. a downloaded AppImage) WriteFile
-	// would risk OOM on. A failed/truncated stream never clobbers the existing
-	// file. opts.Backup is unsupported (returns an error).
+	// WriteReader streams r to path without buffering the whole payload — for a
+	// large artifact (e.g. a downloaded AppImage) WriteFile would risk OOM on. A
+	// crash/power-loss never leaves a partial file (temp + rename). On the Direct
+	// backend a reader error also aborts before the rename, so a truncated stream
+	// never clobbers the existing file; on escalated backends a reader error is
+	// surfaced but may occur after a truncated temp was already renamed, so stream
+	// a complete source. opts.Backup is unsupported (returns an error). See the
+	// method doc for detail.
 	WriteReader(ctx context.Context, path string, r io.Reader, opts WriteOptions) error
 	// Exists reports whether path exists. The probe runs through the privilege
 	// backend so it can see paths in directories the caller cannot traverse

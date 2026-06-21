@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
@@ -110,6 +112,25 @@ func TestEnsureHome_UserNotFoundErrors(t *testing.T) {
 	}
 	if len(ffs.mkdirs) != 0 || len(ffs.copies) != 0 || ffs.chown.called {
 		t.Error("EnsureHome touched the filesystem for a nonexistent user")
+	}
+}
+
+// A failed home-directory create aborts EnsureHome with the error wrapped, and
+// the seed/own/mode steps never run on a directory that wasn't created.
+func TestEnsureHome_MkdirFailureAborts(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	f.Push(exec.Result{Stdout: deployPasswd}, nil) // Get: getent passwd
+	ffs := newFakeFS().install(t)
+	ffs.present["/etc/skel"] = true // home is missing → Mkdir is attempted
+	ffs.mkdirErr = errors.New("read-only fs")
+
+	err := mgr(t, f).EnsureHome(context.Background(), "deploy", EnsureHomeOptions{Group: "deploy"})
+	if err == nil || !strings.Contains(err.Error(), "create") {
+		t.Fatalf("err = %v, want a wrapped create failure", err)
+	}
+	if len(ffs.copies) != 0 || ffs.chown.called || ffs.chmods.path != "" {
+		t.Errorf("EnsureHome seeded/owned/chmod'd after a failed mkdir (copies=%v chown=%v chmod=%q)",
+			ffs.copies, ffs.chown.called, ffs.chmods.path)
 	}
 }
 
