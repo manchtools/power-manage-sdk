@@ -19,6 +19,8 @@ package pkg
 import (
 	"context"
 	"os"
+	osexec "os/exec"
+	"strconv"
 	"testing"
 	"time"
 
@@ -97,5 +99,52 @@ func TestRepair_KeepsHeldLock_Container(t *testing.T) {
 	}
 	if _, err := os.Stat(lock); !os.IsNotExist(err) {
 		t.Fatalf("released lock not removed; stat err = %v — fuser did not discriminate held vs unheld", err)
+	}
+}
+
+// TestRepair_ZyppLockLiveness_Container pins the zypp.pid PID-liveness path
+// against a REAL kill -0: a PID file naming a LIVE process must be kept, one
+// naming a DEAD process must be removed. fuser is deliberately NOT the probe
+// here — zypp.pid has no open holder, so fuser would report "no holder" and
+// wrongly green-light removal even while zypper runs; this proves the PID-based
+// probe is what discriminates.
+//
+// Two-phase so it cannot pass for the wrong reason (mirrors the held-lock test):
+// a kill -0 that always failed would remove in BOTH phases (failing phase 1); one
+// that always succeeded would keep in BOTH (failing phase 2). Only a probe that
+// genuinely discriminates a live PID from a dead one passes both.
+func TestRepair_ZyppLockLiveness_Container(t *testing.T) {
+	dir := t.TempDir()
+	pidFile := dir + "/zypp.pid"
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	r := containerRunner(t)
+
+	// Phase 1: a LIVE pid (this test process) → the lock must remain.
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())+"\n"), 0o644); err != nil {
+		t.Fatalf("write live pid file: %v", err)
+	}
+	if err := removeStaleZyppLock(ctx, r, pidFile); err != nil {
+		t.Fatalf("removeStaleZyppLock(live) returned error: %v", err)
+	}
+	if _, err := os.Stat(pidFile); err != nil {
+		t.Fatalf("a PID file naming a LIVE process was removed (or stat failed): %v — never delete a live lock", err)
+	}
+
+	// Phase 2: a DEAD pid (a child run to completion and reaped — not a zombie,
+	// which would still answer kill -0) → the lock must now be removed.
+	done := osexec.Command("true")
+	if err := done.Run(); err != nil {
+		t.Fatalf("run throwaway child: %v", err)
+	}
+	deadPID := done.Process.Pid
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(deadPID)+"\n"), 0o644); err != nil {
+		t.Fatalf("write dead pid file: %v", err)
+	}
+	if err := removeStaleZyppLock(ctx, r, pidFile); err != nil {
+		t.Fatalf("removeStaleZyppLock(dead) returned error: %v", err)
+	}
+	if _, err := os.Stat(pidFile); !os.IsNotExist(err) {
+		t.Fatalf("a PID file naming a DEAD process was not removed; stat err = %v — kill -0 did not discriminate live vs dead", err)
 	}
 }

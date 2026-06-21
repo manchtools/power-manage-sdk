@@ -231,7 +231,7 @@ func (d *dnf) Repair(ctx context.Context) (pmexec.Result, error) {
 	}{
 		{"dnf history redo last", func() (pmexec.Result, error) { return d.write(ctx, "history", "redo", "last", "-y") }},
 		{"dnf remove --duplicates", func() (pmexec.Result, error) { return d.write(ctx, "remove", "--duplicates", "-y") }},
-		{"rpm --verifydb", func() (pmexec.Result, error) { return d.verifyOrRebuildDB(ctx) }},
+		{"rpm --verifydb", func() (pmexec.Result, error) { return verifyOrRebuildRPMDB(ctx, d.r) }},
 	}
 	var last pmexec.Result
 	for _, s := range steps {
@@ -242,31 +242,6 @@ func (d *dnf) Repair(ctx context.Context) (pmexec.Result, error) {
 		}
 	}
 	return last, nil
-}
-
-// verifyOrRebuildDB runs `rpm --verifydb` (an unprivileged read) and, ONLY when
-// it reports corruption (a non-zero exit — a genuine rpmdb verdict, as opposed
-// to a runner failure where rpm could not run at all), escalates to a full
-// `rpm --rebuilddb` to rebuild the database. The rebuild is itself best-effort:
-// its result/error is returned to the caller's bestEffortStep, so a wedged
-// rebuild is logged rather than fatal, while a cancelled context fails the
-// rebuild closed (runPriv refuses to spawn) and propagates as the cancellation.
-func (d *dnf) verifyOrRebuildDB(ctx context.Context) (pmexec.Result, error) {
-	res, err := runRead(ctx, d.r, "rpm", "--verifydb")
-	if err != nil {
-		// rpm could not be run at all (binary missing, context cancelled): there is
-		// no corruption verdict to act on, so do not rebuild.
-		return res, err
-	}
-	if res.ExitCode == 0 {
-		return res, nil // database is clean — no rebuild
-	}
-	// Corruption reported: escalate to a rebuild of the rpm database.
-	rebuilt, rerr := runPriv(ctx, d.r, true, nil, "rpm", "--rebuilddb")
-	if rerr != nil {
-		return rebuilt, rerr
-	}
-	return rebuilt, asCommandError("rpm", rebuilt)
 }
 
 // Search searches package names/summaries (exit 1 = no matches).
