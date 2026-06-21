@@ -174,6 +174,29 @@ func TestWriteKeyfile_WriteChmodCloseRenameFail(t *testing.T) {
 	}
 }
 
+// When the temp-keyfile cleanup itself fails after a write failure, both the
+// original failure AND the cleanup failure must surface — a dropped removeFile
+// error would silently leave a keyfile holding the plaintext PSK on disk.
+func TestWriteKeyfile_CleanupFailureSurfacesPlaintextResidue(t *testing.T) {
+	swapSeams(t)
+	mkdirAll = func(string, os.FileMode) error { return nil }
+	createTemp = func(string, string) (keyfileHandle, error) {
+		return &fakeHandle{name: "/tmp/seam.tmp", failWrite: true}, nil
+	}
+	removeFile = func(string) error { return errors.New("disk gone") }
+
+	err := writeKeyfile("/etc/nm/y.nmconnection", []byte("super-secret-psk"))
+	if err == nil {
+		t.Fatal("writeKeyfile err = nil, want a failure")
+	}
+	if !strings.Contains(err.Error(), "write keyfile") {
+		t.Errorf("err = %v, want the original write failure preserved", err)
+	}
+	if !strings.Contains(err.Error(), "cleanup failed") || !strings.Contains(err.Error(), "/tmp/seam.tmp") {
+		t.Errorf("err = %v, want the temp-keyfile cleanup failure (plaintext residue) surfaced", err)
+	}
+}
+
 // Belt-and-braces: a PSK with a newline can never be constructed, so it can never
 // inject extra keyfile lines.
 func TestPSKSecret_RejectsNewlineAtConstruction(t *testing.T) {

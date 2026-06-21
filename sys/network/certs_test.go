@@ -119,11 +119,31 @@ func TestRemoveCerts(t *testing.T) {
 	if err := writeCerts(eapProfile(t, dir)); err != nil {
 		t.Fatal(err)
 	}
-	removeCerts(dir)
+	if err := removeCerts(dir); err != nil {
+		t.Fatalf("removeCerts(present) = %v, want nil", err)
+	}
 	for _, name := range []string{"ca.pem", "client.pem", "client-key.pem"} {
 		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
 			t.Errorf("%s should be gone after removeCerts", name)
 		}
+	}
+	// An already-absent file is not a failure (idempotent cleanup).
+	if err := removeCerts(dir); err != nil {
+		t.Errorf("removeCerts(already gone) = %v, want nil", err)
+	}
+}
+
+// A removal failure on the private key must surface, not vanish: a client-key.pem
+// that can't be deleted is key material left on disk the caller has to know about.
+func TestRemoveCerts_SurfacesRemovalFailure(t *testing.T) {
+	swapCertSeams(t)
+	removeFile = func(string) error { return errors.New("read-only fs") }
+	err := removeCerts("/etc/nm/certs")
+	if err == nil {
+		t.Fatal("removeCerts with a failing remove = nil, want the failure surfaced")
+	}
+	if !strings.Contains(err.Error(), "ca.pem") {
+		t.Errorf("err = %v, want the first failing file named", err)
 	}
 }
 
@@ -237,6 +257,33 @@ func TestStagedModify_InstallRenameFails_RollbackAlsoFails(t *testing.T) {
 	_, err := m.stagedModify(context.Background(), eapProfile(t, certDir), nil)
 	if err == nil || !strings.Contains(err.Error(), "rollback also failed") {
 		t.Errorf("err = %v, want the double-failure (install + rollback) message", err)
+	}
+}
+
+// New certs install fine, but the cleanup of the .old backup directory — which
+// holds the PREVIOUS private key — fails. That must surface (changed still true),
+// not be silently dropped: a stale private key left on disk is the caller's
+// concern.
+func TestStagedModify_OldCertCleanupFailureSurfaces(t *testing.T) {
+	swapCertSeams(t)
+	certDir := filepath.Join(t.TempDir(), "eap")
+	if err := os.MkdirAll(certDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	oldDir := certDir + ".old"
+	removeAll = func(p string) error {
+		if p == oldDir {
+			return errors.New("read-only fs")
+		}
+		return os.RemoveAll(p)
+	}
+	m := &networkManager{r: &recordingRunner{}}
+	changed, err := m.stagedModify(context.Background(), eapProfile(t, certDir), nil)
+	if !changed {
+		t.Error("changed = false, want true (the new certs are installed and live)")
+	}
+	if err == nil || !strings.Contains(err.Error(), "old cert directory") {
+		t.Errorf("err = %v, want the stale-private-key cleanup failure surfaced", err)
 	}
 }
 

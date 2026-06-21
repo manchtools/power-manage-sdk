@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -147,21 +148,28 @@ func writeKeyfile(path string, content []byte) error {
 	tmpPath := tmp.Name()
 	if _, err := tmp.Write(content); err != nil {
 		_ = tmp.Close()
-		_ = removeFile(tmpPath)
-		return fmt.Errorf("write keyfile: %w", err)
+		return cleanupTempKeyfile(tmpPath, fmt.Errorf("write keyfile: %w", err))
 	}
 	if err := tmp.Chmod(0o600); err != nil {
 		_ = tmp.Close()
-		_ = removeFile(tmpPath)
-		return fmt.Errorf("chmod keyfile: %w", err)
+		return cleanupTempKeyfile(tmpPath, fmt.Errorf("chmod keyfile: %w", err))
 	}
 	if err := tmp.Close(); err != nil {
-		_ = removeFile(tmpPath)
-		return fmt.Errorf("close keyfile: %w", err)
+		return cleanupTempKeyfile(tmpPath, fmt.Errorf("close keyfile: %w", err))
 	}
 	if err := renameFile(tmpPath, path); err != nil {
-		_ = removeFile(tmpPath)
-		return fmt.Errorf("rename keyfile to %q: %w", path, err)
+		return cleanupTempKeyfile(tmpPath, fmt.Errorf("rename keyfile to %q: %w", path, err))
 	}
 	return nil
+}
+
+// cleanupTempKeyfile removes a partially-written temp keyfile after a failure and
+// folds any removal error into cause. The temp file holds the plaintext PSK/key
+// body, so a dropped removal error would silently leave the secret on disk — a
+// failed cleanup must be visible. A file that is already gone is not a failure.
+func cleanupTempKeyfile(tmpPath string, cause error) error {
+	if rmErr := removeFile(tmpPath); rmErr != nil && !os.IsNotExist(rmErr) {
+		return fmt.Errorf("%w (temp keyfile cleanup failed, plaintext secret may remain at %s: %v)", cause, tmpPath, rmErr)
+	}
+	return cause
 }

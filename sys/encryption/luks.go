@@ -253,6 +253,18 @@ var (
 	}
 )
 
+// cleanupKeyFileAfter removes a partially-written key file after a failure and
+// folds any removal error into cause. The file holds plaintext key material
+// (Reveal()'d into it), so a failed cleanup must surface rather than vanish — a
+// dropped removal error would leave the secret on /dev/shm unnoticed. A file
+// that is already gone is not a cleanup failure.
+func cleanupKeyFileAfter(stage, name string, cause error) error {
+	if rmErr := removeFile(name); rmErr != nil && !os.IsNotExist(rmErr) {
+		return fmt.Errorf("%s: %w (key file cleanup failed, plaintext key may remain at %s: %v)", stage, cause, name, rmErr)
+	}
+	return fmt.Errorf("%s: %w", stage, cause)
+}
+
 // writeKeyFile writes a Secret to a 0600 temp file in /dev/shm and returns its
 // path. Reveal() here is the single sanctioned key-file sink. Never falls back
 // to disk: an unavailable /dev/shm is a hard error.
@@ -266,17 +278,14 @@ func writeKeyFile(key exec.Secret) (string, error) {
 	}
 	if err := f.Chmod(0o600); err != nil {
 		_ = f.Close()
-		_ = removeFile(f.Name())
-		return "", fmt.Errorf("set key file permissions: %w", err)
+		return "", cleanupKeyFileAfter("set key file permissions", f.Name(), err)
 	}
 	if _, err := f.WriteString(key.Reveal()); err != nil {
 		_ = f.Close()
-		_ = removeFile(f.Name())
-		return "", fmt.Errorf("write key file: %w", err)
+		return "", cleanupKeyFileAfter("write key file", f.Name(), err)
 	}
 	if err := f.Close(); err != nil {
-		_ = removeFile(f.Name())
-		return "", fmt.Errorf("close key file: %w", err)
+		return "", cleanupKeyFileAfter("close key file", f.Name(), err)
 	}
 	return f.Name(), nil
 }

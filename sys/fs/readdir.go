@@ -58,7 +58,7 @@ func readDirDirect(path string) ([]DirEntry, error) {
 
 // readDirEscalated is the privilege-backend path. It runs
 //
-//	find <path> -maxdepth 1 -mindepth 1 -printf '%y/%f\n'
+//	find <path>/ -maxdepth 1 -mindepth 1 -printf '%y/%f\n'
 //
 // emitting one line per entry as "<type-char>/<basename>". A basename never
 // contains '/', so the first '/' unambiguously separates the single type char
@@ -66,13 +66,21 @@ func readDirDirect(path string) ([]DirEntry, error) {
 // line framing; managed config directories never hold such names, and the
 // Direct/root path — which the deployed agent always takes — handles them
 // correctly via os.ReadDir.)
+//
+// The trailing slash is load-bearing: `find /file` on a REGULAR file exits 0
+// with no output (which would otherwise read as a silently-empty directory),
+// whereas `find /file/` reports ENOTDIR and exits non-zero. It makes the
+// escalated path enforce the same "non-directory target is an error, never an
+// empty listing" contract the Direct (os.ReadDir) path already honours.
 func (m *manager) readDirEscalated(ctx context.Context, path string) ([]DirEntry, error) {
-	res, err := m.runPriv(ctx, "find", path, "-maxdepth", "1", "-mindepth", "1", "-printf", `%y/%f\n`)
+	res, err := m.runPriv(ctx, "find", path+"/", "-maxdepth", "1", "-mindepth", "1", "-printf", `%y/%f\n`)
 	if err != nil {
 		return nil, err
 	}
 	if res.ExitCode != 0 {
-		if strings.Contains(res.Stderr, "No such file") {
+		// ENOENT (missing dir) → explicit-absence contract; ENOTDIR (a regular
+		// file) and any other failure → a real error, never a silent empty list.
+		if isENOENTStderr(res.Stderr) {
 			return nil, fmt.Errorf("read dir %s: %w", path, os.ErrNotExist)
 		}
 		return nil, cmdError("find", res)

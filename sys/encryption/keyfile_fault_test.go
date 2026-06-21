@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -92,6 +93,29 @@ func TestWriteKeyFile_FaultPaths(t *testing.T) {
 				t.Errorf("%s: partial key file was not removed", tc.name)
 			}
 		})
+	}
+}
+
+// When the key-file cleanup itself fails after a write failure, the error must
+// surface that plaintext key material may remain on /dev/shm — a dropped
+// removeFile error would hide a leaked LUKS key file.
+func TestWriteKeyFile_CleanupFailureSurfacesResidue(t *testing.T) {
+	defer swapKeyFileSeams(t)()
+	mkdirAll = func(string, os.FileMode) error { return nil }
+	createKeyFile = func(string) (keyFileHandle, error) {
+		return &fakeKeyFile{name: "/dev/shm/pm-luks/key-leak", failWrite: true}, nil
+	}
+	removeFile = func(string) error { return errIO }
+
+	_, err := writeKeyFile(mustSecret(t, "x"))
+	if err == nil {
+		t.Fatal("writeKeyFile err = nil, want a failure")
+	}
+	if !strings.Contains(err.Error(), "write key file") {
+		t.Errorf("err = %v, want the original write failure preserved", err)
+	}
+	if !strings.Contains(err.Error(), "cleanup failed") || !strings.Contains(err.Error(), "/dev/shm/pm-luks/key-leak") {
+		t.Errorf("err = %v, want the key-file cleanup failure (plaintext residue) surfaced", err)
 	}
 }
 
