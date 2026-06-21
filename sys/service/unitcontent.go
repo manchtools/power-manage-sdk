@@ -85,7 +85,9 @@ func validateUnitContent(content string) error {
 			// LD_PRELOAD (etc.) into the service. Refuse a reference into a
 			// world-writable directory, consistent with the Exec* policy. systemd
 			// allows a leading '-' (ignore-if-missing); strip it before the check.
-			p := strings.TrimSpace(strings.TrimPrefix(value, "-"))
+			// Normalize so a traversal form (/var/../tmp/x, /./tmp/x) cannot evade
+			// the prefix check (mirrors validateExecLine).
+			p := path.Clean(strings.TrimSpace(strings.TrimPrefix(value, "-")))
 			for _, prefix := range untrustedExecPrefixes {
 				if strings.HasPrefix(p, prefix) {
 					return fmt.Errorf("%w: EnvironmentFile %q references a world-writable path", ErrUnsafeUnitContent, p)
@@ -171,8 +173,11 @@ func validateExecLine(key, value string) error {
 	}
 
 	// A binary executed out of a world-writable directory cannot be trusted.
+	// Normalize first so a traversal form (/var/../tmp/x, /./tmp/x) that resolves
+	// into a world-writable directory cannot slip past the literal prefix check.
+	cleanExe := path.Clean(exe)
 	for _, prefix := range untrustedExecPrefixes {
-		if strings.HasPrefix(exe, prefix) {
+		if strings.HasPrefix(cleanExe, prefix) {
 			return fmt.Errorf("%w: %s runs %q from a world-writable directory", ErrUnsafeUnitContent, key, exe)
 		}
 	}
