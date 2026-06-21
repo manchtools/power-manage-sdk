@@ -35,7 +35,7 @@ func sha256File(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("sha256File %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	h := sha256.New()
 	buf := make([]byte, digestBufSize)
 	if _, err := io.CopyBuffer(h, f, buf); err != nil {
@@ -128,10 +128,10 @@ func sha256Tree(root string) (string, error) {
 				return "", fmt.Errorf("open %s: %w", e.full, oerr)
 			}
 			if _, cerr := io.CopyBuffer(h, f, buf); cerr != nil {
-				f.Close()
+				_ = f.Close()
 				return "", fmt.Errorf("read %s: %w", e.full, cerr)
 			}
-			f.Close()
+			_ = f.Close()
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil

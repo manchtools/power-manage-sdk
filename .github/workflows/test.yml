@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   static-checks:
-    name: Static Checks (gofmt, vet, staticcheck, govulncheck)
+    name: Static Checks (gofmt, vet, staticcheck, errcheck, govulncheck)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -38,6 +38,19 @@ jobs:
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
           staticcheck ./...
+
+      # errcheck catches a returned error dropped on the floor — a bare
+      # statement call (foo(ctx)) that discards an error, which the compiler
+      # permits (only unused *variables* are an error, not unused returns).
+      # No exclude list: every deliberately-ignored error is written `_ = foo()`
+      # at its call site (errcheck honours that without -blank), so the gate
+      # stays honest — it can't be told "read-side Close only" by signature, so
+      # a future bare WRITE-path Close is caught too. Production code only
+      # (-ignoretests); test-setup hygiene is tracked separately.
+      - name: errcheck
+        run: |
+          go install github.com/kisielk/errcheck@latest
+          errcheck -ignoretests ./...
 
       - name: govulncheck
         run: |

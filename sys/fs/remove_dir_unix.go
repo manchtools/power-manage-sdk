@@ -36,7 +36,7 @@ func removeDirSecure(ctx context.Context, path string) error {
 	if err != nil {
 		return err
 	}
-	defer unix.Close(pfd)
+	defer func() { _ = unix.Close(pfd) }()
 
 	var st unix.Stat_t
 	if err := unix.Fstatat(pfd, base, &st, unix.AT_SYMLINK_NOFOLLOW); err != nil {

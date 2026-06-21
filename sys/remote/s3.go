@@ -109,7 +109,7 @@ func (s *s3Source) Fetch(ctx context.Context, dest string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	maxBytes := int64(defaultHTTPMaxBytes) // S3 single objects honour the same cap as HTTP for now.
 	tmp, written, sum, err := streamToTmp(dest, body, maxBytes)
@@ -168,7 +168,7 @@ func (s *s3Source) headNotModified(ctx context.Context, etag string) (bool, erro
 	if err != nil {
 		return false, fmt.Errorf("HEAD %s: %w", s.objectURL, err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	switch {
 	case resp.StatusCode == http.StatusNotModified:
 		return true, nil
@@ -198,15 +198,15 @@ func (s *s3Source) openObject(ctx context.Context, etag string) (io.ReadCloser, 
 	}
 	switch {
 	case resp.StatusCode == http.StatusNotModified:
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return io.NopCloser(strings.NewReader("")), resp.Header.Get("ETag"), nil
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
 		return resp.Body, resp.Header.Get("ETag"), nil
 	case resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized:
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, "", fmt.Errorf("%w: anonymous GET on %s returned %d (bucket policy may need adjustment)", ErrInvalidConfig, s.objectURL, resp.StatusCode)
 	default:
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, "", fmt.Errorf("GET %s: status %d", s.objectURL, resp.StatusCode)
 	}
 }

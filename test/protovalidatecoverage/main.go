@@ -160,7 +160,7 @@ func scanFile(p string) (fileReport, error) {
 	if err != nil {
 		return r, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	sc := bufio.NewScanner(f)
 	// Some generated proto files have long lines (commented sample

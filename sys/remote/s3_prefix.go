@@ -81,7 +81,7 @@ func (s *s3Source) fetchPrefix(ctx context.Context, dest string) (Result, error)
 			return Result{}, err
 		}
 		written, _, err := streamObjectToFile(body, outPath, maxBytes)
-		body.Close()
+		_ = body.Close()
 		if err != nil {
 			return Result{}, err
 		}
@@ -168,19 +168,19 @@ func (s *s3Source) listObjects(ctx context.Context) ([]s3Object, error) {
 		}
 		switch {
 		case resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized:
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("%w: anonymous list on %s returned %d (bucket policy may need adjustment)", ErrInvalidConfig, bucketURL.String(), resp.StatusCode)
 		case resp.StatusCode < 200 || resp.StatusCode >= 300:
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("list %s: status %d", bucketURL.String(), resp.StatusCode)
 		}
 
 		var parsed listV2Response
 		if err := xml.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("decode list %s: %w", bucketURL.String(), err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		for _, e := range parsed.Contents {
 			all = append(all, s3Object{Key: e.Key, ETag: e.ETag, Size: e.Size})
 			if len(all) > maxPrefixObjects {
@@ -242,11 +242,11 @@ func (s *s3Source) openSingleObject(ctx context.Context, key string) (io.ReadClo
 		return nil, "", fmt.Errorf("GET %s: %w", bucketAndKey.String(), err)
 	}
 	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, "", fmt.Errorf("%w: anonymous GET on %s returned %d", ErrInvalidConfig, bucketAndKey.String(), resp.StatusCode)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, "", fmt.Errorf("GET %s: status %d", bucketAndKey.String(), resp.StatusCode)
 	}
 	return resp.Body, resp.Header.Get("ETag"), nil
