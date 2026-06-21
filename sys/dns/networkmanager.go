@@ -70,6 +70,14 @@ func (m *nmManager) Apply(ctx context.Context, cfg Config) error {
 		return fmt.Errorf("nmcli connection modify %s: %w", conn, err)
 	}
 	if err := runPriv(ctx, m.r, "nmcli", "connection", "up", conn); err != nil {
+		// Reactivation failed AFTER the modify, which NetworkManager has already
+		// persisted — so the new (possibly attacker-influenced) DNS is now staged
+		// in the saved profile and would take effect on the next activation. Roll
+		// it back: clear the staged DNS fields so a failed apply leaves no
+		// residual DNS mutation. Best-effort (the up failure is the reported
+		// error); the rollback never re-introduces a custom resolver.
+		_ = runPriv(ctx, m.r, "nmcli", "connection", "modify", conn,
+			"ipv4.dns", "", "ipv6.dns", "", "ipv4.dns-search", "", "ipv6.dns-search", "")
 		return fmt.Errorf("nmcli connection up %s: %w", conn, err)
 	}
 	return nil

@@ -160,13 +160,20 @@ func partialSideEffectProgram() attackProgram {
 		name: "partial side-effect rollback",
 		steps: []programStep{
 			{
-				name:   "NetworkManager reactivation failure leaves no staged DNS mutation",
-				oracle: mustReject | noPrivilegedMutation,
+				// Apply MUST run `connection modify` to set DNS (TestNM_ApplySuccess
+				// requires it), so noPrivilegedMutation is the wrong oracle here.
+				// The real guarantee is ROLLBACK: when reactivation (`connection up`)
+				// fails after the modify, the staged — possibly attacker-influenced —
+				// DNS must not persist in the saved profile. We assert that the final
+				// command clears the staged resolver (never leaves 10.0.0.53 staged).
+				name:   "NetworkManager reactivation failure rolls back the staged DNS mutation",
+				oracle: mustReject,
 				run: func(t *testing.T, env *attackEnv) observation {
 					r := exectest.New(sdkexec.Direct)
 					r.Push(sdkexec.Result{Stdout: "Corp WiFi\n"}, nil)                    // active connection lookup
-					r.Push(sdkexec.Result{}, nil)                                         // connection modify succeeds
+					r.Push(sdkexec.Result{}, nil)                                         // connection modify (set DNS) succeeds
 					r.Push(sdkexec.Result{ExitCode: 1, Stderr: "activation failed"}, nil) // connection up fails
+					r.Push(sdkexec.Result{}, nil)                                         // rollback: clear the staged DNS
 					m, err := dns.New(dns.NetworkManager, r)
 					if err == nil {
 						err = m.Apply(env.ctx, dns.Config{Interface: "wlan0", Nameservers: []string{"10.0.0.53"}})
@@ -174,7 +181,15 @@ func partialSideEffectProgram() attackProgram {
 					if err == nil {
 						err = errors.New("NetworkManager connection up unexpectedly succeeded")
 					}
-					return observation{err: err, commands: r.Calls(), additionalDetail: strings.Join(commandStrings(r.Calls()), " | ")}
+					cmds := commandStrings(r.Calls())
+					last := ""
+					if n := len(cmds); n > 0 {
+						last = cmds[n-1]
+					}
+					if !strings.Contains(last, "modify") || strings.Contains(last, "10.0.0.53") {
+						t.Errorf("staged DNS was not rolled back after a failed reactivation; final command = %q (all: %v)", last, cmds)
+					}
+					return observation{err: err, commands: r.Calls(), additionalDetail: strings.Join(cmds, " | ")}
 				},
 			},
 		},
