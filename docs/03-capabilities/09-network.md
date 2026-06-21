@@ -70,11 +70,11 @@ err = m.Delete(ctx, "corp-wifi", network.DeleteOptions{})
 `nmcli`'s colon-delimited escaping.
 <!-- docref: end -->
 
-<!-- docref: begin src=sys/network/network.go#validateProfile:44f2efac -->
+<!-- docref: begin src=sys/network/network.go#validateProfile:3723557e -->
 `Apply` validates the profile before doing anything: a PSK profile must carry a
-non-empty PSK with no embedded newline (which would corrupt the keyfile), and an
-EAP-TLS profile must carry its client key. An invalid profile is rejected with
-no side effect.
+valid WPA2 PSK — 8–63 printable characters or 64 hex digits, with no embedded
+newline (which would corrupt the keyfile) — and an EAP-TLS profile must carry its
+client key. An invalid profile is rejected with no side effect.
 <!-- docref: end -->
 
 {% callout type="info" title="EAP-TLS" %}

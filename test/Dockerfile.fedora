@@ -1,0 +1,62 @@
+# Container-based real-execution test image for the SDK (Fedora / dnf family).
+#
+# Sibling of Dockerfile.debian: same multi-stage shape (base + bad-state stages),
+# same in-container test model, but the Fedora tool surface. The Go toolchain is
+# COPIED from the canonical golang image so every distro builds with the IDENTICAL
+# compiler — only the distro userland + tools differ, which is the whole point of
+# running the matrix across distros.
+#
+# catrust here exercises the P11Kit backend (update-ca-trust, /etc/pki/ca-trust),
+# which the Debian image cannot reach.
+#
+# No with-osquery stage: osquery is a single statically-built binary whose
+# `osqueryi --json` behaviour is identical across distros, so it is covered on the
+# Debian image (the upstream .deb) — adding a fragile rpm-repo install here buys no
+# behavioural coverage. See test/README.md.
+FROM golang:1.26-bookworm AS go
+
+FROM fedora:latest AS base
+COPY --from=go /usr/local/go /usr/local/go
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOTOOLCHAIN=local
+
+# Tool surface (Fedora package names):
+#   psmisc          — fuser (pkg/repair lock probe)
+#   cryptsetup      — sys/encryption LUKS
+#   nftables        — nft (sys/firewall, CAP_NET_ADMIN)
+#   iproute         — ip (sys/netconfig)
+#   util-linux      — lsblk (sys/inventory), runuser + wall (sys/desktop, sys/notify)
+#   shadow-utils    — useradd (sys/terminal, sys/desktop)
+#   gnupg2          — gpg --dearmor (sys/repo dnf keyring)
+#   smartmontools   — smartctl (sys/smart)
+#   openssl         — sys/catrust trust probe (`openssl verify`)
+#   ca-certificates + p11-kit — update-ca-trust (sys/catrust P11Kit backend)
+#   flatpak         — sys/desktop per-user install probe
+RUN dnf -y install --setopt=install_weak_deps=False \
+    psmisc cryptsetup nftables iproute util-linux shadow-utils \
+    gnupg2 smartmontools openssl ca-certificates p11-kit flatpak git \
+    && dnf clean all
+
+WORKDIR /workspace
+COPY sdk/ ./sdk/
+RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN cd sdk && go mod download
+
+# --- bad-state stages -------------------------------------------------------
+
+# with-clamav: the real ClamAV scanner + the SAME static seed signature DB as the
+# Debian image (EICAR by md5 in .hdb; our marker byte-pattern in .ndb) so clamscan
+# detects deterministically with no ~300 MB freshclam download. freshclam.conf is
+# removed (Fedora ships it at /etc/freshclam.conf) so UpdateSignatures fails fast.
+FROM base AS with-clamav
+RUN dnf -y install --setopt=install_weak_deps=False clamav \
+    && dnf clean all \
+    && rm -f /var/lib/clamav/*.cvd /var/lib/clamav/*.cld /var/lib/clamav/*.cud \
+    && mkdir -p /var/lib/clamav \
+    && printf '44d88612fea8a8f36de82e1278abb02f:68:PM.Eicar.Test\n' \
+       > /var/lib/clamav/pm-seed.hdb \
+    && printf 'PM.Marker.Test:0:*:504d2d434c414d41562d544553542d4d41524b4552\n' \
+       > /var/lib/clamav/pm-seed.ndb \
+    && rm -f /etc/freshclam.conf \
+    && clamscan --version \
+       || (echo "PRECONDITION FAILED: clamscan not installed/runnable" && exit 1)

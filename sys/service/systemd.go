@@ -203,6 +203,13 @@ func (s *systemd) Restart(ctx context.Context, unit string) error {
 	return s.mutate(ctx, "restart", "--", unit)
 }
 
+func (s *systemd) Reload(ctx context.Context, unit string) error {
+	if err := ValidateUnitName(unit); err != nil {
+		return err
+	}
+	return s.mutate(ctx, "reload", "--", unit)
+}
+
 func (s *systemd) Mask(ctx context.Context, unit string) error {
 	if err := ValidateUnitName(unit); err != nil {
 		return err
@@ -225,6 +232,9 @@ func (s *systemd) DaemonReload(ctx context.Context) error {
 
 func (s *systemd) WriteUnit(ctx context.Context, unit, content string) error {
 	if err := ValidateUnitName(unit); err != nil {
+		return err
+	}
+	if err := validateUnitContent(content); err != nil {
 		return err
 	}
 	return s.fsm.WriteFile(ctx, "/etc/systemd/system/"+unit, []byte(content), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"})

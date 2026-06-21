@@ -106,6 +106,24 @@ func (a *apt) Install(ctx context.Context, opts InstallOptions, packages ...stri
 	return a.write(ctx, "apt", args...)
 }
 
+// InstallLocal installs a local .deb file through apt-get install, which —
+// unlike a bare `dpkg -i` — resolves the package's dependencies from the
+// configured repositories. ValidateLocalPackagePath requires an absolute path,
+// so the operand can never be flag-shaped; the conffile-default options keep a
+// postinst that touches a conffile non-interactive. opts.AllowUnsigned is a
+// no-op here — a local .deb carries no per-file signature to skip.
+func (a *apt) InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	flags := []string{"install", "-y"}
+	flags = append(flags, dpkgConfOptions...)
+	if opts.AllowDowngrade {
+		flags = append(flags, "--allow-downgrades")
+	}
+	return a.write(ctx, "apt", append(flags, path)...)
+}
+
 // Remove removes packages; opts.Purge deletes configuration files too.
 func (a *apt) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
@@ -233,6 +251,9 @@ func (a *apt) Repair(ctx context.Context) (pmexec.Result, error) {
 // search` produces a multi-line, presentation-oriented format that would not
 // parse, and `--names-only` would drop the description (and the separator).
 func (a *apt) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	out, err := readOut(ctx, a.r, "apt-cache", "search", query)
 	if err != nil {
 		return nil, err
@@ -405,6 +426,38 @@ func (a *apt) ListVersions(ctx context.Context, name string) (*VersionInfo, erro
 			Version:    version,
 			Repository: strings.TrimSpace(fields[2]),
 		})
+	}
+	return info, nil
+}
+
+// LocalPackageInfo reads the canonical Package/Version/Architecture out of a
+// local .deb via `dpkg-deb -f` (an unprivileged read). The Package field a
+// crafted .deb embeds is untrusted, so it is re-validated with
+// ValidatePackageName — the same grammar Remove/IsInstalled would feed it
+// to — before being returned; a flag-shaped or metacharacter-bearing name is
+// rejected here rather than surfacing as a package-manager flag downstream.
+func (a *apt) LocalPackageInfo(ctx context.Context, path string) (*LocalPackage, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return nil, err
+	}
+	out, err := readOut(ctx, a.r, "dpkg-deb", "-f", path, "Package", "Version", "Architecture")
+	if err != nil {
+		return nil, err
+	}
+	lines := splitPositionalFields(out)
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("pkg: dpkg-deb reported no Package field for %q", path)
+	}
+	name := lines[0]
+	if err := ValidatePackageName(name); err != nil {
+		return nil, fmt.Errorf("pkg: local .deb reports an unsafe package name: %w", err)
+	}
+	info := &LocalPackage{Name: name}
+	if len(lines) > 1 {
+		info.Version = lines[1]
+	}
+	if len(lines) > 2 {
+		info.Arch = lines[2]
 	}
 	return info, nil
 }

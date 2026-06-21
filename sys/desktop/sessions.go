@@ -191,9 +191,22 @@ func (m *manager) loadSession(ctx context.Context, id string) (Session, bool, er
 		return Session{}, false, fmt.Errorf("non-numeric GID %q for user %q", u.Gid, u.Username)
 	}
 
+	// Cross-check the name logind reports against the passwd entry for that UID.
+	// We resolve $HOME/GID by the numeric UID but otherwise trust loginctl's
+	// Name; if the two disagree, the host's logind output and /etc/passwd are
+	// inconsistent (a compromised/spoofed loginctl, or a UID reused under a new
+	// name mid-session). Trusting the mismatched Name would fan a command out
+	// "as <Name>" while resolving $HOME/runtime against a DIFFERENT account — a
+	// confused-deputy. Fail closed rather than act on the ambiguity.
+	if props["Name"] != u.Username {
+		return Session{}, false, fmt.Errorf(
+			"loginctl Name=%q disagrees with passwd username %q for uid %d in session %q",
+			props["Name"], u.Username, uid, id)
+	}
+
 	return Session{
 		ID:         id,
-		Username:   props["Name"],
+		Username:   u.Username,
 		UID:        uid,
 		GID:        gid,
 		Home:       u.HomeDir,

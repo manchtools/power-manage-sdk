@@ -74,6 +74,20 @@ func (f *flatpak) Install(ctx context.Context, opts InstallOptions, packages ...
 	return f.write(ctx, args...)
 }
 
+// InstallLocal installs a local flatpak bundle (a single-file .flatpak) or a
+// .flatpakref. A bundle has no version-ordering concept, so opts.AllowDowngrade
+// is ignored; opts.AllowUnsigned is a no-op (a bundle's signing is not a
+// per-file GPG check). System scope escalates, --user does not.
+// ValidateLocalPackagePath requires an absolute path, so the operand can never
+// be flag-shaped.
+func (f *flatpak) InstallLocal(ctx context.Context, path string, _ InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	flags := []string{"install", "-y", "--noninteractive", f.scope()}
+	return f.write(ctx, append(flags, path)...)
+}
+
 // Remove uninstalls bundles; opts.Purge also deletes per-app data (--delete-data).
 func (f *flatpak) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
@@ -134,6 +148,9 @@ func (f *flatpak) Repair(ctx context.Context) (pmexec.Result, error) {
 
 // Search searches configured remotes (exit 1 = no matches).
 func (f *flatpak) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	res, err := runRead(ctx, f.r, "flatpak", "search", query)
 	if err != nil {
 		return nil, err
@@ -340,6 +357,14 @@ func (f *flatpak) ListVersions(ctx context.Context, name string) (*VersionInfo, 
 		}
 	}
 	return info, nil
+}
+
+// LocalPackageInfo is not supported for flatpak: a .flatpak bundle has no clean,
+// non-installing name-introspection command (its ref must be trusted from the
+// bundle metadata, which `flatpak install` itself reads), so rather than guess a
+// name from an attacker-influenced bundle this fails closed with a clear error.
+func (f *flatpak) LocalPackageInfo(_ context.Context, _ string) (*LocalPackage, error) {
+	return nil, fmt.Errorf("pkg: LocalPackageInfo is not supported for flatpak (a bundle has no introspectable local package name)")
 }
 
 // IsInstalled reports whether a bundle is installed (flatpak info exits 0).

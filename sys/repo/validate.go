@@ -2,7 +2,9 @@ package repo
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/manchtools/power-manage-sdk/pkg"
 )
@@ -86,6 +88,9 @@ func (m *manager) Validate(r Repository) error {
 			return validateDnf(r.Dnf)
 		}
 	case pkg.Pacman:
+		if err := validatePacmanName(r.Name); err != nil {
+			return err
+		}
 		if r.Pacman != nil {
 			return validatePacman(r.Pacman)
 		}
@@ -97,13 +102,41 @@ func (m *manager) Validate(r Repository) error {
 	return nil
 }
 
-func validateApt(c *AptConfig) error {
-	if c.URL == "" {
+// validateAptURL checks an apt repository URL. apt is exempt from the https
+// requirement (its trust anchor is the gpg-signed Release file), so http is
+// accepted alongside https — but the value must still be a real URL. It is
+// written into a deb822 "URIs:" field, so a raw space (which hasControl allows)
+// or a control character would smuggle a SECOND URI/field into the line
+// ("https://h/a https://evil/" → two URIs); a non-URL, a non-http(s) scheme
+// (file://, ftp://), a host-less URL, or embedded credentials (which would leak
+// into the on-disk config) have no place there either.
+func validateAptURL(rawURL string) error {
+	if rawURL == "" {
 		return fmt.Errorf("%w: field %q is required", ErrInvalidConfig, "apt.url")
 	}
-	// apt is exempt from the https requirement (its trust is the signed Release);
-	// reject only control characters / argument confusion.
-	if err := rejectControl("apt.url", c.URL); err != nil {
+	for _, r := range rawURL {
+		if r <= ' ' || r == 0x7f { // any whitespace (incl. space) or control char
+			return badShape("apt.url")
+		}
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return badShape("apt.url")
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return badShape("apt.url")
+	}
+	if u.Host == "" {
+		return badShape("apt.url")
+	}
+	if u.User != nil {
+		return badShape("apt.url")
+	}
+	return nil
+}
+
+func validateApt(c *AptConfig) error {
+	if err := validateAptURL(c.URL); err != nil {
 		return err
 	}
 	if err := rejectControl("apt.distribution", c.Distribution); err != nil {
@@ -160,10 +193,48 @@ func validatePacman(c *PacmanConfig) error {
 	if c.SigLevel != "" && !validPacmanSigLevel.MatchString(c.SigLevel) {
 		return badShape("pacman.sig_level")
 	}
+	// A "Never" SigLevel token disables signature verification entirely, so pacman
+	// would install unsigned/forged packages from this repo. Reject any
+	// signature-disabling level before it is written into pacman.conf. (Trust-DB
+	// relaxations like "TrustAll" still require a valid signature and stay allowed.)
+	if disablesPacmanSig(c.SigLevel) {
+		return fmt.Errorf("%w: field %q disables signature verification (Never)", ErrInvalidConfig, "pacman.sig_level")
+	}
 	if pkg.ValidateRepoBaseURL(c.Server) != nil {
 		return badShape("pacman.server")
 	}
 	return nil
+}
+
+// pacmanReserved is pacman.conf's global settings section, not a repository. A
+// repo named "options" would have its [name] section collide with [options] and
+// silently rewrite global pacman configuration, so it is reserved.
+const pacmanReserved = "options"
+
+// validatePacmanName rejects a pacman repository name that collides with the
+// reserved [options] section. The match is case-insensitive: pacman reads the
+// header literally, but accepting "Options"/"OPTIONS" would still let a section
+// land next to the real [options] block and tamper with global config.
+func validatePacmanName(name string) error {
+	if strings.EqualFold(name, pacmanReserved) {
+		return fmt.Errorf("%w: %q is the reserved pacman.conf section, not a repository", ErrInvalidConfig, name)
+	}
+	return nil
+}
+
+// disablesPacmanSig reports whether a SigLevel turns signature verification off.
+// SigLevel is a space-separated list of tokens; "Never" (and its Package/Database
+// scoped forms) disables checking — the trust downgrade we refuse. The match is
+// case-insensitive because pacman parses SigLevel keywords case-sensitively but an
+// operator typo'd casing must not slip an unsigned repo past this gate.
+func disablesPacmanSig(sigLevel string) bool {
+	for _, tok := range strings.Fields(sigLevel) {
+		switch strings.ToLower(tok) {
+		case "never", "packagenever", "databasenever":
+			return true
+		}
+	}
+	return false
 }
 
 func validateZypper(c *ZypperConfig) error {

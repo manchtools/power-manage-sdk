@@ -32,9 +32,10 @@ err := m.NotifyAll(ctx, "Maintenance", "Rebooting in 5 minutes — save your wor
 err = m.NotifyUsers(ctx, []string{"alice", "bob"}, "Heads up", "Your session ends soon.")
 ```
 
-<!-- docref: begin src=sys/notify/notify.go#notifier.NotifyAll:7695c6d0 -->
-`NotifyAll` broadcasts the message via `wall` to every logged-in user on a TTY;
-the title and body are handed to `wall` as data rather than spliced into a shell
+<!-- docref: begin src=sys/notify/notify.go#notifier.NotifyAll:13680e9e -->
+`NotifyAll` broadcasts the message via `wall` to every logged-in user on a TTY
+and, where a desktop session is reachable, as a desktop notification; the title
+and body are handed to the tools as data rather than spliced into a shell
 command.
 <!-- docref: end -->
 

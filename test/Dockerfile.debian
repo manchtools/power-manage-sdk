@@ -25,6 +25,7 @@ FROM golang:1.26-bookworm AS base
 #   iproute2        — `ip` for the sys/netconfig read-path tests (CAP_NET_ADMIN)
 #   gnupg           — `gpg --dearmor` for the sys/repo apt keyring tests
 #   smartmontools   — `smartctl` for the sys/smart scan + fatal-bits tests
+#   openssl         — `openssl verify` trust probe for the sys/catrust tests
 RUN apt-get update && apt-get install -y --no-install-recommends \
     psmisc \
     ca-certificates \
@@ -33,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     iproute2 \
     gnupg \
     smartmontools \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

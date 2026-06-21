@@ -293,7 +293,7 @@ func TestApply_PSK_ReloadFailure(t *testing.T) {
 	r.push(exec.Result{Stdout: ""}, nil)                                  // not found
 	r.push(exec.Result{ExitCode: 2, Stderr: "Error: reload failed"}, nil) // reload fails
 	_, err := mgr(t, r).Apply(context.Background(), Profile{
-		Name: "pm-wifi-01", SSID: "CorpNet", AuthType: AuthPSK, PSK: mustSecret(t, "p"),
+		Name: "pm-wifi-01", SSID: "CorpNet", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk"),
 	})
 	if err == nil || !strings.Contains(err.Error(), "create PSK connection") {
 		t.Errorf("Apply err = %v, want a wrapped reload failure", err)
@@ -484,7 +484,7 @@ func TestApply_ConnectionExistsErrorAborts(t *testing.T) {
 	r := &recordingRunner{}
 	r.push(exec.Result{}, errors.New("nmcli down"))
 	if _, err := mgr(t, r).Apply(context.Background(), Profile{
-		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "p"),
+		Name: "pm-wifi", SSID: "x", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk"),
 	}); err == nil {
 		t.Error("Apply continued past a ConnectionExists failure")
 	}
@@ -565,10 +565,10 @@ func TestValidateProfile(t *testing.T) {
 		profile Profile
 		wantErr bool
 	}{
-		{"valid PSK", Profile{Name: "t", SSID: "n", AuthType: AuthPSK, PSK: mustSecret(t, "pass")}, false},
+		{"valid PSK", Profile{Name: "t", SSID: "n", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk")}, false},
 		{"valid EAP-TLS", Profile{Name: "t", SSID: "n", AuthType: AuthEAPTLS, Identity: "u", CertDir: good, ClientCert: "c", ClientKey: exec.NewMultilineSecret(realPEMKey)}, false},
-		{"missing name", Profile{SSID: "n", AuthType: AuthPSK, PSK: mustSecret(t, "p")}, true},
-		{"missing SSID", Profile{Name: "t", AuthType: AuthPSK, PSK: mustSecret(t, "p")}, true},
+		{"missing name", Profile{SSID: "n", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk")}, true},
+		{"missing SSID", Profile{Name: "t", AuthType: AuthPSK, PSK: mustSecret(t, "valid-wpa2-psk")}, true},
 		{"empty PSK", Profile{Name: "t", SSID: "n", AuthType: AuthPSK}, true},
 		{"missing identity", Profile{Name: "t", SSID: "n", AuthType: AuthEAPTLS, CertDir: good, ClientCert: "c", ClientKey: exec.NewMultilineSecret("k")}, true},
 		{"missing certdir", Profile{Name: "t", SSID: "n", AuthType: AuthEAPTLS, Identity: "u", ClientCert: "c", ClientKey: exec.NewMultilineSecret("k")}, true},

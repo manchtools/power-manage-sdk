@@ -53,6 +53,13 @@ type Manager interface {
 	NotifyUsers(ctx context.Context, usernames []string, title, message string) error
 }
 
+// maxNotificationField bounds the title and message length. wall and
+// notify-send both render their input into a terminal / desktop banner an
+// operator reads, and an unbounded payload is a denial-of-service / scroll-the-
+// screen vector (and a needless burden on every session). 4096 bytes is far
+// more than any real maintenance notice needs.
+const maxNotificationField = 4096
+
 // New returns a Manager driven by runner. A nil runner is rejected.
 func New(runner exec.Runner) (Manager, error) {
 	if runner == nil {
@@ -66,6 +73,9 @@ type notifier struct {
 }
 
 func (n *notifier) NotifyAll(ctx context.Context, title, message string) error {
+	if err := validateNotification(title, message); err != nil {
+		return err
+	}
 	return errors.Join(
 		n.sendWall(ctx, fmt.Sprintf("%s: %s", title, message)),
 		n.sendDesktopNotifications(ctx, title, message, nil),
@@ -73,6 +83,14 @@ func (n *notifier) NotifyAll(ctx context.Context, title, message string) error {
 }
 
 func (n *notifier) NotifyUsers(ctx context.Context, usernames []string, title, message string) error {
+	if err := validateNotification(title, message); err != nil {
+		return err
+	}
+	for _, u := range usernames {
+		if err := validateUsername(u); err != nil {
+			return err
+		}
+	}
 	filter := make(map[string]bool, len(usernames))
 	for _, u := range usernames {
 		filter[u] = true
@@ -81,6 +99,53 @@ func (n *notifier) NotifyUsers(ctx context.Context, usernames []string, title, m
 		n.sendWall(ctx, fmt.Sprintf("%s: %s", title, message)),
 		n.sendDesktopNotifications(ctx, title, message, filter),
 	)
+}
+
+// validateNotification rejects a title or message that would corrupt the
+// broadcast surface BEFORE any wall/notify-send command runs. A control
+// character (newline, ESC, NUL, DEL, …) can smuggle terminal escape sequences
+// into every logged-in user's TTY (wall broadcasts verbatim) or break the
+// notify-send argv/banner, so both fields must be plain text. Length is bounded
+// to keep a single notice from flooding the screen.
+func validateNotification(title, message string) error {
+	if err := validateField("notification title", title); err != nil {
+		return err
+	}
+	return validateField("notification message", message)
+}
+
+func validateField(kind, s string) error {
+	if containsControl(s) {
+		return fmt.Errorf("invalid %s: must not contain control characters", kind)
+	}
+	if len(s) > maxNotificationField {
+		return fmt.Errorf("invalid %s: must not exceed %d bytes", kind, maxNotificationField)
+	}
+	return nil
+}
+
+// validateUsername rejects a user-filter entry carrying a control character. A
+// newline in a username (e.g. "alice\nroot") can never match a real loginctl
+// session, but more importantly it must never reach the runner — fail closed at
+// the boundary rather than relying on it silently never matching.
+func validateUsername(u string) error {
+	if containsControl(u) {
+		return fmt.Errorf("invalid username %q: must not contain control characters", u)
+	}
+	return nil
+}
+
+// containsControl reports whether s holds any ASCII control character (NUL
+// through US, including newline, CR and tab) or DEL — bytes that would corrupt a
+// wall broadcast or a notify-send banner. A plain space (0x20) is left alone: it
+// is legal, argv-safe text in a notification.
+func containsControl(s string) bool {
+	for _, r := range s {
+		if r < 0x20 || r == 0x7f {
+			return true
+		}
+	}
+	return false
 }
 
 // sendWall broadcasts a message to all terminal sessions via wall (stdin). A

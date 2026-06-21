@@ -214,6 +214,9 @@ func (m *networkManager) stagedModify(ctx context.Context, p Profile, current ma
 // Delete removes a WiFi connection by name and, if opts.CertDir is set, cleans up
 // its cert directory.
 func (m *networkManager) Delete(ctx context.Context, name string, opts DeleteOptions) error {
+	if err := validateConnName(name); err != nil {
+		return err
+	}
 	exists, err := m.ConnectionExists(ctx, name)
 	if err != nil {
 		return err

@@ -48,7 +48,7 @@ if err != nil {
 out, err := cmd.Output() // runs as the session's user
 ```
 
-<!-- docref: begin src=sys/desktop/runas.go#manager.RunAsCommand:c91323e7 -->
+<!-- docref: begin src=sys/desktop/runas.go#manager.RunAsCommand:73de35dd -->
 `RunAsCommand` builds (but does not run) a command that executes as the session's
 user via `runuser`, with a per-user environment: `HOME`, `USER`, `XDG_RUNTIME_DIR`,
 and the session bus address. `PATH` is always re-applied last with a curated

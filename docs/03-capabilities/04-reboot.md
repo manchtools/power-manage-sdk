@@ -55,11 +55,13 @@ err := rb.Schedule(ctx, reboot.ScheduleOptions{
 err = rb.Cancel(ctx)
 ```
 
-<!-- docref: begin src=sys/reboot/reboot.go#ScheduleOptions:b3cc2d01 -->
-`ScheduleOptions.Delay` is a `shutdown(8)` TIME spec (`"+5"`, `"now"`,
-`"23:00"`); an empty `Delay` defaults to `"+1"` (one minute), never an instant
-reboot by accident. The fields are named (not positional) so a caller can't
-transpose the delay and the wall message.
+<!-- docref: begin src=sys/reboot/reboot.go#ScheduleOptions:64cc9237 -->
+`ScheduleOptions.Delay` is a positive relative-minute offset, `"+N"` (e.g.
+`"+5"`) — deliberately narrower than `shutdown(8)`'s full TIME grammar: `"now"`,
+`"+0"`, and absolute clock times like `"23:00"` are rejected, so a reboot always
+leaves a grace window. An empty `Delay` defaults to `"+1"` (one minute), never an
+instant reboot by accident. The fields are named (not positional) so a caller
+can't transpose the delay and the wall message.
 <!-- docref: end -->
 
 {% callout type="warning" title="Schedule really reboots" %}

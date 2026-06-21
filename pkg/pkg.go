@@ -10,9 +10,10 @@
 //	if err := m.Install(ctx, pkg.InstallOptions{}, "vim", "git"); err != nil { ... }
 //
 // Reads (Search/List/Show/IsInstalled/…) run unprivileged; mutations
-// (Install/Remove/Update/Upgrade/Pin/Unpin/Repair/Autoremove) run through the
-// Runner's privilege backend. Every package-name and version argument is
-// validated before it can reach argv — there is no opt-out.
+// (Install/InstallLocal/Remove/Update/Upgrade/Pin/Unpin/Repair/Autoremove) run
+// through the Runner's privilege backend. Every package-name, version, and
+// local-file-path argument is validated before it can reach argv — there is no
+// opt-out.
 //
 // Use Detect to discover which backends are installed; it lists and never picks,
 // so the caller decides (a host can have both a native manager and flatpak).
@@ -116,6 +117,15 @@ type Manager interface {
 	ListVersions(ctx context.Context, name string) (*VersionInfo, error)
 	// IsInstalled reports whether name is currently installed.
 	IsInstalled(ctx context.Context, name string) (bool, error)
+	// LocalPackageInfo reads a package's canonical name (and, where the backend
+	// reports them, version and architecture) from a LOCAL package file already on
+	// disk — a .deb, .rpm or pacman package — WITHOUT installing it. path must be
+	// an absolute filesystem path (ValidateLocalPackagePath). The name a crafted
+	// file embeds is untrusted, so it is validated against the backend's
+	// package-name grammar before being returned; a flag-shaped or
+	// metacharacter-bearing name is rejected. The flatpak backend has no clean
+	// local name-introspection command and returns a not-supported error.
+	LocalPackageInfo(ctx context.Context, path string) (*LocalPackage, error)
 	// InstalledVersion returns the installed version of name, or "" if absent.
 	InstalledVersion(ctx context.Context, name string) (string, error)
 	// InstalledCount returns the number of installed packages.
@@ -134,6 +144,17 @@ type Manager interface {
 	// (exactly one name required when set); opts.AllowDowngrade permits a lower
 	// version than installed.
 	Install(ctx context.Context, opts InstallOptions, packages ...string) (pmexec.Result, error)
+	// InstallLocal installs a package from a local file already on disk — a
+	// downloaded .deb, .rpm, pacman package, or flatpak bundle — rather than by
+	// name from a configured repository, resolving dependencies from the
+	// configured repositories where the backend supports it (apt/dnf/zypper/
+	// pacman). path must be an ABSOLUTE filesystem path to the package file;
+	// fetching and verifying the artifact (https transport, checksum) is the
+	// caller's responsibility. opts.AllowDowngrade permits a lower version than
+	// the one currently installed; opts.AllowUnsigned skips the backend's GPG
+	// check (dnf --nogpgcheck / zypper --allow-unsigned-rpm) for a file whose
+	// authenticity is established out of band — secure-default-off.
+	InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error)
 	// Remove removes the named packages. opts.Purge also deletes configuration
 	// where the backend distinguishes it (apt/pacman/flatpak); elsewhere Purge
 	// is equivalent to a plain remove.

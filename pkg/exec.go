@@ -3,6 +3,7 @@ package pkg
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -92,6 +93,53 @@ func asCommandError(name string, res pmexec.Result) error {
 		return nil
 	}
 	return &pmexec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
+}
+
+// rpmLocalPackageInfo reads NAME / VERSION-RELEASE / ARCH out of a local .rpm via
+// `rpm -qp --qf` (an unprivileged read), shared by the dnf and zypper backends so
+// their local-introspection cannot drift. The %{NAME} a crafted .rpm embeds is
+// untrusted, so it is re-validated with ValidateRpmPackageName before it is
+// returned — a flag-shaped or metacharacter-bearing name is rejected here, not
+// passed on to a later rpm -q/-e as an option.
+func rpmLocalPackageInfo(ctx context.Context, r pmexec.Runner, path string) (*LocalPackage, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return nil, err
+	}
+	out, err := readOut(ctx, r, "rpm", "-qp", "--qf", "%{NAME}\n%{VERSION}-%{RELEASE}\n%{ARCH}", path)
+	if err != nil {
+		return nil, err
+	}
+	fields := splitPositionalFields(out)
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("pkg: rpm -qp reported no name for %q", path)
+	}
+	name := fields[0]
+	if err := ValidateRpmPackageName(name); err != nil {
+		return nil, fmt.Errorf("pkg: local .rpm reports an unsafe package name: %w", err)
+	}
+	info := &LocalPackage{Name: name}
+	if len(fields) > 1 {
+		info.Version = fields[1]
+	}
+	if len(fields) > 2 {
+		info.Arch = fields[2]
+	}
+	return info, nil
+}
+
+// splitPositionalFields splits one-field-per-line command output (dpkg-deb -f /
+// rpm -qp --qf) into its POSITIONAL fields, trimming each line but PRESERVING an
+// empty leading/middle field so the name/version/arch positions never shift. A
+// crafted file that emits an empty NAME must surface as an empty field[0]
+// (rejected by the name validator) — NOT silently promote the version into the
+// name slot. Only the trailing blank line the tool appends is dropped.
+func splitPositionalFields(data string) []string {
+	lines := strings.Split(strings.TrimRight(data, "\n"), "\n")
+	fields := make([]string, len(lines))
+	for i, line := range lines {
+		fields[i] = strings.TrimSpace(line)
+	}
+	return fields
 }
 
 // countNonEmptyLines counts non-blank lines in command output.

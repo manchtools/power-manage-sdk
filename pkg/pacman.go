@@ -77,6 +77,21 @@ func (p *pacman) Install(ctx context.Context, opts InstallOptions, packages ...s
 	return p.write(ctx, "-S", "--noconfirm", fmt.Sprintf("%s=%s", packages[0], opts.Version))
 }
 
+// InstallLocal installs a local package file through `pacman -U`, which resolves
+// its dependencies from the sync repositories and downgrades naturally when the
+// file is older than the installed version — so opts.AllowDowngrade needs no
+// extra flag and is ignored. opts.AllowUnsigned is NOT honored either: `pacman
+// -U` enforces the repo SigLevel and has no per-invocation signature bypass, so
+// the install stays signature-checked (a relaxed SigLevel is a pacman.conf
+// concern, out of scope here). ValidateLocalPackagePath requires an absolute
+// path, so the operand can never be flag-shaped.
+func (p *pacman) InstallLocal(ctx context.Context, path string, _ InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	return p.write(ctx, "-U", "--noconfirm", path)
+}
+
 // Remove removes packages; opts.Purge uses -Rns (with deps + config files).
 func (p *pacman) Remove(ctx context.Context, opts RemoveOptions, packages ...string) (pmexec.Result, error) {
 	if err := ValidatePackageNames(packages); err != nil {
@@ -143,11 +158,36 @@ func (p *pacman) Autoremove(ctx context.Context) (pmexec.Result, error) {
 	return p.write(ctx, append([]string{"-Rns", "--noconfirm"}, orphans...)...)
 }
 
-// Repair clears a stale db lock and force-refreshes all databases.
+// pacmanKeyring is the default keyring `pacman-key --populate` bootstraps. Arch
+// proper ships the "archlinux" keyring; this is the keyring name the agent's
+// repair path used before it was migrated into the SDK.
+const pacmanKeyring = "archlinux"
+
+// Repair clears a stale db lock, bootstraps the pacman keyring (a common cause
+// of "invalid or corrupted package (PGP signature)" failures on a fresh or
+// drifted install), and force-refreshes all databases. The keyring bootstrap is
+// best-effort: an already-initialized keyring or a transient gpg hiccup is
+// logged, not fatal — only the final `-Syy` refresh failure (or a context
+// cancellation) is returned.
 func (p *pacman) Repair(ctx context.Context) (pmexec.Result, error) {
 	if err := removeStaleLock(ctx, p.r, "/var/lib/pacman/db.lck"); err != nil {
 		return pmexec.Result{}, err
 	}
+
+	steps := []struct {
+		what string
+		run  func() (pmexec.Result, error)
+	}{
+		{"pacman-key --init", func() (pmexec.Result, error) { return p.keyWrite(ctx, "--init") }},
+		{"pacman-key --populate", func() (pmexec.Result, error) { return p.keyWrite(ctx, "--populate", pacmanKeyring) }},
+	}
+	for _, s := range steps {
+		_, err := s.run()
+		if err := bestEffortStep(ctx, s.what, err); err != nil {
+			return pmexec.Result{}, err
+		}
+	}
+
 	res, err := p.write(ctx, "-Syy", "--noconfirm")
 	if err != nil {
 		return res, repairErr(ctx, "pacman -Syy failed", err)
@@ -155,8 +195,21 @@ func (p *pacman) Repair(ctx context.Context) (pmexec.Result, error) {
 	return res, nil
 }
 
+// keyWrite runs an escalated `pacman-key` command, mapping a non-zero exit to an
+// *exec.CommandError so bestEffortStep can classify it.
+func (p *pacman) keyWrite(ctx context.Context, args ...string) (pmexec.Result, error) {
+	res, err := runPriv(ctx, p.r, true, nil, "pacman-key", args...)
+	if err != nil {
+		return pmexec.Result{}, err
+	}
+	return res, asCommandError("pacman-key", res)
+}
+
 // Search searches packages (-Ss; exit 1 = no matches).
 func (p *pacman) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	res, err := runRead(ctx, p.r, "pacman", "-Ss", query)
 	if err != nil {
 		return nil, err
@@ -350,6 +403,39 @@ func (p *pacman) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 	}
 	if version != "" {
 		info.Versions = append(info.Versions, AvailableVersion{Version: version, Repository: repo})
+	}
+	return info, nil
+}
+
+// LocalPackageInfo reads a local package file's name and version via `pacman -Qp
+// <path>` (an unprivileged read), which prints "name version" on one line. The
+// name a crafted package embeds is untrusted, so it is re-validated with
+// ValidatePackageName before being returned; a flag-shaped or metacharacter-
+// bearing first field is rejected. pacman has no architecture in -Qp output, so
+// Arch is left empty.
+func (p *pacman) LocalPackageInfo(ctx context.Context, path string) (*LocalPackage, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return nil, err
+	}
+	out, err := readOut(ctx, p.r, "pacman", "-Qp", path)
+	if err != nil {
+		return nil, err
+	}
+	// `pacman -Qp` prints "name version". Reject output with no leading name
+	// token: TrimSpace+Fields would otherwise collapse leading whitespace and
+	// promote the version of a malformed " 1.0-1" line to Name (fail-closed parse).
+	line := strings.TrimRight(out, "\r\n")
+	if strings.TrimSpace(line) == "" || line[0] == ' ' || line[0] == '\t' {
+		return nil, fmt.Errorf("pkg: pacman -Qp reported no name for %q", path)
+	}
+	fields := strings.Fields(line)
+	name := fields[0]
+	if err := ValidatePackageName(name); err != nil {
+		return nil, fmt.Errorf("pkg: local package reports an unsafe name: %w", err)
+	}
+	info := &LocalPackage{Name: name}
+	if len(fields) > 1 {
+		info.Version = fields[1]
 	}
 	return info, nil
 }

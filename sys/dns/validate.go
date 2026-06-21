@@ -31,8 +31,17 @@ var validDomainLabel = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-
 //   - the interface, if set, is a valid ifname.
 func validateConfig(cfg Config) error {
 	for _, ns := range cfg.Nameservers {
-		if net.ParseIP(ns) == nil {
+		ip := net.ParseIP(ns)
+		if ip == nil {
 			return fmt.Errorf("%w: nameserver %q is not a valid IP address", ErrInvalidConfig, ns)
+		}
+		// The unspecified address (0.0.0.0 / ::) is never a real resolver:
+		// it is the wildcard "any" address, not a host that answers queries.
+		// Accepting it would let an attacker point the host's DNS at an
+		// unspecified/wildcard-bound listener — a resolver-poisoning primitive
+		// — so it is refused before any backend mutation.
+		if ip.IsUnspecified() {
+			return fmt.Errorf("%w: nameserver %q is the unspecified address and cannot be a resolver", ErrInvalidConfig, ns)
 		}
 	}
 	for _, d := range cfg.SearchDomains {

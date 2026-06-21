@@ -280,7 +280,10 @@ func (h *httpSource) openBody(ctx context.Context, etag string) (io.ReadCloser, 
 // the returned tmpPath is empty in that case so the caller can't
 // accidentally reference a non-existent path.
 func streamToTmp(dest string, body io.Reader, maxBytes int64) (string, int64, []byte, error) {
-	tmp := tmpPathFor(dest)
+	tmp, err := tmpPathFor(dest)
+	if err != nil {
+		return "", 0, nil, err
+	}
 	if err := os.MkdirAll(filepath.Dir(tmp), 0o755); err != nil {
 		return "", 0, nil, fmt.Errorf("mkdir %s: %w", filepath.Dir(tmp), err)
 	}
@@ -326,14 +329,18 @@ func streamToTmp(dest string, body io.Reader, maxBytes int64) (string, int64, []
 	return tmp, n, h.Sum(nil), nil
 }
 
-// tmpPathFor builds a deterministic-within-process sibling tmp filename.
-// Sixteen random hex chars keep collisions astronomically unlikely while
-// keeping the suffix short enough that ext4's 255-char filename limit
-// doesn't bite.
-func tmpPathFor(dest string) string {
+// tmpPathFor builds an unpredictable sibling tmp filename. Sixteen random hex
+// chars keep collisions astronomically unlikely while keeping the suffix short
+// enough that ext4's 255-char filename limit doesn't bite. The entropy read is
+// fail-closed: if crypto/rand cannot produce randomness the suffix would be
+// predictable, letting an attacker pre-create a symlink at the staging path, so
+// the error is propagated rather than discarded.
+func tmpPathFor(dest string) (string, error) {
 	var b [8]byte
-	_, _ = rand.Read(b[:])
-	return dest + ".tmp." + hex.EncodeToString(b[:])
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("generate staging-file suffix: %w", err)
+	}
+	return dest + ".tmp." + hex.EncodeToString(b[:]), nil
 }
 
 // applyMode sets mode and/or ownership on the freshly-written destination, which
@@ -348,7 +355,10 @@ func applyMode(dest, mode, owner, group string) error {
 		return nil
 	}
 	if mode != "" {
-		bits, perr := strconv.ParseUint(strings.TrimPrefix(mode, "0"), 8, 32)
+		// ParseUint(base 8) handles octal mode strings with or without a leading
+		// zero ("755", "0755", "0"); do NOT strip a leading "0" first — that turns
+		// "0" into "" and wrongly rejects octal zero.
+		bits, perr := strconv.ParseUint(mode, 8, 32)
 		if perr != nil {
 			return fmt.Errorf("invalid mode %q: %w", mode, perr)
 		}
@@ -396,12 +406,61 @@ func chownNoFollow(dest string, uid, gid int) error {
 func defaultHTTPClient() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Minute,
+		// Refuse any redirect that changes the origin (scheme OR host:port). A
+		// download is pinned to a URL; letting a redirect choose a different host
+		// lets a compromised origin substitute the bytes (and is an SSRF vector
+		// toward internal services), and a scheme change is a TLS downgrade
+		// (https -> http) that strips transport integrity from a pinned source.
+		// Same-origin path redirects are allowed but bounded.
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) > 0 && (req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host) {
+				return fmt.Errorf("%w: refusing cross-origin redirect %s://%s -> %s://%s", ErrInvalidConfig,
+					via[0].URL.Scheme, via[0].URL.Host, req.URL.Scheme, req.URL.Host)
+			}
+			if len(via) >= 10 {
+				return fmt.Errorf("%w: stopped after 10 redirects", ErrInvalidConfig)
+			}
+			return nil
+		},
 	}
 }
 
 func validateHTTPConfig(cfg *HTTPConfig) error {
 	if cfg.Prune && !cfg.Extract {
 		return fmt.Errorf("%w: prune requires extract", ErrInvalidConfig)
+	}
+	// extract+prune DELETES pre-existing files in the destination tree, so a
+	// poisoned origin could weaponize it; require an integrity pin so the bytes
+	// that drive the prune are verified before anything is removed.
+	if cfg.Extract && cfg.Prune && cfg.ChecksumSHA256 == "" {
+		return fmt.Errorf("%w: extract+prune requires a checksum_sha256 (the prune deletes files; the payload must be integrity-pinned)", ErrInvalidConfig)
+	}
+	// A negative byte cap is a caller error; never silently fall back to the
+	// default (which would lift the intended limit).
+	if cfg.MaxBytes < 0 {
+		return fmt.Errorf("%w: max_bytes must not be negative", ErrInvalidConfig)
+	}
+	if err := validateModeBits(cfg.Mode); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateModeBits rejects a Mode that sets the setuid/setgid/sticky bits on a
+// downloaded artifact — a downloaded setuid-root helper is a privilege-escalation
+// dropper. Empty Mode is allowed (no chmod). The octal parsing mirrors applyMode.
+func validateModeBits(mode string) error {
+	if mode == "" {
+		return nil
+	}
+	// ParseUint(base 8) accepts a leading zero; do NOT TrimPrefix "0" first (it
+	// turns "0" into "" and wrongly rejects octal zero). Mirrors applyMode.
+	bits, err := strconv.ParseUint(mode, 8, 32)
+	if err != nil {
+		return fmt.Errorf("%w: invalid mode %q", ErrInvalidConfig, mode)
+	}
+	if bits&0o7000 != 0 { // setuid(4000) | setgid(2000) | sticky(1000)
+		return fmt.Errorf("%w: mode %q sets privileged bits (setuid/setgid/sticky), refused for a downloaded artifact", ErrInvalidConfig, mode)
 	}
 	return nil
 }

@@ -25,6 +25,27 @@ func aptLegacyKeyFile(name string) string  { return aptLegacyKeyDir + "/" + name
 // `deb [signed-by=/etc/apt/keyrings/x.gpg] https://…`.
 var aptListSignedBy = regexp.MustCompile(`signed-by=([^\s\]]+)`)
 
+// isAptKeyringPath reports whether p is a file directly inside one of the two
+// directories where apt signing keyrings legitimately live. Cleanup only removes
+// Signed-By targets that pass this jail, so an attacker-controlled source file
+// cannot point Signed-By at an arbitrary path (e.g. /etc/sudoers) and turn repo
+// reconfiguration into an arbitrary privileged delete. A path is in-jail only if
+// it is a direct child of the directory — no traversal, no nested subdirectory.
+func isAptKeyringPath(p string) bool {
+	for _, dir := range []string{aptKeyringDir, aptLegacyKeyDir} {
+		prefix := dir + "/"
+		if !strings.HasPrefix(p, prefix) {
+			continue
+		}
+		rest := p[len(prefix):]
+		if rest == "" || strings.Contains(rest, "/") || strings.Contains(rest, "..") {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
 // applyApt writes the modern deb822 source to /etc/apt/sources.list.d/<name>.sources,
 // installs the (dearmored) signing key under /etc/apt/keyrings, removes any
 // conflicting prior configuration of the same URL, and refreshes the index. It is
@@ -242,6 +263,15 @@ func (m *manager) removeConflictKeys(ctx context.Context, filename, content, ski
 	}
 	for _, keyPath := range keyPaths {
 		if keyPath == skipKeyFile || !strings.HasPrefix(keyPath, "/") {
+			continue
+		}
+		// Only remove paths inside the apt keyring jail. A hostile Signed-By in a
+		// conflicting source file is attacker-controlled config; honoring an
+		// arbitrary absolute path here would turn repo cleanup into an arbitrary
+		// privileged file delete (e.g. Signed-By: /etc/sudoers). Refuse anything
+		// outside the directories apt keyrings legitimately live in.
+		if !isAptKeyringPath(keyPath) {
+			fmt.Fprintf(log, "refusing to remove out-of-jail Signed-By key: %s\n", keyPath)
 			continue
 		}
 		fmt.Fprintf(log, "removing associated GPG key: %s\n", keyPath)

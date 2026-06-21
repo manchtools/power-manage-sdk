@@ -42,7 +42,11 @@ func TestRunAsCommand_BuildsRunuserInvocation(t *testing.T) {
 		t.Errorf("Path: got %q, want %q (runuser is the only acceptable wrapper)", cmd.Path, runuserPath)
 	}
 
-	wantArgs := []string{runuserPath, "-u", "alice", "--", "/usr/bin/flatpak", "--user", "info", "org.example.App"}
+	// The curated PATH is forced via an `env PATH=…` wrapper that runs AFTER
+	// runuser's PAM session, so a distro whose login.defs resets PATH (openSUSE's
+	// ALWAYS_SET_PATH) cannot strip it. The wrapper sits between `--` and the
+	// real command.
+	wantArgs := []string{runuserPath, "-u", "alice", "--", envPath, "PATH=" + UserPath(s), "/usr/bin/flatpak", "--user", "info", "org.example.App"}
 	if len(cmd.Args) != len(wantArgs) {
 		t.Fatalf("Args length: got %d, want %d (got=%v)", len(cmd.Args), len(wantArgs), cmd.Args)
 	}

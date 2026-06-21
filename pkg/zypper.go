@@ -80,6 +80,27 @@ func (z *zypper) Install(ctx context.Context, opts InstallOptions, packages ...s
 	return z.write(ctx, args...)
 }
 
+// InstallLocal installs a local .rpm file through zypper, resolving its
+// dependencies from the configured repositories. opts.AllowDowngrade adds
+// --oldpackage so a file older than the installed version is accepted.
+// opts.AllowUnsigned adds the per-package --allow-unsigned-rpm (NOT the global
+// --no-gpg-checks, which would also drop repository-metadata verification).
+// ValidateLocalPackagePath requires an absolute path, so the operand can never
+// be flag-shaped.
+func (z *zypper) InstallLocal(ctx context.Context, path string, opts InstallLocalOptions) (pmexec.Result, error) {
+	if err := ValidateLocalPackagePath(path); err != nil {
+		return pmexec.Result{}, err
+	}
+	flags := []string{"--non-interactive", "install"}
+	if opts.AllowUnsigned {
+		flags = append(flags, "--allow-unsigned-rpm")
+	}
+	if opts.AllowDowngrade {
+		flags = append(flags, "--oldpackage")
+	}
+	return z.write(ctx, append(flags, path)...)
+}
+
 // Remove removes packages. zypper does not distinguish purge from remove, so
 // opts.Purge is a no-op.
 func (z *zypper) Remove(ctx context.Context, _ RemoveOptions, packages ...string) (pmexec.Result, error) {
@@ -139,6 +160,9 @@ func (z *zypper) Repair(ctx context.Context) (pmexec.Result, error) {
 
 // Search searches packages (exit 104 = no matches).
 func (z *zypper) Search(ctx context.Context, query string) ([]SearchResult, error) {
+	if err := ValidateSearchQuery(query); err != nil {
+		return nil, err
+	}
 	res, err := runRead(ctx, z.r, "zypper", "--non-interactive", "search", query)
 	if err != nil {
 		return nil, err
@@ -368,6 +392,14 @@ func (z *zypper) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 		})
 	}
 	return info, nil
+}
+
+// LocalPackageInfo reads the canonical NAME/VERSION-RELEASE/ARCH out of a local
+// .rpm via the shared rpmLocalPackageInfo helper (an unprivileged `rpm -qp --qf`
+// read), re-validating the untrusted %{NAME} with ValidateRpmPackageName before
+// returning it.
+func (z *zypper) LocalPackageInfo(ctx context.Context, path string) (*LocalPackage, error) {
+	return rpmLocalPackageInfo(ctx, z.r, path)
 }
 
 // IsInstalled reports whether a package is installed (rpm -q exits 0).

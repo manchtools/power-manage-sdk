@@ -61,8 +61,12 @@ func (m *manager) applyDnf(ctx context.Context, name string, c *DnfConfig) (Outc
 	}
 	fmt.Fprintf(&log, "configured repository: %s\n", name)
 
-	// rpm --import is idempotent (re-importing an existing key is a no-op).
-	if c.GPGKey != "" {
+	// rpm --import is idempotent (re-importing an existing key is a no-op). The
+	// key is imported ONLY when signature checking is on: with gpgcheck=0 the
+	// gpgkey= line is dropped from the .repo, so importing the key would silently
+	// trust it system-wide while the repository itself verifies nothing — a trust
+	// downgrade. Honor gpgcheck as the single switch and never import behind it.
+	if c.GPGCheck && c.GPGKey != "" {
 		res, kerr := m.runPriv(ctx, "rpm", pmexec.SeparatePositionals([]string{"--import"}, c.GPGKey)...)
 		if res.Stdout != "" {
 			log.WriteString(res.Stdout)

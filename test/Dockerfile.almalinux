@@ -1,0 +1,46 @@
+# Container-based real-execution test image for the SDK (AlmaLinux / RHEL-compat).
+#
+# Enterprise Linux (Alma/Rocky/RHEL) is the actual server target for much of the
+# fleet, distinct from leading-edge Fedora. Same dnf family, but the EL package
+# set is stabler and some tools (clamav) live in EPEL. EL uses the Fedora/RHEL
+# p11-kit trust paths, so sys/catrust exercises the P11Kit backend here too.
+#
+# Rocky Linux is a bug-for-bug RHEL rebuild like Alma; to add it, copy this file
+# to Dockerfile.rockylinux with `FROM rockylinux:9` and add a matrix distro entry.
+#
+# No with-osquery stage (osquery is covered on the Debian image — see
+# Dockerfile.fedora / test/README.md).
+FROM golang:1.26-bookworm AS go
+
+FROM almalinux:9 AS base
+COPY --from=go /usr/local/go /usr/local/go
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOTOOLCHAIN=local
+
+# EPEL provides clamav on EL; the rest are in base/appstream. See Dockerfile.fedora
+# for the per-tool capability mapping.
+RUN dnf -y install epel-release \
+    && dnf -y install --setopt=install_weak_deps=False \
+    psmisc cryptsetup nftables iproute util-linux shadow-utils \
+    gnupg2 smartmontools openssl ca-certificates p11-kit flatpak git \
+    && dnf clean all
+
+WORKDIR /workspace
+COPY sdk/ ./sdk/
+RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN cd sdk && go mod download
+
+# with-clamav: clamav from EPEL + the same static seed DB as the other images.
+# EL ships freshclam.conf at /etc/freshclam.conf.
+FROM base AS with-clamav
+RUN dnf -y install clamav \
+    && dnf clean all \
+    && rm -f /var/lib/clamav/*.cvd /var/lib/clamav/*.cld /var/lib/clamav/*.cud \
+    && mkdir -p /var/lib/clamav \
+    && printf '44d88612fea8a8f36de82e1278abb02f:68:PM.Eicar.Test\n' \
+       > /var/lib/clamav/pm-seed.hdb \
+    && printf 'PM.Marker.Test:0:*:504d2d434c414d41562d544553542d4d41524b4552\n' \
+       > /var/lib/clamav/pm-seed.ndb \
+    && rm -f /etc/freshclam.conf \
+    && clamscan --version \
+       || (echo "PRECONDITION FAILED: clamscan not installed/runnable" && exit 1)

@@ -75,7 +75,7 @@ model; the reference lists the surface.
 
 ## Construction validates before it works
 
-<!-- docref: begin src=sys/catrust/catrust.go#New:987cc8b3 -->
+<!-- docref: begin src=sys/catrust/catrust.go#New:78dcd9a7 -->
 `New` is pure and fail-closed: it rejects a nil Runner and an unrecognized
 Backend, returning an error, before constructing a usable handle. A successful
 call gives you a Manager that is ready to use.

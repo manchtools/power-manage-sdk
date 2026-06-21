@@ -80,6 +80,60 @@ func TestModify_RejectsFieldInjection(t *testing.T) {
 	}
 }
 
+func TestCreate_RejectsUnsafeHomeDirectory(t *testing.T) {
+	cases := map[string]CreateOptions{
+		"relative path":         {HomeDir: "home/deploy"},
+		"filesystem root":       {HomeDir: "/", CreateHome: true},
+		"etc as existing home":  {HomeDir: "/etc", CreateHome: true},
+		"tmp persistence point": {HomeDir: "/tmp/deploy"},
+	}
+	for name, opts := range cases {
+		t.Run(name, func(t *testing.T) {
+			f := exectest.New(exec.Direct)
+			if err := mgr(t, f).Create(context.Background(), "deploy", opts); err == nil {
+				t.Errorf("Create(%+v) = nil, want unsafe-home-directory validation error", opts)
+			}
+			noRun(t, f)
+		})
+	}
+}
+
+func TestModify_RejectsUnsafeHomeDirectory(t *testing.T) {
+	cases := map[string]ModifyOptions{
+		"relative path":         {HomeDir: "home/deploy"},
+		"filesystem root":       {HomeDir: "/"},
+		"tmp persistence point": {HomeDir: "/tmp/deploy"},
+	}
+	for name, opts := range cases {
+		t.Run(name, func(t *testing.T) {
+			f := exectest.New(exec.Direct)
+			if err := mgr(t, f).Modify(context.Background(), "deploy", opts); err == nil {
+				t.Errorf("Modify(%+v) = nil, want unsafe-home-directory validation error", opts)
+			}
+			noRun(t, f)
+		})
+	}
+}
+
+func TestCreateAndModify_RejectUnsafeLoginShell(t *testing.T) {
+	for _, shell := range []string{"bash", "../bin/sh", "/tmp/pwnsh"} {
+		t.Run("create "+shell, func(t *testing.T) {
+			f := exectest.New(exec.Direct)
+			if err := mgr(t, f).Create(context.Background(), "deploy", CreateOptions{Shell: shell}); err == nil {
+				t.Fatalf("Create(Shell=%q) = nil, want unsafe-shell validation error", shell)
+			}
+			noRun(t, f)
+		})
+		t.Run("modify "+shell, func(t *testing.T) {
+			f := exectest.New(exec.Direct)
+			if err := mgr(t, f).Modify(context.Background(), "deploy", ModifyOptions{Shell: shell}); err == nil {
+				t.Fatalf("Modify(Shell=%q) = nil, want unsafe-shell validation error", shell)
+			}
+			noRun(t, f)
+		})
+	}
+}
+
 // A clean Comment with GECOS commas (the legitimate sub-field separator) must be
 // accepted — the validation rejects the dangerous bytes, not normal content.
 func TestCreate_AllowsCommasInComment(t *testing.T) {

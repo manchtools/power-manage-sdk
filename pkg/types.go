@@ -12,6 +12,18 @@ type Package struct {
 	Pinned       bool // whether the package is pinned (hold)
 }
 
+// LocalPackage is the identity read out of a LOCAL package file (a .deb, .rpm or
+// pacman package on disk) by Manager.LocalPackageInfo. Name is the canonical
+// package name — validated against the backend's package-name grammar before it
+// is returned, because the value is read out of an attacker-influenced file.
+// Version and Arch are best-effort extra fields (a backend that cannot report
+// one leaves it empty).
+type LocalPackage struct {
+	Name    string
+	Version string
+	Arch    string
+}
+
 // PackageUpdate represents an available update for a package.
 type PackageUpdate struct {
 	Name           string
@@ -50,6 +62,30 @@ type InstallOptions struct {
 	Version string
 	// AllowDowngrade permits installing a lower version than the one installed.
 	AllowDowngrade bool
+}
+
+// InstallLocalOptions configures an InstallLocal call.
+type InstallLocalOptions struct {
+	// AllowDowngrade permits installing a package file whose version is lower
+	// than the one currently installed. Honored on apt (--allow-downgrades),
+	// dnf (retried as an explicit downgrade when the install is rejected) and
+	// zypper (--oldpackage). pacman -U downgrades regardless, and a flatpak
+	// bundle has no version-ordering concept, so it is a no-op on those two.
+	AllowDowngrade bool
+	// AllowUnsigned skips the backend's GPG signature check for the local file.
+	// It is secure-default-OFF: with the default (false) an unsigned local .rpm
+	// is rejected by dnf/zypper. Set it ONLY when the file's authenticity is
+	// established out of band — e.g. an HTTPS transport plus a verified SHA256
+	// checksum — so the package manager's per-file GPG check is redundant. Per
+	// backend:
+	//   - dnf:    adds --nogpgcheck
+	//   - zypper: adds --allow-unsigned-rpm (per-package; never the global
+	//             --no-gpg-checks, which would also drop repo-metadata checks)
+	//   - apt:    no-op — a local .deb carries no per-file signature to skip
+	//   - pacman: NOT honored — `pacman -U` enforces the repo SigLevel and has no
+	//             per-invocation bypass; the install stays signature-checked
+	//   - flatpak: no-op — a bundle's signing is not a per-file GPG check
+	AllowUnsigned bool
 }
 
 // RemoveOptions configures a Remove call.

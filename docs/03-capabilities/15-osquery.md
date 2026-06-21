@@ -50,17 +50,19 @@ so a compromised control server cannot exfiltrate them through the agent's
 privileged osquery.
 <!-- docref: end -->
 
-<!-- docref: begin src=sys/osquery/osquery.go#client.Query:7d6685c6 -->
-The deny-list gates the convenience *table* path: `Query` with a `Table` (and
-`QueryTable`) refuses a sensitive name before building any SQL. The signed
-`RawSql` escape hatch is intentionally **not** gated — it is the operator's
-explicit, CA-signed path — so a sanctioned query can still reach a sensitive
-table when the operator deliberately asks for it.
+<!-- docref: begin src=sys/osquery/osquery.go#client.Query:29737495 -->
+The deny-list gates **both** query paths: `Query` with a `Table` (and
+`QueryTable`) refuses a sensitive name before building any SQL, and `RawSql` is
+refused when it *references* a sensitive table. Even the signed raw-query path
+cannot read `shadow`/`sudoers`/… — there is no osquery path to a credential
+table.
 <!-- docref: end -->
 
-{% callout type="warning" title="RawSql is the operator's responsibility" %}
-`RawSql` bypasses the deny-list by design. Restrict who can issue it (it is a
-signed command in the agent), because it can read anything osquery can.
+{% callout type="warning" title="RawSql is still the operator's responsibility" %}
+`RawSql` runs arbitrary read-only SQL and is a signed command in the agent, so
+restrict who can issue it. It is gated by the credential deny-list — it cannot
+read `shadow`/`sudoers`/… — but it can still read any other table osquery
+exposes.
 {% /callout %}
 
 ## Related

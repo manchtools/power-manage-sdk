@@ -28,10 +28,11 @@ if err != nil {
 }
 ```
 
-<!-- docref: begin src=sys/catrust/detect.go#Detect:047f0669 -->
-`Detect` reports `CaCertificates` when `update-ca-certificates` is on `PATH` and
-`P11Kit` when `update-ca-trust` is, so a caller can pick the flow this host
-actually supports.
+<!-- docref: begin src=sys/catrust/detect.go#Detect:0d85bd62 -->
+`Detect` reports the trust-store backends usable on this host: `CaCertificates`
+or `SuseCaCertificates` when `update-ca-certificates` is on `PATH` (the two are
+disambiguated by the anchors directory — Debian vs openSUSE), and `P11Kit` when
+`update-ca-trust` is. A caller picks the flow this host actually supports.
 <!-- docref: end -->
 
 ## Install, remove, list

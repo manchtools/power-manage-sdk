@@ -63,6 +63,7 @@ An unknown backend or a nil runner is rejected (`pkg.ErrUnknownBackend` /
 
 ```go
 m.Install(ctx, pkg.InstallOptions{}, "nginx")
+m.InstallLocal(ctx, "/var/cache/pm/app.deb", pkg.InstallLocalOptions{}) // a downloaded .deb/.rpm/pacman/flatpak file, deps resolved
 m.Remove(ctx, pkg.RemoveOptions{}, "nginx")
 m.Remove(ctx, pkg.RemoveOptions{Purge: true}, "nginx") // also delete config/data where supported
 m.Update(ctx)                                          // refresh metadata
@@ -123,6 +124,14 @@ type InstallOptions struct {
     AllowDowngrade bool
 }
 
+type InstallLocalOptions struct {
+    AllowDowngrade bool // install a file older than the installed version
+    AllowUnsigned  bool // skip the backend GPG check (dnf --nogpgcheck / zypper
+                        // --allow-unsigned-rpm) for an out-of-band-verified file;
+                        // secure-default-off. apt/flatpak: no-op; pacman: NOT
+                        // honored (pacman -U always enforces SigLevel).
+}
+
 type RemoveOptions struct {
     Purge bool // also remove config/data (apt purge / pacman -Rns / flatpak --delete-data)
 }
@@ -172,10 +181,17 @@ reparsed as an option):
 | `ValidateRepoBaseURL` | dnf `baseurl` / zypper `url` / pacman `server` / flatpak remote URL | **https only**, host required, control-char free (template vars `$releasever`/`$arch` allowed). apt is excluded — its security is the gpg-signed Release file. |
 | `ValidateGpgKeyRef` | dnf/zypper `gpgkey` passed to `rpm --import` | https URL, `file:///abs` path, or absolute path; no `..`, no leading `-`, no `http://`, no `ext::` |
 | `ValidateRemoteName` | flatpak remote alias | first char alphanumeric, then `[a-zA-Z0-9._-]`, ≤128 |
+| `ValidateLocalPackagePath` | `InstallLocal` file operand (`apt-get`/`dnf`/`pacman -U`/`zypper`/`flatpak` install) | **absolute path** (never flag-shaped), no `..`, no control chars; a space is allowed |
+| `ValidateSearchQuery` | the free-text `Search` query | must not start with `-` (a search term cannot be `--`-guarded because dnf5 rejects `--`), no control chars; empty allowed |
 
 In addition, pacman's `Pin` runs a stricter `[a-zA-Z0-9][a-zA-Z0-9._+-]*` gate
 before a name is written to `IgnorePkg`, blocking config-injection even for
 names that `ValidatePackageName` would accept.
+
+A self-discovering test (`TestEveryManagerMethodNeutralizesFlagShapedOperands`)
+reflects over the whole `Manager` surface and fails if any method lets a
+flag-shaped operand reach `argv` as an option, so a new method that forgets to
+validate its operand cannot pass CI.
 
 ## Testing
 

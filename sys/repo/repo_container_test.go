@@ -119,6 +119,16 @@ func TestApt_ApplyRemove_Container(t *testing.T) {
 		t.Error("keyring is still ASCII-armored — real `gpg --dearmor` did not run")
 	}
 
+	// Independent tool-acceptance probe (mirrors zypperRepoListed): apt itself
+	// must PARSE the written .sources. `apt-get --print-uris update` parses every
+	// configured source and prints the URIs it WOULD fetch WITHOUT fetching, so
+	// the repo URI appearing proves the deb822 file is well-formed and accepted —
+	// not merely that the bytes we wrote back match. It does not depend on the
+	// unreachable example.com metadata.
+	if !aptParsesRepo(t, "https://example.com/pm-test-debian") {
+		t.Error("apt did not parse the written .sources (`apt-get --print-uris update` omits the repo URI)")
+	}
+
 	// Idempotency: a second identical Apply changes nothing.
 	o2, err := m.Apply(ctx, repo)
 	if err != nil {
@@ -157,8 +167,12 @@ func TestDnf_ApplyRemove_Container(t *testing.T) {
 	repoFile := dnfRepoFile(name)
 	t.Cleanup(func() { _, _ = m.Remove(context.Background(), name) })
 
+	// Happy path is a SIGNED, gpg-checked repo (the secure default). The insecure
+	// gpgcheck=0 operator override is exercised separately in
+	// repo_security_container_test.go so it is never modelled as the normal case.
 	repo := Repository{Name: name, Dnf: &DnfConfig{
-		BaseURL: "https://example.com/pm-test-el9", Description: "PM Test", Enabled: true, GPGCheck: false,
+		BaseURL: "https://example.com/pm-test-el9", Description: "PM Test", Enabled: true,
+		GPGCheck: true, GPGKey: "https://example.com/pm-test-el9/RPM-GPG-KEY",
 	}}
 
 	o, err := m.Apply(ctx, repo)
@@ -169,10 +183,17 @@ func TestDnf_ApplyRemove_Container(t *testing.T) {
 		t.Error("first Apply should report Changed=true")
 	}
 	body := readFile(t, repoFile)
-	for _, want := range []string{"[" + name + "]", "name=PM Test", "baseurl=https://example.com/pm-test-el9", "enabled=1", "gpgcheck=0"} {
+	for _, want := range []string{"[" + name + "]", "name=PM Test", "baseurl=https://example.com/pm-test-el9", "enabled=1", "gpgcheck=1", "gpgkey=https://example.com/pm-test-el9/RPM-GPG-KEY"} {
 		if !strings.Contains(body, want) {
 			t.Errorf(".repo missing %q:\n%s", want, body)
 		}
+	}
+	// Independent tool-acceptance probe: dnf must PARSE the written .repo.
+	// `dnf repolist --all -C` lists configured repos cacheonly (no network refresh
+	// against the unreachable baseurl), so the repo id appearing proves dnf
+	// accepted the file, not merely that the bytes match.
+	if !dnfListsRepo(name) {
+		t.Errorf("dnf did not list %q after Apply (`dnf repolist --all -C` omits it) — config not accepted", name)
 	}
 	if o2, err := m.Apply(ctx, repo); err != nil || o2.Changed {
 		t.Errorf("idempotent re-Apply: changed=%v err=%v", o2.Changed, err)
@@ -193,8 +214,10 @@ func TestPacman_ApplyRemove_Container(t *testing.T) {
 	const name = "pm-test-pacman"
 	t.Cleanup(func() { _, _ = m.Remove(context.Background(), name) })
 
+	// Happy path requires a valid signature (the secure default). The TrustAll
+	// operator override is pinned separately in repo_security_container_test.go.
 	repo := Repository{Name: name, Pacman: &PacmanConfig{
-		Server: "https://example.com/pm-test-arch/$repo/os/$arch", SigLevel: "Optional TrustAll",
+		Server: "https://example.com/pm-test-arch/$repo/os/$arch", SigLevel: "Required DatabaseOptional",
 	}}
 
 	o, err := m.Apply(ctx, repo)
@@ -205,10 +228,16 @@ func TestPacman_ApplyRemove_Container(t *testing.T) {
 		t.Error("first Apply should report Changed=true")
 	}
 	conf := readFile(t, pacmanConf)
-	for _, want := range []string{"[" + name + "]", "SigLevel = Optional TrustAll", "Server = https://example.com/pm-test-arch/$repo/os/$arch"} {
+	for _, want := range []string{"[" + name + "]", "SigLevel = Required DatabaseOptional", "Server = https://example.com/pm-test-arch/$repo/os/$arch"} {
 		if !strings.Contains(conf, want) {
 			t.Errorf("pacman.conf missing %q", want)
 		}
+	}
+	// Independent tool-acceptance probe: pacman's own config parser must accept
+	// the appended [section]. `pacman-conf --repo <name>` dumps the section and
+	// exits non-zero on a malformed/absent one — pure config parse, no network.
+	if !pacmanParsesRepo(name) {
+		t.Errorf("`pacman-conf --repo %s` failed after Apply — pacman did not accept the appended section", name)
 	}
 	if o2, err := m.Apply(ctx, repo); err != nil || o2.Changed {
 		t.Errorf("idempotent re-Apply: changed=%v err=%v", o2.Changed, err)
@@ -234,8 +263,10 @@ func TestZypper_ApplyRemove_Container(t *testing.T) {
 	const name = "pm-test-zypper"
 	t.Cleanup(func() { _, _ = m.Remove(context.Background(), name) })
 
+	// Happy path keeps signature checking ON (the secure default); the
+	// --no-gpgcheck operator override lives in repo_security_container_test.go.
 	repo := Repository{Name: name, Zypper: &ZypperConfig{
-		URL: "https://example.com/pm-test-suite", Description: "PM Test", Enabled: false, Autorefresh: false, GPGCheck: false,
+		URL: "https://example.com/pm-test-suite", Description: "PM Test", Enabled: false, Autorefresh: false, GPGCheck: true,
 	}}
 
 	o, err := m.Apply(ctx, repo)
@@ -274,4 +305,29 @@ func TestZypper_ApplyRemove_Container(t *testing.T) {
 func zypperRepoListed(t *testing.T, name string) bool {
 	t.Helper()
 	return osexec.Command("zypper", "--non-interactive", "lr", name).Run() == nil
+}
+
+// aptParsesRepo reports whether `apt-get --print-uris update` parses the written
+// .sources and would fetch from uri. --print-uris prints the URIs apt WOULD
+// fetch without fetching, so this proves apt accepted the deb822 file with no
+// dependency on the unreachable example.com metadata.
+func aptParsesRepo(t *testing.T, uri string) bool {
+	t.Helper()
+	out, _ := osexec.Command("apt-get", "--print-uris", "update").CombinedOutput()
+	return strings.Contains(string(out), uri)
+}
+
+// dnfListsRepo reports whether `dnf repolist --all -C` lists the named repo.
+// `-C` (cacheonly) reads configuration without a network refresh, so a repo id
+// appearing proves dnf parsed and accepted the .repo file.
+func dnfListsRepo(name string) bool {
+	out, _ := osexec.Command("dnf", "repolist", "--all", "-C").CombinedOutput()
+	return strings.Contains(string(out), name)
+}
+
+// pacmanParsesRepo reports whether `pacman-conf --repo <name>` exits 0. pacman's
+// own config parser dumps the named [section] and fails on a malformed or absent
+// one — a pure config parse with no network.
+func pacmanParsesRepo(name string) bool {
+	return osexec.Command("pacman-conf", "--repo", name).Run() == nil
 }
