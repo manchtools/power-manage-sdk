@@ -44,7 +44,7 @@ git, err  := remote.NewGit(remote.GitConfig{URL: "https://…", Ref: "v1.2.3"})
 s3, err   := remote.NewS3(remote.S3Config{Bucket: "artifacts", Key: "agent/latest"})
 ```
 
-<!-- docref: begin src=sys/remote/http.go#NewHTTP:d4d3f602,sys/remote/git.go#NewGit:0a6c132d,sys/remote/s3.go#NewS3:8a5701dc -->
+<!-- docref: begin src=sys/remote/http.go#NewHTTP:ba137707,sys/remote/git.go#NewGit:0a6c132d,sys/remote/s3.go#NewS3:8a5701dc -->
 Each constructor validates its configuration up front and returns an error for a
 malformed one, so a bad URL, missing checksum, or unusable S3 config fails at
 construction rather than mid-download. The returned value is a `Source` — the

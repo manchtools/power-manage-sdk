@@ -68,6 +68,17 @@ type HTTPConfig struct {
 	Mode  string
 	Owner string
 	Group string
+
+	// Client overrides the *http.Client used for the HEAD/GET round-trips.
+	// Nil (the default) uses an internal client with conservative timeouts and
+	// the cross-origin / scheme-downgrade redirect guard. This is a TRANSPORT
+	// seam — its purpose is to point a test at an httptest TLS server (whose
+	// self-signed cert the default client refuses) or to mock the round-tripper.
+	// It does NOT relax any Fetch invariant: the URL scheme check, the MaxBytes
+	// cap, the sha256 pin, and the atomic rename are enforced in Fetch regardless
+	// of which client transports the bytes. A supplied client owns its own
+	// redirect/transport policy (it does not inherit the default redirect guard).
+	Client *http.Client
 }
 
 // httpSource is the concrete Source implementation.
@@ -105,11 +116,16 @@ func NewHTTP(cfg HTTPConfig) (Source, error) {
 		cfg.MaxBytes = defaultHTTPMaxBytes
 	}
 
+	client := cfg.Client
+	if client == nil {
+		client = defaultHTTPClient()
+	}
+
 	return &httpSource{
 		parsedURL: parsed,
 		cfg:       cfg,
 		checksum:  checksum,
-		client:    defaultHTTPClient(),
+		client:    client,
 	}, nil
 }
 
