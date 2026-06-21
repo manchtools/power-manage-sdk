@@ -230,7 +230,7 @@ func parseCPUInfo(path string) (model string, cores int, err error) {
 	if err != nil {
 		return "", 0, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -259,7 +259,7 @@ func parseMemTotal(path string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -288,7 +288,7 @@ func parseOSRelease(path string) (*OSInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open os-release: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	info := &OSInfo{}
 	scanner := bufio.NewScanner(f)

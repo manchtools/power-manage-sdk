@@ -2,6 +2,7 @@ package fs
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -26,9 +27,11 @@ type DirEntry struct {
 // privilege backend so it can list directories the unprivileged caller cannot
 // traverse, mirroring ReadFile/Exists.
 //
-// A non-existent directory yields (nil, nil): absence is an empty listing, the
-// same contract as ReadFile. Any other failure (permission denied, a non-
-// directory target) is returned as an error — never silently reported as empty.
+// A MISSING directory returns a wrapped os.ErrNotExist (the same explicit-absence
+// contract as ReadFile), NOT a silent empty listing — a caller that wants
+// "absent → empty" opts in with errors.Is(err, fs.ErrNotExist). Any other failure
+// (permission denied, a non-directory target) is returned as an error too — never
+// silently reported as empty.
 func (m *manager) ReadDir(ctx context.Context, path string) ([]DirEntry, error) {
 	if err := ValidatePath(path); err != nil {
 		return nil, err
@@ -39,15 +42,12 @@ func (m *manager) ReadDir(ctx context.Context, path string) ([]DirEntry, error) 
 	return m.readDirEscalated(ctx, path)
 }
 
-// readDirDirect is the root path: os.ReadDir, with a missing directory mapped to
-// an empty listing.
+// readDirDirect is the root path: os.ReadDir, which returns a wrapped
+// os.ErrNotExist for a missing directory.
 func readDirDirect(path string) ([]DirEntry, error) {
 	osEntries, err := os.ReadDir(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
+		return nil, err // os.ReadDir wraps os.ErrNotExist for a missing dir
 	}
 	entries := make([]DirEntry, 0, len(osEntries))
 	for _, e := range osEntries {
@@ -73,7 +73,7 @@ func (m *manager) readDirEscalated(ctx context.Context, path string) ([]DirEntry
 	}
 	if res.ExitCode != 0 {
 		if strings.Contains(res.Stderr, "No such file") {
-			return nil, nil
+			return nil, fmt.Errorf("read dir %s: %w", path, os.ErrNotExist)
 		}
 		return nil, cmdError("find", res)
 	}

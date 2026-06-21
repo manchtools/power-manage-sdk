@@ -4,6 +4,7 @@ package fs_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	osexec "os/exec"
@@ -112,8 +113,10 @@ func TestWriteAndReadRoundTrip(t *testing.T) {
 
 func TestReadFileNotFound(t *testing.T) {
 	got, err := intManager(t).ReadFile(context.Background(), missingPath(t))
-	if err != nil {
-		t.Fatalf("ReadFile(missing) should not error, got: %v", err)
+	// Explicit-absence contract: a missing file is a wrapped os.ErrNotExist, NOT a
+	// silent (nil,nil) — so a caller can tell "absent" from "present but empty".
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("ReadFile(missing) err = %v, want errors.Is(..., os.ErrNotExist)", err)
 	}
 	if got != nil {
 		t.Errorf("ReadFile(missing) = %q, want nil", got)
@@ -343,7 +346,10 @@ func TestReadFile_MissingUnderForeignLocale(t *testing.T) {
 	t.Setenv("LANG", loc)
 	t.Setenv("LC_ALL", loc)
 	got, err := intManager(t).ReadFile(context.Background(), missingPath(t))
-	if err != nil || got != nil {
-		t.Fatalf("ReadFile(missing) under %s = (%q,%v), want (nil,nil) — the Runner must force LC_ALL=C", loc, got, err)
+	// The escalated cat path classifies absence by matching "No such file" in
+	// stderr; that match only holds because the Runner forces LC_ALL=C. Under a
+	// foreign LANG/LC_ALL it must STILL resolve to os.ErrNotExist (not a cmdError).
+	if !errors.Is(err, os.ErrNotExist) || got != nil {
+		t.Fatalf("ReadFile(missing) under %s = (%q,%v), want (nil, ErrNotExist) — the Runner must force LC_ALL=C", loc, got, err)
 	}
 }

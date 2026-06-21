@@ -34,11 +34,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/manchtools/power-manage-sdk/pkg"
 	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
 	"github.com/manchtools/power-manage-sdk/sys/fs"
 )
+
+// isReadAbsent reports whether a fsm.ReadFile/ReadDir error is a benign "path
+// absent" (a wrapped os.ErrNotExist). These config-management paths treat absence
+// as empty content / no entries, so they opt into the old behavior explicitly;
+// a real read error (permission, I/O, escalation) still propagates.
+func isReadAbsent(err error) bool { return errors.Is(err, os.ErrNotExist) }
 
 // ErrUnsupportedBackend is returned by New for a backend that has no
 // native-style repository configuration: flatpak (whose remotes live on

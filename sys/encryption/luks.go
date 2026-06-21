@@ -265,17 +265,17 @@ func writeKeyFile(key exec.Secret) (string, error) {
 		return "", fmt.Errorf("create key file: %w", err)
 	}
 	if err := f.Chmod(0o600); err != nil {
-		f.Close()
-		removeFile(f.Name())
+		_ = f.Close()
+		_ = removeFile(f.Name())
 		return "", fmt.Errorf("set key file permissions: %w", err)
 	}
 	if _, err := f.WriteString(key.Reveal()); err != nil {
-		f.Close()
-		removeFile(f.Name())
+		_ = f.Close()
+		_ = removeFile(f.Name())
 		return "", fmt.Errorf("write key file: %w", err)
 	}
 	if err := f.Close(); err != nil {
-		removeFile(f.Name())
+		_ = removeFile(f.Name())
 		return "", fmt.Errorf("close key file: %w", err)
 	}
 	return f.Name(), nil

@@ -453,7 +453,11 @@ func (z *zypper) HasUpdates(ctx context.Context, securityOnly bool) (bool, error
 		return true, nil
 	}
 	if res.ExitCode != 0 {
-		return false, nil // inconclusive — treat as no updates, not an error
+		// A real-error exit (6 = no repositories, 4 = ZYPP problem / lock held /
+		// network failure) must surface, never silently read as "no updates" — that
+		// would tell a patch/compliance caller it is up to date when the check broke.
+		// Matches dnf.HasUpdates' default branch.
+		return false, asCommandError("zypper", res)
 	}
 	scanner := bufio.NewScanner(strings.NewReader(res.Stdout))
 	for scanner.Scan() {

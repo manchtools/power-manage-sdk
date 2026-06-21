@@ -63,12 +63,14 @@ func TestReadDir_Sudo_EmptyDir(t *testing.T) {
 	}
 }
 
-func TestReadDir_Sudo_MissingDirIsEmptyNoError(t *testing.T) {
+func TestReadDir_Sudo_MissingDirIsErrNotExist(t *testing.T) {
 	f := exectest.New(pmexec.Sudo)
 	f.Push(pmexec.Result{ExitCode: 1, Stderr: "find: '/x': No such file or directory"}, nil)
 	got, err := mustManager(t, f).ReadDir(context.Background(), "/x")
-	if err != nil || got != nil {
-		t.Fatalf("ReadDir(missing) = (%v, %v), want (nil, nil)", got, err)
+	// Explicit-absence contract: a missing dir is a wrapped os.ErrNotExist, not a
+	// silent empty listing.
+	if !errors.Is(err, os.ErrNotExist) || got != nil {
+		t.Fatalf("ReadDir(missing) = (%v, %v), want (nil, ErrNotExist)", got, err)
 	}
 }
 
@@ -133,11 +135,12 @@ func TestReadDir_Direct_ListsRealDir(t *testing.T) {
 	}
 }
 
-func TestReadDir_Direct_MissingDirIsEmptyNoError(t *testing.T) {
+func TestReadDir_Direct_MissingDirIsErrNotExist(t *testing.T) {
 	m := directManager(t)
 	got, err := m.ReadDir(context.Background(), filepath.Join(t.TempDir(), "does-not-exist"))
-	if err != nil || got != nil {
-		t.Fatalf("ReadDir(missing) = (%v, %v), want (nil, nil)", got, err)
+	// Explicit-absence contract: missing dir → wrapped os.ErrNotExist.
+	if !errors.Is(err, os.ErrNotExist) || got != nil {
+		t.Fatalf("ReadDir(missing) = (%v, %v), want (nil, ErrNotExist)", got, err)
 	}
 }
 

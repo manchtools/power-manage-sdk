@@ -247,13 +247,14 @@ func TestReadFile_DoesNotReAddNewline(t *testing.T) {
 	}
 }
 
-func TestReadFile_MissingIsEmptyNoError(t *testing.T) {
+func TestReadFile_MissingIsErrNotExist(t *testing.T) {
 	f := exectest.New(pmexec.Sudo)
 	f.Push(pmexec.Result{ExitCode: 1, Stderr: "cat: /x: No such file or directory"}, nil)
 	m := mustManager(t, f)
 	got, err := m.ReadFile(context.Background(), "/x")
-	if err != nil || got != nil {
-		t.Fatalf("ReadFile(missing) = (%q, %v), want (nil, nil)", got, err)
+	// Explicit-absence contract: missing → wrapped os.ErrNotExist, not silent empty.
+	if !errors.Is(err, os.ErrNotExist) || got != nil {
+		t.Fatalf("ReadFile(missing) = (%q, %v), want (nil, ErrNotExist)", got, err)
 	}
 }
 

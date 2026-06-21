@@ -917,8 +917,8 @@ func (c *Client) Close() error {
 	c.pendingMu.Unlock()
 
 	// Close both request and response sides of the stream
-	c.stream.CloseRequest()
-	c.stream.CloseResponse()
+	_ = c.stream.CloseRequest()
+	_ = c.stream.CloseResponse()
 	c.stream = nil
 	return nil
 }
@@ -955,7 +955,7 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 	if err := c.Connect(ctx); err != nil {
 		return err
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	if err := c.SendHello(ctx, hostname, agentVersion); err != nil {
 		return fmt.Errorf("send hello: %w", err)

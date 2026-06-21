@@ -44,7 +44,7 @@ func removePacmanSection(content, name string) string {
 func (m *manager) applyPacman(ctx context.Context, name string, c *PacmanConfig) (Outcome, error) {
 	var log strings.Builder
 	confBytes, err := m.fsm.ReadFile(ctx, pacmanConf)
-	if err != nil {
+	if err != nil && !isReadAbsent(err) {
 		return Outcome{}, fmt.Errorf("read pacman.conf: %w", err)
 	}
 	confStr := string(confBytes)
@@ -93,7 +93,7 @@ func (m *manager) removePacman(ctx context.Context, name string) (Outcome, error
 	}
 	var log strings.Builder
 	confBytes, err := m.fsm.ReadFile(ctx, pacmanConf)
-	if err != nil {
+	if err != nil && !isReadAbsent(err) {
 		return Outcome{}, fmt.Errorf("read pacman.conf: %w", err)
 	}
 	confStr := string(confBytes)

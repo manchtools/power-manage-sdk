@@ -226,12 +226,33 @@ func TestGet(t *testing.T) {
 		if strings.Join(info.Groups, ",") != "docker,sudo" {
 			t.Errorf("Groups = %v, want [docker sudo] (primary filtered)", info.Groups)
 		}
+		if !info.GroupsKnown {
+			t.Error("GroupsKnown = false after a successful id -Gn; Groups is authoritative here")
+		}
 		if info.Locked {
 			t.Error("Locked = true, want false for a hashed shadow entry")
 		}
 		// The shadow read must be escalated.
 		if c := f.Calls()[3]; c.Name != "getent" || !c.Escalate {
 			t.Errorf("shadow read = %+v, want escalated getent", c)
+		}
+	})
+
+	t.Run("a failed id -Gn leaves Groups unknown, not silently empty", func(t *testing.T) {
+		f := exectest.New(exec.Direct)
+		f.Push(exec.Result{Stdout: "deploy:x:1000:1000::/home/deploy:/bin/bash\n"}, nil) // getent passwd
+		f.Push(exec.Result{Stdout: "deploy:x:1000:\n"}, nil)                             // getent group 1000
+		f.Push(exec.Result{}, exec.ErrEscalationDenied)                                  // id -Gn FAILS
+		f.Push(exec.Result{Stdout: "deploy:$6$abc:19000:0:99999:7:::\n"}, nil)           // getent shadow
+		info, err := mgr(t, f).Get(context.Background(), "deploy")
+		if err != nil {
+			t.Fatalf("Get should not fail just because the group lookup did: %v", err)
+		}
+		if info.GroupsKnown {
+			t.Error("GroupsKnown = true after id -Gn failed; the result is not authoritative")
+		}
+		if info.Groups != nil {
+			t.Errorf("Groups = %v, want nil when the lookup failed", info.Groups)
 		}
 	})
 

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -103,13 +104,27 @@ func TestGet_PasswdLookupFailure(t *testing.T) {
 	}
 }
 
-// GroupMembers treats an unreadable/absent group as "no members", not an error.
-func TestGroupMembers_AbsentGroupIsEmpty(t *testing.T) {
+// GroupMembers reports a genuinely absent group as a wrapped os.ErrNotExist
+// (getent exit 2) — distinguishable from "exists but has no members" — and
+// propagates any OTHER failure instead of silently reading it as "no members".
+func TestGroupMembers_AbsentGroupIsErrNotExist(t *testing.T) {
 	f := exectest.New(exec.Direct)
 	f.Push(exec.Result{ExitCode: 2}, nil) // getent group: not found
 	members, err := mgr(t, f).GroupMembers(context.Background(), "ghosts")
-	if err != nil || members != nil {
-		t.Errorf("GroupMembers = (%v,%v), want (nil,nil) for an absent group", members, err)
+	if !errors.Is(err, os.ErrNotExist) || members != nil {
+		t.Errorf("GroupMembers(absent) = (%v,%v), want (nil, ErrNotExist)", members, err)
+	}
+}
+
+func TestGroupMembers_RealErrorPropagates(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	f.Push(exec.Result{}, exec.ErrEscalationDenied) // a Runner/escalation failure, NOT "not found"
+	members, err := mgr(t, f).GroupMembers(context.Background(), "docker")
+	if err == nil {
+		t.Fatal("a getent failure that is not exit-2-not-found must propagate, not read as 'no members'")
+	}
+	if members != nil {
+		t.Errorf("members = %v, want nil on a real error", members)
 	}
 }
 

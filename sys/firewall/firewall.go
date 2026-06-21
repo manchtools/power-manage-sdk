@@ -309,6 +309,16 @@ func (c cmd) exec(ctx context.Context, spec exec.Command) (exec.Result, error) {
 	return res, nil
 }
 
+// isNoTable reports nft's "table does not exist" failure — the namespace's table
+// hasn't been created yet, so there are genuinely no managed rules. nft prints
+// "No such file or directory"; the Runner forces LC_ALL=C so the match is
+// locale-stable. Distinct from a REAL failure (escalation denied, nft crash),
+// which List must propagate rather than read as "zero rules".
+func isNoTable(err error) bool {
+	var ce *exec.CommandError
+	return errors.As(err, &ce) && strings.Contains(ce.Stderr, "No such file or directory")
+}
+
 // base is embedded by each backend: the namespace, the command runner, and the
 // fs.Manager (over the same Runner) the firewalld backend writes service XML
 // through.

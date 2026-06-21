@@ -146,21 +146,21 @@ func writeKeyfile(path string, content []byte) error {
 	}
 	tmpPath := tmp.Name()
 	if _, err := tmp.Write(content); err != nil {
-		tmp.Close()
-		removeFile(tmpPath)
+		_ = tmp.Close()
+		_ = removeFile(tmpPath)
 		return fmt.Errorf("write keyfile: %w", err)
 	}
 	if err := tmp.Chmod(0o600); err != nil {
-		tmp.Close()
-		removeFile(tmpPath)
+		_ = tmp.Close()
+		_ = removeFile(tmpPath)
 		return fmt.Errorf("chmod keyfile: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
-		removeFile(tmpPath)
+		_ = removeFile(tmpPath)
 		return fmt.Errorf("close keyfile: %w", err)
 	}
 	if err := renameFile(tmpPath, path); err != nil {
-		removeFile(tmpPath)
+		_ = removeFile(tmpPath)
 		return fmt.Errorf("rename keyfile to %q: %w", path, err)
 	}
 	return nil

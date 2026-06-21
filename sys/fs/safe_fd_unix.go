@@ -63,7 +63,7 @@ func FchownNoFollow(path string, uid, gid int) error {
 	if err != nil {
 		return fmt.Errorf("open %s without following symlinks: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	info, err := f.Stat()
 	if err != nil {
@@ -98,7 +98,7 @@ func SetDirPermissionsNoFollow(path string, mode os.FileMode, uid, gid int) erro
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if err := f.Chmod(mode); err != nil {
 		return fmt.Errorf("fchmod dir %s: %w", path, err)
 	}

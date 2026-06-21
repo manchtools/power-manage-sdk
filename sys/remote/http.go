@@ -161,7 +161,7 @@ func (h *httpSource) Fetch(ctx context.Context, dest string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	tmp, written, sum, err := streamToTmp(dest, body, h.cfg.MaxBytes)
 	if err != nil {
@@ -239,7 +239,7 @@ func (h *httpSource) checkNotModified(ctx context.Context, etag string) (bool, e
 	if err != nil {
 		return false, fmt.Errorf("HEAD %s: %w", h.cfg.URL, err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return resp.StatusCode == http.StatusNotModified, nil
 }
 
@@ -264,11 +264,11 @@ func (h *httpSource) openBody(ctx context.Context, etag string) (io.ReadCloser, 
 		// caller falls through to "no body to read" path. In practice
 		// we only reach this branch after our own cachedRevision lost
 		// the race, which is rare but worth handling cleanly.
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return io.NopCloser(strings.NewReader("")), resp.Header.Get("ETag"), nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, "", fmt.Errorf("GET %s: status %d", h.cfg.URL, resp.StatusCode)
 	}
 	return resp.Body, resp.Header.Get("ETag"), nil
@@ -300,7 +300,7 @@ func streamToTmp(dest string, body io.Reader, maxBytes int64) (string, int64, []
 		}
 	}
 	cleanup := func() {
-		f.Close()
+		_ = f.Close()
 		_ = os.Remove(tmp)
 	}
 
@@ -392,7 +392,7 @@ func chownNoFollow(dest string, uid, gid int) error {
 		if err != nil {
 			return err
 		}
-		defer d.Close()
+		defer func() { _ = d.Close() }()
 		return d.Chown(uid, gid)
 	}
 	return sysfs.FchownNoFollow(dest, uid, gid)

@@ -87,7 +87,7 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 	if err != nil {
 		return Result{}, err
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 	if notModified {
 		// Server confirmed the cache was current after we'd already
 		// committed to the GET path; treat it as a no-op rather than
@@ -111,7 +111,7 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 	if err != nil {
 		return Result{}, err
 	}
-	defer os.Remove(tmp)
+	defer func() { _ = os.Remove(tmp) }()
 
 	// Mine the random suffix tmpPathFor stamped into tmp so the staging
 	// dir gets a matching tail — keeps the two sibling artefacts visible
@@ -202,11 +202,11 @@ func (h *httpSource) openArchiveBody(ctx context.Context, etag string) (io.ReadC
 		return nil, "", "", false, fmt.Errorf("GET %s: %w", h.cfg.URL, err)
 	}
 	if resp.StatusCode == http.StatusNotModified {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return io.NopCloser(strings.NewReader("")), resp.Header.Get("ETag"), resp.Header.Get("Content-Type"), true, nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, "", "", false, fmt.Errorf("GET %s: status %d", h.cfg.URL, resp.StatusCode)
 	}
 	return resp.Body, resp.Header.Get("ETag"), resp.Header.Get("Content-Type"), false, nil
@@ -219,7 +219,7 @@ func extractTarGzFile(tmpPath, staging string, maxBytes int64) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("open archive: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return extractTarGz(f, staging, maxBytes)
 }
 
@@ -240,7 +240,7 @@ func extractTarGz(body io.Reader, staging string, maxBytes int64) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("gzip header: %w", err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	tr := tar.NewReader(gz)
 
 	var totalBytes int64
@@ -307,7 +307,7 @@ func writeTarEntry(out string, r io.Reader, mode os.FileMode) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("open %s: %w", out, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	n, err := io.Copy(f, r)
 	if err != nil {
 		return n, fmt.Errorf("copy %s: %w", out, err)
@@ -321,7 +321,7 @@ func extractZipFile(tmpPath, staging string, maxBytes int64) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("open zip: %w", err)
 	}
-	defer zr.Close()
+	defer func() { _ = zr.Close() }()
 
 	var totalBytes int64
 	var files int
@@ -351,12 +351,12 @@ func extractZipFile(tmpPath, staging string, maxBytes int64) (int, error) {
 			return files, fmt.Errorf("open zip entry %q: %w", ze.Name, err)
 		}
 		if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return files, fmt.Errorf("mkdir %s: %w", filepath.Dir(out), err)
 		}
 		limited := io.LimitReader(rc, maxBytes-totalBytes+1)
 		written, werr := writeTarEntry(out, limited, ze.FileInfo().Mode().Perm())
-		rc.Close()
+		_ = rc.Close()
 		if werr != nil {
 			return files, werr
 		}

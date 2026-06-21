@@ -39,7 +39,7 @@ func writeCerts(p Profile) error {
 // errors are ignored since this only runs as cleanup after a failed create.
 func removeCerts(certDir string) {
 	for _, name := range []string{"ca.pem", "client.pem", "client-key.pem"} {
-		removeFile(filepath.Join(certDir, name))
+		_ = removeFile(filepath.Join(certDir, name))
 	}
 }
 

@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -144,13 +145,25 @@ func TestNftables_RemoveRule(t *testing.T) {
 	})
 	t.Run("no table is a no-op", func(t *testing.T) {
 		r := &recordingRunner{}
-		r.push(exec.Result{ExitCode: 1}, nil) // list: missing table
+		// nft prints "No such file or directory" when the table is absent; that
+		// is the only list failure RemoveRule may treat as "already absent".
+		r.push(exec.Result{ExitCode: 1, Stderr: "Error: No such file or directory"}, nil)
 		m := newMgr(t, Nftables, "app", r)
 		if err := m.RemoveRule(context.Background(), "ssh"); err != nil {
 			t.Fatal(err)
 		}
 		if len(r.calls) != 1 {
 			t.Errorf("ran %d commands, want 1 (list only)", len(r.calls))
+		}
+	})
+	t.Run("a real list failure is NOT swallowed as a no-op", func(t *testing.T) {
+		r := &recordingRunner{}
+		// Escalation denied / nft crash: RemoveRule must NOT report a successful
+		// no-op (it did not prove the rule absent).
+		r.push(exec.Result{ExitCode: 1, Stderr: "Operation not permitted"}, nil)
+		m := newMgr(t, Nftables, "app", r)
+		if err := m.RemoveRule(context.Background(), "ssh"); err == nil {
+			t.Fatal("a real list failure must propagate, not read as 'rule already absent'")
 		}
 	})
 	t.Run("rule absent is a no-op", func(t *testing.T) {
@@ -179,13 +192,16 @@ func TestNftables_List(t *testing.T) {
 			t.Errorf("rules = %+v", rules)
 		}
 	})
-	t.Run("no table → empty", func(t *testing.T) {
+	t.Run("no table → wrapped os.ErrNotExist", func(t *testing.T) {
 		r := &recordingRunner{}
-		r.push(exec.Result{ExitCode: 1}, nil)
+		r.push(exec.Result{ExitCode: 1, Stderr: "Error: No such file or directory"}, nil)
 		m := newMgr(t, Nftables, "app", r)
 		rules, err := m.List(context.Background())
-		if err != nil || len(rules) != 0 {
-			t.Errorf("List = (%v,%v), want (nil,nil)", rules, err)
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("List(no table) err = %v, want wrapped os.ErrNotExist", err)
+		}
+		if rules != nil {
+			t.Errorf("List(no table) rules = %v, want nil", rules)
 		}
 	})
 }
@@ -585,11 +601,23 @@ func TestUFW_List(t *testing.T) {
 	})
 	t.Run("inactive → empty", func(t *testing.T) {
 		r := &recordingRunner{}
-		r.push(exec.Result{ExitCode: 1}, nil)
+		// An inactive ufw exits 0 with "Status: inactive" — the firewall IS
+		// installed, it just holds no rules, so List is legitimately empty.
+		r.pushOut("Status: inactive\n")
 		m := newMgr(t, UFW, "app", r)
 		rules, err := m.List(context.Background())
 		if err != nil || len(rules) != 0 {
 			t.Errorf("List = (%v,%v), want empty", rules, err)
+		}
+	})
+	t.Run("can't run ufw propagates", func(t *testing.T) {
+		r := &recordingRunner{}
+		// A non-zero exit (ufw absent, escalation denied) is a genuine
+		// can't-determine-state failure and must NOT be read as "zero rules".
+		r.push(exec.Result{ExitCode: 1}, nil)
+		m := newMgr(t, UFW, "app", r)
+		if _, err := m.List(context.Background()); err == nil {
+			t.Fatal("a failure to run ufw status must propagate, not read as 'no managed rules'")
 		}
 	})
 }

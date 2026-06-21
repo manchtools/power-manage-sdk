@@ -38,7 +38,13 @@ type Info struct {
 	HomeDir string
 	Shell   string
 	Groups  []string // supplementary groups (excluding the primary)
-	Locked  bool
+	// GroupsKnown reports whether Groups is authoritative. If the `id -Gn`
+	// supplementary-group lookup failed, Groups is left empty and GroupsKnown is
+	// false — so a caller can tell "no supplementary groups" (empty, GroupsKnown=
+	// true) apart from "could not determine" (empty, GroupsKnown=false) instead of
+	// silently treating a failed lookup as "no groups".
+	GroupsKnown bool
+	Locked      bool
 	// LockedKnown reports whether Locked is authoritative. The locked state lives
 	// in the root-only shadow file; if reading it failed or escalation was not
 	// authorized, Locked is left false and LockedKnown is false — so a caller can
@@ -343,6 +349,7 @@ func (u *shadowUtils) Get(ctx context.Context, name string) (Info, error) {
 				info.Groups = append(info.Groups, g)
 			}
 		}
+		info.GroupsKnown = true // id -Gn succeeded; Groups is authoritative
 	}
 
 	// The shadow file is root-only: read it escalated. If escalation is not

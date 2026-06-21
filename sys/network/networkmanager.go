@@ -174,7 +174,7 @@ func (m *networkManager) stagedModify(ctx context.Context, p Profile, current ma
 	tmpDir := p.CertDir + ".tmp"
 	staged := p
 	staged.CertDir = tmpDir
-	defer removeAll(tmpDir) // best-effort cleanup if anything below fails
+	defer func() { _ = removeAll(tmpDir) }() // best-effort cleanup if anything below fails
 
 	if err := writeCerts(staged); err != nil {
 		return false, fmt.Errorf("write staged certificates: %w", err)
@@ -206,7 +206,7 @@ func (m *networkManager) stagedModify(ctx context.Context, p Profile, current ma
 		return true, fmt.Errorf("install staged certs: %w", err)
 	}
 	if liveExists {
-		removeAll(oldDir)
+		_ = removeAll(oldDir)
 	}
 	return true, nil
 }
