@@ -40,13 +40,14 @@ lines, err := s.Query(ctx, log.Query{
     Unit:     "sshd.service", // journald only
     Priority: "warning",      // journald only
     Grep:     "Failed password",
+    Kernel:   false,          // true → kernel ring only (-k); journald only
     Lines:    200,            // cap; <=0 defaults to 100
 })
 ```
 
-<!-- docref: begin src=sys/log/journald.go#journaldSource.Query:efa18d89 -->
+<!-- docref: begin src=sys/log/journald.go#journaldSource.Query:44fcc941 -->
 `Query` builds the `journalctl` invocation with every dynamic value as an
-option-argument (`-u <unit>`, `--grep <pat>`, …), never a positional operand, so
+option-argument (`-u <unit>`, `--grep <pat>`, `-k`, …), never a positional operand, so
 none can be reinterpreted as a flag. Two real-journald behaviours it normalises:
 journalctl status markers (`-- No entries --`, `-- Boot … --`) are dropped — they
 are not log entries — and a `--grep` that matches nothing (which `journalctl`
@@ -55,7 +56,7 @@ so a caller can tell "no logs matched" from "journalctl broke".
 <!-- docref: end -->
 
 {% callout type="info" title="Backend differences" %}
-`Unit` and `Priority` are journald-only (ignored by the Syslog backend). The
+`Unit`, `Priority`, and `Kernel` are journald-only (ignored by the Syslog backend). The
 Syslog backend tails the log file and applies `Grep`/`Lines` in-process. For
 unit- or priority-scoped queries, use Journald.
 {% /callout %}
