@@ -167,8 +167,12 @@ func TestDnf_ApplyRemove_Container(t *testing.T) {
 	repoFile := dnfRepoFile(name)
 	t.Cleanup(func() { _, _ = m.Remove(context.Background(), name) })
 
+	// Happy path is a SIGNED, gpg-checked repo (the secure default). The insecure
+	// gpgcheck=0 operator override is exercised separately in
+	// repo_security_container_test.go so it is never modelled as the normal case.
 	repo := Repository{Name: name, Dnf: &DnfConfig{
-		BaseURL: "https://example.com/pm-test-el9", Description: "PM Test", Enabled: true, GPGCheck: false,
+		BaseURL: "https://example.com/pm-test-el9", Description: "PM Test", Enabled: true,
+		GPGCheck: true, GPGKey: "https://example.com/pm-test-el9/RPM-GPG-KEY",
 	}}
 
 	o, err := m.Apply(ctx, repo)
@@ -179,7 +183,7 @@ func TestDnf_ApplyRemove_Container(t *testing.T) {
 		t.Error("first Apply should report Changed=true")
 	}
 	body := readFile(t, repoFile)
-	for _, want := range []string{"[" + name + "]", "name=PM Test", "baseurl=https://example.com/pm-test-el9", "enabled=1", "gpgcheck=0"} {
+	for _, want := range []string{"[" + name + "]", "name=PM Test", "baseurl=https://example.com/pm-test-el9", "enabled=1", "gpgcheck=1", "gpgkey=https://example.com/pm-test-el9/RPM-GPG-KEY"} {
 		if !strings.Contains(body, want) {
 			t.Errorf(".repo missing %q:\n%s", want, body)
 		}
@@ -210,8 +214,10 @@ func TestPacman_ApplyRemove_Container(t *testing.T) {
 	const name = "pm-test-pacman"
 	t.Cleanup(func() { _, _ = m.Remove(context.Background(), name) })
 
+	// Happy path requires a valid signature (the secure default). The TrustAll
+	// operator override is pinned separately in repo_security_container_test.go.
 	repo := Repository{Name: name, Pacman: &PacmanConfig{
-		Server: "https://example.com/pm-test-arch/$repo/os/$arch", SigLevel: "Optional TrustAll",
+		Server: "https://example.com/pm-test-arch/$repo/os/$arch", SigLevel: "Required DatabaseOptional",
 	}}
 
 	o, err := m.Apply(ctx, repo)
@@ -222,7 +228,7 @@ func TestPacman_ApplyRemove_Container(t *testing.T) {
 		t.Error("first Apply should report Changed=true")
 	}
 	conf := readFile(t, pacmanConf)
-	for _, want := range []string{"[" + name + "]", "SigLevel = Optional TrustAll", "Server = https://example.com/pm-test-arch/$repo/os/$arch"} {
+	for _, want := range []string{"[" + name + "]", "SigLevel = Required DatabaseOptional", "Server = https://example.com/pm-test-arch/$repo/os/$arch"} {
 		if !strings.Contains(conf, want) {
 			t.Errorf("pacman.conf missing %q", want)
 		}
@@ -257,8 +263,10 @@ func TestZypper_ApplyRemove_Container(t *testing.T) {
 	const name = "pm-test-zypper"
 	t.Cleanup(func() { _, _ = m.Remove(context.Background(), name) })
 
+	// Happy path keeps signature checking ON (the secure default); the
+	// --no-gpgcheck operator override lives in repo_security_container_test.go.
 	repo := Repository{Name: name, Zypper: &ZypperConfig{
-		URL: "https://example.com/pm-test-suite", Description: "PM Test", Enabled: false, Autorefresh: false, GPGCheck: false,
+		URL: "https://example.com/pm-test-suite", Description: "PM Test", Enabled: false, Autorefresh: false, GPGCheck: true,
 	}}
 
 	o, err := m.Apply(ctx, repo)
