@@ -196,6 +196,18 @@ func cmdError(name string, res pmexec.Result) error {
 	return &pmexec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
 }
 
+// isENOENTStderr reports whether a coreutils/find stderr line is the kernel's
+// ENOENT message — "<tool>: <path>: No such file or directory". It matches the
+// TERMINAL phrase, not a substring anywhere in the line, so a path that itself
+// contains "No such file" (e.g. a present file failing with a *different* error
+// like "Permission denied", or a file literally named that) is never
+// misclassified as absent: the error reason always trails the path in this
+// format, so path content can never reach the suffix. The Runner forces
+// LC_ALL=C, keeping the phrase locale-stable.
+func isENOENTStderr(stderr string) bool {
+	return strings.HasSuffix(strings.TrimSpace(stderr), "No such file or directory")
+}
+
 // validateMode rejects a requested file mode that would set the setuid or
 // setgid bit. Creating a setuid/setgid file through a privileged op is a
 // local-root privilege-escalation primitive (a setuid-root helper, or a

@@ -276,6 +276,25 @@ func TestReadFile_OtherErrorIsCommandError(t *testing.T) {
 	}
 }
 
+// A PRESENT file whose path literally contains "No such file" but that fails for
+// a DIFFERENT reason (Permission denied). Absence classification by substring
+// (strings.Contains(stderr, "No such file")) would wrongly map this to
+// os.ErrNotExist and hide the real failure; the terminal-phrase match must treat
+// it as a command error. The error reason always trails the path, so only a
+// genuine ENOENT ends with the phrase.
+func TestReadFile_PresentFileWithNoSuchFileInPathNotMisclassified(t *testing.T) {
+	f := exectest.New(pmexec.Sudo)
+	f.Push(pmexec.Result{ExitCode: 1, Stderr: "cat: /data/No such file.txt: Permission denied"}, nil)
+	m := mustManager(t, f)
+	_, err := m.ReadFile(context.Background(), "/data/No such file.txt")
+	if errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("ReadFile err = %v; a present file failing with Permission denied must NOT be classified absent", err)
+	}
+	if !errors.As(err, new(*pmexec.CommandError)) {
+		t.Fatalf("err = %v, want *exec.CommandError", err)
+	}
+}
+
 func TestReadFile_RunnerErrorPropagatesAndValidatesPath(t *testing.T) {
 	f := exectest.New(pmexec.Sudo)
 	f.Push(pmexec.Result{}, pmexec.ErrEscalationUnavailable)

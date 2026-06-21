@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 )
 
 // ReadFile reads path's contents.
@@ -46,7 +45,7 @@ func (m *manager) ReadFile(ctx context.Context, path string) ([]byte, error) {
 		return nil, err
 	}
 	if res.ExitCode != 0 {
-		if strings.Contains(res.Stderr, "No such file") {
+		if isENOENTStderr(res.Stderr) {
 			return nil, fmt.Errorf("read %s: %w", path, os.ErrNotExist)
 		}
 		return nil, cmdError("cat", res)

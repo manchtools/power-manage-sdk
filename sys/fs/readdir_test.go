@@ -46,8 +46,10 @@ func TestReadDir_Sudo_ParsesFindOutput(t *testing.T) {
 		t.Errorf("entries = %v, want %v", names(got), want)
 	}
 	// A symlink reports type 'l' from find's %y → classified as not-a-dir, so a
-	// caller iterating files (e.g. apt conflict cleanup) processes it.
-	if got := argv(f.Calls()[0]); got != `find /etc/apt/sources.list.d -maxdepth 1 -mindepth 1 -printf %y/%f\n` {
+	// caller iterating files (e.g. apt conflict cleanup) processes it. The target
+	// carries a trailing slash so find reports ENOTDIR on a non-directory rather
+	// than exiting 0 with no output.
+	if got := argv(f.Calls()[0]); got != `find /etc/apt/sources.list.d/ -maxdepth 1 -mindepth 1 -printf %y/%f\n` {
 		t.Errorf("argv = %q", got)
 	}
 	if !f.Calls()[0].Escalate {
@@ -87,6 +89,42 @@ func TestReadDir_Sudo_RunnerErrorPropagates(t *testing.T) {
 	f.Push(pmexec.Result{}, pmexec.ErrEscalationUnavailable)
 	if _, err := mustManager(t, f).ReadDir(context.Background(), "/x"); !errors.Is(err, pmexec.ErrEscalationUnavailable) {
 		t.Fatalf("err = %v, want ErrEscalationUnavailable", err)
+	}
+}
+
+// A regular file (not a directory): `find /path/` reports ENOTDIR. It must
+// surface as an error mirroring the Direct path — never a silent empty listing,
+// and NOT the absence sentinel (the file exists, it just isn't a directory).
+func TestReadDir_Sudo_NotADirIsError(t *testing.T) {
+	f := exectest.New(pmexec.Sudo)
+	f.Push(pmexec.Result{ExitCode: 1, Stderr: "find: '/etc/hostname/': Not a directory"}, nil)
+	got, err := mustManager(t, f).ReadDir(context.Background(), "/etc/hostname")
+	if err == nil || got != nil {
+		t.Fatalf("ReadDir(regular file) = (%v, %v), want (nil, error)", got, err)
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("err = %v, want a non-directory command error, not the absence sentinel", err)
+	}
+	if !errors.As(err, new(*pmexec.CommandError)) {
+		t.Fatalf("err = %v, want *exec.CommandError", err)
+	}
+}
+
+// The escalated find target carries a trailing slash so `find` reports ENOTDIR
+// on a non-directory (a bare `find /file` exits 0 with no output, which would
+// read as a silently-empty directory). Pin that the slash reaches the argv.
+func TestReadDir_Sudo_FindTargetsDirectoryWithTrailingSlash(t *testing.T) {
+	f := exectest.New(pmexec.Sudo)
+	f.Push(pmexec.Result{Stdout: "f/a.conf\n"}, nil)
+	if _, err := mustManager(t, f).ReadDir(context.Background(), "/etc/app"); err != nil {
+		t.Fatal(err)
+	}
+	calls := f.Calls()
+	if len(calls) != 1 || calls[0].Name != "find" {
+		t.Fatalf("calls = %+v, want a single find", calls)
+	}
+	if len(calls[0].Args) == 0 || calls[0].Args[0] != "/etc/app/" {
+		t.Fatalf("find target = %q, want \"/etc/app/\" (trailing slash enforces directory-only semantics)", calls[0].Args)
 	}
 }
 

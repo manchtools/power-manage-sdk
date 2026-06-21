@@ -35,12 +35,19 @@ func writeCerts(p Profile) error {
 	return nil
 }
 
-// removeCerts removes the certificate files written by writeCerts. Best-effort —
-// errors are ignored since this only runs as cleanup after a failed create.
-func removeCerts(certDir string) {
+// removeCerts removes the certificate files written by writeCerts (cleanup after
+// a failed create). It returns the first removal failure: client-key.pem is a
+// private key, so a file that can't be removed is key material left on disk that
+// the caller must learn about — not something to silently drop. A file that is
+// already absent is not a failure.
+func removeCerts(certDir string) error {
+	var firstErr error
 	for _, name := range []string{"ca.pem", "client.pem", "client-key.pem"} {
-		_ = removeFile(filepath.Join(certDir, name))
+		if err := removeFile(filepath.Join(certDir, name)); err != nil && !os.IsNotExist(err) && firstErr == nil {
+			firstErr = fmt.Errorf("remove %s: %w", name, err)
+		}
 	}
+	return firstErr
 }
 
 // certsChanged reports whether any desired PEM content differs from the file

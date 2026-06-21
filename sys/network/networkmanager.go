@@ -120,7 +120,9 @@ func (m *networkManager) create(ctx context.Context, p Profile) (bool, error) {
 		return false, fmt.Errorf("write certificates: %w", err)
 	}
 	if err := m.nmcliWrite(ctx, buildAddArgs(p)...); err != nil {
-		removeCerts(p.CertDir)
+		if rmErr := removeCerts(p.CertDir); rmErr != nil {
+			return false, fmt.Errorf("create connection: %w (cert cleanup failed, private key may remain on disk: %v)", err, rmErr)
+		}
 		return false, fmt.Errorf("create connection: %w", err)
 	}
 	return true, nil
@@ -206,7 +208,12 @@ func (m *networkManager) stagedModify(ctx context.Context, p Profile, current ma
 		return true, fmt.Errorf("install staged certs: %w", err)
 	}
 	if liveExists {
-		_ = removeAll(oldDir)
+		if err := removeAll(oldDir); err != nil {
+			// New certs are installed and live; the only failure here is cleanup
+			// of the .old backup, which holds the previous private key. Surface it
+			// (changed is still true) so stale key material on disk isn't silent.
+			return true, fmt.Errorf("certs updated but failed to remove old cert directory %s (stale private key may remain): %w", oldDir, err)
+		}
 	}
 	return true, nil
 }
