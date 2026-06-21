@@ -130,9 +130,9 @@ func rpmLocalPackageInfo(ctx context.Context, r pmexec.Runner, path string) (*Lo
 // splitPositionalFields splits VALUE-ONLY one-field-per-line command output (rpm
 // -qp --qf with "\n" separators) into its POSITIONAL fields, trimming each line
 // but PRESERVING an empty leading/middle field so the name/version/arch positions
-// never shift. NOTE: it is NOT for dpkg-deb -f with multiple fields, which emits a
-// labeled "Field: value" stanza (use parseControlFields). A
-// crafted file that emits an empty NAME must surface as an empty field[0]
+// never shift. NOTE: it is NOT for dpkg-deb -f with multiple fields, which emits
+// a labeled "Field: value" stanza (use parseControlFields). A crafted file that
+// emits an empty NAME must surface as an empty field[0]
 // (rejected by the name validator) — NOT silently promote the version into the
 // name slot. Only the trailing blank line the tool appends is dropped.
 func splitPositionalFields(data string) []string {
