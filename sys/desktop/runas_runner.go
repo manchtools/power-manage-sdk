@@ -84,6 +84,7 @@ func (ra *runAsRunner) wrap(c pmexec.Command) (pmexec.Command, error) {
 	return pmexec.Command{
 		Name:     runuserPath,
 		Args:     args,
+		Dir:      c.Dir, // run in the caller's working dir (default: the user's home)
 		Stdin:    c.Stdin,
 		Escalate: false, // runuser from root IS the privilege drop
 	}, nil

@@ -159,6 +159,18 @@ func TestRunAsRunner_Container(t *testing.T) {
 	if !strings.HasPrefix(parts[2], u.HomeDir+"/.local/bin:") {
 		t.Errorf("PATH = %q, want it to start with the user's ~/.local/bin", parts[2])
 	}
+
+	// Working dir: runuser (no -l) keeps the parent's cwd, so a `pwd` with Dir
+	// unset would print the test's cwd. Setting Command.Dir must make the real
+	// child run there — proving Dir survives the runuser wrap (the RunAsCommand
+	// parity that RunAsRunner now provides).
+	res3, err := ru.Run(ctx, pmexec.Command{Name: "pwd", Dir: u.HomeDir})
+	if err != nil {
+		t.Fatalf("run pwd as pmrunas with Dir: %v", err)
+	}
+	if got := strings.TrimSpace(res3.Stdout); got != u.HomeDir {
+		t.Errorf("pwd = %q, want %q (Command.Dir was not honored)", got, u.HomeDir)
+	}
 }
 
 // TestUsersWithFlatpakInstall_Container probes the real per-user Flatpak install

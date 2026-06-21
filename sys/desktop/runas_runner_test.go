@@ -65,6 +65,24 @@ func TestRunAsRunner_CallerPathDropped(t *testing.T) {
 	}
 }
 
+// A per-user command's working directory must survive the runuser wrap. The
+// removed RunAsCommand set cmd.Dir (default: the user's home); RunAsRunner is
+// its replacement, so a caller that sets Command.Dir (e.g. a per-user script
+// run from the action's WorkingDirectory) must actually run there — not silently
+// in the agent's cwd.
+func TestRunAsRunner_PropagatesCallerDir(t *testing.T) {
+	base := exectest.New(pmexec.Direct)
+	base.Push(pmexec.Result{}, nil)
+	s := Session{Username: "alice", UID: 1000, Home: "/home/alice", RuntimeDir: "/run/user/1000"}
+	ra, _ := RunAsRunner(base, s)
+	if _, err := ra.Run(context.Background(), pmexec.Command{Name: "script.sh", Dir: "/home/alice/work"}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := base.Calls()[0].Dir; got != "/home/alice/work" {
+		t.Errorf("wrapped command Dir = %q, want /home/alice/work (caller working dir was dropped)", got)
+	}
+}
+
 func TestRunAsRunner_Rejects(t *testing.T) {
 	if _, err := RunAsRunner(nil, Session{Username: "alice"}); err == nil {
 		t.Error("nil base Runner must be rejected")
