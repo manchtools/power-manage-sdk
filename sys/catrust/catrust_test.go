@@ -229,6 +229,7 @@ func TestInstall_CaCertificates(t *testing.T) {
 }
 
 func TestInstall_P11Kit(t *testing.T) {
+	withAnchorsDirs(t, nil) // no candidate dir present → P11Kit defaults to the Fedora/EL dir
 	ff := &fakeFS{}
 	m, r := newMgr(t, P11Kit, ff)
 	r.Push(exec.Result{}, nil)
@@ -241,6 +242,35 @@ func TestInstall_P11Kit(t *testing.T) {
 	c := r.Calls()[0]
 	if strings.Join(append([]string{c.Name}, c.Args...), " ") != "update-ca-trust extract" {
 		t.Errorf("p11kit refresh = %v", append([]string{c.Name}, c.Args...))
+	}
+}
+
+// withAnchorsDirs fakes the dir-existence seam so anchors-dir resolution is
+// host-independent: only the listed dirs "exist".
+func withAnchorsDirs(t *testing.T, present []string) {
+	t.Helper()
+	prev := anchorsDirExists
+	t.Cleanup(func() { anchorsDirExists = prev })
+	set := make(map[string]bool, len(present))
+	for _, p := range present {
+		set[p] = true
+	}
+	anchorsDirExists = func(p string) bool { return set[p] }
+}
+
+// TestInstall_P11Kit_ResolvesArchAnchorsDir: Fedora/EL and Arch both use
+// update-ca-trust but read DIFFERENT anchors dirs. When only the Arch dir exists,
+// the P11Kit backend must write there (not the Fedora dir).
+func TestInstall_P11Kit_ResolvesArchAnchorsDir(t *testing.T) {
+	withAnchorsDirs(t, []string{"/etc/ca-certificates/trust-source/anchors"})
+	ff := &fakeFS{}
+	m, r := newMgr(t, P11Kit, ff)
+	r.Push(exec.Result{}, nil)
+	if err := m.Install(context.Background(), "acme-root", validCAPEM(t)); err != nil {
+		t.Fatal(err)
+	}
+	if ff.writes[0].path != "/etc/ca-certificates/trust-source/anchors/acme-root.crt" {
+		t.Errorf("p11kit Arch path = %q, want the Arch anchors dir", ff.writes[0].path)
 	}
 }
 

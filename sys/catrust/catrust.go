@@ -90,19 +90,26 @@ type Manager interface {
 // --fresh run rebuilds without a removed file); p11-kit's extract is a full
 // idempotent rebuild for both.
 type backendConfig struct {
-	anchorsDir     string
+	// anchorsDirs lists the candidate anchors directories in priority order. Some
+	// backends use a single dir, but a mechanism shared by distros that disagree on
+	// the path lists several — New resolves to the first that exists (else the
+	// first as the canonical default). p11-kit is the case: Fedora/EL and Arch both
+	// use update-ca-trust but read different dirs.
+	anchorsDirs    []string
 	installRefresh []string // [name, args...]
 	removeRefresh  []string
 }
 
 var backends = map[Backend]backendConfig{
 	CaCertificates: {
-		anchorsDir:     "/usr/local/share/ca-certificates",
+		anchorsDirs:    []string{"/usr/local/share/ca-certificates"},
 		installRefresh: []string{"update-ca-certificates"},
 		removeRefresh:  []string{"update-ca-certificates", "--fresh"},
 	},
 	P11Kit: {
-		anchorsDir:     "/etc/pki/ca-trust/source/anchors",
+		// Fedora/EL: /etc/pki/ca-trust/source/anchors; Arch: /etc/ca-certificates/
+		// trust-source/anchors. Same update-ca-trust command, different dir.
+		anchorsDirs:    []string{"/etc/pki/ca-trust/source/anchors", "/etc/ca-certificates/trust-source/anchors"},
 		installRefresh: []string{"update-ca-trust", "extract"},
 		removeRefresh:  []string{"update-ca-trust", "extract"},
 	},
@@ -111,10 +118,22 @@ var backends = map[Backend]backendConfig{
 	// removed file (remove) — no Debian-style "--fresh" flag (which SUSE's tool
 	// does not accept).
 	SuseCaCertificates: {
-		anchorsDir:     "/etc/pki/trust/anchors",
+		anchorsDirs:    []string{"/etc/pki/trust/anchors"},
 		installRefresh: []string{"update-ca-certificates"},
 		removeRefresh:  []string{"update-ca-certificates"},
 	},
+}
+
+// resolveAnchorsDir picks the anchors dir to use from a backend's candidates: the
+// first that exists on this host, else the first (the canonical default — the
+// distro package creates it on install).
+func resolveAnchorsDir(candidates []string) string {
+	for _, d := range candidates {
+		if anchorsDirExists(d) {
+			return d
+		}
+	}
+	return candidates[0]
 }
 
 // fsManager is the narrow slice of fs.Manager catrust uses for the privileged
@@ -135,9 +154,10 @@ var (
 )
 
 type manager struct {
-	r   exec.Runner
-	fsm fsManager
-	cfg backendConfig
+	r          exec.Runner
+	fsm        fsManager
+	cfg        backendConfig
+	anchorsDir string // resolved from cfg.anchorsDirs at construction
 }
 
 // New returns a Manager for the named backend. Pure: validates the backend; nil
@@ -154,12 +174,12 @@ func New(b Backend, runner exec.Runner) (Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &manager{r: runner, fsm: fsm, cfg: cfg}, nil
+	return &manager{r: runner, fsm: fsm, cfg: cfg, anchorsDir: resolveAnchorsDir(cfg.anchorsDirs)}, nil
 }
 
 // anchorPath is the on-disk path for a named anchor.
 func (m *manager) anchorPath(name string) string {
-	return m.cfg.anchorsDir + "/" + name + anchorExt
+	return m.anchorsDir + "/" + name + anchorExt
 }
 
 const anchorExt = ".crt"
@@ -206,19 +226,19 @@ func (m *manager) Remove(ctx context.Context, name string) error {
 // List enumerates the managed anchors by parsing the .crt files in the backend's
 // anchors dir. A missing dir means none. Unparseable files are skipped.
 func (m *manager) List(ctx context.Context) ([]Anchor, error) {
-	entries, err := readDir(m.cfg.anchorsDir)
+	entries, err := readDir(m.anchorsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []Anchor{}, nil
 		}
-		return nil, fmt.Errorf("catrust: read %s: %w", m.cfg.anchorsDir, err)
+		return nil, fmt.Errorf("catrust: read %s: %w", m.anchorsDir, err)
 	}
 	out := make([]Anchor, 0, len(entries))
 	for _, e := range entries {
 		if e.IsDir() || !hasAnchorExt(e.Name()) {
 			continue
 		}
-		data, err := readFile(m.cfg.anchorsDir + "/" + e.Name())
+		data, err := readFile(m.anchorsDir + "/" + e.Name())
 		if err != nil {
 			continue
 		}

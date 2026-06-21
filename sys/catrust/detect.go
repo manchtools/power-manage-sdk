@@ -28,7 +28,7 @@ func Detect(ctx context.Context) []Backend {
 	if _, err := lookPath("update-ca-certificates"); err == nil {
 		// Debian and SUSE both ship `update-ca-certificates` but read different
 		// anchor dirs; the SUSE anchors dir's presence selects the SUSE backend.
-		if anchorsDirExists(backends[SuseCaCertificates].anchorsDir) {
+		if anchorsDirExists(backends[SuseCaCertificates].anchorsDirs[0]) {
 			out = append(out, SuseCaCertificates)
 		} else {
 			out = append(out, CaCertificates)
