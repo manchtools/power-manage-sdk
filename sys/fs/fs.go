@@ -146,6 +146,10 @@ type Manager interface {
 	IsReadOnly(ctx context.Context, path string) (bool, error)
 	// RemountRW remounts the filesystem at path read-write.
 	RemountRW(ctx context.Context, path string) error
+	// ListMounts enumerates every mounted filesystem (source/target/fstype/ro).
+	// The enumeration counterpart to IsReadOnly/RemountRW — for acting on every
+	// matching mount (e.g. remounting all read-only on-disk mounts).
+	ListMounts(ctx context.Context) ([]MountInfo, error)
 }
 
 // manager is the single Manager implementation; the privilege strategy is the

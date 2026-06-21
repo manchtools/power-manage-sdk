@@ -745,6 +745,71 @@ func TestRemountRW(t *testing.T) {
 	}
 }
 
+func TestListMounts(t *testing.T) {
+	t.Run("parses findmnt rows", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		f.Push(pmexec.Result{Stdout: "/dev/sda1 / ext4 rw,relatime\n/dev/sda2 /usr ext4 ro,relatime\nproc /proc proc rw,nosuid\ntmpfs /run tmpfs rw,nosuid\n"}, nil)
+		got, err := mustManager(t, f).ListMounts(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if a := argv(f.Calls()[0]); a != "findmnt -rn -o SOURCE,TARGET,FSTYPE,OPTIONS" {
+			t.Errorf("argv = %q", a)
+		}
+		want := []MountInfo{
+			{"/dev/sda1", "/", "ext4", false},
+			{"/dev/sda2", "/usr", "ext4", true}, // /usr read-only independently of /
+			{"proc", "/proc", "proc", false},
+			{"tmpfs", "/run", "tmpfs", false},
+		}
+		if len(got) != len(want) {
+			t.Fatalf("got %d mounts, want %d: %+v", len(got), len(want), got)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Errorf("mount[%d] = %+v, want %+v", i, got[i], want[i])
+			}
+		}
+	})
+	t.Run("ro is an exact option token, not a substring", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		// "errors=remount-ro" contains "ro" as a substring but the mount is rw.
+		f.Push(pmexec.Result{Stdout: "/dev/sda1 / ext4 rw,errors=remount-ro\n"}, nil)
+		got, err := mustManager(t, f).ListMounts(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 1 || got[0].ReadOnly {
+			t.Errorf("mount = %+v, want ReadOnly=false (errors=remount-ro is not a ro mount)", got)
+		}
+	})
+	t.Run("skips malformed and blank rows", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		f.Push(pmexec.Result{Stdout: "/dev/sda1 / ext4 rw\nbroken\n\n/dev/sdb /data xfs ro\n"}, nil)
+		got, err := mustManager(t, f).ListMounts(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 2 {
+			t.Fatalf("got %d mounts, want 2 (malformed/blank skipped): %+v", len(got), got)
+		}
+	})
+	t.Run("findmnt non-zero exit is a command error", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		f.Push(pmexec.Result{ExitCode: 1, Stderr: "findmnt: bad"}, nil)
+		if _, err := mustManager(t, f).ListMounts(context.Background()); !errors.As(err, new(*pmexec.CommandError)) {
+			t.Errorf("err = %v, want *exec.CommandError", err)
+		}
+	})
+	t.Run("runner error propagates", func(t *testing.T) {
+		f := exectest.New(pmexec.Sudo)
+		f.Push(pmexec.Result{}, errors.New("findmnt missing"))
+		if _, err := mustManager(t, f).ListMounts(context.Background()); err == nil {
+			t.Error("a runner error must propagate")
+		}
+	})
+}
+
 // --- pure helpers ----------------------------------------------------------
 
 func TestOwnership(t *testing.T) {

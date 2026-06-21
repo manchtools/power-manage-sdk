@@ -391,6 +391,28 @@ func (r *failingReader) Read(p []byte) (int, error) {
 	return 1, nil
 }
 
+func TestListMounts_Integration(t *testing.T) {
+	mounts, err := intManager(t).ListMounts(context.Background())
+	if err != nil {
+		t.Fatalf("ListMounts: %v", err)
+	}
+	if len(mounts) == 0 {
+		t.Fatal("ListMounts returned nothing; at least / must be mounted")
+	}
+	var root *fs.MountInfo
+	for i := range mounts {
+		if mounts[i].Target == "/" {
+			root = &mounts[i]
+		}
+	}
+	if root == nil {
+		t.Fatalf("/ not present in enumerated mounts: %+v", mounts)
+	}
+	if root.Source == "" || root.FSType == "" {
+		t.Errorf("root mount under-populated: %+v", *root)
+	}
+}
+
 func TestMkdirAndRemoveDir(t *testing.T) {
 	ctx := context.Background()
 	m := intManager(t)
