@@ -105,9 +105,15 @@ func TestSealOpen_RejectsEmptyAAD(t *testing.T) {
 
 func TestOpen_RejectsMalformedCiphertext(t *testing.T) {
 	key := key32(t)
-	// Shorter than a 96-bit nonce → can't even split off the nonce.
-	if _, err := OpenWithAAD(key, []byte("tiny"), []byte("d")); !errors.Is(err, ErrMalformedCiphertext) {
-		t.Fatalf("Open(short ciphertext): err = %v, want ErrMalformedCiphertext", err)
+	aad := []byte("d")
+	// A valid AES-256-GCM ciphertext is at least nonce(12) + tag(16) = 28 bytes.
+	// Anything shorter cannot carry BOTH a nonce and a tag, so it is malformed and
+	// must be rejected up front with the precise ErrMalformedCiphertext — not pass
+	// the length check and fail later inside gcm.Open with a generic auth error.
+	for _, n := range []int{0, 4, 12, 27} { // 12 = nonce-only, 27 = one short of nonce+tag
+		if _, err := OpenWithAAD(key, make([]byte, n), aad); !errors.Is(err, ErrMalformedCiphertext) {
+			t.Errorf("Open(%d-byte ciphertext): err = %v, want ErrMalformedCiphertext", n, err)
+		}
 	}
 }
 

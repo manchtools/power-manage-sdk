@@ -68,7 +68,10 @@ func OpenWithAAD(key, ciphertext, aad []byte) ([]byte, error) {
 		return nil, ErrAADRequired
 	}
 	ns := gcm.NonceSize()
-	if len(ciphertext) < ns {
+	// A valid ciphertext carries the prepended nonce AND the GCM tag; reject
+	// anything too short to hold both up front with a precise error, rather than
+	// letting it fail later as a generic authentication failure in gcm.Open.
+	if len(ciphertext) < ns+gcm.Overhead() {
 		return nil, ErrMalformedCiphertext
 	}
 	nonce, ct := ciphertext[:ns], ciphertext[ns:]
