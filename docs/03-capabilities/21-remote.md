@@ -23,8 +23,8 @@ regardless of where the bytes come from.
 
 ```go
 src, err := remote.NewHTTP(remote.HTTPConfig{
-    URL:    "https://releases.example.com/agent-2026.2.0.tar.gz",
-    Sha256: "9f86d08…", // verified before the bytes are trusted
+    URL:            "https://releases.example.com/agent-2026.2.0.tar.gz",
+    ChecksumSHA256: "9f86d08…", // verified before the bytes are trusted
 })
 if err != nil {
     return err
@@ -39,7 +39,7 @@ _ = res
 ## Three transports
 
 ```go
-http, err := remote.NewHTTP(remote.HTTPConfig{URL: "https://…", Sha256: "…"})
+http, err := remote.NewHTTP(remote.HTTPConfig{URL: "https://…", ChecksumSHA256: "…"})
 git, err  := remote.NewGit(remote.GitConfig{URL: "https://…", Ref: "v1.2.3"})
 s3, err   := remote.NewS3(remote.S3Config{Bucket: "artifacts", Key: "agent/latest"})
 ```
@@ -49,6 +49,30 @@ Each constructor validates its configuration up front and returns an error for a
 malformed one, so a bad URL, missing checksum, or unusable S3 config fails at
 construction rather than mid-download. The returned value is a `Source` — the
 caller holds the interface, not the concrete client.
+<!-- docref: end -->
+
+## Fetch into memory
+
+When the payload is small and you want the bytes in hand rather than a file on
+disk — a `SHA256SUMS` manifest, a GPG key, a short JSON descriptor — `FetchBytes`
+fetches an HTTPS source into memory and returns the bytes:
+
+```go
+data, err := remote.FetchBytes(ctx, remote.HTTPConfig{
+    URL:            "https://releases.example.com/SHA256SUMS",
+    ChecksumSHA256: "9f86d08…", // optional; verified before the bytes are returned
+})
+```
+
+<!-- docref: begin src=sys/remote/fetch_bytes.go#FetchBytes:c8e91045 -->
+`FetchBytes` applies the same guards as `Fetch` — URL/scheme validation, the size
+cap, and the optional sha256 pin — but bounded for RAM because the whole body is
+buffered. The cap defaults to 64 MiB (not the 2 GiB file default) unless you
+raise `MaxBytes`; a body past the cap fails closed with `ErrIntegrity` and
+returns no data. A set `ChecksumSHA256` is verified before the bytes are handed
+back, and the archive-oriented `Extract` / `Prune` options are rejected — they
+have no meaning for a single in-memory payload. It is for small payloads; use
+`Fetch` (streamed, atomic, to a file) for large artifacts.
 <!-- docref: end -->
 
 ## Destinations are confined
