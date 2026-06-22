@@ -6,9 +6,38 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// TestRemote_NormalizesPaddedURL (Gap 14): a whitespace-padded but otherwise
+// valid URL — which sdk.ValidateHTTPSURL accepts, since it trims before parsing
+// — must be accepted by NewHTTP/Fetch and FetchBytes too. Otherwise "validation
+// passed" does not imply "the fetch accepts it", and a caller that validated up
+// front fails mysteriously at fetch time.
+func TestRemote_NormalizesPaddedURL(t *testing.T) {
+	fix := newHTTPFixture(t, []byte("ok"), `"v1"`)
+	padded := "  " + fix.srv.URL + "/x\n"
+
+	data, err := FetchBytes(context.Background(), HTTPConfig{URL: padded})
+	if err != nil {
+		t.Fatalf("FetchBytes rejected a padded URL the validator accepts: %v", err)
+	}
+	if string(data) != "ok" {
+		t.Errorf("data = %q, want ok", data)
+	}
+
+	dest := filepath.Join(t.TempDir(), "f")
+	recordDestUnder(t, dest)
+	src, err := NewHTTP(HTTPConfig{URL: padded})
+	if err != nil {
+		t.Fatalf("NewHTTP rejected a padded URL: %v", err)
+	}
+	if _, err := src.Fetch(context.Background(), dest); err != nil {
+		t.Fatalf("Fetch with padded URL: %v", err)
+	}
+}
 
 // TestFetchBytes_ReturnsBody — the value case: a small payload (a GPG key, a
 // checksum manifest) is returned in memory.

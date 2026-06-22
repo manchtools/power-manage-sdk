@@ -108,6 +108,12 @@ func NewHTTP(cfg HTTPConfig) (Source, error) {
 // validates cfg, decodes the checksum, defaults MaxBytes/client, and returns the
 // concrete source.
 func newHTTPSource(cfg HTTPConfig) (*httpSource, error) {
+	// Normalize the URL the same way sdk.ValidateHTTPSURL does (it trims before
+	// parsing), so a whitespace-padded URL that passed validation also passes
+	// here and in the request itself — "validated" implies "fetchable". Trimming
+	// the surrounding whitespace before the control-character check leaves any
+	// INTERNAL control char still caught.
+	cfg.URL = strings.TrimSpace(cfg.URL)
 	if err := validateHTTPConfig(&cfg); err != nil {
 		return nil, err
 	}
