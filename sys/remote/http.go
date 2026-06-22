@@ -95,6 +95,19 @@ type httpSource struct {
 // NewHTTP validates cfg and returns a Source. Returns ErrInvalidConfig
 // on any validation failure.
 func NewHTTP(cfg HTTPConfig) (Source, error) {
+	// Return an untyped nil on error — never a non-nil Source wrapping a nil
+	// *httpSource (the classic nil-interface trap for `src == nil` callers).
+	h, err := newHTTPSource(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
+}
+
+// newHTTPSource is the shared constructor used by NewHTTP and FetchBytes: it
+// validates cfg, decodes the checksum, defaults MaxBytes/client, and returns the
+// concrete source.
+func newHTTPSource(cfg HTTPConfig) (*httpSource, error) {
 	if err := validateHTTPConfig(&cfg); err != nil {
 		return nil, err
 	}
