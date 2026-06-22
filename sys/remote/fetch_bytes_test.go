@@ -101,6 +101,9 @@ func TestFetchBytes_RejectsExtractAndBadScheme(t *testing.T) {
 	if _, err := FetchBytes(context.Background(), HTTPConfig{URL: "https://example.com/y", Extract: true}); !errors.Is(err, ErrInvalidConfig) {
 		t.Errorf("Extract must be rejected for a memory fetch: %v", err)
 	}
+	if _, err := FetchBytes(context.Background(), HTTPConfig{URL: "https://example.com/y", Prune: true}); !errors.Is(err, ErrInvalidConfig) {
+		t.Errorf("Prune must be rejected for a memory fetch: %v", err)
+	}
 	if _, err := FetchBytes(context.Background(), HTTPConfig{URL: "file:///etc/passwd"}); !errors.Is(err, ErrInvalidConfig) {
 		t.Errorf("a non-http(s) scheme must be rejected: %v", err)
 	}
