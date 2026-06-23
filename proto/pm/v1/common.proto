@@ -156,6 +156,43 @@ enum SearchScope {
   SEARCH_SCOPE_AUDIT_EVENTS = 10;
 }
 
+// SortField is the column a Search orders by. Shared across all scopes
+// (the union of sortable columns); the server validates per-scope validity
+// (scopeSortableFields) and maps each value to that scope's index field.
+// UNSPECIFIED means "use the scope's default sort".
+enum SortField {
+  SORT_FIELD_UNSPECIFIED = 0;
+  SORT_FIELD_NAME = 1;
+  SORT_FIELD_TYPE = 2;
+  SORT_FIELD_HOSTNAME = 3;
+  SORT_FIELD_COMPLIANCE_STATUS = 4;
+  SORT_FIELD_EMAIL = 5;
+  SORT_FIELD_DISPLAY_NAME = 6;
+  SORT_FIELD_DISABLED = 7;
+  SORT_FIELD_MEMBER_COUNT = 8;
+  SORT_FIELD_STATUS = 9;
+  SORT_FIELD_ACTION_TYPE = 10;
+  SORT_FIELD_DEVICE_HOSTNAME = 11;
+  SORT_FIELD_ACTOR_TYPE = 12;
+  SORT_FIELD_STREAM_TYPE = 13;
+  SORT_FIELD_EVENT_TYPE = 14;
+  SORT_FIELD_RULE_COUNT = 15;
+  SORT_FIELD_LAST_LOGIN_AT = 16;
+  SORT_FIELD_CREATED_AT = 17;
+  SORT_FIELD_UPDATED_AT = 18;
+  SORT_FIELD_LAST_SEEN_AT = 19;
+  SORT_FIELD_REGISTERED_AT = 20;
+  SORT_FIELD_OCCURRED_AT = 21;
+}
+
+// SortDirection is the order for a Search sort. UNSPECIFIED lets the
+// server pick the field's natural default.
+enum SortDirection {
+  SORT_DIRECTION_UNSPECIFIED = 0;
+  SORT_DIRECTION_ASC = 1;
+  SORT_DIRECTION_DESC = 2;
+}
+
 // IdentityProviderType identifies the auth protocol an
 // IdentityProvider speaks. Today only OIDC ships, but the enum is
 // forward-looking — SAML2, LDAP, etc. can be added without another

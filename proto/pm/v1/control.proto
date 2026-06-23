@@ -2606,6 +2606,11 @@ message SearchRequest {
   repeated SearchDateFilter date_filters = 5;
   // @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
   map<string, string> tag_filters = 6; // field → value(s), pipe-separated for OR (e.g. "completed|failed")
+  // UNSPECIFIED (0) means "scope default"; server validates per-scope validity.
+  // @gotags: validate:"omitempty,gte=0,lte=21"
+  SortField sort_field = 7;
+  // @gotags: validate:"omitempty,gte=0,lte=2"
+  SortDirection sort_direction = 8;
 }
 
 message SearchResult {
