@@ -584,6 +584,167 @@ func (SearchScope) EnumDescriptor() ([]byte, []int) {
 	return file_pm_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
+// SortField is the column a Search orders by. Shared across all scopes
+// (the union of sortable columns); the server validates per-scope validity
+// (scopeSortableFields) and maps each value to that scope's index field.
+// UNSPECIFIED means "use the scope's default sort".
+type SortField int32
+
+const (
+	SortField_SORT_FIELD_UNSPECIFIED       SortField = 0
+	SortField_SORT_FIELD_NAME              SortField = 1
+	SortField_SORT_FIELD_TYPE              SortField = 2
+	SortField_SORT_FIELD_HOSTNAME          SortField = 3
+	SortField_SORT_FIELD_COMPLIANCE_STATUS SortField = 4
+	SortField_SORT_FIELD_EMAIL             SortField = 5
+	SortField_SORT_FIELD_DISPLAY_NAME      SortField = 6
+	SortField_SORT_FIELD_DISABLED          SortField = 7
+	SortField_SORT_FIELD_MEMBER_COUNT      SortField = 8
+	SortField_SORT_FIELD_STATUS            SortField = 9
+	SortField_SORT_FIELD_ACTION_TYPE       SortField = 10
+	SortField_SORT_FIELD_DEVICE_HOSTNAME   SortField = 11
+	SortField_SORT_FIELD_ACTOR_TYPE        SortField = 12
+	SortField_SORT_FIELD_STREAM_TYPE       SortField = 13
+	SortField_SORT_FIELD_EVENT_TYPE        SortField = 14
+	SortField_SORT_FIELD_RULE_COUNT        SortField = 15
+	SortField_SORT_FIELD_LAST_LOGIN_AT     SortField = 16
+	SortField_SORT_FIELD_CREATED_AT        SortField = 17
+	SortField_SORT_FIELD_UPDATED_AT        SortField = 18
+	SortField_SORT_FIELD_LAST_SEEN_AT      SortField = 19
+	SortField_SORT_FIELD_REGISTERED_AT     SortField = 20
+	SortField_SORT_FIELD_OCCURRED_AT       SortField = 21
+)
+
+// Enum value maps for SortField.
+var (
+	SortField_name = map[int32]string{
+		0:  "SORT_FIELD_UNSPECIFIED",
+		1:  "SORT_FIELD_NAME",
+		2:  "SORT_FIELD_TYPE",
+		3:  "SORT_FIELD_HOSTNAME",
+		4:  "SORT_FIELD_COMPLIANCE_STATUS",
+		5:  "SORT_FIELD_EMAIL",
+		6:  "SORT_FIELD_DISPLAY_NAME",
+		7:  "SORT_FIELD_DISABLED",
+		8:  "SORT_FIELD_MEMBER_COUNT",
+		9:  "SORT_FIELD_STATUS",
+		10: "SORT_FIELD_ACTION_TYPE",
+		11: "SORT_FIELD_DEVICE_HOSTNAME",
+		12: "SORT_FIELD_ACTOR_TYPE",
+		13: "SORT_FIELD_STREAM_TYPE",
+		14: "SORT_FIELD_EVENT_TYPE",
+		15: "SORT_FIELD_RULE_COUNT",
+		16: "SORT_FIELD_LAST_LOGIN_AT",
+		17: "SORT_FIELD_CREATED_AT",
+		18: "SORT_FIELD_UPDATED_AT",
+		19: "SORT_FIELD_LAST_SEEN_AT",
+		20: "SORT_FIELD_REGISTERED_AT",
+		21: "SORT_FIELD_OCCURRED_AT",
+	}
+	SortField_value = map[string]int32{
+		"SORT_FIELD_UNSPECIFIED":       0,
+		"SORT_FIELD_NAME":              1,
+		"SORT_FIELD_TYPE":              2,
+		"SORT_FIELD_HOSTNAME":          3,
+		"SORT_FIELD_COMPLIANCE_STATUS": 4,
+		"SORT_FIELD_EMAIL":             5,
+		"SORT_FIELD_DISPLAY_NAME":      6,
+		"SORT_FIELD_DISABLED":          7,
+		"SORT_FIELD_MEMBER_COUNT":      8,
+		"SORT_FIELD_STATUS":            9,
+		"SORT_FIELD_ACTION_TYPE":       10,
+		"SORT_FIELD_DEVICE_HOSTNAME":   11,
+		"SORT_FIELD_ACTOR_TYPE":        12,
+		"SORT_FIELD_STREAM_TYPE":       13,
+		"SORT_FIELD_EVENT_TYPE":        14,
+		"SORT_FIELD_RULE_COUNT":        15,
+		"SORT_FIELD_LAST_LOGIN_AT":     16,
+		"SORT_FIELD_CREATED_AT":        17,
+		"SORT_FIELD_UPDATED_AT":        18,
+		"SORT_FIELD_LAST_SEEN_AT":      19,
+		"SORT_FIELD_REGISTERED_AT":     20,
+		"SORT_FIELD_OCCURRED_AT":       21,
+	}
+)
+
+func (x SortField) Enum() *SortField {
+	p := new(SortField)
+	*p = x
+	return p
+}
+
+func (x SortField) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SortField) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
+}
+
+func (SortField) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[9]
+}
+
+func (x SortField) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SortField.Descriptor instead.
+func (SortField) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
+}
+
+// SortDirection is the order for a Search sort. UNSPECIFIED lets the
+// server pick the field's natural default.
+type SortDirection int32
+
+const (
+	SortDirection_SORT_DIRECTION_UNSPECIFIED SortDirection = 0
+	SortDirection_SORT_DIRECTION_ASC         SortDirection = 1
+	SortDirection_SORT_DIRECTION_DESC        SortDirection = 2
+)
+
+// Enum value maps for SortDirection.
+var (
+	SortDirection_name = map[int32]string{
+		0: "SORT_DIRECTION_UNSPECIFIED",
+		1: "SORT_DIRECTION_ASC",
+		2: "SORT_DIRECTION_DESC",
+	}
+	SortDirection_value = map[string]int32{
+		"SORT_DIRECTION_UNSPECIFIED": 0,
+		"SORT_DIRECTION_ASC":         1,
+		"SORT_DIRECTION_DESC":        2,
+	}
+)
+
+func (x SortDirection) Enum() *SortDirection {
+	p := new(SortDirection)
+	*p = x
+	return p
+}
+
+func (x SortDirection) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SortDirection) Descriptor() protoreflect.EnumDescriptor {
+	return file_pm_v1_common_proto_enumTypes[10].Descriptor()
+}
+
+func (SortDirection) Type() protoreflect.EnumType {
+	return &file_pm_v1_common_proto_enumTypes[10]
+}
+
+func (x SortDirection) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SortDirection.Descriptor instead.
+func (SortDirection) EnumDescriptor() ([]byte, []int) {
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{10}
+}
+
 // IdentityProviderType identifies the auth protocol an
 // IdentityProvider speaks. Today only OIDC ships, but the enum is
 // forward-looking — SAML2, LDAP, etc. can be added without another
@@ -620,11 +781,11 @@ func (x IdentityProviderType) String() string {
 }
 
 func (IdentityProviderType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[9].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[11].Descriptor()
 }
 
 func (IdentityProviderType) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[9]
+	return &file_pm_v1_common_proto_enumTypes[11]
 }
 
 func (x IdentityProviderType) Number() protoreflect.EnumNumber {
@@ -633,7 +794,7 @@ func (x IdentityProviderType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IdentityProviderType.Descriptor instead.
 func (IdentityProviderType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{9}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{11}
 }
 
 // RotationReason classifies why a credential rotation happened. The
@@ -683,11 +844,11 @@ func (x RotationReason) String() string {
 }
 
 func (RotationReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[10].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[12].Descriptor()
 }
 
 func (RotationReason) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[10]
+	return &file_pm_v1_common_proto_enumTypes[12]
 }
 
 func (x RotationReason) Number() protoreflect.EnumNumber {
@@ -696,7 +857,7 @@ func (x RotationReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RotationReason.Descriptor instead.
 func (RotationReason) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{10}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{12}
 }
 
 // LuksRevocationStatus tracks the lifecycle of a LUKS passphrase
@@ -747,11 +908,11 @@ func (x LuksRevocationStatus) String() string {
 }
 
 func (LuksRevocationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[11].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[13].Descriptor()
 }
 
 func (LuksRevocationStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[11]
+	return &file_pm_v1_common_proto_enumTypes[13]
 }
 
 func (x LuksRevocationStatus) Number() protoreflect.EnumNumber {
@@ -760,7 +921,7 @@ func (x LuksRevocationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LuksRevocationStatus.Descriptor instead.
 func (LuksRevocationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{11}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{13}
 }
 
 // Compliance status for a device based on detection scripts
@@ -800,11 +961,11 @@ func (x ComplianceStatus) String() string {
 }
 
 func (ComplianceStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_common_proto_enumTypes[12].Descriptor()
+	return file_pm_v1_common_proto_enumTypes[14].Descriptor()
 }
 
 func (ComplianceStatus) Type() protoreflect.EnumType {
-	return &file_pm_v1_common_proto_enumTypes[12]
+	return &file_pm_v1_common_proto_enumTypes[14]
 }
 
 func (x ComplianceStatus) Number() protoreflect.EnumNumber {
@@ -813,7 +974,7 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_common_proto_rawDescGZIP(), []int{12}
+	return file_pm_v1_common_proto_rawDescGZIP(), []int{14}
 }
 
 // Unique identifier for an action instance
@@ -1225,7 +1386,35 @@ const file_pm_v1_common_proto_rawDesc = "" +
 	"\x18SEARCH_SCOPE_USER_GROUPS\x10\b\x12\x1b\n" +
 	"\x17SEARCH_SCOPE_EXECUTIONS\x10\t\x12\x1d\n" +
 	"\x19SEARCH_SCOPE_AUDIT_EVENTS\x10\n" +
-	"*_\n" +
+	"*\xe0\x04\n" +
+	"\tSortField\x12\x1a\n" +
+	"\x16SORT_FIELD_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fSORT_FIELD_NAME\x10\x01\x12\x13\n" +
+	"\x0fSORT_FIELD_TYPE\x10\x02\x12\x17\n" +
+	"\x13SORT_FIELD_HOSTNAME\x10\x03\x12 \n" +
+	"\x1cSORT_FIELD_COMPLIANCE_STATUS\x10\x04\x12\x14\n" +
+	"\x10SORT_FIELD_EMAIL\x10\x05\x12\x1b\n" +
+	"\x17SORT_FIELD_DISPLAY_NAME\x10\x06\x12\x17\n" +
+	"\x13SORT_FIELD_DISABLED\x10\a\x12\x1b\n" +
+	"\x17SORT_FIELD_MEMBER_COUNT\x10\b\x12\x15\n" +
+	"\x11SORT_FIELD_STATUS\x10\t\x12\x1a\n" +
+	"\x16SORT_FIELD_ACTION_TYPE\x10\n" +
+	"\x12\x1e\n" +
+	"\x1aSORT_FIELD_DEVICE_HOSTNAME\x10\v\x12\x19\n" +
+	"\x15SORT_FIELD_ACTOR_TYPE\x10\f\x12\x1a\n" +
+	"\x16SORT_FIELD_STREAM_TYPE\x10\r\x12\x19\n" +
+	"\x15SORT_FIELD_EVENT_TYPE\x10\x0e\x12\x19\n" +
+	"\x15SORT_FIELD_RULE_COUNT\x10\x0f\x12\x1c\n" +
+	"\x18SORT_FIELD_LAST_LOGIN_AT\x10\x10\x12\x19\n" +
+	"\x15SORT_FIELD_CREATED_AT\x10\x11\x12\x19\n" +
+	"\x15SORT_FIELD_UPDATED_AT\x10\x12\x12\x1b\n" +
+	"\x17SORT_FIELD_LAST_SEEN_AT\x10\x13\x12\x1c\n" +
+	"\x18SORT_FIELD_REGISTERED_AT\x10\x14\x12\x1a\n" +
+	"\x16SORT_FIELD_OCCURRED_AT\x10\x15*`\n" +
+	"\rSortDirection\x12\x1e\n" +
+	"\x1aSORT_DIRECTION_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12SORT_DIRECTION_ASC\x10\x01\x12\x17\n" +
+	"\x13SORT_DIRECTION_DESC\x10\x02*_\n" +
 	"\x14IdentityProviderType\x12&\n" +
 	"\"IDENTITY_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bIDENTITY_PROVIDER_TYPE_OIDC\x10\x01*\x8d\x01\n" +
@@ -1258,7 +1447,7 @@ func file_pm_v1_common_proto_rawDescGZIP() []byte {
 	return file_pm_v1_common_proto_rawDescData
 }
 
-var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
+var file_pm_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 15)
 var file_pm_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pm_v1_common_proto_goTypes = []any{
 	(ExecutionStatus)(0),           // 0: pm.v1.ExecutionStatus
@@ -1270,19 +1459,21 @@ var file_pm_v1_common_proto_goTypes = []any{
 	(PermissionTargetKind)(0),      // 6: pm.v1.PermissionTargetKind
 	(DeviceStatus)(0),              // 7: pm.v1.DeviceStatus
 	(SearchScope)(0),               // 8: pm.v1.SearchScope
-	(IdentityProviderType)(0),      // 9: pm.v1.IdentityProviderType
-	(RotationReason)(0),            // 10: pm.v1.RotationReason
-	(LuksRevocationStatus)(0),      // 11: pm.v1.LuksRevocationStatus
-	(ComplianceStatus)(0),          // 12: pm.v1.ComplianceStatus
-	(*ActionId)(nil),               // 13: pm.v1.ActionId
-	(*DeviceId)(nil),               // 14: pm.v1.DeviceId
-	(*ErrorDetail)(nil),            // 15: pm.v1.ErrorDetail
-	(*MaintenanceWindow)(nil),      // 16: pm.v1.MaintenanceWindow
-	(*MaintenanceWindowEntry)(nil), // 17: pm.v1.MaintenanceWindowEntry
-	(*CommandOutput)(nil),          // 18: pm.v1.CommandOutput
+	(SortField)(0),                 // 9: pm.v1.SortField
+	(SortDirection)(0),             // 10: pm.v1.SortDirection
+	(IdentityProviderType)(0),      // 11: pm.v1.IdentityProviderType
+	(RotationReason)(0),            // 12: pm.v1.RotationReason
+	(LuksRevocationStatus)(0),      // 13: pm.v1.LuksRevocationStatus
+	(ComplianceStatus)(0),          // 14: pm.v1.ComplianceStatus
+	(*ActionId)(nil),               // 15: pm.v1.ActionId
+	(*DeviceId)(nil),               // 16: pm.v1.DeviceId
+	(*ErrorDetail)(nil),            // 17: pm.v1.ErrorDetail
+	(*MaintenanceWindow)(nil),      // 18: pm.v1.MaintenanceWindow
+	(*MaintenanceWindowEntry)(nil), // 19: pm.v1.MaintenanceWindowEntry
+	(*CommandOutput)(nil),          // 20: pm.v1.CommandOutput
 }
 var file_pm_v1_common_proto_depIdxs = []int32{
-	17, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
+	19, // 0: pm.v1.MaintenanceWindow.schedule:type_name -> pm.v1.MaintenanceWindowEntry
 	1,  // [1:1] is the sub-list for method output_type
 	1,  // [1:1] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
@@ -1300,7 +1491,7 @@ func file_pm_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_common_proto_rawDesc), len(file_pm_v1_common_proto_rawDesc)),
-			NumEnums:      13,
+			NumEnums:      15,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
