@@ -26,17 +26,33 @@ import (
 // agree. The gateway relays the proto message verbatim; it never re-derives or
 // originates a signature.
 
+// domainCanonical is the shared body behind every *Canonical encoder: it
+// guards against a nil message, deterministically clones it, clears the
+// `signature` field via protoreflect (so the signature can never cover
+// itself), and returns the deterministic wire bytes. Clearing by field name
+// keeps the four call sites identical and auto-binds every other field —
+// including any added later — without a hand-maintained list. typeName names
+// the message in the nil-guard error so each wrapper keeps its exact message.
+func domainCanonical[T proto.Message](m T, typeName string) ([]byte, error) {
+	// A typed-nil pointer reflects to an invalid message; treat it (and a nil
+	// interface) as "no message" so each wrapper keeps its nil-guard contract.
+	if !m.ProtoReflect().IsValid() {
+		return nil, fmt.Errorf("verify: nil %s", typeName)
+	}
+	c := proto.Clone(m)
+	r := c.ProtoReflect()
+	if fd := r.Descriptor().Fields().ByName("signature"); fd != nil {
+		r.Clear(fd)
+	}
+	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
+}
+
 // OSQueryCanonical returns the signing pre-image bytes for an OSQuery. It
 // binds query_id, table, columns, where, limit and raw_sql — so a compromised
 // gateway cannot swap the table, inject raw_sql, or retarget the query under a
 // valid signature.
 func OSQueryCanonical(q *pmv1.OSQuery) ([]byte, error) {
-	if q == nil {
-		return nil, fmt.Errorf("verify: nil OSQuery")
-	}
-	c := proto.Clone(q).(*pmv1.OSQuery)
-	c.Signature = nil
-	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
+	return domainCanonical(q, "OSQuery")
 }
 
 // LogQueryCanonical returns the signing pre-image bytes for a LogQuery. It
@@ -44,34 +60,19 @@ func OSQueryCanonical(q *pmv1.OSQuery) ([]byte, error) {
 // source — so a compromised gateway cannot retarget the unit or widen the
 // query under a valid signature.
 func LogQueryCanonical(q *pmv1.LogQuery) ([]byte, error) {
-	if q == nil {
-		return nil, fmt.Errorf("verify: nil LogQuery")
-	}
-	c := proto.Clone(q).(*pmv1.LogQuery)
-	c.Signature = nil
-	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
+	return domainCanonical(q, "LogQuery")
 }
 
 // RevokeLuksDeviceKeyCanonical returns the signing pre-image bytes for a
 // RevokeLuksDeviceKey. It binds action_id, so a compromised gateway cannot
 // forge or replay a slot-7 wipe onto any known action_id.
 func RevokeLuksDeviceKeyCanonical(m *pmv1.RevokeLuksDeviceKey) ([]byte, error) {
-	if m == nil {
-		return nil, fmt.Errorf("verify: nil RevokeLuksDeviceKey")
-	}
-	c := proto.Clone(m).(*pmv1.RevokeLuksDeviceKey)
-	c.Signature = nil
-	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
+	return domainCanonical(m, "RevokeLuksDeviceKey")
 }
 
 // RequestInventoryCanonical returns the signing pre-image bytes for a
 // server-originated RequestInventory. It binds query_id so a compromised
 // gateway cannot forge an inventory-collection command.
 func RequestInventoryCanonical(m *pmv1.RequestInventory) ([]byte, error) {
-	if m == nil {
-		return nil, fmt.Errorf("verify: nil RequestInventory")
-	}
-	c := proto.Clone(m).(*pmv1.RequestInventory)
-	c.Signature = nil
-	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
+	return domainCanonical(m, "RequestInventory")
 }

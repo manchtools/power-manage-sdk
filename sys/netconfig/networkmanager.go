@@ -64,7 +64,15 @@ func nmModifyArgs(cfg InterfaceConfig) []string {
 		)
 	} else {
 		v4addr, v6addr := partitionAddrsByFamily(cfg.Addresses)
-		gwV4, gwV6 := splitGatewayByFamily(cfg.Gateway)
+		// cfg.Gateway is a validated IP literal (or empty); bucket it by family.
+		var gwV4, gwV6 string
+		if cfg.Gateway != "" {
+			if net.ParseIP(cfg.Gateway).To4() != nil {
+				gwV4 = cfg.Gateway
+			} else {
+				gwV6 = cfg.Gateway
+			}
+		}
 		if len(v4addr) > 0 {
 			a = append(a, "ipv4.method", "manual", "ipv4.addresses", strings.Join(v4addr, ","))
 			if gwV4 != "" {
@@ -98,18 +106,6 @@ func nmModifyArgs(cfg InterfaceConfig) []string {
 		}
 	}
 	return a
-}
-
-// splitGatewayByFamily returns the gateway as (v4, v6) — exactly one is set (or
-// neither when gw is empty). gw is a validated IP literal.
-func splitGatewayByFamily(gw string) (v4, v6 string) {
-	if gw == "" {
-		return "", ""
-	}
-	if net.ParseIP(gw).To4() != nil {
-		return gw, ""
-	}
-	return "", gw
 }
 
 // nmRoutesByFamily renders each route as nmcli's "<dest> <gateway> [metric]"

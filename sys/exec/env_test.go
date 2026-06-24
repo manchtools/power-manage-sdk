@@ -106,21 +106,28 @@ func TestIsAllowedEnvVar_InvalidNames(t *testing.T) {
 }
 
 func TestBlockedEnvVars_Completeness(t *testing.T) {
-	// Verify the critical security-sensitive env vars are in the blocklist
+	// Verify the critical security-sensitive env vars are rejected. The check is
+	// against IsAllowedEnvVar — the real security boundary — not the map alone,
+	// because the LD_* / BASH_FUNC_ families are blocked by an unconditional
+	// prefix rule rather than enumerated as map keys.
 	critical := []string{
 		"LD_PRELOAD",
 		"LD_LIBRARY_PATH",
+		"LD_AUDIT",
+		"LD_DEBUG",
+		"LD_PROFILE",
 		"PATH",
 		"IFS",
 		"BASH_ENV",
+		"BASH_FUNC_foo",
 		"GCONV_PATH",
 		"NODE_OPTIONS",
 		"HOSTALIASES",
 	}
 
 	for _, name := range critical {
-		if !BlockedEnvVars[name] {
-			t.Errorf("BlockedEnvVars missing critical entry %q", name)
+		if IsAllowedEnvVar(name) {
+			t.Errorf("IsAllowedEnvVar(%q) = true, want false (critical blocked entry)", name)
 		}
 	}
 }

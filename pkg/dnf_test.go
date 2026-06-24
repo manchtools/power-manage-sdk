@@ -848,11 +848,11 @@ func TestDnf_NEVRAParsing(t *testing.T) {
 }
 
 func TestDnf_ParseValue(t *testing.T) {
-	if v := parseValue("Version      : 8.2"); v != "8.2" {
-		t.Errorf("parseValue keyed line = %q, want 8.2", v)
+	if v := parseColonValue("Version      : 8.2"); v != "8.2" {
+		t.Errorf("parseColonValue keyed line = %q, want 8.2", v)
 	}
-	if v := parseValue("a line with no colon"); v != "" {
-		t.Errorf("parseValue no-colon = %q, want empty", v)
+	if v := parseColonValue("a line with no colon"); v != "" {
+		t.Errorf("parseColonValue no-colon = %q, want empty", v)
 	}
 }
 

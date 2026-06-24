@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
@@ -125,6 +126,49 @@ func rpmLocalPackageInfo(ctx context.Context, r pmexec.Runner, path string) (*Lo
 		info.Arch = fields[2]
 	}
 	return info, nil
+}
+
+// parseColonValue returns the trimmed value after the first colon in a
+// "Key: value" info line, or "" when the line has no colon. Shared by every
+// rpm/pacman/flatpak info parser so the "split on first colon" rule cannot drift
+// between backends.
+func parseColonValue(line string) string {
+	parts := strings.SplitN(line, ":", 2)
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
+}
+
+// sizeUnit pairs a trailing size suffix (with its leading space, e.g. " KiB")
+// with the byte multiplier it denotes.
+type sizeUnit struct {
+	suffix string
+	mult   int64
+}
+
+// parseSizeWithUnits parses a human-readable size string ("3.0 MiB", "512 k",
+// "900 B") into bytes using the supplied ordered unit table. Units are tried in
+// order, so a caller must list more specific suffixes before any that are a
+// suffix of them. A matched suffix is stripped and its multiplier applied; a
+// unit with mult == 1 is a no-op-multiplier suffix that is merely trimmed. The
+// remaining text is parsed with strconv.ParseFloat: an empty string, an
+// unrecognised suffix, or unparseable digits all yield 0 (ParseFloat's error is
+// intentionally ignored, mirroring the per-backend originals). The input is
+// space-trimmed before matching; callers needing other preprocessing (e.g.
+// flatpak's comma stripping) do it before calling.
+func parseSizeWithUnits(s string, units []sizeUnit) int64 {
+	s = strings.TrimSpace(s)
+	multiplier := int64(1)
+	for _, u := range units {
+		if strings.HasSuffix(s, u.suffix) {
+			multiplier = u.mult
+			s = strings.TrimSuffix(s, u.suffix)
+			break
+		}
+	}
+	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return int64(size * float64(multiplier))
 }
 
 // splitPositionalFields splits VALUE-ONLY one-field-per-line command output (rpm
