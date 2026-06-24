@@ -169,10 +169,7 @@ func newHTTPSource(cfg HTTPConfig) (*httpSource, error) {
 //     lives outside the project-managed prefixes.
 func (h *httpSource) Fetch(ctx context.Context, dest string) (Result, error) {
 	if h.cfg.Extract {
-		if httpArchiveDispatch == nil {
-			return Result{}, errFetchArchiveUnimplemented
-		}
-		return httpArchiveDispatch(ctx, h, dest)
+		return h.fetchArchive(ctx, dest)
 	}
 	if err := validateDestination(dest); err != nil {
 		return Result{}, err
