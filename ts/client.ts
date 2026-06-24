@@ -243,6 +243,8 @@ import {
 	DeviceStatus,
 	IdentityProviderType,
 	SearchScope,
+	SortField,
+	SortDirection,
 	RoleGrantScopeKind
 } from '../gen/ts/pm/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
@@ -1790,10 +1792,12 @@ export class ApiClient {
 		pageSize: number = 50,
 		pageToken: string = '',
 		dateFilters?: Array<{ field: string; start: bigint; end: bigint }>,
-		tagFilters?: Record<string, string>
+		tagFilters?: Record<string, string>,
+		sortField: SortField = SortField.UNSPECIFIED,
+		sortDirection: SortDirection = SortDirection.UNSPECIFIED
 	) {
 		const client = this.getClient();
-		const req: Record<string, unknown> = { query, scope, pageSize, pageToken };
+		const req: Record<string, unknown> = { query, scope, pageSize, pageToken, sortField, sortDirection };
 		if (dateFilters && dateFilters.length > 0) {
 			req.dateFilters = dateFilters.map((df) =>
 				create(SearchDateFilterSchema, { field: df.field, start: df.start, end: df.end })
