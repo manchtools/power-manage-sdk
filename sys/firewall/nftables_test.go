@@ -38,31 +38,37 @@ func skipIfNotNftablesUsable(t *testing.T) {
 // exact nft batch grammar so future refactors of the builder don't
 // silently change what we send to the kernel.
 func TestNftBuildScript_AcceptTCP(t *testing.T) {
-	got := nftBuildApplyScript(nftTestNamespace, Rule{
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
 		ID:       "ssh-in",
 		Allow:    true,
 		Protocol: ProtocolTCP,
 		Port:     22,
 	}, 0)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(accept tcp): %v", err)
+	}
 	want := strings.Join([]string{
 		`add table inet fwtest_filter`,
 		`add chain inet fwtest_filter input { type filter hook input priority 0; policy accept; }`,
 		`add rule inet fwtest_filter input tcp dport 22 accept comment "ssh-in"`,
 	}, "\n") + "\n"
 	if got != want {
-		t.Fatalf("nftBuildApplyScript:\n--- got  ---\n%s\n--- want ---\n%s", got, want)
+		t.Fatalf("nftBuildApplyScriptStrict:\n--- got  ---\n%s\n--- want ---\n%s", got, want)
 	}
 }
 
 // TestNftBuildScript_DropUDP — Deny side + UDP, verifies the
 // allow→accept/drop and protocol→tcp/udp toggles independently.
 func TestNftBuildScript_DropUDP(t *testing.T) {
-	got := nftBuildApplyScript(nftTestNamespace, Rule{
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
 		ID:       "block-dns",
 		Allow:    false,
 		Protocol: ProtocolUDP,
 		Port:     53,
 	}, 0)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(drop udp): %v", err)
+	}
 	if !strings.Contains(got, `add rule inet fwtest_filter input udp dport 53 drop comment "block-dns"`) {
 		t.Fatalf("missing expected rule line:\n%s", got)
 	}
@@ -72,7 +78,7 @@ func TestNftBuildScript_DropUDP(t *testing.T) {
 // source / dest fields. Source comes BEFORE protocol match, dest comes
 // AFTER (mirrors nft's own statement order from manpage examples).
 func TestNftBuildScript_WithSourceAndDest(t *testing.T) {
-	got := nftBuildApplyScript(nftTestNamespace, Rule{
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
 		ID:       "from-vpn",
 		Allow:    true,
 		Protocol: ProtocolTCP,
@@ -80,6 +86,9 @@ func TestNftBuildScript_WithSourceAndDest(t *testing.T) {
 		Source:   "10.0.0.0/8",
 		Dest:     "192.168.1.10",
 	}, 0)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(source and dest): %v", err)
+	}
 	want := `add rule inet fwtest_filter input ip saddr 10.0.0.0/8 ip daddr 192.168.1.10 tcp dport 443 accept comment "from-vpn"`
 	if !strings.Contains(got, want) {
 		t.Fatalf("missing expected rule line:\n%s", got)
@@ -90,11 +99,14 @@ func TestNftBuildScript_WithSourceAndDest(t *testing.T) {
 // Port is 0 we still produce a valid rule (just accept from a source).
 // This is the "allow this network full access" case.
 func TestNftBuildScript_AnyProtocolNoPort(t *testing.T) {
-	got := nftBuildApplyScript(nftTestNamespace, Rule{
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
 		ID:     "trusted-net",
 		Allow:  true,
 		Source: "172.16.0.0/12",
 	}, 0)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(any protocol no port): %v", err)
+	}
 	want := `add rule inet fwtest_filter input ip saddr 172.16.0.0/12 accept comment "trusted-net"`
 	if !strings.Contains(got, want) {
 		t.Fatalf("missing expected rule line:\n%s", got)
@@ -106,12 +118,15 @@ func TestNftBuildScript_AnyProtocolNoPort(t *testing.T) {
 // the same transaction as the new ADD. Atomic; if either fails the
 // kernel rolls back both.
 func TestNftBuildScript_ReplacesExistingHandle(t *testing.T) {
-	got := nftBuildApplyScript(nftTestNamespace, Rule{
+	got, err := nftBuildApplyScriptStrict(nftTestNamespace, Rule{
 		ID:       "ssh-in",
 		Allow:    true,
 		Protocol: ProtocolTCP,
 		Port:     22,
 	}, 17)
+	if err != nil {
+		t.Fatalf("nftBuildApplyScriptStrict(replace handle): %v", err)
+	}
 	if !strings.Contains(got, `delete rule inet fwtest_filter input handle 17`) {
 		t.Fatalf("missing delete-of-old-handle line:\n%s", got)
 	}

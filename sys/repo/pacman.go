@@ -73,13 +73,7 @@ func (m *manager) applyPacman(ctx context.Context, name string, c *PacmanConfig)
 	}
 	fmt.Fprintf(&log, "configured repository: %s\n", name)
 
-	res, serr := m.runPriv(ctx, "pacman", "-Sy", "--noconfirm")
-	if res.Stdout != "" {
-		log.WriteString(res.Stdout)
-	}
-	if serr != nil {
-		fmt.Fprintf(&log, "warning: failed to sync repository database: %v\n", serr)
-	}
+	m.runNonFatal(ctx, &log, "warning: failed to sync repository database", "pacman", "-Sy", "--noconfirm")
 	return out(log.String(), true), nil
 }
 

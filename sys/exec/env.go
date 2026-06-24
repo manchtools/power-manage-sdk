@@ -40,13 +40,13 @@ var ValidEnvVarName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
 // BlockedEnvVars are environment variable names that must never be overridden
 // because they can hijack process execution (library injection, path manipulation).
+//
+// The whole LD_*, BASH_FUNC_*, and DYLD_* families are blocked unconditionally by
+// the prefix check in IsAllowedEnvVar, so individual LD_* keys (LD_PRELOAD,
+// LD_LIBRARY_PATH, LD_AUDIT, LD_DEBUG, LD_PROFILE) and the BASH_FUNC_ prefix are
+// not enumerated here — listing them would only duplicate the prefix rule. This
+// map carries the names that have no covering prefix.
 var BlockedEnvVars = map[string]bool{
-	// Linux dynamic linker injection
-	"LD_PRELOAD":      true,
-	"LD_LIBRARY_PATH": true,
-	"LD_AUDIT":        true,
-	"LD_DEBUG":        true,
-	"LD_PROFILE":      true,
 	// glibc iconv module loading (CVE-2021-4034 vector)
 	"GCONV_PATH": true,
 	// DNS/resolver manipulation
@@ -67,7 +67,6 @@ var BlockedEnvVars = map[string]bool{
 	"BASH_ENV":   true,
 	"CDPATH":     true,
 	"GLOBIGNORE": true,
-	"BASH_FUNC_": true,
 }
 
 // IsAllowedEnvVar returns true if the environment variable name is safe to set.

@@ -73,21 +73,9 @@ func (m *manager) applyZypper(ctx context.Context, name string, c *ZypperConfig)
 	}
 	// Key import + refresh are non-fatal (the repo is configured).
 	if c.GPGKey != "" {
-		res, kerr := m.runPriv(ctx, "rpm", pmexec.SeparatePositionals([]string{"--import"}, c.GPGKey)...)
-		if res.Stdout != "" {
-			log.WriteString(res.Stdout)
-		}
-		if kerr != nil {
-			fmt.Fprintf(&log, "warning: failed to import GPG key: %v\n", kerr)
-		}
+		m.runNonFatal(ctx, &log, "warning: failed to import GPG key", "rpm", pmexec.SeparatePositionals([]string{"--import"}, c.GPGKey)...)
 	}
-	res2, rerr := m.runPriv(ctx, "zypper", "--non-interactive", "refresh", name)
-	if res2.Stdout != "" {
-		log.WriteString(res2.Stdout)
-	}
-	if rerr != nil {
-		fmt.Fprintf(&log, "warning: failed to refresh repo: %v\n", rerr)
-	}
+	m.runNonFatal(ctx, &log, "warning: failed to refresh repo", "zypper", "--non-interactive", "refresh", name)
 
 	return out(log.String(), true), nil
 }

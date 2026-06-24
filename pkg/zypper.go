@@ -323,17 +323,17 @@ func (z *zypper) Show(ctx context.Context, name string) (*Package, error) {
 		line := scanner.Text()
 		switch {
 		case strings.HasPrefix(line, "Version"):
-			pkg.Version = parseZypperValue(line)
+			pkg.Version = parseColonValue(line)
 		case strings.HasPrefix(line, "Arch"):
-			pkg.Architecture = parseZypperValue(line)
+			pkg.Architecture = parseColonValue(line)
 		case strings.HasPrefix(line, "Summary"):
-			pkg.Description = parseZypperValue(line)
+			pkg.Description = parseColonValue(line)
 		case strings.HasPrefix(line, "Installed Size"):
-			pkg.Size = parseZypperSize(parseZypperValue(line))
+			pkg.Size = parseZypperSize(parseColonValue(line))
 		case strings.HasPrefix(line, "Repository"):
-			pkg.Repository = parseZypperValue(line)
+			pkg.Repository = parseColonValue(line)
 		case strings.HasPrefix(line, "Status"):
-			if strings.Contains(strings.ToLower(parseZypperValue(line)), "installed") {
+			if strings.Contains(strings.ToLower(parseColonValue(line)), "installed") {
 				pkg.Status = "installed"
 			}
 		}
@@ -587,30 +587,11 @@ func (z *zypper) getPinnedSet(ctx context.Context) (map[string]bool, error) {
 	return pinned, nil
 }
 
-func parseZypperValue(line string) string {
-	parts := strings.SplitN(line, ":", 2)
-	if len(parts) < 2 {
-		return ""
-	}
-	return strings.TrimSpace(parts[1])
-}
-
 func parseZypperSize(s string) int64 {
-	s = strings.TrimSpace(s)
-	multiplier := int64(1)
-	switch {
-	case strings.HasSuffix(s, " KiB"):
-		multiplier = 1024
-		s = strings.TrimSuffix(s, " KiB")
-	case strings.HasSuffix(s, " MiB"):
-		multiplier = 1024 * 1024
-		s = strings.TrimSuffix(s, " MiB")
-	case strings.HasSuffix(s, " GiB"):
-		multiplier = 1024 * 1024 * 1024
-		s = strings.TrimSuffix(s, " GiB")
-	case strings.HasSuffix(s, " B"):
-		s = strings.TrimSuffix(s, " B")
-	}
-	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	return int64(size * float64(multiplier))
+	return parseSizeWithUnits(s, []sizeUnit{
+		{" KiB", 1024},
+		{" MiB", 1024 * 1024},
+		{" GiB", 1024 * 1024 * 1024},
+		{" B", 1},
+	})
 }
