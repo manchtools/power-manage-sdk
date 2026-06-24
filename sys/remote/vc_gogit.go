@@ -10,7 +10,6 @@ import (
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
@@ -341,5 +340,3 @@ func restoreUntracked(dest string, snap []untrackedFile) error {
 	}
 	return nil
 }
-
-var _ = storer.ErrStop // anchor the storer import for future use (HEAD walk in v2)

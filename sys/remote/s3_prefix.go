@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -119,7 +118,6 @@ func (s *s3Source) fetchPrefix(ctx context.Context, dest string) (Result, error)
 type s3Object struct {
 	Key  string
 	ETag string
-	Size int64
 }
 
 // maxPrefixObjects caps the total objects a single prefix-sync will
@@ -138,14 +136,13 @@ const maxPrefixObjects = 10000
 // ContinuationToken query of the next. Exceeding maxPrefixObjects
 // surfaces as ErrInvalidConfig so the operator can narrow the prefix.
 func (s *s3Source) listObjects(ctx context.Context) ([]s3Object, error) {
-	endpoint, _ := url.Parse(s.objectURL) // already validated in NewS3
-	bucketURL := *endpoint
-	// Listing happens at the bucket root, NOT the prefix path.
-	parts := strings.SplitN(strings.TrimPrefix(endpoint.Path, "/"), "/", 2)
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("%w: cannot derive bucket from %s", ErrInvalidConfig, s.objectURL)
+	// Listing happens at the bucket root, NOT the prefix path. Derive it
+	// from cfg the same way NewS3 builds objectURL so a path-prefixed
+	// endpoint (e.g. a proxy fronting S3 under /v1) is honored.
+	bucketURL, err := s.bucketRootURL()
+	if err != nil {
+		return nil, err
 	}
-	bucketURL.Path = "/" + parts[0]
 
 	var all []s3Object
 	var token string
@@ -182,9 +179,9 @@ func (s *s3Source) listObjects(ctx context.Context) ([]s3Object, error) {
 		}
 		_ = resp.Body.Close()
 		for _, e := range parsed.Contents {
-			all = append(all, s3Object{Key: e.Key, ETag: e.ETag, Size: e.Size})
+			all = append(all, s3Object{Key: e.Key, ETag: e.ETag})
 			if len(all) > maxPrefixObjects {
-				return nil, fmt.Errorf("%w: prefix %q under %s/%s contains more than %d objects; narrow the prefix or paginate the source", ErrInvalidConfig, s.cfg.Key, s.cfg.Endpoint, parts[0], maxPrefixObjects)
+				return nil, fmt.Errorf("%w: prefix %q under %s/%s contains more than %d objects; narrow the prefix or paginate the source", ErrInvalidConfig, s.cfg.Key, s.cfg.Endpoint, s.cfg.Bucket, maxPrefixObjects)
 			}
 		}
 		if !parsed.IsTruncated || parsed.NextContinuationToken == "" {
@@ -202,7 +199,6 @@ type listV2Response struct {
 	Contents              []struct {
 		Key  string `xml:"Key"`
 		ETag string `xml:"ETag"`
-		Size int64  `xml:"Size"`
 	} `xml:"Contents"`
 }
 
@@ -223,15 +219,31 @@ func hashListing(objs []s3Object) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// bucketRootURL returns the bucket-root URL (endpoint path + bucket),
+// the base for both ListObjectsV2 and per-object GETs. It mirrors how
+// NewS3 builds objectURL, so a path-prefixed endpoint is addressed
+// consistently across single-key and prefix-sync modes. The bucket is
+// taken from cfg (already validated) rather than re-derived from the
+// pre-joined objectURL, which cannot distinguish an endpoint path prefix
+// from the bucket segment.
+func (s *s3Source) bucketRootURL() (*url.URL, error) {
+	endpoint, err := parseS3Endpoint(s.cfg.Endpoint)
+	if err != nil {
+		return nil, err // already wraps ErrInvalidConfig
+	}
+	endpoint.Path = strings.TrimRight(endpoint.Path, "/") + "/" + s.cfg.Bucket
+	return endpoint, nil
+}
+
 // openSingleObject is openObject restricted to the v1 anonymous-GET
 // surface, parameterised by the full key (rather than the cfg.Key the
 // prefix-sync path can't use).
 func (s *s3Source) openSingleObject(ctx context.Context, key string) (io.ReadCloser, string, error) {
-	endpoint, _ := url.Parse(s.objectURL)
-	bucketAndKey := *endpoint
-	parts := strings.SplitN(strings.TrimPrefix(endpoint.Path, "/"), "/", 2)
-	bucket := parts[0]
-	bucketAndKey.Path = "/" + bucket + "/" + key
+	bucketAndKey, err := s.bucketRootURL()
+	if err != nil {
+		return nil, "", err
+	}
+	bucketAndKey.Path = bucketAndKey.Path + "/" + key
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bucketAndKey.String(), nil)
 	if err != nil {
@@ -311,20 +323,3 @@ func assertWithinDest(dest, full string) error {
 	}
 	return nil
 }
-
-// init wires the prefix-sync dispatcher into s3Source.Fetch.
-func init() {
-	s3PrefixDispatch = func(ctx context.Context, s *s3Source, dest string) (Result, error) {
-		return s.fetchPrefix(ctx, dest)
-	}
-}
-
-// s3PrefixDispatch is the seam s3.go's Fetch calls into for the
-// prefix-sync branch.
-var s3PrefixDispatch func(ctx context.Context, s *s3Source, dest string) (Result, error)
-
-// errPrefixSyncUnimplemented — sentinel returned when the prefix
-// dispatcher hasn't been wired up yet (a build-tag scenario nothing
-// in production triggers; keeps the error message clear if it
-// somehow does).
-var errPrefixSyncUnimplemented = errors.New("remote: S3 prefix sync dispatcher not registered")
