@@ -4016,8 +4016,19 @@ type AgentUpdateParams struct {
 	// older version (anti-rollback). Default false.
 	// @gotags: validate:"omitempty"
 	AllowDowngrade bool `protobuf:"varint,3,opt,name=allow_downgrade,json=allowDowngrade,proto3" json:"allow_downgrade,omitempty" validate:"omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// When true, the agent follows a redirect that changes host or scheme
+	// while downloading the update binary and checksum manifest — e.g.
+	// GitHub release assets, which 302 from github.com to
+	// release-assets.githubusercontent.com. Default false: a cross-origin
+	// redirect is refused and the download must reach the configured host
+	// directly. The binary is always sha256-pinned and an https->http
+	// downgrade is refused regardless, so this opts into a host-changing
+	// hop, not into unverified bytes. Rides inside the CA-signed action, so
+	// it is an explicit, authenticated operator decision.
+	// @gotags: validate:"omitempty"
+	AllowRedirect bool `protobuf:"varint,4,opt,name=allow_redirect,json=allowRedirect,proto3" json:"allow_redirect,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AgentUpdateParams) Reset() {
@@ -4067,6 +4078,13 @@ func (x *AgentUpdateParams) GetArm64() *AgentUpdateArch {
 func (x *AgentUpdateParams) GetAllowDowngrade() bool {
 	if x != nil {
 		return x.AllowDowngrade
+	}
+	return false
+}
+
+func (x *AgentUpdateParams) GetAllowRedirect() bool {
+	if x != nil {
+		return x.AllowRedirect
 	}
 	return false
 }
@@ -4335,11 +4353,12 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
 	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
 	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\x12'\n" +
-	"\x0fexpected_sha256\x18\x03 \x01(\tR\x0eexpectedSha256\"\x98\x01\n" +
+	"\x0fexpected_sha256\x18\x03 \x01(\tR\x0eexpectedSha256\"\xbf\x01\n" +
 	"\x11AgentUpdateParams\x12,\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
 	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64\x12'\n" +
-	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade*\xea\x04\n" +
+	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12%\n" +
+	"\x0eallow_redirect\x18\x04 \x01(\bR\rallowRedirect*\xea\x04\n" +
 	"\n" +
 	"ActionType\x12\x1b\n" +
 	"\x17ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
