@@ -290,7 +290,7 @@ func TestHTTPFetch_RejectsCrossHostRedirect(t *testing.T) {
 // path redirect and bounding the redirect count. Exercised directly so the scheme
 // check is isolated from the host:port difference a real two-server test forces.
 func TestDefaultHTTPClient_RejectsSchemeDowngradeRedirect(t *testing.T) {
-	check := defaultHTTPClient().CheckRedirect
+	check := defaultHTTPClient(RedirectSameOrigin).CheckRedirect
 	req := func(raw string) *http.Request {
 		r, err := http.NewRequest(http.MethodGet, raw, nil)
 		if err != nil {
