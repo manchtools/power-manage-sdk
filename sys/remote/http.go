@@ -27,6 +27,29 @@ import (
 // who legitimately need more must set MaxBytes explicitly.
 const defaultHTTPMaxBytes int64 = 2 * 1024 * 1024 * 1024
 
+// RedirectPolicy governs which HTTP redirects a fetch follows. The zero value
+// (RedirectSameOrigin) keeps the historical default so existing callers are
+// unchanged; RedirectNone is stricter (no redirects at all) and
+// RedirectCrossOrigin looser (also follows host changes). The constants are
+// declared so the default is the zero value, NOT in strictness order. An
+// https -> http downgrade is refused at EVERY level (a redirect must never strip
+// TLS), and the chain is bounded to 10 hops wherever redirects are followed.
+type RedirectPolicy int
+
+const (
+	// RedirectSameOrigin (the default / zero value) follows only same-scheme,
+	// same-host redirects (path or query changes); a host or scheme change is
+	// refused. This pins the bytes to the configured origin for unpinned fetches.
+	RedirectSameOrigin RedirectPolicy = iota
+	// RedirectNone refuses every redirect — the fetch must reach exactly its URL.
+	RedirectNone
+	// RedirectCrossOrigin additionally follows host changes and http -> https
+	// upgrades (e.g. a CDN such as GitHub releases redirecting github.com ->
+	// release-assets.githubusercontent.com). Integrity for cross-origin fetches
+	// must come from a ChecksumSHA256 pin, not from host-pinning.
+	RedirectCrossOrigin
+)
+
 // HTTPConfig configures a public-HTTP Source. Authentication is
 // deliberately not modelled — v1 is anonymous-only. v2 adds an Auth
 // type without breaking this struct's binary layout.
@@ -79,6 +102,13 @@ type HTTPConfig struct {
 	// of which client transports the bytes. A supplied client owns its own
 	// redirect/transport policy (it does not inherit the default redirect guard).
 	Client *http.Client
+
+	// Redirect selects which redirects the default client follows. The zero
+	// value (RedirectSameOrigin) preserves the historical strict guard. Set
+	// RedirectCrossOrigin for sources behind a CDN that bounces to another host
+	// (e.g. GitHub release downloads). Ignored when Client is supplied — a
+	// caller-provided client owns its own redirect policy.
+	Redirect RedirectPolicy
 }
 
 // httpSource is the concrete Source implementation.
@@ -137,7 +167,7 @@ func newHTTPSource(cfg HTTPConfig) (*httpSource, error) {
 
 	client := cfg.Client
 	if client == nil {
-		client = defaultHTTPClient()
+		client = defaultHTTPClient(cfg.Redirect)
 	}
 
 	return &httpSource{
@@ -433,30 +463,58 @@ func chownNoFollow(dest string, uid, gid int) error {
 	return sysfs.FchownNoFollow(dest, uid, gid)
 }
 
-// defaultHTTPClient — modest timeouts so a Fetch can't hang forever, and
-// no automatic redirect following on by default? Actually leave Go's
-// default 10-redirect chase in place: legitimate CDNs (Cloudflare, GH
-// releases) use it heavily, and the URL validation already restricts
-// the scheme to http/https.
-func defaultHTTPClient() *http.Client {
+// defaultHTTPClient — modest timeout so a Fetch can't hang forever, and a
+// redirect guard governed by the given RedirectPolicy (the URL validation
+// already restricts the scheme to http/https).
+func defaultHTTPClient(p RedirectPolicy) *http.Client {
 	return &http.Client{
-		Timeout: 30 * time.Minute,
-		// Refuse any redirect that changes the origin (scheme OR host:port). A
-		// download is pinned to a URL; letting a redirect choose a different host
-		// lets a compromised origin substitute the bytes (and is an SSRF vector
-		// toward internal services), and a scheme change is a TLS downgrade
-		// (https -> http) that strips transport integrity from a pinned source.
-		// Same-origin path redirects are allowed but bounded.
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > 0 && (req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host) {
-				return fmt.Errorf("%w: refusing cross-origin redirect %s://%s -> %s://%s", ErrInvalidConfig,
-					via[0].URL.Scheme, via[0].URL.Host, req.URL.Scheme, req.URL.Host)
-			}
-			if len(via) >= 10 {
-				return fmt.Errorf("%w: stopped after 10 redirects", ErrInvalidConfig)
-			}
+		Timeout:       30 * time.Minute,
+		CheckRedirect: redirectPolicy(p),
+	}
+}
+
+// redirectPolicy returns an http.Client.CheckRedirect that enforces p. It
+// compares each hop against the immediately-preceding request:
+//   - An https -> http downgrade is refused at EVERY level — a redirect must
+//     never strip TLS (a download pinned to https loses transport integrity if
+//     a redirect can bounce it to http).
+//   - RedirectNone refuses all redirects; RedirectSameOrigin refuses any scheme
+//     or host change; RedirectCrossOrigin allows host changes and http -> https
+//     upgrades (integrity for those then rests on the ChecksumSHA256 pin, not on
+//     host-pinning).
+//   - The chain is bounded to 10 hops wherever redirects are followed.
+//
+// An unknown policy value fails closed (refuses).
+func redirectPolicy(p RedirectPolicy) func(req *http.Request, via []*http.Request) error {
+	return func(req *http.Request, via []*http.Request) error {
+		if len(via) == 0 {
 			return nil
-		},
+		}
+		from := via[len(via)-1].URL
+		to := req.URL
+		// TLS strip is never permitted, regardless of policy.
+		if from.Scheme == "https" && to.Scheme == "http" {
+			return fmt.Errorf("%w: refusing scheme downgrade %s://%s -> %s://%s", ErrInvalidConfig,
+				from.Scheme, from.Host, to.Scheme, to.Host)
+		}
+		switch p {
+		case RedirectNone:
+			return fmt.Errorf("%w: refusing redirect (policy: none) %s://%s -> %s://%s", ErrInvalidConfig,
+				from.Scheme, from.Host, to.Scheme, to.Host)
+		case RedirectSameOrigin:
+			if to.Scheme != from.Scheme || to.Host != from.Host {
+				return fmt.Errorf("%w: refusing cross-origin redirect %s://%s -> %s://%s", ErrInvalidConfig,
+					from.Scheme, from.Host, to.Scheme, to.Host)
+			}
+		case RedirectCrossOrigin:
+			// Host change / scheme upgrade allowed; downgrade already refused.
+		default:
+			return fmt.Errorf("%w: unknown redirect policy %d", ErrInvalidConfig, p)
+		}
+		if len(via) >= 10 {
+			return fmt.Errorf("%w: stopped after 10 redirects", ErrInvalidConfig)
+		}
+		return nil
 	}
 }
 

@@ -74,7 +74,7 @@ func NewS3(cfg S3Config) (Source, error) {
 	return &s3Source{
 		cfg:       cfg,
 		objectURL: full.String(),
-		client:    defaultHTTPClient(),
+		client:    defaultHTTPClient(RedirectSameOrigin),
 	}, nil
 }
 

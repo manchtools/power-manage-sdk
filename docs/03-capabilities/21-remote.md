@@ -44,11 +44,36 @@ git, err  := remote.NewGit(remote.GitConfig{URL: "https://…", Ref: "v1.2.3"})
 s3, err   := remote.NewS3(remote.S3Config{Bucket: "artifacts", Key: "agent/latest"})
 ```
 
-<!-- docref: begin src=sys/remote/http.go#NewHTTP:9089d62f,sys/remote/git.go#NewGit:0a6c132d,sys/remote/s3.go#NewS3:8a5701dc -->
+<!-- docref: begin src=sys/remote/http.go#NewHTTP:9089d62f,sys/remote/git.go#NewGit:0a6c132d,sys/remote/s3.go#NewS3:78a4b3e6 -->
 Each constructor validates its configuration up front and returns an error for a
 malformed one, so a bad URL, missing checksum, or unusable S3 config fails at
 construction rather than mid-download. The returned value is a `Source` — the
 caller holds the interface, not the concrete client.
+<!-- docref: end -->
+
+## Following redirects
+
+By default an HTTP fetch follows only same-origin redirects: a hop that changes
+host or scheme is refused. A source behind a CDN that bounces to another host —
+GitHub release downloads redirect `github.com` to
+`release-assets.githubusercontent.com` — needs `RedirectCrossOrigin`:
+
+```go
+src, err := remote.NewHTTP(remote.HTTPConfig{
+    URL:            "https://github.com/org/app/releases/download/v1/app-linux-amd64",
+    ChecksumSHA256: "9f86d08…",          // integrity rests on the pin, not the host
+    Redirect:       remote.RedirectCrossOrigin,
+})
+```
+
+<!-- docref: begin src=sys/remote/http.go#RedirectPolicy:1f1fa7c7,sys/remote/http.go#redirectPolicy:a59120a4 -->
+`Redirect` selects one of three ordered levels. `RedirectSameOrigin` — the zero
+value — follows only same-scheme, same-host redirects. `RedirectNone` refuses
+every redirect. `RedirectCrossOrigin` additionally follows host changes and
+`http → https` upgrades, leaving integrity to the `ChecksumSHA256` pin rather
+than to host-pinning. At every level an `https → http` downgrade is refused — a
+redirect must never strip TLS — and the chain is bounded to 10 hops. The policy
+governs the default client only; a caller-supplied `Client` owns its own.
 <!-- docref: end -->
 
 ## Fetch into memory
