@@ -27,11 +27,13 @@ import (
 // who legitimately need more must set MaxBytes explicitly.
 const defaultHTTPMaxBytes int64 = 2 * 1024 * 1024 * 1024
 
-// RedirectPolicy governs which HTTP redirects a fetch follows. The levels are
-// ordered from strictest to loosest; the zero value (RedirectSameOrigin) keeps
-// the historical default so existing callers are unchanged. An https -> http
-// downgrade is refused at EVERY level (a redirect must never strip TLS), and the
-// chain is bounded to 10 hops wherever redirects are followed.
+// RedirectPolicy governs which HTTP redirects a fetch follows. The zero value
+// (RedirectSameOrigin) keeps the historical default so existing callers are
+// unchanged; RedirectNone is stricter (no redirects at all) and
+// RedirectCrossOrigin looser (also follows host changes). The constants are
+// declared so the default is the zero value, NOT in strictness order. An
+// https -> http downgrade is refused at EVERY level (a redirect must never strip
+// TLS), and the chain is bounded to 10 hops wherever redirects are followed.
 type RedirectPolicy int
 
 const (

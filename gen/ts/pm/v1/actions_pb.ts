@@ -1957,10 +1957,12 @@ export type AgentUpdateParams = Message<"pm.v1.AgentUpdateParams"> & {
    * GitHub release assets, which 302 from github.com to
    * release-assets.githubusercontent.com. Default false: a cross-origin
    * redirect is refused and the download must reach the configured host
-   * directly. The binary is always sha256-pinned and an https->http
-   * downgrade is refused regardless, so this opts into a host-changing
-   * hop, not into unverified bytes. Rides inside the CA-signed action, so
-   * it is an explicit, authenticated operator decision.
+   * directly. The binary is still verified against SHA-256 and an
+   * https->http downgrade is refused regardless; when expected_sha256 is
+   * set that hash is pinned inside the CA-signed action, otherwise
+   * verification comes from checksum_url. So this opts into a host-changing
+   * hop, not into unchecked bytes. Rides inside the CA-signed action, so it
+   * is an explicit, authenticated operator decision.
    * @gotags: validate:"omitempty"
    *
    * @generated from field: bool allow_redirect = 4;
