@@ -168,11 +168,24 @@ func ensureCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, queryTimeout)
 }
 
+// exec is the SINGLE Runner chokepoint for this package. Every getent / usermod
+// / useradd / userdel / chpasswd / loginctl / pkill call flows through it, and it
+// bounds a deadline-less context (ensureCtx) so no method can issue an UNBOUNDED
+// escalated command — a hung privileged process can't block forever. The
+// invariant holds by construction here, not by each method remembering to call
+// ensureCtx (which is exactly how Lock/Unlock/SetPassword/KillSessions silently
+// skipped it). Enforced by TestExecBoundsContext.
+func (u *shadowUtils) exec(ctx context.Context, c exec.Command) (exec.Result, error) {
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	return u.r.Run(ctx, c)
+}
+
 // run executes an escalated mutating command and maps a non-zero exit to a
 // *exec.CommandError carrying stderr (the "user already exists" context callers
 // need).
 func (u *shadowUtils) run(ctx context.Context, name string, args ...string) error {
-	res, err := u.r.Run(ctx, exec.Command{Name: name, Args: args, Escalate: true})
+	res, err := u.exec(ctx, exec.Command{Name: name, Args: args, Escalate: true})
 	if err != nil {
 		return err
 	}
@@ -185,7 +198,7 @@ func (u *shadowUtils) run(ctx context.Context, name string, args ...string) erro
 // query executes an unescalated read command and returns trimmed stdout, mapping
 // a non-zero exit to a *exec.CommandError.
 func (u *shadowUtils) query(ctx context.Context, name string, args ...string) (string, error) {
-	res, err := u.r.Run(ctx, exec.Command{Name: name, Args: args})
+	res, err := u.exec(ctx, exec.Command{Name: name, Args: args})
 	if err != nil {
 		return "", err
 	}
@@ -421,7 +434,7 @@ func (u *shadowUtils) Unlock(ctx context.Context, name string) error {
 // /etc/shadow entry, read escalated (root-only). Returns an error when the
 // entry can't be read or is malformed.
 func (u *shadowUtils) shadowPassword(ctx context.Context, name string) (string, error) {
-	res, err := u.r.Run(ctx, exec.Command{Name: "getent", Args: []string{"shadow", name}, Escalate: true})
+	res, err := u.exec(ctx, exec.Command{Name: "getent", Args: []string{"shadow", name}, Escalate: true})
 	if err != nil {
 		return "", err
 	}
@@ -499,7 +512,7 @@ func (u *shadowUtils) Exists(ctx context.Context, name string) (bool, error) {
 	}
 	ctx, cancel := ensureCtx(ctx)
 	defer cancel()
-	res, err := u.r.Run(ctx, exec.Command{Name: "id", Args: []string{name}})
+	res, err := u.exec(ctx, exec.Command{Name: "id", Args: []string{name}})
 	if err != nil {
 		return false, err
 	}

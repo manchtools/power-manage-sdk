@@ -19,10 +19,10 @@ func (u *shadowUtils) KillSessions(ctx context.Context, name string) error {
 	}
 	// loginctl first; the Runner resolves and runs it, reporting "not found" if
 	// systemd-logind is absent, in which case we fall through to pkill.
-	if res, err := u.r.Run(ctx, exec.Command{Name: "loginctl", Args: []string{"terminate-user", name}, Escalate: true}); err == nil && res.ExitCode == 0 {
+	if res, err := u.exec(ctx, exec.Command{Name: "loginctl", Args: []string{"terminate-user", name}, Escalate: true}); err == nil && res.ExitCode == 0 {
 		return nil
 	}
-	res, err := u.r.Run(ctx, exec.Command{Name: "pkill", Args: []string{"-KILL", "-u", name}, Escalate: true})
+	res, err := u.exec(ctx, exec.Command{Name: "pkill", Args: []string{"-KILL", "-u", name}, Escalate: true})
 	if err != nil {
 		return fmt.Errorf("kill sessions for %s: %w", name, err)
 	}
@@ -53,7 +53,7 @@ func (u *shadowUtils) LastLogin(ctx context.Context, name string) (time.Time, er
 	if err := validateUsername(name); err != nil {
 		return time.Time{}, err
 	}
-	res, err := u.r.Run(ctx, exec.Command{Name: "last", Args: []string{"-1", "-F", name}})
+	res, err := u.exec(ctx, exec.Command{Name: "last", Args: []string{"-1", "-F", name}})
 	if err != nil {
 		return time.Time{}, fmt.Errorf("last login for %s: %w", name, err)
 	}
