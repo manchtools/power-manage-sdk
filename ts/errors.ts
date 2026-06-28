@@ -42,6 +42,7 @@ export const ErrGroupNotDynamic = 'group_not_dynamic';
 export const ErrDynamicGroupManualModify = 'dynamic_group_manual_modify';
 export const ErrCannotDeleteSystemRole = 'cannot_delete_system_role';
 export const ErrCannotRenameSystemRole = 'cannot_rename_system_role';
+export const ErrCannotModifySystemAction = 'cannot_modify_system_action';
 export const ErrCannotRemoveLastAdmin = 'cannot_remove_last_admin';
 export const ErrRoleInUse = 'role_in_use';
 export const ErrScimAlreadyEnabled = 'scim_already_enabled';
