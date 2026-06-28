@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -176,10 +177,37 @@ func (a *apt) UpgradeAll(ctx context.Context, opts UpgradeOptions) (pmexec.Resul
 // requires the unattended-upgrades package; if absent it fails closed with an
 // actionable error rather than silently performing a full upgrade.
 func (a *apt) securityUpgrade(ctx context.Context) (pmexec.Result, error) {
-	if _, err := lookPath("unattended-upgrade"); err != nil {
-		return pmexec.Result{}, fmt.Errorf("%w: unattended-upgrade not found — install the unattended-upgrades package for apt security-only upgrades", pmexec.ErrBackendUnavailable)
+	bin, err := resolveUnattendedUpgrade()
+	if err != nil {
+		return pmexec.Result{}, err
 	}
-	return a.write(ctx, "unattended-upgrade", "-v")
+	return a.write(ctx, bin, "-v")
+}
+
+// unattendedUpgradeBinPaths are the canonical absolute locations of the
+// unattended-upgrade binary, probed before a bare $PATH lookup. A hardened
+// systemd unit can run with a $PATH that omits /usr/sbin (or is empty), so the
+// bare command name may fail to resolve even when the package IS installed —
+// resolving an absolute path makes both the presence check and the exec robust.
+var unattendedUpgradeBinPaths = []string{
+	"/usr/bin/unattended-upgrade",
+	"/usr/sbin/unattended-upgrade",
+}
+
+// resolveUnattendedUpgrade returns an absolute path to the unattended-upgrade
+// binary, probing the known locations first and falling back to $PATH. It fails
+// closed with ErrBackendUnavailable when the unattended-upgrades package is not
+// installed.
+func resolveUnattendedUpgrade() (string, error) {
+	for _, p := range unattendedUpgradeBinPaths {
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			return p, nil
+		}
+	}
+	if p, err := lookPath("unattended-upgrade"); err == nil {
+		return p, nil
+	}
+	return "", fmt.Errorf("%w: unattended-upgrade not found — install the unattended-upgrades package for apt security-only upgrades", pmexec.ErrBackendUnavailable)
 }
 
 // Pin holds packages (apt-mark hold).
