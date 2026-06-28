@@ -33,7 +33,13 @@ func TestGet_NonNumericGIDFailsClosed(t *testing.T) {
 
 // A '*'-prefixed shadow password (a common disabled-account marker) is detected
 // as locked, the same as '!'.
-func TestGet_StarLockedIsDetected(t *testing.T) {
+// TestGet_StarPasswordIsNotLocked pins the corrected lock semantics: a "*"
+// shadow password means "no password, password-login disabled" — it is NOT a
+// locked account (only a leading "!", from usermod -L, is). The account stays
+// reachable via SSH keys / su / a setuid opener, which is exactly how the
+// passwordless pm-tty-* terminal accounts work. Treating "*" as locked made the
+// agent refuse every terminal session ("tty user is disabled").
+func TestGet_StarPasswordIsNotLocked(t *testing.T) {
 	f := exectest.New(exec.Direct)
 	f.Push(exec.Result{Stdout: "deploy:x:1000:1000::/home/deploy:/bin/bash\n"}, nil)
 	f.Push(exec.Result{Stdout: "deploy:x:1000:\n"}, nil)
@@ -43,8 +49,8 @@ func TestGet_StarLockedIsDetected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !info.Locked {
-		t.Error("'*'-prefixed shadow entry not detected as locked")
+	if info.Locked {
+		t.Error("'*'-prefixed shadow entry wrongly detected as locked (only '!' means locked)")
 	}
 	if !info.LockedKnown {
 		t.Error("LockedKnown = false after a successful shadow read; Locked is authoritative here")

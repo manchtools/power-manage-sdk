@@ -201,11 +201,40 @@ func TestLockUnlock(t *testing.T) {
 	}
 	wantOneCmd(t, f, "usermod", []string{"-L", "deploy"}, true)
 
+	// Unlock of a PASSWORD-BEARING account: read the shadow, then `usermod -U`
+	// (strips the leading "!", preserving the hash).
 	f2 := exectest.New(exec.Direct)
+	f2.Push(exec.Result{Stdout: "deploy:!$6$abc$hash:19000:0:99999:7:::\n"}, nil) // getent shadow
+	f2.Push(exec.Result{}, nil)                                                   // usermod -U
 	if err := mgr(t, f2).Unlock(context.Background(), "deploy"); err != nil {
 		t.Fatal(err)
 	}
-	wantOneCmd(t, f2, "usermod", []string{"-U", "deploy"}, true)
+	calls := f2.Calls()
+	if len(calls) != 2 {
+		t.Fatalf("want 2 commands (getent shadow + usermod -U), got %d: %+v", len(calls), calls)
+	}
+	if last := calls[1]; last.Name != "usermod" || last.Args[0] != "-U" {
+		t.Errorf("unlock of a password-bearing account must use usermod -U, got %+v", last)
+	}
+}
+
+// TestUnlock_Passwordless covers the pm-tty-* case: `usermod -U` REFUSES to
+// unlock a passwordless account ("would result in a passwordless account"), so
+// Unlock sets the field to "*" (no password, not locked) instead.
+func TestUnlock_Passwordless(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	f.Push(exec.Result{Stdout: "pm-tty-paul:!:19000:0:99999:7:::\n"}, nil) // getent shadow: locked + passwordless
+	f.Push(exec.Result{}, nil)                                             // usermod -p '*'
+	if err := mgr(t, f).Unlock(context.Background(), "pm-tty-paul"); err != nil {
+		t.Fatal(err)
+	}
+	calls := f.Calls()
+	if len(calls) != 2 {
+		t.Fatalf("want 2 commands (getent shadow + usermod -p '*'), got %d: %+v", len(calls), calls)
+	}
+	if last := calls[1]; last.Name != "usermod" || len(last.Args) < 2 || last.Args[0] != "-p" || last.Args[1] != "*" {
+		t.Errorf("passwordless unlock must use usermod -p '*', got %+v", last)
+	}
 }
 
 func TestGet(t *testing.T) {
