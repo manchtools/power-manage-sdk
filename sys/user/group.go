@@ -42,7 +42,7 @@ func (u *shadowUtils) GroupExists(ctx context.Context, name string) (bool, error
 	}
 	ctx, cancel := ensureCtx(ctx)
 	defer cancel()
-	res, err := u.r.Run(ctx, exec.Command{Name: "getent", Args: []string{"group", name}})
+	res, err := u.exec(ctx, exec.Command{Name: "getent", Args: []string{"group", name}})
 	if err != nil {
 		return false, err
 	}

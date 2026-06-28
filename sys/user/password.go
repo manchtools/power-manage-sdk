@@ -72,7 +72,7 @@ func (u *shadowUtils) SetPassword(ctx context.Context, name string, password exe
 	// Reveal() here is the single sanctioned chpasswd sink (see the Secret
 	// redaction contract / the Reveal fitness function).
 	stdin := strings.NewReader(name + ":" + password.Reveal())
-	res, err := u.r.Run(ctx, exec.Command{Name: "chpasswd", Stdin: stdin, Escalate: true})
+	res, err := u.exec(ctx, exec.Command{Name: "chpasswd", Stdin: stdin, Escalate: true})
 	if err != nil {
 		return err
 	}

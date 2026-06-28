@@ -28,6 +28,7 @@ type FakeRunner struct {
 	mu      sync.Mutex
 	backend exec.PrivilegeBackend
 	calls   []exec.Command
+	ctxs    []context.Context
 	queue   []scripted
 }
 
@@ -58,11 +59,21 @@ func (f *FakeRunner) Calls() []exec.Command {
 	return append([]exec.Command(nil), f.calls...)
 }
 
-// record appends the attempted Command to the call log.
-func (f *FakeRunner) record(c exec.Command) {
+// CallContexts returns the context received with each recorded Command, in
+// order (1:1 with Calls). Lets a test assert the invariant that every escalated
+// call ran under a deadline-bounded context — see sys/user TestExecBoundsContext.
+func (f *FakeRunner) CallContexts() []context.Context {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]context.Context(nil), f.ctxs...)
+}
+
+// record appends the attempted Command and its context to the call log.
+func (f *FakeRunner) record(ctx context.Context, c exec.Command) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls = append(f.calls, c)
+	f.ctxs = append(f.ctxs, ctx)
 }
 
 // pop returns the next scripted outcome (FIFO), or a clean success if none.
@@ -89,7 +100,7 @@ func (f *FakeRunner) Run(ctx context.Context, c exec.Command) (exec.Result, erro
 	if err := exec.ValidateCommandEnv(c.Env); err != nil {
 		return exec.Result{}, err
 	}
-	f.record(c)
+	f.record(ctx, c)
 	if err := ctx.Err(); err != nil {
 		return exec.Result{}, err
 	}
@@ -104,7 +115,7 @@ func (f *FakeRunner) Stream(ctx context.Context, c exec.Command, onLine exec.Out
 	if err := exec.ValidateCommandEnv(c.Env); err != nil {
 		return exec.Result{}, err
 	}
-	f.record(c)
+	f.record(ctx, c)
 	if err := ctx.Err(); err != nil {
 		return exec.Result{}, err
 	}

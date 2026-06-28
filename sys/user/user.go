@@ -168,11 +168,24 @@ func ensureCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, queryTimeout)
 }
 
+// exec is the SINGLE Runner chokepoint for this package. Every getent / usermod
+// / useradd / userdel / chpasswd / loginctl / pkill call flows through it, and it
+// bounds a deadline-less context (ensureCtx) so no method can issue an UNBOUNDED
+// escalated command — a hung privileged process can't block forever. The
+// invariant holds by construction here, not by each method remembering to call
+// ensureCtx (which is exactly how Lock/Unlock/SetPassword/KillSessions silently
+// skipped it). Enforced by TestExecBoundsContext.
+func (u *shadowUtils) exec(ctx context.Context, c exec.Command) (exec.Result, error) {
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	return u.r.Run(ctx, c)
+}
+
 // run executes an escalated mutating command and maps a non-zero exit to a
 // *exec.CommandError carrying stderr (the "user already exists" context callers
 // need).
 func (u *shadowUtils) run(ctx context.Context, name string, args ...string) error {
-	res, err := u.r.Run(ctx, exec.Command{Name: name, Args: args, Escalate: true})
+	res, err := u.exec(ctx, exec.Command{Name: name, Args: args, Escalate: true})
 	if err != nil {
 		return err
 	}
@@ -185,7 +198,7 @@ func (u *shadowUtils) run(ctx context.Context, name string, args ...string) erro
 // query executes an unescalated read command and returns trimmed stdout, mapping
 // a non-zero exit to a *exec.CommandError.
 func (u *shadowUtils) query(ctx context.Context, name string, args ...string) (string, error) {
-	res, err := u.r.Run(ctx, exec.Command{Name: name, Args: args})
+	res, err := u.exec(ctx, exec.Command{Name: name, Args: args})
 	if err != nil {
 		return "", err
 	}
@@ -387,12 +400,52 @@ func (u *shadowUtils) Lock(ctx context.Context, name string) error {
 	return u.run(ctx, "usermod", "-L", name)
 }
 
-// Unlock unlocks an account (usermod -U).
+// Unlock unlocks an account so it can be used again.
+//
+// Plain `usermod -U` strips the leading "!" from the shadow password — but it
+// REFUSES when that would leave the account passwordless ("unlocking the user's
+// password would result in a passwordless account"). Accounts reached only via
+// setuid or SSH keys — the pm-tty-* terminal accounts — are passwordless by
+// design, so for a locked PASSWORDLESS account set the field to "*" (no
+// password, not locked) instead. An account with a real password hash still
+// round-trips through `usermod -U`, preserving the hash.
 func (u *shadowUtils) Unlock(ctx context.Context, name string) error {
 	if err := validateUsername(name); err != nil {
 		return err
 	}
+	field, err := u.shadowPassword(ctx, name)
+	if err != nil {
+		// Couldn't read the shadow (e.g. escalation not authorized): fall back
+		// to the plain unlock rather than guessing.
+		return u.run(ctx, "usermod", "-U", name)
+	}
+	if !strings.HasPrefix(field, "!") {
+		return nil // already unlocked
+	}
+	if rest := strings.TrimLeft(field, "!"); rest == "" || rest == "*" {
+		// Locked AND passwordless: usermod -U errors. "*" = no password, not
+		// locked — the unlocked state for a passwordless (pm-tty-*) account.
+		return u.run(ctx, "usermod", "-p", "*", name)
+	}
 	return u.run(ctx, "usermod", "-U", name)
+}
+
+// shadowPassword returns the password field (field 2) of the user's
+// /etc/shadow entry, read escalated (root-only). Returns an error when the
+// entry can't be read or is malformed.
+func (u *shadowUtils) shadowPassword(ctx context.Context, name string) (string, error) {
+	res, err := u.exec(ctx, exec.Command{Name: "getent", Args: []string{"shadow", name}, Escalate: true})
+	if err != nil {
+		return "", err
+	}
+	if res.ExitCode != 0 || res.Stdout == "" {
+		return "", fmt.Errorf("read shadow entry for %q: exit %d", name, res.ExitCode)
+	}
+	sf := strings.Split(strings.TrimSpace(res.Stdout), ":")
+	if len(sf) < 2 {
+		return "", fmt.Errorf("malformed shadow entry for %q", name)
+	}
+	return sf[1], nil
 }
 
 // Get retrieves the current state of a user.
@@ -439,12 +492,15 @@ func (u *shadowUtils) Get(ctx context.Context, name string) (Info, error) {
 
 	// The shadow file is root-only: read it escalated. If escalation is not
 	// authorized, leave Locked=false rather than guessing.
-	if res, err := u.r.Run(ctx, exec.Command{Name: "getent", Args: []string{"shadow", name}, Escalate: true}); err == nil && res.ExitCode == 0 && res.Stdout != "" {
-		sf := strings.Split(strings.TrimSpace(res.Stdout), ":")
-		if len(sf) >= 2 {
-			info.Locked = strings.HasPrefix(sf[1], "!") || strings.HasPrefix(sf[1], "*")
-			info.LockedKnown = true // the shadow read succeeded; Locked is authoritative
-		}
+	//
+	// Only a leading "!" means LOCKED (that's what `usermod -L` prepends). A "*"
+	// is NOT locked — it means "no password, password login disabled," while the
+	// account stays reachable via SSH keys / su / a setuid opener. The pm-tty-*
+	// terminal accounts are passwordless ("*") on purpose; treating "*" as locked
+	// made the agent refuse every terminal session ("tty user is disabled").
+	if field, err := u.shadowPassword(ctx, name); err == nil {
+		info.Locked = strings.HasPrefix(field, "!")
+		info.LockedKnown = true // the shadow read succeeded; Locked is authoritative
 	}
 	return info, nil
 }
@@ -456,7 +512,7 @@ func (u *shadowUtils) Exists(ctx context.Context, name string) (bool, error) {
 	}
 	ctx, cancel := ensureCtx(ctx)
 	defer cancel()
-	res, err := u.r.Run(ctx, exec.Command{Name: "id", Args: []string{name}})
+	res, err := u.exec(ctx, exec.Command{Name: "id", Args: []string{name}})
 	if err != nil {
 		return false, err
 	}
