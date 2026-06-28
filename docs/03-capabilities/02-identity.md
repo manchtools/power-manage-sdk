@@ -76,7 +76,7 @@ written verbatim to a file, where newlines are legitimate payload, use
 `NewMultilineSecret`.)
 <!-- docref: end -->
 
-<!-- docref: begin src=sys/user/password.go#shadowUtils.SetPassword:acf8cd55 -->
+<!-- docref: begin src=sys/user/password.go#shadowUtils.SetPassword:33cb1ef7 -->
 `SetPassword` feeds `name:secret` to `chpasswd` on **stdin** — the password
 never appears in the process's argv, where any other process could read it from
 `/proc/<pid>/cmdline`. The `Reveal` call here is the single sanctioned sink for
