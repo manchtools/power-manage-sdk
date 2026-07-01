@@ -122,10 +122,16 @@ message LpsPasswordRotation {
   // Local Linux username whose password was rotated.
   // @gotags: validate:"required,min=1,max=64"
   string username = 1;
-  // Plaintext rotated password. Encrypted at rest by control before the
-  // event is appended; never stored or logged in cleartext.
-  // @gotags: validate:"required,min=1,max=4096"
-  string password = 2;
+  // Rotated password, sealed BY THE AGENT to the control server's LPS
+  // public key (sdk crypto.SealToPublicKey: ephemeral X25519 + HKDF +
+  // AES-256-GCM; AAD = device_id|action_id|username). The gateway
+  // relays this opaquely — it can no longer read rotated passwords.
+  // Control unseals at receipt and re-encrypts with the at-rest path
+  // before the event is appended (spec 18). Minimum length is the
+  // construction overhead (32 ephemeral || 12 nonce || ct || 16 tag)
+  // plus one plaintext byte.
+  // @gotags: validate:"required,min=61,max=4096"
+  bytes sealed_password = 2;
   // RFC 3339 timestamp the agent observed the rotation. The control
   // server keeps the agent's clock here rather than re-stamping at
   // receipt so the timeline reflects the device's reality.

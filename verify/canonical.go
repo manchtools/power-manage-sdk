@@ -75,3 +75,16 @@ func RequestInventoryCanonical(m *pmv1.RequestInventory) ([]byte, error) {
 	c.Signature = nil
 	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
 }
+
+// LpsPublicKeyCanonical returns the signing pre-image bytes for the control
+// server's LPS sealing key (spec 18). It binds the public key bytes — so a
+// compromised gateway cannot swap in its own key and read sealed passwords —
+// while clearing the signature field the same way as every other surface.
+func LpsPublicKeyCanonical(m *pmv1.LpsPublicKey) ([]byte, error) {
+	if m == nil {
+		return nil, fmt.Errorf("verify: nil LpsPublicKey")
+	}
+	c := proto.Clone(m).(*pmv1.LpsPublicKey)
+	c.Signature = nil
+	return proto.MarshalOptions{Deterministic: true}.Marshal(c)
+}

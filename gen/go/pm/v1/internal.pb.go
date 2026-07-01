@@ -321,10 +321,16 @@ type LpsPasswordRotation struct {
 	// Local Linux username whose password was rotated.
 	// @gotags: validate:"required,min=1,max=64"
 	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=64"`
-	// Plaintext rotated password. Encrypted at rest by control before the
-	// event is appended; never stored or logged in cleartext.
-	// @gotags: validate:"required,min=1,max=4096"
-	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=1,max=4096"`
+	// Rotated password, sealed BY THE AGENT to the control server's LPS
+	// public key (sdk crypto.SealToPublicKey: ephemeral X25519 + HKDF +
+	// AES-256-GCM; AAD = device_id|action_id|username). The gateway
+	// relays this opaquely — it can no longer read rotated passwords.
+	// Control unseals at receipt and re-encrypts with the at-rest path
+	// before the event is appended (spec 18). Minimum length is the
+	// construction overhead (32 ephemeral || 12 nonce || ct || 16 tag)
+	// plus one plaintext byte.
+	// @gotags: validate:"required,min=61,max=4096"
+	SealedPassword []byte `protobuf:"bytes,2,opt,name=sealed_password,json=sealedPassword,proto3" json:"sealed_password,omitempty" validate:"required,min=61,max=4096"`
 	// RFC 3339 timestamp the agent observed the rotation. The control
 	// server keeps the agent's clock here rather than re-stamping at
 	// receipt so the timeline reflects the device's reality.
@@ -380,11 +386,11 @@ func (x *LpsPasswordRotation) GetUsername() string {
 	return ""
 }
 
-func (x *LpsPasswordRotation) GetPassword() string {
+func (x *LpsPasswordRotation) GetSealedPassword() []byte {
 	if x != nil {
-		return x.Password
+		return x.SealedPassword
 	}
-	return ""
+	return nil
 }
 
 func (x *LpsPasswordRotation) GetRotatedAt() string {
@@ -1072,10 +1078,10 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"passphrase\x12>\n" +
 	"\x0frotation_reason\x18\x05 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\x12\x1d\n" +
 	"\n" +
-	"gateway_id\x18\x06 \x01(\tR\tgatewayId\"\x9b\x01\n" +
+	"gateway_id\x18\x06 \x01(\tR\tgatewayId\"\xa8\x01\n" +
 	"\x13LpsPasswordRotation\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1d\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12'\n" +
+	"\x0fsealed_password\x18\x02 \x01(\fR\x0esealedPassword\x12\x1d\n" +
 	"\n" +
 	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x12-\n" +
 	"\x06reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x06reason\"\xb5\x01\n" +
