@@ -708,11 +708,11 @@ func TestZypper_ListPinnedAndIsPinned(t *testing.T) {
 }
 
 func TestZypper_ParseValueAndSize(t *testing.T) {
-	if v := parseZypperValue("Version : 9.0"); v != "9.0" {
-		t.Errorf("parseZypperValue=%q", v)
+	if v := parseColonValue("Version : 9.0"); v != "9.0" {
+		t.Errorf("parseColonValue=%q", v)
 	}
-	if v := parseZypperValue("no colon"); v != "" {
-		t.Errorf("parseZypperValue no-colon=%q", v)
+	if v := parseColonValue("no colon"); v != "" {
+		t.Errorf("parseColonValue no-colon=%q", v)
 	}
 	cases := map[string]int64{
 		"3.0 MiB": 3 * 1024 * 1024,

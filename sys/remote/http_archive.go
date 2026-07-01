@@ -5,7 +5,6 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -113,11 +112,12 @@ func (h *httpSource) fetchArchive(ctx context.Context, dest string) (Result, err
 	}
 	defer func() { _ = os.Remove(tmp) }()
 
-	// Mine the random suffix tmpPathFor stamped into tmp so the staging
-	// dir gets a matching tail — keeps the two sibling artefacts visible
-	// as a pair when an extract is interrupted mid-flight.
-	stagingSuffix := stagingSuffixFromTmp(tmp)
-	staging := dest + ".staging." + stagingSuffix
+	// Build an unpredictable sibling staging dir via the same fail-closed
+	// crypto/rand suffix tmpPathFor stamps onto the tmp file.
+	staging, err := tmpPathFor(dest + ".staging")
+	if err != nil {
+		return Result{}, err
+	}
 	if err := os.MkdirAll(staging, 0o755); err != nil {
 		return Result{}, fmt.Errorf("mkdir staging %s: %w", staging, err)
 	}
@@ -429,34 +429,3 @@ func safeJoinDest(staging, entry string) (string, error) {
 	}
 	return full, nil
 }
-
-// http.go's Fetch dispatches here when cfg.Extract is set; wired up in
-// the same commit so the test suite sees a green archive branch.
-func init() {
-	httpArchiveDispatch = func(ctx context.Context, h *httpSource, dest string) (Result, error) {
-		return h.fetchArchive(ctx, dest)
-	}
-}
-
-// httpArchiveDispatch is the seam Fetch calls into for the archive
-// branch. Initialised in this file's init so the single-file branch in
-// http.go can remain ignorant of archive types.
-var httpArchiveDispatch func(ctx context.Context, h *httpSource, dest string) (Result, error)
-
-// stagingSuffixFromTmp pulls the random hex tail tmpPathFor stamped
-// after ".tmp." out of a tmp path, so the staging dir can carry the
-// same suffix. Returns the basename verbatim when no ".tmp." marker is
-// present (defensive — keeps the malformation visible if streamToTmp's
-// naming convention ever changes).
-func stagingSuffixFromTmp(tmp string) string {
-	base := filepath.Base(tmp)
-	if idx := strings.LastIndex(base, ".tmp."); idx >= 0 {
-		return base[idx+len(".tmp."):]
-	}
-	return base
-}
-
-// errFetchArchiveUnimplemented is the sentinel http.go returns when
-// httpArchiveDispatch hasn't been wired up yet (a build-tag scenario
-// no production caller hits, but worth a clear message).
-var errFetchArchiveUnimplemented = errors.New("remote: http archive Fetch dispatcher not registered")

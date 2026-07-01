@@ -41,15 +41,15 @@ func pruneTo(dest string, keep map[string]struct{}) error {
 		return fmt.Errorf("stat dest %s: %w", dest, err)
 	}
 
-	// Two-pass walk: collect, then act. WalkDir's mid-walk Remove is
-	// allowed by the stdlib but the rules around dir-vs-file ordering
-	// are easy to get wrong; collecting first keeps the deletion order
-	// deterministic.
-	type victim struct {
-		path string
-		dir  bool
-	}
-	var victims []victim
+	// Single collect-then-act walk. WalkDir's mid-walk Remove is allowed
+	// by the stdlib but the rules around dir-vs-file ordering are easy to
+	// get wrong; collecting first keeps the deletion order deterministic.
+	// One pass gathers both the files to delete and every directory; the
+	// dirs are removed afterwards in path-length DESC order (children
+	// before parents), and os.Remove on a non-empty dir is a no-op via
+	// the ENOTEMPTY tolerance below.
+	var victims []string
+	var dirs []string
 
 	walkErr := filepath.WalkDir(dest, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -58,17 +58,18 @@ func pruneTo(dest string, keep map[string]struct{}) error {
 		if path == dest {
 			return nil
 		}
+		if d.IsDir() {
+			// Decide later — only an empty dir gets removed.
+			dirs = append(dirs, path)
+			return nil
+		}
 		rel, rerr := filepath.Rel(dest, path)
 		if rerr != nil {
 			return rerr
 		}
 		rel = filepath.ToSlash(rel)
-		if d.IsDir() {
-			// Decide later — only an empty dir gets removed.
-			return nil
-		}
 		if _, ok := keep[rel]; !ok {
-			victims = append(victims, victim{path: path, dir: false})
+			victims = append(victims, path)
 		}
 		return nil
 	})
@@ -78,27 +79,13 @@ func pruneTo(dest string, keep map[string]struct{}) error {
 
 	// Remove regular files first.
 	for _, v := range victims {
-		if err := os.Remove(v.path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("remove %s: %w", v.path, err)
+		if err := os.Remove(v); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove %s: %w", v, err)
 		}
 	}
 
-	// Now collect directories that ended up empty, in path-length DESC
-	// order so children are removed before their parents.
-	var dirs []string
-	dirsWalkErr := filepath.WalkDir(dest, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if path == dest || !d.IsDir() {
-			return nil
-		}
-		dirs = append(dirs, path)
-		return nil
-	})
-	if dirsWalkErr != nil {
-		return fmt.Errorf("walk %s: %w", dest, dirsWalkErr)
-	}
+	// Remove directories that ended up empty, in path-length DESC order
+	// so children are removed before their parents.
 	sort.Slice(dirs, func(i, j int) bool { return len(dirs[i]) > len(dirs[j]) })
 	for _, d := range dirs {
 		// os.Remove only succeeds when the dir is empty; that's exactly

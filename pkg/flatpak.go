@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
@@ -591,30 +590,17 @@ func parseFlatpakValue(line string) string {
 }
 
 func parseFlatpakSize(s string) int64 {
-	s = strings.ReplaceAll(strings.TrimSpace(s), ",", "")
-	multiplier := int64(1)
-	switch {
-	case strings.HasSuffix(s, " kB"), strings.HasSuffix(s, " KB"):
-		multiplier = 1000
-		s = strings.TrimSuffix(strings.TrimSuffix(s, " kB"), " KB")
-	case strings.HasSuffix(s, " KiB"):
-		multiplier = 1024
-		s = strings.TrimSuffix(s, " KiB")
-	case strings.HasSuffix(s, " MB"):
-		multiplier = 1000 * 1000
-		s = strings.TrimSuffix(s, " MB")
-	case strings.HasSuffix(s, " MiB"):
-		multiplier = 1024 * 1024
-		s = strings.TrimSuffix(s, " MiB")
-	case strings.HasSuffix(s, " GB"):
-		multiplier = 1000 * 1000 * 1000
-		s = strings.TrimSuffix(s, " GB")
-	case strings.HasSuffix(s, " GiB"):
-		multiplier = 1024 * 1024 * 1024
-		s = strings.TrimSuffix(s, " GiB")
-	case strings.HasSuffix(s, " bytes"):
-		s = strings.TrimSuffix(s, " bytes")
-	}
-	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	return int64(size * float64(multiplier))
+	// flatpak's human sizes can carry thousands separators ("1,536 MB"); strip
+	// them before the shared unit parser, which only space-trims.
+	s = strings.ReplaceAll(s, ",", "")
+	return parseSizeWithUnits(s, []sizeUnit{
+		{" kB", 1000},
+		{" KB", 1000},
+		{" KiB", 1024},
+		{" MB", 1000 * 1000},
+		{" MiB", 1024 * 1024},
+		{" GB", 1000 * 1000 * 1000},
+		{" GiB", 1024 * 1024 * 1024},
+		{" bytes", 1},
+	})
 }

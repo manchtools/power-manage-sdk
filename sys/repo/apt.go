@@ -130,13 +130,7 @@ func (m *manager) applyApt(ctx context.Context, name string, c *AptConfig) (Outc
 	// Refresh the index only when something actually changed (non-fatal: the
 	// config landed even if a typo'd URL fails the refresh).
 	if changed {
-		res, uerr := m.runPriv(ctx, "apt-get", "update")
-		if res.Stdout != "" {
-			log.WriteString(res.Stdout)
-		}
-		if uerr != nil {
-			fmt.Fprintf(&log, "warning: apt-get update failed after configuring %s: %v\n", name, uerr)
-		}
+		m.runNonFatal(ctx, &log, fmt.Sprintf("warning: apt-get update failed after configuring %s", name), "apt-get", "update")
 	}
 
 	return out(log.String(), changed), nil

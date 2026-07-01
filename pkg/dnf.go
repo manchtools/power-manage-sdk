@@ -376,19 +376,19 @@ func (d *dnf) Show(ctx context.Context, name string) (*Package, error) {
 		line := scanner.Text()
 		switch {
 		case strings.HasPrefix(line, "Version"):
-			pkg.Version = parseValue(line)
+			pkg.Version = parseColonValue(line)
 		case strings.HasPrefix(line, "Release"):
 			if pkg.Version != "" {
-				pkg.Version += "-" + parseValue(line)
+				pkg.Version += "-" + parseColonValue(line)
 			}
 		case strings.HasPrefix(line, "Architecture"):
-			pkg.Architecture = parseValue(line)
+			pkg.Architecture = parseColonValue(line)
 		case strings.HasPrefix(line, "Size"):
-			pkg.Size = parseSize(parseValue(line))
+			pkg.Size = parseSize(parseColonValue(line))
 		case strings.HasPrefix(line, "Summary"):
-			pkg.Description = parseValue(line)
+			pkg.Description = parseColonValue(line)
 		case strings.HasPrefix(line, "Repository"):
-			pkg.Repository = parseValue(line)
+			pkg.Repository = parseColonValue(line)
 		}
 	}
 
@@ -585,28 +585,11 @@ func (d *dnf) getPinnedSet(ctx context.Context) (map[string]bool, error) {
 	return pinned, nil
 }
 
-func parseValue(line string) string {
-	parts := strings.SplitN(line, ":", 2)
-	if len(parts) < 2 {
-		return ""
-	}
-	return strings.TrimSpace(parts[1])
-}
-
 func parseSize(s string) int64 {
-	s = strings.TrimSpace(s)
-	multiplier := int64(1)
-	switch {
-	case strings.HasSuffix(s, " k"), strings.HasSuffix(s, " K"):
-		multiplier = 1024
-		s = strings.TrimSuffix(strings.TrimSuffix(s, " k"), " K")
-	case strings.HasSuffix(s, " M"):
-		multiplier = 1024 * 1024
-		s = strings.TrimSuffix(s, " M")
-	case strings.HasSuffix(s, " G"):
-		multiplier = 1024 * 1024 * 1024
-		s = strings.TrimSuffix(s, " G")
-	}
-	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	return int64(size * float64(multiplier))
+	return parseSizeWithUnits(s, []sizeUnit{
+		{" k", 1024},
+		{" K", 1024},
+		{" M", 1024 * 1024},
+		{" G", 1024 * 1024 * 1024},
+	})
 }

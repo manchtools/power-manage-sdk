@@ -2,6 +2,7 @@ package exec
 
 import (
 	"io"
+	"slices"
 	"sync"
 )
 
@@ -90,9 +91,7 @@ func (b *CappedBuffer) Bytes() []byte {
 		out = append(out, truncationMarker...)
 		return out
 	}
-	out := make([]byte, len(b.buf))
-	copy(out, b.buf)
-	return out
+	return slices.Clone(b.buf)
 }
 
 // compile-time guard: CappedBuffer satisfies io.Writer.

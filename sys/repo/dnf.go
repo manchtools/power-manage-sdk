@@ -67,22 +67,10 @@ func (m *manager) applyDnf(ctx context.Context, name string, c *DnfConfig) (Outc
 	// trust it system-wide while the repository itself verifies nothing — a trust
 	// downgrade. Honor gpgcheck as the single switch and never import behind it.
 	if c.GPGCheck && c.GPGKey != "" {
-		res, kerr := m.runPriv(ctx, "rpm", pmexec.SeparatePositionals([]string{"--import"}, c.GPGKey)...)
-		if res.Stdout != "" {
-			log.WriteString(res.Stdout)
-		}
-		if kerr != nil {
-			fmt.Fprintf(&log, "warning: failed to import GPG key: %v\n", kerr)
-		}
+		m.runNonFatal(ctx, &log, "warning: failed to import GPG key", "rpm", pmexec.SeparatePositionals([]string{"--import"}, c.GPGKey)...)
 	}
 
-	res, rerr := m.runPriv(ctx, "dnf", "-y", "makecache", "--repo", name)
-	if res.Stdout != "" {
-		log.WriteString(res.Stdout)
-	}
-	if rerr != nil {
-		fmt.Fprintf(&log, "warning: failed to refresh repo metadata: %v\n", rerr)
-	}
+	m.runNonFatal(ctx, &log, "warning: failed to refresh repo metadata", "dnf", "-y", "makecache", "--repo", name)
 
 	return out(log.String(), true), nil
 }

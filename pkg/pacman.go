@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strconv"
+	"slices"
 	"strings"
 
 	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
@@ -348,15 +348,15 @@ func (p *pacman) Show(ctx context.Context, name string) (*Package, error) {
 		line := scanner.Text()
 		switch {
 		case strings.HasPrefix(line, "Version"):
-			pkg.Version = parsePacmanValue(line)
+			pkg.Version = parseColonValue(line)
 		case strings.HasPrefix(line, "Architecture"):
-			pkg.Architecture = parsePacmanValue(line)
+			pkg.Architecture = parseColonValue(line)
 		case strings.HasPrefix(line, "Description"):
-			pkg.Description = parsePacmanValue(line)
+			pkg.Description = parseColonValue(line)
 		case strings.HasPrefix(line, "Installed Size"):
-			pkg.Size = parsePacmanSize(parsePacmanValue(line))
+			pkg.Size = parsePacmanSize(parseColonValue(line))
 		case strings.HasPrefix(line, "Repository"):
-			pkg.Repository = parsePacmanValue(line)
+			pkg.Repository = parseColonValue(line)
 		}
 	}
 
@@ -396,9 +396,9 @@ func (p *pacman) ListVersions(ctx context.Context, name string) (*VersionInfo, e
 		line := scanner.Text()
 		switch {
 		case strings.HasPrefix(line, "Version"):
-			version = parsePacmanValue(line)
+			version = parseColonValue(line)
 		case strings.HasPrefix(line, "Repository"):
-			repo = parsePacmanValue(line)
+			repo = parseColonValue(line)
 		}
 	}
 	if version != "" {
@@ -522,7 +522,7 @@ func (p *pacman) Pin(ctx context.Context, packages ...string) (pmexec.Result, er
 	}
 	ignored := getIgnoredPackages(conf)
 	for _, name := range packages {
-		if !contains(ignored, name) {
+		if !slices.Contains(ignored, name) {
 			ignored = append(ignored, name)
 		}
 	}
@@ -544,7 +544,7 @@ func (p *pacman) Unpin(ctx context.Context, packages ...string) (pmexec.Result, 
 	}
 	var kept []string
 	for _, name := range getIgnoredPackages(conf) {
-		if !contains(packages, name) {
+		if !slices.Contains(packages, name) {
 			kept = append(kept, name)
 		}
 	}
@@ -582,7 +582,7 @@ func (p *pacman) IsPinned(ctx context.Context, name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return contains(getIgnoredPackages(conf), name), nil
+	return slices.Contains(getIgnoredPackages(conf), name), nil
 }
 
 func (p *pacman) getPinnedSet(ctx context.Context) (map[string]bool, error) {
@@ -670,39 +670,11 @@ func buildIgnorePkgConf(conf string, ignored []string) string {
 	return b.String()
 }
 
-func parsePacmanValue(line string) string {
-	parts := strings.SplitN(line, ":", 2)
-	if len(parts) < 2 {
-		return ""
-	}
-	return strings.TrimSpace(parts[1])
-}
-
 func parsePacmanSize(s string) int64 {
-	s = strings.TrimSpace(s)
-	multiplier := int64(1)
-	switch {
-	case strings.HasSuffix(s, " KiB"):
-		multiplier = 1024
-		s = strings.TrimSuffix(s, " KiB")
-	case strings.HasSuffix(s, " MiB"):
-		multiplier = 1024 * 1024
-		s = strings.TrimSuffix(s, " MiB")
-	case strings.HasSuffix(s, " GiB"):
-		multiplier = 1024 * 1024 * 1024
-		s = strings.TrimSuffix(s, " GiB")
-	case strings.HasSuffix(s, " B"):
-		s = strings.TrimSuffix(s, " B")
-	}
-	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	return int64(size * float64(multiplier))
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return parseSizeWithUnits(s, []sizeUnit{
+		{" KiB", 1024},
+		{" MiB", 1024 * 1024},
+		{" GiB", 1024 * 1024 * 1024},
+		{" B", 1},
+	})
 }

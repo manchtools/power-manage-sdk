@@ -6,30 +6,41 @@ import (
 )
 
 // dangerousPaths are top-level system directories that must never be removed.
-// IsProtectedPath matches these (plus extraProtectedPaths); the deny-by-default
-// subtree check RemoveDir uses lives in IsUnderProtectedPrefix below.
+// IsProtectedPath matches this set; the deny-by-default subtree check RemoveDir
+// uses lives in IsUnderProtectedPrefix below.
+//
+// The first block is the critical OS tree (also guarded as subtrees by
+// protectedPrefixRoots); the second block are additional top-level directories
+// IsProtectedPath guards by exact match but that RemoveDir's subtree check does
+// not need (less critical or already covered).
 var dangerousPaths = map[string]bool{
-	"/":      true,
-	"/boot":  true,
-	"/dev":   true,
-	"/etc":   true,
-	"/proc":  true,
-	"/run":   true,
-	"/sys":   true,
-	"/usr":   true,
-	"/var":   true,
-	"/bin":   true,
-	"/sbin":  true,
-	"/lib":   true,
-	"/lib64": true,
-	"/home":  true,
-	"/root":  true,
+	"/":       true,
+	"/boot":   true,
+	"/dev":    true,
+	"/etc":    true,
+	"/proc":   true,
+	"/run":    true,
+	"/sys":    true,
+	"/usr":    true,
+	"/var":    true,
+	"/bin":    true,
+	"/sbin":   true,
+	"/lib":    true,
+	"/lib64":  true,
+	"/home":   true,
+	"/root":   true,
+	"/lib32":  true,
+	"/libx32": true,
+	"/media":  true,
+	"/mnt":    true,
+	"/opt":    true,
+	"/srv":    true,
+	"/tmp":    true,
+	"/snap":   true, // snap-based distributions (Ubuntu)
 }
 
 // IsProtectedPath returns true if path is a system directory that should
 // never be deleted. The path is cleaned and resolved to absolute before checking.
-// This uses the same set as dangerousPaths plus additional top-level
-// directories.
 func IsProtectedPath(path string) bool {
 	clean := filepath.Clean(path)
 	if !filepath.IsAbs(clean) {
@@ -39,21 +50,7 @@ func IsProtectedPath(path string) bool {
 		}
 		clean = abs
 	}
-	return dangerousPaths[clean] || extraProtectedPaths[clean]
-}
-
-// extraProtectedPaths extends dangerousPaths with additional top-level
-// directories that IsProtectedPath should guard but RemoveDir does not
-// need to check (since they are less critical or already covered).
-var extraProtectedPaths = map[string]bool{
-	"/lib32":  true,
-	"/libx32": true,
-	"/media":  true,
-	"/mnt":    true,
-	"/opt":    true,
-	"/srv":    true,
-	"/tmp":    true,
-	"/snap":   true, // snap-based distributions (Ubuntu)
+	return dangerousPaths[clean]
 }
 
 // protectedPrefixRoots are directory subtrees that a managed directory
