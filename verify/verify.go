@@ -73,6 +73,11 @@ const (
 	LuksRevokeSignatureDomain = "power-manage-luks-revoke"
 	// InventorySignatureDomain covers a server-originated RequestInventory.
 	InventorySignatureDomain = "power-manage-inventory"
+	// LpsPublicKeySignatureDomain covers the control server's LPS sealing
+	// public key distributed to agents in the sync response (spec 18). The
+	// CA signature is what stops a relaying gateway from substituting its
+	// own key and reading sealed passwords.
+	LpsPublicKeySignatureDomain = "power-manage-lps-pubkey"
 )
 
 // canonicalDigest hashes the length-prefixed domain tag followed by the

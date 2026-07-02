@@ -485,6 +485,27 @@ message SyncActionsResponse {
   // evaluates this against time.Now().Local() at dispatch time. See
   // manchtools/power-manage-server#58.
   MaintenanceWindow maintenance_window = 5;
+
+  // Control-owned X25519 public key agents seal LPS passwords to
+  // (spec 18, manchtools/power-manage-agent#62). CA-signed so the
+  // relaying gateway cannot substitute its own key; the agent verifies
+  // against its enrollment CA and refuses the key on any mismatch.
+  LpsPublicKey lps_public_key = 6;
+}
+
+// LpsPublicKey carries the control server's LPS sealing key to agents
+// inside the sync response. The signature is minted by the control CA
+// under the power-manage-lps-pubkey domain over the canonical form
+// (signature field cleared, deterministic marshal); agents verify
+// fail-closed before trusting or persisting the key.
+message LpsPublicKey {
+  // 32-byte X25519 public key (ecdh PublicKey.Bytes() encoding).
+  // @gotags: validate:"required,len=32"
+  bytes public_key = 1;
+  // Control-CA signature over the canonical form under the
+  // power-manage-lps-pubkey signing domain.
+  // @gotags: validate:"required,min=1,max=1024"
+  bytes signature = 2;
 }
 
 // ============================================================================
