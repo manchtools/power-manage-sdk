@@ -1588,6 +1588,11 @@ type SyncActionsResult struct {
 	// firing scheduler-driven dispatches; pushed actions (REBOOT,
 	// SYNC, ad-hoc) bypass the gate. See manchtools/power-manage-server#58.
 	MaintenanceWindow *pm.MaintenanceWindow
+	// LpsPublicKey is the control server's CA-signed X25519 key the agent
+	// seals LPS passwords to (spec 18). nil when the control instance has no
+	// keypair configured; the agent MUST verify the signature against its
+	// enrollment CA and refuse the key on mismatch before sealing to it.
+	LpsPublicKey *pm.LpsPublicKey
 }
 
 // SyncActions fetches all actions currently assigned to this device from the server.
@@ -1617,5 +1622,6 @@ func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
 		GroupedActions:      resp.Msg.GroupedActions,
 		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
 		MaintenanceWindow:   resp.Msg.MaintenanceWindow,
+		LpsPublicKey:        resp.Msg.LpsPublicKey,
 	}, nil
 }
