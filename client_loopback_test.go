@@ -44,6 +44,8 @@ type recordingAgentHandler struct {
 	received []*pm.AgentMessage
 
 	onStream func(ctx context.Context, stream *connect.BidiStream[pm.AgentMessage, pm.ServerMessage]) error
+	// syncResp, when set, is returned verbatim by SyncActions (else empty).
+	syncResp *pm.SyncActionsResponse
 }
 
 func (h *recordingAgentHandler) Stream(ctx context.Context, s *connect.BidiStream[pm.AgentMessage, pm.ServerMessage]) error {
@@ -73,6 +75,9 @@ func (h *recordingAgentHandler) snapshot() []*pm.AgentMessage {
 }
 
 func (h *recordingAgentHandler) SyncActions(ctx context.Context, req *connect.Request[pm.SyncActionsRequest]) (*connect.Response[pm.SyncActionsResponse], error) {
+	if h.syncResp != nil {
+		return connect.NewResponse(h.syncResp), nil
+	}
 	return connect.NewResponse(&pm.SyncActionsResponse{}), nil
 }
 
@@ -297,6 +302,32 @@ func TestConnect_DoubleConnectErrors(t *testing.T) {
 
 	if err := c.Connect(ctx); err == nil {
 		t.Fatal("second Connect should error")
+	}
+}
+
+// TestSyncActions_MapsLpsPublicKey guards the hand-written SyncActionsResult
+// facade against drift: a proto regen that adds a field but forgets the facade
+// mapping would silently drop it (the recurring facade-lag bug). Pins that the
+// LPS public key the server puts on SyncActionsResponse reaches the caller.
+func TestSyncActions_MapsLpsPublicKey(t *testing.T) {
+	l := newAgentLoopback(t)
+	l.handler.syncResp = &pm.SyncActionsResponse{
+		LpsPublicKey: &pm.LpsPublicKey{
+			PublicKey: make([]byte, 32),
+			Signature: []byte("sig"),
+		},
+	}
+	c := l.newClient(WithAuth("01HKDEVICE0000000000000000", "tok"))
+
+	res, err := c.SyncActions(context.Background())
+	if err != nil {
+		t.Fatalf("SyncActions: %v", err)
+	}
+	if res.LpsPublicKey == nil {
+		t.Fatal("LpsPublicKey dropped by the SyncActionsResult facade")
+	}
+	if len(res.LpsPublicKey.PublicKey) != 32 || string(res.LpsPublicKey.Signature) != "sig" {
+		t.Errorf("LpsPublicKey mismatch: %+v", res.LpsPublicKey)
 	}
 }
 
