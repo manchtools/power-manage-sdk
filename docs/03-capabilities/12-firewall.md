@@ -8,8 +8,9 @@ icon: "🧱"
 # Firewall
 
 <!-- docref: begin src=sys/firewall/nftables.go#nftables:1d3ee6dd,sys/firewall/firewalld.go#firewalldServiceName:19892a3a -->
-`sys/firewall` manages a small set of allow/deny rules — by protocol, port, and
-source/destination — through nftables or firewalld. It owns a dedicated
+`sys/firewall` manages a small set of firewall rules: full allow/deny rules —
+by protocol, port, and source/destination — through nftables, and a narrower
+allow-only subset through firewalld. It owns a dedicated
 namespace (a dedicated `inet <namespace>_filter` nftables table, or
 `<namespace>-` prefixed firewalld service definitions in the default zone) so
 it never clobbers rules it didn't create.

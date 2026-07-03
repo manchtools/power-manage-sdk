@@ -88,8 +88,9 @@ err = m.EnableNow(ctx, "pm-agent.service")
 
 <!-- docref: begin src=sys/service/systemd.go#systemd.WriteUnit:cbdc6014,sys/service/unitcontent.go#ErrUnsafeUnitContent:ee7dfadb -->
 `WriteUnit` validates the unit name *and* the unit body before the root-owned
-file is created under `/etc/systemd/system/`. A unit runs as root under PID 1,
-so content that would turn it into a dropper is refused with
+file is created under `/etc/systemd/system/`. The unit file is parsed and
+executed by PID 1 with whatever privileges it declares, so content that would
+turn it into a dropper is refused with
 `ErrUnsafeUnitContent`: an `Exec*` directive that shells out via `sh -c`, runs
 a binary from a world-writable directory (`/tmp`, `/var/tmp`, `/dev/shm`), or
 an `Environment=` that injects a dynamic-linker override (`LD_PRELOAD` and

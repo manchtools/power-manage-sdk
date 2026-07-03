@@ -65,8 +65,9 @@ if _, err := m.Remove(ctx, pkg.RemoveOptions{}, "telnet"); err != nil {
     return err
 }
 
-// Refresh the index, then upgrade everything. A failed refresh must not
-// fall through to the upgrade:
+// Refresh the index first on backends that need it (pacman's UpgradeAll
+// already syncs in-transaction), then upgrade everything. A failed
+// refresh must not fall through to the upgrade:
 if _, err := m.Update(ctx); err != nil {
     return err
 }
