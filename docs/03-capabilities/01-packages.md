@@ -61,14 +61,28 @@ if err != nil {
 }
 fmt.Println(res.Stdout)
 
-_, err = m.Remove(ctx, pkg.RemoveOptions{}, "telnet")
-// Refresh the index, then upgrade everything:
-_, err = m.Update(ctx)
-_, err = m.UpgradeAll(ctx, pkg.UpgradeOptions{})
+if _, err := m.Remove(ctx, pkg.RemoveOptions{}, "telnet"); err != nil {
+    return err
+}
+
+// Refresh the index, then upgrade everything. A failed refresh must not
+// fall through to the upgrade:
+if _, err := m.Update(ctx); err != nil {
+    return err
+}
+if _, err := m.UpgradeAll(ctx, pkg.UpgradeOptions{}); err != nil {
+    return err
+}
+
 // Or upgrade specific packages:
-_, err = m.Upgrade(ctx, "openssl")
+if _, err := m.Upgrade(ctx, "openssl"); err != nil {
+    return err
+}
+
 // Drop orphaned dependencies:
-_, err = m.Autoremove(ctx)
+if _, err := m.Autoremove(ctx); err != nil {
+    return err
+}
 ```
 
 <!-- docref: begin src=pkg/dnf.go#dnf.Install:24ff67e3 -->
