@@ -7,10 +7,14 @@ icon: "🧱"
 
 # Firewall
 
-`sys/firewall` manages a small set of allow/deny rules — by protocol, port, and
-source/destination — through nftables or firewalld. It owns a dedicated
-namespace (an nftables table / a firewalld zone) so it never clobbers rules it
-didn't create.
+<!-- docref: begin src=sys/firewall/nftables.go#nftables:1d3ee6dd,sys/firewall/firewalld.go#firewalldServiceName:19892a3a -->
+`sys/firewall` manages a small set of firewall rules: full allow/deny rules —
+by protocol, port, and source/destination — through nftables, and a narrower
+allow-only subset through firewalld. It owns a dedicated
+namespace (a dedicated `inet <namespace>_filter` nftables table, or
+`<namespace>-` prefixed firewalld service definitions in the default zone) so
+it never clobbers rules it didn't create.
+<!-- docref: end -->
 
 ## Construct a manager
 
@@ -62,6 +66,15 @@ what it matches; an empty `Source`/`Dest` or a zero `Port` means "any". Rules
 are scoped to the manager's own namespace, so listing and removal never touch
 the host's other firewall state.
 <!-- docref: end -->
+
+{% callout type="info" title="Backend scope" %}
+<!-- docref: begin src=sys/firewall/firewalld.go#firewalldValidateRule:398b9411 -->
+The **firewalld** backend is deliberately narrow in v1: allow rules with a
+concrete protocol and port only. A deny rule or source/destination scoping is
+rejected with `ErrInvalidRule` and a hint naming the unsupported field — use
+the **nftables** backend for those.
+<!-- docref: end -->
+{% /callout %}
 
 ## Related
 

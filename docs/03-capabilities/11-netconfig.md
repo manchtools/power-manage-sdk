@@ -65,9 +65,11 @@ change is made.
 <!-- docref: end -->
 
 {% callout type="info" title="DNS lives in two places" %}
-`InterfaceConfig.DNS` sets resolvers on the interface as a convenience.
-Host-wide DNS policy — global nameservers, search domains — is the proper job of
-[`sys/dns`](/capabilities/dns).
+<!-- docref: begin src=sys/netconfig/netconfig.go#InterfaceConfig.DNS:9c1f3793 -->
+`InterfaceConfig.DNS` sets resolvers on the interface as a convenience (in both
+addressing modes). Host-wide DNS policy — global nameservers, search domains —
+is the proper job of [`sys/dns`](/capabilities/dns).
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

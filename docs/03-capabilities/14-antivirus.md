@@ -61,9 +61,12 @@ exit surfaces as an error rather than being swallowed.
 <!-- docref: end -->
 
 {% callout type="info" title="Version needs a signature DB" %}
-`Version` reports the engine *and* signature-database version, so it expects a
-real ClamAV signature DB to be present. A freshly-installed ClamAV that has never
-run `freshclam` has no signature version to report.
+<!-- docref: begin src=sys/antivirus/clamav.go#clamavManager.Version:5f37c067,sys/antivirus/clamav.go#parseClamscanVersion:e124e2f8 -->
+`Version` parses `clamscan --version` into the engine *and* signature-database
+version, so it expects a real ClamAV signature DB to be present. A
+freshly-installed ClamAV that has never run `freshclam` reports no signature
+version — `Version` returns an error rather than a half-filled result.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

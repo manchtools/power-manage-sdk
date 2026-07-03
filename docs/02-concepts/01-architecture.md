@@ -10,16 +10,20 @@ Every system-management capability follows the same three-part shape:
 
 {% steps %}
   {% step title="Build a Runner" %}
+  <!-- docref: begin src=sys/exec/runner.go#Runner:7679445f,sys/exec/runner.go#PrivilegeBackend:01258357 -->
   A `Runner` is how commands reach the host — directly (the process is
   already root), or escalated through `sudo` / `doas`. You construct it once
   and inject it everywhere.
+  <!-- docref: end -->
   {% /step %}
   {% step title="Choose a Backend" %}
+  <!-- docref: begin src=sys/service/service.go#Systemd:ff233171,sys/user/user.go#ShadowUtils:936a2cbe -->
   Capabilities that drive a *family* of tools (package managers, init systems,
   encryption tools) take an explicit `Backend` value — the caller always names
   it, even when only one backend is implemented today (`service.Systemd`,
   `user.ShadowUtils`), and the SDK never auto-detects. Single-tool capabilities
   (`smartctl`, `osqueryi`) take only a Runner.
+  <!-- docref: end -->
   {% /step %}
   {% step title="Get a Manager" %}
   `New` returns a handle whose methods do the work. The handle holds the

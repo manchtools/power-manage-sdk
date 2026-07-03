@@ -7,10 +7,13 @@ icon: "📜"
 
 # CA trust
 
+<!-- docref: begin src=sys/catrust/catrust.go#CaCertificates:350dcebc,sys/catrust/catrust.go#P11Kit:350dcebc,sys/catrust/catrust.go#SuseCaCertificates:350dcebc -->
 `sys/catrust` manages the system's CA trust store — the anchors every TLS client
 on the host validates against. Install a corporate root, remove one, list what's
-trusted, across the Debian (`update-ca-certificates`) and Red Hat / SUSE
-(`p11-kit`) flows.
+trusted, across three flows: Debian/Ubuntu (`update-ca-certificates`),
+Fedora/RHEL/Arch (p11-kit's `update-ca-trust`), and openSUSE/SLES (its own
+`update-ca-certificates` layout).
+<!-- docref: end -->
 
 ## Construct a manager
 

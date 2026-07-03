@@ -66,10 +66,12 @@ per-link runtime settings.
 <!-- docref: end -->
 
 {% callout type="info" title="Backend scope" %}
+<!-- docref: begin src=sys/dns/dns.go#Config.Interface:acca040e,sys/dns/networkmanager.go#nmManager.Apply:88f225c8 -->
 The **Resolved** backend supports host-global config (empty `Interface`).
 **NetworkManager** is connection-scoped — it configures DNS on a specific
 interface's active connection, so `Interface` is required there. For host-wide
 DNS, use Resolved.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

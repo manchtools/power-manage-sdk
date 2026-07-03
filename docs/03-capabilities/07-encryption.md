@@ -63,9 +63,12 @@ authenticating passphrase — before `cryptsetup` is ever run.
 <!-- docref: end -->
 
 {% callout type="warning" title="Key-slot operations are destructive" %}
-`KillSlot` erases a key slot; `RemoveKey` removes the slot matching a passphrase.
+<!-- docref: begin src=sys/encryption/luks.go#luks.KillSlot:8e6852ce,sys/encryption/luks.go#luks.RemoveKey:b9040d71 -->
+`KillSlot` erases a specific key slot, authenticating with an existing
+passphrase; `RemoveKey` removes the slot matching a passphrase.
 Removing the last usable key makes the volume unopenable — the SDK validates
 inputs, but the *policy* of which slot is safe to remove is the caller's.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

@@ -61,13 +61,29 @@ if err != nil {
 }
 fmt.Println(res.Stdout)
 
-_, err = m.Remove(ctx, pkg.RemoveOptions{}, "telnet")
-// Refresh the index and upgrade everything:
-_, err = m.UpgradeAll(ctx, pkg.UpgradeOptions{})
+if _, err := m.Remove(ctx, pkg.RemoveOptions{}, "telnet"); err != nil {
+    return err
+}
+
+// Refresh the index first on backends that need it (pacman's UpgradeAll
+// already syncs in-transaction), then upgrade everything. A failed
+// refresh must not fall through to the upgrade:
+if _, err := m.Update(ctx); err != nil {
+    return err
+}
+if _, err := m.UpgradeAll(ctx, pkg.UpgradeOptions{}); err != nil {
+    return err
+}
+
 // Or upgrade specific packages:
-_, err = m.Upgrade(ctx, "openssl")
+if _, err := m.Upgrade(ctx, "openssl"); err != nil {
+    return err
+}
+
 // Drop orphaned dependencies:
-_, err = m.Autoremove(ctx)
+if _, err := m.Autoremove(ctx); err != nil {
+    return err
+}
 ```
 
 <!-- docref: begin src=pkg/dnf.go#dnf.Install:24ff67e3 -->
@@ -78,7 +94,10 @@ the package manager's `exec.Result`.
 
 ## Query installed state
 
-Reads do not need escalation — a `Direct` Runner is enough:
+<!-- docref: begin src=sys/exec/runner.go#Direct:ed029c0e,pkg/exec.go#runRead:cc3d492f -->
+Reads never escalate — the query path runs each command without the privilege
+wrapper, so a `Direct` Runner is enough:
+<!-- docref: end -->
 
 ```go
 ok, err := m.IsInstalled(ctx, "curl")
@@ -103,12 +122,23 @@ nothing.
 
 Behavioural differences the Manager smooths over but you should know about:
 
-- **apt / dnf / zypper** refresh their index as part of an upgrade; **pacman**
-  uses `-Sy` to sync the database first.
+<!-- docref: begin src=pkg/pkg.go#Manager:48758d2d,pkg/pacman.go#pacman.UpgradeAll:ac396816 -->
+- `Update` is the explicit index refresh; `UpgradeAll` maps to the backend's
+  full upgrade (`apt dist-upgrade` / `dnf upgrade` / `zypper dist-upgrade` /
+  `flatpak update`) and does **not** re-sync the index first — except
+  **pacman**, whose `-Syu` syncs the database and upgrades in one transaction
+  (Arch does not support partial upgrades).
+- `UpgradeOptions.SecurityOnly` narrows the upgrade to security updates where
+  the backend supports it (apt / dnf / zypper); **pacman** and **flatpak** have
+  no security-only concept and fail closed with `ErrSecurityOnlyUnsupported`
+  rather than silently running a full upgrade.
 - **flatpak** installs are per-remote application IDs, not distro package names;
   use it for desktop apps, the distro backends for system packages.
-- **dnf / zypper / apt** resolve dependencies automatically; `Autoremove`
-  prunes what's no longer needed.
+- `Upgrade` with an empty package list is a **no-op**, never a full upgrade —
+  an accidentally-empty list must not upgrade the whole system; `UpgradeAll` is
+  the explicit way to do that. `Autoremove` prunes no-longer-needed
+  dependencies, and is a no-op on backends with no native equivalent.
+<!-- docref: end -->
 
 {% callout type="info" title="Reference" %}
 The full method set and option fields are generated API docs on

@@ -58,7 +58,9 @@ logged into by accident.
 
 ## Passwords are secrets, not arguments
 
+<!-- docref: begin src=sys/user/password.go#shadowUtils.SetPassword:33cb1ef7 -->
 `SetPassword` takes an `exec.Secret`, not a string:
+<!-- docref: end -->
 
 ```go
 pw, err := exec.NewSecret("correct horse battery staple")
