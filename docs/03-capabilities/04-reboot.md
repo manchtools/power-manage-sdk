@@ -25,7 +25,9 @@ if err != nil {
 
 ## Is a reboot required?
 
+<!-- docref: begin src=sys/reboot/reboot.go#rebooter.IsRequired:acb46152,sys/exec/runner.go#Direct:ed029c0e -->
 The probe is unprivileged, so a `Direct` Runner is enough to *read*:
+<!-- docref: end -->
 
 ```go
 need, err := rb.IsRequired(ctx)
@@ -65,8 +67,11 @@ can't transpose the delay and the wall message.
 <!-- docref: end -->
 
 {% callout type="warning" title="Schedule really reboots" %}
-`Schedule` calls the host's real `shutdown -r`. It is not a dry run — the host
-will reboot at the requested time unless you `Cancel` first.
+<!-- docref: begin src=sys/reboot/reboot.go#rebooter.Schedule:2028bda5,sys/reboot/reboot.go#rebooter.Cancel:ab133980 -->
+`Schedule` calls the host's real `shutdown -r` (escalated). It is not a dry
+run — the host will reboot at the requested time unless you `Cancel` (a
+`shutdown -c`) first.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

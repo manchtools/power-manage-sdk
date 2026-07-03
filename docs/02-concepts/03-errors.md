@@ -21,7 +21,10 @@ if errors.Is(err, svc.ErrUnknownBackend) {
 }
 ```
 
-Each multi-backend package exports `ErrUnknownBackend`.
+<!-- docref: begin src=pkg/pkg.go#ErrUnknownBackend:fed789a4,sys/service/service.go#ErrUnknownBackend:1b9dc3c6 -->
+Each multi-backend package exports `ErrUnknownBackend`, returned by its `New`
+for the zero value and any unimplemented backend.
+<!-- docref: end -->
 
 <!-- docref: begin src=sys/exec/command_error.go#@escalation-sentinels:89446e95 -->
 The `exec` package adds sentinels for the escalation path —
@@ -32,11 +35,15 @@ that can't escalate fails fast instead of hanging.
 
 ## Command failures — inspect with errors.As
 
+<!-- docref: begin src=sys/exec/runner.go#Runner:7679445f -->
 A non-zero exit code is **not** automatically an error. The Runner reports the
 exit code in its result and leaves the judgement to the capability layer,
 because some non-zero codes are meaningful answers (a `cryptsetup` probe
-returning "not a LUKS device", for example). When a capability does decide a
+returning "not a LUKS device", for example). A non-nil error from `Run` means
+the command *could not be executed* — binary not found, blocked env var,
+cancelled context — or escalation failed. When a capability does decide a
 command failed, it wraps the details in a typed error:
+<!-- docref: end -->
 
 <!-- docref: begin src=sys/exec/command_error.go#CommandError:c48644e3 -->
 `CommandError` is the typed error the capability layer wraps a failed command

@@ -63,9 +63,11 @@ user-scoped command.
 <!-- docref: end -->
 
 {% callout type="info" title="It's a Runner, not a one-shot" %}
+<!-- docref: begin src=sys/desktop/runas_runner.go#RunAsRunner:f70588a4 -->
 `RunAsRunner` returns an `exec.Runner` you compose with any capability (a per-user
 Flatpak manager, a script exec), so the privilege drop and environment are wired
 in once and reused — no separate streaming pipeline to build.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

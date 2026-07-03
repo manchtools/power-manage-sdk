@@ -6,12 +6,14 @@ description: How a capability's backend is chosen explicitly, how to discover wh
 
 # Backends & detection
 
+<!-- docref: begin src=sys/service/service.go#Backend:11393461,sys/user/user.go#ShadowUtils:936a2cbe -->
 A *backend* is one concrete way to do a job: `apt` vs `dnf` for packages,
 `systemd` for services, `ca-certificates` vs `p11-kit` for CA trust. A
 capability that drives such a family takes a `Backend` value at construction —
 and it takes one **even when only one backend is implemented today** (services
 has just `systemd`; users just shadow-utils), so the choice is always explicit
 and never auto-detected.
+<!-- docref: end -->
 
 <!-- docref: begin src=sys/smart/smart.go#New:b54f2658,sys/osquery/osquery.go#New:dda636e8 -->
 A capability that is a single tool by nature — `smartctl` for SMART, `osqueryi`
@@ -65,12 +67,14 @@ behind your back the way call-site auto-detection would.
 The `Backend`-enum shape fits "this host has exactly one right answer, fixed
 for the process" — package managers, init systems, encryption tools.
 
+<!-- docref: begin src=sys/remote/remote.go#Source:2cfeaa37,sys/remote/http.go#NewHTTP:9089d62f,sys/remote/git.go#NewGit:0a6c132d,sys/remote/s3.go#NewS3:78a4b3e6 -->
 `sys/remote` deliberately departs from it. An agent may fetch a tarball over
 HTTPS, clone a Git repo, and read an S3 prefix in the same cycle, driven by
 different actions — there is no single "active source" for the process. So
 `sys/remote` exposes a `Source` interface with one constructor per kind
 (`NewHTTP`, `NewGit`, `NewS3`), each validating its own config. The choice is
 **per call**, not per host.
+<!-- docref: end -->
 
 {% callout type="info" title="Rule of thumb" %}
 If the answer to "which backend?" is *"whichever this machine has"* (one per

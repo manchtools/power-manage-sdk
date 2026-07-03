@@ -53,10 +53,12 @@ caller holds the interface, not the concrete client.
 
 ## Following redirects
 
+<!-- docref: begin src=sys/remote/http.go#RedirectSameOrigin:9f1477bb,sys/remote/http.go#RedirectCrossOrigin:9f1477bb -->
 By default an HTTP fetch follows only same-origin redirects: a hop that changes
 host or scheme is refused. A source behind a CDN that bounces to another host —
 GitHub release downloads redirect `github.com` to
 `release-assets.githubusercontent.com` — needs `RedirectCrossOrigin`:
+<!-- docref: end -->
 
 ```go
 src, err := remote.NewHTTP(remote.HTTPConfig{
@@ -78,9 +80,11 @@ governs the default client only; a caller-supplied `Client` owns its own.
 
 ## Fetch into memory
 
+<!-- docref: begin src=sys/remote/fetch_bytes.go#FetchBytes:c8e91045 -->
 When the payload is small and you want the bytes in hand rather than a file on
 disk — a `SHA256SUMS` manifest, a GPG key, a short JSON descriptor — `FetchBytes`
 fetches an HTTPS source into memory and returns the bytes:
+<!-- docref: end -->
 
 ```go
 data, err := remote.FetchBytes(ctx, remote.HTTPConfig{

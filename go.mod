@@ -1,4 +1,7 @@
+// docref: begin module-path
 module github.com/manchtools/power-manage-sdk
+
+// docref: end module-path
 
 go 1.25.11
 

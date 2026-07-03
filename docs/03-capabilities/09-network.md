@@ -78,9 +78,12 @@ client key. An invalid profile is rejected with no side effect.
 <!-- docref: end -->
 
 {% callout type="info" title="EAP-TLS" %}
+<!-- docref: begin src=sys/network/certs.go#writeCerts:361f715b -->
 For enterprise networks, set `AuthType: network.AuthEAPTLS` and provide the
-client certificate and key; the key is written to a cert file under the
-connection's directory, again never on the command line.
+client certificate and key; the private key is written `0600` into the
+profile's cert directory, and only the file *paths* go on the `nmcli` command
+line — the key contents never do.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

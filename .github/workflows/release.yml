@@ -1,9 +1,11 @@
 name: Release
 
+# docref: begin release-trigger
 on:
   push:
     tags:
       - 'v*'
+# docref: end release-trigger
 
 permissions:
   contents: write
@@ -41,6 +43,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # docref: begin ts-release-assets
       - name: Generate TypeScript SDK
         run: npx buf generate
 
@@ -55,6 +58,7 @@ jobs:
           tar czf release/ts-sdk.tar.gz -C gen/ts .
 
           cd release && sha256sum * > SHA256SUMS
+      # docref: end ts-release-assets
 
       - name: Generate changelog
         run: |

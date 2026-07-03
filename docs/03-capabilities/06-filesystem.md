@@ -59,17 +59,22 @@ err = m.Remove(ctx, "/var/lib/power-manage/state/stale.tmp")
 rejected.
 <!-- docref: end -->
 
-The operations are privilege-backend-keyed: as root they take a TOCTOU-safe,
-fd-anchored path — each step operates on an open directory handle, so a symlink
-swapped in mid-operation can't redirect a write or delete out of bounds; when
-escalation is via sudo, the same operations are driven through the escalated
-tool.
+<!-- docref: begin src=sys/fs/fs.go#manager.direct:9e4adeb0 -->
+The operations are privilege-backend-keyed: as root (a `Direct` Runner) they
+take a TOCTOU-safe, fd-anchored path — each step operates on an open directory
+handle, so a symlink swapped in mid-operation can't redirect a write or delete
+out of bounds; when escalation is via sudo, the same operations are driven
+through the escalated tool.
+<!-- docref: end -->
 
 {% callout type="info" title="Read-only roots" %}
-`IsReadOnly` and `RemountRW` handle the immutable-root case (ostree, a
-read-only `/usr`): check, remount read-write for the change, and the caller can
-remount back. Mutations refuse to write into protected system subtrees they
-don't own.
+<!-- docref: begin src=sys/fs/mount.go#manager.IsReadOnly:1edb9acd,sys/fs/mount.go#manager.RemountRW:3eadcb2c,sys/fs/protected.go#IsUnderProtectedPrefix:4231d9a0 -->
+`IsReadOnly` (an unprivileged `findmnt` probe) and `RemountRW` (an escalated
+`mount -o remount,rw`) handle the immutable-root case (ostree, a read-only
+`/usr`): check, remount read-write for the change. There is no remount-ro
+helper — restoring the read-only state afterwards is the caller's job.
+Mutations refuse to write into protected system subtrees they don't own.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

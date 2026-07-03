@@ -56,9 +56,13 @@ so a caller can tell "no logs matched" from "journalctl broke".
 <!-- docref: end -->
 
 {% callout type="info" title="Backend differences" %}
-`Unit`, `Since`, `Until`, `Priority`, and `Kernel` are journald-only (ignored by the Syslog backend). The
-Syslog backend tails the log file and applies `Grep`/`Lines` in-process. For
-unit- or priority-scoped queries, use Journald.
+<!-- docref: begin src=sys/log/syslog.go#syslogSource:e33f14f6 -->
+`Unit`, `Since`, `Until`, `Priority`, and `Kernel` are journald-only — the
+Syslog backend still validates them (a bad value errors) but does not apply
+them. The Syslog backend tails the log file and applies `Grep`/`Lines`
+in-process, filtering within the tail window. For unit- or priority-scoped
+queries, use Journald.
+<!-- docref: end -->
 {% /callout %}
 
 ## Related

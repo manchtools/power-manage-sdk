@@ -39,12 +39,15 @@ require (
 )
 ```
 
-The module path now equals the repo URL, so `go get` resolves it
+<!-- docref: begin src=go.mod#@module-path:3320c783 -->
+The module path now equals the repo URL
+(`github.com/manchtools/power-manage-sdk`), so `go get` resolves it
 directly — no `replace` directive needed. The version is a Go-compatible
 semver tag (`v0.x.x` / `v1.x.x`); pseudo-versions
 (`v0.0.0-TIMESTAMP-SHORTSHA`) are accepted for pinning an untagged
 commit, but prefer a tagged release when one exists — `go.mod` stays
 readable.
+<!-- docref: end -->
 
 `go build` fetches the pinned version from GitHub. Nothing looks at
 SDK main unless someone explicitly bumps the pin.
@@ -137,10 +140,13 @@ The SDK uses two kinds of tags side-by-side:
 | Go module tag | `v0.x.x` semver | agent/server `go.mod` |
 | Human-readable release label | `vYYYY.MM.XX` calendar date (e.g. `v2026.04.03`) | GitHub Releases UI, operator-facing docs |
 
+<!-- docref: begin src=.github/workflows/release.yml#@release-trigger:6d9c7468,.github/workflows/release.yml#@ts-release-assets:b589cafd -->
 Both can live at the same commit — the release workflow
 (`.github/workflows/release.yml`) fires on any tag matching `v*` and
-builds TypeScript SDK assets for the GitHub Release page regardless of
-the format. They're just two ways to reference the same release.
+builds TypeScript SDK assets (`ts-sdk.tar.gz`, plus the proto sources
+as `proto.tar.gz`) for the GitHub Release page regardless of the
+format. They're just two ways to reference the same release.
+<!-- docref: end -->
 
 ### Why two conventions
 

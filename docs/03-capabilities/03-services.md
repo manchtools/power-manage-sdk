@@ -44,7 +44,10 @@ unimplemented backend is an explicit error, not a silent no-op.
 
 ## Query unit state
 
-Reads are unprivileged:
+<!-- docref: begin src=sys/service/systemd.go#systemd.query:f8774d53,sys/service/systemd.go#systemd.mutate:985e7091 -->
+Reads are unprivileged — the query verbs run `systemctl` without escalation,
+while every mutation goes through the escalated path:
+<!-- docref: end -->
 
 ```go
 st, err := m.Status(ctx, "sshd.service") // active state, sub-state, …
@@ -82,6 +85,16 @@ err := m.WriteUnit(ctx, "pm-agent.service", unit)
 err = m.DaemonReload(ctx)            // re-read unit files
 err = m.EnableNow(ctx, "pm-agent.service")
 ```
+
+<!-- docref: begin src=sys/service/systemd.go#systemd.WriteUnit:cbdc6014,sys/service/unitcontent.go#ErrUnsafeUnitContent:ee7dfadb -->
+`WriteUnit` validates the unit name *and* the unit body before the root-owned
+file is created under `/etc/systemd/system/`. A unit runs as root under PID 1,
+so content that would turn it into a dropper is refused with
+`ErrUnsafeUnitContent`: an `Exec*` directive that shells out via `sh -c`, runs
+a binary from a world-writable directory (`/tmp`, `/var/tmp`, `/dev/shm`), or
+an `Environment=` that injects a dynamic-linker override (`LD_PRELOAD` and
+friends).
+<!-- docref: end -->
 
 ## Mask a unit
 
