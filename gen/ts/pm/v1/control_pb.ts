@@ -1587,8 +1587,9 @@ export type Device = Message<"pm.v1.Device"> & {
   inventoryOverdue: boolean;
 
   /**
-   * Device-level inventory interval override in minutes
-   * (0 = inherit from group minimum, else server default of 1440).
+   * Device-level inventory interval override in minutes. Resolution:
+   * device override first, then group minimum, then the 1440-minute
+   * server default; 0 means inherit.
    *
    * @generated from field: int32 inventory_interval_minutes = 18;
    */

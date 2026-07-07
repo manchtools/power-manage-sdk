@@ -3047,8 +3047,9 @@ type Device struct {
 	// (max(1h, 25% of interval)) — computed server-side from policy, so it
 	// is valid even while the device is offline.
 	InventoryOverdue bool `protobuf:"varint,17,opt,name=inventory_overdue,json=inventoryOverdue,proto3" json:"inventory_overdue,omitempty"`
-	// Device-level inventory interval override in minutes
-	// (0 = inherit from group minimum, else server default of 1440).
+	// Device-level inventory interval override in minutes. Resolution:
+	// device override first, then group minimum, then the 1440-minute
+	// server default; 0 means inherit.
 	InventoryIntervalMinutes int32 `protobuf:"varint,18,opt,name=inventory_interval_minutes,json=inventoryIntervalMinutes,proto3" json:"inventory_interval_minutes,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
