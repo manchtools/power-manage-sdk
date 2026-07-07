@@ -427,6 +427,17 @@ message Device {
   google.protobuf.Timestamp compliance_checked_at = 13;
   int32 compliance_total = 14; // Total number of compliance checks
   int32 compliance_passing = 15; // Number of passing checks
+  // Freshness of the server-scheduled inventory collection (spec 22).
+  // last_inventory_at is MAX(collected_at) across the device's inventory;
+  // unset when no inventory has ever been collected.
+  google.protobuf.Timestamp last_inventory_at = 16;
+  // True when inventory age exceeds the resolved interval plus grace
+  // (max(1h, 25% of interval)) — computed server-side from policy, so it
+  // is valid even while the device is offline.
+  bool inventory_overdue = 17;
+  // Device-level inventory interval override in minutes
+  // (0 = inherit from group minimum, else server default of 1440).
+  int32 inventory_interval_minutes = 18;
 }
 
 message ListDevicesRequest {
@@ -543,6 +554,14 @@ message SetDeviceSyncIntervalRequest {
   string id = 1;
   // @gotags: validate:"gte=0,lte=1440"
   int32 sync_interval_minutes = 2; // 0 = use default (30 min), max 24 hours
+}
+
+// Update device inventory collection interval (spec 22).
+message SetDeviceInventoryIntervalRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,gte=120,lte=10080"
+  int32 inventory_interval_minutes = 2; // 0 = inherit (group min, else 1440), else 2h–7d
 }
 
 // ============================================================================
@@ -1129,6 +1148,10 @@ message DeviceGroup {
   // reaching it via assignments). See
   // manchtools/power-manage-server#58.
   MaintenanceWindow maintenance_window = 10;
+  // Inventory collection interval in minutes for devices in this group
+  // (0 = no group contribution). A device resolves its interval as:
+  // device override, else MIN across its groups, else 1440 (spec 22).
+  int32 inventory_interval_minutes = 11;
 }
 
 message CreateDeviceGroupRequest {
@@ -1279,6 +1302,14 @@ message SetDeviceGroupSyncIntervalRequest {
   string id = 1;
   // @gotags: validate:"gte=0,lte=1440"
   int32 sync_interval_minutes = 2; // 0 = use device/default, max 24 hours
+}
+
+// Update device group inventory collection interval (spec 22).
+message SetDeviceGroupInventoryIntervalRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+  // @gotags: validate:"omitempty,gte=120,lte=10080"
+  int32 inventory_interval_minutes = 2; // 0 = no group contribution, else 2h–7d
 }
 
 // Replace the device group's maintenance window. Pass an empty
@@ -2737,6 +2768,7 @@ service ControlService {
   rpc UnassignDevice(UnassignDeviceRequest) returns (UnassignDeviceResponse);
   rpc ListDeviceAssignees(ListDeviceAssigneesRequest) returns (ListDeviceAssigneesResponse);
   rpc SetDeviceSyncInterval(SetDeviceSyncIntervalRequest) returns (UpdateDeviceResponse);
+  rpc SetDeviceInventoryInterval(SetDeviceInventoryIntervalRequest) returns (UpdateDeviceResponse);
   rpc DeleteDevice(DeleteDeviceRequest) returns (DeleteDeviceResponse);
 
   // Registration Tokens
@@ -2794,6 +2826,7 @@ service ControlService {
   rpc ValidateDynamicQuery(ValidateDynamicQueryRequest) returns (ValidateDynamicQueryResponse);
   rpc EvaluateDynamicGroup(EvaluateDynamicGroupRequest) returns (EvaluateDynamicGroupResponse);
   rpc SetDeviceGroupSyncInterval(SetDeviceGroupSyncIntervalRequest) returns (UpdateDeviceGroupResponse);
+  rpc SetDeviceGroupInventoryInterval(SetDeviceGroupInventoryIntervalRequest) returns (UpdateDeviceGroupResponse);
   rpc SetDeviceGroupMaintenanceWindow(SetDeviceGroupMaintenanceWindowRequest) returns (UpdateDeviceGroupResponse);
 
   // Assignments
