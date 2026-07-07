@@ -167,6 +167,9 @@ const (
 	// ControlServiceSetDeviceSyncIntervalProcedure is the fully-qualified name of the ControlService's
 	// SetDeviceSyncInterval RPC.
 	ControlServiceSetDeviceSyncIntervalProcedure = "/pm.v1.ControlService/SetDeviceSyncInterval"
+	// ControlServiceSetDeviceInventoryIntervalProcedure is the fully-qualified name of the
+	// ControlService's SetDeviceInventoryInterval RPC.
+	ControlServiceSetDeviceInventoryIntervalProcedure = "/pm.v1.ControlService/SetDeviceInventoryInterval"
 	// ControlServiceDeleteDeviceProcedure is the fully-qualified name of the ControlService's
 	// DeleteDevice RPC.
 	ControlServiceDeleteDeviceProcedure = "/pm.v1.ControlService/DeleteDevice"
@@ -307,6 +310,9 @@ const (
 	// ControlServiceSetDeviceGroupSyncIntervalProcedure is the fully-qualified name of the
 	// ControlService's SetDeviceGroupSyncInterval RPC.
 	ControlServiceSetDeviceGroupSyncIntervalProcedure = "/pm.v1.ControlService/SetDeviceGroupSyncInterval"
+	// ControlServiceSetDeviceGroupInventoryIntervalProcedure is the fully-qualified name of the
+	// ControlService's SetDeviceGroupInventoryInterval RPC.
+	ControlServiceSetDeviceGroupInventoryIntervalProcedure = "/pm.v1.ControlService/SetDeviceGroupInventoryInterval"
 	// ControlServiceSetDeviceGroupMaintenanceWindowProcedure is the fully-qualified name of the
 	// ControlService's SetDeviceGroupMaintenanceWindow RPC.
 	ControlServiceSetDeviceGroupMaintenanceWindowProcedure = "/pm.v1.ControlService/SetDeviceGroupMaintenanceWindow"
@@ -576,6 +582,7 @@ type ControlServiceClient interface {
 	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
 	ListDeviceAssignees(context.Context, *connect.Request[v1.ListDeviceAssigneesRequest]) (*connect.Response[v1.ListDeviceAssigneesResponse], error)
 	SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
+	SetDeviceInventoryInterval(context.Context, *connect.Request[v1.SetDeviceInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
 	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
@@ -628,6 +635,7 @@ type ControlServiceClient interface {
 	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	SetDeviceGroupInventoryInterval(context.Context, *connect.Request[v1.SetDeviceGroupInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
@@ -1004,6 +1012,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("SetDeviceSyncInterval")),
 			connect.WithClientOptions(opts...),
 		),
+		setDeviceInventoryInterval: connect.NewClient[v1.SetDeviceInventoryIntervalRequest, v1.UpdateDeviceResponse](
+			httpClient,
+			baseURL+ControlServiceSetDeviceInventoryIntervalProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetDeviceInventoryInterval")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteDevice: connect.NewClient[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse](
 			httpClient,
 			baseURL+ControlServiceDeleteDeviceProcedure,
@@ -1284,6 +1298,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceSetDeviceGroupSyncIntervalProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupSyncInterval")),
+			connect.WithClientOptions(opts...),
+		),
+		setDeviceGroupInventoryInterval: connect.NewClient[v1.SetDeviceGroupInventoryIntervalRequest, v1.UpdateDeviceGroupResponse](
+			httpClient,
+			baseURL+ControlServiceSetDeviceGroupInventoryIntervalProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupInventoryInterval")),
 			connect.WithClientOptions(opts...),
 		),
 		setDeviceGroupMaintenanceWindow: connect.NewClient[v1.SetDeviceGroupMaintenanceWindowRequest, v1.UpdateDeviceGroupResponse](
@@ -1763,6 +1783,7 @@ type controlServiceClient struct {
 	unassignDevice                    *connect.Client[v1.UnassignDeviceRequest, v1.UnassignDeviceResponse]
 	listDeviceAssignees               *connect.Client[v1.ListDeviceAssigneesRequest, v1.ListDeviceAssigneesResponse]
 	setDeviceSyncInterval             *connect.Client[v1.SetDeviceSyncIntervalRequest, v1.UpdateDeviceResponse]
+	setDeviceInventoryInterval        *connect.Client[v1.SetDeviceInventoryIntervalRequest, v1.UpdateDeviceResponse]
 	deleteDevice                      *connect.Client[v1.DeleteDeviceRequest, v1.DeleteDeviceResponse]
 	createToken                       *connect.Client[v1.CreateTokenRequest, v1.CreateTokenResponse]
 	getToken                          *connect.Client[v1.GetTokenRequest, v1.GetTokenResponse]
@@ -1810,6 +1831,7 @@ type controlServiceClient struct {
 	validateDynamicQuery              *connect.Client[v1.ValidateDynamicQueryRequest, v1.ValidateDynamicQueryResponse]
 	evaluateDynamicGroup              *connect.Client[v1.EvaluateDynamicGroupRequest, v1.EvaluateDynamicGroupResponse]
 	setDeviceGroupSyncInterval        *connect.Client[v1.SetDeviceGroupSyncIntervalRequest, v1.UpdateDeviceGroupResponse]
+	setDeviceGroupInventoryInterval   *connect.Client[v1.SetDeviceGroupInventoryIntervalRequest, v1.UpdateDeviceGroupResponse]
 	setDeviceGroupMaintenanceWindow   *connect.Client[v1.SetDeviceGroupMaintenanceWindowRequest, v1.UpdateDeviceGroupResponse]
 	createAssignment                  *connect.Client[v1.CreateAssignmentRequest, v1.CreateAssignmentResponse]
 	deleteAssignment                  *connect.Client[v1.DeleteAssignmentRequest, v1.DeleteAssignmentResponse]
@@ -2113,6 +2135,11 @@ func (c *controlServiceClient) SetDeviceSyncInterval(ctx context.Context, req *c
 	return c.setDeviceSyncInterval.CallUnary(ctx, req)
 }
 
+// SetDeviceInventoryInterval calls pm.v1.ControlService.SetDeviceInventoryInterval.
+func (c *controlServiceClient) SetDeviceInventoryInterval(ctx context.Context, req *connect.Request[v1.SetDeviceInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
+	return c.setDeviceInventoryInterval.CallUnary(ctx, req)
+}
+
 // DeleteDevice calls pm.v1.ControlService.DeleteDevice.
 func (c *controlServiceClient) DeleteDevice(ctx context.Context, req *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error) {
 	return c.deleteDevice.CallUnary(ctx, req)
@@ -2346,6 +2373,11 @@ func (c *controlServiceClient) EvaluateDynamicGroup(ctx context.Context, req *co
 // SetDeviceGroupSyncInterval calls pm.v1.ControlService.SetDeviceGroupSyncInterval.
 func (c *controlServiceClient) SetDeviceGroupSyncInterval(ctx context.Context, req *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
 	return c.setDeviceGroupSyncInterval.CallUnary(ctx, req)
+}
+
+// SetDeviceGroupInventoryInterval calls pm.v1.ControlService.SetDeviceGroupInventoryInterval.
+func (c *controlServiceClient) SetDeviceGroupInventoryInterval(ctx context.Context, req *connect.Request[v1.SetDeviceGroupInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return c.setDeviceGroupInventoryInterval.CallUnary(ctx, req)
 }
 
 // SetDeviceGroupMaintenanceWindow calls pm.v1.ControlService.SetDeviceGroupMaintenanceWindow.
@@ -2759,6 +2791,7 @@ type ControlServiceHandler interface {
 	UnassignDevice(context.Context, *connect.Request[v1.UnassignDeviceRequest]) (*connect.Response[v1.UnassignDeviceResponse], error)
 	ListDeviceAssignees(context.Context, *connect.Request[v1.ListDeviceAssigneesRequest]) (*connect.Response[v1.ListDeviceAssigneesResponse], error)
 	SetDeviceSyncInterval(context.Context, *connect.Request[v1.SetDeviceSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
+	SetDeviceInventoryInterval(context.Context, *connect.Request[v1.SetDeviceInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error)
 	DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error)
 	// Registration Tokens
 	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
@@ -2811,6 +2844,7 @@ type ControlServiceHandler interface {
 	ValidateDynamicQuery(context.Context, *connect.Request[v1.ValidateDynamicQueryRequest]) (*connect.Response[v1.ValidateDynamicQueryResponse], error)
 	EvaluateDynamicGroup(context.Context, *connect.Request[v1.EvaluateDynamicGroupRequest]) (*connect.Response[v1.EvaluateDynamicGroupResponse], error)
 	SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
+	SetDeviceGroupInventoryInterval(context.Context, *connect.Request[v1.SetDeviceGroupInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error)
 	// Assignments
 	CreateAssignment(context.Context, *connect.Request[v1.CreateAssignmentRequest]) (*connect.Response[v1.CreateAssignmentResponse], error)
@@ -3183,6 +3217,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("SetDeviceSyncInterval")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceSetDeviceInventoryIntervalHandler := connect.NewUnaryHandler(
+		ControlServiceSetDeviceInventoryIntervalProcedure,
+		svc.SetDeviceInventoryInterval,
+		connect.WithSchema(controlServiceMethods.ByName("SetDeviceInventoryInterval")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceDeleteDeviceHandler := connect.NewUnaryHandler(
 		ControlServiceDeleteDeviceProcedure,
 		svc.DeleteDevice,
@@ -3463,6 +3503,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceSetDeviceGroupSyncIntervalProcedure,
 		svc.SetDeviceGroupSyncInterval,
 		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupSyncInterval")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceSetDeviceGroupInventoryIntervalHandler := connect.NewUnaryHandler(
+		ControlServiceSetDeviceGroupInventoryIntervalProcedure,
+		svc.SetDeviceGroupInventoryInterval,
+		connect.WithSchema(controlServiceMethods.ByName("SetDeviceGroupInventoryInterval")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceSetDeviceGroupMaintenanceWindowHandler := connect.NewUnaryHandler(
@@ -3985,6 +4031,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListDeviceAssigneesHandler.ServeHTTP(w, r)
 		case ControlServiceSetDeviceSyncIntervalProcedure:
 			controlServiceSetDeviceSyncIntervalHandler.ServeHTTP(w, r)
+		case ControlServiceSetDeviceInventoryIntervalProcedure:
+			controlServiceSetDeviceInventoryIntervalHandler.ServeHTTP(w, r)
 		case ControlServiceDeleteDeviceProcedure:
 			controlServiceDeleteDeviceHandler.ServeHTTP(w, r)
 		case ControlServiceCreateTokenProcedure:
@@ -4079,6 +4127,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceEvaluateDynamicGroupHandler.ServeHTTP(w, r)
 		case ControlServiceSetDeviceGroupSyncIntervalProcedure:
 			controlServiceSetDeviceGroupSyncIntervalHandler.ServeHTTP(w, r)
+		case ControlServiceSetDeviceGroupInventoryIntervalProcedure:
+			controlServiceSetDeviceGroupInventoryIntervalHandler.ServeHTTP(w, r)
 		case ControlServiceSetDeviceGroupMaintenanceWindowProcedure:
 			controlServiceSetDeviceGroupMaintenanceWindowHandler.ServeHTTP(w, r)
 		case ControlServiceCreateAssignmentProcedure:
@@ -4414,6 +4464,10 @@ func (UnimplementedControlServiceHandler) SetDeviceSyncInterval(context.Context,
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceSyncInterval is not implemented"))
 }
 
+func (UnimplementedControlServiceHandler) SetDeviceInventoryInterval(context.Context, *connect.Request[v1.SetDeviceInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceInventoryInterval is not implemented"))
+}
+
 func (UnimplementedControlServiceHandler) DeleteDevice(context.Context, *connect.Request[v1.DeleteDeviceRequest]) (*connect.Response[v1.DeleteDeviceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.DeleteDevice is not implemented"))
 }
@@ -4600,6 +4654,10 @@ func (UnimplementedControlServiceHandler) EvaluateDynamicGroup(context.Context, 
 
 func (UnimplementedControlServiceHandler) SetDeviceGroupSyncInterval(context.Context, *connect.Request[v1.SetDeviceGroupSyncIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupSyncInterval is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) SetDeviceGroupInventoryInterval(context.Context, *connect.Request[v1.SetDeviceGroupInventoryIntervalRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.SetDeviceGroupInventoryInterval is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) SetDeviceGroupMaintenanceWindow(context.Context, *connect.Request[v1.SetDeviceGroupMaintenanceWindowRequest]) (*connect.Response[v1.UpdateDeviceGroupResponse], error) {

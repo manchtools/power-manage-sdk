@@ -35,6 +35,7 @@ import {
 	ListDeviceAssigneesRequestSchema,
 	DeleteDeviceRequestSchema,
 	SetDeviceSyncIntervalRequestSchema,
+	SetDeviceInventoryIntervalRequestSchema,
 	CreateTokenRequestSchema,
 	GetTokenRequestSchema,
 	ListTokensRequestSchema,
@@ -85,6 +86,7 @@ import {
 	ValidateDynamicQueryRequestSchema,
 	EvaluateDynamicGroupRequestSchema,
 	SetDeviceGroupSyncIntervalRequestSchema,
+	SetDeviceGroupInventoryIntervalRequestSchema,
 	SetDeviceGroupMaintenanceWindowRequestSchema,
 	SetUserGroupMaintenanceWindowRequestSchema,
 	// Assignments
@@ -665,6 +667,14 @@ export class ApiClient {
 		return response.device;
 	}
 
+	async setDeviceInventoryInterval(id: string, inventoryIntervalMinutes: number) {
+		const client = this.getClient();
+		const response = await client.setDeviceInventoryInterval(
+			create(SetDeviceInventoryIntervalRequestSchema, { id, inventoryIntervalMinutes })
+		);
+		return response.device;
+	}
+
 	// ============================================================================
 	// Registration Tokens
 	// ============================================================================
@@ -1027,6 +1037,14 @@ export class ApiClient {
 		const client = this.getClient();
 		const response = await client.setDeviceGroupSyncInterval(
 			create(SetDeviceGroupSyncIntervalRequestSchema, { id, syncIntervalMinutes })
+		);
+		return response.group;
+	}
+
+	async setDeviceGroupInventoryInterval(id: string, inventoryIntervalMinutes: number) {
+		const client = this.getClient();
+		const response = await client.setDeviceGroupInventoryInterval(
+			create(SetDeviceGroupInventoryIntervalRequestSchema, { id, inventoryIntervalMinutes })
 		);
 		return response.group;
 	}
