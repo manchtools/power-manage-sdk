@@ -364,9 +364,14 @@ func TestApt_Apply_MalformedSourcesRollsBackAndFails(t *testing.T) {
 		}
 	})
 
-	t.Run("fresh file is removed", func(t *testing.T) {
+	t.Run("fresh file is removed; diagnostic only on stderr", func(t *testing.T) {
 		m, ff, fr := newTestManager(t, pkg.Apt)
-		fr.Push(pmexec.Result{}, fmt.Errorf("E: Malformed entry 1 in sources file %s (absolute Suite Component)", repoFile))
+		// The path arrives ONLY via Result.Stderr — pins that the guard
+		// reads the raw streams, not just the folded error string (CR).
+		fr.Push(pmexec.Result{
+			ExitCode: 100,
+			Stderr:   fmt.Sprintf("E: Malformed entry 1 in sources file %s (absolute Suite Component)", repoFile),
+		}, errors.New("apt-get: exit 100"))
 
 		_, err := m.Apply(context.Background(), Repository{Name: "docker", Apt: &AptConfig{
 			URL:          "https://download.docker.com/linux/ubuntu",

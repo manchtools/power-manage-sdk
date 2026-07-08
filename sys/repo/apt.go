@@ -139,7 +139,12 @@ func (m *manager) applyApt(ctx context.Context, name string, c *AptConfig) (Outc
 			log.WriteString(res.Stdout)
 		}
 		if uerr != nil {
-			if strings.Contains(uerr.Error()+res.Stdout, repoFile) {
+			// The malformed-entry diagnostic reaches us through
+			// CommandError.Error() (which folds in stderr) — but match
+			// the raw streams too, so a runner path that doesn't fold
+			// stderr into the error can never turn this guard into dead
+			// code (CR catch).
+			if strings.Contains(uerr.Error()+res.Stdout+res.Stderr, repoFile) {
 				fmt.Fprintf(&log, "apt rejected the just-written %s; rolling it back\n", repoFile)
 				if len(existingBytes) > 0 {
 					if rerr := m.fsm.WriteFile(ctx, repoFile, existingBytes, fs.WriteOptions{Mode: 0o644}); rerr != nil {
