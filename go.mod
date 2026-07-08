@@ -3,7 +3,7 @@ module github.com/manchtools/power-manage-sdk
 
 // docref: end module-path
 
-go 1.25.11
+go 1.25.12
 
 require (
 	connectrpc.com/connect v1.18.1

@@ -127,14 +127,37 @@ func (m *manager) applyApt(ctx context.Context, name string, c *AptConfig) (Outc
 		changed = true
 	}
 
-	// Refresh the index only when something actually changed (non-fatal: the
-	// config landed even if a typo'd URL fails the refresh).
+	// Refresh the index only when something actually changed. A NETWORK
+	// failure stays non-fatal (the config landed even if a typo'd URL
+	// fails the refresh) — but if apt names the file WE just wrote, the
+	// file itself is malformed and every apt operation on the host is now
+	// broken. Roll it back to the pre-apply content and FAIL: leaving it
+	// in place while reporting success bricked apt fleet-wide (#302).
 	if changed {
 		res, uerr := m.runPriv(ctx, "apt-get", "update")
 		if res.Stdout != "" {
 			log.WriteString(res.Stdout)
 		}
 		if uerr != nil {
+			// The malformed-entry diagnostic reaches us through
+			// CommandError.Error() (which folds in stderr) — but match
+			// the raw streams too, so a runner path that doesn't fold
+			// stderr into the error can never turn this guard into dead
+			// code (CR catch).
+			if strings.Contains(uerr.Error()+res.Stdout+res.Stderr, repoFile) {
+				fmt.Fprintf(&log, "apt rejected the just-written %s; rolling it back\n", repoFile)
+				if len(existingBytes) > 0 {
+					if rerr := m.fsm.WriteFile(ctx, repoFile, existingBytes, fs.WriteOptions{Mode: 0o644}); rerr != nil {
+						fmt.Fprintf(&log, "CRITICAL: rollback write failed — apt remains broken on this host: %v\n", rerr)
+					}
+				} else {
+					if rerr := m.fsm.Remove(ctx, repoFile); rerr != nil {
+						fmt.Fprintf(&log, "CRITICAL: rollback remove failed — apt remains broken on this host: %v\n", rerr)
+					}
+				}
+				ferr := fmt.Errorf("apt rejected the generated sources file for %s (rolled back): %w", name, uerr)
+				return Outcome{Result: fsResultErr(log.String(), ferr), Changed: false}, ferr
+			}
 			fmt.Fprintf(&log, "warning: apt-get update failed after configuring %s: %v\n", name, uerr)
 		}
 	}

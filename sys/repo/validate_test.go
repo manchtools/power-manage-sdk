@@ -184,3 +184,34 @@ func TestValidate_Zypper(t *testing.T) {
 
 // mut clones-by-mutation: applies f to c and returns it (test sugar).
 func mut(c *AptConfig, f func(*AptConfig)) *AptConfig { f(c); return c }
+
+// #302: deb822 forbids Components with the exact-path suite form that an
+// empty distribution renders (`Suites: /`) — apt rejects the file with
+// "Malformed entry … (absolute Suite Component)" and, once written,
+// every apt operation on the host breaks. Validate must reject the
+// combination at the gate.
+func TestValidate_Apt_FlatRepoWithComponentsRejected(t *testing.T) {
+	m, _, _ := newTestManager(t, pkg.Apt)
+	err := m.Validate(Repository{Name: "docker", Apt: &AptConfig{
+		URL:        "https://download.docker.com/linux/ubuntu",
+		Components: []string{"stable"}, // no distribution → flat form
+	}})
+	if err == nil {
+		t.Fatal("empty distribution + components must be rejected (would write a malformed .sources)")
+	}
+	if !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("want ErrInvalidConfig, got %v", err)
+	}
+
+	// Both resolutions of the conflict stay valid.
+	if err := m.Validate(Repository{Name: "docker", Apt: &AptConfig{
+		URL: "https://download.docker.com/linux/ubuntu", // flat, no components
+	}}); err != nil {
+		t.Fatalf("flat repository without components must validate: %v", err)
+	}
+	if err := m.Validate(Repository{Name: "docker", Apt: &AptConfig{
+		URL: "https://download.docker.com/linux/ubuntu", Distribution: "noble", Components: []string{"stable"},
+	}}); err != nil {
+		t.Fatalf("distribution + components must validate: %v", err)
+	}
+}
