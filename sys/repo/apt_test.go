@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -333,4 +334,74 @@ func TestApt_Remove(t *testing.T) {
 			t.Fatalf("err = %v, want a wrapped primary-remove failure", err)
 		}
 	})
+}
+
+// #302: apt rejecting the JUST-WRITTEN sources file (e.g. the malformed
+// "absolute Suite Component" form) must roll the file back and FAIL —
+// leaving it in place while reporting success breaks every apt
+// operation on the host.
+func TestApt_Apply_MalformedSourcesRollsBackAndFails(t *testing.T) {
+	const repoFile = "/etc/apt/sources.list.d/docker.sources"
+
+	t.Run("prior content is restored", func(t *testing.T) {
+		m, ff, fr := newTestManager(t, pkg.Apt)
+		ff.read[repoFile] = []byte("# old good content\n")
+		fr.Push(pmexec.Result{}, fmt.Errorf("apt-get: exit 100: E: Malformed entry 1 in sources file %s (absolute Suite Component)", repoFile))
+
+		out, err := m.Apply(context.Background(), Repository{Name: "docker", Apt: &AptConfig{
+			URL:          "https://download.docker.com/linux/ubuntu",
+			Distribution: "noble",
+			Components:   []string{"stable"},
+		}})
+		if err == nil {
+			t.Fatalf("Apply must fail when apt rejects the written file, got success: %+v", out)
+		}
+		if out.Changed {
+			t.Error("a rolled-back apply must not report Changed")
+		}
+		if got := ff.wrote(repoFile); got != "# old good content\n" {
+			t.Errorf("repo file = %q, want the pre-apply content restored", got)
+		}
+	})
+
+	t.Run("fresh file is removed", func(t *testing.T) {
+		m, ff, fr := newTestManager(t, pkg.Apt)
+		fr.Push(pmexec.Result{}, fmt.Errorf("E: Malformed entry 1 in sources file %s (absolute Suite Component)", repoFile))
+
+		_, err := m.Apply(context.Background(), Repository{Name: "docker", Apt: &AptConfig{
+			URL:          "https://download.docker.com/linux/ubuntu",
+			Distribution: "noble",
+			Components:   []string{"stable"},
+		}})
+		if err == nil {
+			t.Fatal("Apply must fail when apt rejects the written file")
+		}
+		if !ff.didCall("Remove:" + repoFile) {
+			t.Error("a fresh malformed file must be removed, not left to break apt")
+		}
+	})
+}
+
+// #302 counterpart: an update failure that does NOT name our file (a
+// network error, a broken THIRD-PARTY repo) stays a warning — the
+// config landed and is valid; failing would block converging repos on
+// hosts with unrelated apt breakage.
+func TestApt_Apply_UnrelatedUpdateFailureStaysWarning(t *testing.T) {
+	m, ff, fr := newTestManager(t, pkg.Apt)
+	fr.Push(pmexec.Result{}, fmt.Errorf("apt-get: exit 100: Could not resolve 'download.docker.com'"))
+
+	out, err := m.Apply(context.Background(), Repository{Name: "docker", Apt: &AptConfig{
+		URL:          "https://download.docker.com/linux/ubuntu",
+		Distribution: "noble",
+		Components:   []string{"stable"},
+	}})
+	if err != nil {
+		t.Fatalf("a network-shaped update failure must stay non-fatal: %v", err)
+	}
+	if !out.Changed {
+		t.Error("the configuration landed; Changed must be true")
+	}
+	if got := ff.wrote("/etc/apt/sources.list.d/docker.sources"); !strings.Contains(got, "Suites: noble") {
+		t.Errorf("valid sources file must be kept, got %q", got)
+	}
 }

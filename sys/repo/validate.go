@@ -145,6 +145,14 @@ func validateApt(c *AptConfig) error {
 	if c.Distribution != "" && !validAptDistribution.MatchString(c.Distribution) {
 		return badShape("apt.distribution")
 	}
+	// deb822 cross-field rule (#302): an empty distribution renders the
+	// exact-path/flat form (`Suites: /`), and apt forbids Components with
+	// an exact-path suite — the written file fails to parse ("Malformed
+	// entry … (absolute Suite Component)") and, because it is already on
+	// disk, EVERY apt operation on the host breaks. Reject at the gate.
+	if c.Distribution == "" && len(c.Components) > 0 {
+		return fmt.Errorf("%w: apt.components requires apt.distribution (a flat repository — empty distribution — must have no components)", ErrInvalidConfig)
+	}
 	for _, comp := range c.Components {
 		if err := rejectControl("apt.components", comp); err != nil {
 			return err
