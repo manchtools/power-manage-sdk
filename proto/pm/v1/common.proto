@@ -38,6 +38,16 @@ enum ExecutionStatus {
   // terminal status, the cancel is a no-op and the row keeps its
   // observed outcome.
   EXECUTION_STATUS_CANCELLED = 8;
+  // The action is structurally inapplicable to this device — e.g.
+  // security_only on a package manager with no security-patch
+  // scoping, a DEB action on an rpm host, a FLATPAK action with no
+  // flatpak installed. Terminal, non-error: nothing was executed
+  // (fail-closed), and the machine-readable reason travels in the
+  // result error field. Distinct from SKIPPED (a run the server or
+  // agent chose not to perform this time, e.g. maintenance window)
+  // in that NOT_APPLICABLE is a property of the device+action pair,
+  // not of the moment.
+  EXECUTION_STATUS_NOT_APPLICABLE = 9;
 }
 
 // Desired state for stateful actions
