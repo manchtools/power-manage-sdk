@@ -101,8 +101,15 @@ message InternalStoreLuksKeyRequest {
   string action_id = 2;
   // @gotags: validate:"required,min=1,max=4096"
   string device_path = 3;
-  // @gotags: validate:"required,min=1,max=1024"
-  string passphrase = 4;
+  // Managed passphrase sealed by the agent to the control X25519 key
+  // (crypto.SealLuksPassphrase, spec 25) and relayed opaquely by the
+  // gateway. Control unseals with the reconstructed
+  // device_id|action_id|"luks" AAD; an unsealable blob is rejected
+  // with InvalidArgument and nothing is stored. min=61 is the seal
+  // construction overhead plus one byte — legacy cleartext from a
+  // pre-spec-25 agent can never satisfy it AND unseal.
+  // @gotags: validate:"required,min=61,max=4096"
+  bytes sealed_passphrase = 4;
   // Why this rotation happened. INITIAL on the first rotation for the
   // (device, action) pair; SCHEDULED for any subsequent policy-driven
   // rotation. Stored on the event as the lowercase string form.

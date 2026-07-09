@@ -225,8 +225,15 @@ type InternalStoreLuksKeyRequest struct {
 	ActionId string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,min=1,max=4096"
 	DevicePath string `protobuf:"bytes,3,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,min=1,max=4096"`
-	// @gotags: validate:"required,min=1,max=1024"
-	Passphrase string `protobuf:"bytes,4,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=1024"`
+	// Managed passphrase sealed by the agent to the control X25519 key
+	// (crypto.SealLuksPassphrase, spec 25) and relayed opaquely by the
+	// gateway. Control unseals with the reconstructed
+	// device_id|action_id|"luks" AAD; an unsealable blob is rejected
+	// with InvalidArgument and nothing is stored. min=61 is the seal
+	// construction overhead plus one byte — legacy cleartext from a
+	// pre-spec-25 agent can never satisfy it AND unseal.
+	// @gotags: validate:"required,min=61,max=4096"
+	SealedPassphrase []byte `protobuf:"bytes,4,opt,name=sealed_passphrase,json=sealedPassphrase,proto3" json:"sealed_passphrase,omitempty" validate:"required,min=61,max=4096"`
 	// Why this rotation happened. INITIAL on the first rotation for the
 	// (device, action) pair; SCHEDULED for any subsequent policy-driven
 	// rotation. Stored on the event as the lowercase string form.
@@ -291,11 +298,11 @@ func (x *InternalStoreLuksKeyRequest) GetDevicePath() string {
 	return ""
 }
 
-func (x *InternalStoreLuksKeyRequest) GetPassphrase() string {
+func (x *InternalStoreLuksKeyRequest) GetSealedPassphrase() []byte {
 	if x != nil {
-		return x.Passphrase
+		return x.SealedPassphrase
 	}
-	return ""
+	return nil
 }
 
 func (x *InternalStoreLuksKeyRequest) GetRotationReason() RotationReason {
@@ -1067,15 +1074,13 @@ const file_pm_v1_internal_proto_rawDesc = "" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1d\n" +
 	"\n" +
-	"gateway_id\x18\x03 \x01(\tR\tgatewayId\"\xf7\x01\n" +
+	"gateway_id\x18\x03 \x01(\tR\tgatewayId\"\x84\x02\n" +
 	"\x1bInternalStoreLuksKeyRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x03 \x01(\tR\n" +
-	"devicePath\x12\x1e\n" +
-	"\n" +
-	"passphrase\x18\x04 \x01(\tR\n" +
-	"passphrase\x12>\n" +
+	"devicePath\x12+\n" +
+	"\x11sealed_passphrase\x18\x04 \x01(\fR\x10sealedPassphrase\x12>\n" +
 	"\x0frotation_reason\x18\x05 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x06 \x01(\tR\tgatewayId\"\xa8\x01\n" +

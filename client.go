@@ -785,8 +785,12 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 	}
 }
 
-// StoreLuksKey sends a StoreLuksKeyRequest on the stream and waits for the server confirmation.
-func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphrase string, reason pm.RotationReason) error {
+// StoreLuksKey sends a StoreLuksKeyRequest on the stream and waits for the
+// server confirmation. sealedPassphrase MUST be the output of
+// crypto.SealLuksPassphrase (spec 25) — the client is transport only and
+// never sees the cleartext passphrase; sealing (and the fail-closed no-key
+// policy) is the caller's responsibility.
+func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath string, sealedPassphrase []byte, reason pm.RotationReason) error {
 	id := NewULID()
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
@@ -795,10 +799,10 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 		Id: id,
 		Payload: &pm.AgentMessage_StoreLuksKey{
 			StoreLuksKey: &pm.StoreLuksKeyRequest{
-				ActionId:       actionID,
-				DevicePath:     devicePath,
-				Passphrase:     passphrase,
-				RotationReason: reason,
+				ActionId:         actionID,
+				DevicePath:       devicePath,
+				SealedPassphrase: sealedPassphrase,
+				RotationReason:   reason,
 			},
 		},
 	}); err != nil {
