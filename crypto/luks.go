@@ -11,6 +11,12 @@ import (
 // bind loosely and is refused.
 var ErrLuksContextIncomplete = errors.New("crypto: LUKS seal context requires non-empty device and action")
 
+// ErrEmptySecret is returned when the plaintext to seal is empty. An empty
+// secret would seal to a blob one byte below MinSealedLen and be rejected by
+// the downstream boundary validators with a confusing wire error — failing
+// fast here names the real cause. Shared by the LPS and LUKS seal helpers.
+var ErrEmptySecret = errors.New("crypto: secret to seal must be non-empty")
+
 // LUKS passphrase sealing (spec 25): the agent seals each managed LUKS
 // passphrase to the control server's X25519 public key — the SAME control
 // keypair LPS sealing uses — so the relaying gateway can never read a
@@ -43,6 +49,9 @@ func luksSealAAD(deviceID, actionID string) []byte {
 // the agent puts on the wire; only the holder of the matching private key
 // (control) can open it.
 func SealLuksPassphrase(recipient *ecdh.PublicKey, passphrase, deviceID, actionID string) ([]byte, error) {
+	if passphrase == "" {
+		return nil, ErrEmptySecret
+	}
 	if deviceID == "" || actionID == "" {
 		return nil, ErrLuksContextIncomplete
 	}

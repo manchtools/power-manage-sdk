@@ -42,6 +42,12 @@ func lpsSealAAD(deviceID, actionID, username string) []byte {
 // private key (control) can open it. All three context fields are required —
 // an empty one makes the AAD ambiguous and is refused by the underlying AEAD.
 func SealLpsPassword(recipient *ecdh.PublicKey, password, deviceID, actionID, username string) ([]byte, error) {
+	// An empty password would seal to a blob one byte below the wire
+	// validators' min length — fail fast with the real cause (CR catch on
+	// the spec-25 LUKS twin; same gap existed here).
+	if password == "" {
+		return nil, ErrEmptySecret
+	}
 	if deviceID == "" || actionID == "" || username == "" {
 		return nil, ErrLpsContextIncomplete
 	}

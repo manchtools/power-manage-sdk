@@ -103,6 +103,23 @@ func TestLuksLpsDomainSeparation(t *testing.T) {
 	})
 }
 
+// TestSeal_EmptySecretFailsFast pins the fail-fast on an empty secret for
+// BOTH seal domains: an empty plaintext would seal to a blob one byte below
+// MinSealedLen and die at a wire validator with a confusing error instead.
+func TestSeal_EmptySecretFailsFast(t *testing.T) {
+	priv := genRecipient(t)
+	const (
+		dev = "01HKDEVICE0000000000000000"
+		act = "01HKACTION0000000000000000"
+	)
+	if _, err := SealLuksPassphrase(priv.PublicKey(), "", dev, act); err == nil {
+		t.Error("expected SealLuksPassphrase with empty passphrase to fail fast")
+	}
+	if _, err := SealLpsPassword(priv.PublicKey(), "", dev, act, "alice"); err == nil {
+		t.Error("expected SealLpsPassword with empty password to fail fast")
+	}
+}
+
 // TestSealLuksPassphrase_RequiresContext refuses empty device/action — a
 // partial AAD would bind loosely (mirrors the LPS context rule).
 func TestSealLuksPassphrase_RequiresContext(t *testing.T) {
