@@ -36,6 +36,12 @@ const (
 	aeadOverhead = 12 + 16
 	// sealedOverhead is the total non-plaintext size of a sealed blob.
 	sealedOverhead = x25519KeyLen + aeadOverhead
+	// MinSealedLen is the smallest possible valid sealed blob: the
+	// construction overhead plus one plaintext byte. Boundary validators
+	// (proto `min=` tags, the gateway's legacy-cleartext guard) use it to
+	// reject anything that cannot possibly be a sealed blob — in particular
+	// a legacy cleartext secret from a pre-sealed-transport agent.
+	MinSealedLen = sealedOverhead + 1
 )
 
 // ErrInfoRequired is returned when the HKDF info string is empty. Like the

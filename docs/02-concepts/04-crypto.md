@@ -53,11 +53,12 @@ returns an error and no plaintext.
 
 ## LPS password sealing
 
-The concrete consumer is Local Password Solution rotation: the agent seals
-each rotated local password to the control server's key, so the relaying
-gateway — the least-trusted server-side actor — can never read it.
+The concrete consumers are Local Password Solution rotation and managed LUKS
+passphrase storage (spec 25): the agent seals each rotated local password /
+managed disk passphrase to the control server's key, so the relaying
+gateway — the least-trusted server-side actor — can never read either.
 
-<!-- docref: begin src=crypto/lps.go#SealLpsPassword:94af0f03,crypto/lps.go#OpenLpsPassword:c17da04f,crypto/lps.go#ErrLpsContextIncomplete:6fc490b5 -->
+<!-- docref: begin src=crypto/lps.go#SealLpsPassword:db41abd7,crypto/lps.go#OpenLpsPassword:c17da04f,crypto/lps.go#ErrLpsContextIncomplete:6fc490b5 -->
 `SealLpsPassword` (agent side) and `OpenLpsPassword` (control side) are the
 **single construction site** for the LPS domain-separation info and the
 context AAD — both sides call through the same functions, so they cannot
@@ -66,6 +67,17 @@ and would silently break every unseal). The AAD binds the sealed password to
 its exact (device, action, username) record; all three fields are required,
 and a partial context is refused with `ErrLpsContextIncomplete` — a valid
 blob cannot be relocated to another device, action, or user record.
+<!-- docref: end -->
+
+<!-- docref: begin src=crypto/luks.go#SealLuksPassphrase:4ce5127e,crypto/luks.go#OpenLuksPassphrase:75392470,crypto/luks.go#ErrLuksContextIncomplete:71224e92 -->
+`SealLuksPassphrase` / `OpenLuksPassphrase` are the LUKS twin (spec 25): the
+same control keypair, but a **distinct HKDF info**
+(`power-manage-luks-passphrase:v1`) and a `device|action|"luks"` AAD, so a
+blob sealed under one domain can never open under the other — even with a
+byte-identical AAD, the info separates them. The context requires non-empty
+device and action (`ErrLuksContextIncomplete`); an empty secret is refused
+outright (`ErrEmptySecret`) rather than sealing to a blob the wire
+validators would reject.
 <!-- docref: end -->
 
 ## Certificates: CSRs, pins, and CA continuity

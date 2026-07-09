@@ -1888,8 +1888,18 @@ type StoreLuksKeyRequest struct {
 	// Auto-detected device path (e.g., "/dev/sda2")
 	// @gotags: validate:"required,startswith=/"
 	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,startswith=/"`
-	// @gotags: validate:"required,min=1"
-	Passphrase string `protobuf:"bytes,3,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1"`
+	// Managed passphrase, sealed BY THE AGENT to the control server's
+	// X25519 public key (sdk crypto.SealLuksPassphrase: ephemeral X25519 +
+	// HKDF info "power-manage-luks-passphrase:v1" + AES-256-GCM; AAD =
+	// device_id|action_id|"luks"). The gateway relays this opaquely — it
+	// can no longer read disk-encryption secrets (spec 25). Control
+	// unseals at receipt and re-encrypts with the at-rest path before the
+	// event is appended. Minimum length is the construction overhead
+	// (32 ephemeral || 12 nonce || ct || 16 tag) plus one plaintext byte,
+	// which also rejects legacy cleartext from pre-spec-25 agents at
+	// every validation boundary.
+	// @gotags: validate:"required,min=61,max=4096"
+	SealedPassphrase []byte `protobuf:"bytes,3,opt,name=sealed_passphrase,json=sealedPassphrase,proto3" json:"sealed_passphrase,omitempty" validate:"required,min=61,max=4096"`
 	// Why this rotation happened. INITIAL on the first time the action
 	// runs on a device (no previous passphrase to retain); SCHEDULED for
 	// any subsequent policy-driven rotation. LUKS does not use
@@ -1947,11 +1957,11 @@ func (x *StoreLuksKeyRequest) GetDevicePath() string {
 	return ""
 }
 
-func (x *StoreLuksKeyRequest) GetPassphrase() string {
+func (x *StoreLuksKeyRequest) GetSealedPassphrase() []byte {
 	if x != nil {
-		return x.Passphrase
+		return x.SealedPassphrase
 	}
-	return ""
+	return nil
 }
 
 func (x *StoreLuksKeyRequest) GetRotationReason() RotationReason {
@@ -3251,14 +3261,12 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x12GetLuksKeyResponse\x12\x1e\n" +
 	"\n" +
 	"passphrase\x18\x01 \x01(\tR\n" +
-	"passphrase\"\xb3\x01\n" +
+	"passphrase\"\xc0\x01\n" +
 	"\x13StoreLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x02 \x01(\tR\n" +
-	"devicePath\x12\x1e\n" +
-	"\n" +
-	"passphrase\x18\x03 \x01(\tR\n" +
-	"passphrase\x12>\n" +
+	"devicePath\x12+\n" +
+	"\x11sealed_passphrase\x18\x03 \x01(\fR\x10sealedPassphrase\x12>\n" +
 	"\x0frotation_reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"0\n" +
 	"\x14StoreLuksKeyResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"P\n" +
