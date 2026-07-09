@@ -11,10 +11,11 @@
 # self-skips when its precondition is absent, so adding a state is a new stage +
 # a new test file — no CI wiring change.
 
-# The toolchain (1.26) is newer than the module's `go` directive (1.25.11, the
-# SDK's go.mod version mirrored into go.work below); a newer toolchain building
-# an older go-directive module is standard Go behaviour. Matches the pinning in
-# test/Dockerfile.integration so both images move together.
+# The toolchain (1.26) is newer than the module's `go` directive (the SDK's
+# go.mod version, derived into go.work below so the mirror can never go
+# stale); a newer toolchain building an older go-directive module is standard
+# Go behaviour. Matches the pinning in test/Dockerfile.integration so both
+# images move together.
 FROM golang:1.26-bookworm AS base
 
 # Tool surface for the container tests:
@@ -42,7 +43,7 @@ WORKDIR /workspace
 # Copy only the SDK module and pin it into a minimal workspace (standalone
 # resolution; mirrors test/Dockerfile.integration).
 COPY sdk/ ./sdk/
-RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN printf 'go %s\n\nuse (\n\t./sdk\n)\n' "$(sed -n 's/^go //p' sdk/go.mod)" > go.work
 RUN cd sdk && go mod download
 
 # --- bad-state stages -------------------------------------------------------
