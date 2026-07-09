@@ -39,7 +39,7 @@ RUN dnf -y install --setopt=install_weak_deps=False \
 
 WORKDIR /workspace
 COPY sdk/ ./sdk/
-RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN printf 'go %s\n\nuse (\n\t./sdk\n)\n' "$(sed -n 's/^go //p' sdk/go.mod)" > go.work
 RUN cd sdk && go mod download
 
 # --- bad-state stages -------------------------------------------------------
