@@ -24,7 +24,7 @@ RUN pacman -Sy --noconfirm \
 
 WORKDIR /workspace
 COPY sdk/ ./sdk/
-RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN printf 'go %s\n\nuse (\n\t./sdk\n)\n' "$(sed -n 's/^go //p' sdk/go.mod)" > go.work
 RUN cd sdk && go mod download
 
 # with-clamav: clamav + the same static seed DB. Arch ships freshclam.conf at

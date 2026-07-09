@@ -44,7 +44,7 @@ WORKDIR /workspace
 COPY sdk/ ./sdk/
 
 # Create a minimal go.work for the SDK
-RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN printf 'go %s\n\nuse (\n\t./sdk\n)\n' "$(sed -n 's/^go //p' sdk/go.mod)" > go.work
 
 # Pre-download dependencies
 RUN cd sdk && go mod download

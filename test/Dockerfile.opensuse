@@ -25,7 +25,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys refresh \
 
 WORKDIR /workspace
 COPY sdk/ ./sdk/
-RUN printf 'go 1.25.11\n\nuse (\n\t./sdk\n)\n' > go.work
+RUN printf 'go %s\n\nuse (\n\t./sdk\n)\n' "$(sed -n 's/^go //p' sdk/go.mod)" > go.work
 RUN cd sdk && go mod download
 
 # with-clamav: clamav + the same static seed DB. openSUSE ships freshclam.conf at
