@@ -67,7 +67,18 @@ type Manager interface {
 	Unmask(ctx context.Context, unit string) error
 	DaemonReload(ctx context.Context) error
 	WriteUnit(ctx context.Context, unit, content string) error
+	// ReadUnit returns the on-disk content of a unit WriteUnit manages —
+	// the sibling read so the unit path is constructed in exactly one
+	// place. An absent unit surfaces sys/fs's wrapped fs.ErrNotExist
+	// (errors.Is-able), so callers can tell "not installed" from a read
+	// failure.
+	ReadUnit(ctx context.Context, unit string) (string, error)
 	RemoveUnit(ctx context.Context, unit string) error
+	// Version reports the service manager's major version (for systemd:
+	// the first integer token on the first line of `systemctl --version`).
+	// Unparseable or empty output is an ERROR, never a guessed value —
+	// version-conditional rendering decides its own fail-safe.
+	Version(ctx context.Context) (int, error)
 }
 
 // Option is the functional-option type for backend-specific knobs (none today).
@@ -114,9 +125,10 @@ func ensureCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, systemctlQueryTimeout)
 }
 
-// fsManager is the narrow slice of fs.Manager the systemd backend uses to write
-// and remove unit files; a small interface so tests inject a fake via newFS.
+// fsManager is the narrow slice of fs.Manager the systemd backend uses to read,
+// write, and remove unit files; a small interface so tests inject a fake via newFS.
 type fsManager interface {
+	ReadFile(ctx context.Context, path string) ([]byte, error)
 	WriteFile(ctx context.Context, path string, data []byte, opts fs.WriteOptions) error
 	Remove(ctx context.Context, path string) error
 }
