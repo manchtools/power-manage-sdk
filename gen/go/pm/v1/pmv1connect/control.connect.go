@@ -370,6 +370,9 @@ const (
 	// ControlServiceListAuditEventsProcedure is the fully-qualified name of the ControlService's
 	// ListAuditEvents RPC.
 	ControlServiceListAuditEventsProcedure = "/pm.v1.ControlService/ListAuditEvents"
+	// ControlServiceExportAuditEventsProcedure is the fully-qualified name of the ControlService's
+	// ExportAuditEvents RPC.
+	ControlServiceExportAuditEventsProcedure = "/pm.v1.ControlService/ExportAuditEvents"
 	// ControlServiceGetDeviceLpsPasswordsProcedure is the fully-qualified name of the ControlService's
 	// GetDeviceLpsPasswords RPC.
 	ControlServiceGetDeviceLpsPasswordsProcedure = "/pm.v1.ControlService/GetDeviceLpsPasswords"
@@ -659,6 +662,7 @@ type ControlServiceClient interface {
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
+	ExportAuditEvents(context.Context, *connect.Request[v1.ExportAuditEventsRequest]) (*connect.Response[v1.ExportAuditEventsResponse], error)
 	// LPS (Local Password Solution)
 	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
 	// LUKS (Disk Encryption)
@@ -1420,6 +1424,12 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ListAuditEvents")),
 			connect.WithClientOptions(opts...),
 		),
+		exportAuditEvents: connect.NewClient[v1.ExportAuditEventsRequest, v1.ExportAuditEventsResponse](
+			httpClient,
+			baseURL+ControlServiceExportAuditEventsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ExportAuditEvents")),
+			connect.WithClientOptions(opts...),
+		),
 		getDeviceLpsPasswords: connect.NewClient[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse](
 			httpClient,
 			baseURL+ControlServiceGetDeviceLpsPasswordsProcedure,
@@ -1851,6 +1861,7 @@ type controlServiceClient struct {
 	getExecution                      *connect.Client[v1.GetExecutionRequest, v1.GetExecutionResponse]
 	listExecutions                    *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
 	listAuditEvents                   *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
+	exportAuditEvents                 *connect.Client[v1.ExportAuditEventsRequest, v1.ExportAuditEventsResponse]
 	getDeviceLpsPasswords             *connect.Client[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse]
 	getDeviceLuksKeys                 *connect.Client[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse]
 	createLuksToken                   *connect.Client[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse]
@@ -2475,6 +2486,11 @@ func (c *controlServiceClient) ListAuditEvents(ctx context.Context, req *connect
 	return c.listAuditEvents.CallUnary(ctx, req)
 }
 
+// ExportAuditEvents calls pm.v1.ControlService.ExportAuditEvents.
+func (c *controlServiceClient) ExportAuditEvents(ctx context.Context, req *connect.Request[v1.ExportAuditEventsRequest]) (*connect.Response[v1.ExportAuditEventsResponse], error) {
+	return c.exportAuditEvents.CallUnary(ctx, req)
+}
+
 // GetDeviceLpsPasswords calls pm.v1.ControlService.GetDeviceLpsPasswords.
 func (c *controlServiceClient) GetDeviceLpsPasswords(ctx context.Context, req *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
 	return c.getDeviceLpsPasswords.CallUnary(ctx, req)
@@ -2868,6 +2884,7 @@ type ControlServiceHandler interface {
 	ListExecutions(context.Context, *connect.Request[v1.ListExecutionsRequest]) (*connect.Response[v1.ListExecutionsResponse], error)
 	// Audit Log
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
+	ExportAuditEvents(context.Context, *connect.Request[v1.ExportAuditEventsRequest]) (*connect.Response[v1.ExportAuditEventsResponse], error)
 	// LPS (Local Password Solution)
 	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
 	// LUKS (Disk Encryption)
@@ -3625,6 +3642,12 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ListAuditEvents")),
 		connect.WithHandlerOptions(opts...),
 	)
+	controlServiceExportAuditEventsHandler := connect.NewUnaryHandler(
+		ControlServiceExportAuditEventsProcedure,
+		svc.ExportAuditEvents,
+		connect.WithSchema(controlServiceMethods.ByName("ExportAuditEvents")),
+		connect.WithHandlerOptions(opts...),
+	)
 	controlServiceGetDeviceLpsPasswordsHandler := connect.NewUnaryHandler(
 		ControlServiceGetDeviceLpsPasswordsProcedure,
 		svc.GetDeviceLpsPasswords,
@@ -4167,6 +4190,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListExecutionsHandler.ServeHTTP(w, r)
 		case ControlServiceListAuditEventsProcedure:
 			controlServiceListAuditEventsHandler.ServeHTTP(w, r)
+		case ControlServiceExportAuditEventsProcedure:
+			controlServiceExportAuditEventsHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceLpsPasswordsProcedure:
 			controlServiceGetDeviceLpsPasswordsHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceLuksKeysProcedure:
@@ -4734,6 +4759,10 @@ func (UnimplementedControlServiceHandler) ListExecutions(context.Context, *conne
 
 func (UnimplementedControlServiceHandler) ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ListAuditEvents is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ExportAuditEvents(context.Context, *connect.Request[v1.ExportAuditEventsRequest]) (*connect.Response[v1.ExportAuditEventsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.ExportAuditEvents is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
