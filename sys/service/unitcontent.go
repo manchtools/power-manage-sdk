@@ -213,3 +213,12 @@ func validateEnvLine(value string) error {
 	}
 	return nil
 }
+
+// ValidateUnitContent applies the unit-file content policy to content
+// without writing anything — the same gate WriteUnit enforces. Exported
+// so a caller that RENDERS unit content (the agent's embedded unit,
+// spec 27) can pin at test time that its template never produces a
+// directive the write path would reject.
+func ValidateUnitContent(content string) error {
+	return validateUnitContent(content)
+}

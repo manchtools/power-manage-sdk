@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
@@ -240,6 +241,20 @@ func (s *systemd) WriteUnit(ctx context.Context, unit, content string) error {
 	return s.fsm.WriteFile(ctx, "/etc/systemd/system/"+unit, []byte(content), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"})
 }
 
+func (s *systemd) ReadUnit(ctx context.Context, unit string) (string, error) {
+	if err := ValidateUnitName(unit); err != nil {
+		return "", err
+	}
+	// No extra wrapping on the error: sys/fs's ReadFile contract (wrapped
+	// fs.ErrNotExist on absence) must stay errors.Is-able for callers that
+	// treat "not installed" as a distinct state.
+	content, err := s.fsm.ReadFile(ctx, "/etc/systemd/system/"+unit)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
 func (s *systemd) RemoveUnit(ctx context.Context, unit string) error {
 	if err := ValidateUnitName(unit); err != nil {
 		return err
@@ -249,4 +264,25 @@ func (s *systemd) RemoveUnit(ctx context.Context, unit string) error {
 		return fmt.Errorf("remove systemd unit %s: %w", path, err)
 	}
 	return nil
+}
+
+// Version reports systemd's major version: the first integer token on the
+// first line of `systemctl --version` ("systemd 257 (257.7-1)" → 257),
+// mirroring the parse the agent install script used. Anything else — empty
+// output, no numeric token, an exec failure — is an error; the caller owns
+// its fail-safe.
+func (s *systemd) Version(ctx context.Context) (int, error) {
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	res, err := s.r.Run(ctx, exec.Command{Name: "systemctl", Args: []string{"--version"}})
+	if err != nil {
+		return 0, fmt.Errorf("systemctl --version: %w", err)
+	}
+	firstLine, _, _ := strings.Cut(res.Stdout, "\n")
+	for _, tok := range strings.Fields(firstLine) {
+		if v, convErr := strconv.Atoi(tok); convErr == nil {
+			return v, nil
+		}
+	}
+	return 0, fmt.Errorf("systemctl --version: no version token in %q", firstLine)
 }

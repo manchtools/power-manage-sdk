@@ -19,12 +19,22 @@ type fakeFS struct {
 	wrotePath, wroteContent string
 	wroteOpts               fs.WriteOptions
 	removedPath             string
+	readPath, readContent   string
 	writeErr, removeErr     error
+	readErr                 error
 }
 
 func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
 	f.wrotePath, f.wroteContent, f.wroteOpts = path, string(data), opts
 	return f.writeErr
+}
+
+func (f *fakeFS) ReadFile(_ context.Context, path string) ([]byte, error) {
+	f.readPath = path
+	if f.readErr != nil {
+		return nil, f.readErr
+	}
+	return []byte(f.readContent), nil
 }
 
 func (f *fakeFS) Remove(_ context.Context, path string) error {
