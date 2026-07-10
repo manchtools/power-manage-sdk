@@ -113,3 +113,51 @@ func TestValidateUnitContent_ExportMatchesGate(t *testing.T) {
 		t.Errorf("plain unit must pass, got %v", err)
 	}
 }
+
+// TestNeedsReload_ParsesShowOutput pins the NeedDaemonReload probe
+// (spec 27 reload-retry): yes/no parse strictly, anything else — an
+// empty reply, an error line, a D-Bus stall — is an ERROR, never a
+// guessed false (fail-closed, matching the package's query posture).
+func TestNeedsReload_ParsesShowOutput(t *testing.T) {
+	cases := []struct {
+		name    string
+		stdout  string
+		want    bool
+		wantErr bool
+	}{
+		{"pending", "NeedDaemonReload=yes\n", true, false},
+		{"clean", "NeedDaemonReload=no\n", false, false},
+		{"empty", "", false, true},
+		{"garbage", "Failed to get properties", false, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := exectest.New(exec.Direct)
+			f.Push(exec.Result{Stdout: tc.stdout}, nil)
+			got, err := mgr(t, f).NeedsReload(context.Background(), "demo.service")
+			wantOneCmd(t, f, []string{"show", "--property=NeedDaemonReload", "--", "demo.service"}, false)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("NeedsReload() = %v, want error", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("NeedsReload(): %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("NeedsReload() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestNeedsReload_RejectsInvalidUnitName(t *testing.T) {
+	f := exectest.New(exec.Direct)
+	if _, err := mgr(t, f).NeedsReload(context.Background(), "../evil"); err == nil {
+		t.Fatal("invalid unit name must be rejected")
+	}
+	if len(f.Calls()) != 0 {
+		t.Fatal("no systemctl call may run for an invalid unit name")
+	}
+}
