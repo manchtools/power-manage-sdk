@@ -281,13 +281,14 @@ func (s *systemd) NeedsReload(ctx context.Context, unit string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("systemctl show %s: %w", unit, err)
 	}
-	switch strings.TrimSpace(res.Stdout) {
+	out := strings.TrimSpace(res.Stdout)
+	switch out {
 	case "NeedDaemonReload=yes":
 		return true, nil
 	case "NeedDaemonReload=no":
 		return false, nil
 	}
-	return false, fmt.Errorf("systemctl show %s: unexpected NeedDaemonReload output %q", unit, strings.TrimSpace(res.Stdout))
+	return false, fmt.Errorf("systemctl show %s: unexpected NeedDaemonReload output %q", unit, out)
 }
 
 // Version reports systemd's major version: the first integer token on the

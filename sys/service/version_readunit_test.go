@@ -135,6 +135,7 @@ func TestNeedsReload_ParsesShowOutput(t *testing.T) {
 			f := exectest.New(exec.Direct)
 			f.Push(exec.Result{Stdout: tc.stdout}, nil)
 			got, err := mgr(t, f).NeedsReload(context.Background(), "demo.service")
+			wantOneCmd(t, f, []string{"show", "--property=NeedDaemonReload", "--", "demo.service"}, false)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("NeedsReload() = %v, want error", got)
@@ -147,7 +148,6 @@ func TestNeedsReload_ParsesShowOutput(t *testing.T) {
 			if got != tc.want {
 				t.Errorf("NeedsReload() = %v, want %v", got, tc.want)
 			}
-			wantOneCmd(t, f, []string{"show", "--property=NeedDaemonReload", "--", "demo.service"}, false)
 		})
 	}
 }
