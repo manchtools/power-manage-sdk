@@ -5,7 +5,7 @@
 import { createClient, Code, ConnectError } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { create } from '@bufbuild/protobuf';
-import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { timestampFromDate, type Timestamp } from '@bufbuild/protobuf/wkt';
 
 import {
 	ControlService,
@@ -111,6 +111,7 @@ import {
 	ListExecutionsRequestSchema,
 	// Audit Log
 	ListAuditEventsRequestSchema,
+	ExportAuditEventsRequestSchema,
 	// LPS
 	GetDeviceLpsPasswordsRequestSchema,
 	// LUKS
@@ -1475,6 +1476,25 @@ export class ApiClient {
 		return client.listAuditEvents(
 			create(ListAuditEventsRequestSchema, { pageSize, pageToken, actorId, streamType, eventType })
 		);
+	}
+
+	/**
+	 * One chunk of the audit-log export (spec 26). The export is unary
+	 * and chunked: pass the returned nextPageToken back until it comes
+	 * back empty, concatenating the chunks into one valid CSV file or
+	 * JSON array.
+	 */
+	async exportAuditEvents(options: {
+		format: 'csv' | 'json';
+		actorId?: string;
+		streamTypes?: string[];
+		eventType?: string;
+		occurredFrom?: Timestamp;
+		occurredTo?: Timestamp;
+		pageToken?: string;
+	}) {
+		const client = this.getClient();
+		return client.exportAuditEvents(create(ExportAuditEventsRequestSchema, options));
 	}
 
 	// ============================================================================
