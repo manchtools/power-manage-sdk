@@ -1702,6 +1702,47 @@ message ListAuditEventsResponse {
   int32 total_count = 3;
 }
 
+// ExportAuditEvents streams the audit log as CSV or JSON for DSAR /
+// external review (spec 26, manchtools/power-manage-server#501). It is
+// a *unary, chunked* export on purpose: the control server's
+// interceptors are deliberately fail-closed on streaming RPCs, so the
+// client loops — pass the returned next_page_token back until it comes
+// back empty, concatenating the chunks. The server applies the same
+// read-side redaction and the same permission gate as ListAuditEvents.
+//
+// Filters mirror what the audit view can express: exact actor, a set
+// of stream types, an event-type substring match (same semantics as
+// ListAuditEvents.event_type), and an occurred_at range.
+message ExportAuditEventsRequest {
+  // Export format: "csv" or "json".
+  // @gotags: validate:"required,oneof=csv json"
+  string format = 1;
+  // @gotags: validate:"omitempty"
+  string actor_id = 2;
+  // Empty = all stream types.
+  // @gotags: validate:"omitempty,max=64,dive,min=1,max=64"
+  repeated string stream_types = 3;
+  // Case-insensitive substring match on the event type.
+  // @gotags: validate:"omitempty,max=128"
+  string event_type = 4;
+  // Inclusive occurred_at lower/upper bounds; unset = unbounded.
+  google.protobuf.Timestamp occurred_from = 5;
+  google.protobuf.Timestamp occurred_to = 6;
+  // Cursor from the previous chunk; empty starts the export.
+  // @gotags: validate:"omitempty,max=32"
+  string page_token = 7;
+}
+
+message ExportAuditEventsResponse {
+  // The next fragment of the export artifact. Chunks concatenate to
+  // one valid CSV file (header on the first chunk) or one valid JSON
+  // array. A chunk can be empty (e.g. a filter matching zero events
+  // still yields the CSV header / "[]").
+  bytes chunk = 1;
+  // Empty when the export is complete.
+  string next_page_token = 2;
+}
+
 // ============================================================================
 // LPS (Local Password Solution)
 // ============================================================================
@@ -2855,6 +2896,7 @@ service ControlService {
 
   // Audit Log
   rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
+  rpc ExportAuditEvents(ExportAuditEventsRequest) returns (ExportAuditEventsResponse);
 
   // LPS (Local Password Solution)
   rpc GetDeviceLpsPasswords(GetDeviceLpsPasswordsRequest) returns (GetDeviceLpsPasswordsResponse);
