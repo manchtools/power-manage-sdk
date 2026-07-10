@@ -266,6 +266,30 @@ func (s *systemd) RemoveUnit(ctx context.Context, unit string) error {
 	return nil
 }
 
+// NeedsReload reports whether systemd's loaded configuration for unit is
+// stale relative to the on-disk unit file, via the NeedDaemonReload unit
+// property. `systemctl show` is lenient (exit 0 even for unknown units), so
+// correctness rides on the strict yes/no output parse: anything else is an
+// error, never a guessed false.
+func (s *systemd) NeedsReload(ctx context.Context, unit string) (bool, error) {
+	if err := ValidateUnitName(unit); err != nil {
+		return false, err
+	}
+	ctx, cancel := ensureCtx(ctx)
+	defer cancel()
+	res, err := s.r.Run(ctx, exec.Command{Name: "systemctl", Args: []string{"show", "--property=NeedDaemonReload", "--", unit}})
+	if err != nil {
+		return false, fmt.Errorf("systemctl show %s: %w", unit, err)
+	}
+	switch strings.TrimSpace(res.Stdout) {
+	case "NeedDaemonReload=yes":
+		return true, nil
+	case "NeedDaemonReload=no":
+		return false, nil
+	}
+	return false, fmt.Errorf("systemctl show %s: unexpected NeedDaemonReload output %q", unit, strings.TrimSpace(res.Stdout))
+}
+
 // Version reports systemd's major version: the first integer token on the
 // first line of `systemctl --version` ("systemd 257 (257.7-1)" → 257),
 // mirroring the parse the agent install script used. Anything else — empty

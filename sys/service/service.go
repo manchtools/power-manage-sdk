@@ -79,6 +79,13 @@ type Manager interface {
 	// Unparseable or empty output is an ERROR, never a guessed value —
 	// version-conditional rendering decides its own fail-safe.
 	Version(ctx context.Context) (int, error)
+	// NeedsReload reports whether the manager's LOADED configuration for
+	// unit is stale relative to the on-disk unit file (systemd's
+	// NeedDaemonReload property) — i.e. a daemon-reload is pending. Lets
+	// a caller that once failed a reload retry it later without tracking
+	// state of its own. Unexpected output is an ERROR, never a guessed
+	// false.
+	NeedsReload(ctx context.Context, unit string) (bool, error)
 }
 
 // Option is the functional-option type for backend-specific knobs (none today).
