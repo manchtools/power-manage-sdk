@@ -910,18 +910,12 @@ func TestPacman_GetIgnoredPackages(t *testing.T) {
 	}
 }
 
-func TestPacman_Contains(t *testing.T) {
-	if !contains([]string{"a", "b"}, "b") || contains([]string{"a"}, "z") || contains(nil, "x") {
-		t.Error("contains is wrong")
-	}
-}
-
 func TestPacman_ParseValueAndSize(t *testing.T) {
-	if v := parsePacmanValue("Version : 9.0"); v != "9.0" {
-		t.Errorf("parsePacmanValue=%q", v)
+	if v := parseColonValue("Version : 9.0"); v != "9.0" {
+		t.Errorf("parseColonValue=%q", v)
 	}
-	if v := parsePacmanValue("no colon"); v != "" {
-		t.Errorf("parsePacmanValue no-colon=%q", v)
+	if v := parseColonValue("no colon"); v != "" {
+		t.Errorf("parseColonValue no-colon=%q", v)
 	}
 	cases := map[string]int64{
 		"3.00 MiB": 3 * 1024 * 1024,

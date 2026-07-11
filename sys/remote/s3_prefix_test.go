@@ -202,6 +202,54 @@ func TestS3Fetch_PrefixSync_PruneRemovesLocalExtras(t *testing.T) {
 	}
 }
 
+// TestS3Fetch_PrefixSync_PathPrefixedEndpoint is a regression test:
+// when the endpoint carries a path prefix (e.g. a reverse proxy fronting
+// S3 under /v1), prefix-sync must address the bucket at
+// <endpoint-path>/<bucket> — the same way NewS3 and single-key mode do.
+// The buggy version split objectURL and mistook the path prefix for the
+// bucket, listing at /v1 and GETting /v1/<key> with the bucket dropped.
+func TestS3Fetch_PrefixSync_PathPrefixedEndpoint(t *testing.T) {
+	const bucket = "mybucket"
+	objs := []s3TestObject{{key: "data/a.txt", body: []byte("alpha"), etag: `"a1"`}}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/"+bucket &&
+			r.URL.Query().Get("list-type") == "2" && r.URL.Query().Get("prefix") == "data/":
+			writeListResponse(w, bucket, "data/", objs)
+		case r.Method == http.MethodHead && r.URL.Path == "/v1/"+bucket+"/data/a.txt":
+			w.Header().Set("ETag", `"a1"`)
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/"+bucket+"/data/a.txt":
+			w.Header().Set("ETag", `"a1"`)
+			_, _ = w.Write([]byte("alpha"))
+		default:
+			http.Error(w, "unexpected "+r.Method+" "+r.URL.Path, http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	dest := filepath.Join(t.TempDir(), "tree")
+	recordDestUnder(t, dest)
+
+	src, err := NewS3(S3Config{
+		Endpoint: srv.URL + "/v1",
+		Bucket:   bucket,
+		Key:      "data/",
+	})
+	if err != nil {
+		t.Fatalf("NewS3: %v", err)
+	}
+	res, err := src.Fetch(context.Background(), dest)
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if !res.Changed || res.FilesTouched != 1 {
+		t.Fatalf("Result = %+v; want Changed=true FilesTouched=1", res)
+	}
+	assertFile(t, filepath.Join(dest, "a.txt"), "alpha")
+}
+
 // TestS3Fetch_PrefixSync_403OnList_SurfacesClearError — anonymous
 // listing forbidden by bucket policy must surface as ErrInvalidConfig
 // so the operator knows what to fix.

@@ -145,14 +145,6 @@ func (n *nftables) nftDeleteManagedTable(ctx context.Context) error {
 	return err // missing table on the second teardown surfaces as a (harmless) error
 }
 
-// nftBuildApplyScript builds the batch script for an ApplyRule call,
-// no validation beyond the dispatch layer's ID check. Used by the
-// idempotency-test cases that exercise the builder's output shape.
-func nftBuildApplyScript(namespace string, rule Rule, replaceHandle int64) string {
-	script, _ := nftBuildApplyScriptStrict(namespace, rule, replaceHandle)
-	return script
-}
-
 // nftBuildApplyScriptStrict errors on nft-untranslatable Rule combos —
 // currently just "Port set without Protocol", which can't be expressed
 // in one nft rule.

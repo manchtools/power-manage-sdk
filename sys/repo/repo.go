@@ -35,6 +35,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/manchtools/power-manage-sdk/pkg"
 	pmexec "github.com/manchtools/power-manage-sdk/sys/exec"
@@ -302,6 +303,23 @@ func (m *manager) runPriv(ctx context.Context, name string, args ...string) (pme
 		return res, &pmexec.CommandError{Name: name, ExitCode: res.ExitCode, Stderr: res.Stderr}
 	}
 	return res, nil
+}
+
+// runNonFatal runs an escalated package-manager command whose failure is
+// non-fatal: its stdout is appended to log when non-empty, and on error a
+// warning (warnMsg followed by the error) is written to log and execution
+// continues. warnMsg is the per-site message WITHOUT the trailing ": <err>"
+// (e.g. "warning: failed to refresh repo metadata"). This folds the
+// run-append-stdout-warn-on-error idiom repeated across the backends; paths
+// where a command failure is fatal must NOT use it.
+func (m *manager) runNonFatal(ctx context.Context, log *strings.Builder, warnMsg, name string, args ...string) {
+	res, err := m.runPriv(ctx, name, args...)
+	if res.Stdout != "" {
+		log.WriteString(res.Stdout)
+	}
+	if err != nil {
+		fmt.Fprintf(log, "%s: %v\n", warnMsg, err)
+	}
 }
 
 // runStdin runs an UNPRIVILEGED command with stdin (the gpg --dearmor path: it
