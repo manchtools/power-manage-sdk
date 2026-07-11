@@ -214,17 +214,16 @@ func TestS3Fetch_PrefixSync_PathPrefixedEndpoint(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.URL.Path == "/v1/"+bucket && r.URL.Query().Get("list-type") == "2":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/"+bucket && r.URL.Query().Get("list-type") == "2":
 			writeListResponse(w, bucket, "data/", objs)
-		case r.URL.Path == "/v1/"+bucket+"/data/a.txt":
+		case r.Method == http.MethodHead && r.URL.Path == "/v1/"+bucket+"/data/a.txt":
 			w.Header().Set("ETag", `"a1"`)
-			if r.Method == http.MethodHead {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/"+bucket+"/data/a.txt":
+			w.Header().Set("ETag", `"a1"`)
 			_, _ = w.Write([]byte("alpha"))
 		default:
-			http.Error(w, "unexpected path "+r.URL.Path, http.StatusNotFound)
+			http.Error(w, "unexpected "+r.Method+" "+r.URL.Path, http.StatusNotFound)
 		}
 	}))
 	t.Cleanup(srv.Close)

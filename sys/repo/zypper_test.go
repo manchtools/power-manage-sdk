@@ -181,3 +181,22 @@ func TestZypper_Remove(t *testing.T) {
 		}
 	})
 }
+
+// TestZypper_Apply_GPGCheckFalseIgnoresKey guards the trust-downgrade fix
+// (parity with TestDnf_Apply_GPGCheckFalseIgnoresKey): with GPGCheck=false
+// the repo is added --no-gpgcheck, so importing the GPGKey would trust it
+// system-wide in the rpm keyring while the repo verifies nothing. The key
+// import must be gated on GPGCheck.
+func TestZypper_Apply_GPGCheckFalseIgnoresKey(t *testing.T) {
+	m, _, fr := newTestManager(t, pkg.Zypper)
+	if _, err := m.Apply(context.Background(), Repository{Name: "r", Zypper: &ZypperConfig{
+		URL: "https://h/r", Enabled: true, GPGCheck: false, GPGKey: "https://h/KEY",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, cmd := range argvs(fr) {
+		if strings.Contains(cmd, "rpm --import") {
+			t.Fatalf("rpm --import ran despite GPGCheck=false — trust downgrade:\n%v", argvs(fr))
+		}
+	}
+}

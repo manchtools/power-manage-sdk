@@ -71,8 +71,13 @@ func (m *manager) applyZypper(ctx context.Context, name string, c *ZypperConfig)
 			return Outcome{}, fmt.Errorf("disable repo: %w", err)
 		}
 	}
-	// Key import + refresh are non-fatal (the repo is configured).
-	if c.GPGKey != "" {
+	// Key import + refresh are non-fatal (the repo is configured). Import
+	// the key ONLY when signature checking is on: with GPGCheck=false the
+	// repo is added --no-gpgcheck (above), so importing the key would
+	// silently trust it system-wide in the rpm keyring while the repo
+	// verifies nothing — a trust downgrade. Same single-switch rule as
+	// applyDnf.
+	if c.GPGCheck && c.GPGKey != "" {
 		m.runNonFatal(ctx, &log, "warning: failed to import GPG key", "rpm", pmexec.SeparatePositionals([]string{"--import"}, c.GPGKey)...)
 	}
 	m.runNonFatal(ctx, &log, "warning: failed to refresh repo", "zypper", "--non-interactive", "refresh", name)
