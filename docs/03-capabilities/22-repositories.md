@@ -60,12 +60,12 @@ same desired state is safe and produces no spurious change events.
 <!-- docref: end -->
 
 {% callout type="info" title="GPG keys are public material" %}
-<!-- docref: begin src=sys/repo/apt.go#updateAptKey:f3733dcc,sys/repo/dnf.go#manager.applyDnf:0bc9b98b -->
+<!-- docref: begin src=sys/repo/apt.go#updateAptKey:f3733dcc,sys/repo/dnf.go#manager.applyDnf:c628e81a,sys/repo/zypper.go#manager.applyZypper:159c1fe5 -->
 The signing keys here are *public* repository keys, not secrets. apt receives the
 key bytes (dearmored into `/etc/apt/keyrings`); dnf and zypper take a key
-reference (URL or path) the package manager imports — and dnf imports it only
-when `GPGCheck` is on, so a key is never trusted system-wide while the
-repository itself verifies nothing.
+reference (URL or path) the package manager imports — and both dnf and zypper
+import it only when `GPGCheck` is on, so a key is never trusted system-wide while
+the repository itself verifies nothing.
 <!-- docref: end -->
 {% /callout %}
 
