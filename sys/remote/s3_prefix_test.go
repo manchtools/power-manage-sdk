@@ -214,7 +214,8 @@ func TestS3Fetch_PrefixSync_PathPrefixedEndpoint(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/"+bucket && r.URL.Query().Get("list-type") == "2":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/"+bucket &&
+			r.URL.Query().Get("list-type") == "2" && r.URL.Query().Get("prefix") == "data/":
 			writeListResponse(w, bucket, "data/", objs)
 		case r.Method == http.MethodHead && r.URL.Path == "/v1/"+bucket+"/data/a.txt":
 			w.Header().Set("ETag", `"a1"`)
