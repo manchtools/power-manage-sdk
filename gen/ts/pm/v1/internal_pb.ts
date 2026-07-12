@@ -16,7 +16,61 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/internal.proto.
  */
 export const file_pm_v1_internal: GenFile = /*@__PURE__*/
-  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiQwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhIKCmdhdGV3YXlfaWQYAiABKAkiWAogSW50ZXJuYWxWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJEhIKCmdhdGV3YXlfaWQYAyABKAkiVQoZSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhIKCmdhdGV3YXlfaWQYAyABKAkitwEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhkKEXNlYWxlZF9wYXNzcGhyYXNlGAQgASgMEi4KD3JvdGF0aW9uX3JlYXNvbhgFIAEoDjIVLnBtLnYxLlJvdGF0aW9uUmVhc29uEhIKCmdhdGV3YXlfaWQYBiABKAkiewoTTHBzUGFzc3dvcmRSb3RhdGlvbhIQCgh1c2VybmFtZRgBIAEoCRIXCg9zZWFsZWRfcGFzc3dvcmQYAiABKAwSEgoKcm90YXRlZF9hdBgDIAEoCRIlCgZyZWFzb24YBCABKA4yFS5wbS52MS5Sb3RhdGlvblJlYXNvbiKLAQogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uEhIKCmdhdGV3YXlfaWQYBCABKAkiIwohSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlIkkKJEludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg0KBXRva2VuGAIgASgJInkKJUludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVzcG9uc2USDwoHdXNlcl9pZBgBIAEoCRIRCglkZXZpY2VfaWQYAiABKAkSEAoIdHR5X3VzZXIYAyABKAkSDAoEY29scxgEIAEoDRIMCgRyb3dzGAUgASgNIjwKE1ZlcmlmeURldmljZVJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhIKCmdhdGV3YXlfaWQYAiABKAkiFgoUVmVyaWZ5RGV2aWNlUmVzcG9uc2UizAEKGkdhdGV3YXlUZXJtaW5hbFNlc3Npb25JbmZvEhIKCnNlc3Npb25faWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIRCglkZXZpY2VfaWQYAyABKAkSEAoIdHR5X3VzZXIYBCABKAkSLgoKc3RhcnRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQbGFzdF9hY3Rpdml0eV9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiJAoiTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVxdWVzdCJaCiNMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXNwb25zZRIzCghzZXNzaW9ucxgBIAMoCzIhLnBtLnYxLkdhdGV3YXlUZXJtaW5hbFNlc3Npb25JbmZvIkwKJlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDgoGcmVhc29uGAIgASgJIjgKJ1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZRINCgVmb3VuZBgBIAEoCDKeBQoPSW50ZXJuYWxTZXJ2aWNlEkcKDFZlcmlmeURldmljZRIaLnBtLnYxLlZlcmlmeURldmljZVJlcXVlc3QaGy5wbS52MS5WZXJpZnlEZXZpY2VSZXNwb25zZRJRChBQcm94eVN5bmNBY3Rpb25zEiEucG0udjEuSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlEmMKFlByb3h5VmFsaWRhdGVMdWtzVG9rZW4SJy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlTHVrc1Rva2VuUmVxdWVzdBogLnBtLnYxLlZhbGlkYXRlTHVrc1Rva2VuUmVzcG9uc2USTgoPUHJveHlHZXRMdWtzS2V5EiAucG0udjEuSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBoZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZRJUChFQcm94eVN0b3JlTHVrc0tleRIiLnBtLnYxLkludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBobLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlEmsKFlByb3h5U3RvcmVMcHNQYXNzd29yZHMSJy5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBooLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZRJ3ChpQcm94eVZhbGlkYXRlVGVybWluYWxUb2tlbhIrLnBtLnYxLkludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVxdWVzdBosLnBtLnYxLkludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVzcG9uc2UyiQIKDkdhdGV3YXlTZXJ2aWNlEnQKG0xpc3RHYXRld2F5VGVybWluYWxTZXNzaW9ucxIpLnBtLnYxLkxpc3RHYXRld2F5VGVybWluYWxTZXNzaW9uc1JlcXVlc3QaKi5wbS52MS5MaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXNwb25zZRKAAQofVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvbhItLnBtLnYxLlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXF1ZXN0Gi4ucG0udjEuVGVybWluYXRlR2F0ZXdheVRlcm1pbmFsU2Vzc2lvblJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Utc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_pm_v1_agent, file_pm_v1_common]);
+  fileDesc("ChRwbS92MS9pbnRlcm5hbC5wcm90bxIFcG0udjEiLQoeUmVuZXdHYXRld2F5Q2VydGlmaWNhdGVSZXF1ZXN0EgsKA2NzchgBIAEoDCJlCh9SZW5ld0dhdGV3YXlDZXJ0aWZpY2F0ZVJlc3BvbnNlEhMKC2NlcnRpZmljYXRlGAEgASgMEi0KCW5vdF9hZnRlchgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiQwoaSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhIKCmdhdGV3YXlfaWQYAiABKAkiWAogSW50ZXJuYWxWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJEhIKCmdhdGV3YXlfaWQYAyABKAkiVQoZSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhIKCmdhdGV3YXlfaWQYAyABKAkitwEKG0ludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhMKC2RldmljZV9wYXRoGAMgASgJEhkKEXNlYWxlZF9wYXNzcGhyYXNlGAQgASgMEi4KD3JvdGF0aW9uX3JlYXNvbhgFIAEoDjIVLnBtLnYxLlJvdGF0aW9uUmVhc29uEhIKCmdhdGV3YXlfaWQYBiABKAkiewoTTHBzUGFzc3dvcmRSb3RhdGlvbhIQCgh1c2VybmFtZRgBIAEoCRIXCg9zZWFsZWRfcGFzc3dvcmQYAiABKAwSEgoKcm90YXRlZF9hdBgDIAEoCRIlCgZyZWFzb24YBCABKA4yFS5wbS52MS5Sb3RhdGlvblJlYXNvbiKLAQogSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRItCglyb3RhdGlvbnMYAyADKAsyGi5wbS52MS5McHNQYXNzd29yZFJvdGF0aW9uEhIKCmdhdGV3YXlfaWQYBCABKAkiIwohSW50ZXJuYWxTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlIkkKJEludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg0KBXRva2VuGAIgASgJInkKJUludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVzcG9uc2USDwoHdXNlcl9pZBgBIAEoCRIRCglkZXZpY2VfaWQYAiABKAkSEAoIdHR5X3VzZXIYAyABKAkSDAoEY29scxgEIAEoDRIMCgRyb3dzGAUgASgNIjwKE1ZlcmlmeURldmljZVJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEhIKCmdhdGV3YXlfaWQYAiABKAkiFgoUVmVyaWZ5RGV2aWNlUmVzcG9uc2UizAEKGkdhdGV3YXlUZXJtaW5hbFNlc3Npb25JbmZvEhIKCnNlc3Npb25faWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIRCglkZXZpY2VfaWQYAyABKAkSEAoIdHR5X3VzZXIYBCABKAkSLgoKc3RhcnRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQbGFzdF9hY3Rpdml0eV9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiJAoiTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVxdWVzdCJaCiNMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXNwb25zZRIzCghzZXNzaW9ucxgBIAMoCzIhLnBtLnYxLkdhdGV3YXlUZXJtaW5hbFNlc3Npb25JbmZvIkwKJlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDgoGcmVhc29uGAIgASgJIjgKJ1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZRINCgVmb3VuZBgBIAEoCDKIBgoPSW50ZXJuYWxTZXJ2aWNlEkcKDFZlcmlmeURldmljZRIaLnBtLnYxLlZlcmlmeURldmljZVJlcXVlc3QaGy5wbS52MS5WZXJpZnlEZXZpY2VSZXNwb25zZRJRChBQcm94eVN5bmNBY3Rpb25zEiEucG0udjEuSW50ZXJuYWxTeW5jQWN0aW9uc1JlcXVlc3QaGi5wbS52MS5TeW5jQWN0aW9uc1Jlc3BvbnNlEmMKFlByb3h5VmFsaWRhdGVMdWtzVG9rZW4SJy5wbS52MS5JbnRlcm5hbFZhbGlkYXRlTHVrc1Rva2VuUmVxdWVzdBogLnBtLnYxLlZhbGlkYXRlTHVrc1Rva2VuUmVzcG9uc2USTgoPUHJveHlHZXRMdWtzS2V5EiAucG0udjEuSW50ZXJuYWxHZXRMdWtzS2V5UmVxdWVzdBoZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZRJUChFQcm94eVN0b3JlTHVrc0tleRIiLnBtLnYxLkludGVybmFsU3RvcmVMdWtzS2V5UmVxdWVzdBobLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlEmsKFlByb3h5U3RvcmVMcHNQYXNzd29yZHMSJy5wbS52MS5JbnRlcm5hbFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBooLnBtLnYxLkludGVybmFsU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZRJ3ChpQcm94eVZhbGlkYXRlVGVybWluYWxUb2tlbhIrLnBtLnYxLkludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVxdWVzdBosLnBtLnYxLkludGVybmFsVmFsaWRhdGVUZXJtaW5hbFRva2VuUmVzcG9uc2USaAoXUmVuZXdHYXRld2F5Q2VydGlmaWNhdGUSJS5wbS52MS5SZW5ld0dhdGV3YXlDZXJ0aWZpY2F0ZVJlcXVlc3QaJi5wbS52MS5SZW5ld0dhdGV3YXlDZXJ0aWZpY2F0ZVJlc3BvbnNlMokCCg5HYXRld2F5U2VydmljZRJ0ChtMaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnMSKS5wbS52MS5MaXN0R2F0ZXdheVRlcm1pbmFsU2Vzc2lvbnNSZXF1ZXN0GioucG0udjEuTGlzdEdhdGV3YXlUZXJtaW5hbFNlc3Npb25zUmVzcG9uc2USgAEKH1Rlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb24SLS5wbS52MS5UZXJtaW5hdGVHYXRld2F5VGVybWluYWxTZXNzaW9uUmVxdWVzdBouLnBtLnYxLlRlcm1pbmF0ZUdhdGV3YXlUZXJtaW5hbFNlc3Npb25SZXNwb25zZUI6WjhnaXRodWIuY29tL21hbmNodG9vbHMvcG93ZXItbWFuYWdlLXNkay9nZW4vZ28vcG0vdjE7cG12MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_pm_v1_agent, file_pm_v1_common]);
+
+/**
+ * RenewGatewayCertificateRequest carries only the new CSR; the current cert
+ * is the authenticated mTLS peer cert and gateway_id is read from its CN.
+ *
+ * @generated from message pm.v1.RenewGatewayCertificateRequest
+ */
+export type RenewGatewayCertificateRequest = Message<"pm.v1.RenewGatewayCertificateRequest"> & {
+  /**
+   * Certificate Signing Request (PEM-encoded PKCS#10) for the new cert.
+   * Proof-of-possession is checked against the presented peer cert's key.
+   * @gotags: validate:"required"
+   *
+   * @generated from field: bytes csr = 1;
+   */
+  csr: Uint8Array;
+};
+
+/**
+ * Describes the message pm.v1.RenewGatewayCertificateRequest.
+ * Use `create(RenewGatewayCertificateRequestSchema)` to create a new message.
+ */
+export const RenewGatewayCertificateRequestSchema: GenMessage<RenewGatewayCertificateRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 0);
+
+/**
+ * @generated from message pm.v1.RenewGatewayCertificateResponse
+ */
+export type RenewGatewayCertificateResponse = Message<"pm.v1.RenewGatewayCertificateResponse"> & {
+  /**
+   * New signed gateway certificate (PEM), same gateway_id (CN) as before.
+   * @gotags: validate:"required"
+   *
+   * @generated from field: bytes certificate = 1;
+   */
+  certificate: Uint8Array;
+
+  /**
+   * Expiry of the new cert, so the gateway schedules its next renewal (at
+   * 80% of lifetime) without re-parsing the PEM. Mirrors
+   * RenewCertificateResponse.not_after on the agent path.
+   * @gotags: validate:"required"
+   *
+   * @generated from field: google.protobuf.Timestamp not_after = 2;
+   */
+  notAfter?: Timestamp;
+};
+
+/**
+ * Describes the message pm.v1.RenewGatewayCertificateResponse.
+ * Use `create(RenewGatewayCertificateResponseSchema)` to create a new message.
+ */
+export const RenewGatewayCertificateResponseSchema: GenMessage<RenewGatewayCertificateResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_internal, 1);
 
 /**
  * InternalSyncActionsRequest wraps SyncActionsRequest with the device_id
@@ -51,7 +105,7 @@ export type InternalSyncActionsRequest = Message<"pm.v1.InternalSyncActionsReque
  * Use `create(InternalSyncActionsRequestSchema)` to create a new message.
  */
 export const InternalSyncActionsRequestSchema: GenMessage<InternalSyncActionsRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 0);
+  messageDesc(file_pm_v1_internal, 2);
 
 /**
  * InternalValidateLuksTokenRequest wraps ValidateLuksTokenRequest.
@@ -88,7 +142,7 @@ export type InternalValidateLuksTokenRequest = Message<"pm.v1.InternalValidateLu
  * Use `create(InternalValidateLuksTokenRequestSchema)` to create a new message.
  */
 export const InternalValidateLuksTokenRequestSchema: GenMessage<InternalValidateLuksTokenRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 1);
+  messageDesc(file_pm_v1_internal, 3);
 
 /**
  * InternalGetLuksKeyRequest includes device_id (from mTLS) and action_id.
@@ -125,7 +179,7 @@ export type InternalGetLuksKeyRequest = Message<"pm.v1.InternalGetLuksKeyRequest
  * Use `create(InternalGetLuksKeyRequestSchema)` to create a new message.
  */
 export const InternalGetLuksKeyRequestSchema: GenMessage<InternalGetLuksKeyRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 2);
+  messageDesc(file_pm_v1_internal, 4);
 
 /**
  * InternalStoreLuksKeyRequest includes device_id (from mTLS) and key data.
@@ -193,7 +247,7 @@ export type InternalStoreLuksKeyRequest = Message<"pm.v1.InternalStoreLuksKeyReq
  * Use `create(InternalStoreLuksKeyRequestSchema)` to create a new message.
  */
 export const InternalStoreLuksKeyRequestSchema: GenMessage<InternalStoreLuksKeyRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 3);
+  messageDesc(file_pm_v1_internal, 5);
 
 /**
  * LpsPasswordRotation represents a single password rotation entry the
@@ -257,7 +311,7 @@ export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
  * Use `create(LpsPasswordRotationSchema)` to create a new message.
  */
 export const LpsPasswordRotationSchema: GenMessage<LpsPasswordRotation> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 4);
+  messageDesc(file_pm_v1_internal, 6);
 
 /**
  * InternalStoreLpsPasswordsRequest sends LPS password rotations to control
@@ -302,7 +356,7 @@ export type InternalStoreLpsPasswordsRequest = Message<"pm.v1.InternalStoreLpsPa
  * Use `create(InternalStoreLpsPasswordsRequestSchema)` to create a new message.
  */
 export const InternalStoreLpsPasswordsRequestSchema: GenMessage<InternalStoreLpsPasswordsRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 5);
+  messageDesc(file_pm_v1_internal, 7);
 
 /**
  * @generated from message pm.v1.InternalStoreLpsPasswordsResponse
@@ -315,7 +369,7 @@ export type InternalStoreLpsPasswordsResponse = Message<"pm.v1.InternalStoreLpsP
  * Use `create(InternalStoreLpsPasswordsResponseSchema)` to create a new message.
  */
 export const InternalStoreLpsPasswordsResponseSchema: GenMessage<InternalStoreLpsPasswordsResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 6);
+  messageDesc(file_pm_v1_internal, 8);
 
 /**
  * InternalValidateTerminalTokenRequest is sent by the gateway when a
@@ -349,7 +403,7 @@ export type InternalValidateTerminalTokenRequest = Message<"pm.v1.InternalValida
  * Use `create(InternalValidateTerminalTokenRequestSchema)` to create a new message.
  */
 export const InternalValidateTerminalTokenRequestSchema: GenMessage<InternalValidateTerminalTokenRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 7);
+  messageDesc(file_pm_v1_internal, 9);
 
 /**
  * InternalValidateTerminalTokenResponse carries the session metadata
@@ -407,7 +461,7 @@ export type InternalValidateTerminalTokenResponse = Message<"pm.v1.InternalValid
  * Use `create(InternalValidateTerminalTokenResponseSchema)` to create a new message.
  */
 export const InternalValidateTerminalTokenResponseSchema: GenMessage<InternalValidateTerminalTokenResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 8);
+  messageDesc(file_pm_v1_internal, 10);
 
 /**
  * VerifyDeviceRequest is sent by the gateway to verify a device before
@@ -438,7 +492,7 @@ export type VerifyDeviceRequest = Message<"pm.v1.VerifyDeviceRequest"> & {
  * Use `create(VerifyDeviceRequestSchema)` to create a new message.
  */
 export const VerifyDeviceRequestSchema: GenMessage<VerifyDeviceRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 9);
+  messageDesc(file_pm_v1_internal, 11);
 
 /**
  * VerifyDeviceResponse indicates whether the device is valid for connection.
@@ -453,7 +507,7 @@ export type VerifyDeviceResponse = Message<"pm.v1.VerifyDeviceResponse"> & {
  * Use `create(VerifyDeviceResponseSchema)` to create a new message.
  */
 export const VerifyDeviceResponseSchema: GenMessage<VerifyDeviceResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 10);
+  messageDesc(file_pm_v1_internal, 12);
 
 /**
  * GatewayTerminalSessionInfo is a single entry in a gateway's session
@@ -517,7 +571,7 @@ export type GatewayTerminalSessionInfo = Message<"pm.v1.GatewayTerminalSessionIn
  * Use `create(GatewayTerminalSessionInfoSchema)` to create a new message.
  */
 export const GatewayTerminalSessionInfoSchema: GenMessage<GatewayTerminalSessionInfo> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 11);
+  messageDesc(file_pm_v1_internal, 13);
 
 /**
  * @generated from message pm.v1.ListGatewayTerminalSessionsRequest
@@ -530,7 +584,7 @@ export type ListGatewayTerminalSessionsRequest = Message<"pm.v1.ListGatewayTermi
  * Use `create(ListGatewayTerminalSessionsRequestSchema)` to create a new message.
  */
 export const ListGatewayTerminalSessionsRequestSchema: GenMessage<ListGatewayTerminalSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 12);
+  messageDesc(file_pm_v1_internal, 14);
 
 /**
  * @generated from message pm.v1.ListGatewayTerminalSessionsResponse
@@ -547,7 +601,7 @@ export type ListGatewayTerminalSessionsResponse = Message<"pm.v1.ListGatewayTerm
  * Use `create(ListGatewayTerminalSessionsResponseSchema)` to create a new message.
  */
 export const ListGatewayTerminalSessionsResponseSchema: GenMessage<ListGatewayTerminalSessionsResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 13);
+  messageDesc(file_pm_v1_internal, 15);
 
 /**
  * @generated from message pm.v1.TerminateGatewayTerminalSessionRequest
@@ -576,7 +630,7 @@ export type TerminateGatewayTerminalSessionRequest = Message<"pm.v1.TerminateGat
  * Use `create(TerminateGatewayTerminalSessionRequestSchema)` to create a new message.
  */
 export const TerminateGatewayTerminalSessionRequestSchema: GenMessage<TerminateGatewayTerminalSessionRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 14);
+  messageDesc(file_pm_v1_internal, 16);
 
 /**
  * @generated from message pm.v1.TerminateGatewayTerminalSessionResponse
@@ -597,7 +651,7 @@ export type TerminateGatewayTerminalSessionResponse = Message<"pm.v1.TerminateGa
  * Use `create(TerminateGatewayTerminalSessionResponseSchema)` to create a new message.
  */
 export const TerminateGatewayTerminalSessionResponseSchema: GenMessage<TerminateGatewayTerminalSessionResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_internal, 15);
+  messageDesc(file_pm_v1_internal, 17);
 
 /**
  * @generated from service pm.v1.InternalService
@@ -683,6 +737,21 @@ export const InternalService: GenService<{
     methodKind: "unary";
     input: typeof InternalValidateTerminalTokenRequestSchema;
     output: typeof InternalValidateTerminalTokenResponseSchema;
+  },
+  /**
+   * RenewGatewayCertificate re-signs a gateway's cert before it expires.
+   * Called by the gateway over the control-facing mTLS plane presenting its
+   * current (valid, non-revoked) gateway cert; gateway_id is read from that
+   * peer cert's CN, never a request field. Control re-signs the same
+   * gateway_id, revokes the superseded fingerprint, and emits
+   * GatewayCertRenewed.
+   *
+   * @generated from rpc pm.v1.InternalService.RenewGatewayCertificate
+   */
+  renewGatewayCertificate: {
+    methodKind: "unary";
+    input: typeof RenewGatewayCertificateRequestSchema;
+    output: typeof RenewGatewayCertificateResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pm_v1_internal, 0);

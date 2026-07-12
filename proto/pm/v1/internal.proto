@@ -48,6 +48,34 @@ service InternalService {
   // ControlService.StopTerminal or the admin TerminateTerminalSession
   // path — never as a side effect of validation.
   rpc ProxyValidateTerminalToken(InternalValidateTerminalTokenRequest) returns (InternalValidateTerminalTokenResponse);
+
+  // RenewGatewayCertificate re-signs a gateway's cert before it expires.
+  // Called by the gateway over the control-facing mTLS plane presenting its
+  // current (valid, non-revoked) gateway cert; gateway_id is read from that
+  // peer cert's CN, never a request field. Control re-signs the same
+  // gateway_id, revokes the superseded fingerprint, and emits
+  // GatewayCertRenewed.
+  rpc RenewGatewayCertificate(RenewGatewayCertificateRequest) returns (RenewGatewayCertificateResponse);
+}
+
+// RenewGatewayCertificateRequest carries only the new CSR; the current cert
+// is the authenticated mTLS peer cert and gateway_id is read from its CN.
+message RenewGatewayCertificateRequest {
+  // Certificate Signing Request (PEM-encoded PKCS#10) for the new cert.
+  // Proof-of-possession is checked against the presented peer cert's key.
+  // @gotags: validate:"required"
+  bytes csr = 1;
+}
+
+message RenewGatewayCertificateResponse {
+  // New signed gateway certificate (PEM), same gateway_id (CN) as before.
+  // @gotags: validate:"required"
+  bytes certificate = 1;
+  // Expiry of the new cert, so the gateway schedules its next renewal (at
+  // 80% of lifetime) without re-parsing the PEM. Mirrors
+  // RenewCertificateResponse.not_after on the agent path.
+  // @gotags: validate:"required"
+  google.protobuf.Timestamp not_after = 2;
 }
 
 // ============================================================================

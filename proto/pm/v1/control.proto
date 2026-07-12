@@ -64,6 +64,34 @@ message RenewCertificateResponse {
 }
 
 // ============================================================================
+// Certificate Revocation List (agent-facing gateway revocation, spec 31)
+// ============================================================================
+
+message GetCertificateRevocationListRequest {}
+
+message GetCertificateRevocationListResponse {
+  // Hex SHA-256 fingerprints of currently-revoked certificates. An agent
+  // refuses any gateway whose server-cert fingerprint appears here.
+  repeated string revoked_fingerprints = 1;
+  // Validity window: the agent MUST fail closed (treat the gateway as
+  // untrusted) rather than trust this list past not_after. Required so a
+  // control that forgets to populate it fails boundary validation rather
+  // than handing the agent a zero-value expiry.
+  // @gotags: validate:"required"
+  google.protobuf.Timestamp not_after = 2;
+  // When control assembled this snapshot; surfaced for staleness reasoning.
+  // @gotags: validate:"required"
+  google.protobuf.Timestamp refreshed_at = 3;
+}
+
+message RevokeGatewayCertificateRequest {
+  // @gotags: validate:"required,ulid"
+  string gateway_id = 1;
+}
+
+message RevokeGatewayCertificateResponse {}
+
+// ============================================================================
 // Authentication
 // ============================================================================
 
@@ -2754,6 +2782,16 @@ service ControlService {
 
   // Certificate Renewal
   rpc RenewCertificate(RenewCertificateRequest) returns (RenewCertificateResponse);
+
+  // Certificate Revocation List — agent-facing, rate-limited, CA-pinned TLS.
+  // Agents fetch it directly (no gateway relay) to check the gateway
+  // server-cert they connect to against revoked fingerprints.
+  rpc GetCertificateRevocationList(GetCertificateRevocationListRequest) returns (GetCertificateRevocationListResponse);
+
+  // Revoke an individual gateway's certificate by gateway_id. Permission-
+  // gated (gateway:revoke) and audit-logged; adds the gateway's fingerprint
+  // to the CRL and emits GatewayRevoked.
+  rpc RevokeGatewayCertificate(RevokeGatewayCertificateRequest) returns (RevokeGatewayCertificateResponse);
 
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);
