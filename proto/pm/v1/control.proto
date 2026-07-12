@@ -91,6 +91,22 @@ message RevokeGatewayCertificateRequest {
 
 message RevokeGatewayCertificateResponse {}
 
+// GatewayInfo is one row in the operator Gateways view. fingerprint is omitted
+// (not needed by the UI); revoked_at is absent for an active gateway.
+message GatewayInfo {
+  string gateway_id = 1;
+  string hostname = 2;
+  google.protobuf.Timestamp enrolled_at = 3;
+  google.protobuf.Timestamp not_after = 4;
+  google.protobuf.Timestamp revoked_at = 5;
+}
+
+message ListGatewaysRequest {}
+
+message ListGatewaysResponse {
+  repeated GatewayInfo gateways = 1;
+}
+
 // ============================================================================
 // Authentication
 // ============================================================================
@@ -2789,9 +2805,13 @@ service ControlService {
   rpc GetCertificateRevocationList(GetCertificateRevocationListRequest) returns (GetCertificateRevocationListResponse);
 
   // Revoke an individual gateway's certificate by gateway_id. Permission-
-  // gated (gateway:revoke) and audit-logged; adds the gateway's fingerprint
-  // to the CRL and emits GatewayRevoked.
+  // gated (RevokeGatewayCertificate) and audit-logged; adds the gateway's
+  // fingerprint to the CRL and emits GatewayRevoked.
   rpc RevokeGatewayCertificate(RevokeGatewayCertificateRequest) returns (RevokeGatewayCertificateResponse);
+
+  // List currently-live enrolled gateways for the operator Gateways view.
+  // Permission-gated (ListGateways).
+  rpc ListGateways(ListGatewaysRequest) returns (ListGatewaysResponse);
 
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);
