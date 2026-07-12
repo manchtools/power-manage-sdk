@@ -1962,8 +1962,8 @@ type CreateUserRequest struct {
 	// @gotags: validate:"required,min=8"
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=8"`
 	// Role IDs to assign to the new user. If empty, the default "User" role is assigned.
-	// @gotags: validate:"omitempty,dive,ulid"
-	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	// Optional profile fields
 	// @gotags: validate:"omitempty,max=255"
 	DisplayName string `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty" validate:"omitempty,max=255"`
@@ -3695,10 +3695,10 @@ type AssignDeviceRequest struct {
 	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"omitempty,ulid"`
 	// @gotags: validate:"omitempty,ulid"
 	GroupId string `protobuf:"bytes,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"omitempty,ulid"`
-	// @gotags: validate:"omitempty,dive,ulid"
-	UserIds []string `protobuf:"bytes,4,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty" validate:"omitempty,dive,ulid"`
-	// @gotags: validate:"omitempty,dive,ulid"
-	GroupIds      []string `protobuf:"bytes,5,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	UserIds []string `protobuf:"bytes,4,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	GroupIds      []string `protobuf:"bytes,5,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9657,8 +9657,8 @@ type AddDeviceToGroupRequest struct {
 	GroupId string `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"omitempty,ulid"
 	DeviceId string `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"`
-	// @gotags: validate:"omitempty,dive,ulid"
-	DeviceIds     []string `protobuf:"bytes,3,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	DeviceIds     []string `protobuf:"bytes,3,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11779,8 +11779,8 @@ func (x *DispatchActionResponse) GetExecution() *ActionExecution {
 
 type DispatchToMultipleRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,min=1,dive,ulid"
-	DeviceIds []string `protobuf:"bytes,1,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty" validate:"required,min=1,dive,ulid"`
+	// @gotags: validate:"required,min=1,max=256,dive,ulid"
+	DeviceIds []string `protobuf:"bytes,1,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty" validate:"required,min=1,max=256,dive,ulid"`
 	// Types that are valid to be assigned to ActionSource:
 	//
 	//	*DispatchToMultipleRequest_ActionId
@@ -15161,8 +15161,8 @@ type AssignRoleToUserRequest struct {
 	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"omitempty,ulid"
 	RoleId string `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" validate:"omitempty,ulid"`
-	// @gotags: validate:"omitempty,dive,ulid"
-	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	// Optional grant scope. Paired-or-neither: both scope_kind and
 	// scope_id MUST be set together, or both absent. Absent =
 	// unscoped/global grant (backward-compatible with pre-#7 grants).
@@ -16188,8 +16188,8 @@ type AddUserToGroupRequest struct {
 	GroupId string `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"omitempty,ulid"
 	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"omitempty,ulid"`
-	// @gotags: validate:"omitempty,dive,ulid"
-	UserIds       []string `protobuf:"bytes,3,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	UserIds       []string `protobuf:"bytes,3,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16377,8 +16377,8 @@ type AssignRoleToUserGroupRequest struct {
 	GroupId string `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"omitempty,ulid"
 	RoleId string `protobuf:"bytes,2,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" validate:"omitempty,ulid"`
-	// @gotags: validate:"omitempty,dive,ulid"
-	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,dive,ulid"`
+	// @gotags: validate:"omitempty,max=256,dive,ulid"
+	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	// Optional grant scope. Same paired-or-neither semantics as
 	// AssignRoleToUserRequest.scope_*. Every member of the target
 	// user group inherits this scope through the grant. server #7.
