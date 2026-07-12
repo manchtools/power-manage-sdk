@@ -56,6 +56,9 @@ const (
 	// InternalServiceProxyValidateTerminalTokenProcedure is the fully-qualified name of the
 	// InternalService's ProxyValidateTerminalToken RPC.
 	InternalServiceProxyValidateTerminalTokenProcedure = "/pm.v1.InternalService/ProxyValidateTerminalToken"
+	// InternalServiceRenewGatewayCertificateProcedure is the fully-qualified name of the
+	// InternalService's RenewGatewayCertificate RPC.
+	InternalServiceRenewGatewayCertificateProcedure = "/pm.v1.InternalService/RenewGatewayCertificate"
 	// GatewayServiceListGatewayTerminalSessionsProcedure is the fully-qualified name of the
 	// GatewayService's ListGatewayTerminalSessions RPC.
 	GatewayServiceListGatewayTerminalSessionsProcedure = "/pm.v1.GatewayService/ListGatewayTerminalSessions"
@@ -91,6 +94,13 @@ type InternalServiceClient interface {
 	// ControlService.StopTerminal or the admin TerminateTerminalSession
 	// path — never as a side effect of validation.
 	ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error)
+	// RenewGatewayCertificate re-signs a gateway's cert before it expires.
+	// Called by the gateway over the control-facing mTLS plane presenting its
+	// current (valid, non-revoked) gateway cert; gateway_id is read from that
+	// peer cert's CN, never a request field. Control re-signs the same
+	// gateway_id, revokes the superseded fingerprint, and emits
+	// GatewayCertRenewed.
+	RenewGatewayCertificate(context.Context, *connect.Request[v1.RenewGatewayCertificateRequest]) (*connect.Response[v1.RenewGatewayCertificateResponse], error)
 }
 
 // NewInternalServiceClient constructs a client for the pm.v1.InternalService service. By default,
@@ -146,6 +156,12 @@ func NewInternalServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(internalServiceMethods.ByName("ProxyValidateTerminalToken")),
 			connect.WithClientOptions(opts...),
 		),
+		renewGatewayCertificate: connect.NewClient[v1.RenewGatewayCertificateRequest, v1.RenewGatewayCertificateResponse](
+			httpClient,
+			baseURL+InternalServiceRenewGatewayCertificateProcedure,
+			connect.WithSchema(internalServiceMethods.ByName("RenewGatewayCertificate")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -158,6 +174,7 @@ type internalServiceClient struct {
 	proxyStoreLuksKey          *connect.Client[v1.InternalStoreLuksKeyRequest, v1.StoreLuksKeyResponse]
 	proxyStoreLpsPasswords     *connect.Client[v1.InternalStoreLpsPasswordsRequest, v1.InternalStoreLpsPasswordsResponse]
 	proxyValidateTerminalToken *connect.Client[v1.InternalValidateTerminalTokenRequest, v1.InternalValidateTerminalTokenResponse]
+	renewGatewayCertificate    *connect.Client[v1.RenewGatewayCertificateRequest, v1.RenewGatewayCertificateResponse]
 }
 
 // VerifyDevice calls pm.v1.InternalService.VerifyDevice.
@@ -195,6 +212,11 @@ func (c *internalServiceClient) ProxyValidateTerminalToken(ctx context.Context, 
 	return c.proxyValidateTerminalToken.CallUnary(ctx, req)
 }
 
+// RenewGatewayCertificate calls pm.v1.InternalService.RenewGatewayCertificate.
+func (c *internalServiceClient) RenewGatewayCertificate(ctx context.Context, req *connect.Request[v1.RenewGatewayCertificateRequest]) (*connect.Response[v1.RenewGatewayCertificateResponse], error) {
+	return c.renewGatewayCertificate.CallUnary(ctx, req)
+}
+
 // InternalServiceHandler is an implementation of the pm.v1.InternalService service.
 type InternalServiceHandler interface {
 	// VerifyDevice checks that a device exists and is not deleted.
@@ -222,6 +244,13 @@ type InternalServiceHandler interface {
 	// ControlService.StopTerminal or the admin TerminateTerminalSession
 	// path — never as a side effect of validation.
 	ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error)
+	// RenewGatewayCertificate re-signs a gateway's cert before it expires.
+	// Called by the gateway over the control-facing mTLS plane presenting its
+	// current (valid, non-revoked) gateway cert; gateway_id is read from that
+	// peer cert's CN, never a request field. Control re-signs the same
+	// gateway_id, revokes the superseded fingerprint, and emits
+	// GatewayCertRenewed.
+	RenewGatewayCertificate(context.Context, *connect.Request[v1.RenewGatewayCertificateRequest]) (*connect.Response[v1.RenewGatewayCertificateResponse], error)
 }
 
 // NewInternalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -273,6 +302,12 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 		connect.WithSchema(internalServiceMethods.ByName("ProxyValidateTerminalToken")),
 		connect.WithHandlerOptions(opts...),
 	)
+	internalServiceRenewGatewayCertificateHandler := connect.NewUnaryHandler(
+		InternalServiceRenewGatewayCertificateProcedure,
+		svc.RenewGatewayCertificate,
+		connect.WithSchema(internalServiceMethods.ByName("RenewGatewayCertificate")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pm.v1.InternalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case InternalServiceVerifyDeviceProcedure:
@@ -289,6 +324,8 @@ func NewInternalServiceHandler(svc InternalServiceHandler, opts ...connect.Handl
 			internalServiceProxyStoreLpsPasswordsHandler.ServeHTTP(w, r)
 		case InternalServiceProxyValidateTerminalTokenProcedure:
 			internalServiceProxyValidateTerminalTokenHandler.ServeHTTP(w, r)
+		case InternalServiceRenewGatewayCertificateProcedure:
+			internalServiceRenewGatewayCertificateHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -324,6 +361,10 @@ func (UnimplementedInternalServiceHandler) ProxyStoreLpsPasswords(context.Contex
 
 func (UnimplementedInternalServiceHandler) ProxyValidateTerminalToken(context.Context, *connect.Request[v1.InternalValidateTerminalTokenRequest]) (*connect.Response[v1.InternalValidateTerminalTokenResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.ProxyValidateTerminalToken is not implemented"))
+}
+
+func (UnimplementedInternalServiceHandler) RenewGatewayCertificate(context.Context, *connect.Request[v1.RenewGatewayCertificateRequest]) (*connect.Response[v1.RenewGatewayCertificateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.InternalService.RenewGatewayCertificate is not implemented"))
 }
 
 // GatewayServiceClient is a client for the pm.v1.GatewayService service.

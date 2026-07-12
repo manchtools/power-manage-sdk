@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package pm.v1;
+
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
+
+// ============================================================================
+// Gateway Enrollment Service (public, token-gated, no mTLS)
+//
+// A gateway self-enrolls on boot by generating a keypair and submitting a
+// CSR here with the shared bootstrap token (CONTROL_GATEWAY_ENROLL_TOKEN).
+// Control validates the token in constant time, assigns a fresh ULID
+// gateway_id, and returns a per-gateway certificate whose CN is that id.
+// This mirrors ControlService.Register for agents. It is exposed on the
+// public listener because a gateway has no mTLS identity until it enrolls;
+// the bootstrap token is the sole authorization.
+// ============================================================================
+
+service GatewayAuthService {
+  // EnrollGateway issues a per-gateway mTLS certificate for a valid
+  // bootstrap token. The response carries no gateway_id field: the id is
+  // the issued cert's CN, the single source of truth, so a gateway reads
+  // its own id by parsing the returned certificate.
+  rpc EnrollGateway(EnrollGatewayRequest) returns (EnrollGatewayResponse);
+}
+
+message EnrollGatewayRequest {
+  // Shared bootstrap token (CONTROL_GATEWAY_ENROLL_TOKEN). Compared in
+  // constant time; a wrong/absent/malformed token is rejected
+  // PermissionDenied with no gateway_id allocated.
+  // @gotags: validate:"required,max=512"
+  string token = 1;
+  // Optional operator-facing hostname recorded on the GatewayEnrolled
+  // event for the admin view. Not trusted for any authorization decision.
+  // @gotags: validate:"omitempty,hostname_rfc1123,max=253"
+  string hostname = 2;
+  // Certificate Signing Request (PEM-encoded PKCS#10). The gateway
+  // generates its own keypair; the private key never leaves the process.
+  // The CA stamps the class SAN itself and rejects caller-supplied SANs.
+  // @gotags: validate:"required"
+  bytes csr = 3;
+}
+
+message EnrollGatewayResponse {
+  // CA certificate (PEM) — the trust anchor the gateway pins.
+  // @gotags: validate:"required"
+  bytes ca_cert = 1;
+  // Signed per-gateway certificate (PEM). CN = SerialNumber = the assigned
+  // gateway_id; the private key stays in the gateway process.
+  // @gotags: validate:"required"
+  bytes certificate = 2;
+}

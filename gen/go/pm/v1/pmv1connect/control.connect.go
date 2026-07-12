@@ -38,6 +38,12 @@ const (
 	// ControlServiceRenewCertificateProcedure is the fully-qualified name of the ControlService's
 	// RenewCertificate RPC.
 	ControlServiceRenewCertificateProcedure = "/pm.v1.ControlService/RenewCertificate"
+	// ControlServiceGetCertificateRevocationListProcedure is the fully-qualified name of the
+	// ControlService's GetCertificateRevocationList RPC.
+	ControlServiceGetCertificateRevocationListProcedure = "/pm.v1.ControlService/GetCertificateRevocationList"
+	// ControlServiceRevokeGatewayCertificateProcedure is the fully-qualified name of the
+	// ControlService's RevokeGatewayCertificate RPC.
+	ControlServiceRevokeGatewayCertificateProcedure = "/pm.v1.ControlService/RevokeGatewayCertificate"
 	// ControlServiceLoginProcedure is the fully-qualified name of the ControlService's Login RPC.
 	ControlServiceLoginProcedure = "/pm.v1.ControlService/Login"
 	// ControlServiceRefreshTokenProcedure is the fully-qualified name of the ControlService's
@@ -535,6 +541,14 @@ type ControlServiceClient interface {
 	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Certificate Renewal
 	RenewCertificate(context.Context, *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error)
+	// Certificate Revocation List — agent-facing, rate-limited, CA-pinned TLS.
+	// Agents fetch it directly (no gateway relay) to check the gateway
+	// server-cert they connect to against revoked fingerprints.
+	GetCertificateRevocationList(context.Context, *connect.Request[v1.GetCertificateRevocationListRequest]) (*connect.Response[v1.GetCertificateRevocationListResponse], error)
+	// Revoke an individual gateway's certificate by gateway_id. Permission-
+	// gated (gateway:revoke) and audit-logged; adds the gateway's fingerprint
+	// to the CRL and emits GatewayRevoked.
+	RevokeGatewayCertificate(context.Context, *connect.Request[v1.RevokeGatewayCertificateRequest]) (*connect.Response[v1.RevokeGatewayCertificateResponse], error)
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
@@ -750,6 +764,18 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceRenewCertificateProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("RenewCertificate")),
+			connect.WithClientOptions(opts...),
+		),
+		getCertificateRevocationList: connect.NewClient[v1.GetCertificateRevocationListRequest, v1.GetCertificateRevocationListResponse](
+			httpClient,
+			baseURL+ControlServiceGetCertificateRevocationListProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("GetCertificateRevocationList")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeGatewayCertificate: connect.NewClient[v1.RevokeGatewayCertificateRequest, v1.RevokeGatewayCertificateResponse](
+			httpClient,
+			baseURL+ControlServiceRevokeGatewayCertificateProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevokeGatewayCertificate")),
 			connect.WithClientOptions(opts...),
 		),
 		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
@@ -1749,6 +1775,8 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 type controlServiceClient struct {
 	register                          *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
 	renewCertificate                  *connect.Client[v1.RenewCertificateRequest, v1.RenewCertificateResponse]
+	getCertificateRevocationList      *connect.Client[v1.GetCertificateRevocationListRequest, v1.GetCertificateRevocationListResponse]
+	revokeGatewayCertificate          *connect.Client[v1.RevokeGatewayCertificateRequest, v1.RevokeGatewayCertificateResponse]
 	login                             *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	refreshToken                      *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 	logout                            *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
@@ -1924,6 +1952,16 @@ func (c *controlServiceClient) Register(ctx context.Context, req *connect.Reques
 // RenewCertificate calls pm.v1.ControlService.RenewCertificate.
 func (c *controlServiceClient) RenewCertificate(ctx context.Context, req *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error) {
 	return c.renewCertificate.CallUnary(ctx, req)
+}
+
+// GetCertificateRevocationList calls pm.v1.ControlService.GetCertificateRevocationList.
+func (c *controlServiceClient) GetCertificateRevocationList(ctx context.Context, req *connect.Request[v1.GetCertificateRevocationListRequest]) (*connect.Response[v1.GetCertificateRevocationListResponse], error) {
+	return c.getCertificateRevocationList.CallUnary(ctx, req)
+}
+
+// RevokeGatewayCertificate calls pm.v1.ControlService.RevokeGatewayCertificate.
+func (c *controlServiceClient) RevokeGatewayCertificate(ctx context.Context, req *connect.Request[v1.RevokeGatewayCertificateRequest]) (*connect.Response[v1.RevokeGatewayCertificateResponse], error) {
+	return c.revokeGatewayCertificate.CallUnary(ctx, req)
 }
 
 // Login calls pm.v1.ControlService.Login.
@@ -2757,6 +2795,14 @@ type ControlServiceHandler interface {
 	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Certificate Renewal
 	RenewCertificate(context.Context, *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error)
+	// Certificate Revocation List — agent-facing, rate-limited, CA-pinned TLS.
+	// Agents fetch it directly (no gateway relay) to check the gateway
+	// server-cert they connect to against revoked fingerprints.
+	GetCertificateRevocationList(context.Context, *connect.Request[v1.GetCertificateRevocationListRequest]) (*connect.Response[v1.GetCertificateRevocationListResponse], error)
+	// Revoke an individual gateway's certificate by gateway_id. Permission-
+	// gated (gateway:revoke) and audit-logged; adds the gateway's fingerprint
+	// to the CRL and emits GatewayRevoked.
+	RevokeGatewayCertificate(context.Context, *connect.Request[v1.RevokeGatewayCertificateRequest]) (*connect.Response[v1.RevokeGatewayCertificateResponse], error)
 	// Authentication
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
@@ -2968,6 +3014,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceRenewCertificateProcedure,
 		svc.RenewCertificate,
 		connect.WithSchema(controlServiceMethods.ByName("RenewCertificate")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceGetCertificateRevocationListHandler := connect.NewUnaryHandler(
+		ControlServiceGetCertificateRevocationListProcedure,
+		svc.GetCertificateRevocationList,
+		connect.WithSchema(controlServiceMethods.ByName("GetCertificateRevocationList")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevokeGatewayCertificateHandler := connect.NewUnaryHandler(
+		ControlServiceRevokeGatewayCertificateProcedure,
+		svc.RevokeGatewayCertificate,
+		connect.WithSchema(controlServiceMethods.ByName("RevokeGatewayCertificate")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceLoginHandler := connect.NewUnaryHandler(
@@ -3966,6 +4024,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRegisterHandler.ServeHTTP(w, r)
 		case ControlServiceRenewCertificateProcedure:
 			controlServiceRenewCertificateHandler.ServeHTTP(w, r)
+		case ControlServiceGetCertificateRevocationListProcedure:
+			controlServiceGetCertificateRevocationListHandler.ServeHTTP(w, r)
+		case ControlServiceRevokeGatewayCertificateProcedure:
+			controlServiceRevokeGatewayCertificateHandler.ServeHTTP(w, r)
 		case ControlServiceLoginProcedure:
 			controlServiceLoginHandler.ServeHTTP(w, r)
 		case ControlServiceRefreshTokenProcedure:
@@ -4311,6 +4373,14 @@ func (UnimplementedControlServiceHandler) Register(context.Context, *connect.Req
 
 func (UnimplementedControlServiceHandler) RenewCertificate(context.Context, *connect.Request[v1.RenewCertificateRequest]) (*connect.Response[v1.RenewCertificateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RenewCertificate is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) GetCertificateRevocationList(context.Context, *connect.Request[v1.GetCertificateRevocationListRequest]) (*connect.Response[v1.GetCertificateRevocationListResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.GetCertificateRevocationList is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevokeGatewayCertificate(context.Context, *connect.Request[v1.RevokeGatewayCertificateRequest]) (*connect.Response[v1.RevokeGatewayCertificateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pm.v1.ControlService.RevokeGatewayCertificate is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
