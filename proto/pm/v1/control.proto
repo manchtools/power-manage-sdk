@@ -276,7 +276,7 @@ message CreateUserRequest {
   // @gotags: validate:"required,min=8"
   string password = 2;
   // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string role_ids = 3;
   // Optional profile fields
   // @gotags: validate:"omitempty,max=255"
@@ -507,9 +507,9 @@ message AssignDeviceRequest {
   string user_id = 2;
   // @gotags: validate:"omitempty,ulid"
   string group_id = 3;
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string user_ids = 4;
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string group_ids = 5;
 }
 
@@ -1240,7 +1240,7 @@ message AddDeviceToGroupRequest {
   string group_id = 1;
   // @gotags: validate:"omitempty,ulid"
   string device_id = 2;
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string device_ids = 3;
 }
 
@@ -1527,7 +1527,7 @@ message DispatchActionResponse {
 }
 
 message DispatchToMultipleRequest {
-  // @gotags: validate:"required,min=1,dive,ulid"
+  // @gotags: validate:"required,min=1,max=256,dive,ulid"
   repeated string device_ids = 1;
   oneof action_source {
     // @gotags: validate:"omitempty,ulid"
@@ -1999,7 +1999,7 @@ message AssignRoleToUserRequest {
   string user_id = 1;
   // @gotags: validate:"omitempty,ulid"
   string role_id = 2;
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string role_ids = 3;
   // Optional grant scope. Paired-or-neither: both scope_kind and
   // scope_id MUST be set together, or both absent. Absent =
@@ -2138,7 +2138,7 @@ message AddUserToGroupRequest {
   string group_id = 1;
   // @gotags: validate:"omitempty,ulid"
   string user_id = 2;
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string user_ids = 3;
 }
 
@@ -2158,7 +2158,7 @@ message AssignRoleToUserGroupRequest {
   string group_id = 1;
   // @gotags: validate:"omitempty,ulid"
   string role_id = 2;
-  // @gotags: validate:"omitempty,dive,ulid"
+  // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string role_ids = 3;
   // Optional grant scope. Same paired-or-neither semantics as
   // AssignRoleToUserRequest.scope_*. Every member of the target

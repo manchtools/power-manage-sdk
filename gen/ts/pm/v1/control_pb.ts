@@ -979,7 +979,7 @@ export type CreateUserRequest = Message<"pm.v1.CreateUserRequest"> & {
 
   /**
    * Role IDs to assign to the new user. If empty, the default "User" role is assigned.
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string role_ids = 3;
    */
@@ -1854,14 +1854,14 @@ export type AssignDeviceRequest = Message<"pm.v1.AssignDeviceRequest"> & {
   groupId: string;
 
   /**
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string user_ids = 4;
    */
   userIds: string[];
 
   /**
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string group_ids = 5;
    */
@@ -4657,7 +4657,7 @@ export type AddDeviceToGroupRequest = Message<"pm.v1.AddDeviceToGroupRequest"> &
   deviceId: string;
 
   /**
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string device_ids = 3;
    */
@@ -5724,7 +5724,7 @@ export const DispatchActionResponseSchema: GenMessage<DispatchActionResponse> = 
  */
 export type DispatchToMultipleRequest = Message<"pm.v1.DispatchToMultipleRequest"> & {
   /**
-   * @gotags: validate:"required,min=1,dive,ulid"
+   * @gotags: validate:"required,min=1,max=256,dive,ulid"
    *
    * @generated from field: repeated string device_ids = 1;
    */
@@ -7379,7 +7379,7 @@ export type AssignRoleToUserRequest = Message<"pm.v1.AssignRoleToUserRequest"> &
   roleId: string;
 
   /**
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string role_ids = 3;
    */
@@ -7873,7 +7873,7 @@ export type AddUserToGroupRequest = Message<"pm.v1.AddUserToGroupRequest"> & {
   userId: string;
 
   /**
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string user_ids = 3;
    */
@@ -7958,7 +7958,7 @@ export type AssignRoleToUserGroupRequest = Message<"pm.v1.AssignRoleToUserGroupR
   roleId: string;
 
   /**
-   * @gotags: validate:"omitempty,dive,ulid"
+   * @gotags: validate:"omitempty,max=256,dive,ulid"
    *
    * @generated from field: repeated string role_ids = 3;
    */
