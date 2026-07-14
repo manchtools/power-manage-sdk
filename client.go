@@ -4,8 +4,10 @@ package sdk
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -306,6 +308,56 @@ func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption,
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      caPool,
 		MinVersion:   tls.VersionTLS13,
+	}
+
+	return &funcOption{func(c *Client, httpClient **http.Client) {
+		*httpClient = newHTTPClientWithTLS(tlsConfig)
+	}}, nil
+}
+
+// WithMTLSFromPEMAndRevocationCheck is WithMTLSFromPEM plus the agent-facing
+// gateway revocation gate (spec 31 Part D, AC 11): trust is still the strict
+// internal CA only, and AFTER normal chain verification the connection's leaf
+// certificate is fingerprinted (hex SHA-256 of its DER — the exact value the
+// control server stores in gateways_projection.fingerprint and serves in the
+// CRL) and passed to check. A non-nil return from check FAILS the handshake, so
+// a revoked gateway — or, when check reports a stale/unavailable CRL, an
+// unverifiable one — is refused fail-closed rather than trusted.
+//
+// check MUST be non-nil: a nil check would silently disable the gate, so it is
+// a construction error, not a no-op. The caller (the agent's CRL cache) owns the
+// policy — which fingerprints are revoked and when a stale list fails closed
+// (AC 12); this option only supplies the mechanism.
+func WithMTLSFromPEMAndRevocationCheck(certPEM, keyPEM, caPEM []byte, check func(fingerprintHex string) error) (ClientOption, error) {
+	if check == nil {
+		return nil, errors.New("revocation check is required (fail-closed); pass a non-nil check")
+	}
+
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return nil, fmt.Errorf("parse client certificate: %w", err)
+	}
+
+	caPool := x509.NewCertPool()
+	if !caPool.AppendCertsFromPEM(caPEM) {
+		return nil, errors.New("failed to parse CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caPool,
+		MinVersion:   tls.VersionTLS13,
+		// VerifyConnection runs AFTER the standard chain/RootCAs/ServerName
+		// verification (InsecureSkipVerify stays false), so this narrows trust
+		// further — it never widens it. A revoked (or unverifiable) gateway
+		// leaf is rejected even though it chains to the pinned CA.
+		VerifyConnection: func(cs tls.ConnectionState) error {
+			if len(cs.PeerCertificates) == 0 {
+				return errors.New("gateway presented no certificate")
+			}
+			sum := sha256.Sum256(cs.PeerCertificates[0].Raw)
+			return check(hex.EncodeToString(sum[:]))
+		},
 	}
 
 	return &funcOption{func(c *Client, httpClient **http.Client) {

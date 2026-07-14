@@ -2,8 +2,11 @@ package sdk
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -695,6 +698,96 @@ func TestWithMTLSFromPEM_RejectsServerSignedByForeignCA(t *testing.T) {
 		"tok", "host", "v0", []byte("csr"), opt)
 	if err == nil {
 		t.Fatal("strict mTLS must reject a server signed by a CA other than the pinned internal CA")
+	}
+}
+
+// certFingerprintHex returns the hex SHA-256 of a PEM cert's DER — the same
+// value the control server stores in gateways_projection.fingerprint and hands
+// out in the CRL, so the agent-side check compares like-for-like.
+func certFingerprintHex(t *testing.T, certPEM []byte) string {
+	t.Helper()
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		t.Fatal("pem.Decode(cert)")
+	}
+	sum := sha256.Sum256(block.Bytes)
+	return hex.EncodeToString(sum[:])
+}
+
+// TestWithMTLSFromPEMAndRevocationCheck_RejectsRevokedGateway pins spec 31 Part D
+// AC 11: the revocation-gated variant fingerprints the gateway's presented leaf
+// cert and refuses the connection when the caller's check reports it revoked —
+// even though that cert chains to the pinned internal CA and would otherwise be
+// accepted. This is the agent-facing enforcement of RevokeGatewayCertificate.
+func TestWithMTLSFromPEMAndRevocationCheck_RejectsRevokedGateway(t *testing.T) {
+	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
+	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "127.0.0.1", true)
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
+	clientCAPool := x509.NewCertPool()
+	if !clientCAPool.AppendCertsFromPEM(caPEM) {
+		t.Fatal("AppendCertsFromPEM(ca)")
+	}
+	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
+
+	revokedFP := certFingerprintHex(t, serverCertPEM)
+	check := func(fp string) error {
+		if fp == revokedFP {
+			return fmt.Errorf("gateway cert %s is revoked", fp)
+		}
+		return nil
+	}
+
+	opt, err := WithMTLSFromPEMAndRevocationCheck(clientCertPEM, clientKeyPEM, caPEM, check)
+	if err != nil {
+		t.Fatalf("WithMTLSFromPEMAndRevocationCheck: %v", err)
+	}
+	if _, err := RegisterAgent(context.Background(), srvURL,
+		"tok", "host", "v0", []byte("csr"), opt); err == nil {
+		t.Fatal("revocation check must refuse a revoked gateway cert even though it chains to the pinned CA")
+	}
+}
+
+// TestWithMTLSFromPEMAndRevocationCheck_AllowsUnrevokedGateway pins the happy
+// path: a non-revoked gateway still connects, and the check is actually invoked
+// (guards against the VerifyConnection hook being silently dropped).
+func TestWithMTLSFromPEMAndRevocationCheck_AllowsUnrevokedGateway(t *testing.T) {
+	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
+	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "127.0.0.1", true)
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
+	clientCAPool := x509.NewCertPool()
+	if !clientCAPool.AppendCertsFromPEM(caPEM) {
+		t.Fatal("AppendCertsFromPEM(ca)")
+	}
+	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
+
+	var checked atomic.Bool
+	check := func(fp string) error { checked.Store(true); return nil } // nothing revoked
+
+	opt, err := WithMTLSFromPEMAndRevocationCheck(clientCertPEM, clientKeyPEM, caPEM, check)
+	if err != nil {
+		t.Fatalf("WithMTLSFromPEMAndRevocationCheck: %v", err)
+	}
+	got, err := RegisterAgent(context.Background(), srvURL,
+		"tok", "host", "v0", []byte("csr"), opt)
+	if err != nil {
+		t.Fatalf("unrevoked gateway must connect: %v", err)
+	}
+	if !checked.Load() {
+		t.Error("revocation check was never invoked — VerifyConnection not wired into the TLS config")
+	}
+	if got.DeviceID != "ok" {
+		t.Errorf("DeviceID = %q", got.DeviceID)
+	}
+}
+
+// TestWithMTLSFromPEMAndRevocationCheck_NilCheckRejected pins that the variant
+// refuses a nil check at construction — a nil check would silently disable the
+// fail-closed gate, so it must be a wiring error, not a no-op.
+func TestWithMTLSFromPEMAndRevocationCheck_NilCheckRejected(t *testing.T) {
+	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
+	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
+	if _, err := WithMTLSFromPEMAndRevocationCheck(clientCertPEM, clientKeyPEM, caPEM, nil); err == nil {
+		t.Fatal("a nil revocation check must be rejected (fail-closed), not accepted as a no-op")
 	}
 }
 
