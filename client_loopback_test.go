@@ -141,6 +141,14 @@ type recordingControlHandler struct {
 
 	registerFn         func(*connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error)
 	renewCertificateFn func(*connect.Request[pm.RenewCertificateRequest]) (*connect.Response[pm.RenewCertificateResponse], error)
+	getCRLFn           func(*connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error)
+}
+
+func (h *recordingControlHandler) GetCertificateRevocationList(ctx context.Context, req *connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error) {
+	if h.getCRLFn != nil {
+		return h.getCRLFn(req)
+	}
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("GetCertificateRevocationList not stubbed"))
 }
 
 func (h *recordingControlHandler) Register(ctx context.Context, req *connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error) {
@@ -266,6 +274,45 @@ func TestRenewCertificate_HappyPath(t *testing.T) {
 	}
 	if observed == nil || string(observed.Csr) != "new-csr" || string(observed.CurrentCertificate) != "old-cert" {
 		t.Errorf("request lost fields: %+v", observed)
+	}
+}
+
+func TestFetchGatewayCRL_HappyPath(t *testing.T) {
+	cl := newControlLoopback(t)
+
+	notAfter := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	refreshedAt := time.Date(2026, 7, 14, 12, 0, 0, 0, time.UTC)
+	cl.handler.getCRLFn = func(_ *connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error) {
+		return connect.NewResponse(&pm.GetCertificateRevocationListResponse{
+			RevokedFingerprints: []string{"aa11", "bb22"},
+			NotAfter:            timestamppb.New(notAfter),
+			RefreshedAt:         timestamppb.New(refreshedAt),
+		}), nil
+	}
+
+	got, err := FetchGatewayCRL(context.Background(), cl.serverURL)
+	if err != nil {
+		t.Fatalf("FetchGatewayCRL: %v", err)
+	}
+	if len(got.RevokedFingerprints) != 2 || got.RevokedFingerprints[0] != "aa11" || got.RevokedFingerprints[1] != "bb22" {
+		t.Errorf("RevokedFingerprints = %v", got.RevokedFingerprints)
+	}
+	if !got.NotAfter.Equal(notAfter) {
+		t.Errorf("NotAfter = %v want %v", got.NotAfter, notAfter)
+	}
+	if !got.RefreshedAt.Equal(refreshedAt) {
+		t.Errorf("RefreshedAt = %v want %v", got.RefreshedAt, refreshedAt)
+	}
+}
+
+func TestFetchGatewayCRL_ServerErrorPropagates(t *testing.T) {
+	cl := newControlLoopback(t)
+	cl.handler.getCRLFn = func(_ *connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error) {
+		return nil, connect.NewError(connect.CodeUnavailable, errors.New("control down"))
+	}
+
+	if _, err := FetchGatewayCRL(context.Background(), cl.serverURL); err == nil {
+		t.Fatal("FetchGatewayCRL must propagate a control error (so the cache retains its last-good snapshot and eventually fails closed)")
 	}
 }
 
