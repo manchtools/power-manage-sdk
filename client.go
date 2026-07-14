@@ -482,6 +482,45 @@ type RenewCertificateResult struct {
 	CACert      []byte // Active CA certificate (non-empty when CA has been rotated)
 }
 
+// GatewayCRL is a snapshot of the gateway certificate revocation list fetched
+// from control (spec 31 Part D). RevokedFingerprints are hex SHA-256 leaf-cert
+// fingerprints — compare against the value produced by
+// WithMTLSFromPEMAndRevocationCheck. NotAfter bounds how long the agent may
+// trust this snapshot before it must fail closed (AC 12); RefreshedAt is when
+// control assembled it, for staleness reasoning.
+type GatewayCRL struct {
+	RevokedFingerprints []string
+	NotAfter            time.Time
+	RefreshedAt         time.Time
+}
+
+// FetchGatewayCRL retrieves the current gateway CRL from control over the given
+// transport (the agent uses WithMTLSFromPEMAndSystemRoots, as control sits
+// behind a public-CA proxy). Like RenewCertificate, control is reached
+// directly — no gateway relay (spec 31 AC 13), which is what lets an agent
+// learn its gateway is revoked even while still connected to it.
+func FetchGatewayCRL(ctx context.Context, controlURL string, opts ...ClientOption) (*GatewayCRL, error) {
+	c := &Client{}
+	httpClient := bootstrapHTTPClient()
+	for _, opt := range opts {
+		opt.apply(c, &httpClient)
+	}
+
+	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
+
+	resp, err := controlClient.GetCertificateRevocationList(ctx,
+		connect.NewRequest(&pm.GetCertificateRevocationListRequest{}))
+	if err != nil {
+		return nil, fmt.Errorf("get gateway CRL: %w", err)
+	}
+
+	return &GatewayCRL{
+		RevokedFingerprints: resp.Msg.RevokedFingerprints,
+		NotAfter:            resp.Msg.NotAfter.AsTime(),
+		RefreshedAt:         resp.Msg.RefreshedAt.AsTime(),
+	}, nil
+}
+
 // RenewCertificate renews a device certificate via the control server.
 // The agent presents its current certificate for identity verification.
 func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert []byte, opts ...ClientOption) (*RenewCertificateResult, error) {
