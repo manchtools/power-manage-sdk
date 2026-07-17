@@ -1361,9 +1361,16 @@ type OSQuery struct {
 	// gateway/Valkey relay cannot originate or tamper a query under a valid
 	// signature.
 	// @gotags: validate:"omitempty"
-	Signature     []byte `protobuf:"bytes,7,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Signature []byte `protobuf:"bytes,7,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
+	// The single device this query is authorized to run on. Bound INSIDE the
+	// signed canonical bytes (signature covers every field but itself), so a
+	// compromised gateway/relay cannot replay one device's validly-signed query
+	// onto another device that trusts the same CA (PMSEC-001, sibling of
+	// SignedActionEnvelope.target_device_id). The agent verifies target ==
+	// itself after the signature and refuses otherwise.
+	TargetDeviceId string `protobuf:"bytes,8,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *OSQuery) Reset() {
@@ -1443,6 +1450,13 @@ func (x *OSQuery) GetSignature() []byte {
 		return x.Signature
 	}
 	return nil
+}
+
+func (x *OSQuery) GetTargetDeviceId() string {
+	if x != nil {
+		return x.TargetDeviceId
+	}
+	return ""
 }
 
 type OSQueryCondition struct {
@@ -1738,9 +1752,15 @@ type RequestInventory struct {
 	// signature cleared, under the inventory signing domain. Verified
 	// fail-closed by the agent before any osquery collection.
 	// @gotags: validate:"omitempty"
-	Signature     []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
+	// The single device this collection request is authorized for. Bound INSIDE
+	// the signed canonical bytes so a compromised gateway/relay cannot replay one
+	// device's validly-signed request onto another (PMSEC-001, sibling of
+	// SignedActionEnvelope.target_device_id). The agent verifies target == itself
+	// after the signature and refuses otherwise.
+	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RequestInventory) Reset() {
@@ -1785,6 +1805,13 @@ func (x *RequestInventory) GetSignature() []byte {
 		return x.Signature
 	}
 	return nil
+}
+
+func (x *RequestInventory) GetTargetDeviceId() string {
+	if x != nil {
+		return x.TargetDeviceId
+	}
+	return ""
 }
 
 // Agent requests the current managed passphrase for a LUKS action.
@@ -2027,9 +2054,15 @@ type RevokeLuksDeviceKey struct {
 	// fail-closed before revoking — a compromised gateway cannot forge or
 	// replay a revocation onto any known action_id.
 	// @gotags: validate:"omitempty"
-	Signature     []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
+	// The single device this destructive slot-7 wipe is authorized for. Bound
+	// INSIDE the signed canonical bytes so a compromised gateway/relay cannot
+	// replay one device's validly-signed revocation onto another that trusts the
+	// same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
+	// agent verifies target == itself after the signature and refuses otherwise.
+	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RevokeLuksDeviceKey) Reset() {
@@ -2074,6 +2107,13 @@ func (x *RevokeLuksDeviceKey) GetSignature() []byte {
 		return x.Signature
 	}
 	return nil
+}
+
+func (x *RevokeLuksDeviceKey) GetTargetDeviceId() string {
+	if x != nil {
+		return x.TargetDeviceId
+	}
+	return ""
 }
 
 // Agent reports the result of revoking the device-bound key.
@@ -2578,9 +2618,15 @@ type LogQuery struct {
 	// invocation — a compromised gateway cannot originate or retarget
 	// (e.g. swap the unit) a log read under a valid signature.
 	// @gotags: validate:"omitempty"
-	Signature     []byte `protobuf:"bytes,10,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Signature []byte `protobuf:"bytes,10,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
+	// The single device this log read is authorized for. Bound INSIDE the signed
+	// canonical bytes so a compromised gateway/relay cannot replay one device's
+	// validly-signed log query onto another that trusts the same CA (PMSEC-001,
+	// sibling of SignedActionEnvelope.target_device_id). The agent verifies
+	// target == itself after the signature and refuses otherwise.
+	TargetDeviceId string `protobuf:"bytes,11,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *LogQuery) Reset() {
@@ -2681,6 +2727,13 @@ func (x *LogQuery) GetSignature() []byte {
 		return x.Signature
 	}
 	return nil
+}
+
+func (x *LogQuery) GetTargetDeviceId() string {
+	if x != nil {
+		return x.TargetDeviceId
+	}
+	return ""
 }
 
 // Agent -> Server: journalctl output result
@@ -3223,7 +3276,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\"5\n" +
 	"\x05Error\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xd0\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xfa\x01\n" +
 	"\aOSQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05table\x12\x18\n" +
@@ -3231,7 +3284,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x05where\x18\x04 \x03(\v2\x17.pm.v1.OSQueryConditionR\x05where\x12\x14\n" +
 	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x17\n" +
 	"\araw_sql\x18\x06 \x01(\tR\x06rawSql\x12\x1c\n" +
-	"\tsignature\x18\a \x01(\fR\tsignature\"b\n" +
+	"\tsignature\x18\a \x01(\fR\tsignature\x12(\n" +
+	"\x10target_device_id\x18\b \x01(\tR\x0etargetDeviceId\"b\n" +
 	"\x10OSQueryCondition\x12\x16\n" +
 	"\x06column\x18\x01 \x01(\tR\x06column\x12 \n" +
 	"\x02op\x18\x02 \x01(\x0e2\x10.pm.v1.OSQueryOpR\x02op\x12\x14\n" +
@@ -3252,10 +3306,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eInventoryTable\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12%\n" +
-	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"K\n" +
+	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"u\n" +
 	"\x10RequestInventory\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\"0\n" +
+	"\tsignature\x18\x02 \x01(\fR\tsignature\x12(\n" +
+	"\x10target_device_id\x18\x03 \x01(\tR\x0etargetDeviceId\"0\n" +
 	"\x11GetLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"4\n" +
 	"\x12GetLuksKeyResponse\x12\x1e\n" +
@@ -3269,10 +3324,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x11sealed_passphrase\x18\x03 \x01(\fR\x10sealedPassphrase\x12>\n" +
 	"\x0frotation_reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"0\n" +
 	"\x14StoreLuksKeyResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"P\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"z\n" +
 	"\x13RevokeLuksDeviceKey\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\"h\n" +
+	"\tsignature\x18\x02 \x01(\fR\tsignature\x12(\n" +
+	"\x10target_device_id\x18\x03 \x01(\tR\x0etargetDeviceId\"h\n" +
 	"\x19RevokeLuksDeviceKeyResult\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
@@ -3304,7 +3360,7 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\fLpsPublicKey\x12\x1d\n" +
 	"\n" +
 	"public_key\x18\x01 \x01(\fR\tpublicKey\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\"\x8b\x02\n" +
+	"\tsignature\x18\x02 \x01(\fR\tsignature\"\xb5\x02\n" +
 	"\bLogQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
@@ -3316,7 +3372,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x06kernel\x18\b \x01(\bR\x06kernel\x12(\n" +
 	"\x06source\x18\t \x01(\x0e2\x10.pm.v1.LogSourceR\x06source\x12\x1c\n" +
 	"\tsignature\x18\n" +
-	" \x01(\fR\tsignature\"o\n" +
+	" \x01(\fR\tsignature\x12(\n" +
+	"\x10target_device_id\x18\v \x01(\tR\x0etargetDeviceId\"o\n" +
 	"\x0eLogQueryResult\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
