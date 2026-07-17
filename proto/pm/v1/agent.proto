@@ -240,6 +240,13 @@ message OSQuery {
   // signature.
   // @gotags: validate:"omitempty"
   bytes signature = 7;
+  // The single device this query is authorized to run on. Bound INSIDE the
+  // signed canonical bytes (signature covers every field but itself), so a
+  // compromised gateway/relay cannot replay one device's validly-signed query
+  // onto another device that trusts the same CA (PMSEC-001, sibling of
+  // SignedActionEnvelope.target_device_id). The agent verifies target ==
+  // itself after the signature and refuses otherwise.
+  string target_device_id = 8;
 }
 
 message OSQueryCondition {
@@ -309,6 +316,12 @@ message RequestInventory {
   // fail-closed by the agent before any osquery collection.
   // @gotags: validate:"omitempty"
   bytes signature = 2;
+  // The single device this collection request is authorized for. Bound INSIDE
+  // the signed canonical bytes so a compromised gateway/relay cannot replay one
+  // device's validly-signed request onto another (PMSEC-001, sibling of
+  // SignedActionEnvelope.target_device_id). The agent verifies target == itself
+  // after the signature and refuses otherwise.
+  string target_device_id = 3;
 }
 
 // ============================================================================
@@ -392,6 +405,12 @@ message RevokeLuksDeviceKey {
   // replay a revocation onto any known action_id.
   // @gotags: validate:"omitempty"
   bytes signature = 2;
+  // The single device this destructive slot-7 wipe is authorized for. Bound
+  // INSIDE the signed canonical bytes so a compromised gateway/relay cannot
+  // replay one device's validly-signed revocation onto another that trusts the
+  // same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
+  // agent verifies target == itself after the signature and refuses otherwise.
+  string target_device_id = 3;
 }
 
 // Agent reports the result of revoking the device-bound key.
@@ -561,6 +580,12 @@ message LogQuery {
   // (e.g. swap the unit) a log read under a valid signature.
   // @gotags: validate:"omitempty"
   bytes signature = 10;
+  // The single device this log read is authorized for. Bound INSIDE the signed
+  // canonical bytes so a compromised gateway/relay cannot replay one device's
+  // validly-signed log query onto another that trusts the same CA (PMSEC-001,
+  // sibling of SignedActionEnvelope.target_device_id). The agent verifies
+  // target == itself after the signature and refuses otherwise.
+  string target_device_id = 11;
 }
 
 // Agent -> Server: journalctl output result

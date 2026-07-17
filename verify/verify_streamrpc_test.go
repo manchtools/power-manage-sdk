@@ -173,6 +173,9 @@ func TestOSQueryCanonical_ClearsSignatureAndBindsFields(t *testing.T) {
 		{"limit", func(q *pm.OSQuery) { q.Limit = 999 }},
 		{"query_id", func(q *pm.OSQuery) { q.QueryId = "01HOTHER" }},
 		{"columns", func(q *pm.OSQuery) { q.Columns = []string{"hash"} }},
+		// PMSEC-001: target_device_id must bind so a signature minted for one
+		// device cannot be replayed onto another that trusts the same CA.
+		{"target_device_id", func(q *pm.OSQuery) { q.TargetDeviceId = "01HDEVICEB" }},
 	}
 	for _, b := range bind {
 		mutated := &pm.OSQuery{QueryId: "01HQUERY", Table: "processes", Limit: 50}
@@ -208,6 +211,19 @@ func TestLogQueryCanonical_BindsUnit(t *testing.T) {
 	if bytes.Equal(ca, cb) {
 		t.Fatal("LogQueryCanonical did not bind unit")
 	}
+	// PMSEC-001: target_device_id must bind so a validly-signed log read for one
+	// device cannot be replayed onto another.
+	dA, err := LogQueryCanonical(&pm.LogQuery{QueryId: "01HLOG", Unit: "nginx.service", Lines: 100, TargetDeviceId: "01HDEVA"})
+	if err != nil {
+		t.Fatalf("LogQueryCanonical(devA): %v", err)
+	}
+	dB, err := LogQueryCanonical(&pm.LogQuery{QueryId: "01HLOG", Unit: "nginx.service", Lines: 100, TargetDeviceId: "01HDEVB"})
+	if err != nil {
+		t.Fatalf("LogQueryCanonical(devB): %v", err)
+	}
+	if bytes.Equal(dA, dB) {
+		t.Fatal("LogQueryCanonical did not bind target_device_id — cross-device replay possible")
+	}
 	withSig := &pm.LogQuery{QueryId: "01HLOG", Unit: "nginx.service", Lines: 100, Signature: []byte("zz")}
 	cs, err := LogQueryCanonical(withSig)
 	if err != nil {
@@ -233,6 +249,19 @@ func TestLuksAndInventoryCanonical_BindIdentifiers(t *testing.T) {
 	if bytes.Equal(lA, lB) {
 		t.Fatal("RevokeLuksDeviceKeyCanonical did not bind action_id")
 	}
+	// PMSEC-001: target_device_id must bind so a validly-signed slot-7 wipe for
+	// one device cannot be replayed onto another that trusts the same CA.
+	lDevA, err := RevokeLuksDeviceKeyCanonical(&pm.RevokeLuksDeviceKey{ActionId: "01HAAA", TargetDeviceId: "01HDEVA"})
+	if err != nil {
+		t.Fatalf("RevokeLuksDeviceKeyCanonical(devA): %v", err)
+	}
+	lDevB, err := RevokeLuksDeviceKeyCanonical(&pm.RevokeLuksDeviceKey{ActionId: "01HAAA", TargetDeviceId: "01HDEVB"})
+	if err != nil {
+		t.Fatalf("RevokeLuksDeviceKeyCanonical(devB): %v", err)
+	}
+	if bytes.Equal(lDevA, lDevB) {
+		t.Fatal("RevokeLuksDeviceKeyCanonical did not bind target_device_id — cross-device replay of a slot-7 wipe possible")
+	}
 	lSig, err := RevokeLuksDeviceKeyCanonical(&pm.RevokeLuksDeviceKey{ActionId: "01HAAA", Signature: []byte("q")})
 	if err != nil {
 		t.Fatalf("RevokeLuksDeviceKeyCanonical(withSig): %v", err)
@@ -254,6 +283,19 @@ func TestLuksAndInventoryCanonical_BindIdentifiers(t *testing.T) {
 	}
 	if bytes.Equal(iA, iB) {
 		t.Fatal("RequestInventoryCanonical did not bind query_id")
+	}
+	// PMSEC-001: target_device_id must bind so a validly-signed collection
+	// request for one device cannot be replayed onto another.
+	iDevA, err := RequestInventoryCanonical(&pm.RequestInventory{QueryId: "01HINV1", TargetDeviceId: "01HDEVA"})
+	if err != nil {
+		t.Fatalf("RequestInventoryCanonical(devA): %v", err)
+	}
+	iDevB, err := RequestInventoryCanonical(&pm.RequestInventory{QueryId: "01HINV1", TargetDeviceId: "01HDEVB"})
+	if err != nil {
+		t.Fatalf("RequestInventoryCanonical(devB): %v", err)
+	}
+	if bytes.Equal(iDevA, iDevB) {
+		t.Fatal("RequestInventoryCanonical did not bind target_device_id — cross-device replay possible")
 	}
 	iSig, err := RequestInventoryCanonical(&pm.RequestInventory{QueryId: "01HINV1", Signature: []byte("q")})
 	if err != nil {
@@ -308,5 +350,97 @@ func TestEndToEnd_OSQuerySignThenVerify(t *testing.T) {
 	}
 	if err := verifier.VerifyDomain(OSQuerySignatureDomain, swapped, msg.Signature); err == nil {
 		t.Fatal("verify accepted a message whose raw_sql was swapped after signing")
+	}
+}
+
+// TestCrossDeviceReplay_RejectedAllSurfaces is the H3 regression: on every
+// non-action stream-RPC surface, a message validly signed for device A must
+// NOT verify once its target_device_id is rewritten to device B. This is the
+// canonical-bytes half of the defense — a compromised gateway holding a
+// device-A signature and relaying it to device B produces bytes whose
+// re-derived canonical no longer matches the signature. Before target_device_id
+// was bound into the signed bytes, the swapped message verified fine and the
+// agent (which trusts the same CA) would have run it. The agent-side
+// target==self refusal is the complementary half, tested in the agent repo.
+func TestCrossDeviceReplay_RejectedAllSurfaces(t *testing.T) {
+	certPEM, key, _ := cryptotest.GenCA(t, "Test CA")
+	signer := NewActionSigner(key)
+	verifier, err := NewActionVerifier(certPEM)
+	if err != nil {
+		t.Fatalf("new verifier: %v", err)
+	}
+
+	const devA, devB = "01HDEVICEAAAAAAAAAAAAAAAAA", "01HDEVICEBBBBBBBBBBBBBBBBB"
+
+	// Each surface: (canonical for a message targeting devA, then the same
+	// message retargeted to devB). Signed over the devA bytes; the devB bytes
+	// must fail verification.
+	surfaces := []struct {
+		name         string
+		domain       string
+		canonA       func() ([]byte, error)
+		canonBReplay func() ([]byte, error)
+	}{
+		{
+			"osquery", OSQuerySignatureDomain,
+			func() ([]byte, error) {
+				return OSQueryCanonical(&pm.OSQuery{QueryId: "01HQ", RawSql: "SELECT 1", TargetDeviceId: devA})
+			},
+			func() ([]byte, error) {
+				return OSQueryCanonical(&pm.OSQuery{QueryId: "01HQ", RawSql: "SELECT 1", TargetDeviceId: devB})
+			},
+		},
+		{
+			"logquery", LogQuerySignatureDomain,
+			func() ([]byte, error) {
+				return LogQueryCanonical(&pm.LogQuery{QueryId: "01HL", Unit: "ssh.service", TargetDeviceId: devA})
+			},
+			func() ([]byte, error) {
+				return LogQueryCanonical(&pm.LogQuery{QueryId: "01HL", Unit: "ssh.service", TargetDeviceId: devB})
+			},
+		},
+		{
+			"luks-revoke", LuksRevokeSignatureDomain,
+			func() ([]byte, error) {
+				return RevokeLuksDeviceKeyCanonical(&pm.RevokeLuksDeviceKey{ActionId: "01HA", TargetDeviceId: devA})
+			},
+			func() ([]byte, error) {
+				return RevokeLuksDeviceKeyCanonical(&pm.RevokeLuksDeviceKey{ActionId: "01HA", TargetDeviceId: devB})
+			},
+		},
+		{
+			"inventory", InventorySignatureDomain,
+			func() ([]byte, error) {
+				return RequestInventoryCanonical(&pm.RequestInventory{QueryId: "01HI", TargetDeviceId: devA})
+			},
+			func() ([]byte, error) {
+				return RequestInventoryCanonical(&pm.RequestInventory{QueryId: "01HI", TargetDeviceId: devB})
+			},
+		},
+	}
+
+	for _, s := range surfaces {
+		t.Run(s.name, func(t *testing.T) {
+			canonA, err := s.canonA()
+			if err != nil {
+				t.Fatalf("canonical(devA): %v", err)
+			}
+			sig, err := signer.SignDomain(s.domain, canonA)
+			if err != nil {
+				t.Fatalf("sign: %v", err)
+			}
+			// Sanity: the legitimately-targeted message verifies.
+			if err := verifier.VerifyDomain(s.domain, canonA, sig); err != nil {
+				t.Fatalf("verify on the correctly-targeted message: %v", err)
+			}
+			// Replay: retarget to devB → must fail.
+			canonB, err := s.canonBReplay()
+			if err != nil {
+				t.Fatalf("canonical(devB replay): %v", err)
+			}
+			if err := verifier.VerifyDomain(s.domain, canonB, sig); err == nil {
+				t.Fatalf("%s: a device-A signature verified against a device-B-retargeted message — cross-device replay possible", s.name)
+			}
+		})
 	}
 }

@@ -48,31 +48,33 @@ func domainCanonical[T proto.Message](m T, typeName string) ([]byte, error) {
 }
 
 // OSQueryCanonical returns the signing pre-image bytes for an OSQuery. It
-// binds query_id, table, columns, where, limit and raw_sql — so a compromised
-// gateway cannot swap the table, inject raw_sql, or retarget the query under a
-// valid signature.
+// binds query_id, table, columns, where, limit, raw_sql and target_device_id
+// — so a compromised gateway cannot swap the table, inject raw_sql, retarget
+// the query, or replay it onto another device under a valid signature.
 func OSQueryCanonical(q *pmv1.OSQuery) ([]byte, error) {
 	return domainCanonical(q, "OSQuery")
 }
 
 // LogQueryCanonical returns the signing pre-image bytes for a LogQuery. It
-// binds query_id, unit, since, until, priority, grep, kernel, lines and
-// source — so a compromised gateway cannot retarget the unit or widen the
-// query under a valid signature.
+// binds query_id, unit, since, until, priority, grep, kernel, lines, source
+// and target_device_id — so a compromised gateway cannot retarget the unit,
+// widen the query, or replay it onto another device under a valid signature.
 func LogQueryCanonical(q *pmv1.LogQuery) ([]byte, error) {
 	return domainCanonical(q, "LogQuery")
 }
 
 // RevokeLuksDeviceKeyCanonical returns the signing pre-image bytes for a
-// RevokeLuksDeviceKey. It binds action_id, so a compromised gateway cannot
-// forge or replay a slot-7 wipe onto any known action_id.
+// RevokeLuksDeviceKey. It binds action_id and target_device_id, so a
+// compromised gateway cannot forge, retarget, or replay a slot-7 wipe onto any
+// known action_id or another served device.
 func RevokeLuksDeviceKeyCanonical(m *pmv1.RevokeLuksDeviceKey) ([]byte, error) {
 	return domainCanonical(m, "RevokeLuksDeviceKey")
 }
 
 // RequestInventoryCanonical returns the signing pre-image bytes for a
-// server-originated RequestInventory. It binds query_id so a compromised
-// gateway cannot forge an inventory-collection command.
+// server-originated RequestInventory. It binds query_id and target_device_id
+// so a compromised gateway cannot forge an inventory-collection command or
+// replay one onto another served device.
 func RequestInventoryCanonical(m *pmv1.RequestInventory) ([]byte, error) {
 	return domainCanonical(m, "RequestInventory")
 }
