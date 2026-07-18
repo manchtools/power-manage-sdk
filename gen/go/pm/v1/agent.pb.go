@@ -1368,7 +1368,8 @@ type OSQuery struct {
 	// onto another device that trusts the same CA (PMSEC-001, sibling of
 	// SignedActionEnvelope.target_device_id). The agent verifies target ==
 	// itself after the signature and refuses otherwise.
-	TargetDeviceId string `protobuf:"bytes,8,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	TargetDeviceId string `protobuf:"bytes,8,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1758,7 +1759,8 @@ type RequestInventory struct {
 	// device's validly-signed request onto another (PMSEC-001, sibling of
 	// SignedActionEnvelope.target_device_id). The agent verifies target == itself
 	// after the signature and refuses otherwise.
-	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2060,7 +2062,8 @@ type RevokeLuksDeviceKey struct {
 	// replay one device's validly-signed revocation onto another that trusts the
 	// same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
 	// agent verifies target == itself after the signature and refuses otherwise.
-	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2624,7 +2627,8 @@ type LogQuery struct {
 	// validly-signed log query onto another that trusts the same CA (PMSEC-001,
 	// sibling of SignedActionEnvelope.target_device_id). The agent verifies
 	// target == itself after the signature and refuses otherwise.
-	TargetDeviceId string `protobuf:"bytes,11,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
+	// @gotags: validate:"required,ulid"
+	TargetDeviceId string `protobuf:"bytes,11,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }

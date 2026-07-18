@@ -87,7 +87,7 @@ func TestDispatchServerMessage_InventoryConcurrencyBounded(t *testing.T) {
 		msg := &pm.ServerMessage{
 			Id: "m",
 			Payload: &pm.ServerMessage_RequestInventory{
-				RequestInventory: &pm.RequestInventory{QueryId: "01HQ0000000000000000000000"},
+				RequestInventory: &pm.RequestInventory{QueryId: "01HQ0000000000000000000000", TargetDeviceId: "01HQ0000000000000000000000"},
 			},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
@@ -125,7 +125,7 @@ func TestDispatchServerMessage_LuksRevokeConcurrencyBounded(t *testing.T) {
 		msg := &pm.ServerMessage{
 			Id: "m",
 			Payload: &pm.ServerMessage_RevokeLuksDeviceKey{
-				RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: "01HQ0000000000000000000000"},
+				RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: "01HQ0000000000000000000000", TargetDeviceId: "01HQ0000000000000000000000"},
 			},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
