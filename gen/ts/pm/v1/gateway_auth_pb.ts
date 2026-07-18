@@ -27,9 +27,14 @@ export type EnrollGatewayRequest = Message<"pm.v1.EnrollGatewayRequest"> & {
   token: string;
 
   /**
-   * Optional operator-facing hostname recorded on the GatewayEnrolled
-   * event for the admin view. Not trusted for any authorization decision.
-   * @gotags: validate:"omitempty,hostname_rfc1123,max=253"
+   * The gateway's public host — the name agents dial (GATEWAY_DOMAIN). The
+   * gateway MUST declare it; control cross-checks it against its own
+   * authoritative gateway host (from CONTROL_GATEWAY_URL) and refuses to
+   * enroll on any mismatch, then stamps ITS authoritative host — never this
+   * claimed value — as the issued cert's DNS SAN. Required so the operator
+   * configures one canonical name on both sides; an IP literal, an unlisted
+   * name, mixed case, or a trailing dot is rejected.
+   * @gotags: validate:"required,hostname_rfc1123,max=253"
    *
    * @generated from field: string hostname = 2;
    */

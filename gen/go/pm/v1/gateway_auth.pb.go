@@ -28,10 +28,15 @@ type EnrollGatewayRequest struct {
 	// PermissionDenied with no gateway_id allocated.
 	// @gotags: validate:"required,max=512"
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty" validate:"required,max=512"`
-	// Optional operator-facing hostname recorded on the GatewayEnrolled
-	// event for the admin view. Not trusted for any authorization decision.
-	// @gotags: validate:"omitempty,hostname_rfc1123,max=253"
-	Hostname string `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty" validate:"omitempty,hostname_rfc1123,max=253"`
+	// The gateway's public host — the name agents dial (GATEWAY_DOMAIN). The
+	// gateway MUST declare it; control cross-checks it against its own
+	// authoritative gateway host (from CONTROL_GATEWAY_URL) and refuses to
+	// enroll on any mismatch, then stamps ITS authoritative host — never this
+	// claimed value — as the issued cert's DNS SAN. Required so the operator
+	// configures one canonical name on both sides; an IP literal, an unlisted
+	// name, mixed case, or a trailing dot is rejected.
+	// @gotags: validate:"required,hostname_rfc1123,max=253"
+	Hostname string `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty" validate:"required,hostname_rfc1123,max=253"`
 	// Certificate Signing Request (PEM-encoded PKCS#10). The gateway
 	// generates its own keypair; the private key never leaves the process.
 	// The CA stamps the class SAN itself and rejects caller-supplied SANs.
