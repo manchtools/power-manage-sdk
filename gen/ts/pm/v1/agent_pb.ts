@@ -604,6 +604,7 @@ export type OSQuery = Message<"pm.v1.OSQuery"> & {
    * onto another device that trusts the same CA (PMSEC-001, sibling of
    * SignedActionEnvelope.target_device_id). The agent verifies target ==
    * itself after the signature and refuses otherwise.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string target_device_id = 8;
    */
@@ -787,6 +788,7 @@ export type RequestInventory = Message<"pm.v1.RequestInventory"> & {
    * device's validly-signed request onto another (PMSEC-001, sibling of
    * SignedActionEnvelope.target_device_id). The agent verifies target == itself
    * after the signature and refuses otherwise.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string target_device_id = 3;
    */
@@ -951,6 +953,7 @@ export type RevokeLuksDeviceKey = Message<"pm.v1.RevokeLuksDeviceKey"> & {
    * replay one device's validly-signed revocation onto another that trusts the
    * same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
    * agent verifies target == itself after the signature and refuses otherwise.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string target_device_id = 3;
    */
@@ -1318,6 +1321,7 @@ export type LogQuery = Message<"pm.v1.LogQuery"> & {
    * validly-signed log query onto another that trusts the same CA (PMSEC-001,
    * sibling of SignedActionEnvelope.target_device_id). The agent verifies
    * target == itself after the signature and refuses otherwise.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string target_device_id = 11;
    */

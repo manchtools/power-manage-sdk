@@ -246,6 +246,7 @@ message OSQuery {
   // onto another device that trusts the same CA (PMSEC-001, sibling of
   // SignedActionEnvelope.target_device_id). The agent verifies target ==
   // itself after the signature and refuses otherwise.
+  // @gotags: validate:"required,ulid"
   string target_device_id = 8;
 }
 
@@ -321,6 +322,7 @@ message RequestInventory {
   // device's validly-signed request onto another (PMSEC-001, sibling of
   // SignedActionEnvelope.target_device_id). The agent verifies target == itself
   // after the signature and refuses otherwise.
+  // @gotags: validate:"required,ulid"
   string target_device_id = 3;
 }
 
@@ -410,6 +412,7 @@ message RevokeLuksDeviceKey {
   // replay one device's validly-signed revocation onto another that trusts the
   // same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
   // agent verifies target == itself after the signature and refuses otherwise.
+  // @gotags: validate:"required,ulid"
   string target_device_id = 3;
 }
 
@@ -585,6 +588,7 @@ message LogQuery {
   // validly-signed log query onto another that trusts the same CA (PMSEC-001,
   // sibling of SignedActionEnvelope.target_device_id). The agent verifies
   // target == itself after the signature and refuses otherwise.
+  // @gotags: validate:"required,ulid"
   string target_device_id = 11;
 }
 

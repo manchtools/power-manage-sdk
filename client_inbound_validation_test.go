@@ -22,6 +22,7 @@ import (
 // dropped by validateInbound BEFORE it reaches the handler, and — as a
 // guard against a vacuous pass — that a well-formed one still gets through.
 type recordingHandler struct {
+	osqueryCalls   int32
 	inventoryCalls int32
 	logQueryCalls  int32
 	luksCalls      int32
@@ -32,6 +33,7 @@ func (h *recordingHandler) OnAction(context.Context, []byte, []byte) (*pm.Action
 	return nil, nil
 }
 func (h *recordingHandler) OnQuery(context.Context, *pm.OSQuery) (*pm.OSQueryResult, error) {
+	atomic.AddInt32(&h.osqueryCalls, 1)
 	return nil, nil
 }
 func (h *recordingHandler) OnError(context.Context, *pm.Error) error { return nil }
@@ -52,8 +54,9 @@ func (h *recordingHandler) OnRevokeLuksDeviceKey(context.Context, *pm.RevokeLuks
 }
 
 // validULID is a syntactically valid ULID; badULID fails the
-// `validate:"required,ulid"` rule the three command payloads carry on their
-// query_id / action_id field.
+// `validate:"required,ulid"` rule the command payloads carry on their
+// query_id / action_id field — and, since PMSEC-001, on their
+// target_device_id field too.
 const (
 	validULID = "01HQ0000000000000000000000"
 	badULID   = "not-a-ulid"
@@ -70,17 +73,20 @@ const (
 // (the rejection — the point of the test), and a valid ULID DOES (so the test
 // can't pass vacuously because the handler interface went unsatisfied).
 func TestDispatch_RejectsInvalidInboundCommands(t *testing.T) {
+	// Each builder sets a VALID target_device_id (also `required,ulid` since
+	// PMSEC-001) so `id` — the query_id / action_id — stays the only field
+	// under test here. target_device_id gets its own rejection test below.
 	mkInventory := func(id string) *pm.ServerMessage {
 		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_RequestInventory{
-			RequestInventory: &pm.RequestInventory{QueryId: id}}}
+			RequestInventory: &pm.RequestInventory{QueryId: id, TargetDeviceId: validULID}}}
 	}
 	mkLogQuery := func(id string) *pm.ServerMessage {
 		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_LogQuery{
-			LogQuery: &pm.LogQuery{QueryId: id}}}
+			LogQuery: &pm.LogQuery{QueryId: id, TargetDeviceId: validULID}}}
 	}
 	mkLuks := func(id string) *pm.ServerMessage {
 		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_RevokeLuksDeviceKey{
-			RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: id}}}
+			RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: id, TargetDeviceId: validULID}}}
 	}
 
 	cases := []struct {
@@ -124,6 +130,81 @@ func TestDispatch_RejectsInvalidInboundCommands(t *testing.T) {
 // settle waits a short, fixed period for a dispatch-spawned goroutine to have
 // run, so a "handler must NOT be called" assertion is not racing the spawn.
 func settle() { time.Sleep(150 * time.Millisecond) }
+
+// TestDispatch_RejectsMissingOrInvalidTargetDeviceId pins the PMSEC-001 hardening:
+// all four non-action stream-RPC payloads (OSQuery, RequestInventory, LogQuery,
+// RevokeLuksDeviceKey) now carry `validate:"required,ulid"` on target_device_id,
+// so validateInbound drops a command that names no target device (or a malformed
+// one) at the SDK boundary — before it reaches a privileged handler. A missing
+// target is exactly the shape a target-stripped or pre-binding relay frame has;
+// dropping it is defence-in-depth beneath the agent's own target==self check.
+//
+// Each surface asserts BOTH a missing and a non-ULID target are dropped, and — as
+// a guard against a vacuous pass — that a valid target still reaches the handler.
+func TestDispatch_RejectsMissingOrInvalidTargetDeviceId(t *testing.T) {
+	// build(target) sets a VALID query/action id and the given target_device_id,
+	// so target_device_id is the only field under test.
+	mkOSQuery := func(target string) *pm.ServerMessage {
+		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_Query{
+			Query: &pm.OSQuery{QueryId: validULID, Table: "processes", TargetDeviceId: target}}}
+	}
+	mkInventory := func(target string) *pm.ServerMessage {
+		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_RequestInventory{
+			RequestInventory: &pm.RequestInventory{QueryId: validULID, TargetDeviceId: target}}}
+	}
+	mkLogQuery := func(target string) *pm.ServerMessage {
+		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_LogQuery{
+			LogQuery: &pm.LogQuery{QueryId: validULID, TargetDeviceId: target}}}
+	}
+	mkLuks := func(target string) *pm.ServerMessage {
+		return &pm.ServerMessage{Id: "m", Payload: &pm.ServerMessage_RevokeLuksDeviceKey{
+			RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: validULID, TargetDeviceId: target}}}
+	}
+
+	cases := []struct {
+		name  string
+		build func(target string) *pm.ServerMessage
+		count func(*recordingHandler) int32
+	}{
+		{"OSQuery", mkOSQuery, func(h *recordingHandler) int32 { return atomic.LoadInt32(&h.osqueryCalls) }},
+		{"RequestInventory", mkInventory, func(h *recordingHandler) int32 { return atomic.LoadInt32(&h.inventoryCalls) }},
+		{"LogQuery", mkLogQuery, func(h *recordingHandler) int32 { return atomic.LoadInt32(&h.logQueryCalls) }},
+		{"RevokeLuksDeviceKey", mkLuks, func(h *recordingHandler) int32 { return atomic.LoadInt32(&h.luksCalls) }},
+	}
+
+	bad := []struct{ label, target string }{
+		{"missing_target", ""},
+		{"nonulid_target", badULID},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		for _, b := range bad {
+			b := b
+			t.Run(tc.name+"/"+b.label+"_never_reaches_handler", func(t *testing.T) {
+				c := NewClient("https://gw.invalid", WithAuth(validULID, ""))
+				h := &recordingHandler{}
+				if err := c.dispatchServerMessage(context.Background(), tc.build(b.target), h); err != nil {
+					t.Fatalf("dispatch: %v", err)
+				}
+				// The async surfaces run the handler on a spawned goroutine;
+				// settle so an unguarded dispatch would have reached it.
+				settle()
+				if got := tc.count(h); got != 0 {
+					t.Fatalf("%s: a command with a %s reached the handler %d time(s); validateInbound must drop it at the boundary (PMSEC-001)", tc.name, b.label, got)
+				}
+			})
+		}
+		t.Run(tc.name+"/valid_target_reaches_handler", func(t *testing.T) {
+			c := NewClient("https://gw.invalid", WithAuth(validULID, ""))
+			h := &recordingHandler{}
+			if err := c.dispatchServerMessage(context.Background(), tc.build(validULID), h); err != nil {
+				t.Fatalf("dispatch: %v", err)
+			}
+			waitForCond(t, func() bool { return tc.count(h) == 1 })
+		})
+	}
+}
 
 // TestDispatchValidatesEveryInboundCommand is the self-discovering regression
 // guard for P0.3: it walks EVERY ServerMessage oneof arm whose payload carries
