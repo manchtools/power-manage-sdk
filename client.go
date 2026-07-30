@@ -898,6 +898,58 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 	}
 }
 
+// StoreLpsPasswords reports one LPS execution's password rotations and waits for
+// the server confirmation.
+//
+// Spec 41 moved this onto the stream. It previously reached control through
+// InternalService/ProxyStoreLpsPasswords — the gateway relayed the batch — and
+// each password was X25519-sealed so the relay could not read it. With no relay
+// the agent's mTLS terminates at control, which was always the only party able
+// to open the seal, so the rotations travel as plaintext inside that connection
+// and control encrypts them at rest on receipt.
+//
+// Request/response are correlated by message id like every other stream call, so
+// a failed batch is reported rather than silently dropped: LPS rotations are
+// unrecoverable if lost — the agent has already changed the local password.
+func (c *Client) StoreLpsPasswords(ctx context.Context, actionID string, rotations []*pm.LpsPasswordRotation) error {
+	if len(rotations) == 0 {
+		return errors.New("refusing to send an empty LPS rotation batch")
+	}
+
+	id := NewULID()
+	ch := c.registerPending(id)
+	defer c.unregisterPending(id)
+
+	if err := c.send(ctx, &pm.AgentMessage{
+		Id: id,
+		Payload: &pm.AgentMessage_StoreLpsPasswords{
+			StoreLpsPasswords: &pm.StoreLpsPasswordsRequest{
+				ActionId:  actionID,
+				Rotations: rotations,
+			},
+		},
+	}); err != nil {
+		return fmt.Errorf("send store lps passwords request: %w", err)
+	}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case resp := <-ch:
+		if errMsg := resp.GetError(); errMsg != nil {
+			return fmt.Errorf("server error: %s", errMsg.Message)
+		}
+		storeResp := resp.GetStoreLpsPasswords()
+		if storeResp == nil {
+			return errors.New("unexpected response type")
+		}
+		if !storeResp.Success {
+			return errors.New("server rejected LPS password storage")
+		}
+		return nil
+	}
+}
+
 // SendRevokeLuksDeviceKeyResult sends the result of a LUKS device key revocation back to the server.
 func (c *Client) SendRevokeLuksDeviceKeyResult(ctx context.Context, actionID string, success bool, errMsg string) error {
 	return c.send(ctx, &pm.AgentMessage{

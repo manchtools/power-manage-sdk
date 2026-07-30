@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pm/v1/agent.proto.
  */
 export const file_pm_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChFwbS92MS9hZ2VudC5wcm90bxIFcG0udjEipQUKDEFnZW50TWVzc2FnZRIKCgJpZBgBIAEoCRIdCgVoZWxsbxgKIAEoCzIMLnBtLnYxLkhlbGxvSAASJQoJaGVhcnRiZWF0GAsgASgLMhAucG0udjEuSGVhcnRiZWF0SAASLAoNYWN0aW9uX3Jlc3VsdBgUIAEoCzITLnBtLnYxLkFjdGlvblJlc3VsdEgAEioKDG91dHB1dF9jaHVuaxgVIAEoCzISLnBtLnYxLk91dHB1dENodW5rSAASLAoMcXVlcnlfcmVzdWx0GB4gASgLMhQucG0udjEuT1NRdWVyeVJlc3VsdEgAEisKCWludmVudG9yeRgfIAEoCzIWLnBtLnYxLkRldmljZUludmVudG9yeUgAEi4KDnNlY3VyaXR5X2FsZXJ0GCggASgLMhQucG0udjEuU2VjdXJpdHlBbGVydEgAEjAKDGdldF9sdWtzX2tleRgyIAEoCzIYLnBtLnYxLkdldEx1a3NLZXlSZXF1ZXN0SAASNAoOc3RvcmVfbHVrc19rZXkYMyABKAsyGi5wbS52MS5TdG9yZUx1a3NLZXlSZXF1ZXN0SAASSQodcmV2b2tlX2x1a3NfZGV2aWNlX2tleV9yZXN1bHQYNCABKAsyIC5wbS52MS5SZXZva2VMdWtzRGV2aWNlS2V5UmVzdWx0SAASMQoQbG9nX3F1ZXJ5X3Jlc3VsdBg8IAEoCzIVLnBtLnYxLkxvZ1F1ZXJ5UmVzdWx0SAASMAoPdGVybWluYWxfb3V0cHV0GEYgASgLMhUucG0udjEuVGVybWluYWxPdXRwdXRIABI7ChV0ZXJtaW5hbF9zdGF0ZV9jaGFuZ2UYRyABKAsyGi5wbS52MS5UZXJtaW5hbFN0YXRlQ2hhbmdlSABCCQoHcGF5bG9hZCJsCgtPdXRwdXRDaHVuaxIUCgxleGVjdXRpb25faWQYASABKAkSJwoGc3RyZWFtGAIgASgOMhcucG0udjEuT3V0cHV0U3RyZWFtVHlwZRIMCgRkYXRhGAMgASgMEhAKCHNlcXVlbmNlGAQgASgDInYKBUhlbGxvEiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkEhUKDWFnZW50X3ZlcnNpb24YAiABKAkSEAoIaG9zdG5hbWUYAyABKAkSEgoKYXV0aF90b2tlbhgEIAEoCRIMCgRhcmNoGAUgASgJInkKCUhlYXJ0YmVhdBIpCgZ1cHRpbWUYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SEwoLY3B1X3BlcmNlbnQYAiABKAISFgoObWVtb3J5X3BlcmNlbnQYAyABKAISFAoMZGlza19wZXJjZW50GAQgASgCIqwBCg1TZWN1cml0eUFsZXJ0EiYKBHR5cGUYASABKA4yGC5wbS52MS5TZWN1cml0eUFsZXJ0VHlwZRIPCgdtZXNzYWdlGAIgASgJEjIKB2RldGFpbHMYAyADKAsyIS5wbS52MS5TZWN1cml0eUFsZXJ0LkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASL2BAoNU2VydmVyTWVzc2FnZRIKCgJpZBgBIAEoCRIhCgd3ZWxjb21lGAogASgLMg4ucG0udjEuV2VsY29tZUgAEicKBmFjdGlvbhgUIAEoCzIVLnBtLnYxLkFjdGlvbkRpc3BhdGNoSAASHwoFcXVlcnkYHiABKAsyDi5wbS52MS5PU1F1ZXJ5SAASNAoRcmVxdWVzdF9pbnZlbnRvcnkYHyABKAsyFy5wbS52MS5SZXF1ZXN0SW52ZW50b3J5SAASHQoFZXJyb3IYKCABKAsyDC5wbS52MS5FcnJvckgAEjEKDGdldF9sdWtzX2tleRgyIAEoCzIZLnBtLnYxLkdldEx1a3NLZXlSZXNwb25zZUgAEjUKDnN0b3JlX2x1a3Nfa2V5GDMgASgLMhsucG0udjEuU3RvcmVMdWtzS2V5UmVzcG9uc2VIABI8ChZyZXZva2VfbHVrc19kZXZpY2Vfa2V5GDQgASgLMhoucG0udjEuUmV2b2tlTHVrc0RldmljZUtleUgAEiQKCWxvZ19xdWVyeRg8IAEoCzIPLnBtLnYxLkxvZ1F1ZXJ5SAASLgoOdGVybWluYWxfc3RhcnQYRiABKAsyFC5wbS52MS5UZXJtaW5hbFN0YXJ0SAASLgoOdGVybWluYWxfaW5wdXQYRyABKAsyFC5wbS52MS5UZXJtaW5hbElucHV0SAASMAoPdGVybWluYWxfcmVzaXplGEggASgLMhUucG0udjEuVGVybWluYWxSZXNpemVIABIsCg10ZXJtaW5hbF9zdG9wGEkgASgLMhMucG0udjEuVGVybWluYWxTdG9wSABCCQoHcGF5bG9hZCK3AQoHV2VsY29tZRIWCg5zZXJ2ZXJfdmVyc2lvbhgBIAEoCRI1ChJoZWFydGJlYXRfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SGAoQZGV2aWNlX2xvZ2luX3VybBgDIAEoCUoECAQQBUoECAUQBkoECAYQB1IUbGF0ZXN0X2FnZW50X3ZlcnNpb25SCnVwZGF0ZV91cmxSD3VwZGF0ZV9jaGVja3N1bSI1Cg5BY3Rpb25EaXNwYXRjaBIQCghlbnZlbG9wZRgBIAEoDBIRCglzaWduYXR1cmUYAiABKAwiJgoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIrABCgdPU1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBXRhYmxlGAIgASgJEg8KB2NvbHVtbnMYAyADKAkSJgoFd2hlcmUYBCADKAsyFy5wbS52MS5PU1F1ZXJ5Q29uZGl0aW9uEg0KBWxpbWl0GAUgASgFEg8KB3Jhd19zcWwYBiABKAkSEQoJc2lnbmF0dXJlGAcgASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYCCABKAkiTwoQT1NRdWVyeUNvbmRpdGlvbhIOCgZjb2x1bW4YASABKAkSHAoCb3AYAiABKA4yEC5wbS52MS5PU1F1ZXJ5T3ASDQoFdmFsdWUYAyABKAkiYgoNT1NRdWVyeVJlc3VsdBIQCghxdWVyeV9pZBgBIAEoCRIPCgdzdWNjZXNzGAIgASgIEg0KBWVycm9yGAMgASgJEh8KBHJvd3MYBCADKAsyES5wbS52MS5PU1F1ZXJ5Um93ImQKCk9TUXVlcnlSb3cSKQoEZGF0YRgBIAMoCzIbLnBtLnYxLk9TUXVlcnlSb3cuRGF0YUVudHJ5GisKCURhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKD0RldmljZUludmVudG9yeRIlCgZ0YWJsZXMYASADKAsyFS5wbS52MS5JbnZlbnRvcnlUYWJsZSJFCg5JbnZlbnRvcnlUYWJsZRISCgp0YWJsZV9uYW1lGAEgASgJEh8KBHJvd3MYAiADKAsyES5wbS52MS5PU1F1ZXJ5Um93IlEKEFJlcXVlc3RJbnZlbnRvcnkSEAoIcXVlcnlfaWQYASABKAkSEQoJc2lnbmF0dXJlGAIgASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYAyABKAkiJgoRR2V0THVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJIigKEkdldEx1a3NLZXlSZXNwb25zZRISCgpwYXNzcGhyYXNlGAEgASgJIoEBChNTdG9yZUx1a3NLZXlSZXF1ZXN0EhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgpwYXNzcGhyYXNlGAMgASgJEi4KD3JvdGF0aW9uX3JlYXNvbhgEIAEoDjIVLnBtLnYxLlJvdGF0aW9uUmVhc29uIicKFFN0b3JlTHVrc0tleVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgiVQoTUmV2b2tlTHVrc0RldmljZUtleRIRCglhY3Rpb25faWQYASABKAkSEQoJc2lnbmF0dXJlGAIgASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYAyABKAkiTgoZUmV2b2tlTHVrc0RldmljZUtleVJlc3VsdBIRCglhY3Rpb25faWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCSI8ChhWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJIokBChlWYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgptaW5fbGVuZ3RoGAMgASgFEjAKCmNvbXBsZXhpdHkYBCABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkiOAoSU3luY0FjdGlvbnNSZXF1ZXN0EiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkImwKC0FjdGlvbkdyb3VwEhQKDHNvdXJjZV9sYWJlbBgBIAEoCRInCghzY2hlZHVsZRgCIAEoCzIVLnBtLnYxLkFjdGlvblNjaGVkdWxlEh4KB2FjdGlvbnMYAyADKAsyDS5wbS52MS5BY3Rpb24i0QEKE1N5bmNBY3Rpb25zUmVzcG9uc2USHQoVc3luY19pbnRlcnZhbF9taW51dGVzGAIgASgFEikKEnN0YW5kYWxvbmVfYWN0aW9ucxgDIAMoCzINLnBtLnYxLkFjdGlvbhIrCg9ncm91cGVkX2FjdGlvbnMYBCADKAsyEi5wbS52MS5BY3Rpb25Hcm91cBI0ChJtYWludGVuYW5jZV93aW5kb3cYBSABKAsyGC5wbS52MS5NYWludGVuYW5jZVdpbmRvd0oECAEQAlIHYWN0aW9ucyLWAQoITG9nUXVlcnkSEAoIcXVlcnlfaWQYASABKAkSDQoFbGluZXMYAiABKAUSDAoEdW5pdBgDIAEoCRINCgVzaW5jZRgEIAEoCRINCgV1bnRpbBgFIAEoCRIQCghwcmlvcml0eRgGIAEoCRIMCgRncmVwGAcgASgJEg4KBmtlcm5lbBgIIAEoCBIgCgZzb3VyY2UYCSABKA4yEC5wbS52MS5Mb2dTb3VyY2USEQoJc2lnbmF0dXJlGAogASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYCyABKAkiUAoOTG9nUXVlcnlSZXN1bHQSEAoIcXVlcnlfaWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCRIMCgRsb2dzGAQgASgJIlEKDVRlcm1pbmFsU3RhcnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRIQCgh0dHlfdXNlchgCIAEoCRIMCgRjb2xzGAMgASgNEgwKBHJvd3MYBCABKA0iMQoNVGVybWluYWxJbnB1dBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGRhdGEYAiABKAwiQAoOVGVybWluYWxSZXNpemUSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRjb2xzGAIgASgNEgwKBHJvd3MYAyABKA0iMgoMVGVybWluYWxTdG9wEhIKCnNlc3Npb25faWQYASABKAkSDgoGcmVhc29uGAIgASgJIjIKDlRlcm1pbmFsT3V0cHV0EhIKCnNlc3Npb25faWQYASABKAkSDAoEZGF0YRgCIAEoDCJ3ChNUZXJtaW5hbFN0YXRlQ2hhbmdlEhIKCnNlc3Npb25faWQYASABKAkSKgoFc3RhdGUYAiABKA4yGy5wbS52MS5UZXJtaW5hbFNlc3Npb25TdGF0ZRIRCglleGl0X2NvZGUYAyABKAUSDQoFZXJyb3IYBCABKAkqdAoQT3V0cHV0U3RyZWFtVHlwZRIiCh5PVVRQVVRfU1RSRUFNX1RZUEVfVU5TUEVDSUZJRUQQABIdChlPVVRQVVRfU1RSRUFNX1RZUEVfU1RET1VUEAESHQoZT1VUUFVUX1NUUkVBTV9UWVBFX1NUREVSUhACKsgBChFTZWN1cml0eUFsZXJ0VHlwZRIjCh9TRUNVUklUWV9BTEVSVF9UWVBFX1VOU1BFQ0lGSUVEEAASMwovU0VDVVJJVFlfQUxFUlRfVFlQRV9TRVJWRVJfUkVBU1NJR05NRU5UX0FUVEVNUFQQARIsCihTRUNVUklUWV9BTEVSVF9UWVBFX0NSRURFTlRJQUxfVEFNUEVSSU5HEAISKwonU0VDVVJJVFlfQUxFUlRfVFlQRV9JTlZBTElEX0NFUlRJRklDQVRFEAMqzAEKCU9TUXVlcnlPcBIbChdPU19RVUVSWV9PUF9VTlNQRUNJRklFRBAAEhIKDk9TX1FVRVJZX09QX0VREAESEgoOT1NfUVVFUllfT1BfTkUQAhISCg5PU19RVUVSWV9PUF9HVBADEhIKDk9TX1FVRVJZX09QX0xUEAQSEgoOT1NfUVVFUllfT1BfR0UQBRISCg5PU19RVUVSWV9PUF9MRRAGEhQKEE9TX1FVRVJZX09QX0xJS0UQBxIUChBPU19RVUVSWV9PUF9HTE9CEAgqOwoJTG9nU291cmNlEhcKE0xPR19TT1VSQ0VfSk9VUk5BTEQQABIVChFMT0dfU09VUkNFX1NZU0xPRxABKqcBChRUZXJtaW5hbFNlc3Npb25TdGF0ZRImCiJURVJNSU5BTF9TRVNTSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9TVEFSVEVEEAESIQodVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9FWElURUQQAhIgChxURVJNSU5BTF9TRVNTSU9OX1NUQVRFX0VSUk9SEAMy5QEKDEFnZW50U2VydmljZRI3CgZTdHJlYW0SEy5wbS52MS5BZ2VudE1lc3NhZ2UaFC5wbS52MS5TZXJ2ZXJNZXNzYWdlKAEwARJECgtTeW5jQWN0aW9ucxIZLnBtLnYxLlN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USVgoRVmFsaWRhdGVMdWtzVG9rZW4SHy5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QaIC5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Utc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_duration, file_pm_v1_actions, file_pm_v1_common]);
+  fileDesc("ChFwbS92MS9hZ2VudC5wcm90bxIFcG0udjEi5QUKDEFnZW50TWVzc2FnZRIKCgJpZBgBIAEoCRIdCgVoZWxsbxgKIAEoCzIMLnBtLnYxLkhlbGxvSAASJQoJaGVhcnRiZWF0GAsgASgLMhAucG0udjEuSGVhcnRiZWF0SAASLAoNYWN0aW9uX3Jlc3VsdBgUIAEoCzITLnBtLnYxLkFjdGlvblJlc3VsdEgAEioKDG91dHB1dF9jaHVuaxgVIAEoCzISLnBtLnYxLk91dHB1dENodW5rSAASLAoMcXVlcnlfcmVzdWx0GB4gASgLMhQucG0udjEuT1NRdWVyeVJlc3VsdEgAEisKCWludmVudG9yeRgfIAEoCzIWLnBtLnYxLkRldmljZUludmVudG9yeUgAEi4KDnNlY3VyaXR5X2FsZXJ0GCggASgLMhQucG0udjEuU2VjdXJpdHlBbGVydEgAEjAKDGdldF9sdWtzX2tleRgyIAEoCzIYLnBtLnYxLkdldEx1a3NLZXlSZXF1ZXN0SAASNAoOc3RvcmVfbHVrc19rZXkYMyABKAsyGi5wbS52MS5TdG9yZUx1a3NLZXlSZXF1ZXN0SAASSQodcmV2b2tlX2x1a3NfZGV2aWNlX2tleV9yZXN1bHQYNCABKAsyIC5wbS52MS5SZXZva2VMdWtzRGV2aWNlS2V5UmVzdWx0SAASPgoTc3RvcmVfbHBzX3Bhc3N3b3Jkcxg1IAEoCzIfLnBtLnYxLlN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdEgAEjEKEGxvZ19xdWVyeV9yZXN1bHQYPCABKAsyFS5wbS52MS5Mb2dRdWVyeVJlc3VsdEgAEjAKD3Rlcm1pbmFsX291dHB1dBhGIAEoCzIVLnBtLnYxLlRlcm1pbmFsT3V0cHV0SAASOwoVdGVybWluYWxfc3RhdGVfY2hhbmdlGEcgASgLMhoucG0udjEuVGVybWluYWxTdGF0ZUNoYW5nZUgAQgkKB3BheWxvYWQibAoLT3V0cHV0Q2h1bmsSFAoMZXhlY3V0aW9uX2lkGAEgASgJEicKBnN0cmVhbRgCIAEoDjIXLnBtLnYxLk91dHB1dFN0cmVhbVR5cGUSDAoEZGF0YRgDIAEoDBIQCghzZXF1ZW5jZRgEIAEoAyJ2CgVIZWxsbxIiCglkZXZpY2VfaWQYASABKAsyDy5wbS52MS5EZXZpY2VJZBIVCg1hZ2VudF92ZXJzaW9uGAIgASgJEhAKCGhvc3RuYW1lGAMgASgJEhIKCmF1dGhfdG9rZW4YBCABKAkSDAoEYXJjaBgFIAEoCSJ5CglIZWFydGJlYXQSKQoGdXB0aW1lGAEgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uEhMKC2NwdV9wZXJjZW50GAIgASgCEhYKDm1lbW9yeV9wZXJjZW50GAMgASgCEhQKDGRpc2tfcGVyY2VudBgEIAEoAiKsAQoNU2VjdXJpdHlBbGVydBImCgR0eXBlGAEgASgOMhgucG0udjEuU2VjdXJpdHlBbGVydFR5cGUSDwoHbWVzc2FnZRgCIAEoCRIyCgdkZXRhaWxzGAMgAygLMiEucG0udjEuU2VjdXJpdHlBbGVydC5EZXRhaWxzRW50cnkaLgoMRGV0YWlsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEitwUKDVNlcnZlck1lc3NhZ2USCgoCaWQYASABKAkSIQoHd2VsY29tZRgKIAEoCzIOLnBtLnYxLldlbGNvbWVIABInCgZhY3Rpb24YFCABKAsyFS5wbS52MS5BY3Rpb25EaXNwYXRjaEgAEh8KBXF1ZXJ5GB4gASgLMg4ucG0udjEuT1NRdWVyeUgAEjQKEXJlcXVlc3RfaW52ZW50b3J5GB8gASgLMhcucG0udjEuUmVxdWVzdEludmVudG9yeUgAEh0KBWVycm9yGCggASgLMgwucG0udjEuRXJyb3JIABIxCgxnZXRfbHVrc19rZXkYMiABKAsyGS5wbS52MS5HZXRMdWtzS2V5UmVzcG9uc2VIABI1Cg5zdG9yZV9sdWtzX2tleRgzIAEoCzIbLnBtLnYxLlN0b3JlTHVrc0tleVJlc3BvbnNlSAASPAoWcmV2b2tlX2x1a3NfZGV2aWNlX2tleRg0IAEoCzIaLnBtLnYxLlJldm9rZUx1a3NEZXZpY2VLZXlIABI/ChNzdG9yZV9scHNfcGFzc3dvcmRzGDUgASgLMiAucG0udjEuU3RvcmVMcHNQYXNzd29yZHNSZXNwb25zZUgAEiQKCWxvZ19xdWVyeRg8IAEoCzIPLnBtLnYxLkxvZ1F1ZXJ5SAASLgoOdGVybWluYWxfc3RhcnQYRiABKAsyFC5wbS52MS5UZXJtaW5hbFN0YXJ0SAASLgoOdGVybWluYWxfaW5wdXQYRyABKAsyFC5wbS52MS5UZXJtaW5hbElucHV0SAASMAoPdGVybWluYWxfcmVzaXplGEggASgLMhUucG0udjEuVGVybWluYWxSZXNpemVIABIsCg10ZXJtaW5hbF9zdG9wGEkgASgLMhMucG0udjEuVGVybWluYWxTdG9wSABCCQoHcGF5bG9hZCK3AQoHV2VsY29tZRIWCg5zZXJ2ZXJfdmVyc2lvbhgBIAEoCRI1ChJoZWFydGJlYXRfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SGAoQZGV2aWNlX2xvZ2luX3VybBgDIAEoCUoECAQQBUoECAUQBkoECAYQB1IUbGF0ZXN0X2FnZW50X3ZlcnNpb25SCnVwZGF0ZV91cmxSD3VwZGF0ZV9jaGVja3N1bSI1Cg5BY3Rpb25EaXNwYXRjaBIQCghlbnZlbG9wZRgBIAEoDBIRCglzaWduYXR1cmUYAiABKAwiJgoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIrABCgdPU1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEg0KBXRhYmxlGAIgASgJEg8KB2NvbHVtbnMYAyADKAkSJgoFd2hlcmUYBCADKAsyFy5wbS52MS5PU1F1ZXJ5Q29uZGl0aW9uEg0KBWxpbWl0GAUgASgFEg8KB3Jhd19zcWwYBiABKAkSEQoJc2lnbmF0dXJlGAcgASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYCCABKAkiTwoQT1NRdWVyeUNvbmRpdGlvbhIOCgZjb2x1bW4YASABKAkSHAoCb3AYAiABKA4yEC5wbS52MS5PU1F1ZXJ5T3ASDQoFdmFsdWUYAyABKAkiYgoNT1NRdWVyeVJlc3VsdBIQCghxdWVyeV9pZBgBIAEoCRIPCgdzdWNjZXNzGAIgASgIEg0KBWVycm9yGAMgASgJEh8KBHJvd3MYBCADKAsyES5wbS52MS5PU1F1ZXJ5Um93ImQKCk9TUXVlcnlSb3cSKQoEZGF0YRgBIAMoCzIbLnBtLnYxLk9TUXVlcnlSb3cuRGF0YUVudHJ5GisKCURhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKD0RldmljZUludmVudG9yeRIlCgZ0YWJsZXMYASADKAsyFS5wbS52MS5JbnZlbnRvcnlUYWJsZSJFCg5JbnZlbnRvcnlUYWJsZRISCgp0YWJsZV9uYW1lGAEgASgJEh8KBHJvd3MYAiADKAsyES5wbS52MS5PU1F1ZXJ5Um93IlEKEFJlcXVlc3RJbnZlbnRvcnkSEAoIcXVlcnlfaWQYASABKAkSEQoJc2lnbmF0dXJlGAIgASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYAyABKAkiJgoRR2V0THVrc0tleVJlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJIigKEkdldEx1a3NLZXlSZXNwb25zZRISCgpwYXNzcGhyYXNlGAEgASgJIoEBChNTdG9yZUx1a3NLZXlSZXF1ZXN0EhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgpwYXNzcGhyYXNlGAMgASgJEi4KD3JvdGF0aW9uX3JlYXNvbhgEIAEoDjIVLnBtLnYxLlJvdGF0aW9uUmVhc29uIicKFFN0b3JlTHVrc0tleVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgidAoTTHBzUGFzc3dvcmRSb3RhdGlvbhIQCgh1c2VybmFtZRgBIAEoCRIQCghwYXNzd29yZBgCIAEoCRISCgpyb3RhdGVkX2F0GAMgASgJEiUKBnJlYXNvbhgEIAEoDjIVLnBtLnYxLlJvdGF0aW9uUmVhc29uIlwKGFN0b3JlTHBzUGFzc3dvcmRzUmVxdWVzdBIRCglhY3Rpb25faWQYASABKAkSLQoJcm90YXRpb25zGAIgAygLMhoucG0udjEuTHBzUGFzc3dvcmRSb3RhdGlvbiIsChlTdG9yZUxwc1Bhc3N3b3Jkc1Jlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgiVQoTUmV2b2tlTHVrc0RldmljZUtleRIRCglhY3Rpb25faWQYASABKAkSEQoJc2lnbmF0dXJlGAIgASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYAyABKAkiTgoZUmV2b2tlTHVrc0RldmljZUtleVJlc3VsdBIRCglhY3Rpb25faWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCSI8ChhWYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg0KBXRva2VuGAIgASgJIokBChlWYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlEhEKCWFjdGlvbl9pZBgBIAEoCRITCgtkZXZpY2VfcGF0aBgCIAEoCRISCgptaW5fbGVuZ3RoGAMgASgFEjAKCmNvbXBsZXhpdHkYBCABKA4yHC5wbS52MS5McHNQYXNzd29yZENvbXBsZXhpdHkiOAoSU3luY0FjdGlvbnNSZXF1ZXN0EiIKCWRldmljZV9pZBgBIAEoCzIPLnBtLnYxLkRldmljZUlkImwKC0FjdGlvbkdyb3VwEhQKDHNvdXJjZV9sYWJlbBgBIAEoCRInCghzY2hlZHVsZRgCIAEoCzIVLnBtLnYxLkFjdGlvblNjaGVkdWxlEh4KB2FjdGlvbnMYAyADKAsyDS5wbS52MS5BY3Rpb24i0QEKE1N5bmNBY3Rpb25zUmVzcG9uc2USHQoVc3luY19pbnRlcnZhbF9taW51dGVzGAIgASgFEikKEnN0YW5kYWxvbmVfYWN0aW9ucxgDIAMoCzINLnBtLnYxLkFjdGlvbhIrCg9ncm91cGVkX2FjdGlvbnMYBCADKAsyEi5wbS52MS5BY3Rpb25Hcm91cBI0ChJtYWludGVuYW5jZV93aW5kb3cYBSABKAsyGC5wbS52MS5NYWludGVuYW5jZVdpbmRvd0oECAEQAlIHYWN0aW9ucyLWAQoITG9nUXVlcnkSEAoIcXVlcnlfaWQYASABKAkSDQoFbGluZXMYAiABKAUSDAoEdW5pdBgDIAEoCRINCgVzaW5jZRgEIAEoCRINCgV1bnRpbBgFIAEoCRIQCghwcmlvcml0eRgGIAEoCRIMCgRncmVwGAcgASgJEg4KBmtlcm5lbBgIIAEoCBIgCgZzb3VyY2UYCSABKA4yEC5wbS52MS5Mb2dTb3VyY2USEQoJc2lnbmF0dXJlGAogASgMEhgKEHRhcmdldF9kZXZpY2VfaWQYCyABKAkiUAoOTG9nUXVlcnlSZXN1bHQSEAoIcXVlcnlfaWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCRIMCgRsb2dzGAQgASgJIlEKDVRlcm1pbmFsU3RhcnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRIQCgh0dHlfdXNlchgCIAEoCRIMCgRjb2xzGAMgASgNEgwKBHJvd3MYBCABKA0iMQoNVGVybWluYWxJbnB1dBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGRhdGEYAiABKAwiQAoOVGVybWluYWxSZXNpemUSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRjb2xzGAIgASgNEgwKBHJvd3MYAyABKA0iMgoMVGVybWluYWxTdG9wEhIKCnNlc3Npb25faWQYASABKAkSDgoGcmVhc29uGAIgASgJIjIKDlRlcm1pbmFsT3V0cHV0EhIKCnNlc3Npb25faWQYASABKAkSDAoEZGF0YRgCIAEoDCJ3ChNUZXJtaW5hbFN0YXRlQ2hhbmdlEhIKCnNlc3Npb25faWQYASABKAkSKgoFc3RhdGUYAiABKA4yGy5wbS52MS5UZXJtaW5hbFNlc3Npb25TdGF0ZRIRCglleGl0X2NvZGUYAyABKAUSDQoFZXJyb3IYBCABKAkqdAoQT3V0cHV0U3RyZWFtVHlwZRIiCh5PVVRQVVRfU1RSRUFNX1RZUEVfVU5TUEVDSUZJRUQQABIdChlPVVRQVVRfU1RSRUFNX1RZUEVfU1RET1VUEAESHQoZT1VUUFVUX1NUUkVBTV9UWVBFX1NUREVSUhACKsgBChFTZWN1cml0eUFsZXJ0VHlwZRIjCh9TRUNVUklUWV9BTEVSVF9UWVBFX1VOU1BFQ0lGSUVEEAASMwovU0VDVVJJVFlfQUxFUlRfVFlQRV9TRVJWRVJfUkVBU1NJR05NRU5UX0FUVEVNUFQQARIsCihTRUNVUklUWV9BTEVSVF9UWVBFX0NSRURFTlRJQUxfVEFNUEVSSU5HEAISKwonU0VDVVJJVFlfQUxFUlRfVFlQRV9JTlZBTElEX0NFUlRJRklDQVRFEAMqzAEKCU9TUXVlcnlPcBIbChdPU19RVUVSWV9PUF9VTlNQRUNJRklFRBAAEhIKDk9TX1FVRVJZX09QX0VREAESEgoOT1NfUVVFUllfT1BfTkUQAhISCg5PU19RVUVSWV9PUF9HVBADEhIKDk9TX1FVRVJZX09QX0xUEAQSEgoOT1NfUVVFUllfT1BfR0UQBRISCg5PU19RVUVSWV9PUF9MRRAGEhQKEE9TX1FVRVJZX09QX0xJS0UQBxIUChBPU19RVUVSWV9PUF9HTE9CEAgqOwoJTG9nU291cmNlEhcKE0xPR19TT1VSQ0VfSk9VUk5BTEQQABIVChFMT0dfU09VUkNFX1NZU0xPRxABKqcBChRUZXJtaW5hbFNlc3Npb25TdGF0ZRImCiJURVJNSU5BTF9TRVNTSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9TVEFSVEVEEAESIQodVEVSTUlOQUxfU0VTU0lPTl9TVEFURV9FWElURUQQAhIgChxURVJNSU5BTF9TRVNTSU9OX1NUQVRFX0VSUk9SEAMy5QEKDEFnZW50U2VydmljZRI3CgZTdHJlYW0SEy5wbS52MS5BZ2VudE1lc3NhZ2UaFC5wbS52MS5TZXJ2ZXJNZXNzYWdlKAEwARJECgtTeW5jQWN0aW9ucxIZLnBtLnYxLlN5bmNBY3Rpb25zUmVxdWVzdBoaLnBtLnYxLlN5bmNBY3Rpb25zUmVzcG9uc2USVgoRVmFsaWRhdGVMdWtzVG9rZW4SHy5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlcXVlc3QaIC5wbS52MS5WYWxpZGF0ZUx1a3NUb2tlblJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbWFuY2h0b29scy9wb3dlci1tYW5hZ2Utc2RrL2dlbi9nby9wbS92MTtwbXYxYgZwcm90bzM", [file_google_protobuf_duration, file_pm_v1_actions, file_pm_v1_common]);
 
 /**
  * @generated from message pm.v1.AgentMessage
@@ -113,6 +113,19 @@ export type AgentMessage = Message<"pm.v1.AgentMessage"> & {
      */
     value: RevokeLuksDeviceKeyResult;
     case: "revokeLuksDeviceKeyResult";
+  } | {
+    /**
+     * LPS password rotations. Spec 41 moved this onto the stream: it used to
+     * reach control through InternalService/ProxyStoreLpsPasswords, i.e. the
+     * gateway relayed the batch. LUKS was already a stream message; LPS was not,
+     * purely because it went via the proxy. With the proxy deleted the agent
+     * reports rotations the same way it reports everything else.
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.StoreLpsPasswordsRequest store_lps_passwords = 53;
+     */
+    value: StoreLpsPasswordsRequest;
+    case: "storeLpsPasswords";
   } | {
     /**
      * Log query result (journalctl output)
@@ -393,6 +406,14 @@ export type ServerMessage = Message<"pm.v1.ServerMessage"> & {
      */
     value: RevokeLuksDeviceKey;
     case: "revokeLuksDeviceKey";
+  } | {
+    /**
+     * @gotags: validate:"omitempty"
+     *
+     * @generated from field: pm.v1.StoreLpsPasswordsResponse store_lps_passwords = 53;
+     */
+    value: StoreLpsPasswordsResponse;
+    case: "storeLpsPasswords";
   } | {
     /**
      * Log query dispatch (journalctl)
@@ -924,6 +945,121 @@ export const StoreLuksKeyResponseSchema: GenMessage<StoreLuksKeyResponse> = /*@_
   messageDesc(file_pm_v1_agent, 19);
 
 /**
+ * One password rotation the agent performed during an LPS execution.
+ *
+ * Spec 41 moved this onto the agent stream. It previously travelled as
+ * InternalStoreLpsPasswordsRequest through InternalService/ProxyStoreLpsPasswords
+ * — the gateway relayed the batch to control — and the password was X25519-sealed
+ * so that relay could not read it. There is no relay: the agent's mTLS terminates
+ * at control, which was always the only party able to open the seal.
+ *
+ * @generated from message pm.v1.LpsPasswordRotation
+ */
+export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
+  /**
+   * Local Linux username whose password was rotated.
+   * @gotags: validate:"required,min=1,max=64"
+   *
+   * @generated from field: string username = 1;
+   */
+  username: string;
+
+  /**
+   * The rotated password, sent over the agent's direct mTLS connection.
+   * Control encrypts it at rest on receipt.
+   *
+   * NOTE, because it is the one property that genuinely changes: the transport
+   * seal's AAD bound device|action|username, and the at-rest AAD binds
+   * device|action|"lps" with NO username — ADR 0009 omits it deliberately. So
+   * control no longer cryptographically verifies that the password it stores
+   * under a username is the one the agent generated for that username. That was
+   * an end-to-end correctness check, not a confidentiality boundary; a caller
+   * authorised to read one username's password on a device already receives all
+   * of them. Closing it means adding username to the at-rest AAD, which is ruled
+   * separately (spec 41, criterion 8a).
+   * @gotags: validate:"required,min=1,max=4096"
+   *
+   * @generated from field: string password = 2;
+   */
+  password: string;
+
+  /**
+   * RFC 3339 timestamp the agent observed the rotation. Control keeps the
+   * agent's clock here rather than re-stamping at receipt, so the timeline
+   * reflects the device's reality.
+   * @gotags: validate:"required,min=1,max=64"
+   *
+   * @generated from field: string rotated_at = 3;
+   */
+  rotatedAt: string;
+
+  /**
+   * Why this rotation happened. INITIAL the first time the LPS action ran for
+   * the user; SCHEDULED for a policy-driven rotation; AUTH_GRACE when a user
+   * authenticates during the post-rotation grace window — an LPS-only path that
+   * signals "rotate now to limit the leaked-password window", never emitted from
+   * LUKS. Stored on the event as the lowercase string form.
+   * @gotags: validate:"required"
+   *
+   * @generated from field: pm.v1.RotationReason reason = 4;
+   */
+  reason: RotationReason;
+};
+
+/**
+ * Describes the message pm.v1.LpsPasswordRotation.
+ * Use `create(LpsPasswordRotationSchema)` to create a new message.
+ */
+export const LpsPasswordRotationSchema: GenMessage<LpsPasswordRotation> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 20);
+
+/**
+ * Agent reports the LPS rotations from one execution. Batched per action: an LPS
+ * run rotates every managed local account on the device.
+ *
+ * @generated from message pm.v1.StoreLpsPasswordsRequest
+ */
+export type StoreLpsPasswordsRequest = Message<"pm.v1.StoreLpsPasswordsRequest"> & {
+  /**
+   * @gotags: validate:"required,ulid"
+   *
+   * @generated from field: string action_id = 1;
+   */
+  actionId: string;
+
+  /**
+   * @gotags: validate:"required,min=1,dive"
+   *
+   * @generated from field: repeated pm.v1.LpsPasswordRotation rotations = 2;
+   */
+  rotations: LpsPasswordRotation[];
+};
+
+/**
+ * Describes the message pm.v1.StoreLpsPasswordsRequest.
+ * Use `create(StoreLpsPasswordsRequestSchema)` to create a new message.
+ */
+export const StoreLpsPasswordsRequestSchema: GenMessage<StoreLpsPasswordsRequest> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 21);
+
+/**
+ * @generated from message pm.v1.StoreLpsPasswordsResponse
+ */
+export type StoreLpsPasswordsResponse = Message<"pm.v1.StoreLpsPasswordsResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+};
+
+/**
+ * Describes the message pm.v1.StoreLpsPasswordsResponse.
+ * Use `create(StoreLpsPasswordsResponseSchema)` to create a new message.
+ */
+export const StoreLpsPasswordsResponseSchema: GenMessage<StoreLpsPasswordsResponse> = /*@__PURE__*/
+  messageDesc(file_pm_v1_agent, 22);
+
+/**
  * Server instructs agent to revoke the device-bound key in LUKS slot 7.
  * Dispatched as an instant action via the stream.
  *
@@ -967,7 +1103,7 @@ export type RevokeLuksDeviceKey = Message<"pm.v1.RevokeLuksDeviceKey"> & {
  * Use `create(RevokeLuksDeviceKeySchema)` to create a new message.
  */
 export const RevokeLuksDeviceKeySchema: GenMessage<RevokeLuksDeviceKey> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 20);
+  messageDesc(file_pm_v1_agent, 23);
 
 /**
  * Agent reports the result of revoking the device-bound key.
@@ -1000,7 +1136,7 @@ export type RevokeLuksDeviceKeyResult = Message<"pm.v1.RevokeLuksDeviceKeyResult
  * Use `create(RevokeLuksDeviceKeyResultSchema)` to create a new message.
  */
 export const RevokeLuksDeviceKeyResultSchema: GenMessage<RevokeLuksDeviceKeyResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 21);
+  messageDesc(file_pm_v1_agent, 24);
 
 /**
  * @generated from message pm.v1.ValidateLuksTokenRequest
@@ -1026,7 +1162,7 @@ export type ValidateLuksTokenRequest = Message<"pm.v1.ValidateLuksTokenRequest">
  * Use `create(ValidateLuksTokenRequestSchema)` to create a new message.
  */
 export const ValidateLuksTokenRequestSchema: GenMessage<ValidateLuksTokenRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 22);
+  messageDesc(file_pm_v1_agent, 25);
 
 /**
  * @generated from message pm.v1.ValidateLuksTokenResponse
@@ -1064,7 +1200,7 @@ export type ValidateLuksTokenResponse = Message<"pm.v1.ValidateLuksTokenResponse
  * Use `create(ValidateLuksTokenResponseSchema)` to create a new message.
  */
 export const ValidateLuksTokenResponseSchema: GenMessage<ValidateLuksTokenResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 23);
+  messageDesc(file_pm_v1_agent, 26);
 
 /**
  * @generated from message pm.v1.SyncActionsRequest
@@ -1083,7 +1219,7 @@ export type SyncActionsRequest = Message<"pm.v1.SyncActionsRequest"> & {
  * Use `create(SyncActionsRequestSchema)` to create a new message.
  */
 export const SyncActionsRequestSchema: GenMessage<SyncActionsRequest> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 24);
+  messageDesc(file_pm_v1_agent, 27);
 
 /**
  * ActionGroup represents a set or definition's worth of actions that share a
@@ -1135,7 +1271,7 @@ export type ActionGroup = Message<"pm.v1.ActionGroup"> & {
  * Use `create(ActionGroupSchema)` to create a new message.
  */
 export const ActionGroupSchema: GenMessage<ActionGroup> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 25);
+  messageDesc(file_pm_v1_agent, 28);
 
 /**
  * @generated from message pm.v1.SyncActionsResponse
@@ -1189,7 +1325,7 @@ export type SyncActionsResponse = Message<"pm.v1.SyncActionsResponse"> & {
  * Use `create(SyncActionsResponseSchema)` to create a new message.
  */
 export const SyncActionsResponseSchema: GenMessage<SyncActionsResponse> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 26);
+  messageDesc(file_pm_v1_agent, 29);
 
 /**
  * Server -> Agent: request system log output
@@ -1290,7 +1426,7 @@ export type LogQuery = Message<"pm.v1.LogQuery"> & {
  * Use `create(LogQuerySchema)` to create a new message.
  */
 export const LogQuerySchema: GenMessage<LogQuery> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 27);
+  messageDesc(file_pm_v1_agent, 30);
 
 /**
  * Agent -> Server: journalctl output result
@@ -1330,7 +1466,7 @@ export type LogQueryResult = Message<"pm.v1.LogQueryResult"> & {
  * Use `create(LogQueryResultSchema)` to create a new message.
  */
 export const LogQueryResultSchema: GenMessage<LogQueryResult> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 28);
+  messageDesc(file_pm_v1_agent, 31);
 
 /**
  * Server -> Agent: open a PTY session as the given TTY user.
@@ -1377,7 +1513,7 @@ export type TerminalStart = Message<"pm.v1.TerminalStart"> & {
  * Use `create(TerminalStartSchema)` to create a new message.
  */
 export const TerminalStartSchema: GenMessage<TerminalStart> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 29);
+  messageDesc(file_pm_v1_agent, 32);
 
 /**
  * Server -> Agent: stdin data for an active session.
@@ -1405,7 +1541,7 @@ export type TerminalInput = Message<"pm.v1.TerminalInput"> & {
  * Use `create(TerminalInputSchema)` to create a new message.
  */
 export const TerminalInputSchema: GenMessage<TerminalInput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 30);
+  messageDesc(file_pm_v1_agent, 33);
 
 /**
  * Server -> Agent: window resize.
@@ -1441,7 +1577,7 @@ export type TerminalResize = Message<"pm.v1.TerminalResize"> & {
  * Use `create(TerminalResizeSchema)` to create a new message.
  */
 export const TerminalResizeSchema: GenMessage<TerminalResize> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 31);
+  messageDesc(file_pm_v1_agent, 34);
 
 /**
  * Server -> Agent: terminate an active session.
@@ -1475,7 +1611,7 @@ export type TerminalStop = Message<"pm.v1.TerminalStop"> & {
  * Use `create(TerminalStopSchema)` to create a new message.
  */
 export const TerminalStopSchema: GenMessage<TerminalStop> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 32);
+  messageDesc(file_pm_v1_agent, 35);
 
 /**
  * Agent -> Server: stdout/stderr data from the PTY.
@@ -1503,7 +1639,7 @@ export type TerminalOutput = Message<"pm.v1.TerminalOutput"> & {
  * Use `create(TerminalOutputSchema)` to create a new message.
  */
 export const TerminalOutputSchema: GenMessage<TerminalOutput> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 33);
+  messageDesc(file_pm_v1_agent, 36);
 
 /**
  * Agent -> Server: session state transition.
@@ -1550,7 +1686,7 @@ export type TerminalStateChange = Message<"pm.v1.TerminalStateChange"> & {
  * Use `create(TerminalStateChangeSchema)` to create a new message.
  */
 export const TerminalStateChangeSchema: GenMessage<TerminalStateChange> = /*@__PURE__*/
-  messageDesc(file_pm_v1_agent, 34);
+  messageDesc(file_pm_v1_agent, 37);
 
 /**
  * Output stream type for stdout/stderr differentiation
