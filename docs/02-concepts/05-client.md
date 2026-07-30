@@ -92,12 +92,13 @@ relay cannot flip a field, swap params, or retarget the device under a
 still-valid signature.
 <!-- docref: end -->
 
-<!-- docref: begin src=verify/verify.go#ActionSignatureDomain:fe438abc,verify/verify.go#canonicalDigest:8e724a35 -->
+<!-- docref: begin src=verify/verify.go#ActionSignatureDomain:f9d7e120,verify/verify.go#canonicalDigest:8e724a35 -->
 Every signing surface that shares the CA key — actions, osquery dispatches,
-log queries, LUKS revocations, inventory requests, the LPS public key — has
-its own domain string, and the digest mixes in the domain with a length
-prefix, so a signature minted for one surface can never be replayed against
-another.
+log queries, LUKS revocations, inventory requests — has its own domain string,
+and the digest mixes in the domain with a length prefix, so a signature minted
+for one surface can never be replayed against another. (The LPS public key was
+a sixth such surface until spec 41: its domain existed to stop a relaying
+gateway substituting its own sealing key, and it retired with the gateway.)
 <!-- docref: end -->
 
 <!-- docref: begin src=verify/verify.go#ActionVerifier.verifyDigest:5f7ba25f -->

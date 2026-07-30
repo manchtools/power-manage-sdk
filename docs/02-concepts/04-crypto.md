@@ -51,34 +51,45 @@ AAD; any mismatch — a tampered byte, a different context, the wrong key —
 returns an error and no plaintext.
 <!-- docref: end -->
 
-## LPS password sealing
+## LPS and LUKS secret transport — removed by spec 41
 
-The concrete consumers are Local Password Solution rotation and managed LUKS
+~~The concrete consumers are Local Password Solution rotation and managed LUKS
 passphrase storage (spec 25): the agent seals each rotated local password /
 managed disk passphrase to the control server's key, so the relaying
-gateway — the least-trusted server-side actor — can never read either.
+gateway — the least-trusted server-side actor — can never read either.~~
 
-<!-- docref: begin src=crypto/lps.go#SealLpsPassword:db41abd7,crypto/lps.go#OpenLpsPassword:c17da04f,crypto/lps.go#ErrLpsContextIncomplete:6fc490b5 -->
-`SealLpsPassword` (agent side) and `OpenLpsPassword` (control side) are the
-**single construction site** for the LPS domain-separation info and the
-context AAD — both sides call through the same functions, so they cannot
-drift on either value (a drift would not be caught by any single-repo test
-and would silently break every unseal). The AAD binds the sealed password to
-its exact (device, action, username) record; all three fields are required,
-and a partial context is refused with `ErrLpsContextIncomplete` — a valid
-blob cannot be relocated to another device, action, or user record.
-<!-- docref: end -->
+**`SealLpsPassword` / `OpenLpsPassword` and `SealLuksPassphrase` /
+`OpenLuksPassphrase` no longer exist.** Their sole purpose was keeping secrets
+from the relaying gateway, and [spec 41](../../../docs/content/06-specs/41-gateway-removal.md)
+deletes the gateway tier. The agent's mTLS now terminates at control, which is
+the only party that could ever have opened those blobs.
 
-<!-- docref: begin src=crypto/luks.go#SealLuksPassphrase:4ce5127e,crypto/luks.go#OpenLuksPassphrase:75392470,crypto/luks.go#ErrLuksContextIncomplete:71224e92 -->
-`SealLuksPassphrase` / `OpenLuksPassphrase` are the LUKS twin (spec 25): the
-same control keypair, but a **distinct HKDF info**
-(`power-manage-luks-passphrase:v1`) and a `device|action|"luks"` AAD, so a
-blob sealed under one domain can never open under the other — even with a
-byte-identical AAD, the info separates them. The context requires non-empty
-device and action (`ErrLuksContextIncomplete`); an empty secret is refused
-outright (`ErrEmptySecret`) rather than sealing to a blob the wire
-validators would reject.
-<!-- docref: end -->
+**What survives the deletion, because the relay was never its reason:**
+
+- **At-rest encryption** — `SealWithAAD` / `OpenWithAAD` (AES-256-GCM), documented
+  above. A different primitive from the public-key `seal` path.
+- **The context AAD binding — for LUKS, identically; for LPS, NOT identically.**
+  This is stated precisely because an earlier draft got it wrong.
+  - **LUKS:** transport bound `device|action` under a LUKS domain, and the at-rest
+    path already binds `SecretAAD(device, action, "luks")`. Same shape, nothing lost.
+  - **LPS:** transport bound `device|action|username`; the at-rest path binds
+    `SecretAAD(device, action, "lps")` — **no username, deliberately.** ADR 0009
+    records the choice: *"a within-action username swap is a minor residual inside
+    a single trusted rotation batch."* So the username component does not move to
+    at-rest — it simply ends.
+
+  What that costs is narrow. It is **not** a confidentiality hole: anyone
+  authorised to call `GetDeviceLpsPasswords` for a device already receives every
+  username's password on it, so there is no per-username boundary to bypass. What
+  ends is an **end-to-end correctness check** — control's unseal used to verify
+  that the password it was about to store under `alice` was the one the agent
+  generated for `alice`. Nothing checks that association now, which makes a
+  zip-mismatch bug in a multi-account rotation batch silent.
+- **Domain separation** between LPS and LUKS, so a ciphertext written under one
+  domain never opens under the other.
+
+The agent now sends these secrets over the direct mTLS stream and control
+encrypts them at rest on receipt.
 
 ## Certificates: CSRs, pins, and CA continuity
 
