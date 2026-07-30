@@ -439,7 +439,10 @@ type RegisterAgentResult struct {
 	DeviceID    string
 	CACert      []byte
 	Certificate []byte
-	GatewayURL  string
+	// ControlURL is where the agent dials its AgentService stream. Spec 41
+	// renamed this from GatewayURL: control terminates agent mTLS itself now,
+	// so the address the agent keeps is control's.
+	ControlURL string
 }
 
 // RegisterAgent registers an agent with the control server.
@@ -471,7 +474,7 @@ func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agen
 		DeviceID:    resp.Msg.DeviceId.GetValue(),
 		CACert:      resp.Msg.CaCert,
 		Certificate: resp.Msg.Certificate,
-		GatewayURL:  resp.Msg.GatewayUrl,
+		ControlURL:  resp.Msg.ControlUrl,
 	}, nil
 }
 
@@ -482,44 +485,17 @@ type RenewCertificateResult struct {
 	CACert      []byte // Active CA certificate (non-empty when CA has been rotated)
 }
 
-// GatewayCRL is a snapshot of the gateway certificate revocation list fetched
-// from control (spec 31 Part D). RevokedFingerprints are hex SHA-256 leaf-cert
-// fingerprints — compare against the value produced by
-// WithMTLSFromPEMAndRevocationCheck. NotAfter bounds how long the agent may
-// trust this snapshot before it must fail closed (AC 12); RefreshedAt is when
-// control assembled it, for staleness reasoning.
-type GatewayCRL struct {
-	RevokedFingerprints []string
-	NotAfter            time.Time
-	RefreshedAt         time.Time
-}
-
-// FetchGatewayCRL retrieves the current gateway CRL from control over the given
-// transport (the agent uses WithMTLSFromPEMAndSystemRoots, as control sits
-// behind a public-CA proxy). Like RenewCertificate, control is reached
-// directly — no gateway relay (spec 31 AC 13), which is what lets an agent
-// learn its gateway is revoked even while still connected to it.
-func FetchGatewayCRL(ctx context.Context, controlURL string, opts ...ClientOption) (*GatewayCRL, error) {
-	c := &Client{}
-	httpClient := bootstrapHTTPClient()
-	for _, opt := range opts {
-		opt.apply(c, &httpClient)
-	}
-
-	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
-
-	resp, err := controlClient.GetCertificateRevocationList(ctx,
-		connect.NewRequest(&pm.GetCertificateRevocationListRequest{}))
-	if err != nil {
-		return nil, fmt.Errorf("get gateway CRL: %w", err)
-	}
-
-	return &GatewayCRL{
-		RevokedFingerprints: resp.Msg.RevokedFingerprints,
-		NotAfter:            resp.Msg.NotAfter.AsTime(),
-		RefreshedAt:         resp.Msg.RefreshedAt.AsTime(),
-	}, nil
-}
+// Spec 41 removed GatewayCRL and FetchGatewayCRL with the gateway tier. The CRL
+// let an agent check the *gateway* server-cert it was connecting to. With no
+// gateway the agent's peer is control, and re-scoping the list to control's own
+// certificate is circular: the agent would fetch it over a connection
+// authenticated by the certificate under judgement, behind a gate that fails
+// closed before the first load — so it could never connect at all.
+//
+// Agent-certificate revocation, which is the direction that still matters,
+// moves entirely to the control side: a store lookup during the mTLS handshake,
+// with no published list, no distribution RPC and no agent-side cache. A stolen
+// device certificate still stops working.
 
 // RenewCertificate renews a device certificate via the control server.
 // The agent presents its current certificate for identity verification.
@@ -877,11 +853,15 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 }
 
 // StoreLuksKey sends a StoreLuksKeyRequest on the stream and waits for the
-// server confirmation. sealedPassphrase MUST be the output of
-// crypto.SealLuksPassphrase (spec 25) — the client is transport only and
-// never sees the cleartext passphrase; sealing (and the fail-closed no-key
-// policy) is the caller's responsibility.
-func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath string, sealedPassphrase []byte, reason pm.RotationReason) error {
+// server confirmation.
+//
+// Spec 41 removed the X25519 transport sealing: the passphrase now travels as
+// plaintext inside the agent's direct mTLS connection to control. The seal
+// existed only so a relaying gateway could not read disk-encryption secrets,
+// and there is no relay — control is the peer and was always the only party
+// able to open the blob. Control encrypts at rest on receipt, still binding
+// device|action|"luks" as the AAD so a ciphertext cannot be relocated.
+func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphrase string, reason pm.RotationReason) error {
 	id := NewULID()
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
@@ -890,10 +870,10 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath string, 
 		Id: id,
 		Payload: &pm.AgentMessage_StoreLuksKey{
 			StoreLuksKey: &pm.StoreLuksKeyRequest{
-				ActionId:         actionID,
-				DevicePath:       devicePath,
-				SealedPassphrase: sealedPassphrase,
-				RotationReason:   reason,
+				ActionId:       actionID,
+				DevicePath:     devicePath,
+				Passphrase:     passphrase,
+				RotationReason: reason,
 			},
 		},
 	}); err != nil {
@@ -1683,11 +1663,9 @@ type SyncActionsResult struct {
 	// firing scheduler-driven dispatches; pushed actions (REBOOT,
 	// SYNC, ad-hoc) bypass the gate. See manchtools/power-manage-server#58.
 	MaintenanceWindow *pm.MaintenanceWindow
-	// LpsPublicKey is the control server's CA-signed X25519 key the agent
-	// seals LPS passwords to (spec 18). nil when the control instance has no
-	// keypair configured; the agent MUST verify the signature against its
-	// enrollment CA and refuse the key on mismatch before sealing to it.
-	LpsPublicKey *pm.LpsPublicKey
+	// Spec 41 removed LpsPublicKey. It carried the key the agent sealed LPS
+	// passwords to; the agent no longer seals, so distributing the key is dead
+	// contract.
 }
 
 // SyncActions fetches all actions currently assigned to this device from the server.
@@ -1717,6 +1695,5 @@ func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
 		GroupedActions:      resp.Msg.GroupedActions,
 		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
 		MaintenanceWindow:   resp.Msg.MaintenanceWindow,
-		LpsPublicKey:        resp.Msg.LpsPublicKey,
 	}, nil
 }

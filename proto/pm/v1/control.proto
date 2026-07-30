@@ -35,9 +35,13 @@ message RegisterResponse {
   // Signed device certificate (PEM) - private key stays on agent
   // @gotags: validate:"required"
   bytes certificate = 3;
-  // Gateway URL for streaming connection (agent stores this for future connections)
+  // Control URL for the agent's streaming connection; the agent stores this and
+  // dials it for the AgentService bidi stream. Spec 41 renamed this from
+  // gateway_url when the gateway tier was deleted — control now terminates agent
+  // mTLS itself, so the address the agent keeps is control's. Re-tagged in place
+  // rather than reserved: V1 is the only wire version and clean breaks are the rule.
   // @gotags: validate:"required,url"
-  string gateway_url = 4;
+  string control_url = 4;
 }
 
 // ============================================================================
@@ -61,50 +65,6 @@ message RenewCertificateResponse {
   // Active CA certificate (PEM). Agents should update their stored CA cert
   // if non-empty, enabling seamless CA rotation.
   bytes ca_certificate = 3;
-}
-
-// ============================================================================
-// Certificate Revocation List (agent-facing gateway revocation, spec 31)
-// ============================================================================
-
-message GetCertificateRevocationListRequest {}
-
-message GetCertificateRevocationListResponse {
-  // Hex SHA-256 fingerprints of currently-revoked certificates. An agent
-  // refuses any gateway whose server-cert fingerprint appears here.
-  repeated string revoked_fingerprints = 1;
-  // Validity window: the agent MUST fail closed (treat the gateway as
-  // untrusted) rather than trust this list past not_after. Required so a
-  // control that forgets to populate it fails boundary validation rather
-  // than handing the agent a zero-value expiry.
-  // @gotags: validate:"required"
-  google.protobuf.Timestamp not_after = 2;
-  // When control assembled this snapshot; surfaced for staleness reasoning.
-  // @gotags: validate:"required"
-  google.protobuf.Timestamp refreshed_at = 3;
-}
-
-message RevokeGatewayCertificateRequest {
-  // @gotags: validate:"required,ulid"
-  string gateway_id = 1;
-}
-
-message RevokeGatewayCertificateResponse {}
-
-// GatewayInfo is one row in the operator Gateways view. fingerprint is omitted
-// (not needed by the UI); revoked_at is absent for an active gateway.
-message GatewayInfo {
-  string gateway_id = 1;
-  string hostname = 2;
-  google.protobuf.Timestamp enrolled_at = 3;
-  google.protobuf.Timestamp not_after = 4;
-  google.protobuf.Timestamp revoked_at = 5;
-}
-
-message ListGatewaysRequest {}
-
-message ListGatewaysResponse {
-  repeated GatewayInfo gateways = 1;
 }
 
 // ============================================================================
@@ -2799,19 +2759,15 @@ service ControlService {
   // Certificate Renewal
   rpc RenewCertificate(RenewCertificateRequest) returns (RenewCertificateResponse);
 
-  // Certificate Revocation List — agent-facing, rate-limited, CA-pinned TLS.
-  // Agents fetch it directly (no gateway relay) to check the gateway
-  // server-cert they connect to against revoked fingerprints.
-  rpc GetCertificateRevocationList(GetCertificateRevocationListRequest) returns (GetCertificateRevocationListResponse);
-
-  // Revoke an individual gateway's certificate by gateway_id. Permission-
-  // gated (RevokeGatewayCertificate) and audit-logged; adds the gateway's
-  // fingerprint to the CRL and emits GatewayRevoked.
-  rpc RevokeGatewayCertificate(RevokeGatewayCertificateRequest) returns (RevokeGatewayCertificateResponse);
-
-  // List currently-live enrolled gateways for the operator Gateways view.
-  // Permission-gated (ListGateways).
-  rpc ListGateways(ListGatewaysRequest) returns (ListGatewaysResponse);
+  // Spec 41 removed GetCertificateRevocationList, RevokeGatewayCertificate and
+  // ListGateways along with the gateway tier. The CRL was agent-facing so an
+  // agent could check the gateway server-cert it connected to; with no gateway
+  // the agent's peer is control itself, and re-scoping the list to control's own
+  // certificate would be circular — fetched over a connection authenticated by
+  // the certificate under judgement, behind a gate that fails closed before the
+  // first load. Agent-certificate revocation survives on the control side as a
+  // store lookup during the mTLS handshake: no published list, no distribution
+  // RPC, no agent-side cache.
 
   // Authentication
   rpc Login(LoginRequest) returns (LoginResponse);

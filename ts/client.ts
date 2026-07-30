@@ -42,9 +42,6 @@ import {
 	RenameTokenRequestSchema,
 	SetTokenDisabledRequestSchema,
 	DeleteTokenRequestSchema,
-	// Gateways (spec 31)
-	ListGatewaysRequestSchema,
-	RevokeGatewayCertificateRequestSchema,
 	// Actions (renamed from definitions)
 	CreateActionRequestSchema,
 	GetActionRequestSchema,
@@ -739,21 +736,9 @@ export class ApiClient {
 		await client.deleteToken(create(DeleteTokenRequestSchema, { id }));
 	}
 
-	// Gateways (spec 31): list enrolled gateways and revoke an individual
-	// gateway's certificate by gateway_id. Permission-gated server-side
-	// (ListGateways / RevokeGatewayCertificate).
-	async listGateways() {
-		const client = this.getClient();
-		const response = await client.listGateways(create(ListGatewaysRequestSchema, {}));
-		return response.gateways;
-	}
-
-	async revokeGatewayCertificate(gatewayId: string) {
-		const client = this.getClient();
-		await client.revokeGatewayCertificate(
-			create(RevokeGatewayCertificateRequestSchema, { gatewayId })
-		);
-	}
+	// Spec 41 removed listGateways and revokeGatewayCertificate with the gateway
+	// tier. Agent-certificate revocation, the direction that still matters, is a
+	// control-side store lookup at the mTLS handshake — not an RPC.
 
 	// ============================================================================
 	// Actions (single executable actions)

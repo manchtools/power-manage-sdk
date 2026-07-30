@@ -141,14 +141,6 @@ type recordingControlHandler struct {
 
 	registerFn         func(*connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error)
 	renewCertificateFn func(*connect.Request[pm.RenewCertificateRequest]) (*connect.Response[pm.RenewCertificateResponse], error)
-	getCRLFn           func(*connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error)
-}
-
-func (h *recordingControlHandler) GetCertificateRevocationList(ctx context.Context, req *connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error) {
-	if h.getCRLFn != nil {
-		return h.getCRLFn(req)
-	}
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("GetCertificateRevocationList not stubbed"))
 }
 
 func (h *recordingControlHandler) Register(ctx context.Context, req *connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error) {
@@ -197,7 +189,7 @@ func TestRegisterAgent_HappyPath(t *testing.T) {
 			DeviceId:    &pm.DeviceId{Value: "01HXXXXXXXXXXXXXXXXXXXXXX0"},
 			CaCert:      []byte("ca"),
 			Certificate: []byte("cert"),
-			GatewayUrl:  "https://gateway.example",
+			ControlUrl:  "https://control.example",
 		}), nil
 	}
 
@@ -214,8 +206,8 @@ func TestRegisterAgent_HappyPath(t *testing.T) {
 	if string(got.Certificate) != "cert" || string(got.CACert) != "ca" {
 		t.Errorf("certs not threaded through")
 	}
-	if got.GatewayURL != "https://gateway.example" {
-		t.Errorf("GatewayURL = %q", got.GatewayURL)
+	if got.ControlURL != "https://control.example" {
+		t.Errorf("ControlURL = %q", got.ControlURL)
 	}
 	if observed == nil {
 		t.Fatal("server never observed the Register request")
@@ -277,44 +269,20 @@ func TestRenewCertificate_HappyPath(t *testing.T) {
 	}
 }
 
-func TestFetchGatewayCRL_HappyPath(t *testing.T) {
-	cl := newControlLoopback(t)
-
-	notAfter := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
-	refreshedAt := time.Date(2026, 7, 14, 12, 0, 0, 0, time.UTC)
-	cl.handler.getCRLFn = func(_ *connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error) {
-		return connect.NewResponse(&pm.GetCertificateRevocationListResponse{
-			RevokedFingerprints: []string{"aa11", "bb22"},
-			NotAfter:            timestamppb.New(notAfter),
-			RefreshedAt:         timestamppb.New(refreshedAt),
-		}), nil
-	}
-
-	got, err := FetchGatewayCRL(context.Background(), cl.serverURL)
-	if err != nil {
-		t.Fatalf("FetchGatewayCRL: %v", err)
-	}
-	if len(got.RevokedFingerprints) != 2 || got.RevokedFingerprints[0] != "aa11" || got.RevokedFingerprints[1] != "bb22" {
-		t.Errorf("RevokedFingerprints = %v", got.RevokedFingerprints)
-	}
-	if !got.NotAfter.Equal(notAfter) {
-		t.Errorf("NotAfter = %v want %v", got.NotAfter, notAfter)
-	}
-	if !got.RefreshedAt.Equal(refreshedAt) {
-		t.Errorf("RefreshedAt = %v want %v", got.RefreshedAt, refreshedAt)
-	}
-}
-
-func TestFetchGatewayCRL_ServerErrorPropagates(t *testing.T) {
-	cl := newControlLoopback(t)
-	cl.handler.getCRLFn = func(_ *connect.Request[pm.GetCertificateRevocationListRequest]) (*connect.Response[pm.GetCertificateRevocationListResponse], error) {
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("control down"))
-	}
-
-	if _, err := FetchGatewayCRL(context.Background(), cl.serverURL); err == nil {
-		t.Fatal("FetchGatewayCRL must propagate a control error (so the cache retains its last-good snapshot and eventually fails closed)")
-	}
-}
+// TestFetchGatewayCRL_HappyPath and TestFetchGatewayCRL_ServerErrorPropagates
+// were removed with FetchGatewayCRL itself (spec 41). They exercised an agent
+// fetching the gateway CRL from control; with no gateway there is no such fetch,
+// and re-scoping the list to control's own certificate would be circular.
+//
+// Replacement coverage, deliberately stronger than these were: the RPC's
+// ABSENCE is now asserted by TestRPCSurface_MatchesGoldenMinusSpec41Removals in
+// contract_rpc_surface_test.go, against a golden list captured from the
+// predecessor descriptor. A stub test proves an endpoint answers; the contract
+// test proves the endpoint is gone and that nothing else went with it.
+//
+// The surviving direction — control refusing a revoked AGENT certificate at the
+// mTLS handshake — is server-side and is covered by spec 41 criteria 4-6 in the
+// server repository, not here.
 
 func TestRenewCertificate_ServerErrorPropagates(t *testing.T) {
 	cl := newControlLoopback(t)
@@ -355,16 +323,24 @@ func TestConnect_DoubleConnectErrors(t *testing.T) {
 	}
 }
 
-// TestSyncActions_MapsLpsPublicKey guards the hand-written SyncActionsResult
-// facade against drift: a proto regen that adds a field but forgets the facade
-// mapping would silently drop it (the recurring facade-lag bug). Pins that the
-// LPS public key the server puts on SyncActionsResponse reaches the caller.
-func TestSyncActions_MapsLpsPublicKey(t *testing.T) {
+// TestSyncActions_MapsMessageFieldsThroughFacade guards the hand-written
+// SyncActionsResult facade against drift: a proto regen that adds a field but
+// forgets the facade mapping would silently drop it (the recurring facade-lag
+// bug).
+//
+// This previously pinned LpsPublicKey, which spec 41 removed with the transport
+// sealing. The FIELD is gone; the PROPERTY is not, so the test is re-pointed at
+// MaintenanceWindow — the other nested message on this response, mapped through
+// the same facade — rather than deleted. A guard whose subject disappears should
+// change subject, not vanish.
+func TestSyncActions_MapsMessageFieldsThroughFacade(t *testing.T) {
 	l := newAgentLoopback(t)
 	l.handler.syncResp = &pm.SyncActionsResponse{
-		LpsPublicKey: &pm.LpsPublicKey{
-			PublicKey: make([]byte, 32),
-			Signature: []byte("sig"),
+		SyncIntervalMinutes: 42,
+		MaintenanceWindow: &pm.MaintenanceWindow{
+			Schedule: []*pm.MaintenanceWindowEntry{
+				{Days: []string{"sat", "sun"}, Allow: "22:00-06:00"},
+			},
 		},
 	}
 	c := l.newClient(WithAuth("01HKDEVICE0000000000000000", "tok"))
@@ -373,11 +349,17 @@ func TestSyncActions_MapsLpsPublicKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SyncActions: %v", err)
 	}
-	if res.LpsPublicKey == nil {
-		t.Fatal("LpsPublicKey dropped by the SyncActionsResult facade")
+	if res.MaintenanceWindow == nil {
+		t.Fatal("MaintenanceWindow dropped by the SyncActionsResult facade")
 	}
-	if len(res.LpsPublicKey.PublicKey) != 32 || string(res.LpsPublicKey.Signature) != "sig" {
-		t.Errorf("LpsPublicKey mismatch: %+v", res.LpsPublicKey)
+	if len(res.MaintenanceWindow.Schedule) != 1 ||
+		res.MaintenanceWindow.Schedule[0].Allow != "22:00-06:00" ||
+		len(res.MaintenanceWindow.Schedule[0].Days) != 2 {
+		t.Errorf("MaintenanceWindow mismatch: %+v", res.MaintenanceWindow)
+	}
+	// A scalar alongside the message field: the facade drops these independently.
+	if res.SyncIntervalMinutes != 42 {
+		t.Errorf("SyncIntervalMinutes = %d, want 42", res.SyncIntervalMinutes)
 	}
 }
 
