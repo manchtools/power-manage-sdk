@@ -20,7 +20,17 @@ generate: generate-go inject-tags gofmt-gen generate-ts
 gofmt-gen:
 	gofmt -w $(GEN_DIR)/go
 
+# protoc writes outputs; it never deletes outputs whose INPUT is gone. Removing a
+# .proto therefore leaves an orphaned .pb.go behind — and because a .pb.go
+# registers its descriptors at init, the deleted service stays live at runtime
+# and in protoregistry while every drift check (`git diff` on gen/) reports
+# clean. Spec 41 hit exactly this: deleting internal.proto and gateway_auth.proto
+# left four orphans that had to be removed by hand.
+#
+# So the generated directories are emptied before regeneration. Scoped to the
+# pm/v1 output dirs rather than $(GEN_DIR) so nothing else under gen/ is at risk.
 generate-go:
+	@rm -f $(GEN_DIR)/go/pm/v1/*.pb.go $(GEN_DIR)/go/pm/v1/pmv1connect/*.connect.go
 	@mkdir -p $(GEN_DIR)/go/pm/v1
 	protoc \
 		--proto_path=$(PROTO_DIR) \
