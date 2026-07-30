@@ -43,7 +43,11 @@ generate-go:
 inject-tags:
 	protoc-go-inject-tag -input="$(GEN_DIR)/go/pm/v1/*.pb.go"
 
+# Same orphan problem as generate-go: buf writes outputs and leaves behind any
+# whose .proto input was deleted, and gen/ts is archived directly into the npm
+# release, so a stale *_pb.ts ships to consumers as a live export.
 generate-ts:
+	@rm -f $(GEN_DIR)/ts/pm/v1/*_pb.ts
 	npx @bufbuild/buf generate
 
 clean:

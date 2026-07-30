@@ -1462,8 +1462,13 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			return fmt.Errorf("handle error: %w", err)
 		}
 
-	case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey:
-		// LUKS request-response: deliver to pending request by message ID.
+	case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey,
+		*pm.ServerMessage_StoreLpsPasswords:
+		// Secret request-response: deliver to the pending request by message ID.
+		// Every Client method that blocks on registerPending MUST be listed here
+		// — a missing case does not error, it drops the frame and the caller
+		// blocks until its context expires. Covered by
+		// TestDispatchServerMessage_DeliversEveryPendingResponse.
 		c.deliverPending(msg)
 
 	case *pm.ServerMessage_RequestInventory:
