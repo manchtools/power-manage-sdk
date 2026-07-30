@@ -3022,18 +3022,24 @@ message StartTerminalResponse {
   // ULID identifying the session for the lifetime of the connection.
   // @gotags: validate:"required,ulid"
   string session_id = 1;
-  // Short-lived bearer token the web client must append to gateway_url
+  // Short-lived bearer token the web client must append to terminal_url
   // as ?token=<session_token> when opening the WebSocket. The token is
   // intentionally returned separately from the URL so the URL can be
   // logged or displayed without leaking the credential.
   // @gotags: validate:"required,min=1"
   string session_token = 2;
-  // Token-free base WebSocket URL of the gateway endpoint
-  // (e.g. wss://gateway.example.com/terminal). Clients MUST construct
+  // Token-free base WebSocket URL of control's terminal endpoint
+  // (e.g. wss://control.example.com/terminal). Clients MUST construct
   // the final connect URL by appending ?token=<session_token>; this
   // field never embeds the token.
+  //
+  // Spec 41 renamed this from gateway_url. The gateway was only ever the
+  // WebSocket bridge for the browser — terminal frames already travelled to
+  // the agent over the AgentService bidi stream — so with the tier deleted the
+  // bridge moves to control and the field names what it now is. Re-tagged in
+  // place rather than reserved: V1 is the only wire version.
   // @gotags: validate:"required,url"
-  string gateway_url = 3;
+  string terminal_url = 3;
   // Token expiry; the client should connect well before this.
   // @gotags: validate:"required"
   google.protobuf.Timestamp expires_at = 4;

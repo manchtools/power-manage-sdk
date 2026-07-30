@@ -21168,18 +21168,24 @@ type StartTerminalResponse struct {
 	// ULID identifying the session for the lifetime of the connection.
 	// @gotags: validate:"required,ulid"
 	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
-	// Short-lived bearer token the web client must append to gateway_url
+	// Short-lived bearer token the web client must append to terminal_url
 	// as ?token=<session_token> when opening the WebSocket. The token is
 	// intentionally returned separately from the URL so the URL can be
 	// logged or displayed without leaking the credential.
 	// @gotags: validate:"required,min=1"
 	SessionToken string `protobuf:"bytes,2,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty" validate:"required,min=1"`
-	// Token-free base WebSocket URL of the gateway endpoint
-	// (e.g. wss://gateway.example.com/terminal). Clients MUST construct
+	// Token-free base WebSocket URL of control's terminal endpoint
+	// (e.g. wss://control.example.com/terminal). Clients MUST construct
 	// the final connect URL by appending ?token=<session_token>; this
 	// field never embeds the token.
+	//
+	// Spec 41 renamed this from gateway_url. The gateway was only ever the
+	// WebSocket bridge for the browser — terminal frames already travelled to
+	// the agent over the AgentService bidi stream — so with the tier deleted the
+	// bridge moves to control and the field names what it now is. Re-tagged in
+	// place rather than reserved: V1 is the only wire version.
 	// @gotags: validate:"required,url"
-	GatewayUrl string `protobuf:"bytes,3,opt,name=gateway_url,json=gatewayUrl,proto3" json:"gateway_url,omitempty" validate:"required,url"`
+	TerminalUrl string `protobuf:"bytes,3,opt,name=terminal_url,json=terminalUrl,proto3" json:"terminal_url,omitempty" validate:"required,url"`
 	// Token expiry; the client should connect well before this.
 	// @gotags: validate:"required"
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" validate:"required"`
@@ -21235,9 +21241,9 @@ func (x *StartTerminalResponse) GetSessionToken() string {
 	return ""
 }
 
-func (x *StartTerminalResponse) GetGatewayUrl() string {
+func (x *StartTerminalResponse) GetTerminalUrl() string {
 	if x != nil {
-		return x.GatewayUrl
+		return x.TerminalUrl
 	}
 	return ""
 }
@@ -23249,13 +23255,12 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x14StartTerminalRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x12\n" +
 	"\x04cols\x18\x02 \x01(\rR\x04cols\x12\x12\n" +
-	"\x04rows\x18\x03 \x01(\rR\x04rows\"\xd2\x01\n" +
+	"\x04rows\x18\x03 \x01(\rR\x04rows\"\xd4\x01\n" +
 	"\x15StartTerminalResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
-	"\rsession_token\x18\x02 \x01(\tR\fsessionToken\x12\x1f\n" +
-	"\vgateway_url\x18\x03 \x01(\tR\n" +
-	"gatewayUrl\x129\n" +
+	"\rsession_token\x18\x02 \x01(\tR\fsessionToken\x12!\n" +
+	"\fterminal_url\x18\x03 \x01(\tR\vterminalUrl\x129\n" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x19\n" +
 	"\btty_user\x18\x05 \x01(\tR\attyUser\"4\n" +
