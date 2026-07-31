@@ -32,7 +32,7 @@ import (
 // Welcome.heartbeat_interval into this range before applying them, so a
 // misconfigured or malicious server can never push the cadence outside
 // what's safe for both sides (too fast = stream spam, too slow = agent
-// looks dead to the gateway's liveness tracking).
+// looks dead to control's liveness tracking).
 const (
 	MinHeartbeatInterval = 5 * time.Second
 	MaxHeartbeatInterval = 5 * time.Minute
@@ -87,7 +87,7 @@ type Client struct {
 	// RequestInventory / RevokeLuksDeviceKey handlers run concurrently.
 	// Each spawns a goroutine (inventory forks osquery; revoke does a
 	// request-response on the stream), so an unbounded flood from a
-	// compromised or buggy gateway could exhaust memory and goroutines.
+	// compromised or buggy server could exhaust memory and goroutines.
 	// Acquisition is non-blocking: excess is DROPPED, not queued (WS6
 	// #11). Initialised by NewClient.
 	invSem        chan struct{}
@@ -107,7 +107,7 @@ const (
 	// ServerMessage the agent will decode. The agent only ever receives
 	// small control frames (actions, queries, terminal I/O chunks capped
 	// at 64 KiB, LUKS request-response) — none legitimately approach this
-	// size. Without a bound, a compromised or buggy gateway could push a
+	// size. Without a bound, a compromised or buggy server could push a
 	// multi-gigabyte frame and force the agent to allocate it, an OOM /
 	// DoS vector. 16 MiB is comfortably above any real frame yet refuses
 	// a frame whose only purpose is to exhaust memory. Enforced via
@@ -145,7 +145,7 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 	c.httpClient = httpClient
 
 	// Bound the size of inbound ServerMessages. A compromised or buggy
-	// gateway could otherwise push an arbitrarily large frame and force
+	// server could otherwise push an arbitrarily large frame and force
 	// the agent to allocate it (OOM/DoS). connect.WithReadMaxBytes makes
 	// the connection that receives an oversized frame fail with a
 	// resource-exhausted error and tear down cleanly, rather than
@@ -246,9 +246,9 @@ func WithTLSConfig(tlsConfig *tls.Config) ClientOption {
 //
 // Trust is strict: the returned TLS config verifies the server ONLY
 // against caPEM. This is the correct setup for talking to the
-// internal-CA-signed gateway over mTLS — system roots are NOT
-// consulted, so a cert signed by any public CA cannot impersonate
-// the gateway even if its SNI matches.
+// internal-CA-signed control agent listener over mTLS — system roots
+// are NOT consulted, so a cert signed by any public CA cannot
+// impersonate control even if its SNI matches.
 //
 // For reaching servers whose public-facing HTTPS cert is signed by
 // a public CA (typically a Traefik reverse proxy with Let's Encrypt
@@ -286,10 +286,10 @@ func WithMTLSFromPEM(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
 // public-LE-fronted HTTPS endpoint and also passes the current
 // certificate in the request body.
 //
-// Do NOT use this for the agent-to-gateway mTLS connection: the
-// gateway is internal-CA only, and broadening its trust to system
+// Do NOT use this for the agent's mTLS stream: control's agent
+// listener is internal-CA only, and broadening its trust to system
 // roots lets any publicly-trusted cert with a matching SNI
-// impersonate the gateway.
+// impersonate it.
 func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption, error) {
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
@@ -315,19 +315,25 @@ func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption,
 	}}, nil
 }
 
-// WithMTLSFromPEMAndRevocationCheck is WithMTLSFromPEM plus the agent-facing
-// gateway revocation gate (spec 31 Part D, AC 11): trust is still the strict
-// internal CA only, and AFTER normal chain verification the connection's leaf
-// certificate is fingerprinted (hex SHA-256 of its DER — the exact value the
-// control server stores in gateways_projection.fingerprint and serves in the
-// CRL) and passed to check. A non-nil return from check FAILS the handshake, so
-// a revoked gateway — or, when check reports a stale/unavailable CRL, an
-// unverifiable one — is refused fail-closed rather than trusted.
+// WithMTLSFromPEMAndRevocationCheck is WithMTLSFromPEM plus a caller-supplied
+// peer revocation gate: trust is still the strict internal CA only, and AFTER
+// normal chain verification the connection's leaf certificate is fingerprinted
+// (hex SHA-256 of its DER) and passed to check. A non-nil return from check
+// FAILS the handshake, so a revoked peer — or, when check reports that it
+// cannot decide, an unverifiable one — is refused fail-closed rather than
+// trusted.
 //
 // check MUST be non-nil: a nil check would silently disable the gate, so it is
-// a construction error, not a no-op. The caller (the agent's CRL cache) owns the
-// policy — which fingerprints are revoked and when a stale list fails closed
-// (AC 12); this option only supplies the mechanism.
+// a construction error, not a no-op. The caller owns the policy — which
+// fingerprints are revoked and when an indeterminate answer fails closed; this
+// option only supplies the mechanism.
+//
+// Spec 41 removed this option's only caller. It existed so an agent could
+// refuse a revoked GATEWAY, and there is no gateway to revoke: the agent dials
+// control directly and control is the CA's own peer. The mechanism is kept
+// because it is exactly that — mechanism, with no policy baked in — and
+// deleting a working dial option would be an API break bought for nothing.
+// Client-side revocation of a server peer is not currently used anywhere.
 func WithMTLSFromPEMAndRevocationCheck(certPEM, keyPEM, caPEM []byte, check func(fingerprintHex string) error) (ClientOption, error) {
 	if check == nil {
 		return nil, errors.New("revocation check is required (fail-closed); pass a non-nil check")
@@ -349,11 +355,11 @@ func WithMTLSFromPEMAndRevocationCheck(certPEM, keyPEM, caPEM []byte, check func
 		MinVersion:   tls.VersionTLS13,
 		// VerifyConnection runs AFTER the standard chain/RootCAs/ServerName
 		// verification (InsecureSkipVerify stays false), so this narrows trust
-		// further — it never widens it. A revoked (or unverifiable) gateway
+		// further — it never widens it. A revoked (or unverifiable) peer
 		// leaf is rejected even though it chains to the pinned CA.
 		VerifyConnection: func(cs tls.ConnectionState) error {
 			if len(cs.PeerCertificates) == 0 {
-				return errors.New("gateway presented no certificate")
+				return errors.New("server presented no certificate")
 			}
 			sum := sha256.Sum256(cs.PeerCertificates[0].Raw)
 			return check(hex.EncodeToString(sum[:]))
@@ -370,7 +376,7 @@ func WithMTLSFromPEMAndRevocationCheck(certPEM, keyPEM, caPEM []byte, check func
 // HTTP/2 negotiation, so we explicitly configure it via http2.ConfigureTransport.
 // If the HTTP/2 configuration fails the transport silently falls back to HTTP/1.1,
 // which breaks Connect bidirectional streaming — log it loudly so the operator can
-// see why the agent is unable to reach the gateway.
+// see why the agent is unable to reach control.
 func newHTTPClientWithTLS(tlsConfig *tls.Config) *http.Client {
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
@@ -447,8 +453,9 @@ type RegisterAgentResult struct {
 
 // RegisterAgent registers an agent with the control server.
 // This is a standalone function that uses ControlServiceClient (not AgentServiceClient).
-// The controlURL is the control server URL (where the web UI connects).
-// Returns the gateway URL that the agent should use for streaming.
+// The controlURL is the control server's public API URL (where the web UI
+// connects). The result's ControlURL is a DIFFERENT host — control's agent
+// listener, which the agent dials for its stream.
 func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agentVersion string, csr []byte, opts ...ClientOption) (*RegisterAgentResult, error) {
 	c := &Client{}
 	httpClient := bootstrapHTTPClient()
@@ -584,7 +591,7 @@ type InventoryHandler interface {
 	// installed).
 	CollectInventory(ctx context.Context) *pm.DeviceInventory
 	// OnRequestInventory handles a SERVER-originated RequestInventory. Because
-	// a compromised gateway could forge this message, the handler verifies the
+	// a compromised server could forge this message, the handler verifies the
 	// CA signature that binds it before running osquery as root, then collects
 	// the same inventory. Returns nil on verification failure or when
 	// collection is unavailable.
@@ -1401,7 +1408,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 		}
 
 	case *pm.ServerMessage_Action:
-		// Malformed-oneof guard: a compromised/buggy gateway could deliver a
+		// Malformed-oneof guard: a compromised/buggy server could deliver a
 		// ServerMessage_Action whose inner ActionDispatch is nil. Reading
 		// p.Action.Envelope/.Signature on a nil p.Action is a nil-pointer
 		// dereference. Drop it non-fatally — every real Action on the wire
@@ -1422,7 +1429,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			select {
 			case ch <- p.Action:
 			default:
-				// A full queue means a pathological flood (a legit gateway never
+				// A full queue means a pathological flood (a legit server never
 				// has actionQueueDepth actions outstanding). Drop with a loud
 				// warning rather than block the receive loop; the server
 				// re-dispatches unacked actions on reconnect.
@@ -1492,7 +1499,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 					defer func() { <-c.invSem }()
 					// Server-originated: verify the signature (inside the
 					// handler) before collecting. A forged RequestInventory
-					// from a compromised gateway yields nil and never runs
+					// from a compromised server yields nil and never runs
 					// osquery.
 					if inv := invHandler.OnRequestInventory(ctx, req); inv != nil {
 						if err := c.SendInventory(ctx, inv); err != nil {
@@ -1529,7 +1536,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 
 	case *pm.ServerMessage_RevokeLuksDeviceKey:
 		if p.RevokeLuksDeviceKey == nil {
-			// A compromised/buggy gateway could deliver a nil payload;
+			// A compromised/buggy server could deliver a nil payload;
 			// dropping it avoids a nil dereference and is harmless (a
 			// real revocation always carries action_id + signature).
 			c.logger.Warn("dropping RevokeLuksDeviceKey with nil payload", "message_id", msg.Id)
@@ -1672,7 +1679,7 @@ type ValidateLuksTokenResult struct {
 	Complexity pm.LpsPasswordComplexity
 }
 
-// ValidateLuksToken validates a one-time LUKS token via the gateway's unary RPC.
+// ValidateLuksToken validates a one-time LUKS token via control's unary RPC.
 // The token is consumed (marked as used) atomically by the server.
 func (c *Client) ValidateLuksToken(ctx context.Context, token string) (*ValidateLuksTokenResult, error) {
 	c.mu.RLock()
