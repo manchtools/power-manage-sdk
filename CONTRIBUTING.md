@@ -1,6 +1,9 @@
 # Contributing to the Power Manage SDK
 
-This SDK holds the protocol definitions (`.proto`) and shared libraries used by the Control Server, Gateway, Agent, and Web UI. Changes here ripple into every downstream component, so most contributions start by understanding where the breakage will land.
+This SDK currently holds protocol definitions and shared libraries used by
+control, agent, and web. During consolidation the contract moves to its own
+monorepo module; the SDK remains the reusable mechanism layer. The sole system
+design authority is `../DESIGN_2026_07_31/00_TARGET_DESIGN.md`.
 
 ## Before you start
 
@@ -16,7 +19,7 @@ sdk/
 ├── gen/               Generated Go + TypeScript code (do not edit)
 ├── go/                Go libraries consumed by agent + server
 ├── ts/                TypeScript libraries consumed by the web UI
-├── docs/              Pattern guides and architectural notes
+├── docs/              SDK concepts, capabilities, and contributor guidance
 └── Makefile           Proto generation (`make generate`)
 ```
 

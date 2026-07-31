@@ -29,7 +29,7 @@ the streaming client with its signed-command model.
   Mandatory domain separation on every AEAD and seal, X25519 sealing past a
   low-trust relay, and the CSR / CA-continuity rules.
   {% /card %}
-  {% card title="Client & signing" href="/concepts/client" icon="📡" %}
+  {% card title="Agent client" href="/concepts/client" icon="📡" %}
   The agent's bidirectional stream, dispatch robustness against a hostile
   relay, fail-closed command signatures, and maintenance windows.
   {% /card %}

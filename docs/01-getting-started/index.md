@@ -1,7 +1,7 @@
 ---
 title: Power Manage SDK
 label: Getting started
-description: The Go SDK for building on Power Manage — proto types, signing/crypto helpers, and an idiomatic Linux system-management library.
+description: The Go SDK for building on Power Manage — proto types, crypto helpers, and an idiomatic Linux system-management library.
 icon: "🚀"
 ---
 
@@ -10,15 +10,13 @@ icon: "🚀"
 The Power Manage SDK is the shared Go (and TypeScript) library the agent,
 control server, and web UI build on. It ships three things:
 
-<!-- docref: begin src=crypto/csr.go#GenerateCSR:4a9d84de,verify/verify.go#ActionVerifier.Verify:c3b3df3c,crypto/cert.go#CAFingerprintFromPEM:5a8bdd28 -->
 - **Protocol types** — the generated protobuf / Connect-RPC code for the
   Power Manage wire format.
-- **Crypto & signing helpers** — CSR generation, certificate utilities, and
-  action-payload signature verification.
+- **Crypto helpers** — CSR generation, certificate utilities, at-rest AEAD,
+  and recipient-bound field sealing.
 - **A Linux system-management library** — package managers, users, services,
   filesystems, disk encryption, networking, antivirus, CA trust, and more,
   behind one consistent, dependency-injected API.
-<!-- docref: end -->
 
 These pages are the **narrative** docs — concepts, recipes, and the
 contributor workflow. The **API reference** is generated and lives on

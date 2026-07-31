@@ -2,6 +2,10 @@
 
 Shared protocol definitions, generated code, and client libraries for Power Manage. Used by the [Control Server](../server/cmd/control/), [Agent](../agent/), and [Web UI](../web/).
 
+The workspace system-design authority is
+`../DESIGN_2026_07_31/00_TARGET_DESIGN.md`. During consolidation the contract
+moves to its own monorepo module; the SDK remains the reusable mechanism layer.
+
 ## Contents
 
 ```
@@ -42,7 +46,6 @@ sdk/
 │   │   ├── terminal/          PTY session management
 │   │   └── user/              User & group management, password generation
 │   ├── validate/            Input validation (struct tag validator + ULID rule)
-│   └── verify/              Action payload signature verification
 │
 ├── ts/                      TypeScript SDK (framework-agnostic browser utilities)
 │   ├── client.ts              Connect-RPC client with all API methods
@@ -69,10 +72,11 @@ Five proto files define the entire API surface:
 | `common.proto` | ULID identifiers, execution status, assignment modes, error detail codes |
 | `actions.proto` | Action types (package, update, repository, app_image, deb, rpm, flatpak, shell, service, file, directory, user, group, ssh, sshd, admin_policy, lps, encryption, wifi, agent_update), parameters, scheduling. Several capability areas are modelled with a backend enum so the same action type can target multiple implementations (e.g. `AdminPolicyParams.backend = sudo|doas`, `ServiceParams.backend = systemd|openrc|…`). See [docs/backend-pattern.md](docs/backend-pattern.md). |
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries. Hello includes `arch` for platform detection. |
-| `control.proto` | `ControlService` — full RPC surface (~164 methods) covering users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, server settings, and more |
+| `control.proto` | `ControlService` — the explicit product RPC surface for users, devices, groups, actions, assignments, executions, roles, identity providers, SCIM, audit, compliance, renewal, search, and settings |
 | `device_auth.proto` | `DeviceAuthService` — agent enrollment via local unix socket |
 
-`internal.proto` is gone. `InternalService` was the gateway's proxy to control for credential-bearing operations (LUKS keys, LPS passwords) and auto-update info; the agent now carries those on its own `AgentService` stream, which control terminates directly.
+`internal.proto` and the Gateway-only proxy contract are removed. The agent
+carries its traffic on the direct `AgentService` stream terminated by control.
 
 ## Go SDK
 
@@ -228,29 +232,11 @@ err := service.DaemonReload(ctx)
 
 `service` selects between systemd / openrc / runit / s6 via `service.SetServiceBackend(...)`.
 
-### Action Signature Verification
+### Transport confidentiality
 
-`verify/` provides action payload signature verification for agents:
-
-```go
-import "github.com/manchtools/power-manage-sdk/verify"
-
-signer := verify.NewActionSigner(caKey)        // server-side signing
-verifier := verify.NewActionVerifier(caCert)   // agent-side verification
-err := verifier.Verify(action)                 // verify action signature
-```
-
-Beyond actions, the same CA key signs the four root **stream-RPCs** (osquery,
-log query, LUKS revoke, inventory) under per-surface **disjoint domains** so a
-signature for one surface can never be replayed against another:
-
-```go
-// Control server signs the canonical bytes of each message (signature field
-// cleared) under that surface's domain; the agent verifies before any root work.
-canonical, _ := verify.OSQueryCanonical(q)                       // also LogQueryCanonical / RevokeLuksDeviceKeyCanonical / RequestInventoryCanonical
-sig, _  := signer.SignDomain(verify.OSQuerySignatureDomain, canonical)
-err     := verifier.VerifyDomain(verify.OSQuerySignatureDomain, canonical, sig)
-```
+The direct agent/control stream uses mTLS and ordinary application frames are
+not separately signed. Classified protobuf fields use versioned X25519
+recipient sealing with context-bound AAD.
 
 ### Input Validation
 

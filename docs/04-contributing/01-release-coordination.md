@@ -140,7 +140,7 @@ The SDK uses two kinds of tags side-by-side:
 | Go module tag | `v0.x.x` semver | agent/server `go.mod` |
 | Human-readable release label | `vYYYY.MM.XX` calendar date (e.g. `v2026.04.03`) | GitHub Releases UI, operator-facing docs |
 
-<!-- docref: begin src=.github/workflows/release.yml#@release-trigger:6d9c7468,.github/workflows/release.yml#@ts-release-assets:b589cafd -->
+<!-- docref: begin src=.github/workflows/release.yml#@release-trigger:6d9c7468,.github/workflows/release.yml#@ts-release-assets:8a07e73a -->
 Both can live at the same commit — the release workflow
 (`.github/workflows/release.yml`) fires on any tag matching `v*` and
 builds TypeScript SDK assets (`ts-sdk.tar.gz`, plus the proto sources

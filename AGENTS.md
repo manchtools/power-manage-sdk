@@ -5,6 +5,12 @@ with **open-docs** (folder tree = navigation; `NN-` prefixes order; frontmatter
 sets titles) and kept honest against the code with **open-docref**
 (`docref.toml` at the repo root; `docref check` runs in CI).
 
+The sole Power Manage system-design authority is
+`../DESIGN_2026_07_31/00_TARGET_DESIGN.md`. SDK docs may explain the
+implemented mechanism layer, but must not create a competing product
+architecture. During consolidation the protobuf contract moves to its own
+monorepo module; the SDK remains mechanism, not server policy.
+
 Don't re-derive the conventions from memory — read the canonical specs:
 
 - **open-docs** content model, every Markdoc tag, and the gotchas:

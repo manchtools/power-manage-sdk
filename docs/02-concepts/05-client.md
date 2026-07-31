@@ -1,142 +1,48 @@
 ---
-title: Agent client & signed commands
-label: Client & signing
-description: The long-lived bidirectional stream between agent and control — dispatch robustness against a hostile server, fail-closed action-signature verification, and maintenance-window evaluation.
+title: Agent client
+label: Client
+description: The direct long-lived mTLS stream, bounded dispatch, and maintenance windows.
 ---
 
-# Agent client & signed commands
+# Agent client
 
-Three pieces of the SDK carry the agent's server-facing behaviour: the
-`Client` (a long-lived bidirectional stream to control), the `verify`
-package (signatures over every server-originated command), and the
-`maintenance` package (when scheduled work is allowed to run). The common
-thread: the agent runs as root, so the client treats every inbound frame as
-potentially hostile and every command as unauthenticated until a CA signature
-says otherwise.
+The client maintains one outbound bidirectional mTLS stream directly between
+agent and control. Handshake, synchronization, heartbeats, delivery, results,
+inventory, log/osquery replies, and terminal traffic share the stream.
 
-Spec 41 removed the gateway, which was the *least-trusted* server-side actor
-and the original reason for that posture. The posture stays: it is what makes
-a compromised control server, not merely a compromised relay, unable to turn
-the fleet into a root-execution service.
+## Transport
 
-## The stream
+The agent validates control against the CA pinned at enrollment. Control
+derives device identity from the client certificate and checks revocation
+during the handshake.
 
-The agent connects over mTLS and keeps one bidirectional stream open;
-heartbeats, action results, inventory, and terminal I/O all multiplex over
-it.
+Application frames are not separately signed. Both endpoints are trusted and
+there is no relay or offline verifier. Classified secret fields use
+recipient-bound X25519 envelopes as described in [Crypto](/concepts/crypto).
 
-<!-- docref: begin src=client.go#WithMTLSFromPEM:7e7dc2c3,client.go#WithMTLSFromPEMAndSystemRoots:0388329a -->
-Stream trust is strict: the mTLS options verify the server **only** against
-the enrolled internal CA — system roots are deliberately not consulted, so a
-certificate signed by any public CA cannot impersonate control even with a
-matching SNI. That works because the agent host is passed through the edge
-untouched, so control presents its own CA-signed certificate. The
-`...AndSystemRoots` variant exists solely for the public API host, which is
-fronted by a public CA (a reverse proxy with Let's Encrypt); using it for the
-stream would broaden that connection's trust and is explicitly warned
-against.
-<!-- docref: end -->
+## Robustness
 
-<!-- docref: begin src=client.go#MinHeartbeatInterval:2278f3a7,client.go#Client.applyWelcomeHeartbeat:64ed1259 -->
-The server can retune the heartbeat cadence via its Welcome message, but the
-SDK clamps the value into a safe band (5 seconds to 5 minutes) before
-applying it — a misconfigured or malicious server can never push the cadence
-into stream spam or make the agent look dead to liveness tracking. A
-zero/unset interval keeps the caller-supplied one.
-<!-- docref: end -->
+- bound inbound frame size;
+- reject malformed and nil payloads before handlers;
+- serialize sends with context-aware cancellation;
+- bound worker queues and goroutine fan-out;
+- isolate a handler panic without leaking secrets; and
+- preserve on-wire ordering.
 
-<!-- docref: begin src=client.go#Client.send:881c9f04 -->
-All writes to the stream are serialized through a context-aware send lock:
-concurrent writers (heartbeat, results, terminal output) can never interleave
-bytes on the wire, and a sender stalled behind a peer that stops draining
-abandons its claim on its own deadline instead of wedging every other sender
-behind it. At most one send is ever in flight, so the on-wire serialization
-guarantee survives even an abandoned send.
-<!-- docref: end -->
+Control commits a delivery before sending it. The agent durably records its
+`delivery_id` before acknowledging receipt. Retries reuse the same ID and
+results are idempotent.
 
-## Dispatch robustness
-
-Inbound frames get no benefit of the doubt — a compromised server is in the
-threat model.
-
-<!-- docref: begin src=client.go#maxInboundMessageBytes:be33da55,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:2527789a -->
-A single inbound message is size-capped (16 MiB — far above any legitimate
-control frame), so a multi-gigabyte frame cannot force an allocation; the
-connection that receives one is torn down with a resource-exhausted error.
-Every concrete command payload is then re-validated against the shared
-`validate` tags at the SDK boundary — a malformed-but-non-nil frame
-(out-of-range PTY dimensions, a non-ULID session id, an empty envelope) is
-dropped before it reaches a handler. Nil oneof payloads are dropped
-non-fatally, unknown payload variants from a newer server are logged and
-dropped rather than tearing the connection down, and a **panic inside any
-handler is recovered and turned into a dropped frame** — one hostile or buggy
-invocation cannot crash-loop the agent.
-
-An error frame carrying a pending request's message ID is delivered to that
-request, not to the general error handler. The distinction matters because the
-operations that block on a reply are the irreversible ones — local passwords
-already changed, a LUKS slot already added — and a rejection routed past its
-caller leaves that caller waiting out its timeout before it can roll back.
-<!-- docref: end -->
-
-<!-- docref: begin src=client.go#actionQueueDepth:be33da55,client.go#Client.runDispatchedAction:528ff624 -->
-Server-dispatched actions execute on a single worker goroutine off the
-receive loop — one at a time, in order — so a long-running action can never
-head-of-line-block terminal input or a stop request. The queue is bounded; a
-flood beyond it is dropped with a loud warning (the server re-dispatches
-unacked actions on reconnect) rather than allowed to grow without bound or to
-block the receive loop.
-<!-- docref: end -->
-
-## Every server command is signed
-
-The stream being authenticated is not enough. Authority comes from a CA
-signature on the command itself, verified against the CA the device enrolled
-with — so possession of the stream is not possession of the right to run
-anything as root.
-
-<!-- docref: begin src=client.go#StreamHandler:0163986d,verify/verify.go#ActionVerifier.Verify:c3b3df3c,verify/envelope.go#MarshalEnvelope:eeb40f10 -->
-An action arrives as opaque **envelope bytes plus a signature**. The handler
-contract is verify-then-execute-the-same-bytes: verify the signature over
-exactly the bytes received, then unmarshal *those same bytes* to execute —
-never a re-marshalled copy — so the executed action is byte-for-byte the
-verified action. The envelope covers the whole command (id, type, params,
-desired state, timeout, schedule, target device), which means a compromised
-relay cannot flip a field, swap params, or retarget the device under a
-still-valid signature.
-<!-- docref: end -->
-
-<!-- docref: begin src=verify/verify.go#ActionSignatureDomain:f9d7e120,verify/verify.go#canonicalDigest:8e724a35 -->
-Every signing surface that shares the CA key — actions, osquery dispatches,
-log queries, LUKS revocations, inventory requests — has its own domain string,
-and the digest mixes in the domain with a length prefix, so a signature minted
-for one surface can never be replayed against another. (The LPS public key was
-a sixth such surface until spec 41: its domain existed to stop a relaying
-gateway substituting its own sealing key, and it retired with the gateway.)
-<!-- docref: end -->
-
-<!-- docref: begin src=verify/verify.go#ActionVerifier.verifyDigest:5f7ba25f -->
-Verification is fail-closed: an empty signature or payload is rejected, and
-only ECDSA and RSA keys are accepted — any other key type (including
-Ed25519) is an explicit error, so a key-type drift between server and agent
-surfaces loudly instead of as a silent mismatch.
-<!-- docref: end -->
+Before a non-idempotent side effect, the agent records `STARTED`. A crash
+after that point reports `INDETERMINATE` instead of repeating the effect.
 
 ## Maintenance windows
 
-<!-- docref: begin src=maintenance/window.go#IsAllowed:8a918a14,maintenance/window.go#Union:be10448d,maintenance/window.go#Validate:eb666b47 -->
-The `maintenance` package is the **shared** parser, validator, union resolver
-and evaluator for maintenance windows, so server and agent agree bit-for-bit
-on what counts as an allowed dispatch moment. An empty window means "always
-allowed" (the feature is opt-in); entries within a window OR together, and
-the union across a device's groups ORs again — if any reaching group has no
-window, the union collapses to unconstrained. Evaluation runs against the
-device's **local** wall-clock on the agent; the server never computes
-allowedness, because the device is the only authority on its own clock.
-<!-- docref: end -->
+The maintenance package is the shared parser and evaluator. The agent applies
+windows using its local wall clock. Already received scheduled work can
+continue while control is temporarily unavailable.
 
 ## Related
 
-- [Crypto helpers](/concepts/crypto) — the AEAD, sealing, and certificate
-  primitives underneath.
-- [Errors](/concepts/errors) — how failures surface across the SDK.
+- [Crypto helpers](/concepts/crypto)
+- [Errors](/concepts/errors)
