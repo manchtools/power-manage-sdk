@@ -40,6 +40,14 @@ func quietLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard
 // This is table-driven over the response types so a newly added waiter is one
 // line away from being covered, and it asserts delivery rather than absence of
 // error — a dropped frame is silent by design.
+//
+// KNOWN WEAKNESS, left in place deliberately: this list and the dispatch case
+// it mirrors are both handwritten, so a fourth registerPending caller can be
+// added without either noticing. Hoisting the correlation above the switch
+// removes the list but breaks TestDispatchValidatesEveryInboundCommand, which
+// identifies response arms precisely BY their deliverPending call and would then
+// demand validateInbound on a delivery path. The real fix is a self-discovering
+// guard over the registerPending call sites; it is not this test.
 func TestDispatchServerMessage_DeliversEveryPendingResponse(t *testing.T) {
 	cases := []struct {
 		name    string

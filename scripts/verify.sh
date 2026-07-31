@@ -17,6 +17,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+REPO_ROOT=$PWD
 export GOWORK=off
 
 echo "== gofmt"
@@ -55,13 +56,19 @@ go test ./... -count=1
 # CI invokes it as `npx --prefix .. buf`, where `..` is the runner workspace;
 # that path does not exist in the multi-repo checkout, so resolve buf the way it
 # is actually available here.
+# REPO_ROOT is captured before any cd: the lock-installed binary lives at the
+# repo root, and resolving it relative to the cwd meant `cd proto` silently
+# missed it and fell through to a bare `npx`, which downloads and runs
+# registry-latest. A verification gate must not execute code the lockfile did
+# not pin, so the fallback is an instruction rather than a download.
 buf_cmd() {
-  if command -v buf >/dev/null 2>&1; then
+  if [ -x "$REPO_ROOT/node_modules/.bin/buf" ]; then
+    "$REPO_ROOT/node_modules/.bin/buf" "$@"
+  elif command -v buf >/dev/null 2>&1; then
     buf "$@"
-  elif [ -x node_modules/.bin/buf ]; then
-    "$PWD/node_modules/.bin/buf" "$@"
   else
-    npx @bufbuild/buf "$@"
+    echo "buf is not installed — run 'npm ci' in $REPO_ROOT; the gate will not fetch it at run time" >&2
+    exit 1
   fi
 }
 
@@ -77,5 +84,27 @@ if ! command -v docref >/dev/null 2>&1; then
 fi
 echo "== docref check"
 docref check
+
+# Generated-code drift. Without this the gate passes on a tree whose .proto and
+# gen/ disagree: buf lints the SOURCE while the contract test reads the stale
+# generated descriptor, so an RPC can be added or removed and both halves report
+# green while contradicting each other.
+#
+# The `// protoc vX.Y.Z` comment is excluded exactly as CI excludes it — it flips
+# with every protoc release and is not semantic.
+echo "== generated-code drift"
+make generate >/dev/null
+if ! git diff --exit-code -I '^//\s*protoc\s+v[0-9]+\.[0-9]+\(\.[0-9]+\)\?' -- gen/; then
+  echo "generated code in gen/ drifted from the proto sources — run 'make generate' and commit the result" >&2
+  exit 1
+fi
+
+# The TypeScript half of the contract. gen/ts ships to consumers in the npm
+# release, so a gate that only builds Go certifies half an artifact.
+echo "== TypeScript typecheck"
+npm run typecheck
+
+echo "== TypeScript tests"
+npm test
 
 echo "== SDK gate green"

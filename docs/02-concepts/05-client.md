@@ -59,7 +59,7 @@ guarantee survives even an abandoned send.
 Inbound frames get no benefit of the doubt — a compromised server is in the
 threat model.
 
-<!-- docref: begin src=client.go#maxInboundMessageBytes:be33da55,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:6c917d60 -->
+<!-- docref: begin src=client.go#maxInboundMessageBytes:be33da55,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:2527789a -->
 A single inbound message is size-capped (16 MiB — far above any legitimate
 control frame), so a multi-gigabyte frame cannot force an allocation; the
 connection that receives one is torn down with a resource-exhausted error.
