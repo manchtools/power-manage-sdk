@@ -3104,9 +3104,10 @@ message TerminalSessionInfo {
   google.protobuf.Timestamp started_at = 7;
   // Last activity timestamp (any input or output traffic).
   google.protobuf.Timestamp last_activity_at = 8;
-  // Identifier of the gateway instance hosting the session, so admins
-  // can correlate with gateway logs in clustered deployments.
-  string gateway_id = 9;
+  // Field 9 held gateway_id: the gateway instance hosting the session, for
+  // correlating with that gateway's logs in a clustered deployment. Control
+  // hosts every session itself now, so there is no second process to correlate
+  // with and no instance to name.
 }
 
 // ListActiveTerminalSessionsRequest follows the project-wide pagination

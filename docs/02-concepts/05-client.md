@@ -59,7 +59,7 @@ guarantee survives even an abandoned send.
 Inbound frames get no benefit of the doubt — a compromised server is in the
 threat model.
 
-<!-- docref: begin src=client.go#maxInboundMessageBytes:be33da55,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:bcd86265 -->
+<!-- docref: begin src=client.go#maxInboundMessageBytes:be33da55,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:6c917d60 -->
 A single inbound message is size-capped (16 MiB — far above any legitimate
 control frame), so a multi-gigabyte frame cannot force an allocation; the
 connection that receives one is torn down with a resource-exhausted error.
@@ -71,6 +71,12 @@ non-fatally, unknown payload variants from a newer server are logged and
 dropped rather than tearing the connection down, and a **panic inside any
 handler is recovered and turned into a dropped frame** — one hostile or buggy
 invocation cannot crash-loop the agent.
+
+An error frame carrying a pending request's message ID is delivered to that
+request, not to the general error handler. The distinction matters because the
+operations that block on a reply are the irreversible ones — local passwords
+already changed, a LUKS slot already added — and a rejection routed past its
+caller leaves that caller waiting out its timeout before it can roll back.
 <!-- docref: end -->
 
 <!-- docref: begin src=client.go#actionQueueDepth:be33da55,client.go#Client.runDispatchedAction:528ff624 -->

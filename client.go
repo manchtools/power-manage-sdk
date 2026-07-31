@@ -1465,6 +1465,20 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			c.logger.Warn("dropping Error with nil payload", "message_id", msg.Id)
 			return nil
 		}
+		// A CORRELATED error is the rejection of a specific request, and its
+		// caller is blocked waiting for exactly this message ID. Routing it to
+		// the general handler instead left that caller waiting until its
+		// context expired — with the server having already answered.
+		//
+		// That is not a latency bug. The operations that block here are the
+		// irreversible ones: the agent has changed the local passwords, or
+		// added a LUKS slot, and is waiting to learn whether control accepted
+		// them before it commits or rolls back. A rejection it never receives
+		// stalls the rollback for the whole timeout.
+		if c.deliverPending(msg) {
+			return nil
+		}
+		// Uncorrelated: a server-originated error with no waiter.
 		if err := handler.OnError(ctx, p.Error); err != nil {
 			return fmt.Errorf("handle error: %w", err)
 		}

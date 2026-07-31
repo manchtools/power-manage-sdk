@@ -21392,11 +21392,8 @@ type TerminalSessionInfo struct {
 	StartedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
 	// Last activity timestamp (any input or output traffic).
 	LastActivityAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
-	// Identifier of the gateway instance hosting the session, so admins
-	// can correlate with gateway logs in clustered deployments.
-	GatewayId     string `protobuf:"bytes,9,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TerminalSessionInfo) Reset() {
@@ -21483,13 +21480,6 @@ func (x *TerminalSessionInfo) GetLastActivityAt() *timestamppb.Timestamp {
 		return x.LastActivityAt
 	}
 	return nil
-}
-
-func (x *TerminalSessionInfo) GetGatewayId() string {
-	if x != nil {
-		return x.GatewayId
-	}
-	return ""
 }
 
 // ListActiveTerminalSessionsRequest follows the project-wide pagination
@@ -23267,7 +23257,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x13StopTerminalRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"\x16\n" +
-	"\x14StopTerminalResponse\"\xed\x02\n" +
+	"\x14StopTerminalResponse\"\xce\x02\n" +
 	"\x13TerminalSessionInfo\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x17\n" +
@@ -23279,9 +23269,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\btty_user\x18\x06 \x01(\tR\attyUser\x129\n" +
 	"\n" +
 	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12D\n" +
-	"\x10last_activity_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0elastActivityAt\x12\x1d\n" +
-	"\n" +
-	"gateway_id\x18\t \x01(\tR\tgatewayId\"\x95\x01\n" +
+	"\x10last_activity_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0elastActivityAt\"\x95\x01\n" +
 	"!ListActiveTerminalSessionsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +

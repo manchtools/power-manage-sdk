@@ -102,3 +102,78 @@ func TestDispatchServerMessage_DeliversEveryPendingResponse(t *testing.T) {
 		})
 	}
 }
+
+// A correlated ERROR must reach the caller that is blocked on it.
+//
+// The server answers a rejected StoreLpsPasswords / StoreLuksKey / GetLuksKey
+// with a ServerMessage_Error carrying the request's message ID, and the waiting
+// method already knows how to read one — it returns "server error: …". It never
+// received any: the Error case in the dispatch loop went straight to
+// handler.OnError, so the waiter blocked until its context expired while the
+// answer sat one branch away.
+//
+// The cost is not latency. These are the irreversible operations: the agent has
+// already changed the local passwords, or added a LUKS slot, and is waiting to
+// learn whether control accepted them before committing or rolling back. A
+// rejection it never sees stalls the rollback for the whole timeout.
+func TestDispatchServerMessage_DeliversCorrelatedErrorToTheWaiter(t *testing.T) {
+	c := &Client{logger: quietLogger()}
+	id := NewULID()
+	ch := c.registerPending(id)
+	defer c.unregisterPending(id)
+
+	msg := &pm.ServerMessage{
+		Id: id,
+		Payload: &pm.ServerMessage_Error{
+			Error: &pm.Error{Code: "internal", Message: "failed to store LPS passwords"},
+		},
+	}
+
+	handler := &recordingErrHandler{}
+	if err := c.dispatchServerMessage(context.Background(), msg, handler); err != nil {
+		t.Fatalf("dispatchServerMessage: %v", err)
+	}
+
+	select {
+	case got := <-ch:
+		if got.GetError().GetMessage() != "failed to store LPS passwords" {
+			t.Errorf("waiter got %+v, want the server's rejection", got)
+		}
+	default:
+		t.Fatal("the correlated error never reached the waiter — the caller blocks until its context expires " +
+			"while the server has already answered, stalling the rollback of an irreversible change")
+	}
+
+	if handler.calls != 0 {
+		t.Errorf("a correlated error also went to OnError (%d calls) — it belongs to its waiter, not the general handler", handler.calls)
+	}
+}
+
+// An UNcorrelated error — no waiter for that id — must still reach OnError.
+func TestDispatchServerMessage_UncorrelatedErrorStillReachesTheHandler(t *testing.T) {
+	c := &Client{logger: quietLogger()}
+	handler := &recordingErrHandler{}
+
+	msg := &pm.ServerMessage{
+		Id: NewULID(), // nothing is waiting on this
+		Payload: &pm.ServerMessage_Error{
+			Error: &pm.Error{Code: "internal", Message: "server-originated"},
+		},
+	}
+	if err := c.dispatchServerMessage(context.Background(), msg, handler); err != nil {
+		t.Fatalf("dispatchServerMessage: %v", err)
+	}
+	if handler.calls != 1 {
+		t.Errorf("OnError calls = %d, want 1 — an error with no waiter must not be swallowed", handler.calls)
+	}
+}
+
+type recordingErrHandler struct {
+	noopStreamHandler
+	calls int
+}
+
+func (h *recordingErrHandler) OnError(context.Context, *pm.Error) error {
+	h.calls++
+	return nil
+}
