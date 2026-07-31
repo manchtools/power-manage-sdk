@@ -7,9 +7,9 @@ description: The crypto package's guarantees — mandatory domain separation on 
 # Crypto helpers
 
 The top-level `crypto` package holds the primitives the Power Manage trust
-story is built from: authenticated encryption, asymmetric sealing, LPS
-password sealing, and the certificate utilities used at agent enrollment and
-renewal. The design rule across all of them: **misuse is rejected by
+story is built from: authenticated encryption, asymmetric sealing, and the
+certificate utilities used at agent enrollment and renewal. (LPS password
+sealing was one of them until spec 41 — see below.) The design rule across all of them: **misuse is rejected by
 construction**, not left to caller discipline.
 
 ## No naked AEAD calls

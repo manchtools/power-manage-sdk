@@ -187,11 +187,18 @@ func TestRPCSurface_MatchesGoldenMinusSpec41Removals(t *testing.T) {
 }
 
 // TestRPCSurface_GatewayServicesAreGone names the whole-service deletions
-// separately: a service reduced to zero methods still disappears from the
-// enumeration above, so an empty-but-present service would not be caught.
+// separately: the enumeration above compares METHOD names, so a service
+// stripped to zero methods raises nothing there — its (empty) method list
+// matches an absent expectation vacuously. Every service whose entire method
+// set spec 41 removes has to be named here or nothing checks it at all.
+//
+// InternalService was missing from this list, which is the failure the comment
+// describes: internal.proto is deleted, and had it survived with its methods
+// intact the enumeration would have caught it — but a partially-stripped one
+// would have passed both.
 func TestRPCSurface_GatewayServicesAreGone(t *testing.T) {
 	live := liveSurface(t)
-	for _, svc := range []string{"GatewayAuthService", "GatewayService"} {
+	for _, svc := range []string{"GatewayAuthService", "GatewayService", "InternalService"} {
 		if methods, ok := live[svc]; ok {
 			t.Errorf("service %s is still registered with %d method(s): %s",
 				svc, len(methods), strings.Join(methods, ", "))

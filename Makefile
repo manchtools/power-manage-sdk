@@ -10,7 +10,15 @@ install-tools:
 	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
 	go install github.com/favadi/protoc-go-inject-tag@latest
 
-generate: generate-go inject-tags gofmt-gen generate-ts
+# NOT prerequisites: make may satisfy those in any order, and concurrently
+# under -j. This pipeline is strictly ordered — protoc writes the files,
+# inject-tags rewrites their struct tags, gofmt cleans up after inject-tags —
+# so the stages are invoked in sequence instead.
+generate:
+	$(MAKE) generate-go
+	$(MAKE) inject-tags
+	$(MAKE) gofmt-gen
+	$(MAKE) generate-ts
 
 # protoc-go-inject-tag rewrites struct tags but does NOT re-run gofmt
 # afterwards, so its output can leave the generated .pb.go files with

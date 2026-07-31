@@ -21184,8 +21184,8 @@ type StartTerminalResponse struct {
 	// the agent over the AgentService bidi stream — so with the tier deleted the
 	// bridge moves to control and the field names what it now is. Re-tagged in
 	// place rather than reserved: V1 is the only wire version.
-	// @gotags: validate:"required,url"
-	TerminalUrl string `protobuf:"bytes,3,opt,name=terminal_url,json=terminalUrl,proto3" json:"terminal_url,omitempty" validate:"required,url"`
+	// @gotags: validate:"required,url,startswith=wss://"
+	TerminalUrl string `protobuf:"bytes,3,opt,name=terminal_url,json=terminalUrl,proto3" json:"terminal_url,omitempty" validate:"required,url,startswith=wss://"`
 	// Token expiry; the client should connect well before this.
 	// @gotags: validate:"required"
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" validate:"required"`

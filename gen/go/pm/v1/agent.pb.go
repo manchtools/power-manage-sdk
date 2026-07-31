@@ -2114,6 +2114,14 @@ type LpsPasswordRotation struct {
 	// RFC 3339 timestamp the agent observed the rotation. Control keeps the
 	// agent's clock here rather than re-stamping at receipt, so the timeline
 	// reflects the device's reality.
+	//
+	// Deliberately NOT format-validated, which is the one exception to the
+	// type/format/length/range rule on this message. By the time this arrives the
+	// agent has ALREADY changed the passwords locally and cannot undo it, so
+	// rejecting the batch over a malformed timestamp destroys the only copy of a
+	// credential the operator now needs. The handler normalises what it can and
+	// keeps the rotation; length is still bounded.
+	// (TestAgentOps_StoreLpsPasswords_PersistsWholeBatch pins this.)
 	// @gotags: validate:"required,min=1,max=64"
 	RotatedAt string `protobuf:"bytes,3,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty" validate:"required,min=1,max=64"`
 	// Why this rotation happened. INITIAL the first time the LPS action ran for

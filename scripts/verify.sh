@@ -20,7 +20,10 @@ cd "$(dirname "$0")/.."
 export GOWORK=off
 
 echo "== gofmt"
-unfmt=$(gofmt -l . 2>/dev/null || true)
+# No `2>/dev/null || true`: that swallows gofmt FAILING (unparseable file, bad
+# path) and reports an empty violation list, so the check passes precisely when
+# it could not run.
+unfmt=$(gofmt -l .)
 if [ -n "$unfmt" ]; then
   echo "gofmt violations:" >&2
   echo "$unfmt" >&2

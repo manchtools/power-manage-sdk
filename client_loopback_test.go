@@ -354,7 +354,9 @@ func TestSyncActions_MapsMessageFieldsThroughFacade(t *testing.T) {
 	}
 	if len(res.MaintenanceWindow.Schedule) != 1 ||
 		res.MaintenanceWindow.Schedule[0].Allow != "22:00-06:00" ||
-		len(res.MaintenanceWindow.Schedule[0].Days) != 2 {
+		len(res.MaintenanceWindow.Schedule[0].Days) != 2 ||
+		res.MaintenanceWindow.Schedule[0].Days[0] != "sat" ||
+		res.MaintenanceWindow.Schedule[0].Days[1] != "sun" {
 		t.Errorf("MaintenanceWindow mismatch: %+v", res.MaintenanceWindow)
 	}
 	// A scalar alongside the message field: the facade drops these independently.

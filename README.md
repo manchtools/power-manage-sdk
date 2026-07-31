@@ -62,7 +62,7 @@ sdk/
 
 ## Proto Definitions
 
-Six proto files define the entire API surface:
+Five proto files define the entire API surface:
 
 | File | Purpose |
 |------|---------|

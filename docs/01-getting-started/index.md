@@ -8,7 +8,7 @@ icon: "🚀"
 # Power Manage SDK
 
 The Power Manage SDK is the shared Go (and TypeScript) library the agent,
-control server, agent, and web UI build on. It ships three things:
+control server, and web UI build on. It ships three things:
 
 <!-- docref: begin src=crypto/csr.go#GenerateCSR:4a9d84de,verify/verify.go#ActionVerifier.Verify:c3b3df3c,crypto/cert.go#CAFingerprintFromPEM:5a8bdd28 -->
 - **Protocol types** — the generated protobuf / Connect-RPC code for the

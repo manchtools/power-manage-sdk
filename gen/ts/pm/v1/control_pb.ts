@@ -10284,7 +10284,7 @@ export type StartTerminalResponse = Message<"pm.v1.StartTerminalResponse"> & {
    * the agent over the AgentService bidi stream — so with the tier deleted the
    * bridge moves to control and the field names what it now is. Re-tagged in
    * place rather than reserved: V1 is the only wire version.
-   * @gotags: validate:"required,url"
+   * @gotags: validate:"required,url,startswith=wss://"
    *
    * @generated from field: string terminal_url = 3;
    */
