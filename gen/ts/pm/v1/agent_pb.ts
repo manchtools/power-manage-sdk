@@ -850,7 +850,14 @@ export const GetLuksKeyRequestSchema: GenMessage<GetLuksKeyRequest> = /*@__PURE_
  */
 export type GetLuksKeyResponse = Message<"pm.v1.GetLuksKeyResponse"> & {
   /**
-   * @gotags: validate:"required,min=1"
+   * Bounded like the storage side, so the two halves of the round trip agree on
+   * what a passphrase can be.
+   *
+   * NOT marked debug_redact: the option reaches the descriptor but protobuf-go's
+   * generated String() does not honour it, so the annotation would assert a
+   * protection that does not exist. This field IS printed by %v on the enclosing
+   * ServerMessage — see spec 41 open item on secret redaction.
+   * @gotags: validate:"required,min=1,max=4096"
    *
    * @generated from field: string passphrase = 1;
    */
@@ -879,8 +886,11 @@ export type StoreLuksKeyRequest = Message<"pm.v1.StoreLuksKeyRequest"> & {
   actionId: string;
 
   /**
-   * Auto-detected device path (e.g., "/dev/sda2")
-   * @gotags: validate:"required,startswith=/"
+   * Auto-detected device path (e.g., "/dev/sda2"). Bounded at PATH_MAX: the
+   * value is only ever a local block-device path, and without a ceiling an
+   * authenticated agent can send a transport-sized string that is validated,
+   * encrypted and persisted.
+   * @gotags: validate:"required,startswith=/,max=4096"
    *
    * @generated from field: string device_path = 2;
    */
@@ -1007,7 +1017,7 @@ export type LpsPasswordRotation = Message<"pm.v1.LpsPasswordRotation"> & {
    * authenticates during the post-rotation grace window — an LPS-only path that
    * signals "rotate now to limit the leaked-password window", never emitted from
    * LUKS. Stored on the event as the lowercase string form.
-   * @gotags: validate:"required"
+   * @gotags: validate:"required,oneof=1 2 3"
    *
    * @generated from field: pm.v1.RotationReason reason = 4;
    */
@@ -1036,7 +1046,10 @@ export type StoreLpsPasswordsRequest = Message<"pm.v1.StoreLpsPasswordsRequest">
   actionId: string;
 
   /**
-   * @gotags: validate:"required,min=1,dive"
+   * One entry per managed local account on the device. Capped: each entry costs
+   * a validation pass, an encryption, and a row, and no real device manages
+   * anything near this many accounts.
+   * @gotags: validate:"required,min=1,max=256,dive"
    *
    * @generated from field: repeated pm.v1.LpsPasswordRotation rotations = 2;
    */

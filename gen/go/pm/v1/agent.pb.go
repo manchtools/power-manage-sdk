@@ -1904,8 +1904,15 @@ func (x *GetLuksKeyRequest) GetActionId() string {
 
 type GetLuksKeyResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,min=1"
-	Passphrase    string `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1"`
+	// Bounded like the storage side, so the two halves of the round trip agree on
+	// what a passphrase can be.
+	//
+	// NOT marked debug_redact: the option reaches the descriptor but protobuf-go's
+	// generated String() does not honour it, so the annotation would assert a
+	// protection that does not exist. This field IS printed by %v on the enclosing
+	// ServerMessage — see spec 41 open item on secret redaction.
+	// @gotags: validate:"required,min=1,max=4096"
+	Passphrase    string `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=4096"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1953,9 +1960,12 @@ type StoreLuksKeyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
-	// Auto-detected device path (e.g., "/dev/sda2")
-	// @gotags: validate:"required,startswith=/"
-	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,startswith=/"`
+	// Auto-detected device path (e.g., "/dev/sda2"). Bounded at PATH_MAX: the
+	// value is only ever a local block-device path, and without a ceiling an
+	// authenticated agent can send a transport-sized string that is validated,
+	// encrypted and persisted.
+	// @gotags: validate:"required,startswith=/,max=4096"
+	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,startswith=/,max=4096"`
 	// Managed passphrase, sent over the agent's direct mTLS connection to
 	// control. Spec 41 removed the X25519 transport sealing along with the
 	// gateway: the seal existed so a relaying gateway could not read
@@ -2129,8 +2139,8 @@ type LpsPasswordRotation struct {
 	// authenticates during the post-rotation grace window — an LPS-only path that
 	// signals "rotate now to limit the leaked-password window", never emitted from
 	// LUKS. Stored on the event as the lowercase string form.
-	// @gotags: validate:"required"
-	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty" validate:"required"`
+	// @gotags: validate:"required,oneof=1 2 3"
+	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty" validate:"required,oneof=1 2 3"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2199,8 +2209,11 @@ type StoreLpsPasswordsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,min=1,dive"
-	Rotations     []*LpsPasswordRotation `protobuf:"bytes,2,rep,name=rotations,proto3" json:"rotations,omitempty" validate:"required,min=1,dive"`
+	// One entry per managed local account on the device. Capped: each entry costs
+	// a validation pass, an encryption, and a row, and no real device manages
+	// anything near this many accounts.
+	// @gotags: validate:"required,min=1,max=256,dive"
+	Rotations     []*LpsPasswordRotation `protobuf:"bytes,2,rep,name=rotations,proto3" json:"rotations,omitempty" validate:"required,min=1,max=256,dive"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
