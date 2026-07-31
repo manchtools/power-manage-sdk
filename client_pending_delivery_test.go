@@ -1,13 +1,14 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
 	"testing"
 	"time"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 // noopStreamHandler satisfies StreamHandler; these cases never reach a handler
@@ -15,8 +16,8 @@ import (
 type noopStreamHandler struct{}
 
 func (noopStreamHandler) OnWelcome(context.Context, *pm.Welcome) error { return nil }
-func (noopStreamHandler) OnAction(context.Context, []byte, []byte) (*pm.ActionResult, error) {
-	return nil, nil
+func (noopStreamHandler) OnManifestDelivery(context.Context, *pm.ManifestDelivery) error {
+	return nil
 }
 func (noopStreamHandler) OnQuery(context.Context, *pm.OSQuery) (*pm.OSQueryResult, error) {
 	return nil, nil
@@ -24,6 +25,15 @@ func (noopStreamHandler) OnQuery(context.Context, *pm.OSQuery) (*pm.OSQueryResul
 func (noopStreamHandler) OnError(context.Context, *pm.Error) error { return nil }
 
 func quietLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
+
+// testSealedValue is a SealedValue long enough to pass the `min=61` boundary
+// check (crypto.MinSealedLen: 32-byte ephemeral key + 12-byte nonce + 16-byte
+// tag + at least one plaintext byte). A shorter fixture would be rejected at
+// validateInbound, so a test using one would assert the rejection path while
+// claiming to exercise the happy one.
+func testSealedValue() *pm.SealedValue {
+	return &pm.SealedValue{Version: 1, Ciphertext: bytes.Repeat([]byte{0x7f}, 61)}
+}
 
 // Every Client method that sends a stream request and then BLOCKS on a pending
 // channel depends on dispatchServerMessage routing the matching ServerMessage
@@ -65,7 +75,7 @@ func TestDispatchServerMessage_DeliversEveryPendingResponse(t *testing.T) {
 			name: "GetLuksKey",
 			payload: func() *pm.ServerMessage {
 				return &pm.ServerMessage{Payload: &pm.ServerMessage_GetLuksKey{
-					GetLuksKey: &pm.GetLuksKeyResponse{Passphrase: "p"},
+					GetLuksKey: &pm.GetLuksKeyResponse{Passphrase: testSealedValue()},
 				}}
 			},
 		},

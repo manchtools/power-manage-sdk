@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: pm/v1/device_auth.proto
+// source: powermanage/v1/device_auth.proto
 
-package pmv1
+package powermanagev1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -36,9 +36,7 @@ type EnrollRequest struct {
 	// the enroll CLI strips colons and lowercases the operator's value
 	// (openssl emits uppercase, colon-separated) and the agent compares
 	// with EqualFold, so the `hexadecimal` tag is intentionally permissive
-	// on case. Field 3 (formerly the removed skip_verify bool) is reused in
-	// place — EnrollRequest only crosses the local enrollment socket within
-	// one agent binary, so there is no cross-version wire concern.
+	// on case.
 	// @gotags: validate:"omitempty,len=64,hexadecimal"
 	CaFingerprintPin string `protobuf:"bytes,3,opt,name=ca_fingerprint_pin,json=caFingerprintPin,proto3" json:"ca_fingerprint_pin,omitempty" validate:"omitempty,len=64,hexadecimal"`
 	unknownFields    protoimpl.UnknownFields
@@ -47,7 +45,7 @@ type EnrollRequest struct {
 
 func (x *EnrollRequest) Reset() {
 	*x = EnrollRequest{}
-	mi := &file_pm_v1_device_auth_proto_msgTypes[0]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -59,7 +57,7 @@ func (x *EnrollRequest) String() string {
 func (*EnrollRequest) ProtoMessage() {}
 
 func (x *EnrollRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_device_auth_proto_msgTypes[0]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -72,7 +70,7 @@ func (x *EnrollRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnrollRequest.ProtoReflect.Descriptor instead.
 func (*EnrollRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{0}
+	return file_powermanage_v1_device_auth_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *EnrollRequest) GetServerUrl() string {
@@ -102,8 +100,8 @@ type EnrollResponse struct {
 	// means device_id is populated and error is empty; success=false
 	// means error is populated and device_id is empty. The bool itself
 	// is unconditional but we tag it explicit-required so the
-	// proto-validate coverage tool stops counting it as a gap (audit
-	// finding #2 / #73). Bools always have a default value, so
+	// proto-validate coverage tool stops counting it as a gap. Bools
+	// always have a default value, so
 	// "required" here means "must be present in the wire payload" —
 	// protovalidate enforces no extra runtime check beyond that.
 	// @gotags: validate:"required"
@@ -118,7 +116,7 @@ type EnrollResponse struct {
 
 func (x *EnrollResponse) Reset() {
 	*x = EnrollResponse{}
-	mi := &file_pm_v1_device_auth_proto_msgTypes[1]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -130,7 +128,7 @@ func (x *EnrollResponse) String() string {
 func (*EnrollResponse) ProtoMessage() {}
 
 func (x *EnrollResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_device_auth_proto_msgTypes[1]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -143,7 +141,7 @@ func (x *EnrollResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnrollResponse.ProtoReflect.Descriptor instead.
 func (*EnrollResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{1}
+	return file_powermanage_v1_device_auth_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *EnrollResponse) GetSuccess() bool {
@@ -175,7 +173,7 @@ type GetEnrollmentStatusRequest struct {
 
 func (x *GetEnrollmentStatusRequest) Reset() {
 	*x = GetEnrollmentStatusRequest{}
-	mi := &file_pm_v1_device_auth_proto_msgTypes[2]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -187,7 +185,7 @@ func (x *GetEnrollmentStatusRequest) String() string {
 func (*GetEnrollmentStatusRequest) ProtoMessage() {}
 
 func (x *GetEnrollmentStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_device_auth_proto_msgTypes[2]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -200,7 +198,7 @@ func (x *GetEnrollmentStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEnrollmentStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetEnrollmentStatusRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{2}
+	return file_powermanage_v1_device_auth_proto_rawDescGZIP(), []int{2}
 }
 
 type GetEnrollmentStatusResponse struct {
@@ -215,7 +213,7 @@ type GetEnrollmentStatusResponse struct {
 
 func (x *GetEnrollmentStatusResponse) Reset() {
 	*x = GetEnrollmentStatusResponse{}
-	mi := &file_pm_v1_device_auth_proto_msgTypes[3]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -227,7 +225,7 @@ func (x *GetEnrollmentStatusResponse) String() string {
 func (*GetEnrollmentStatusResponse) ProtoMessage() {}
 
 func (x *GetEnrollmentStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_device_auth_proto_msgTypes[3]
+	mi := &file_powermanage_v1_device_auth_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -240,7 +238,7 @@ func (x *GetEnrollmentStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEnrollmentStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetEnrollmentStatusResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_device_auth_proto_rawDescGZIP(), []int{3}
+	return file_powermanage_v1_device_auth_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetEnrollmentStatusResponse) GetEnrolled() bool {
@@ -257,11 +255,11 @@ func (x *GetEnrollmentStatusResponse) GetDeviceId() string {
 	return ""
 }
 
-var File_pm_v1_device_auth_proto protoreflect.FileDescriptor
+var File_powermanage_v1_device_auth_proto protoreflect.FileDescriptor
 
-const file_pm_v1_device_auth_proto_rawDesc = "" +
+const file_powermanage_v1_device_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x17pm/v1/device_auth.proto\x12\x05pm.v1\"r\n" +
+	" powermanage/v1/device_auth.proto\x12\x0epowermanage.v1\"r\n" +
 	"\rEnrollRequest\x12\x1d\n" +
 	"\n" +
 	"server_url\x18\x01 \x01(\tR\tserverUrl\x12\x14\n" +
@@ -274,35 +272,35 @@ const file_pm_v1_device_auth_proto_rawDesc = "" +
 	"\x1aGetEnrollmentStatusRequest\"V\n" +
 	"\x1bGetEnrollmentStatusResponse\x12\x1a\n" +
 	"\benrolled\x18\x01 \x01(\bR\benrolled\x12\x1b\n" +
-	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId2\xa8\x01\n" +
-	"\x11DeviceAuthService\x125\n" +
-	"\x06Enroll\x12\x14.pm.v1.EnrollRequest\x1a\x15.pm.v1.EnrollResponse\x12\\\n" +
-	"\x13GetEnrollmentStatus\x12!.pm.v1.GetEnrollmentStatusRequest\x1a\".pm.v1.GetEnrollmentStatusResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId2\xcc\x01\n" +
+	"\x11DeviceAuthService\x12G\n" +
+	"\x06Enroll\x12\x1d.powermanage.v1.EnrollRequest\x1a\x1e.powermanage.v1.EnrollResponse\x12n\n" +
+	"\x13GetEnrollmentStatus\x12*.powermanage.v1.GetEnrollmentStatusRequest\x1a+.powermanage.v1.GetEnrollmentStatusResponseBLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
-	file_pm_v1_device_auth_proto_rawDescOnce sync.Once
-	file_pm_v1_device_auth_proto_rawDescData []byte
+	file_powermanage_v1_device_auth_proto_rawDescOnce sync.Once
+	file_powermanage_v1_device_auth_proto_rawDescData []byte
 )
 
-func file_pm_v1_device_auth_proto_rawDescGZIP() []byte {
-	file_pm_v1_device_auth_proto_rawDescOnce.Do(func() {
-		file_pm_v1_device_auth_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_device_auth_proto_rawDesc), len(file_pm_v1_device_auth_proto_rawDesc)))
+func file_powermanage_v1_device_auth_proto_rawDescGZIP() []byte {
+	file_powermanage_v1_device_auth_proto_rawDescOnce.Do(func() {
+		file_powermanage_v1_device_auth_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_device_auth_proto_rawDesc), len(file_powermanage_v1_device_auth_proto_rawDesc)))
 	})
-	return file_pm_v1_device_auth_proto_rawDescData
+	return file_powermanage_v1_device_auth_proto_rawDescData
 }
 
-var file_pm_v1_device_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_pm_v1_device_auth_proto_goTypes = []any{
-	(*EnrollRequest)(nil),               // 0: pm.v1.EnrollRequest
-	(*EnrollResponse)(nil),              // 1: pm.v1.EnrollResponse
-	(*GetEnrollmentStatusRequest)(nil),  // 2: pm.v1.GetEnrollmentStatusRequest
-	(*GetEnrollmentStatusResponse)(nil), // 3: pm.v1.GetEnrollmentStatusResponse
+var file_powermanage_v1_device_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_powermanage_v1_device_auth_proto_goTypes = []any{
+	(*EnrollRequest)(nil),               // 0: powermanage.v1.EnrollRequest
+	(*EnrollResponse)(nil),              // 1: powermanage.v1.EnrollResponse
+	(*GetEnrollmentStatusRequest)(nil),  // 2: powermanage.v1.GetEnrollmentStatusRequest
+	(*GetEnrollmentStatusResponse)(nil), // 3: powermanage.v1.GetEnrollmentStatusResponse
 }
-var file_pm_v1_device_auth_proto_depIdxs = []int32{
-	0, // 0: pm.v1.DeviceAuthService.Enroll:input_type -> pm.v1.EnrollRequest
-	2, // 1: pm.v1.DeviceAuthService.GetEnrollmentStatus:input_type -> pm.v1.GetEnrollmentStatusRequest
-	1, // 2: pm.v1.DeviceAuthService.Enroll:output_type -> pm.v1.EnrollResponse
-	3, // 3: pm.v1.DeviceAuthService.GetEnrollmentStatus:output_type -> pm.v1.GetEnrollmentStatusResponse
+var file_powermanage_v1_device_auth_proto_depIdxs = []int32{
+	0, // 0: powermanage.v1.DeviceAuthService.Enroll:input_type -> powermanage.v1.EnrollRequest
+	2, // 1: powermanage.v1.DeviceAuthService.GetEnrollmentStatus:input_type -> powermanage.v1.GetEnrollmentStatusRequest
+	1, // 2: powermanage.v1.DeviceAuthService.Enroll:output_type -> powermanage.v1.EnrollResponse
+	3, // 3: powermanage.v1.DeviceAuthService.GetEnrollmentStatus:output_type -> powermanage.v1.GetEnrollmentStatusResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -310,26 +308,26 @@ var file_pm_v1_device_auth_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_pm_v1_device_auth_proto_init() }
-func file_pm_v1_device_auth_proto_init() {
-	if File_pm_v1_device_auth_proto != nil {
+func init() { file_powermanage_v1_device_auth_proto_init() }
+func file_powermanage_v1_device_auth_proto_init() {
+	if File_powermanage_v1_device_auth_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_device_auth_proto_rawDesc), len(file_pm_v1_device_auth_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_device_auth_proto_rawDesc), len(file_powermanage_v1_device_auth_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_pm_v1_device_auth_proto_goTypes,
-		DependencyIndexes: file_pm_v1_device_auth_proto_depIdxs,
-		MessageInfos:      file_pm_v1_device_auth_proto_msgTypes,
+		GoTypes:           file_powermanage_v1_device_auth_proto_goTypes,
+		DependencyIndexes: file_powermanage_v1_device_auth_proto_depIdxs,
+		MessageInfos:      file_powermanage_v1_device_auth_proto_msgTypes,
 	}.Build()
-	File_pm_v1_device_auth_proto = out.File
-	file_pm_v1_device_auth_proto_goTypes = nil
-	file_pm_v1_device_auth_proto_depIdxs = nil
+	File_powermanage_v1_device_auth_proto = out.File
+	file_powermanage_v1_device_auth_proto_goTypes = nil
+	file_powermanage_v1_device_auth_proto_depIdxs = nil
 }

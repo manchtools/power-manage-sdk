@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: pm/v1/actions.proto
+// source: powermanage/v1/actions.proto
 
-package pmv1
+package powermanagev1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -131,11 +131,11 @@ func (x ActionType) String() string {
 }
 
 func (ActionType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[0].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[0].Descriptor()
 }
 
 func (ActionType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[0]
+	return &file_powermanage_v1_actions_proto_enumTypes[0]
 }
 
 func (x ActionType) Number() protoreflect.EnumNumber {
@@ -144,7 +144,7 @@ func (x ActionType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActionType.Descriptor instead.
 func (ActionType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{0}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{0}
 }
 
 // ServiceBackend selects which init/service manager the agent targets.
@@ -188,11 +188,11 @@ func (x ServiceBackend) String() string {
 }
 
 func (ServiceBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[1].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[1].Descriptor()
 }
 
 func (ServiceBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[1]
+	return &file_powermanage_v1_actions_proto_enumTypes[1]
 }
 
 func (x ServiceBackend) Number() protoreflect.EnumNumber {
@@ -201,7 +201,7 @@ func (x ServiceBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ServiceBackend.Descriptor instead.
 func (ServiceBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
 // FirewallBackend selects which packet-filter framework the agent
@@ -246,11 +246,11 @@ func (x FirewallBackend) String() string {
 }
 
 func (FirewallBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[2].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[2].Descriptor()
 }
 
 func (FirewallBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[2]
+	return &file_powermanage_v1_actions_proto_enumTypes[2]
 }
 
 func (x FirewallBackend) Number() protoreflect.EnumNumber {
@@ -259,7 +259,7 @@ func (x FirewallBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FirewallBackend.Descriptor instead.
 func (FirewallBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 // DnsBackend selects which resolver framework the agent targets when a
@@ -300,11 +300,11 @@ func (x DnsBackend) String() string {
 }
 
 func (DnsBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[3].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[3].Descriptor()
 }
 
 func (DnsBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[3]
+	return &file_powermanage_v1_actions_proto_enumTypes[3]
 }
 
 func (x DnsBackend) Number() protoreflect.EnumNumber {
@@ -313,7 +313,7 @@ func (x DnsBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DnsBackend.Descriptor instead.
 func (DnsBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 // NetworkConfigBackend selects which tool manages interface IP,
@@ -359,11 +359,11 @@ func (x NetworkConfigBackend) String() string {
 }
 
 func (NetworkConfigBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[4].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[4].Descriptor()
 }
 
 func (NetworkConfigBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[4]
+	return &file_powermanage_v1_actions_proto_enumTypes[4]
 }
 
 func (x NetworkConfigBackend) Number() protoreflect.EnumNumber {
@@ -372,7 +372,7 @@ func (x NetworkConfigBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use NetworkConfigBackend.Descriptor instead.
 func (NetworkConfigBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 type ServiceUnitState int32
@@ -411,11 +411,11 @@ func (x ServiceUnitState) String() string {
 }
 
 func (ServiceUnitState) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[5].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[5].Descriptor()
 }
 
 func (ServiceUnitState) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[5]
+	return &file_powermanage_v1_actions_proto_enumTypes[5]
 }
 
 func (x ServiceUnitState) Number() protoreflect.EnumNumber {
@@ -424,7 +424,7 @@ func (x ServiceUnitState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ServiceUnitState.Descriptor instead.
 func (ServiceUnitState) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 // AdminAccessLevel defines the level of administrative access granted.
@@ -478,11 +478,11 @@ func (x AdminAccessLevel) String() string {
 }
 
 func (AdminAccessLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[6].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[6].Descriptor()
 }
 
 func (AdminAccessLevel) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[6]
+	return &file_powermanage_v1_actions_proto_enumTypes[6]
 }
 
 func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
@@ -491,7 +491,7 @@ func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AdminAccessLevel.Descriptor instead.
 func (AdminAccessLevel) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 // PrivilegeBackend selects which privilege-escalation tool the agent
@@ -528,11 +528,11 @@ func (x PrivilegeBackend) String() string {
 }
 
 func (PrivilegeBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[7].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[7].Descriptor()
 }
 
 func (PrivilegeBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[7]
+	return &file_powermanage_v1_actions_proto_enumTypes[7]
 }
 
 func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
@@ -541,7 +541,7 @@ func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PrivilegeBackend.Descriptor instead.
 func (PrivilegeBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{7}
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.
@@ -578,11 +578,11 @@ func (x LpsPasswordComplexity) String() string {
 }
 
 func (LpsPasswordComplexity) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[8].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[8].Descriptor()
 }
 
 func (LpsPasswordComplexity) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[8]
+	return &file_powermanage_v1_actions_proto_enumTypes[8]
 }
 
 func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
@@ -591,7 +591,7 @@ func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LpsPasswordComplexity.Descriptor instead.
 func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{8}
 }
 
 // EncryptionBackend selects the disk-encryption implementation the
@@ -631,11 +631,11 @@ func (x EncryptionBackend) String() string {
 }
 
 func (EncryptionBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[9].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[9].Descriptor()
 }
 
 func (EncryptionBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[9]
+	return &file_powermanage_v1_actions_proto_enumTypes[9]
 }
 
 func (x EncryptionBackend) Number() protoreflect.EnumNumber {
@@ -644,7 +644,7 @@ func (x EncryptionBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncryptionBackend.Descriptor instead.
 func (EncryptionBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{9}
 }
 
 // EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
@@ -684,11 +684,11 @@ func (x EncryptionDeviceBoundKeyType) String() string {
 }
 
 func (EncryptionDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[10].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[10].Descriptor()
 }
 
 func (EncryptionDeviceBoundKeyType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[10]
+	return &file_powermanage_v1_actions_proto_enumTypes[10]
 }
 
 func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
@@ -697,7 +697,7 @@ func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncryptionDeviceBoundKeyType.Descriptor instead.
 func (EncryptionDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{10}
 }
 
 // WiFi authentication type.
@@ -734,11 +734,11 @@ func (x WifiAuthType) String() string {
 }
 
 func (WifiAuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[11].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[11].Descriptor()
 }
 
 func (WifiAuthType) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[11]
+	return &file_powermanage_v1_actions_proto_enumTypes[11]
 }
 
 func (x WifiAuthType) Number() protoreflect.EnumNumber {
@@ -747,7 +747,7 @@ func (x WifiAuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiAuthType.Descriptor instead.
 func (WifiAuthType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{11}
 }
 
 // WifiBackend selects which WiFi-management tool the agent targets.
@@ -790,11 +790,11 @@ func (x WifiBackend) String() string {
 }
 
 func (WifiBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_actions_proto_enumTypes[12].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[12].Descriptor()
 }
 
 func (WifiBackend) Type() protoreflect.EnumType {
-	return &file_pm_v1_actions_proto_enumTypes[12]
+	return &file_powermanage_v1_actions_proto_enumTypes[12]
 }
 
 func (x WifiBackend) Number() protoreflect.EnumNumber {
@@ -803,7 +803,7 @@ func (x WifiBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiBackend.Descriptor instead.
 func (WifiBackend) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{12}
 }
 
 type Action struct {
@@ -811,32 +811,18 @@ type Action struct {
 	// @gotags: validate:"required"
 	Id *ActionId `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required"`
 	// @gotags: validate:"required,ne=0"
-	Type ActionType `protobuf:"varint,2,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty" validate:"required,ne=0"`
+	Type ActionType `protobuf:"varint,2,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty" validate:"required,ne=0"`
 	// @gotags: validate:"omitempty"
-	DesiredState DesiredState `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState DesiredState `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0,lte=3600"
 	TimeoutSeconds int32 `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty" validate:"omitempty,gte=0,lte=3600"`
-	// Scheduling configuration for autonomous agent execution.
-	// Authoritative ONLY when this Action is delivered as a member of
-	// SyncActionsResponse.standalone_actions. When delivered inside an
-	// ActionGroup (i.e. via SyncActionsResponse.grouped_actions), this
-	// field is ignored — the group's schedule fires the action and every
-	// sibling in declared order.
+	// The action's own authored schedule. It is carried for display and for
+	// authoring round-trips; execution is driven by the schedule on the
+	// Manifest the occurrence belongs to, which fires every occurrence in
+	// declared order. A singleton-Action manifest simply carries this schedule
+	// at the manifest level.
 	// @gotags: validate:"omitempty"
 	Schedule *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"omitempty"`
-	// CA signature over `signed_envelope` (the deterministic wire bytes of
-	// a SignedActionEnvelope). The agent verifies this over `signed_envelope`
-	// and unmarshals THOSE bytes to execute — the executed action is the
-	// verified action.
-	Signature []byte `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Deterministic wire bytes of the device-bound SignedActionEnvelope this
-	// action executes. Carried on actions delivered via SyncActions (the
-	// offline-scheduler pull path) so the agent verifies and executes the
-	// same bytes it would on the push (ActionDispatch) path. Reuses field 7,
-	// freed by the params_canonical removal. The typed params/schedule fields
-	// below remain for the scheduler's display/ordering, but EXECUTION and
-	// all security-relevant decisions use the verified envelope.
-	SignedEnvelope []byte `protobuf:"bytes,7,opt,name=signed_envelope,json=signedEnvelope,proto3" json:"signed_envelope,omitempty"`
 	// Type-specific parameters
 	//
 	// Types that are valid to be assigned to Params:
@@ -866,7 +852,7 @@ type Action struct {
 
 func (x *Action) Reset() {
 	*x = Action{}
-	mi := &file_pm_v1_actions_proto_msgTypes[0]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -878,7 +864,7 @@ func (x *Action) String() string {
 func (*Action) ProtoMessage() {}
 
 func (x *Action) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[0]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -891,7 +877,7 @@ func (x *Action) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Action.ProtoReflect.Descriptor instead.
 func (*Action) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{0}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Action) GetId() *ActionId {
@@ -925,20 +911,6 @@ func (x *Action) GetTimeoutSeconds() int32 {
 func (x *Action) GetSchedule() *ActionSchedule {
 	if x != nil {
 		return x.Schedule
-	}
-	return nil
-}
-
-func (x *Action) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *Action) GetSignedEnvelope() []byte {
-	if x != nil {
-		return x.SignedEnvelope
 	}
 	return nil
 }
@@ -1224,419 +1196,6 @@ func (*Action_Wifi) isAction_Params() {}
 
 func (*Action_AgentUpdate) isAction_Params() {}
 
-// SignedActionEnvelope is the canonical, signed representation of an
-// executable action. The control server's CA signs the DETERMINISTIC
-// protobuf wire bytes of this message (proto.MarshalOptions{Deterministic:
-// true}); the agent verifies the signature over the received bytes and
-// unmarshals THOSE SAME bytes to execute. There is exactly one
-// representation: the executed message IS the verified message.
-//
-// Binding the full executed envelope closes the gap (sdk#82 / audit
-// F-C2 / SA-C1) where a compromised gateway or Valkey relay could rewrite
-// the executed action — flip desired_state PRESENT->ABSENT, swap params,
-// change the timeout/schedule, or retarget the device — under a signature
-// that covered only (id, type, params). Every field below is bound:
-//
-//   - target_device_id binds the action to one device (no cross-device
-//     replay of a captured envelope).
-//   - action_type binds the type (no lifting a signed envelope onto SYNC).
-//   - desired_state / timeout_seconds / schedule bind the execution
-//     semantics.
-//   - the params oneof binds exactly what runs.
-//
-// There is no signature field inside the envelope — the signature is over
-// the envelope's bytes and travels alongside them (see ActionDispatch).
-type SignedActionEnvelope struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Execution id this envelope authorizes (the wire ActionId.value).
-	ActionId       *ActionId       `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	ActionType     ActionType      `protobuf:"varint,2,opt,name=action_type,json=actionType,proto3,enum=pm.v1.ActionType" json:"action_type,omitempty"`
-	DesiredState   DesiredState    `protobuf:"varint,3,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty"`
-	TimeoutSeconds int32           `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
-	Schedule       *ActionSchedule `protobuf:"bytes,5,opt,name=schedule,proto3" json:"schedule,omitempty"`
-	// The single device this envelope is authorized to run on.
-	TargetDeviceId string `protobuf:"bytes,6,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty"`
-	// Type-specific parameters — the same param message types as Action,
-	// re-declared here so the signed bytes carry exactly what executes.
-	//
-	// Types that are valid to be assigned to Params:
-	//
-	//	*SignedActionEnvelope_Package
-	//	*SignedActionEnvelope_App
-	//	*SignedActionEnvelope_Shell
-	//	*SignedActionEnvelope_Service
-	//	*SignedActionEnvelope_File
-	//	*SignedActionEnvelope_Update
-	//	*SignedActionEnvelope_Repository
-	//	*SignedActionEnvelope_Flatpak
-	//	*SignedActionEnvelope_Directory
-	//	*SignedActionEnvelope_User
-	//	*SignedActionEnvelope_Ssh
-	//	*SignedActionEnvelope_Sshd
-	//	*SignedActionEnvelope_AdminPolicy
-	//	*SignedActionEnvelope_Lps
-	//	*SignedActionEnvelope_Group
-	//	*SignedActionEnvelope_Encryption
-	//	*SignedActionEnvelope_Wifi
-	//	*SignedActionEnvelope_AgentUpdate
-	Params        isSignedActionEnvelope_Params `protobuf_oneof:"params"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SignedActionEnvelope) Reset() {
-	*x = SignedActionEnvelope{}
-	mi := &file_pm_v1_actions_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SignedActionEnvelope) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SignedActionEnvelope) ProtoMessage() {}
-
-func (x *SignedActionEnvelope) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SignedActionEnvelope.ProtoReflect.Descriptor instead.
-func (*SignedActionEnvelope) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *SignedActionEnvelope) GetActionId() *ActionId {
-	if x != nil {
-		return x.ActionId
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetActionType() ActionType {
-	if x != nil {
-		return x.ActionType
-	}
-	return ActionType_ACTION_TYPE_UNSPECIFIED
-}
-
-func (x *SignedActionEnvelope) GetDesiredState() DesiredState {
-	if x != nil {
-		return x.DesiredState
-	}
-	return DesiredState_DESIRED_STATE_PRESENT
-}
-
-func (x *SignedActionEnvelope) GetTimeoutSeconds() int32 {
-	if x != nil {
-		return x.TimeoutSeconds
-	}
-	return 0
-}
-
-func (x *SignedActionEnvelope) GetSchedule() *ActionSchedule {
-	if x != nil {
-		return x.Schedule
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetTargetDeviceId() string {
-	if x != nil {
-		return x.TargetDeviceId
-	}
-	return ""
-}
-
-func (x *SignedActionEnvelope) GetParams() isSignedActionEnvelope_Params {
-	if x != nil {
-		return x.Params
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetPackage() *PackageParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Package); ok {
-			return x.Package
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetApp() *AppInstallParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_App); ok {
-			return x.App
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetShell() *ShellParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Shell); ok {
-			return x.Shell
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetService() *ServiceParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Service); ok {
-			return x.Service
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetFile() *FileParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_File); ok {
-			return x.File
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetUpdate() *UpdateParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Update); ok {
-			return x.Update
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetRepository() *RepositoryParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Repository); ok {
-			return x.Repository
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetFlatpak() *FlatpakParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Flatpak); ok {
-			return x.Flatpak
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetDirectory() *DirectoryParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Directory); ok {
-			return x.Directory
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetUser() *UserParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_User); ok {
-			return x.User
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetSsh() *SshParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Ssh); ok {
-			return x.Ssh
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetSshd() *SshdParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Sshd); ok {
-			return x.Sshd
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetAdminPolicy() *AdminPolicyParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_AdminPolicy); ok {
-			return x.AdminPolicy
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetLps() *LpsParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Lps); ok {
-			return x.Lps
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetGroup() *GroupParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Group); ok {
-			return x.Group
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetEncryption() *EncryptionParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Encryption); ok {
-			return x.Encryption
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetWifi() *WifiParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_Wifi); ok {
-			return x.Wifi
-		}
-	}
-	return nil
-}
-
-func (x *SignedActionEnvelope) GetAgentUpdate() *AgentUpdateParams {
-	if x != nil {
-		if x, ok := x.Params.(*SignedActionEnvelope_AgentUpdate); ok {
-			return x.AgentUpdate
-		}
-	}
-	return nil
-}
-
-type isSignedActionEnvelope_Params interface {
-	isSignedActionEnvelope_Params()
-}
-
-type SignedActionEnvelope_Package struct {
-	Package *PackageParams `protobuf:"bytes,7,opt,name=package,proto3,oneof"`
-}
-
-type SignedActionEnvelope_App struct {
-	App *AppInstallParams `protobuf:"bytes,8,opt,name=app,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Shell struct {
-	Shell *ShellParams `protobuf:"bytes,9,opt,name=shell,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Service struct {
-	Service *ServiceParams `protobuf:"bytes,10,opt,name=service,proto3,oneof"`
-}
-
-type SignedActionEnvelope_File struct {
-	File *FileParams `protobuf:"bytes,11,opt,name=file,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Update struct {
-	Update *UpdateParams `protobuf:"bytes,12,opt,name=update,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Repository struct {
-	Repository *RepositoryParams `protobuf:"bytes,13,opt,name=repository,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Flatpak struct {
-	Flatpak *FlatpakParams `protobuf:"bytes,14,opt,name=flatpak,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Directory struct {
-	Directory *DirectoryParams `protobuf:"bytes,15,opt,name=directory,proto3,oneof"`
-}
-
-type SignedActionEnvelope_User struct {
-	User *UserParams `protobuf:"bytes,16,opt,name=user,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Ssh struct {
-	Ssh *SshParams `protobuf:"bytes,17,opt,name=ssh,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Sshd struct {
-	Sshd *SshdParams `protobuf:"bytes,18,opt,name=sshd,proto3,oneof"`
-}
-
-type SignedActionEnvelope_AdminPolicy struct {
-	AdminPolicy *AdminPolicyParams `protobuf:"bytes,19,opt,name=admin_policy,json=adminPolicy,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Lps struct {
-	Lps *LpsParams `protobuf:"bytes,20,opt,name=lps,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Group struct {
-	Group *GroupParams `protobuf:"bytes,21,opt,name=group,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Encryption struct {
-	Encryption *EncryptionParams `protobuf:"bytes,22,opt,name=encryption,proto3,oneof"`
-}
-
-type SignedActionEnvelope_Wifi struct {
-	Wifi *WifiParams `protobuf:"bytes,23,opt,name=wifi,proto3,oneof"`
-}
-
-type SignedActionEnvelope_AgentUpdate struct {
-	AgentUpdate *AgentUpdateParams `protobuf:"bytes,24,opt,name=agent_update,json=agentUpdate,proto3,oneof"`
-}
-
-func (*SignedActionEnvelope_Package) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_App) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Shell) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Service) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_File) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Update) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Repository) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Flatpak) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Directory) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_User) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Ssh) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Sshd) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_AdminPolicy) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Lps) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Group) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Encryption) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_Wifi) isSignedActionEnvelope_Params() {}
-
-func (*SignedActionEnvelope_AgentUpdate) isSignedActionEnvelope_Params() {}
-
 // ActionSchedule defines when an action should be executed by the agent.
 // Actions run autonomously on the agent even without server connection.
 type ActionSchedule struct {
@@ -1661,7 +1220,7 @@ type ActionSchedule struct {
 
 func (x *ActionSchedule) Reset() {
 	*x = ActionSchedule{}
-	mi := &file_pm_v1_actions_proto_msgTypes[2]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1673,7 +1232,7 @@ func (x *ActionSchedule) String() string {
 func (*ActionSchedule) ProtoMessage() {}
 
 func (x *ActionSchedule) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[2]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1686,7 +1245,7 @@ func (x *ActionSchedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionSchedule.ProtoReflect.Descriptor instead.
 func (*ActionSchedule) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{2}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ActionSchedule) GetCron() string {
@@ -1745,7 +1304,7 @@ type PackageParams struct {
 
 func (x *PackageParams) Reset() {
 	*x = PackageParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[3]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1757,7 +1316,7 @@ func (x *PackageParams) String() string {
 func (*PackageParams) ProtoMessage() {}
 
 func (x *PackageParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[3]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1770,7 +1329,7 @@ func (x *PackageParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageParams.ProtoReflect.Descriptor instead.
 func (*PackageParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{3}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PackageParams) GetName() string {
@@ -1846,7 +1405,7 @@ type AppInstallParams struct {
 
 func (x *AppInstallParams) Reset() {
 	*x = AppInstallParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[4]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1858,7 +1417,7 @@ func (x *AppInstallParams) String() string {
 func (*AppInstallParams) ProtoMessage() {}
 
 func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[4]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1871,7 +1430,7 @@ func (x *AppInstallParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppInstallParams.ProtoReflect.Descriptor instead.
 func (*AppInstallParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{4}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AppInstallParams) GetUrl() string {
@@ -1920,7 +1479,7 @@ type ShellParams struct {
 
 func (x *ShellParams) Reset() {
 	*x = ShellParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[5]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1932,7 +1491,7 @@ func (x *ShellParams) String() string {
 func (*ShellParams) ProtoMessage() {}
 
 func (x *ShellParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[5]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1945,7 +1504,7 @@ func (x *ShellParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShellParams.ProtoReflect.Descriptor instead.
 func (*ShellParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ShellParams) GetScript() string {
@@ -2006,22 +1565,22 @@ type ServiceParams struct {
 	// @gotags: validate:"required,min=1,max=255"
 	UnitName string `protobuf:"bytes,1,opt,name=unit_name,json=unitName,proto3" json:"unit_name,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"omitempty"
-	DesiredState ServiceUnitState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.ServiceUnitState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState ServiceUnitState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.ServiceUnitState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty"
 	Enable bool `protobuf:"varint,3,opt,name=enable,proto3" json:"enable,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,max=65536"
 	UnitContent string `protobuf:"bytes,4,opt,name=unit_content,json=unitContent,proto3" json:"unit_content,omitempty" validate:"omitempty,max=65536"`
-	// Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
-	// compatibility with devices that don't explicitly set it.
+	// Service manager backend. Unset means SERVICE_BACKEND_SYSTEMD, which is
+	// what most managed Linux runs.
 	// @gotags: validate:"omitempty"
-	Backend       ServiceBackend `protobuf:"varint,5,opt,name=backend,proto3,enum=pm.v1.ServiceBackend" json:"backend,omitempty" validate:"omitempty"`
+	Backend       ServiceBackend `protobuf:"varint,5,opt,name=backend,proto3,enum=powermanage.v1.ServiceBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ServiceParams) Reset() {
 	*x = ServiceParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[6]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2033,7 +1592,7 @@ func (x *ServiceParams) String() string {
 func (*ServiceParams) ProtoMessage() {}
 
 func (x *ServiceParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[6]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2046,7 +1605,7 @@ func (x *ServiceParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceParams.ProtoReflect.Descriptor instead.
 func (*ServiceParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ServiceParams) GetUnitName() string {
@@ -2108,7 +1667,7 @@ type FileParams struct {
 
 func (x *FileParams) Reset() {
 	*x = FileParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2120,7 +1679,7 @@ func (x *FileParams) String() string {
 func (*FileParams) ProtoMessage() {}
 
 func (x *FileParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[7]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2133,7 +1692,7 @@ func (x *FileParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileParams.ProtoReflect.Descriptor instead.
 func (*FileParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{7}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *FileParams) GetPath() string {
@@ -2201,7 +1760,7 @@ type DirectoryParams struct {
 
 func (x *DirectoryParams) Reset() {
 	*x = DirectoryParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2213,7 +1772,7 @@ func (x *DirectoryParams) String() string {
 func (*DirectoryParams) ProtoMessage() {}
 
 func (x *DirectoryParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[8]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2226,7 +1785,7 @@ func (x *DirectoryParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryParams.ProtoReflect.Descriptor instead.
 func (*DirectoryParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DirectoryParams) GetPath() string {
@@ -2280,7 +1839,7 @@ type UpdateParams struct {
 
 func (x *UpdateParams) Reset() {
 	*x = UpdateParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2292,7 +1851,7 @@ func (x *UpdateParams) String() string {
 func (*UpdateParams) ProtoMessage() {}
 
 func (x *UpdateParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[9]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2305,7 +1864,7 @@ func (x *UpdateParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateParams.ProtoReflect.Descriptor instead.
 func (*UpdateParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{9}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateParams) GetSecurityOnly() bool {
@@ -2352,7 +1911,7 @@ type FlatpakParams struct {
 
 func (x *FlatpakParams) Reset() {
 	*x = FlatpakParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2364,7 +1923,7 @@ func (x *FlatpakParams) String() string {
 func (*FlatpakParams) ProtoMessage() {}
 
 func (x *FlatpakParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[10]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2377,7 +1936,7 @@ func (x *FlatpakParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlatpakParams.ProtoReflect.Descriptor instead.
 func (*FlatpakParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{10}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *FlatpakParams) GetAppId() string {
@@ -2433,7 +1992,7 @@ type RepositoryParams struct {
 
 func (x *RepositoryParams) Reset() {
 	*x = RepositoryParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2445,7 +2004,7 @@ func (x *RepositoryParams) String() string {
 func (*RepositoryParams) ProtoMessage() {}
 
 func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[11]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2458,7 +2017,7 @@ func (x *RepositoryParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryParams.ProtoReflect.Descriptor instead.
 func (*RepositoryParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{11}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RepositoryParams) GetName() string {
@@ -2529,7 +2088,7 @@ type AptRepository struct {
 
 func (x *AptRepository) Reset() {
 	*x = AptRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2541,7 +2100,7 @@ func (x *AptRepository) String() string {
 func (*AptRepository) ProtoMessage() {}
 
 func (x *AptRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[12]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2554,7 +2113,7 @@ func (x *AptRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AptRepository.ProtoReflect.Descriptor instead.
 func (*AptRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{12}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AptRepository) GetUrl() string {
@@ -2643,7 +2202,7 @@ type DnfRepository struct {
 
 func (x *DnfRepository) Reset() {
 	*x = DnfRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[13]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2655,7 +2214,7 @@ func (x *DnfRepository) String() string {
 func (*DnfRepository) ProtoMessage() {}
 
 func (x *DnfRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[13]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2668,7 +2227,7 @@ func (x *DnfRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DnfRepository.ProtoReflect.Descriptor instead.
 func (*DnfRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{13}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DnfRepository) GetBaseurl() string {
@@ -2738,7 +2297,7 @@ type PacmanRepository struct {
 
 func (x *PacmanRepository) Reset() {
 	*x = PacmanRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[14]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2750,7 +2309,7 @@ func (x *PacmanRepository) String() string {
 func (*PacmanRepository) ProtoMessage() {}
 
 func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[14]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2763,7 +2322,7 @@ func (x *PacmanRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PacmanRepository.ProtoReflect.Descriptor instead.
 func (*PacmanRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{14}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PacmanRepository) GetServer() string {
@@ -2820,7 +2379,7 @@ type ZypperRepository struct {
 
 func (x *ZypperRepository) Reset() {
 	*x = ZypperRepository{}
-	mi := &file_pm_v1_actions_proto_msgTypes[15]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2832,7 +2391,7 @@ func (x *ZypperRepository) String() string {
 func (*ZypperRepository) ProtoMessage() {}
 
 func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[15]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2845,7 +2404,7 @@ func (x *ZypperRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ZypperRepository.ProtoReflect.Descriptor instead.
 func (*ZypperRepository) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{15}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ZypperRepository) GetUrl() string {
@@ -2969,7 +2528,7 @@ type UserParams struct {
 
 func (x *UserParams) Reset() {
 	*x = UserParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2981,7 +2540,7 @@ func (x *UserParams) String() string {
 func (*UserParams) ProtoMessage() {}
 
 func (x *UserParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[16]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2994,7 +2553,7 @@ func (x *UserParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserParams.ProtoReflect.Descriptor instead.
 func (*UserParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{16}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UserParams) GetUsername() string {
@@ -3110,7 +2669,7 @@ type GroupParams struct {
 
 func (x *GroupParams) Reset() {
 	*x = GroupParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3122,7 +2681,7 @@ func (x *GroupParams) String() string {
 func (*GroupParams) ProtoMessage() {}
 
 func (x *GroupParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[17]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3135,7 +2694,7 @@ func (x *GroupParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupParams.ProtoReflect.Descriptor instead.
 func (*GroupParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{17}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GroupParams) GetName() string {
@@ -3187,7 +2746,7 @@ type SshParams struct {
 
 func (x *SshParams) Reset() {
 	*x = SshParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[18]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3199,7 +2758,7 @@ func (x *SshParams) String() string {
 func (*SshParams) ProtoMessage() {}
 
 func (x *SshParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[18]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3212,7 +2771,7 @@ func (x *SshParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshParams.ProtoReflect.Descriptor instead.
 func (*SshParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{18}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SshParams) GetAllowPubkey() bool {
@@ -3251,7 +2810,7 @@ type SshdDirective struct {
 
 func (x *SshdDirective) Reset() {
 	*x = SshdDirective{}
-	mi := &file_pm_v1_actions_proto_msgTypes[19]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3263,7 +2822,7 @@ func (x *SshdDirective) String() string {
 func (*SshdDirective) ProtoMessage() {}
 
 func (x *SshdDirective) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[19]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3276,7 +2835,7 @@ func (x *SshdDirective) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshdDirective.ProtoReflect.Descriptor instead.
 func (*SshdDirective) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{19}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SshdDirective) GetKey() string {
@@ -3311,7 +2870,7 @@ type SshdParams struct {
 
 func (x *SshdParams) Reset() {
 	*x = SshdParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[20]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3323,7 +2882,7 @@ func (x *SshdParams) String() string {
 func (*SshdParams) ProtoMessage() {}
 
 func (x *SshdParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[20]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3336,7 +2895,7 @@ func (x *SshdParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshdParams.ProtoReflect.Descriptor instead.
 func (*SshdParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{20}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SshdParams) GetPriority() uint32 {
@@ -3364,7 +2923,7 @@ type AdminPolicyParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Access level determines the policy template
 	// @gotags: validate:"required,ne=0"
-	AccessLevel AdminAccessLevel `protobuf:"varint,1,opt,name=access_level,json=accessLevel,proto3,enum=pm.v1.AdminAccessLevel" json:"access_level,omitempty" validate:"required,ne=0"`
+	AccessLevel AdminAccessLevel `protobuf:"varint,1,opt,name=access_level,json=accessLevel,proto3,enum=powermanage.v1.AdminAccessLevel" json:"access_level,omitempty" validate:"required,ne=0"`
 	// Users to add to the admin group (must be valid Linux usernames)
 	// @gotags: validate:"required,min=1,dive,min=1,max=32"
 	Users []string `protobuf:"bytes,2,rep,name=users,proto3" json:"users,omitempty" validate:"required,min=1,dive,min=1,max=32"`
@@ -3374,17 +2933,16 @@ type AdminPolicyParams struct {
 	// auto-generated group name. Required when access_level is CUSTOM (3).
 	// @gotags: validate:"required_if=AccessLevel 3,max=65536"
 	CustomConfig string `protobuf:"bytes,3,opt,name=custom_config,json=customConfig,proto3" json:"custom_config,omitempty" validate:"required_if=AccessLevel 3,max=65536"`
-	// Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
-	// compatibility with devices that don't explicitly set it.
+	// Privilege backend. Unset means PRIVILEGE_BACKEND_SUDO.
 	// @gotags: validate:"omitempty"
-	Backend       PrivilegeBackend `protobuf:"varint,4,opt,name=backend,proto3,enum=pm.v1.PrivilegeBackend" json:"backend,omitempty" validate:"omitempty"`
+	Backend       PrivilegeBackend `protobuf:"varint,4,opt,name=backend,proto3,enum=powermanage.v1.PrivilegeBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AdminPolicyParams) Reset() {
 	*x = AdminPolicyParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[21]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3396,7 +2954,7 @@ func (x *AdminPolicyParams) String() string {
 func (*AdminPolicyParams) ProtoMessage() {}
 
 func (x *AdminPolicyParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[21]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3409,7 +2967,7 @@ func (x *AdminPolicyParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminPolicyParams.ProtoReflect.Descriptor instead.
 func (*AdminPolicyParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{21}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *AdminPolicyParams) GetAccessLevel() AdminAccessLevel {
@@ -3456,7 +3014,7 @@ type LpsParams struct {
 	PasswordLength int32 `protobuf:"varint,2,opt,name=password_length,json=passwordLength,proto3" json:"password_length,omitempty" validate:"required,gte=8,lte=128"`
 	// Password complexity
 	// @gotags: validate:"required,ne=0"
-	Complexity LpsPasswordComplexity `protobuf:"varint,3,opt,name=complexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"complexity,omitempty" validate:"required,ne=0"`
+	Complexity LpsPasswordComplexity `protobuf:"varint,3,opt,name=complexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"complexity,omitempty" validate:"required,ne=0"`
 	// Days between scheduled rotations (1-365)
 	// @gotags: validate:"required,gte=1,lte=365"
 	RotationIntervalDays int32 `protobuf:"varint,4,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty" validate:"required,gte=1,lte=365"`
@@ -3469,7 +3027,7 @@ type LpsParams struct {
 
 func (x *LpsParams) Reset() {
 	*x = LpsParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3481,7 +3039,7 @@ func (x *LpsParams) String() string {
 func (*LpsParams) ProtoMessage() {}
 
 func (x *LpsParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[22]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3494,7 +3052,7 @@ func (x *LpsParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpsParams.ProtoReflect.Descriptor instead.
 func (*LpsParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{22}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *LpsParams) GetUsernames() []string {
@@ -3551,23 +3109,23 @@ type EncryptionParams struct {
 	MinWords int32 `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty" validate:"omitempty,gte=3,lte=10"`
 	// What to put in the device-bound key slot — TPM, user passphrase, or nothing
 	// @gotags: validate:"omitempty"
-	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=pm.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
+	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
 	// Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
 	// @gotags: validate:"omitempty,gte=16,lte=128"
 	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
 	// Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
 	// @gotags: validate:"omitempty"
-	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
+	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
 	// Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
 	// @gotags: validate:"omitempty"
-	Backend       EncryptionBackend `protobuf:"varint,7,opt,name=backend,proto3,enum=pm.v1.EncryptionBackend" json:"backend,omitempty" validate:"omitempty"`
+	Backend       EncryptionBackend `protobuf:"varint,7,opt,name=backend,proto3,enum=powermanage.v1.EncryptionBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EncryptionParams) Reset() {
 	*x = EncryptionParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3579,7 +3137,7 @@ func (x *EncryptionParams) String() string {
 func (*EncryptionParams) ProtoMessage() {}
 
 func (x *EncryptionParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[23]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3592,7 +3150,7 @@ func (x *EncryptionParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EncryptionParams.ProtoReflect.Descriptor instead.
 func (*EncryptionParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{23}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *EncryptionParams) GetPresharedKey() string {
@@ -3655,7 +3213,7 @@ type WifiParams struct {
 	Ssid string `protobuf:"bytes,1,opt,name=ssid,proto3" json:"ssid,omitempty" validate:"required,min=1,max=255"`
 	// Authentication type
 	// @gotags: validate:"required,ne=0"
-	AuthType WifiAuthType `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=pm.v1.WifiAuthType" json:"auth_type,omitempty" validate:"required,ne=0"`
+	AuthType WifiAuthType `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=powermanage.v1.WifiAuthType" json:"auth_type,omitempty" validate:"required,ne=0"`
 	// PSK authentication (WPA2/WPA3 Personal)
 	// @gotags: validate:"omitempty,max=63"
 	Psk string `protobuf:"bytes,3,opt,name=psk,proto3" json:"psk,omitempty" validate:"omitempty,max=63"`
@@ -3678,14 +3236,14 @@ type WifiParams struct {
 	Priority int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
 	// WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
 	// @gotags: validate:"omitempty"
-	Backend       WifiBackend `protobuf:"varint,11,opt,name=backend,proto3,enum=pm.v1.WifiBackend" json:"backend,omitempty" validate:"omitempty"`
+	Backend       WifiBackend `protobuf:"varint,11,opt,name=backend,proto3,enum=powermanage.v1.WifiBackend" json:"backend,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WifiParams) Reset() {
 	*x = WifiParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[24]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3697,7 +3255,7 @@ func (x *WifiParams) String() string {
 func (*WifiParams) ProtoMessage() {}
 
 func (x *WifiParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[24]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3710,7 +3268,7 @@ func (x *WifiParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WifiParams.ProtoReflect.Descriptor instead.
 func (*WifiParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{24}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *WifiParams) GetSsid() string {
@@ -3795,7 +3353,7 @@ type ActionResult struct {
 	// @gotags: validate:"required"
 	ActionId *ActionId `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required"`
 	// @gotags: validate:"required"
-	Status ExecutionStatus `protobuf:"varint,2,opt,name=status,proto3,enum=pm.v1.ExecutionStatus" json:"status,omitempty" validate:"required"`
+	Status ExecutionStatus `protobuf:"varint,2,opt,name=status,proto3,enum=powermanage.v1.ExecutionStatus" json:"status,omitempty" validate:"required"`
 	// @gotags: validate:"omitempty,max=4096"
 	Error string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty" validate:"omitempty,max=4096"`
 	// @gotags: validate:"omitempty"
@@ -3814,13 +3372,29 @@ type ActionResult struct {
 	// Detection script output (separate from execution output)
 	// @gotags: validate:"omitempty"
 	DetectionOutput *CommandOutput `protobuf:"bytes,10,opt,name=detection_output,json=detectionOutput,proto3" json:"detection_output,omitempty" validate:"omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The delivery this result belongs to, and the authored position within
+	// that delivery's manifest. Together they make ingestion idempotent:
+	// control keys the stored result on (delivery_id, occurrence_id), so a
+	// result replayed after a reconnect updates the same row instead of
+	// creating a second one. action_id alone cannot do this — duplicate
+	// authored occurrences of the same action are preserved and executed, so
+	// one delivery legitimately produces several results with the same
+	// action_id.
+	//
+	// Both are mandatory. Every execution descends from a delivery — the pull
+	// path carries the same ManifestDelivery the push path does — so a result
+	// that can name neither did not come from an assignment.
+	// @gotags: validate:"required,ulid"
+	DeliveryId string `protobuf:"bytes,11,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	OccurrenceId  string `protobuf:"bytes,12,opt,name=occurrence_id,json=occurrenceId,proto3" json:"occurrence_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_pm_v1_actions_proto_msgTypes[25]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3832,7 +3406,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[25]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3845,7 +3419,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{25}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ActionResult) GetActionId() *ActionId {
@@ -3918,6 +3492,20 @@ func (x *ActionResult) GetDetectionOutput() *CommandOutput {
 	return nil
 }
 
+func (x *ActionResult) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
+}
+
+func (x *ActionResult) GetOccurrenceId() string {
+	if x != nil {
+		return x.OccurrenceId
+	}
+	return ""
+}
+
 // Per-architecture binary source with checksum.
 type AgentUpdateArch struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3936,13 +3524,12 @@ type AgentUpdateArch struct {
 	// @gotags: validate:"omitempty,url,startswith=https://"
 	ChecksumUrl string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"omitempty,url,startswith=https://"`
 	// Optional pinned SHA-256 of the binary, lowercase hex. When set it is
-	// the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: it
-	// travels inside the CA-signed action, so the agent verifies the
-	// downloaded binary against a hash bound to the control server's
-	// signature rather than a checksum file fetched from the download
-	// origin. Use it to pin an exact binary (staged rollouts) or for
-	// stronger authenticity; leave it unset to track "latest" via
-	// checksum_url.
+	// the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: the agent
+	// verifies the downloaded binary against a hash control authored and sent
+	// over the authenticated mTLS stream, rather than against a checksum file
+	// fetched from the download origin. Use it to pin an exact binary (staged
+	// rollouts) or for stronger authenticity; leave it unset to track "latest"
+	// via checksum_url.
 	// @gotags: validate:"omitempty,len=64,hexadecimal"
 	ExpectedSha256 string `protobuf:"bytes,3,opt,name=expected_sha256,json=expectedSha256,proto3" json:"expected_sha256,omitempty" validate:"omitempty,len=64,hexadecimal"`
 	unknownFields  protoimpl.UnknownFields
@@ -3951,7 +3538,7 @@ type AgentUpdateArch struct {
 
 func (x *AgentUpdateArch) Reset() {
 	*x = AgentUpdateArch{}
-	mi := &file_pm_v1_actions_proto_msgTypes[26]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3963,7 +3550,7 @@ func (x *AgentUpdateArch) String() string {
 func (*AgentUpdateArch) ProtoMessage() {}
 
 func (x *AgentUpdateArch) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[26]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3976,7 +3563,7 @@ func (x *AgentUpdateArch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentUpdateArch.ProtoReflect.Descriptor instead.
 func (*AgentUpdateArch) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{26}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *AgentUpdateArch) GetBinaryUrl() string {
@@ -4011,9 +3598,9 @@ type AgentUpdateParams struct {
 	Arm64 *AgentUpdateArch `protobuf:"bytes,2,opt,name=arm64,proto3" json:"arm64,omitempty"`
 	// When true, the agent installs the target binary even if its version
 	// is older than or equal to the running version (downgrade). The flag
-	// rides inside the CA-signed action, so a downgrade is an explicit,
-	// authenticated operator decision — the agent otherwise refuses an
-	// older version (anti-rollback). Default false.
+	// reaches the agent over the authenticated mTLS stream, so a downgrade is
+	// an explicit operator decision — the agent otherwise refuses an older
+	// version (anti-rollback). Default false.
 	// @gotags: validate:"omitempty"
 	AllowDowngrade bool `protobuf:"varint,3,opt,name=allow_downgrade,json=allowDowngrade,proto3" json:"allow_downgrade,omitempty" validate:"omitempty"`
 	// When true, the agent follows a redirect that changes host or scheme
@@ -4023,10 +3610,9 @@ type AgentUpdateParams struct {
 	// redirect is refused and the download must reach the configured host
 	// directly. The binary is still verified against SHA-256 and an
 	// https->http downgrade is refused regardless; when expected_sha256 is
-	// set that hash is pinned inside the CA-signed action, otherwise
-	// verification comes from checksum_url. So this opts into a host-changing
-	// hop, not into unchecked bytes. Rides inside the CA-signed action, so it
-	// is an explicit, authenticated operator decision.
+	// set that hash is the pinned gate, otherwise verification comes from
+	// checksum_url. So this opts into a host-changing hop, not into unchecked
+	// bytes, and it is an explicit operator decision either way.
 	// @gotags: validate:"omitempty"
 	AllowRedirect bool `protobuf:"varint,4,opt,name=allow_redirect,json=allowRedirect,proto3" json:"allow_redirect,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -4035,7 +3621,7 @@ type AgentUpdateParams struct {
 
 func (x *AgentUpdateParams) Reset() {
 	*x = AgentUpdateParams{}
-	mi := &file_pm_v1_actions_proto_msgTypes[27]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4047,7 +3633,7 @@ func (x *AgentUpdateParams) String() string {
 func (*AgentUpdateParams) ProtoMessage() {}
 
 func (x *AgentUpdateParams) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_actions_proto_msgTypes[27]
+	mi := &file_powermanage_v1_actions_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4060,7 +3646,7 @@ func (x *AgentUpdateParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentUpdateParams.ProtoReflect.Descriptor instead.
 func (*AgentUpdateParams) Descriptor() ([]byte, []int) {
-	return file_pm_v1_actions_proto_rawDescGZIP(), []int{27}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *AgentUpdateParams) GetAmd64() *AgentUpdateArch {
@@ -4091,74 +3677,41 @@ func (x *AgentUpdateParams) GetAllowRedirect() bool {
 	return false
 }
 
-var File_pm_v1_actions_proto protoreflect.FileDescriptor
+var File_powermanage_v1_actions_proto protoreflect.FileDescriptor
 
-const file_pm_v1_actions_proto_rawDesc = "" +
+const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/actions.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12pm/v1/common.proto\"\x9d\t\n" +
-	"\x06Action\x12\x1f\n" +
-	"\x02id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\x02id\x12%\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
-	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
-	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
-	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12\x1c\n" +
-	"\tsignature\x18\x06 \x01(\fR\tsignature\x12'\n" +
-	"\x0fsigned_envelope\x18\a \x01(\fR\x0esignedEnvelope\x120\n" +
-	"\apackage\x18\b \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\t \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
+	"\x1cpowermanage/v1/actions.proto\x12\x0epowermanage.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bpowermanage/v1/common.proto\"\x9c\n" +
+	"\n" +
+	"\x06Action\x12(\n" +
+	"\x02id\x18\x01 \x01(\v2\x18.powermanage.v1.ActionIdR\x02id\x12.\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\x04type\x12A\n" +
+	"\rdesired_state\x18\x03 \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12'\n" +
+	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x12:\n" +
+	"\bschedule\x18\x05 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\x129\n" +
+	"\apackage\x18\b \x01(\v2\x1d.powermanage.v1.PackageParamsH\x00R\apackage\x124\n" +
+	"\x03app\x18\t \x01(\v2 .powermanage.v1.AppInstallParamsH\x00R\x03app\x123\n" +
 	"\x05shell\x18\n" +
-	" \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\aservice\x18\v \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
-	"\x04file\x18\f \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\r \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	" \x01(\v2\x1b.powermanage.v1.ShellParamsH\x00R\x05shell\x129\n" +
+	"\aservice\x18\v \x01(\v2\x1d.powermanage.v1.ServiceParamsH\x00R\aservice\x120\n" +
+	"\x04file\x18\f \x01(\v2\x1a.powermanage.v1.FileParamsH\x00R\x04file\x126\n" +
+	"\x06update\x18\r \x01(\v2\x1c.powermanage.v1.UpdateParamsH\x00R\x06update\x12B\n" +
 	"\n" +
-	"repository\x18\x0e \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repository\x120\n" +
-	"\aflatpak\x18\x0f \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x10 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x11 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x12 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x13 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
-	"\fadmin_policy\x18\x14 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
-	"\x03lps\x18\x15 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x16 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
+	"repository\x18\x0e \x01(\v2 .powermanage.v1.RepositoryParamsH\x00R\n" +
+	"repository\x129\n" +
+	"\aflatpak\x18\x0f \x01(\v2\x1d.powermanage.v1.FlatpakParamsH\x00R\aflatpak\x12?\n" +
+	"\tdirectory\x18\x10 \x01(\v2\x1f.powermanage.v1.DirectoryParamsH\x00R\tdirectory\x120\n" +
+	"\x04user\x18\x11 \x01(\v2\x1a.powermanage.v1.UserParamsH\x00R\x04user\x12-\n" +
+	"\x03ssh\x18\x12 \x01(\v2\x19.powermanage.v1.SshParamsH\x00R\x03ssh\x120\n" +
+	"\x04sshd\x18\x13 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
+	"\fadmin_policy\x18\x14 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
+	"\x03lps\x18\x15 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
+	"\x05group\x18\x16 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
 	"\n" +
-	"encryption\x18\x17 \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x12'\n" +
-	"\x04wifi\x18\x18 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
-	"\fagent_update\x18\x19 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
-	"\x06params\"\xa8\t\n" +
-	"\x14SignedActionEnvelope\x12,\n" +
-	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x122\n" +
-	"\vaction_type\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\n" +
-	"actionType\x128\n" +
-	"\rdesired_state\x18\x03 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
-	"\x0ftimeout_seconds\x18\x04 \x01(\x05R\x0etimeoutSeconds\x121\n" +
-	"\bschedule\x18\x05 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12(\n" +
-	"\x10target_device_id\x18\x06 \x01(\tR\x0etargetDeviceId\x120\n" +
-	"\apackage\x18\a \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\b \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\t \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\aservice\x18\n" +
-	" \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
-	"\x04file\x18\v \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
-	"\n" +
-	"repository\x18\r \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repository\x120\n" +
-	"\aflatpak\x18\x0e \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x0f \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x10 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x11 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x12 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
-	"\fadmin_policy\x18\x13 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
-	"\x03lps\x18\x14 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x15 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
-	"\n" +
-	"encryption\x18\x16 \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x12'\n" +
-	"\x04wifi\x18\x17 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
-	"\fagent_update\x18\x18 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
+	"encryption\x18\x17 \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
+	"encryption\x120\n" +
+	"\x04wifi\x18\x18 \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"\fagent_update\x18\x19 \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
 	"\x06params\"\x9b\x01\n" +
 	"\x0eActionSchedule\x12\x12\n" +
 	"\x04cron\x18\x01 \x01(\tR\x04cron\x12%\n" +
@@ -4179,24 +3732,24 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x10AppInstallParams\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12'\n" +
 	"\x0fchecksum_sha256\x18\x02 \x01(\tR\x0echecksumSha256\x12!\n" +
-	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xeb\x02\n" +
+	"\finstall_path\x18\x03 \x01(\tR\vinstallPath\"\xf4\x02\n" +
 	"\vShellParams\x12\x16\n" +
 	"\x06script\x18\x01 \x01(\tR\x06script\x12 \n" +
 	"\vinterpreter\x18\x02 \x01(\tR\vinterpreter\x12\x1e\n" +
 	"\vrun_as_root\x18\x03 \x01(\bR\trunAsRoot\x12+\n" +
-	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12E\n" +
-	"\venvironment\x18\x05 \x03(\v2#.pm.v1.ShellParams.EnvironmentEntryR\venvironment\x12)\n" +
+	"\x11working_directory\x18\x04 \x01(\tR\x10workingDirectory\x12N\n" +
+	"\venvironment\x18\x05 \x03(\v2,.powermanage.v1.ShellParams.EnvironmentEntryR\venvironment\x12)\n" +
 	"\x10detection_script\x18\x06 \x01(\tR\x0fdetectionScript\x12#\n" +
 	"\ris_compliance\x18\a \x01(\bR\fisCompliance\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd6\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe8\x01\n" +
 	"\rServiceParams\x12\x1b\n" +
-	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12<\n" +
-	"\rdesired_state\x18\x02 \x01(\x0e2\x17.pm.v1.ServiceUnitStateR\fdesiredState\x12\x16\n" +
+	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12E\n" +
+	"\rdesired_state\x18\x02 \x01(\x0e2 .powermanage.v1.ServiceUnitStateR\fdesiredState\x12\x16\n" +
 	"\x06enable\x18\x03 \x01(\bR\x06enable\x12!\n" +
-	"\funit_content\x18\x04 \x01(\tR\vunitContent\x12/\n" +
-	"\abackend\x18\x05 \x01(\x0e2\x15.pm.v1.ServiceBackendR\abackend\"\x9f\x01\n" +
+	"\funit_content\x18\x04 \x01(\tR\vunitContent\x128\n" +
+	"\abackend\x18\x05 \x01(\x0e2\x1e.powermanage.v1.ServiceBackendR\abackend\"\x9f\x01\n" +
 	"\n" +
 	"FileParams\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
@@ -4222,13 +3775,13 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x06remote\x18\x02 \x01(\tR\x06remote\x12\x1f\n" +
 	"\vsystem_wide\x18\x03 \x01(\bR\n" +
 	"systemWide\x12\x10\n" +
-	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xd8\x01\n" +
+	"\x03pin\x18\x04 \x01(\bR\x03pin\"\xfc\x01\n" +
 	"\x10RepositoryParams\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
-	"\x03apt\x18\x02 \x01(\v2\x14.pm.v1.AptRepositoryR\x03apt\x12&\n" +
-	"\x03dnf\x18\x03 \x01(\v2\x14.pm.v1.DnfRepositoryR\x03dnf\x12/\n" +
-	"\x06pacman\x18\x04 \x01(\v2\x17.pm.v1.PacmanRepositoryR\x06pacman\x12/\n" +
-	"\x06zypper\x18\x05 \x01(\v2\x17.pm.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
+	"\x03apt\x18\x02 \x01(\v2\x1d.powermanage.v1.AptRepositoryR\x03apt\x12/\n" +
+	"\x03dnf\x18\x03 \x01(\v2\x1d.powermanage.v1.DnfRepositoryR\x03dnf\x128\n" +
+	"\x06pacman\x18\x04 \x01(\v2 .powermanage.v1.PacmanRepositoryR\x06pacman\x128\n" +
+	"\x06zypper\x18\x05 \x01(\v2 .powermanage.v1.ZypperRepositoryR\x06zypper\"\xe8\x01\n" +
 	"\rAptRepository\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
 	"\fdistribution\x18\x02 \x01(\tR\fdistribution\x12\x1e\n" +
@@ -4291,38 +3844,38 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x05users\x18\x03 \x03(\tR\x05users\"7\n" +
 	"\rSshdDirective\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"^\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"g\n" +
 	"\n" +
 	"SshdParams\x12\x1a\n" +
-	"\bpriority\x18\x01 \x01(\rR\bpriority\x124\n" +
+	"\bpriority\x18\x01 \x01(\rR\bpriority\x12=\n" +
 	"\n" +
-	"directives\x18\x02 \x03(\v2\x14.pm.v1.SshdDirectiveR\n" +
-	"directives\"\xbd\x01\n" +
-	"\x11AdminPolicyParams\x12:\n" +
-	"\faccess_level\x18\x01 \x01(\x0e2\x17.pm.v1.AdminAccessLevelR\vaccessLevel\x12\x14\n" +
+	"directives\x18\x02 \x03(\v2\x1d.powermanage.v1.SshdDirectiveR\n" +
+	"directives\"\xcf\x01\n" +
+	"\x11AdminPolicyParams\x12C\n" +
+	"\faccess_level\x18\x01 \x01(\x0e2 .powermanage.v1.AdminAccessLevelR\vaccessLevel\x12\x14\n" +
 	"\x05users\x18\x02 \x03(\tR\x05users\x12#\n" +
-	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\x121\n" +
-	"\abackend\x18\x04 \x01(\x0e2\x17.pm.v1.PrivilegeBackendR\abackend\"\xf4\x01\n" +
+	"\rcustom_config\x18\x03 \x01(\tR\fcustomConfig\x12:\n" +
+	"\abackend\x18\x04 \x01(\x0e2 .powermanage.v1.PrivilegeBackendR\abackend\"\xfd\x01\n" +
 	"\tLpsParams\x12\x1c\n" +
 	"\tusernames\x18\x01 \x03(\tR\tusernames\x12'\n" +
-	"\x0fpassword_length\x18\x02 \x01(\x05R\x0epasswordLength\x12<\n" +
+	"\x0fpassword_length\x18\x02 \x01(\x05R\x0epasswordLength\x12E\n" +
 	"\n" +
-	"complexity\x18\x03 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
+	"complexity\x18\x03 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\n" +
 	"complexity\x124\n" +
 	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
-	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xaf\x03\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xca\x03\n" +
 	"\x10EncryptionParams\x12#\n" +
 	"\rpreshared_key\x18\x01 \x01(\tR\fpresharedKey\x124\n" +
 	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
-	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12V\n" +
-	"\x15device_bound_key_type\x18\x04 \x01(\x0e2#.pm.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
-	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12Z\n" +
-	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\x122\n" +
-	"\abackend\x18\a \x01(\x0e2\x18.pm.v1.EncryptionBackendR\abackend\"\xde\x02\n" +
+	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12_\n" +
+	"\x15device_bound_key_type\x18\x04 \x01(\x0e2,.powermanage.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
+	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12c\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\x12;\n" +
+	"\abackend\x18\a \x01(\x0e2!.powermanage.v1.EncryptionBackendR\abackend\"\xf0\x02\n" +
 	"\n" +
 	"WifiParams\x12\x12\n" +
-	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x120\n" +
-	"\tauth_type\x18\x02 \x01(\x0e2\x13.pm.v1.WifiAuthTypeR\bauthType\x12\x10\n" +
+	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x129\n" +
+	"\tauth_type\x18\x02 \x01(\x0e2\x1c.powermanage.v1.WifiAuthTypeR\bauthType\x12\x10\n" +
 	"\x03psk\x18\x03 \x01(\tR\x03psk\x12\x17\n" +
 	"\aca_cert\x18\x04 \x01(\tR\x06caCert\x12\x1f\n" +
 	"\vclient_cert\x18\x05 \x01(\tR\n" +
@@ -4333,21 +3886,24 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
 	"\bpriority\x18\n" +
-	" \x01(\x05R\bpriority\x12,\n" +
-	"\abackend\x18\v \x01(\x0e2\x12.pm.v1.WifiBackendR\abackend\"\x85\x04\n" +
-	"\fActionResult\x12,\n" +
-	"\taction_id\x18\x01 \x01(\v2\x0f.pm.v1.ActionIdR\bactionId\x12.\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\x12,\n" +
-	"\x06output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x12=\n" +
+	" \x01(\x05R\bpriority\x125\n" +
+	"\abackend\x18\v \x01(\x0e2\x1b.powermanage.v1.WifiBackendR\abackend\"\xf8\x04\n" +
+	"\fActionResult\x125\n" +
+	"\taction_id\x18\x01 \x01(\v2\x18.powermanage.v1.ActionIdR\bactionId\x127\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x1f.powermanage.v1.ExecutionStatusR\x06status\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x125\n" +
+	"\x06output\x18\x04 \x01(\v2\x1d.powermanage.v1.CommandOutputR\x06output\x12=\n" +
 	"\fcompleted_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
 	"durationMs\x12\x18\n" +
-	"\achanged\x18\a \x01(\bR\achanged\x12=\n" +
-	"\bmetadata\x18\b \x03(\v2!.pm.v1.ActionResult.MetadataEntryR\bmetadata\x12\x1c\n" +
-	"\tcompliant\x18\t \x01(\bR\tcompliant\x12?\n" +
+	"\achanged\x18\a \x01(\bR\achanged\x12F\n" +
+	"\bmetadata\x18\b \x03(\v2*.powermanage.v1.ActionResult.MetadataEntryR\bmetadata\x12\x1c\n" +
+	"\tcompliant\x18\t \x01(\bR\tcompliant\x12H\n" +
 	"\x10detection_output\x18\n" +
-	" \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x1a;\n" +
+	" \x01(\v2\x1d.powermanage.v1.CommandOutputR\x0fdetectionOutput\x12\x1f\n" +
+	"\vdelivery_id\x18\v \x01(\tR\n" +
+	"deliveryId\x12#\n" +
+	"\roccurrence_id\x18\f \x01(\tR\foccurrenceId\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"|\n" +
@@ -4355,10 +3911,10 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\n" +
 	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
 	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\x12'\n" +
-	"\x0fexpected_sha256\x18\x03 \x01(\tR\x0eexpectedSha256\"\xbf\x01\n" +
-	"\x11AgentUpdateParams\x12,\n" +
-	"\x05amd64\x18\x01 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05amd64\x12,\n" +
-	"\x05arm64\x18\x02 \x01(\v2\x16.pm.v1.AgentUpdateArchR\x05arm64\x12'\n" +
+	"\x0fexpected_sha256\x18\x03 \x01(\tR\x0eexpectedSha256\"\xd1\x01\n" +
+	"\x11AgentUpdateParams\x125\n" +
+	"\x05amd64\x18\x01 \x01(\v2\x1f.powermanage.v1.AgentUpdateArchR\x05amd64\x125\n" +
+	"\x05arm64\x18\x02 \x01(\v2\x1f.powermanage.v1.AgentUpdateArchR\x05arm64\x12'\n" +
 	"\x0fallow_downgrade\x18\x03 \x01(\bR\x0eallowDowngrade\x12%\n" +
 	"\x0eallow_redirect\x18\x04 \x01(\bR\rallowRedirect*\xea\x04\n" +
 	"\n" +
@@ -4445,155 +4001,132 @@ const file_pm_v1_actions_proto_rawDesc = "" +
 	"\x1bWIFI_BACKEND_NETWORKMANAGER\x10\x00\x12\x18\n" +
 	"\x14WIFI_BACKEND_CONNMAN\x10\x01\x12\x1f\n" +
 	"\x1bWIFI_BACKEND_WPA_SUPPLICANT\x10\x02\x12\x14\n" +
-	"\x10WIFI_BACKEND_IWD\x10\x03B:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x10WIFI_BACKEND_IWD\x10\x03BLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
-	file_pm_v1_actions_proto_rawDescOnce sync.Once
-	file_pm_v1_actions_proto_rawDescData []byte
+	file_powermanage_v1_actions_proto_rawDescOnce sync.Once
+	file_powermanage_v1_actions_proto_rawDescData []byte
 )
 
-func file_pm_v1_actions_proto_rawDescGZIP() []byte {
-	file_pm_v1_actions_proto_rawDescOnce.Do(func() {
-		file_pm_v1_actions_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)))
+func file_powermanage_v1_actions_proto_rawDescGZIP() []byte {
+	file_powermanage_v1_actions_proto_rawDescOnce.Do(func() {
+		file_powermanage_v1_actions_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_actions_proto_rawDesc), len(file_powermanage_v1_actions_proto_rawDesc)))
 	})
-	return file_pm_v1_actions_proto_rawDescData
+	return file_powermanage_v1_actions_proto_rawDescData
 }
 
-var file_pm_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
-var file_pm_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
-var file_pm_v1_actions_proto_goTypes = []any{
-	(ActionType)(0),                   // 0: pm.v1.ActionType
-	(ServiceBackend)(0),               // 1: pm.v1.ServiceBackend
-	(FirewallBackend)(0),              // 2: pm.v1.FirewallBackend
-	(DnsBackend)(0),                   // 3: pm.v1.DnsBackend
-	(NetworkConfigBackend)(0),         // 4: pm.v1.NetworkConfigBackend
-	(ServiceUnitState)(0),             // 5: pm.v1.ServiceUnitState
-	(AdminAccessLevel)(0),             // 6: pm.v1.AdminAccessLevel
-	(PrivilegeBackend)(0),             // 7: pm.v1.PrivilegeBackend
-	(LpsPasswordComplexity)(0),        // 8: pm.v1.LpsPasswordComplexity
-	(EncryptionBackend)(0),            // 9: pm.v1.EncryptionBackend
-	(EncryptionDeviceBoundKeyType)(0), // 10: pm.v1.EncryptionDeviceBoundKeyType
-	(WifiAuthType)(0),                 // 11: pm.v1.WifiAuthType
-	(WifiBackend)(0),                  // 12: pm.v1.WifiBackend
-	(*Action)(nil),                    // 13: pm.v1.Action
-	(*SignedActionEnvelope)(nil),      // 14: pm.v1.SignedActionEnvelope
-	(*ActionSchedule)(nil),            // 15: pm.v1.ActionSchedule
-	(*PackageParams)(nil),             // 16: pm.v1.PackageParams
-	(*AppInstallParams)(nil),          // 17: pm.v1.AppInstallParams
-	(*ShellParams)(nil),               // 18: pm.v1.ShellParams
-	(*ServiceParams)(nil),             // 19: pm.v1.ServiceParams
-	(*FileParams)(nil),                // 20: pm.v1.FileParams
-	(*DirectoryParams)(nil),           // 21: pm.v1.DirectoryParams
-	(*UpdateParams)(nil),              // 22: pm.v1.UpdateParams
-	(*FlatpakParams)(nil),             // 23: pm.v1.FlatpakParams
-	(*RepositoryParams)(nil),          // 24: pm.v1.RepositoryParams
-	(*AptRepository)(nil),             // 25: pm.v1.AptRepository
-	(*DnfRepository)(nil),             // 26: pm.v1.DnfRepository
-	(*PacmanRepository)(nil),          // 27: pm.v1.PacmanRepository
-	(*ZypperRepository)(nil),          // 28: pm.v1.ZypperRepository
-	(*UserParams)(nil),                // 29: pm.v1.UserParams
-	(*GroupParams)(nil),               // 30: pm.v1.GroupParams
-	(*SshParams)(nil),                 // 31: pm.v1.SshParams
-	(*SshdDirective)(nil),             // 32: pm.v1.SshdDirective
-	(*SshdParams)(nil),                // 33: pm.v1.SshdParams
-	(*AdminPolicyParams)(nil),         // 34: pm.v1.AdminPolicyParams
-	(*LpsParams)(nil),                 // 35: pm.v1.LpsParams
-	(*EncryptionParams)(nil),          // 36: pm.v1.EncryptionParams
-	(*WifiParams)(nil),                // 37: pm.v1.WifiParams
-	(*ActionResult)(nil),              // 38: pm.v1.ActionResult
-	(*AgentUpdateArch)(nil),           // 39: pm.v1.AgentUpdateArch
-	(*AgentUpdateParams)(nil),         // 40: pm.v1.AgentUpdateParams
-	nil,                               // 41: pm.v1.ShellParams.EnvironmentEntry
-	nil,                               // 42: pm.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),                  // 43: pm.v1.ActionId
-	(DesiredState)(0),                 // 44: pm.v1.DesiredState
-	(ExecutionStatus)(0),              // 45: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),             // 46: pm.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil),     // 47: google.protobuf.Timestamp
+var file_powermanage_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
+var file_powermanage_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_powermanage_v1_actions_proto_goTypes = []any{
+	(ActionType)(0),                   // 0: powermanage.v1.ActionType
+	(ServiceBackend)(0),               // 1: powermanage.v1.ServiceBackend
+	(FirewallBackend)(0),              // 2: powermanage.v1.FirewallBackend
+	(DnsBackend)(0),                   // 3: powermanage.v1.DnsBackend
+	(NetworkConfigBackend)(0),         // 4: powermanage.v1.NetworkConfigBackend
+	(ServiceUnitState)(0),             // 5: powermanage.v1.ServiceUnitState
+	(AdminAccessLevel)(0),             // 6: powermanage.v1.AdminAccessLevel
+	(PrivilegeBackend)(0),             // 7: powermanage.v1.PrivilegeBackend
+	(LpsPasswordComplexity)(0),        // 8: powermanage.v1.LpsPasswordComplexity
+	(EncryptionBackend)(0),            // 9: powermanage.v1.EncryptionBackend
+	(EncryptionDeviceBoundKeyType)(0), // 10: powermanage.v1.EncryptionDeviceBoundKeyType
+	(WifiAuthType)(0),                 // 11: powermanage.v1.WifiAuthType
+	(WifiBackend)(0),                  // 12: powermanage.v1.WifiBackend
+	(*Action)(nil),                    // 13: powermanage.v1.Action
+	(*ActionSchedule)(nil),            // 14: powermanage.v1.ActionSchedule
+	(*PackageParams)(nil),             // 15: powermanage.v1.PackageParams
+	(*AppInstallParams)(nil),          // 16: powermanage.v1.AppInstallParams
+	(*ShellParams)(nil),               // 17: powermanage.v1.ShellParams
+	(*ServiceParams)(nil),             // 18: powermanage.v1.ServiceParams
+	(*FileParams)(nil),                // 19: powermanage.v1.FileParams
+	(*DirectoryParams)(nil),           // 20: powermanage.v1.DirectoryParams
+	(*UpdateParams)(nil),              // 21: powermanage.v1.UpdateParams
+	(*FlatpakParams)(nil),             // 22: powermanage.v1.FlatpakParams
+	(*RepositoryParams)(nil),          // 23: powermanage.v1.RepositoryParams
+	(*AptRepository)(nil),             // 24: powermanage.v1.AptRepository
+	(*DnfRepository)(nil),             // 25: powermanage.v1.DnfRepository
+	(*PacmanRepository)(nil),          // 26: powermanage.v1.PacmanRepository
+	(*ZypperRepository)(nil),          // 27: powermanage.v1.ZypperRepository
+	(*UserParams)(nil),                // 28: powermanage.v1.UserParams
+	(*GroupParams)(nil),               // 29: powermanage.v1.GroupParams
+	(*SshParams)(nil),                 // 30: powermanage.v1.SshParams
+	(*SshdDirective)(nil),             // 31: powermanage.v1.SshdDirective
+	(*SshdParams)(nil),                // 32: powermanage.v1.SshdParams
+	(*AdminPolicyParams)(nil),         // 33: powermanage.v1.AdminPolicyParams
+	(*LpsParams)(nil),                 // 34: powermanage.v1.LpsParams
+	(*EncryptionParams)(nil),          // 35: powermanage.v1.EncryptionParams
+	(*WifiParams)(nil),                // 36: powermanage.v1.WifiParams
+	(*ActionResult)(nil),              // 37: powermanage.v1.ActionResult
+	(*AgentUpdateArch)(nil),           // 38: powermanage.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),         // 39: powermanage.v1.AgentUpdateParams
+	nil,                               // 40: powermanage.v1.ShellParams.EnvironmentEntry
+	nil,                               // 41: powermanage.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),                  // 42: powermanage.v1.ActionId
+	(DesiredState)(0),                 // 43: powermanage.v1.DesiredState
+	(ExecutionStatus)(0),              // 44: powermanage.v1.ExecutionStatus
+	(*CommandOutput)(nil),             // 45: powermanage.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil),     // 46: google.protobuf.Timestamp
 }
-var file_pm_v1_actions_proto_depIdxs = []int32{
-	43, // 0: pm.v1.Action.id:type_name -> pm.v1.ActionId
-	0,  // 1: pm.v1.Action.type:type_name -> pm.v1.ActionType
-	44, // 2: pm.v1.Action.desired_state:type_name -> pm.v1.DesiredState
-	15, // 3: pm.v1.Action.schedule:type_name -> pm.v1.ActionSchedule
-	16, // 4: pm.v1.Action.package:type_name -> pm.v1.PackageParams
-	17, // 5: pm.v1.Action.app:type_name -> pm.v1.AppInstallParams
-	18, // 6: pm.v1.Action.shell:type_name -> pm.v1.ShellParams
-	19, // 7: pm.v1.Action.service:type_name -> pm.v1.ServiceParams
-	20, // 8: pm.v1.Action.file:type_name -> pm.v1.FileParams
-	22, // 9: pm.v1.Action.update:type_name -> pm.v1.UpdateParams
-	24, // 10: pm.v1.Action.repository:type_name -> pm.v1.RepositoryParams
-	23, // 11: pm.v1.Action.flatpak:type_name -> pm.v1.FlatpakParams
-	21, // 12: pm.v1.Action.directory:type_name -> pm.v1.DirectoryParams
-	29, // 13: pm.v1.Action.user:type_name -> pm.v1.UserParams
-	31, // 14: pm.v1.Action.ssh:type_name -> pm.v1.SshParams
-	33, // 15: pm.v1.Action.sshd:type_name -> pm.v1.SshdParams
-	34, // 16: pm.v1.Action.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	35, // 17: pm.v1.Action.lps:type_name -> pm.v1.LpsParams
-	30, // 18: pm.v1.Action.group:type_name -> pm.v1.GroupParams
-	36, // 19: pm.v1.Action.encryption:type_name -> pm.v1.EncryptionParams
-	37, // 20: pm.v1.Action.wifi:type_name -> pm.v1.WifiParams
-	40, // 21: pm.v1.Action.agent_update:type_name -> pm.v1.AgentUpdateParams
-	43, // 22: pm.v1.SignedActionEnvelope.action_id:type_name -> pm.v1.ActionId
-	0,  // 23: pm.v1.SignedActionEnvelope.action_type:type_name -> pm.v1.ActionType
-	44, // 24: pm.v1.SignedActionEnvelope.desired_state:type_name -> pm.v1.DesiredState
-	15, // 25: pm.v1.SignedActionEnvelope.schedule:type_name -> pm.v1.ActionSchedule
-	16, // 26: pm.v1.SignedActionEnvelope.package:type_name -> pm.v1.PackageParams
-	17, // 27: pm.v1.SignedActionEnvelope.app:type_name -> pm.v1.AppInstallParams
-	18, // 28: pm.v1.SignedActionEnvelope.shell:type_name -> pm.v1.ShellParams
-	19, // 29: pm.v1.SignedActionEnvelope.service:type_name -> pm.v1.ServiceParams
-	20, // 30: pm.v1.SignedActionEnvelope.file:type_name -> pm.v1.FileParams
-	22, // 31: pm.v1.SignedActionEnvelope.update:type_name -> pm.v1.UpdateParams
-	24, // 32: pm.v1.SignedActionEnvelope.repository:type_name -> pm.v1.RepositoryParams
-	23, // 33: pm.v1.SignedActionEnvelope.flatpak:type_name -> pm.v1.FlatpakParams
-	21, // 34: pm.v1.SignedActionEnvelope.directory:type_name -> pm.v1.DirectoryParams
-	29, // 35: pm.v1.SignedActionEnvelope.user:type_name -> pm.v1.UserParams
-	31, // 36: pm.v1.SignedActionEnvelope.ssh:type_name -> pm.v1.SshParams
-	33, // 37: pm.v1.SignedActionEnvelope.sshd:type_name -> pm.v1.SshdParams
-	34, // 38: pm.v1.SignedActionEnvelope.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	35, // 39: pm.v1.SignedActionEnvelope.lps:type_name -> pm.v1.LpsParams
-	30, // 40: pm.v1.SignedActionEnvelope.group:type_name -> pm.v1.GroupParams
-	36, // 41: pm.v1.SignedActionEnvelope.encryption:type_name -> pm.v1.EncryptionParams
-	37, // 42: pm.v1.SignedActionEnvelope.wifi:type_name -> pm.v1.WifiParams
-	40, // 43: pm.v1.SignedActionEnvelope.agent_update:type_name -> pm.v1.AgentUpdateParams
-	41, // 44: pm.v1.ShellParams.environment:type_name -> pm.v1.ShellParams.EnvironmentEntry
-	5,  // 45: pm.v1.ServiceParams.desired_state:type_name -> pm.v1.ServiceUnitState
-	1,  // 46: pm.v1.ServiceParams.backend:type_name -> pm.v1.ServiceBackend
-	25, // 47: pm.v1.RepositoryParams.apt:type_name -> pm.v1.AptRepository
-	26, // 48: pm.v1.RepositoryParams.dnf:type_name -> pm.v1.DnfRepository
-	27, // 49: pm.v1.RepositoryParams.pacman:type_name -> pm.v1.PacmanRepository
-	28, // 50: pm.v1.RepositoryParams.zypper:type_name -> pm.v1.ZypperRepository
-	32, // 51: pm.v1.SshdParams.directives:type_name -> pm.v1.SshdDirective
-	6,  // 52: pm.v1.AdminPolicyParams.access_level:type_name -> pm.v1.AdminAccessLevel
-	7,  // 53: pm.v1.AdminPolicyParams.backend:type_name -> pm.v1.PrivilegeBackend
-	8,  // 54: pm.v1.LpsParams.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	10, // 55: pm.v1.EncryptionParams.device_bound_key_type:type_name -> pm.v1.EncryptionDeviceBoundKeyType
-	8,  // 56: pm.v1.EncryptionParams.user_passphrase_complexity:type_name -> pm.v1.LpsPasswordComplexity
-	9,  // 57: pm.v1.EncryptionParams.backend:type_name -> pm.v1.EncryptionBackend
-	11, // 58: pm.v1.WifiParams.auth_type:type_name -> pm.v1.WifiAuthType
-	12, // 59: pm.v1.WifiParams.backend:type_name -> pm.v1.WifiBackend
-	43, // 60: pm.v1.ActionResult.action_id:type_name -> pm.v1.ActionId
-	45, // 61: pm.v1.ActionResult.status:type_name -> pm.v1.ExecutionStatus
-	46, // 62: pm.v1.ActionResult.output:type_name -> pm.v1.CommandOutput
-	47, // 63: pm.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	42, // 64: pm.v1.ActionResult.metadata:type_name -> pm.v1.ActionResult.MetadataEntry
-	46, // 65: pm.v1.ActionResult.detection_output:type_name -> pm.v1.CommandOutput
-	39, // 66: pm.v1.AgentUpdateParams.amd64:type_name -> pm.v1.AgentUpdateArch
-	39, // 67: pm.v1.AgentUpdateParams.arm64:type_name -> pm.v1.AgentUpdateArch
-	68, // [68:68] is the sub-list for method output_type
-	68, // [68:68] is the sub-list for method input_type
-	68, // [68:68] is the sub-list for extension type_name
-	68, // [68:68] is the sub-list for extension extendee
-	0,  // [0:68] is the sub-list for field type_name
+var file_powermanage_v1_actions_proto_depIdxs = []int32{
+	42, // 0: powermanage.v1.Action.id:type_name -> powermanage.v1.ActionId
+	0,  // 1: powermanage.v1.Action.type:type_name -> powermanage.v1.ActionType
+	43, // 2: powermanage.v1.Action.desired_state:type_name -> powermanage.v1.DesiredState
+	14, // 3: powermanage.v1.Action.schedule:type_name -> powermanage.v1.ActionSchedule
+	15, // 4: powermanage.v1.Action.package:type_name -> powermanage.v1.PackageParams
+	16, // 5: powermanage.v1.Action.app:type_name -> powermanage.v1.AppInstallParams
+	17, // 6: powermanage.v1.Action.shell:type_name -> powermanage.v1.ShellParams
+	18, // 7: powermanage.v1.Action.service:type_name -> powermanage.v1.ServiceParams
+	19, // 8: powermanage.v1.Action.file:type_name -> powermanage.v1.FileParams
+	21, // 9: powermanage.v1.Action.update:type_name -> powermanage.v1.UpdateParams
+	23, // 10: powermanage.v1.Action.repository:type_name -> powermanage.v1.RepositoryParams
+	22, // 11: powermanage.v1.Action.flatpak:type_name -> powermanage.v1.FlatpakParams
+	20, // 12: powermanage.v1.Action.directory:type_name -> powermanage.v1.DirectoryParams
+	28, // 13: powermanage.v1.Action.user:type_name -> powermanage.v1.UserParams
+	30, // 14: powermanage.v1.Action.ssh:type_name -> powermanage.v1.SshParams
+	32, // 15: powermanage.v1.Action.sshd:type_name -> powermanage.v1.SshdParams
+	33, // 16: powermanage.v1.Action.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	34, // 17: powermanage.v1.Action.lps:type_name -> powermanage.v1.LpsParams
+	29, // 18: powermanage.v1.Action.group:type_name -> powermanage.v1.GroupParams
+	35, // 19: powermanage.v1.Action.encryption:type_name -> powermanage.v1.EncryptionParams
+	36, // 20: powermanage.v1.Action.wifi:type_name -> powermanage.v1.WifiParams
+	39, // 21: powermanage.v1.Action.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	40, // 22: powermanage.v1.ShellParams.environment:type_name -> powermanage.v1.ShellParams.EnvironmentEntry
+	5,  // 23: powermanage.v1.ServiceParams.desired_state:type_name -> powermanage.v1.ServiceUnitState
+	1,  // 24: powermanage.v1.ServiceParams.backend:type_name -> powermanage.v1.ServiceBackend
+	24, // 25: powermanage.v1.RepositoryParams.apt:type_name -> powermanage.v1.AptRepository
+	25, // 26: powermanage.v1.RepositoryParams.dnf:type_name -> powermanage.v1.DnfRepository
+	26, // 27: powermanage.v1.RepositoryParams.pacman:type_name -> powermanage.v1.PacmanRepository
+	27, // 28: powermanage.v1.RepositoryParams.zypper:type_name -> powermanage.v1.ZypperRepository
+	31, // 29: powermanage.v1.SshdParams.directives:type_name -> powermanage.v1.SshdDirective
+	6,  // 30: powermanage.v1.AdminPolicyParams.access_level:type_name -> powermanage.v1.AdminAccessLevel
+	7,  // 31: powermanage.v1.AdminPolicyParams.backend:type_name -> powermanage.v1.PrivilegeBackend
+	8,  // 32: powermanage.v1.LpsParams.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	10, // 33: powermanage.v1.EncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	8,  // 34: powermanage.v1.EncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	9,  // 35: powermanage.v1.EncryptionParams.backend:type_name -> powermanage.v1.EncryptionBackend
+	11, // 36: powermanage.v1.WifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	12, // 37: powermanage.v1.WifiParams.backend:type_name -> powermanage.v1.WifiBackend
+	42, // 38: powermanage.v1.ActionResult.action_id:type_name -> powermanage.v1.ActionId
+	44, // 39: powermanage.v1.ActionResult.status:type_name -> powermanage.v1.ExecutionStatus
+	45, // 40: powermanage.v1.ActionResult.output:type_name -> powermanage.v1.CommandOutput
+	46, // 41: powermanage.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	41, // 42: powermanage.v1.ActionResult.metadata:type_name -> powermanage.v1.ActionResult.MetadataEntry
+	45, // 43: powermanage.v1.ActionResult.detection_output:type_name -> powermanage.v1.CommandOutput
+	38, // 44: powermanage.v1.AgentUpdateParams.amd64:type_name -> powermanage.v1.AgentUpdateArch
+	38, // 45: powermanage.v1.AgentUpdateParams.arm64:type_name -> powermanage.v1.AgentUpdateArch
+	46, // [46:46] is the sub-list for method output_type
+	46, // [46:46] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
-func init() { file_pm_v1_actions_proto_init() }
-func file_pm_v1_actions_proto_init() {
-	if File_pm_v1_actions_proto != nil {
+func init() { file_powermanage_v1_actions_proto_init() }
+func file_powermanage_v1_actions_proto_init() {
+	if File_powermanage_v1_actions_proto != nil {
 		return
 	}
-	file_pm_v1_common_proto_init()
-	file_pm_v1_actions_proto_msgTypes[0].OneofWrappers = []any{
+	file_powermanage_v1_common_proto_init()
+	file_powermanage_v1_actions_proto_msgTypes[0].OneofWrappers = []any{
 		(*Action_Package)(nil),
 		(*Action_App)(nil),
 		(*Action_Shell)(nil),
@@ -4613,42 +4146,22 @@ func file_pm_v1_actions_proto_init() {
 		(*Action_Wifi)(nil),
 		(*Action_AgentUpdate)(nil),
 	}
-	file_pm_v1_actions_proto_msgTypes[1].OneofWrappers = []any{
-		(*SignedActionEnvelope_Package)(nil),
-		(*SignedActionEnvelope_App)(nil),
-		(*SignedActionEnvelope_Shell)(nil),
-		(*SignedActionEnvelope_Service)(nil),
-		(*SignedActionEnvelope_File)(nil),
-		(*SignedActionEnvelope_Update)(nil),
-		(*SignedActionEnvelope_Repository)(nil),
-		(*SignedActionEnvelope_Flatpak)(nil),
-		(*SignedActionEnvelope_Directory)(nil),
-		(*SignedActionEnvelope_User)(nil),
-		(*SignedActionEnvelope_Ssh)(nil),
-		(*SignedActionEnvelope_Sshd)(nil),
-		(*SignedActionEnvelope_AdminPolicy)(nil),
-		(*SignedActionEnvelope_Lps)(nil),
-		(*SignedActionEnvelope_Group)(nil),
-		(*SignedActionEnvelope_Encryption)(nil),
-		(*SignedActionEnvelope_Wifi)(nil),
-		(*SignedActionEnvelope_AgentUpdate)(nil),
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_actions_proto_rawDesc), len(file_pm_v1_actions_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_actions_proto_rawDesc), len(file_powermanage_v1_actions_proto_rawDesc)),
 			NumEnums:      13,
-			NumMessages:   30,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_pm_v1_actions_proto_goTypes,
-		DependencyIndexes: file_pm_v1_actions_proto_depIdxs,
-		EnumInfos:         file_pm_v1_actions_proto_enumTypes,
-		MessageInfos:      file_pm_v1_actions_proto_msgTypes,
+		GoTypes:           file_powermanage_v1_actions_proto_goTypes,
+		DependencyIndexes: file_powermanage_v1_actions_proto_depIdxs,
+		EnumInfos:         file_powermanage_v1_actions_proto_enumTypes,
+		MessageInfos:      file_powermanage_v1_actions_proto_msgTypes,
 	}.Build()
-	File_pm_v1_actions_proto = out.File
-	file_pm_v1_actions_proto_goTypes = nil
-	file_pm_v1_actions_proto_depIdxs = nil
+	File_powermanage_v1_actions_proto = out.File
+	file_powermanage_v1_actions_proto_goTypes = nil
+	file_powermanage_v1_actions_proto_depIdxs = nil
 }

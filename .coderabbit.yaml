@@ -4,11 +4,15 @@ reviews:
     enabled: true
   profile: chill
   path_instructions:
-    - path: "proto/pm/v1/*.proto"
+    - path: "proto/powermanage/v1/*.proto"
       instructions: >
-        Protobuf definitions shared across all components. Check for backward
-        compatibility (no removed/renumbered fields), proper field numbering,
-        and validate tags. Changes here require regeneration (make generate).
+        Protobuf definitions shared across all components. Review against the
+        approved target design (../DESIGN_2026_07_31/00_TARGET_DESIGN.md): the
+        RPC surface must exactly match the guarded golden set, and the contract
+        is a pre-alpha clean break — reject compatibility shims, dual old/new
+        fields, tombstone comments, and reserved-history markers for removed
+        shapes. Scrutinize field numbering and validate tags for the current V1
+        only. Changes here require regeneration (make generate).
     - path: "ts/client.ts"
       instructions: >
         TypeScript SDK client used by the web frontend. Methods must match

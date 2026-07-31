@@ -2,7 +2,7 @@
 // Plain TypeScript — no framework dependencies.
 // Refresh/logout functions are set lazily to avoid circular dependencies with ApiClient.
 
-import type { User } from '../gen/ts/pm/v1/control_pb';
+import type { User } from '../gen/ts/powermanage/v1/control_pb';
 import superjson from 'superjson';
 import { logger, describeError } from './logger.js';
 
@@ -141,17 +141,16 @@ export class AuthStore {
 
 	/**
 	 * True if the user has the bootstrap admin role assigned (directly or
-	 * via group inheritance). The previous implementation proxied the
-	 * `CreateRole` permission, which any custom role could carry without
-	 * being the admin — F019 in the SDK tech-debt audit. We now check the
-	 * stable admin role ID (`00000000000000000000000001`, defined in
-	 * server/internal/auth/reconcile.go AdminRoleID).
+	 * via group inheritance). This checks the stable admin role ID
+	 * (`00000000000000000000000001`, defined in
+	 * server/internal/auth/reconcile.go AdminRoleID) rather than proxying the
+	 * `CreateRole` permission, which any custom role could carry without being
+	 * the admin.
 	 */
 	get isAdmin() {
 		const adminRoleID = '00000000000000000000000001';
-		const directRoles = this.state.user?.roles ?? [];
-		for (const role of directRoles) {
-			if (role.id === adminRoleID) return true;
+		for (const grant of this.state.user?.roleGrants ?? []) {
+			if (grant.role?.id === adminRoleID) return true;
 		}
 		const inherited = this.state.user?.inheritedRoles ?? [];
 		for (const ir of inherited) {
@@ -161,10 +160,8 @@ export class AuthStore {
 	}
 
 	hasPermission(permission: string) {
-		const roles = this.state.user?.roles;
-		if (!roles) return false;
-		for (const role of roles) {
-			if (role.permissions.includes(permission)) return true;
+		for (const grant of this.state.user?.roleGrants ?? []) {
+			if (grant.role?.permissions.includes(permission)) return true;
 		}
 		return false;
 	}

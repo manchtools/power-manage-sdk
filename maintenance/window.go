@@ -1,5 +1,5 @@
 // Package maintenance hosts the canonical parser, validator, union
-// resolver and evaluator for pm.v1.MaintenanceWindow. The package is
+// resolver and evaluator for powermanage.v1.MaintenanceWindow. The package is
 // shared so server (handler validation, union computation across the
 // device's groups) and agent (per-tick gate in the scheduler) agree
 // bit-for-bit on what counts as an allowed dispatch time.
@@ -31,7 +31,7 @@ import (
 	"strconv"
 	"time"
 
-	pmv1 "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	powermanagev1 "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 // Allowed weekday tokens. Order matches time.Weekday so we can index
@@ -45,7 +45,7 @@ var ErrInvalidEntry = errors.New("invalid maintenance window entry")
 
 // Validate reports whether the window is syntactically well-formed.
 // A nil window or an empty schedule is valid (= always allowed).
-func Validate(w *pmv1.MaintenanceWindow) error {
+func Validate(w *powermanagev1.MaintenanceWindow) error {
 	if w == nil {
 		return nil
 	}
@@ -61,7 +61,7 @@ func Validate(w *pmv1.MaintenanceWindow) error {
 // nil window or empty schedule allows every moment. The check uses
 // t.Weekday() and t.Hour()/t.Minute() — callers that want
 // device-local semantics must pass an already-Local'd time.
-func IsAllowed(w *pmv1.MaintenanceWindow, t time.Time) bool {
+func IsAllowed(w *powermanagev1.MaintenanceWindow, t time.Time) bool {
 	if w == nil || len(w.GetSchedule()) == 0 {
 		return true
 	}
@@ -82,13 +82,13 @@ func IsAllowed(w *pmv1.MaintenanceWindow, t time.Time) bool {
 // The returned window aliases input entry pointers; callers that
 // mutate the result must clone first. Server-side resolvers don't
 // mutate, so the alias is safe in practice.
-func Union(windows ...*pmv1.MaintenanceWindow) *pmv1.MaintenanceWindow {
+func Union(windows ...*powermanagev1.MaintenanceWindow) *powermanagev1.MaintenanceWindow {
 	for _, w := range windows {
 		if w == nil || len(w.GetSchedule()) == 0 {
-			return &pmv1.MaintenanceWindow{}
+			return &powermanagev1.MaintenanceWindow{}
 		}
 	}
-	out := &pmv1.MaintenanceWindow{}
+	out := &powermanagev1.MaintenanceWindow{}
 	for _, w := range windows {
 		out.Schedule = append(out.Schedule, w.GetSchedule()...)
 	}
@@ -98,7 +98,7 @@ func Union(windows ...*pmv1.MaintenanceWindow) *pmv1.MaintenanceWindow {
 // validateEntry checks a single MaintenanceWindowEntry for shape.
 // Returns the underlying parse error so Validate can wrap it with
 // the entry index for a useful operator-facing message.
-func validateEntry(e *pmv1.MaintenanceWindowEntry) error {
+func validateEntry(e *powermanagev1.MaintenanceWindowEntry) error {
 	if e == nil {
 		return errors.New("nil entry")
 	}
@@ -125,7 +125,7 @@ func validateEntry(e *pmv1.MaintenanceWindowEntry) error {
 // midnight when the range's start is after its end: in that case
 // "match before midnight today" OR "match after midnight on the
 // previous-day-listed-in-days".
-func entryAllows(e *pmv1.MaintenanceWindowEntry, t time.Time) bool {
+func entryAllows(e *powermanagev1.MaintenanceWindowEntry, t time.Time) bool {
 	if e == nil {
 		return false
 	}
@@ -165,7 +165,7 @@ func entryAllows(e *pmv1.MaintenanceWindowEntry, t time.Time) bool {
 	return false
 }
 
-func entryListsDay(e *pmv1.MaintenanceWindowEntry, day string) bool {
+func entryListsDay(e *powermanagev1.MaintenanceWindowEntry, day string) bool {
 	for _, d := range e.Days {
 		if d == day {
 			return true

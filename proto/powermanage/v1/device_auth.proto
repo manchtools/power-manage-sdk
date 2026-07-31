@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package pm.v1;
+package powermanage.v1;
 
-option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1";
 
 // ============================================================================
 // Device Enrollment Service (Agent Local Socket)
@@ -39,9 +39,7 @@ message EnrollRequest {
   // the enroll CLI strips colons and lowercases the operator's value
   // (openssl emits uppercase, colon-separated) and the agent compares
   // with EqualFold, so the `hexadecimal` tag is intentionally permissive
-  // on case. Field 3 (formerly the removed skip_verify bool) is reused in
-  // place — EnrollRequest only crosses the local enrollment socket within
-  // one agent binary, so there is no cross-version wire concern.
+  // on case.
   // @gotags: validate:"omitempty,len=64,hexadecimal"
   string ca_fingerprint_pin = 3;
 }
@@ -51,8 +49,8 @@ message EnrollResponse {
   // means device_id is populated and error is empty; success=false
   // means error is populated and device_id is empty. The bool itself
   // is unconditional but we tag it explicit-required so the
-  // proto-validate coverage tool stops counting it as a gap (audit
-  // finding #2 / #73). Bools always have a default value, so
+  // proto-validate coverage tool stops counting it as a gap. Bools
+  // always have a default value, so
   // "required" here means "must be present in the wire payload" —
   // protovalidate enforces no extra runtime check beyond that.
   // @gotags: validate:"required"

@@ -23,8 +23,8 @@ import (
 	"github.com/oklog/ulid/v2"
 	"golang.org/x/net/http2"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
-	"github.com/manchtools/power-manage-sdk/gen/go/pm/v1/pmv1connect"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
+	"github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1/powermanagev1connect"
 	"github.com/manchtools/power-manage-sdk/validate"
 )
 
@@ -40,7 +40,7 @@ const (
 
 // Client provides methods to communicate with the power-manage server.
 type Client struct {
-	client    pmv1connect.AgentServiceClient
+	client    powermanagev1connect.AgentServiceClient
 	deviceID  string
 	authToken string
 	logger    *slog.Logger
@@ -58,13 +58,13 @@ type Client struct {
 	mu     sync.RWMutex
 	stream *connect.BidiStreamForClient[pm.AgentMessage, pm.ServerMessage]
 
-	// actionCh feeds the per-Run action worker. Server-dispatched actions are
-	// handed to a single worker goroutine (off the receive loop) so a
-	// long-running action can no longer head-of-line-block TerminalStop/Input/
+	// deliveryCh feeds the per-Run delivery worker. Manifest deliveries are
+	// handed to a single worker goroutine (off the receive loop) so recording
+	// and running one can no longer head-of-line-block TerminalStop/Input/
 	// Resize (WS13 #7). A single worker preserves one-at-a-time, in-order
-	// execution; the buffered channel bounds memory. Non-nil only while Run()
+	// handling; the buffered channel bounds memory. Non-nil only while Run()
 	// is active; guarded by mu.
-	actionCh chan *pm.ActionDispatch
+	deliveryCh chan *pm.ManifestDelivery
 
 	// sendSem is a buffered-1 channel used as a ctx-aware send lock. It
 	// serializes all stream.Send() calls — concurrent writes on a bidi
@@ -115,12 +115,13 @@ const (
 	// an oversized frame is torn down with a resource-exhausted error.
 	maxInboundMessageBytes = 16 << 20 // 16 MiB
 
-	// actionQueueDepth bounds how many server-dispatched actions can wait for
-	// the single action worker (WS13 #7). Deep enough to absorb any legitimate
+	// deliveryQueueDepth bounds how many manifest deliveries can wait for the
+	// single delivery worker (WS13 #7). Deep enough to absorb any legitimate
 	// burst; a backlog beyond it means a pathological flood, so the excess is
-	// dropped (the server re-dispatches on reconnect) rather than queued
-	// unbounded or allowed to block the receive loop.
-	actionQueueDepth = 256
+	// dropped rather than queued unbounded or allowed to block the receive
+	// loop. Dropping is safe by construction: a dropped delivery was never
+	// receipted, so control redelivers it.
+	deliveryQueueDepth = 256
 )
 
 // NewClient creates a new SDK client.
@@ -151,7 +152,7 @@ func NewClient(serverURL string, opts ...ClientOption) *Client {
 	// resource-exhausted error and tear down cleanly, rather than
 	// allocate. The long-lived bidi stream is unaffected for normal
 	// (small) control frames.
-	c.client = pmv1connect.NewAgentServiceClient(httpClient, serverURL,
+	c.client = powermanagev1connect.NewAgentServiceClient(httpClient, serverURL,
 		connect.WithReadMaxBytes(maxInboundMessageBytes))
 	return c
 }
@@ -445,10 +446,14 @@ type RegisterAgentResult struct {
 	DeviceID    string
 	CACert      []byte
 	Certificate []byte
-	// ControlURL is where the agent dials its AgentService stream. Spec 41
-	// renamed this from GatewayURL: control terminates agent mTLS itself now,
-	// so the address the agent keeps is control's.
+	// ControlURL is where the agent dials its AgentService stream — control's
+	// agent listener, normally a different host from the API URL registration
+	// went to.
 	ControlURL string
+	// ControlSealingPublicKey is control's deployment X25519 public key, raw
+	// 32-byte encoding. The agent pins it alongside CACert and seals every
+	// secret it reports to it.
+	ControlSealingPublicKey []byte
 }
 
 // RegisterAgent registers an agent with the control server.
@@ -456,20 +461,27 @@ type RegisterAgentResult struct {
 // The controlURL is the control server's public API URL (where the web UI
 // connects). The result's ControlURL is a DIFFERENT host — control's agent
 // listener, which the agent dials for its stream.
-func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agentVersion string, csr []byte, opts ...ClientOption) (*RegisterAgentResult, error) {
+//
+// sealingPubKey is the raw 32-byte X25519 public key the agent generated for
+// this enrollment; control seals to it for the lifetime of the device
+// identity issued here. It is a required parameter rather than an option
+// because an enrollment without it produces a device control can never send a
+// secret to.
+func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agentVersion string, csr, sealingPubKey []byte, opts ...ClientOption) (*RegisterAgentResult, error) {
 	c := &Client{}
 	httpClient := bootstrapHTTPClient()
 	for _, opt := range opts {
 		opt.apply(c, &httpClient)
 	}
 
-	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
+	controlClient := powermanagev1connect.NewControlServiceClient(httpClient, controlURL)
 
 	req := connect.NewRequest(&pm.RegisterRequest{
-		Token:        token,
-		Hostname:     hostname,
-		AgentVersion: agentVersion,
-		Csr:          csr,
+		Token:                 token,
+		Hostname:              hostname,
+		AgentVersion:          agentVersion,
+		Csr:                   csr,
+		AgentSealingPublicKey: sealingPubKey,
 	})
 
 	resp, err := controlClient.Register(ctx, req)
@@ -478,10 +490,11 @@ func RegisterAgent(ctx context.Context, controlURL string, token, hostname, agen
 	}
 
 	return &RegisterAgentResult{
-		DeviceID:    resp.Msg.DeviceId.GetValue(),
-		CACert:      resp.Msg.CaCert,
-		Certificate: resp.Msg.Certificate,
-		ControlURL:  resp.Msg.ControlUrl,
+		DeviceID:                resp.Msg.DeviceId.GetValue(),
+		CACert:                  resp.Msg.CaCert,
+		Certificate:             resp.Msg.Certificate,
+		ControlURL:              resp.Msg.ControlUrl,
+		ControlSealingPublicKey: resp.Msg.ControlSealingPublicKey,
 	}, nil
 }
 
@@ -513,7 +526,7 @@ func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert [
 		opt.apply(c, &httpClient)
 	}
 
-	controlClient := pmv1connect.NewControlServiceClient(httpClient, controlURL)
+	controlClient := powermanagev1connect.NewControlServiceClient(httpClient, controlURL)
 
 	req := connect.NewRequest(&pm.RenewCertificateRequest{
 		Csr:                csr,
@@ -536,38 +549,50 @@ func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert [
 type StreamHandler interface {
 	// OnWelcome is called when the server sends a welcome message.
 	OnWelcome(ctx context.Context, welcome *pm.Welcome) error
-	// OnAction is called when the server dispatches an action. The handler
-	// receives the signed envelope bytes and the CA signature: it MUST
-	// verify the signature over `envelope` and unmarshal THOSE SAME bytes
-	// (a pm.SignedActionEnvelope) to execute — the executed action is the
-	// verified action (sdk#82).
-	OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error)
+	// OnManifestDelivery is called when control delivers a manifest, from the
+	// stream or from a SyncActions pull — both carry the same
+	// ManifestDelivery, and the handler cannot tell them apart because it must
+	// not behave differently.
+	//
+	// The handler MUST durably record the delivery, keyed by its delivery_id,
+	// before returning nil. The SDK sends DeliveryReceipt only on a nil
+	// return, so a receipt can never claim durability the device does not
+	// have; control keeps redelivering until it sees one. A delivery_id the
+	// handler already holds is a retry: record-once, execute-once, return nil
+	// again so the receipt is re-sent.
+	//
+	// Returning an error means the delivery was NOT recorded. No receipt is
+	// sent and the error is logged; control redelivers.
+	//
+	// Execution is the handler's own business, driven off its durable record
+	// and reported asynchronously with SendActionResult (per occurrence) and
+	// SendManifestResult (once for the manifest).
+	OnManifestDelivery(ctx context.Context, delivery *pm.ManifestDelivery) error
 	// OnQuery is called when the server sends an OS query.
 	OnQuery(ctx context.Context, query *pm.OSQuery) (*pm.OSQueryResult, error)
 	// OnError is called when the server sends an error.
 	OnError(ctx context.Context, err *pm.Error) error
 }
 
-// StreamingHandler extends StreamHandler with streaming action support.
-// Handlers that implement this interface will receive a callback to stream
-// output chunks during action execution.
+// StreamingHandler extends StreamHandler with output streaming during manifest
+// execution. Handlers that implement this interface receive a callback for
+// pushing output chunks as the manifest's occurrences run.
 type StreamingHandler interface {
 	StreamHandler
-	// OnActionWithStreaming is called when the server dispatches an action.
-	// It receives the signed envelope bytes and CA signature (verify-then-
-	// unmarshal-then-execute the SAME bytes; see OnAction). The sendChunk
-	// callback streams output chunks during execution.
-	OnActionWithStreaming(ctx context.Context, envelope []byte, signature []byte, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error)
+	// OnManifestDeliveryWithStreaming carries the same durable-receipt
+	// contract as OnManifestDelivery — nil return means recorded, and only
+	// then does the SDK send the receipt. sendChunk streams per-occurrence
+	// output while the manifest executes.
+	OnManifestDeliveryWithStreaming(ctx context.Context, delivery *pm.ManifestDelivery, sendChunk func(*pm.OutputChunk) error) error
 }
 
 // LuksHandler extends StreamHandler with LUKS device-key revocation support.
 // Handlers that implement this interface will receive revoke requests from the server.
 type LuksHandler interface {
 	StreamHandler
-	// OnRevokeLuksDeviceKey is called when the server requests revocation of a
-	// LUKS device-bound key. The full message is delivered (not just the
-	// action_id) so the handler can verify the CA signature that binds it
-	// before performing the destructive, irreversible slot-7 wipe.
+	// OnRevokeLuksDeviceKey is called when control requests revocation of a
+	// LUKS device-bound key. The full message is delivered rather than the
+	// bare action_id so the handler keeps whatever context later fields add.
 	// Returns (success, errorMessage).
 	OnRevokeLuksDeviceKey(ctx context.Context, req *pm.RevokeLuksDeviceKey) (bool, string)
 }
@@ -585,16 +610,12 @@ type LogQueryHandler interface {
 type InventoryHandler interface {
 	StreamHandler
 	// CollectInventory gathers hardware/software inventory from the device on
-	// the agent's OWN schedule (on connect + every 24h). This is the
-	// agent-initiated path: no server command is involved, so no signature is
-	// required. Returns nil if collection is unavailable (e.g. osquery not
-	// installed).
+	// the agent's OWN schedule (on connect + every 24h). Returns nil if
+	// collection is unavailable (e.g. osquery not installed).
 	CollectInventory(ctx context.Context) *pm.DeviceInventory
-	// OnRequestInventory handles a SERVER-originated RequestInventory. Because
-	// a compromised server could forge this message, the handler verifies the
-	// CA signature that binds it before running osquery as root, then collects
-	// the same inventory. Returns nil on verification failure or when
-	// collection is unavailable.
+	// OnRequestInventory handles a control-originated RequestInventory,
+	// collecting the same inventory on demand and correlating it with the
+	// request's query_id. Returns nil when collection is unavailable.
 	OnRequestInventory(ctx context.Context, req *pm.RequestInventory) *pm.DeviceInventory
 }
 
@@ -736,12 +757,46 @@ func (c *Client) SendHeartbeat(ctx context.Context, hb *pm.Heartbeat) error {
 	})
 }
 
-// SendActionResult sends an action result to the server.
+// SendActionResult reports the outcome of one occurrence. The result must
+// carry the delivery_id and occurrence_id it descends from; control keys
+// ingestion on that pair, so a result replayed after a reconnect updates the
+// same row instead of creating a second one.
 func (c *Client) SendActionResult(ctx context.Context, result *pm.ActionResult) error {
 	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
 		Payload: &pm.AgentMessage_ActionResult{
 			ActionResult: result,
+		},
+	})
+}
+
+// SendManifestResult reports the outcome of a complete manifest, once, after
+// its occurrences have reported individually.
+func (c *Client) SendManifestResult(ctx context.Context, result *pm.ManifestResult) error {
+	return c.send(ctx, &pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_ManifestResult{
+			ManifestResult: result,
+		},
+	})
+}
+
+// SendDeliveryReceipt confirms that a delivery is durably recorded on this
+// device. Control advances the delivery only on this frame, never on its own
+// successful socket write, so the caller MUST NOT send it before the local
+// commit has landed.
+//
+// The stream path does not rely on the caller for that: runManifestDelivery
+// emits the receipt only after the handler returns nil, so on that path the
+// ordering is structural. This method is exported for the pull path, where
+// SyncActions returns the same deliveries and the agent sends the receipt from
+// inside its own durable-receipt transaction. The durability lives agent-side;
+// the SDK does not model it and must not pretend to.
+func (c *Client) SendDeliveryReceipt(ctx context.Context, deliveryID string) error {
+	return c.send(ctx, &pm.AgentMessage{
+		Id: NewULID(),
+		Payload: &pm.AgentMessage_DeliveryReceipt{
+			DeliveryReceipt: &pm.DeliveryReceipt{DeliveryId: deliveryID},
 		},
 	})
 }
@@ -826,9 +881,14 @@ func (c *Client) SendTerminalStateChange(ctx context.Context, change *pm.Termina
 	})
 }
 
-// GetLuksKey sends a GetLuksKeyRequest on the stream and waits for the correlated response.
-// The response is matched by the message ID.
-func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error) {
+// GetLuksKey sends a GetLuksKeyRequest on the stream and waits for the
+// correlated response, matched by message ID.
+//
+// The returned passphrase is sealed to this device's enrollment recipient key.
+// Opening it is the caller's job, at the narrow sink immediately before use —
+// the SDK deliberately does not unseal here, so the plaintext never exists in
+// a general-purpose transport helper.
+func (c *Client) GetLuksKey(ctx context.Context, actionID string) (*pm.SealedValue, error) {
 	id := NewULID()
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
@@ -841,26 +901,25 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 			},
 		},
 	}); err != nil {
-		return "", fmt.Errorf("send get luks key request: %w", err)
+		return nil, fmt.Errorf("send get luks key request: %w", err)
 	}
 
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return nil, ctx.Err()
 	case resp := <-ch:
 		if errMsg := resp.GetError(); errMsg != nil {
-			return "", fmt.Errorf("server error: %s", errMsg.Message)
+			return nil, fmt.Errorf("server error: %s", errMsg.Message)
 		}
 		luksResp := resp.GetGetLuksKey()
 		if luksResp == nil {
-			return "", errors.New("unexpected response type")
+			return nil, errors.New("unexpected response type")
 		}
-		// The response carries the same validate tags as the request side, and
-		// nothing was checking them: the declared max was decoration, and an
-		// empty passphrase — which `required` exists to reject — was accepted
-		// and handed to cryptsetup.
+		// The response carries validate tags and nothing was checking them: a
+		// blob too short to be a seal, or an absent one, would otherwise reach
+		// the unseal call and fail there with a less honest error.
 		if err := c.validateInbound(luksResp); err != nil {
-			return "", fmt.Errorf("invalid GetLuksKey response: %w", err)
+			return nil, fmt.Errorf("invalid GetLuksKey response: %w", err)
 		}
 		return luksResp.Passphrase, nil
 	}
@@ -869,13 +928,12 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (string, error
 // StoreLuksKey sends a StoreLuksKeyRequest on the stream and waits for the
 // server confirmation.
 //
-// Spec 41 removed the X25519 transport sealing: the passphrase now travels as
-// plaintext inside the agent's direct mTLS connection to control. The seal
-// existed only so a relaying gateway could not read disk-encryption secrets,
-// and there is no relay — control is the peer and was always the only party
-// able to open the blob. Control encrypts at rest on receipt, still binding
-// device|action|"luks" as the AAD so a ciphertext cannot be relocated.
-func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphrase string, reason pm.RotationReason) error {
+// passphrase must already be sealed to control's deployment sealing key, with
+// AAD binding this device and actionID. The SDK does not seal for the caller:
+// sealing needs the recipient key and the action context, both of which belong
+// to the agent, and a transport helper that accepted plaintext would be the
+// one place a credential could be logged by accident.
+func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath string, passphrase *pm.SealedValue, reason pm.RotationReason) error {
 	id := NewULID()
 	ch := c.registerPending(id)
 	defer c.unregisterPending(id)
@@ -915,12 +973,10 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath, passphr
 // StoreLpsPasswords reports one LPS execution's password rotations and waits for
 // the server confirmation.
 //
-// Spec 41 moved this onto the stream. It previously reached control through
-// InternalService/ProxyStoreLpsPasswords — the gateway relayed the batch — and
-// each password was X25519-sealed so the relay could not read it. With no relay
-// the agent's mTLS terminates at control, which was always the only party able
-// to open the seal, so the rotations travel as plaintext inside that connection
-// and control encrypts them at rest on receipt.
+// Each rotation's password must already be sealed to control's deployment
+// sealing key, with AAD binding the device, the action and that rotation's
+// username — the username binding is what stops a blob being stored under a
+// different account than the one it was generated for.
 //
 // Request/response are correlated by message id like every other stream call, so
 // a failed batch is reported rather than silently dropped: LPS rotations are
@@ -1192,37 +1248,38 @@ func (c *Client) Run(ctx context.Context, hostname, agentVersion string, heartbe
 		})
 	}
 
-	// Action worker (WS13 #7): server-dispatched actions execute on this single
-	// goroutine, off the receive loop, so a long-running action cannot
-	// head-of-line-block terminal control frames. One worker = one-at-a-time,
-	// in-order execution; the buffered channel bounds memory. Published on the
-	// Client so dispatchServerMessage can enqueue; cleared + drained on Run exit.
-	actionCh := make(chan *pm.ActionDispatch, actionQueueDepth)
+	// Delivery worker (WS13 #7): manifest deliveries are recorded and run on
+	// this single goroutine, off the receive loop, so a long-running manifest
+	// cannot head-of-line-block terminal control frames. One worker =
+	// one-at-a-time, in-order handling; the buffered channel bounds memory.
+	// Published on the Client so dispatchServerMessage can enqueue; cleared +
+	// drained on Run exit.
+	deliveryCh := make(chan *pm.ManifestDelivery, deliveryQueueDepth)
 	workerCtx, cancelWorker := context.WithCancel(ctx)
 	c.mu.Lock()
-	c.actionCh = actionCh
+	c.deliveryCh = deliveryCh
 	c.mu.Unlock()
-	var actionWG sync.WaitGroup
-	actionWG.Add(1)
+	var deliveryWG sync.WaitGroup
+	deliveryWG.Add(1)
 	go func() {
-		defer actionWG.Done()
-		for disp := range actionCh {
-			// Skip queued actions once the connection is going down rather than
-			// half-applying system state during teardown; the server
-			// re-dispatches unacked actions on reconnect.
+		defer deliveryWG.Done()
+		for delivery := range deliveryCh {
+			// Skip queued deliveries once the connection is going down rather
+			// than half-applying system state during teardown. Nothing is lost:
+			// no receipt was sent, so control redelivers on reconnect.
 			if workerCtx.Err() != nil {
 				continue
 			}
-			c.runDispatchedAction(workerCtx, disp, handler)
+			c.runManifestDelivery(workerCtx, delivery, handler)
 		}
 	}()
 	defer func() {
 		c.mu.Lock()
-		c.actionCh = nil
+		c.deliveryCh = nil
 		c.mu.Unlock()
 		cancelWorker()
-		close(actionCh)
-		actionWG.Wait()
+		close(deliveryCh)
+		deliveryWG.Wait()
 	}()
 
 	// Channel to receive messages from blocking Receive call
@@ -1347,42 +1404,47 @@ func (c *Client) validateInbound(payload any) error {
 	return nil
 }
 
-// currentActionCh returns the per-Run action worker channel, or nil when Run()
-// is not active (e.g. dispatchServerMessage driven directly by a unit test).
-func (c *Client) currentActionCh() chan *pm.ActionDispatch {
+// currentDeliveryCh returns the per-Run delivery worker channel, or nil when
+// Run() is not active (e.g. dispatchServerMessage driven directly by a unit
+// test).
+func (c *Client) currentDeliveryCh() chan *pm.ManifestDelivery {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.actionCh
+	return c.deliveryCh
 }
 
-// runDispatchedAction executes one server-dispatched action and sends its
-// result. Run on the single action worker goroutine (or inline as a test
-// fallback). A panic is recovered (one bad action can't crash the agent); an
-// infrastructure error is logged, not propagated — off the receive loop there is
-// no connection to tear down, and an action *failure* already comes back as a
-// FAILED ActionResult rather than an error.
-func (c *Client) runDispatchedAction(ctx context.Context, disp *pm.ActionDispatch, handler StreamHandler) {
+// runManifestDelivery hands one delivery to the handler and, only if the
+// handler reports it durably recorded, sends the DeliveryReceipt. Run on the
+// single delivery worker goroutine (or inline as a test fallback).
+//
+// The receipt is sent here rather than by the handler so the ordering is
+// structural: there is no code path that emits a receipt without a nil return
+// from the handler, and none that returns nil without the handler having
+// committed. A handler error or panic therefore leaves the delivery
+// unacknowledged, which is the outcome that makes control redeliver.
+func (c *Client) runManifestDelivery(ctx context.Context, delivery *pm.ManifestDelivery, handler StreamHandler) {
 	defer func() {
 		if r := recover(); r != nil {
-			c.logger.Error("recovered panic while executing dispatched action (non-fatal)", "panic", fmt.Sprintf("%v", r))
+			c.logger.Error("recovered panic while handling manifest delivery (non-fatal; no receipt sent)",
+				"delivery_id", delivery.GetDeliveryId(), "panic", fmt.Sprintf("%v", r))
 		}
 	}()
-	var result *pm.ActionResult
 	var err error
 	if streamingHandler, ok := handler.(StreamingHandler); ok {
 		sendChunk := func(chunk *pm.OutputChunk) error { return c.SendOutputChunk(ctx, chunk) }
-		result, err = streamingHandler.OnActionWithStreaming(ctx, disp.Envelope, disp.Signature, sendChunk)
+		err = streamingHandler.OnManifestDeliveryWithStreaming(ctx, delivery, sendChunk)
 	} else {
-		result, err = handler.OnAction(ctx, disp.Envelope, disp.Signature)
+		err = handler.OnManifestDelivery(ctx, delivery)
 	}
 	if err != nil {
-		c.logger.Error("action handler error", "error", err)
+		// Not durably recorded: staying silent is the correct answer, because
+		// control's retry is the only thing that recovers this delivery.
+		c.logger.Error("manifest delivery not recorded; withholding receipt",
+			"delivery_id", delivery.GetDeliveryId(), "error", err)
 		return
 	}
-	if result != nil {
-		if err := c.SendActionResult(ctx, result); err != nil {
-			c.logger.Warn("failed to send action result", "error", err)
-		}
+	if err := c.SendDeliveryReceipt(ctx, delivery.GetDeliveryId()); err != nil {
+		c.logger.Warn("failed to send delivery receipt", "delivery_id", delivery.GetDeliveryId(), "error", err)
 	}
 }
 
@@ -1414,39 +1476,38 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			return fmt.Errorf("handle welcome: %w", err)
 		}
 
-	case *pm.ServerMessage_Action:
-		// Malformed-oneof guard: a compromised/buggy server could deliver a
-		// ServerMessage_Action whose inner ActionDispatch is nil. Reading
-		// p.Action.Envelope/.Signature on a nil p.Action is a nil-pointer
-		// dereference. Drop it non-fatally — every real Action on the wire
-		// carries the signed envelope + signature.
-		if p.Action == nil {
-			c.logger.Warn("dropping Action with nil dispatch payload", "message_id", msg.Id)
+	case *pm.ServerMessage_ManifestDelivery:
+		// Malformed-oneof guard: a buggy or hostile peer can deliver a
+		// ServerMessage_ManifestDelivery whose inner message is nil, and
+		// reading through it is a nil-pointer dereference. Drop non-fatally.
+		if p.ManifestDelivery == nil {
+			c.logger.Warn("dropping manifest delivery with nil payload", "message_id", msg.Id)
 			return nil
 		}
-		if err := c.validateInbound(p.Action); err != nil {
-			c.logger.Warn("dropping invalid Action", "message_id", msg.Id, "error", err)
+		if err := c.validateInbound(p.ManifestDelivery); err != nil {
+			c.logger.Warn("dropping invalid manifest delivery", "message_id", msg.Id, "error", err)
 			return nil
 		}
-		// Off-loop (WS13 #7): hand the action to the single per-Run worker so a
-		// long-running action can't head-of-line-block TerminalStop/Input/Resize
-		// on the receive loop. The worker preserves one-at-a-time, in-order
-		// execution and sends the result via the sendMu-serialized SendActionResult.
-		if ch := c.currentActionCh(); ch != nil {
+		// Off-loop (WS13 #7): hand the delivery to the single per-Run worker so
+		// recording and running a manifest can't head-of-line-block
+		// TerminalStop/Input/Resize on the receive loop. The worker preserves
+		// one-at-a-time, in-order handling and sends the receipt itself.
+		if ch := c.currentDeliveryCh(); ch != nil {
 			select {
-			case ch <- p.Action:
+			case ch <- p.ManifestDelivery:
 			default:
-				// A full queue means a pathological flood (a legit server never
-				// has actionQueueDepth actions outstanding). Drop with a loud
-				// warning rather than block the receive loop; the server
-				// re-dispatches unacked actions on reconnect.
-				c.logger.Warn("action queue full; dropping dispatched action", "message_id", msg.Id, "depth", actionQueueDepth)
+				// A full queue means a pathological flood (a legit control never
+				// has deliveryQueueDepth deliveries outstanding). Drop with a
+				// loud warning rather than block the receive loop; no receipt
+				// goes out, so control redelivers.
+				c.logger.Warn("delivery queue full; dropping manifest delivery",
+					"message_id", msg.Id, "delivery_id", p.ManifestDelivery.GetDeliveryId(), "depth", deliveryQueueDepth)
 			}
 			return nil
 		}
 		// Fallback: no worker (dispatchServerMessage driven directly, e.g. a unit
-		// test, outside Run) — execute inline so behaviour is preserved.
-		c.runDispatchedAction(ctx, p.Action, handler)
+		// test, outside Run) — handle inline so behaviour is preserved.
+		c.runManifestDelivery(ctx, p.ManifestDelivery, handler)
 
 	case *pm.ServerMessage_Query:
 		if p.Query == nil {
@@ -1735,13 +1796,12 @@ func (c *Client) ValidateLuksToken(ctx context.Context, token string) (*Validate
 
 // SyncActionsResult contains the result of a sync actions call.
 type SyncActionsResult struct {
-	// StandaloneActions are actions assigned at the action layer (not absorbed
-	// by a reached set or definition). Each fires on its own schedule.
-	StandaloneActions []*pm.Action
-	// GroupedActions are sets/definitions reaching this device, expressed as
-	// groups that share a single schedule. Members run in declared order when
-	// the group's schedule fires.
-	GroupedActions []*pm.ActionGroup
+	// Deliveries are every manifest delivery currently assigned to this
+	// device, in exactly the form the stream pushes them. The caller records
+	// each one under its delivery_id and receipts it the same way, so a
+	// delivery already known from the stream is recognised as a repeat rather
+	// than executed twice.
+	Deliveries []*pm.ManifestDelivery
 	// SyncIntervalMinutes is the effective sync interval for this device.
 	// 0 means use the default (30 minutes).
 	SyncIntervalMinutes int32
@@ -1749,18 +1809,14 @@ type SyncActionsResult struct {
 	// group's window (device groups + user groups assigned to the
 	// device). nil means "no constraint" — the agent dispatches at any
 	// time. The agent evaluates this against time.Now().Local() before
-	// firing scheduler-driven dispatches; pushed actions (REBOOT,
-	// SYNC, ad-hoc) bypass the gate. See manchtools/power-manage-server#58.
+	// firing scheduler-driven dispatches; instant actions bypass the gate.
 	MaintenanceWindow *pm.MaintenanceWindow
-	// Spec 41 removed LpsPublicKey. It carried the key the agent sealed LPS
-	// passwords to; the agent no longer seals, so distributing the key is dead
-	// contract.
 }
 
-// SyncActions fetches all actions currently assigned to this device from the server.
-// This should be called after a successful connection to sync the local action store.
-// The returned actions should replace the agent's local action store entirely.
-// Also returns the effective sync interval for this device.
+// SyncActions fetches every delivery currently assigned to this device.
+// Called after a successful connection to converge the local store: the
+// returned deliveries are the complete assigned set, so a delivery the agent
+// holds and this response omits has been withdrawn.
 func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
 	c.mu.RLock()
 	deviceID := c.deviceID
@@ -1780,8 +1836,7 @@ func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
 	}
 
 	return &SyncActionsResult{
-		StandaloneActions:   resp.Msg.StandaloneActions,
-		GroupedActions:      resp.Msg.GroupedActions,
+		Deliveries:          resp.Msg.Deliveries,
 		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
 		MaintenanceWindow:   resp.Msg.MaintenanceWindow,
 	}, nil

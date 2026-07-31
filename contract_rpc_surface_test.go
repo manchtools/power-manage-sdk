@@ -9,8 +9,9 @@ import (
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
-	_ "github.com/manchtools/power-manage-sdk/gen/go/pm/v1" // registers the pm.v1 descriptors
+	_ "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1" // registers the contract descriptors
 )
 
 // Spec 41 (gateway removal), acceptance criterion 10.
@@ -49,6 +50,41 @@ var removedBySpec41 = map[string][]string{
 	},
 }
 
+// removedLocalAuth is the second approved deletion delta: local human
+// authentication. Target design 5.2 — human identity is OIDC plus SCIM only;
+// there are no local accounts, passwords, TOTP secrets, or a local MFA
+// implementation, because MFA belongs to the identity provider. These nine are
+// the entire local-password/TOTP RPC surface.
+//
+// Everything else on the session path stays: RefreshToken, Logout,
+// GetCurrentUser, ListAuthMethods, and the SSO*/SCIM* families are the
+// OIDC-plus-SCIM flow itself, not local auth.
+var removedLocalAuth = map[string][]string{
+	"ControlService": {
+		"AdminDisableUserTOTP",
+		"DisableTOTP",
+		"GetTOTPStatus",
+		"Login",
+		"RegenerateBackupCodes",
+		"SetupTOTP",
+		"UpdateUserPassword",
+		"VerifyLoginTOTP",
+		"VerifyTOTP",
+	},
+}
+
+// removalDeltas are the approved deltas, subtracted cumulatively from the one
+// golden predecessor. Keyed by name so a failure reports WHICH delta owns the
+// offending RPC instead of just "not expected".
+//
+// New removals are added as a new delta rather than by growing an existing one
+// or by re-capturing the golden: the golden is a committed reviewed artifact
+// and the deltas are the reviewable record of what left the contract and why.
+var removalDeltas = map[string]map[string][]string{
+	"spec-41-gateway-removal": removedBySpec41,
+	"local-auth-removal":      removedLocalAuth,
+}
+
 type goldenSurface struct {
 	Total    int                 `json:"total"`
 	Services map[string][]string `json:"services"`
@@ -85,13 +121,18 @@ func loadGolden(t *testing.T) goldenSurface {
 	return g
 }
 
-// liveSurface enumerates services and methods from the registered pm.v1
+// contractPackage is the protobuf namespace the contract ships under
+// (target design §2). Every descriptor-level assertion in this file is scoped
+// to it, so a stray descriptor from another module can never satisfy one.
+const contractPackage = "powermanage.v1"
+
+// liveSurface enumerates services and methods from the registered contract
 // descriptors — the artifact that actually ships, not the .proto text.
 func liveSurface(t *testing.T) map[string][]string {
 	t.Helper()
 	out := map[string][]string{}
 	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		if fd.Package() != "pm.v1" {
+		if string(fd.Package()) != contractPackage {
 			return true
 		}
 		svcs := fd.Services()
@@ -116,28 +157,74 @@ func liveSurface(t *testing.T) map[string][]string {
 		sort.Strings(out[k])
 	}
 	if len(out) == 0 {
-		t.Fatal("no pm.v1 services found in the descriptor registry — the enumeration is broken, " +
-			"so a passing result would prove nothing")
+		t.Fatalf("no %s services found in the descriptor registry — the enumeration is broken, "+
+			"so a passing result would prove nothing", contractPackage)
 	}
 	return out
 }
 
-// TestRPCSurface_MatchesGoldenMinusSpec41Removals is the criterion-10 gate.
-func TestRPCSurface_MatchesGoldenMinusSpec41Removals(t *testing.T) {
+// removalOwner reports which delta deletes svc/name, if any.
+func removalOwner(svc, name string) (string, bool) {
+	for delta, byService := range removalDeltas {
+		if contains(byService[svc], name) {
+			return delta, true
+		}
+	}
+	return "", false
+}
+
+// TestRPCSurface_MatchesGoldenMinusApprovedRemovals is the criterion-10 gate,
+// extended to every approved removal delta rather than spec 41 alone.
+func TestRPCSurface_MatchesGoldenMinusApprovedRemovals(t *testing.T) {
 	golden := loadGolden(t)
 	live := liveSurface(t)
+
+	// Matches-zero: a delta map that decayed to empty (or a delta whose lists
+	// all emptied) would turn "golden minus deltas" back into "golden", and the
+	// removals would silently stop being verified as removals.
+	if len(removalDeltas) == 0 {
+		t.Fatal("no removal deltas declared — the subtraction below would be a no-op")
+	}
+	for delta, byService := range removalDeltas {
+		n := 0
+		for _, names := range byService {
+			n += len(names)
+		}
+		if n == 0 {
+			t.Fatalf("removal delta %q is empty — an empty delta removes nothing and asserts nothing", delta)
+		}
+	}
+
+	// Deltas must be disjoint. A name listed twice is subtracted once but
+	// counted twice by any per-delta arithmetic, and it means two reviews each
+	// believe they own the same deletion.
+	seen := map[string]string{}
+	for delta, byService := range removalDeltas {
+		for svc, names := range byService {
+			for _, n := range names {
+				key := svc + "/" + n
+				if other, dup := seen[key]; dup {
+					t.Errorf("%s is claimed by both removal deltas %q and %q", key, other, delta)
+					continue
+				}
+				seen[key] = delta
+			}
+		}
+	}
 
 	// Every declared removal must exist in the predecessor. A typo here would
 	// otherwise silently under-remove: the misspelled name is absent from the
 	// golden, so subtracting it changes nothing.
-	for svc, names := range removedBySpec41 {
-		have, ok := golden.Services[svc]
-		if !ok {
-			t.Fatalf("removal list names service %q, absent from the golden predecessor", svc)
-		}
-		for _, n := range names {
-			if !contains(have, n) {
-				t.Errorf("removal list names %s/%s, which the predecessor never had — typo?", svc, n)
+	for delta, byService := range removalDeltas {
+		for svc, names := range byService {
+			have, ok := golden.Services[svc]
+			if !ok {
+				t.Fatalf("removal delta %q names service %q, absent from the golden predecessor", delta, svc)
+			}
+			for _, n := range names {
+				if !contains(have, n) {
+					t.Errorf("removal delta %q names %s/%s, which the predecessor never had — typo?", delta, svc, n)
+				}
 			}
 		}
 	}
@@ -146,7 +233,7 @@ func TestRPCSurface_MatchesGoldenMinusSpec41Removals(t *testing.T) {
 	for svc, names := range golden.Services {
 		var keep []string
 		for _, n := range names {
-			if !contains(removedBySpec41[svc], n) {
+			if _, removed := removalOwner(svc, n); !removed {
 				keep = append(keep, n)
 			}
 		}
@@ -160,29 +247,40 @@ func TestRPCSurface_MatchesGoldenMinusSpec41Removals(t *testing.T) {
 		got := live[svc]
 		for _, n := range want {
 			if !contains(got, n) {
-				t.Errorf("MISSING: %s/%s survives spec 41 but is absent from the shipped descriptor", svc, n)
+				t.Errorf("MISSING: %s/%s is removed by no approved delta but is absent from the shipped descriptor", svc, n)
 			}
 		}
 	}
 	for svc, got := range live {
 		for _, n := range got {
-			if !contains(expected[svc], n) {
-				t.Errorf("UNEXPECTED: %s/%s is still shipped — spec 41 removes it", svc, n)
+			if contains(expected[svc], n) {
+				continue
 			}
+			if delta, removed := removalOwner(svc, n); removed {
+				t.Errorf("UNEXPECTED: %s/%s is still shipped — removal delta %q deletes it", svc, n, delta)
+				continue
+			}
+			t.Errorf("UNEXPECTED: %s/%s is shipped but the golden predecessor never had it "+
+				"and no delta mentions it — the contract grew outside review", svc, n)
 		}
 	}
 
-	wantTotal := 0
-	for _, v := range expected {
-		wantTotal += len(v)
+	// Independent arithmetic witness: count the removals straight off the
+	// deltas instead of re-deriving them from `expected`, so a subtraction bug
+	// in the loop above cannot agree with itself.
+	removed := 0
+	for _, byService := range removalDeltas {
+		for _, names := range byService {
+			removed += len(names)
+		}
 	}
 	gotTotal := 0
 	for _, v := range live {
 		gotTotal += len(v)
 	}
-	if gotTotal != wantTotal {
-		t.Errorf("RPC count: shipped %d, expected %d (golden %d minus %d removals)",
-			gotTotal, wantTotal, golden.Total, golden.Total-wantTotal)
+	if want := golden.Total - removed; gotTotal != want {
+		t.Errorf("RPC count: shipped %d, expected %d (golden %d minus %d removals across %d deltas)",
+			gotTotal, want, golden.Total, removed, len(removalDeltas))
 	}
 }
 
@@ -213,4 +311,198 @@ func contains(hay []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+// ---------------------------------------------------------------------------
+// Contract shape guard: the message-level properties the target design fixes.
+// Subject is the registered descriptor set, i.e. what actually ships.
+// ---------------------------------------------------------------------------
+
+// contractMessages returns every message (nested included) in the namespace
+// that declares AgentService. The namespace is discovered, not hardcoded, so
+// the sweeps below keep scanning the real descriptors while the namespace
+// itself is being renamed; TestContract_Namespace judges the name.
+func contractMessages(t *testing.T) map[protoreflect.Name]protoreflect.MessageDescriptor {
+	t.Helper()
+	var pkg protoreflect.FullName
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		if fd.Services().ByName("AgentService") == nil {
+			return true
+		}
+		pkg = fd.Package()
+		return false
+	})
+	if pkg == "" {
+		t.Fatal("no registered file declares AgentService — the contract descriptors are not linked in")
+	}
+	out := map[protoreflect.Name]protoreflect.MessageDescriptor{}
+	var walk func(protoreflect.MessageDescriptors)
+	walk = func(mds protoreflect.MessageDescriptors) {
+		for i := 0; i < mds.Len(); i++ {
+			out[mds.Get(i).Name()] = mds.Get(i)
+			walk(mds.Get(i).Messages())
+		}
+	}
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		if fd.Package() == pkg {
+			walk(fd.Messages())
+		}
+		return true
+	})
+	if len(out) == 0 {
+		t.Fatalf("zero messages discovered in %s — the walk is broken", pkg)
+	}
+	return out
+}
+
+// Design §2: the contract lives under powermanage.v1. Both directions, so a
+// rename that copied instead of moved (stale descriptors still registering at
+// init) fails here.
+func TestContract_Namespace(t *testing.T) {
+	var shipped, legacy []string
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		switch string(fd.Package()) {
+		case contractPackage:
+			shipped = append(shipped, fd.Path())
+		case "pm.v1":
+			legacy = append(legacy, fd.Path())
+		}
+		return true
+	})
+	if len(shipped) == 0 {
+		t.Errorf("no descriptors registered under %s — the contract namespace has not moved", contractPackage)
+	}
+	if len(legacy) != 0 {
+		sort.Strings(legacy)
+		t.Errorf("stale pm.v1 descriptors still registered: %s", strings.Join(legacy, ", "))
+	}
+}
+
+// Design §7.1–7.2 (manifest dispatch, stable delivery id, durable receipt,
+// per-action and per-manifest results) and §8 (sealed secrets, enrollment key
+// exchange), asserted by exact name and exact type.
+func TestContract_TargetShape(t *testing.T) {
+	msgs := contractMessages(t)
+
+	for _, name := range []protoreflect.Name{
+		"Manifest", "ManifestProvenance", "ManifestOccurrence", "ManifestDelivery",
+		"DeliveryReceipt", "ManifestResult", "SealedValue",
+	} {
+		if _, ok := msgs[name]; !ok {
+			t.Errorf("message %s is absent from the shipped contract", name)
+		}
+	}
+	for _, name := range []protoreflect.Name{"ActionDispatch", "SignedActionEnvelope"} {
+		if _, ok := msgs[name]; ok {
+			t.Errorf("message %s still ships — the signed-envelope dispatch path must be absent", name)
+		}
+	}
+	// One dispatch model: the pull path carries the same durable unit as the
+	// stream. The old standalone/group scheduler shape must be gone, not
+	// coexisting.
+	if _, ok := msgs["ActionGroup"]; ok {
+		t.Error("message ActionGroup still ships — the pull path must deliver ManifestDeliveries, not schedule groups")
+	}
+
+	for _, f := range []struct {
+		msg, field string
+		kind       protoreflect.Kind
+		msgType    protoreflect.Name // required when kind is MessageKind
+		list       bool
+		why        string
+	}{
+		{"Manifest", "manifest_id", protoreflect.StringKind, "", false, "the manifest has no identity"},
+		{"Manifest", "provenance", protoreflect.MessageKind, "ManifestProvenance", false, "no bounded authoring provenance path"},
+		{"Manifest", "occurrences", protoreflect.MessageKind, "ManifestOccurrence", true, "no ordered occurrence list"},
+		{"ManifestOccurrence", "occurrence_id", protoreflect.StringKind, "", false, "authored positions are indistinguishable"},
+		{"ManifestOccurrence", "action", protoreflect.MessageKind, "Action", false, "the occurrence carries no action"},
+		{"ManifestOccurrence", "on_failure", protoreflect.EnumKind, "", false, "no per-occurrence failure policy"},
+		{"ManifestDelivery", "delivery_id", protoreflect.StringKind, "", false, "delivery has no identity stable across transport retries"},
+		{"ManifestDelivery", "manifest", protoreflect.MessageKind, "Manifest", false, "the delivery carries no manifest"},
+		{"DeliveryReceipt", "delivery_id", protoreflect.StringKind, "", false, "the receipt names no delivery, so control cannot acknowledge one"},
+		{"ActionResult", "delivery_id", protoreflect.StringKind, "", false, "per-action result ingestion cannot be idempotent"},
+		{"ActionResult", "occurrence_id", protoreflect.StringKind, "", false, "per-action result ingestion cannot be idempotent"},
+		{"ManifestResult", "delivery_id", protoreflect.StringKind, "", false, "the manifest result cannot be matched to its delivery"},
+		{"ManifestResult", "manifest_id", protoreflect.StringKind, "", false, "the manifest result names no manifest"},
+		{"SyncActionsResponse", "deliveries", protoreflect.MessageKind, "ManifestDelivery", true, "the pull path is not on the one dispatch model"},
+		{"ServerMessage", "manifest_delivery", protoreflect.MessageKind, "ManifestDelivery", false, "control cannot deliver a manifest"},
+		{"AgentMessage", "delivery_receipt", protoreflect.MessageKind, "DeliveryReceipt", false, "the agent cannot confirm durable receipt"},
+		{"AgentMessage", "manifest_result", protoreflect.MessageKind, "ManifestResult", false, "there is no result for the complete manifest"},
+		{"SealedValue", "version", protoreflect.Uint32Kind, "", false, "the sealed envelope is unversioned"},
+		{"SealedValue", "ciphertext", protoreflect.BytesKind, "", false, "the sealed envelope carries no ciphertext"},
+		{"RegisterRequest", "agent_sealing_public_key", protoreflect.BytesKind, "", false, "control cannot seal a secret to this agent"},
+		{"RegisterResponse", "control_sealing_public_key", protoreflect.BytesKind, "", false, "the agent cannot seal a secret to control"},
+	} {
+		md, ok := msgs[protoreflect.Name(f.msg)]
+		if !ok {
+			t.Errorf("%s.%s: message %s is absent", f.msg, f.field, f.msg)
+			continue
+		}
+		fd := md.Fields().ByName(protoreflect.Name(f.field))
+		if fd == nil {
+			t.Errorf("%s has no %s — %s", f.msg, f.field, f.why)
+			continue
+		}
+		if fd.Kind() != f.kind {
+			t.Errorf("%s.%s is %s, want %s", f.msg, f.field, fd.Kind(), f.kind)
+			continue
+		}
+		if f.kind == protoreflect.MessageKind && fd.Message().Name() != f.msgType {
+			t.Errorf("%s.%s carries %s, want %s", f.msg, f.field, fd.Message().Name(), f.msgType)
+		}
+		if fd.IsList() != f.list {
+			t.Errorf("%s.%s repeated = %v, want %v", f.msg, f.field, fd.IsList(), f.list)
+		}
+	}
+
+	// §7.2: a crash after a persisted STARTED reports INDETERMINATE instead of
+	// silently re-running. The enum is reached through the field that uses it.
+	if status := msgs["ActionResult"].Fields().ByName("status"); status == nil || status.Enum() == nil {
+		t.Error("ActionResult has no enum-typed status field")
+	} else if status.Enum().Values().ByName("EXECUTION_STATUS_INDETERMINATE") == nil {
+		t.Errorf("%s has no EXECUTION_STATUS_INDETERMINATE — a crash after STARTED has no honest terminal status",
+			status.Enum().FullName())
+	}
+}
+
+// Design §8: every field classified secret ships sealed, and no application
+// frame carries a signature or the relay-era device-binding guard. Both are
+// registry sweeps rather than lists — a NEW secret or a NEW signature field
+// fails without anyone remembering to extend anything.
+func TestContract_SecretsAreSealedAndFramesAreUnsigned(t *testing.T) {
+	msgs := contractMessages(t)
+	banned := map[protoreflect.Name]string{
+		"signature":          "a CA signature over an application frame",
+		"signed_envelope":    "the signed-envelope indirection",
+		"target_device_id":   "the relay-era device-binding guard (mTLS identifies the device)",
+		"standalone_actions": "the abolished pull-path scheduler shape (deliveries carry manifests)",
+		"grouped_actions":    "the abolished pull-path scheduler shape (deliveries carry manifests)",
+	}
+
+	classified, scanned := 0, 0
+	for _, md := range msgs {
+		for i := 0; i < md.Fields().Len(); i++ {
+			fd := md.Fields().Get(i)
+			scanned++
+			if why, bad := banned[fd.Name()]; bad {
+				t.Errorf("%s.%s still ships — %s has no place on a direct mTLS transport", md.Name(), fd.Name(), why)
+			}
+			opts, _ := fd.Options().(*descriptorpb.FieldOptions)
+			if !opts.GetDebugRedact() {
+				continue
+			}
+			classified++
+			if fd.Kind() != protoreflect.MessageKind || fd.Message().Name() != "SealedValue" {
+				t.Errorf("%s.%s is classified secret but ships as %s — it must be a SealedValue",
+					md.Name(), fd.Name(), fd.Kind())
+			}
+		}
+	}
+	if scanned == 0 {
+		t.Fatal("matches-zero: scanned zero fields — the signing sweep proved nothing")
+	}
+	if classified == 0 {
+		t.Fatal("matches-zero: no field carries the secret classification (debug_redact) — " +
+			"the marker convention was dropped, so the sealing sweep proved nothing")
+	}
 }

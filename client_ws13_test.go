@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 const testULID = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -38,32 +38,32 @@ func TestClient_CloseIdleConnections(t *testing.T) {
 	require.NotPanics(t, func() { nilClient.CloseIdleConnections() }, "must be nil-safe")
 }
 
-// offLoopHandler is a StreamingHandler whose action blocks until released, plus a
-// TerminalHandler (via the embedded fake) so the off-loop test can prove a
-// TerminalStop is handled while an action is still in-flight.
+// offLoopHandler is a StreamingHandler whose delivery handling blocks until
+// released, plus a TerminalHandler (via the embedded fake) so the off-loop case
+// can prove a TerminalStop is handled while a manifest is still in-flight.
 type offLoopHandler struct {
 	*fakeTerminalHandler
 	started chan struct{}
 	release chan struct{}
 }
 
-func (h *offLoopHandler) OnActionWithStreaming(ctx context.Context, envelope, signature []byte, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error) {
+func (h *offLoopHandler) OnManifestDeliveryWithStreaming(ctx context.Context, d *pm.ManifestDelivery, sendChunk func(*pm.OutputChunk) error) error {
 	close(h.started)
 	<-h.release
-	return &pm.ActionResult{}, nil
+	return nil
 }
 
-// TestDispatch_ActionRunsOffLoop_DoesNotBlockTerminal pins WS13 #7: a
-// long-running action is executed off the receive loop, so a TerminalStop
-// dispatched while it is in-flight is still handled promptly (no head-of-line
-// block). Against the old inline dispatch this would hang.
-func TestDispatch_ActionRunsOffLoop_DoesNotBlockTerminal(t *testing.T) {
+// TestDispatch_DeliveryRunsOffLoop_DoesNotBlockTerminal pins WS13 #7: a
+// long-running manifest delivery is handled off the receive loop, so a
+// TerminalStop dispatched while it is in-flight is still handled promptly (no
+// head-of-line block). Against an inline dispatch this would hang.
+func TestDispatch_DeliveryRunsOffLoop_DoesNotBlockTerminal(t *testing.T) {
 	c := newTestClient()
 
-	// Stand up the per-Run action worker the way Run() does.
-	actionCh := make(chan *pm.ActionDispatch, actionQueueDepth)
+	// Stand up the per-Run delivery worker the way Run() does.
+	deliveryCh := make(chan *pm.ManifestDelivery, deliveryQueueDepth)
 	c.mu.Lock()
-	c.actionCh = actionCh
+	c.deliveryCh = deliveryCh
 	c.mu.Unlock()
 	h := &offLoopHandler{
 		fakeTerminalHandler: &fakeTerminalHandler{},
@@ -74,34 +74,34 @@ func TestDispatch_ActionRunsOffLoop_DoesNotBlockTerminal(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for d := range actionCh {
-			c.runDispatchedAction(context.Background(), d, h)
+		for d := range deliveryCh {
+			c.runManifestDelivery(context.Background(), d, h)
 		}
 	}()
 	// Cleanup closes h.release here (not at the end) so an early assertion
-	// failure can't leave the worker blocked in OnActionWithStreaming and hang
-	// wg.Wait(). Closed exactly once, on every exit path. Order matters: unblock
-	// the action, then end the channel range, then wait.
-	defer func() { close(h.release); close(actionCh); wg.Wait() }()
+	// failure can't leave the worker blocked in the handler and hang wg.Wait().
+	// Closed exactly once, on every exit path. Order matters: unblock the
+	// handler, then end the channel range, then wait.
+	defer func() { close(h.release); close(deliveryCh); wg.Wait() }()
 
-	// Dispatch a long-running action — returns immediately (enqueued off-loop).
-	actionMsg := &pm.ServerMessage{Id: NewULID(), Payload: &pm.ServerMessage_Action{
-		Action: &pm.ActionDispatch{Envelope: []byte{0x01}, Signature: []byte{0x01}},
+	// Dispatch a long-running delivery — returns immediately (enqueued off-loop).
+	deliveryMsg := &pm.ServerMessage{Id: NewULID(), Payload: &pm.ServerMessage_ManifestDelivery{
+		ManifestDelivery: newTestDelivery(),
 	}}
-	require.NoError(t, c.dispatchServerMessage(context.Background(), actionMsg, h))
+	require.NoError(t, c.dispatchServerMessage(context.Background(), deliveryMsg, h))
 
 	select {
 	case <-h.started:
 	case <-time.After(2 * time.Second):
-		t.Fatal("action never started on the worker")
+		t.Fatal("delivery never started on the worker")
 	}
 
-	// While the action is blocked, a TerminalStop must still be handled.
+	// While the delivery is blocked, a TerminalStop must still be handled.
 	stopMsg := &pm.ServerMessage{Id: NewULID(), Payload: &pm.ServerMessage_TerminalStop{
 		TerminalStop: &pm.TerminalStop{SessionId: testULID, Reason: "stop"},
 	}}
 	require.NoError(t, c.dispatchServerMessage(context.Background(), stopMsg, h))
-	require.Len(t, h.stopCalls, 1, "TerminalStop must be handled while a long action is still in-flight (off-loop)")
+	require.Len(t, h.stopCalls, 1, "TerminalStop must be handled while a long delivery is still in-flight (off-loop)")
 	// h.release is closed by the deferred cleanup above (safe on any exit path).
 }
 

@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: pm/v1/control.proto
+// source: powermanage/v1/control.proto
 
-package pmv1
+package powermanagev1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -33,14 +33,21 @@ type RegisterRequest struct {
 	// Certificate Signing Request (PEM-encoded PKCS#10)
 	// Agent generates its own key pair and sends CSR for signing
 	// @gotags: validate:"required"
-	Csr           []byte `protobuf:"bytes,4,opt,name=csr,proto3" json:"csr,omitempty" validate:"required"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Csr []byte `protobuf:"bytes,4,opt,name=csr,proto3" json:"csr,omitempty" validate:"required"`
+	// The agent's X25519 recipient public key, raw 32-byte encoding. Generated
+	// on the device at enrollment alongside the Ed25519 identity key; the
+	// private half never leaves the device. Control seals every secret it sends
+	// this agent to this key, and pins it to the device identity it issues here
+	// — the key and the certificate are bound by the same enrollment.
+	// @gotags: validate:"required,len=32"
+	AgentSealingPublicKey []byte `protobuf:"bytes,5,opt,name=agent_sealing_public_key,json=agentSealingPublicKey,proto3" json:"agent_sealing_public_key,omitempty" validate:"required,len=32"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[0]
+	mi := &file_powermanage_v1_control_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -52,7 +59,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[0]
+	mi := &file_powermanage_v1_control_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -65,7 +72,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{0}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RegisterRequest) GetToken() string {
@@ -96,6 +103,13 @@ func (x *RegisterRequest) GetCsr() []byte {
 	return nil
 }
 
+func (x *RegisterRequest) GetAgentSealingPublicKey() []byte {
+	if x != nil {
+		return x.AgentSealingPublicKey
+	}
+	return nil
+}
+
 type RegisterResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -107,19 +121,25 @@ type RegisterResponse struct {
 	// @gotags: validate:"required"
 	Certificate []byte `protobuf:"bytes,3,opt,name=certificate,proto3" json:"certificate,omitempty" validate:"required"`
 	// Control URL for the agent's streaming connection; the agent stores this and
-	// dials it for the AgentService bidi stream. Spec 41 renamed this from
-	// gateway_url when the gateway tier was deleted — control now terminates agent
-	// mTLS itself, so the address the agent keeps is control's. Re-tagged in place
-	// rather than reserved: V1 is the only wire version and clean breaks are the rule.
+	// dials it for the AgentService bidi stream. Control terminates agent mTLS
+	// itself, so this is control's own agent-listener address, which is normally
+	// a different host from the web/API URL the agent registered against.
 	// @gotags: validate:"required,url"
-	ControlUrl    string `protobuf:"bytes,4,opt,name=control_url,json=controlUrl,proto3" json:"control_url,omitempty" validate:"required,url"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ControlUrl string `protobuf:"bytes,4,opt,name=control_url,json=controlUrl,proto3" json:"control_url,omitempty" validate:"required,url"`
+	// Control's deployment sealing public key, raw 32-byte X25519 encoding. The
+	// agent seals every secret it reports (LUKS passphrases, LPS passwords) to
+	// this key and pins it to the CA it accepts in the same response, so a later
+	// substitution is a visible identity change rather than a silent redirect of
+	// where secrets can be opened.
+	// @gotags: validate:"required,len=32"
+	ControlSealingPublicKey []byte `protobuf:"bytes,5,opt,name=control_sealing_public_key,json=controlSealingPublicKey,proto3" json:"control_sealing_public_key,omitempty" validate:"required,len=32"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *RegisterResponse) Reset() {
 	*x = RegisterResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[1]
+	mi := &file_powermanage_v1_control_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -131,7 +151,7 @@ func (x *RegisterResponse) String() string {
 func (*RegisterResponse) ProtoMessage() {}
 
 func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[1]
+	mi := &file_powermanage_v1_control_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -144,7 +164,7 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{1}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RegisterResponse) GetDeviceId() *DeviceId {
@@ -175,6 +195,13 @@ func (x *RegisterResponse) GetControlUrl() string {
 	return ""
 }
 
+func (x *RegisterResponse) GetControlSealingPublicKey() []byte {
+	if x != nil {
+		return x.ControlSealingPublicKey
+	}
+	return nil
+}
+
 type RenewCertificateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Certificate Signing Request (PEM-encoded PKCS#10)
@@ -189,7 +216,7 @@ type RenewCertificateRequest struct {
 
 func (x *RenewCertificateRequest) Reset() {
 	*x = RenewCertificateRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[2]
+	mi := &file_powermanage_v1_control_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -201,7 +228,7 @@ func (x *RenewCertificateRequest) String() string {
 func (*RenewCertificateRequest) ProtoMessage() {}
 
 func (x *RenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[2]
+	mi := &file_powermanage_v1_control_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -214,7 +241,7 @@ func (x *RenewCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenewCertificateRequest.ProtoReflect.Descriptor instead.
 func (*RenewCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{2}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RenewCertificateRequest) GetCsr() []byte {
@@ -246,7 +273,7 @@ type RenewCertificateResponse struct {
 
 func (x *RenewCertificateResponse) Reset() {
 	*x = RenewCertificateResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[3]
+	mi := &file_powermanage_v1_control_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +285,7 @@ func (x *RenewCertificateResponse) String() string {
 func (*RenewCertificateResponse) ProtoMessage() {}
 
 func (x *RenewCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[3]
+	mi := &file_powermanage_v1_control_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -271,7 +298,7 @@ func (x *RenewCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenewCertificateResponse.ProtoReflect.Descriptor instead.
 func (*RenewCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{3}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RenewCertificateResponse) GetCertificate() []byte {
@@ -295,147 +322,6 @@ func (x *RenewCertificateResponse) GetCaCertificate() []byte {
 	return nil
 }
 
-type LoginRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,email"
-	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty" validate:"required,email"`
-	// @gotags: validate:"required,min=8"
-	Password      string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=8"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LoginRequest) Reset() {
-	*x = LoginRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LoginRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LoginRequest) ProtoMessage() {}
-
-func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
-func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *LoginRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *LoginRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-type LoginResponse struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken  string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	RefreshToken string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
-	ExpiresAt    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	User         *User                  `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
-	// When true, TOTP verification is required before tokens are issued.
-	// The client must call VerifyLoginTOTP with the totp_challenge.
-	TotpRequired bool `protobuf:"varint,5,opt,name=totp_required,json=totpRequired,proto3" json:"totp_required,omitempty"`
-	// Short-lived challenge token for TOTP verification (only set when totp_required=true).
-	TotpChallenge string `protobuf:"bytes,6,opt,name=totp_challenge,json=totpChallenge,proto3" json:"totp_challenge,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LoginResponse) Reset() {
-	*x = LoginResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LoginResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LoginResponse) ProtoMessage() {}
-
-func (x *LoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
-func (*LoginResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *LoginResponse) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *LoginResponse) GetRefreshToken() string {
-	if x != nil {
-		return x.RefreshToken
-	}
-	return ""
-}
-
-func (x *LoginResponse) GetExpiresAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ExpiresAt
-	}
-	return nil
-}
-
-func (x *LoginResponse) GetUser() *User {
-	if x != nil {
-		return x.User
-	}
-	return nil
-}
-
-func (x *LoginResponse) GetTotpRequired() bool {
-	if x != nil {
-		return x.TotpRequired
-	}
-	return false
-}
-
-func (x *LoginResponse) GetTotpChallenge() string {
-	if x != nil {
-		return x.TotpChallenge
-	}
-	return ""
-}
-
 type RefreshTokenRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required"
@@ -446,7 +332,7 @@ type RefreshTokenRequest struct {
 
 func (x *RefreshTokenRequest) Reset() {
 	*x = RefreshTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[6]
+	mi := &file_powermanage_v1_control_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -458,7 +344,7 @@ func (x *RefreshTokenRequest) String() string {
 func (*RefreshTokenRequest) ProtoMessage() {}
 
 func (x *RefreshTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[6]
+	mi := &file_powermanage_v1_control_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -471,7 +357,7 @@ func (x *RefreshTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokenRequest.ProtoReflect.Descriptor instead.
 func (*RefreshTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{6}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RefreshTokenRequest) GetRefreshToken() string {
@@ -492,7 +378,7 @@ type RefreshTokenResponse struct {
 
 func (x *RefreshTokenResponse) Reset() {
 	*x = RefreshTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[7]
+	mi := &file_powermanage_v1_control_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +390,7 @@ func (x *RefreshTokenResponse) String() string {
 func (*RefreshTokenResponse) ProtoMessage() {}
 
 func (x *RefreshTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[7]
+	mi := &file_powermanage_v1_control_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +403,7 @@ func (x *RefreshTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokenResponse.ProtoReflect.Descriptor instead.
 func (*RefreshTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{7}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RefreshTokenResponse) GetAccessToken() string {
@@ -551,7 +437,7 @@ type LogoutRequest struct {
 
 func (x *LogoutRequest) Reset() {
 	*x = LogoutRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[8]
+	mi := &file_powermanage_v1_control_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -563,7 +449,7 @@ func (x *LogoutRequest) String() string {
 func (*LogoutRequest) ProtoMessage() {}
 
 func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[8]
+	mi := &file_powermanage_v1_control_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -576,7 +462,7 @@ func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
 func (*LogoutRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{8}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LogoutRequest) GetRefreshToken() string {
@@ -594,7 +480,7 @@ type LogoutResponse struct {
 
 func (x *LogoutResponse) Reset() {
 	*x = LogoutResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[9]
+	mi := &file_powermanage_v1_control_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -606,7 +492,7 @@ func (x *LogoutResponse) String() string {
 func (*LogoutResponse) ProtoMessage() {}
 
 func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[9]
+	mi := &file_powermanage_v1_control_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -619,7 +505,7 @@ func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
 func (*LogoutResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{9}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{7}
 }
 
 type GetCurrentUserRequest struct {
@@ -630,7 +516,7 @@ type GetCurrentUserRequest struct {
 
 func (x *GetCurrentUserRequest) Reset() {
 	*x = GetCurrentUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[10]
+	mi := &file_powermanage_v1_control_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -642,7 +528,7 @@ func (x *GetCurrentUserRequest) String() string {
 func (*GetCurrentUserRequest) ProtoMessage() {}
 
 func (x *GetCurrentUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[10]
+	mi := &file_powermanage_v1_control_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -655,7 +541,7 @@ func (x *GetCurrentUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentUserRequest.ProtoReflect.Descriptor instead.
 func (*GetCurrentUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{10}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{8}
 }
 
 type GetCurrentUserResponse struct {
@@ -667,7 +553,7 @@ type GetCurrentUserResponse struct {
 
 func (x *GetCurrentUserResponse) Reset() {
 	*x = GetCurrentUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[11]
+	mi := &file_powermanage_v1_control_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -679,7 +565,7 @@ func (x *GetCurrentUserResponse) String() string {
 func (*GetCurrentUserResponse) ProtoMessage() {}
 
 func (x *GetCurrentUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[11]
+	mi := &file_powermanage_v1_control_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -692,662 +578,10 @@ func (x *GetCurrentUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentUserResponse.ProtoReflect.Descriptor instead.
 func (*GetCurrentUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{11}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetCurrentUserResponse) GetUser() *User {
-	if x != nil {
-		return x.User
-	}
-	return nil
-}
-
-type SetupTOTPRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetupTOTPRequest) Reset() {
-	*x = SetupTOTPRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetupTOTPRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetupTOTPRequest) ProtoMessage() {}
-
-func (x *SetupTOTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetupTOTPRequest.ProtoReflect.Descriptor instead.
-func (*SetupTOTPRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{12}
-}
-
-type SetupTOTPResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Base32-encoded TOTP secret for manual entry.
-	Secret string `protobuf:"bytes,1,opt,name=secret,proto3" json:"secret,omitempty"`
-	// otpauth:// URI for QR code generation.
-	QrUri string `protobuf:"bytes,2,opt,name=qr_uri,json=qrUri,proto3" json:"qr_uri,omitempty"`
-	// One-time backup codes (shown once, user must save them).
-	BackupCodes   []string `protobuf:"bytes,3,rep,name=backup_codes,json=backupCodes,proto3" json:"backup_codes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetupTOTPResponse) Reset() {
-	*x = SetupTOTPResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetupTOTPResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetupTOTPResponse) ProtoMessage() {}
-
-func (x *SetupTOTPResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetupTOTPResponse.ProtoReflect.Descriptor instead.
-func (*SetupTOTPResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *SetupTOTPResponse) GetSecret() string {
-	if x != nil {
-		return x.Secret
-	}
-	return ""
-}
-
-func (x *SetupTOTPResponse) GetQrUri() string {
-	if x != nil {
-		return x.QrUri
-	}
-	return ""
-}
-
-func (x *SetupTOTPResponse) GetBackupCodes() []string {
-	if x != nil {
-		return x.BackupCodes
-	}
-	return nil
-}
-
-type VerifyTOTPRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,len=6,numeric"
-	Code          string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty" validate:"required,len=6,numeric"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyTOTPRequest) Reset() {
-	*x = VerifyTOTPRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyTOTPRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyTOTPRequest) ProtoMessage() {}
-
-func (x *VerifyTOTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyTOTPRequest.ProtoReflect.Descriptor instead.
-func (*VerifyTOTPRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *VerifyTOTPRequest) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-type VerifyTOTPResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyTOTPResponse) Reset() {
-	*x = VerifyTOTPResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyTOTPResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyTOTPResponse) ProtoMessage() {}
-
-func (x *VerifyTOTPResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyTOTPResponse.ProtoReflect.Descriptor instead.
-func (*VerifyTOTPResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *VerifyTOTPResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-type DisableTOTPRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,min=8"
-	Password      string `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=8"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DisableTOTPRequest) Reset() {
-	*x = DisableTOTPRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DisableTOTPRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DisableTOTPRequest) ProtoMessage() {}
-
-func (x *DisableTOTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DisableTOTPRequest.ProtoReflect.Descriptor instead.
-func (*DisableTOTPRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *DisableTOTPRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-type DisableTOTPResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DisableTOTPResponse) Reset() {
-	*x = DisableTOTPResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DisableTOTPResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DisableTOTPResponse) ProtoMessage() {}
-
-func (x *DisableTOTPResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DisableTOTPResponse.ProtoReflect.Descriptor instead.
-func (*DisableTOTPResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{17}
-}
-
-// Admin: disable TOTP for another user (no password required).
-type AdminDisableUserTOTPRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,ulid"
-	UserId        string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" validate:"required,ulid"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AdminDisableUserTOTPRequest) Reset() {
-	*x = AdminDisableUserTOTPRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AdminDisableUserTOTPRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AdminDisableUserTOTPRequest) ProtoMessage() {}
-
-func (x *AdminDisableUserTOTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AdminDisableUserTOTPRequest.ProtoReflect.Descriptor instead.
-func (*AdminDisableUserTOTPRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *AdminDisableUserTOTPRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-type AdminDisableUserTOTPResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AdminDisableUserTOTPResponse) Reset() {
-	*x = AdminDisableUserTOTPResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AdminDisableUserTOTPResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AdminDisableUserTOTPResponse) ProtoMessage() {}
-
-func (x *AdminDisableUserTOTPResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AdminDisableUserTOTPResponse.ProtoReflect.Descriptor instead.
-func (*AdminDisableUserTOTPResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{19}
-}
-
-type GetTOTPStatusRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetTOTPStatusRequest) Reset() {
-	*x = GetTOTPStatusRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetTOTPStatusRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetTOTPStatusRequest) ProtoMessage() {}
-
-func (x *GetTOTPStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetTOTPStatusRequest.ProtoReflect.Descriptor instead.
-func (*GetTOTPStatusRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{20}
-}
-
-type GetTOTPStatusResponse struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Enabled              bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	BackupCodesRemaining int32                  `protobuf:"varint,2,opt,name=backup_codes_remaining,json=backupCodesRemaining,proto3" json:"backup_codes_remaining,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
-}
-
-func (x *GetTOTPStatusResponse) Reset() {
-	*x = GetTOTPStatusResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetTOTPStatusResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetTOTPStatusResponse) ProtoMessage() {}
-
-func (x *GetTOTPStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetTOTPStatusResponse.ProtoReflect.Descriptor instead.
-func (*GetTOTPStatusResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{21}
-}
-
-func (x *GetTOTPStatusResponse) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
-}
-
-func (x *GetTOTPStatusResponse) GetBackupCodesRemaining() int32 {
-	if x != nil {
-		return x.BackupCodesRemaining
-	}
-	return 0
-}
-
-type RegenerateBackupCodesRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,min=8"
-	Password      string `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=8"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RegenerateBackupCodesRequest) Reset() {
-	*x = RegenerateBackupCodesRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[22]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RegenerateBackupCodesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegenerateBackupCodesRequest) ProtoMessage() {}
-
-func (x *RegenerateBackupCodesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[22]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegenerateBackupCodesRequest.ProtoReflect.Descriptor instead.
-func (*RegenerateBackupCodesRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{22}
-}
-
-func (x *RegenerateBackupCodesRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-type RegenerateBackupCodesResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BackupCodes   []string               `protobuf:"bytes,1,rep,name=backup_codes,json=backupCodes,proto3" json:"backup_codes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RegenerateBackupCodesResponse) Reset() {
-	*x = RegenerateBackupCodesResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[23]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RegenerateBackupCodesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegenerateBackupCodesResponse) ProtoMessage() {}
-
-func (x *RegenerateBackupCodesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[23]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegenerateBackupCodesResponse.ProtoReflect.Descriptor instead.
-func (*RegenerateBackupCodesResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{23}
-}
-
-func (x *RegenerateBackupCodesResponse) GetBackupCodes() []string {
-	if x != nil {
-		return x.BackupCodes
-	}
-	return nil
-}
-
-type VerifyLoginTOTPRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Short-lived challenge token from LoginResponse.totp_challenge.
-	// @gotags: validate:"required"
-	Challenge string `protobuf:"bytes,1,opt,name=challenge,proto3" json:"challenge,omitempty" validate:"required"`
-	// 6-digit TOTP code or 16-character backup code.
-	// @gotags: validate:"required,min=6,max=16"
-	Code          string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty" validate:"required,min=6,max=16"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyLoginTOTPRequest) Reset() {
-	*x = VerifyLoginTOTPRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyLoginTOTPRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyLoginTOTPRequest) ProtoMessage() {}
-
-func (x *VerifyLoginTOTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyLoginTOTPRequest.ProtoReflect.Descriptor instead.
-func (*VerifyLoginTOTPRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{24}
-}
-
-func (x *VerifyLoginTOTPRequest) GetChallenge() string {
-	if x != nil {
-		return x.Challenge
-	}
-	return ""
-}
-
-func (x *VerifyLoginTOTPRequest) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-type VerifyLoginTOTPResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	User          *User                  `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyLoginTOTPResponse) Reset() {
-	*x = VerifyLoginTOTPResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[25]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyLoginTOTPResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyLoginTOTPResponse) ProtoMessage() {}
-
-func (x *VerifyLoginTOTPResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[25]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyLoginTOTPResponse.ProtoReflect.Descriptor instead.
-func (*VerifyLoginTOTPResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{25}
-}
-
-func (x *VerifyLoginTOTPResponse) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *VerifyLoginTOTPResponse) GetRefreshToken() string {
-	if x != nil {
-		return x.RefreshToken
-	}
-	return ""
-}
-
-func (x *VerifyLoginTOTPResponse) GetExpiresAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ExpiresAt
-	}
-	return nil
-}
-
-func (x *VerifyLoginTOTPResponse) GetUser() *User {
 	if x != nil {
 		return x.User
 	}
@@ -1361,9 +595,6 @@ type User struct {
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastLoginAt   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
 	Disabled      bool                   `protobuf:"varint,5,opt,name=disabled,proto3" json:"disabled,omitempty"`
-	Roles         []*Role                `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
-	TotpEnabled   bool                   `protobuf:"varint,7,opt,name=totp_enabled,json=totpEnabled,proto3" json:"totp_enabled,omitempty"`
-	HasPassword   bool                   `protobuf:"varint,8,opt,name=has_password,json=hasPassword,proto3" json:"has_password,omitempty"`
 	IdentityLinks []*IdentityLink        `protobuf:"bytes,9,rep,name=identity_links,json=identityLinks,proto3" json:"identity_links,omitempty"`
 	// OIDC profile scope properties
 	DisplayName       string `protobuf:"bytes,10,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
@@ -1382,12 +613,10 @@ type User struct {
 	SshAllowPassword        bool             `protobuf:"varint,21,opt,name=ssh_allow_password,json=sshAllowPassword,proto3" json:"ssh_allow_password,omitempty"`
 	UserProvisioningEnabled bool             `protobuf:"varint,22,opt,name=user_provisioning_enabled,json=userProvisioningEnabled,proto3" json:"user_provisioning_enabled,omitempty"`
 	InheritedRoles          []*InheritedRole `protobuf:"bytes,23,rep,name=inherited_roles,json=inheritedRoles,proto3" json:"inherited_roles,omitempty"`
-	// Per-grant view of the user's directly-assigned roles, carrying each
-	// grant's scope (#7). `roles` (field 6) remains the de-duplicated,
-	// scope-blind set for backward compatibility; `role_grants` is the
-	// authoritative source for scoped-grant display and revocation — a
-	// role granted both globally and scoped to a device group appears as
-	// two RoleGrant entries.
+	// The user's directly-assigned roles, one entry per grant, carrying each
+	// grant's scope. This is the role surface: a role granted both globally and
+	// scoped to a device group appears as two RoleGrant entries, and revocation
+	// names the grant, not just the role.
 	RoleGrants    []*RoleGrant `protobuf:"bytes,24,rep,name=role_grants,json=roleGrants,proto3" json:"role_grants,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1395,7 +624,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_pm_v1_control_proto_msgTypes[26]
+	mi := &file_powermanage_v1_control_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1407,7 +636,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[26]
+	mi := &file_powermanage_v1_control_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1420,7 +649,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{26}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *User) GetId() string {
@@ -1454,27 +683,6 @@ func (x *User) GetLastLoginAt() *timestamppb.Timestamp {
 func (x *User) GetDisabled() bool {
 	if x != nil {
 		return x.Disabled
-	}
-	return false
-}
-
-func (x *User) GetRoles() []*Role {
-	if x != nil {
-		return x.Roles
-	}
-	return nil
-}
-
-func (x *User) GetTotpEnabled() bool {
-	if x != nil {
-		return x.TotpEnabled
-	}
-	return false
-}
-
-func (x *User) GetHasPassword() bool {
-	if x != nil {
-		return x.HasPassword
 	}
 	return false
 }
@@ -1603,7 +811,7 @@ type InheritedRole struct {
 
 func (x *InheritedRole) Reset() {
 	*x = InheritedRole{}
-	mi := &file_pm_v1_control_proto_msgTypes[27]
+	mi := &file_powermanage_v1_control_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1615,7 +823,7 @@ func (x *InheritedRole) String() string {
 func (*InheritedRole) ProtoMessage() {}
 
 func (x *InheritedRole) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[27]
+	mi := &file_powermanage_v1_control_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1628,7 +836,7 @@ func (x *InheritedRole) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InheritedRole.ProtoReflect.Descriptor instead.
 func (*InheritedRole) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{27}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *InheritedRole) GetRoleId() string {
@@ -1671,7 +879,7 @@ type SshPublicKey struct {
 
 func (x *SshPublicKey) Reset() {
 	*x = SshPublicKey{}
-	mi := &file_pm_v1_control_proto_msgTypes[28]
+	mi := &file_powermanage_v1_control_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1683,7 +891,7 @@ func (x *SshPublicKey) String() string {
 func (*SshPublicKey) ProtoMessage() {}
 
 func (x *SshPublicKey) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[28]
+	mi := &file_powermanage_v1_control_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1696,7 +904,7 @@ func (x *SshPublicKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SshPublicKey.ProtoReflect.Descriptor instead.
 func (*SshPublicKey) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{28}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SshPublicKey) GetId() string {
@@ -1742,7 +950,7 @@ type Role struct {
 
 func (x *Role) Reset() {
 	*x = Role{}
-	mi := &file_pm_v1_control_proto_msgTypes[29]
+	mi := &file_powermanage_v1_control_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1754,7 +962,7 @@ func (x *Role) String() string {
 func (*Role) ProtoMessage() {}
 
 func (x *Role) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[29]
+	mi := &file_powermanage_v1_control_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1767,7 +975,7 @@ func (x *Role) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Role.ProtoReflect.Descriptor instead.
 func (*Role) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{29}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Role) GetId() string {
@@ -1813,14 +1021,14 @@ func (x *Role) GetIsSystem() bool {
 }
 
 // A single role grant on a user or user group, with its optional scope
-// (#7). scope_kind == UNSPECIFIED is an unscoped/global grant (scope_id
+// scope_kind == UNSPECIFIED is an unscoped/global grant (scope_id
 // and scope_name empty). For a scoped grant, scope_id is the device- or
 // user-group id and scope_name is that group's resolved display name
 // (empty if the group was deleted).
 type RoleGrant struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          *Role                  `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
-	ScopeKind     RoleGrantScopeKind     `protobuf:"varint,2,opt,name=scope_kind,json=scopeKind,proto3,enum=pm.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
+	ScopeKind     RoleGrantScopeKind     `protobuf:"varint,2,opt,name=scope_kind,json=scopeKind,proto3,enum=powermanage.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
 	ScopeId       string                 `protobuf:"bytes,3,opt,name=scope_id,json=scopeId,proto3" json:"scope_id,omitempty"`
 	ScopeName     string                 `protobuf:"bytes,4,opt,name=scope_name,json=scopeName,proto3" json:"scope_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1829,7 +1037,7 @@ type RoleGrant struct {
 
 func (x *RoleGrant) Reset() {
 	*x = RoleGrant{}
-	mi := &file_pm_v1_control_proto_msgTypes[30]
+	mi := &file_powermanage_v1_control_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1841,7 +1049,7 @@ func (x *RoleGrant) String() string {
 func (*RoleGrant) ProtoMessage() {}
 
 func (x *RoleGrant) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[30]
+	mi := &file_powermanage_v1_control_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1854,7 +1062,7 @@ func (x *RoleGrant) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoleGrant.ProtoReflect.Descriptor instead.
 func (*RoleGrant) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{30}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RoleGrant) GetRole() *Role {
@@ -1895,15 +1103,14 @@ type PermissionInfo struct {
 	// UNSPECIFIED = not scopable (fail-closed default). DEVICE = takes
 	// RoleGrantScopeKind=DEVICE_GROUP. USER = takes USER_GROUP.
 	// Surfaced so the web role-builder can gate the scope picker.
-	// manchtools/power-manage-server#7.
-	TargetKind    PermissionTargetKind `protobuf:"varint,4,opt,name=target_kind,json=targetKind,proto3,enum=pm.v1.PermissionTargetKind" json:"target_kind,omitempty"`
+	TargetKind    PermissionTargetKind `protobuf:"varint,4,opt,name=target_kind,json=targetKind,proto3,enum=powermanage.v1.PermissionTargetKind" json:"target_kind,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PermissionInfo) Reset() {
 	*x = PermissionInfo{}
-	mi := &file_pm_v1_control_proto_msgTypes[31]
+	mi := &file_powermanage_v1_control_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1915,7 +1122,7 @@ func (x *PermissionInfo) String() string {
 func (*PermissionInfo) ProtoMessage() {}
 
 func (x *PermissionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[31]
+	mi := &file_powermanage_v1_control_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1928,7 +1135,7 @@ func (x *PermissionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PermissionInfo.ProtoReflect.Descriptor instead.
 func (*PermissionInfo) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{31}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *PermissionInfo) GetKey() string {
@@ -1963,8 +1170,6 @@ type CreateUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,email"
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty" validate:"required,email"`
-	// @gotags: validate:"required,min=8"
-	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=8"`
 	// Role IDs to assign to the new user. If empty, the default "User" role is assigned.
 	// @gotags: validate:"omitempty,max=256,dive,ulid"
 	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
@@ -1983,7 +1188,7 @@ type CreateUserRequest struct {
 
 func (x *CreateUserRequest) Reset() {
 	*x = CreateUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[32]
+	mi := &file_powermanage_v1_control_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1995,7 +1200,7 @@ func (x *CreateUserRequest) String() string {
 func (*CreateUserRequest) ProtoMessage() {}
 
 func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[32]
+	mi := &file_powermanage_v1_control_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2008,19 +1213,12 @@ func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{32}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CreateUserRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
-	}
-	return ""
-}
-
-func (x *CreateUserRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
 	}
 	return ""
 }
@@ -2069,7 +1267,7 @@ type CreateUserResponse struct {
 
 func (x *CreateUserResponse) Reset() {
 	*x = CreateUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[33]
+	mi := &file_powermanage_v1_control_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2081,7 +1279,7 @@ func (x *CreateUserResponse) String() string {
 func (*CreateUserResponse) ProtoMessage() {}
 
 func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[33]
+	mi := &file_powermanage_v1_control_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2094,7 +1292,7 @@ func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserResponse.ProtoReflect.Descriptor instead.
 func (*CreateUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{33}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CreateUserResponse) GetUser() *User {
@@ -2114,7 +1312,7 @@ type GetUserRequest struct {
 
 func (x *GetUserRequest) Reset() {
 	*x = GetUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[34]
+	mi := &file_powermanage_v1_control_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2126,7 +1324,7 @@ func (x *GetUserRequest) String() string {
 func (*GetUserRequest) ProtoMessage() {}
 
 func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[34]
+	mi := &file_powermanage_v1_control_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2139,7 +1337,7 @@ func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
 func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{34}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetUserRequest) GetId() string {
@@ -2158,7 +1356,7 @@ type GetUserResponse struct {
 
 func (x *GetUserResponse) Reset() {
 	*x = GetUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[35]
+	mi := &file_powermanage_v1_control_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2170,7 +1368,7 @@ func (x *GetUserResponse) String() string {
 func (*GetUserResponse) ProtoMessage() {}
 
 func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[35]
+	mi := &file_powermanage_v1_control_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2183,7 +1381,7 @@ func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserResponse.ProtoReflect.Descriptor instead.
 func (*GetUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{35}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetUserResponse) GetUser() *User {
@@ -2205,7 +1403,7 @@ type ListUsersRequest struct {
 
 func (x *ListUsersRequest) Reset() {
 	*x = ListUsersRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[36]
+	mi := &file_powermanage_v1_control_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2217,7 +1415,7 @@ func (x *ListUsersRequest) String() string {
 func (*ListUsersRequest) ProtoMessage() {}
 
 func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[36]
+	mi := &file_powermanage_v1_control_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2230,7 +1428,7 @@ func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersRequest.ProtoReflect.Descriptor instead.
 func (*ListUsersRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{36}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListUsersRequest) GetPageSize() int32 {
@@ -2258,7 +1456,7 @@ type ListUsersResponse struct {
 
 func (x *ListUsersResponse) Reset() {
 	*x = ListUsersResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[37]
+	mi := &file_powermanage_v1_control_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2270,7 +1468,7 @@ func (x *ListUsersResponse) String() string {
 func (*ListUsersResponse) ProtoMessage() {}
 
 func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[37]
+	mi := &file_powermanage_v1_control_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2283,7 +1481,7 @@ func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersResponse.ProtoReflect.Descriptor instead.
 func (*ListUsersResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{37}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListUsersResponse) GetUsers() []*User {
@@ -2320,7 +1518,7 @@ type UpdateUserEmailRequest struct {
 
 func (x *UpdateUserEmailRequest) Reset() {
 	*x = UpdateUserEmailRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[38]
+	mi := &file_powermanage_v1_control_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2332,7 +1530,7 @@ func (x *UpdateUserEmailRequest) String() string {
 func (*UpdateUserEmailRequest) ProtoMessage() {}
 
 func (x *UpdateUserEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[38]
+	mi := &file_powermanage_v1_control_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2345,7 +1543,7 @@ func (x *UpdateUserEmailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserEmailRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserEmailRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{38}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *UpdateUserEmailRequest) GetId() string {
@@ -2362,69 +1560,6 @@ func (x *UpdateUserEmailRequest) GetEmail() string {
 	return ""
 }
 
-type UpdateUserPasswordRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,ulid"
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"omitempty,min=8"
-	CurrentPassword string `protobuf:"bytes,2,opt,name=current_password,json=currentPassword,proto3" json:"current_password,omitempty" validate:"omitempty,min=8"` // Required for self-update
-	// @gotags: validate:"required,min=8"
-	NewPassword   string `protobuf:"bytes,3,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty" validate:"required,min=8"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateUserPasswordRequest) Reset() {
-	*x = UpdateUserPasswordRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[39]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateUserPasswordRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateUserPasswordRequest) ProtoMessage() {}
-
-func (x *UpdateUserPasswordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[39]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateUserPasswordRequest.ProtoReflect.Descriptor instead.
-func (*UpdateUserPasswordRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{39}
-}
-
-func (x *UpdateUserPasswordRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *UpdateUserPasswordRequest) GetCurrentPassword() string {
-	if x != nil {
-		return x.CurrentPassword
-	}
-	return ""
-}
-
-func (x *UpdateUserPasswordRequest) GetNewPassword() string {
-	if x != nil {
-		return x.NewPassword
-	}
-	return ""
-}
-
 type SetUserDisabledRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -2436,7 +1571,7 @@ type SetUserDisabledRequest struct {
 
 func (x *SetUserDisabledRequest) Reset() {
 	*x = SetUserDisabledRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[40]
+	mi := &file_powermanage_v1_control_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2448,7 +1583,7 @@ func (x *SetUserDisabledRequest) String() string {
 func (*SetUserDisabledRequest) ProtoMessage() {}
 
 func (x *SetUserDisabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[40]
+	mi := &file_powermanage_v1_control_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2461,7 +1596,7 @@ func (x *SetUserDisabledRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserDisabledRequest.ProtoReflect.Descriptor instead.
 func (*SetUserDisabledRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{40}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *SetUserDisabledRequest) GetId() string {
@@ -2487,7 +1622,7 @@ type UpdateUserResponse struct {
 
 func (x *UpdateUserResponse) Reset() {
 	*x = UpdateUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[41]
+	mi := &file_powermanage_v1_control_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2499,7 +1634,7 @@ func (x *UpdateUserResponse) String() string {
 func (*UpdateUserResponse) ProtoMessage() {}
 
 func (x *UpdateUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[41]
+	mi := &file_powermanage_v1_control_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2512,7 +1647,7 @@ func (x *UpdateUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserResponse.ProtoReflect.Descriptor instead.
 func (*UpdateUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{41}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *UpdateUserResponse) GetUser() *User {
@@ -2544,7 +1679,7 @@ type UpdateUserProfileRequest struct {
 
 func (x *UpdateUserProfileRequest) Reset() {
 	*x = UpdateUserProfileRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[42]
+	mi := &file_powermanage_v1_control_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2556,7 +1691,7 @@ func (x *UpdateUserProfileRequest) String() string {
 func (*UpdateUserProfileRequest) ProtoMessage() {}
 
 func (x *UpdateUserProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[42]
+	mi := &file_powermanage_v1_control_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2569,7 +1704,7 @@ func (x *UpdateUserProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserProfileRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserProfileRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{42}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *UpdateUserProfileRequest) GetId() string {
@@ -2631,7 +1766,7 @@ type DeleteUserRequest struct {
 
 func (x *DeleteUserRequest) Reset() {
 	*x = DeleteUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[43]
+	mi := &file_powermanage_v1_control_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2643,7 +1778,7 @@ func (x *DeleteUserRequest) String() string {
 func (*DeleteUserRequest) ProtoMessage() {}
 
 func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[43]
+	mi := &file_powermanage_v1_control_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2656,7 +1791,7 @@ func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
 func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{43}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DeleteUserRequest) GetId() string {
@@ -2674,7 +1809,7 @@ type DeleteUserResponse struct {
 
 func (x *DeleteUserResponse) Reset() {
 	*x = DeleteUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[44]
+	mi := &file_powermanage_v1_control_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2686,7 +1821,7 @@ func (x *DeleteUserResponse) String() string {
 func (*DeleteUserResponse) ProtoMessage() {}
 
 func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[44]
+	mi := &file_powermanage_v1_control_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2699,7 +1834,7 @@ func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
 func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{44}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{27}
 }
 
 type AddUserSshKeyRequest struct {
@@ -2716,7 +1851,7 @@ type AddUserSshKeyRequest struct {
 
 func (x *AddUserSshKeyRequest) Reset() {
 	*x = AddUserSshKeyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[45]
+	mi := &file_powermanage_v1_control_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2728,7 +1863,7 @@ func (x *AddUserSshKeyRequest) String() string {
 func (*AddUserSshKeyRequest) ProtoMessage() {}
 
 func (x *AddUserSshKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[45]
+	mi := &file_powermanage_v1_control_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2741,7 +1876,7 @@ func (x *AddUserSshKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserSshKeyRequest.ProtoReflect.Descriptor instead.
 func (*AddUserSshKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{45}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AddUserSshKeyRequest) GetUserId() string {
@@ -2774,7 +1909,7 @@ type AddUserSshKeyResponse struct {
 
 func (x *AddUserSshKeyResponse) Reset() {
 	*x = AddUserSshKeyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[46]
+	mi := &file_powermanage_v1_control_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2786,7 +1921,7 @@ func (x *AddUserSshKeyResponse) String() string {
 func (*AddUserSshKeyResponse) ProtoMessage() {}
 
 func (x *AddUserSshKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[46]
+	mi := &file_powermanage_v1_control_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2799,7 +1934,7 @@ func (x *AddUserSshKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserSshKeyResponse.ProtoReflect.Descriptor instead.
 func (*AddUserSshKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{46}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *AddUserSshKeyResponse) GetKey() *SshPublicKey {
@@ -2821,7 +1956,7 @@ type RemoveUserSshKeyRequest struct {
 
 func (x *RemoveUserSshKeyRequest) Reset() {
 	*x = RemoveUserSshKeyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[47]
+	mi := &file_powermanage_v1_control_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2833,7 +1968,7 @@ func (x *RemoveUserSshKeyRequest) String() string {
 func (*RemoveUserSshKeyRequest) ProtoMessage() {}
 
 func (x *RemoveUserSshKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[47]
+	mi := &file_powermanage_v1_control_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2846,7 +1981,7 @@ func (x *RemoveUserSshKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveUserSshKeyRequest.ProtoReflect.Descriptor instead.
 func (*RemoveUserSshKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{47}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *RemoveUserSshKeyRequest) GetUserId() string {
@@ -2871,7 +2006,7 @@ type RemoveUserSshKeyResponse struct {
 
 func (x *RemoveUserSshKeyResponse) Reset() {
 	*x = RemoveUserSshKeyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[48]
+	mi := &file_powermanage_v1_control_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2883,7 +2018,7 @@ func (x *RemoveUserSshKeyResponse) String() string {
 func (*RemoveUserSshKeyResponse) ProtoMessage() {}
 
 func (x *RemoveUserSshKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[48]
+	mi := &file_powermanage_v1_control_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2896,7 +2031,7 @@ func (x *RemoveUserSshKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveUserSshKeyResponse.ProtoReflect.Descriptor instead.
 func (*RemoveUserSshKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{48}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{31}
 }
 
 type UpdateUserSshSettingsRequest struct {
@@ -2912,7 +2047,7 @@ type UpdateUserSshSettingsRequest struct {
 
 func (x *UpdateUserSshSettingsRequest) Reset() {
 	*x = UpdateUserSshSettingsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[49]
+	mi := &file_powermanage_v1_control_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2924,7 +2059,7 @@ func (x *UpdateUserSshSettingsRequest) String() string {
 func (*UpdateUserSshSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateUserSshSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[49]
+	mi := &file_powermanage_v1_control_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2937,7 +2072,7 @@ func (x *UpdateUserSshSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserSshSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserSshSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{49}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *UpdateUserSshSettingsRequest) GetUserId() string {
@@ -2980,7 +2115,7 @@ type UpdateUserLinuxUsernameRequest struct {
 
 func (x *UpdateUserLinuxUsernameRequest) Reset() {
 	*x = UpdateUserLinuxUsernameRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[50]
+	mi := &file_powermanage_v1_control_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2992,7 +2127,7 @@ func (x *UpdateUserLinuxUsernameRequest) String() string {
 func (*UpdateUserLinuxUsernameRequest) ProtoMessage() {}
 
 func (x *UpdateUserLinuxUsernameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[50]
+	mi := &file_powermanage_v1_control_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3005,7 +2140,7 @@ func (x *UpdateUserLinuxUsernameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserLinuxUsernameRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserLinuxUsernameRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{50}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *UpdateUserLinuxUsernameRequest) GetUserId() string {
@@ -3028,7 +2163,7 @@ type Device struct {
 	Hostname     string                 `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
 	AgentVersion string                 `protobuf:"bytes,3,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty"`
 	// Online / offline, derived from last_seen_at on the server.
-	Status           DeviceStatus           `protobuf:"varint,4,opt,name=status,proto3,enum=pm.v1.DeviceStatus" json:"status,omitempty"`
+	Status           DeviceStatus           `protobuf:"varint,4,opt,name=status,proto3,enum=powermanage.v1.DeviceStatus" json:"status,omitempty"`
 	RegisteredAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
 	LastSeenAt       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
 	CertExpiresAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=cert_expires_at,json=certExpiresAt,proto3" json:"cert_expires_at,omitempty"`
@@ -3039,11 +2174,11 @@ type Device struct {
 	// Agent will pull assigned actions at this interval
 	SyncIntervalMinutes int32 `protobuf:"varint,11,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
 	// Compliance status based on detection scripts
-	ComplianceStatus    ComplianceStatus       `protobuf:"varint,12,opt,name=compliance_status,json=complianceStatus,proto3,enum=pm.v1.ComplianceStatus" json:"compliance_status,omitempty"`
+	ComplianceStatus    ComplianceStatus       `protobuf:"varint,12,opt,name=compliance_status,json=complianceStatus,proto3,enum=powermanage.v1.ComplianceStatus" json:"compliance_status,omitempty"`
 	ComplianceCheckedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=compliance_checked_at,json=complianceCheckedAt,proto3" json:"compliance_checked_at,omitempty"`
 	ComplianceTotal     int32                  `protobuf:"varint,14,opt,name=compliance_total,json=complianceTotal,proto3" json:"compliance_total,omitempty"`       // Total number of compliance checks
 	CompliancePassing   int32                  `protobuf:"varint,15,opt,name=compliance_passing,json=compliancePassing,proto3" json:"compliance_passing,omitempty"` // Number of passing checks
-	// Freshness of the server-scheduled inventory collection (spec 22).
+	// Freshness of the server-scheduled inventory collection.
 	// last_inventory_at is MAX(collected_at) across the device's inventory;
 	// unset when no inventory has ever been collected.
 	LastInventoryAt *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=last_inventory_at,json=lastInventoryAt,proto3" json:"last_inventory_at,omitempty"`
@@ -3061,7 +2196,7 @@ type Device struct {
 
 func (x *Device) Reset() {
 	*x = Device{}
-	mi := &file_pm_v1_control_proto_msgTypes[51]
+	mi := &file_powermanage_v1_control_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3073,7 +2208,7 @@ func (x *Device) String() string {
 func (*Device) ProtoMessage() {}
 
 func (x *Device) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[51]
+	mi := &file_powermanage_v1_control_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3086,7 +2221,7 @@ func (x *Device) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Device.ProtoReflect.Descriptor instead.
 func (*Device) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{51}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *Device) GetId() string {
@@ -3224,7 +2359,7 @@ type ListDevicesRequest struct {
 	// UNSPECIFIED (0) means "no status filter"; ONLINE / OFFLINE narrow
 	// the listing to that single status.
 	// @gotags: validate:"omitempty,gte=0,lte=2"
-	StatusFilter DeviceStatus `protobuf:"varint,3,opt,name=status_filter,json=statusFilter,proto3,enum=pm.v1.DeviceStatus" json:"status_filter,omitempty" validate:"omitempty,gte=0,lte=2"`
+	StatusFilter DeviceStatus `protobuf:"varint,3,opt,name=status_filter,json=statusFilter,proto3,enum=powermanage.v1.DeviceStatus" json:"status_filter,omitempty" validate:"omitempty,gte=0,lte=2"`
 	// @gotags: validate:"omitempty,dive,keys,max=64,endkeys,max=1024"
 	LabelFilter   map[string]string `protobuf:"bytes,4,rep,name=label_filter,json=labelFilter,proto3" json:"label_filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=64,endkeys,max=1024"`
 	MyDevicesOnly bool              `protobuf:"varint,5,opt,name=my_devices_only,json=myDevicesOnly,proto3" json:"my_devices_only,omitempty"` // when true, only return devices assigned to the authenticated user
@@ -3234,7 +2369,7 @@ type ListDevicesRequest struct {
 
 func (x *ListDevicesRequest) Reset() {
 	*x = ListDevicesRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[52]
+	mi := &file_powermanage_v1_control_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3246,7 +2381,7 @@ func (x *ListDevicesRequest) String() string {
 func (*ListDevicesRequest) ProtoMessage() {}
 
 func (x *ListDevicesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[52]
+	mi := &file_powermanage_v1_control_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3259,7 +2394,7 @@ func (x *ListDevicesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDevicesRequest.ProtoReflect.Descriptor instead.
 func (*ListDevicesRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{52}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ListDevicesRequest) GetPageSize() int32 {
@@ -3308,7 +2443,7 @@ type ListDevicesResponse struct {
 
 func (x *ListDevicesResponse) Reset() {
 	*x = ListDevicesResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[53]
+	mi := &file_powermanage_v1_control_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3320,7 +2455,7 @@ func (x *ListDevicesResponse) String() string {
 func (*ListDevicesResponse) ProtoMessage() {}
 
 func (x *ListDevicesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[53]
+	mi := &file_powermanage_v1_control_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3333,7 +2468,7 @@ func (x *ListDevicesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDevicesResponse.ProtoReflect.Descriptor instead.
 func (*ListDevicesResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{53}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListDevicesResponse) GetDevices() []*Device {
@@ -3367,7 +2502,7 @@ type GetDeviceRequest struct {
 
 func (x *GetDeviceRequest) Reset() {
 	*x = GetDeviceRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[54]
+	mi := &file_powermanage_v1_control_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3379,7 +2514,7 @@ func (x *GetDeviceRequest) String() string {
 func (*GetDeviceRequest) ProtoMessage() {}
 
 func (x *GetDeviceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[54]
+	mi := &file_powermanage_v1_control_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3392,7 +2527,7 @@ func (x *GetDeviceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{54}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetDeviceRequest) GetId() string {
@@ -3411,7 +2546,7 @@ type GetDeviceResponse struct {
 
 func (x *GetDeviceResponse) Reset() {
 	*x = GetDeviceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[55]
+	mi := &file_powermanage_v1_control_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3423,7 +2558,7 @@ func (x *GetDeviceResponse) String() string {
 func (*GetDeviceResponse) ProtoMessage() {}
 
 func (x *GetDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[55]
+	mi := &file_powermanage_v1_control_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3436,7 +2571,7 @@ func (x *GetDeviceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{55}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetDeviceResponse) GetDevice() *Device {
@@ -3461,7 +2596,7 @@ type SetDeviceLabelRequest struct {
 
 func (x *SetDeviceLabelRequest) Reset() {
 	*x = SetDeviceLabelRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[56]
+	mi := &file_powermanage_v1_control_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3473,7 +2608,7 @@ func (x *SetDeviceLabelRequest) String() string {
 func (*SetDeviceLabelRequest) ProtoMessage() {}
 
 func (x *SetDeviceLabelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[56]
+	mi := &file_powermanage_v1_control_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3486,7 +2621,7 @@ func (x *SetDeviceLabelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetDeviceLabelRequest.ProtoReflect.Descriptor instead.
 func (*SetDeviceLabelRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{56}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *SetDeviceLabelRequest) GetId() string {
@@ -3522,7 +2657,7 @@ type RemoveDeviceLabelRequest struct {
 
 func (x *RemoveDeviceLabelRequest) Reset() {
 	*x = RemoveDeviceLabelRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[57]
+	mi := &file_powermanage_v1_control_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3534,7 +2669,7 @@ func (x *RemoveDeviceLabelRequest) String() string {
 func (*RemoveDeviceLabelRequest) ProtoMessage() {}
 
 func (x *RemoveDeviceLabelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[57]
+	mi := &file_powermanage_v1_control_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3547,7 +2682,7 @@ func (x *RemoveDeviceLabelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveDeviceLabelRequest.ProtoReflect.Descriptor instead.
 func (*RemoveDeviceLabelRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{57}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *RemoveDeviceLabelRequest) GetId() string {
@@ -3573,7 +2708,7 @@ type UpdateDeviceResponse struct {
 
 func (x *UpdateDeviceResponse) Reset() {
 	*x = UpdateDeviceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[58]
+	mi := &file_powermanage_v1_control_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3585,7 +2720,7 @@ func (x *UpdateDeviceResponse) String() string {
 func (*UpdateDeviceResponse) ProtoMessage() {}
 
 func (x *UpdateDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[58]
+	mi := &file_powermanage_v1_control_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3598,7 +2733,7 @@ func (x *UpdateDeviceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDeviceResponse.ProtoReflect.Descriptor instead.
 func (*UpdateDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{58}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *UpdateDeviceResponse) GetDevice() *Device {
@@ -3618,7 +2753,7 @@ type DeleteDeviceRequest struct {
 
 func (x *DeleteDeviceRequest) Reset() {
 	*x = DeleteDeviceRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[59]
+	mi := &file_powermanage_v1_control_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3630,7 +2765,7 @@ func (x *DeleteDeviceRequest) String() string {
 func (*DeleteDeviceRequest) ProtoMessage() {}
 
 func (x *DeleteDeviceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[59]
+	mi := &file_powermanage_v1_control_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3643,7 +2778,7 @@ func (x *DeleteDeviceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDeviceRequest.ProtoReflect.Descriptor instead.
 func (*DeleteDeviceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{59}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *DeleteDeviceRequest) GetId() string {
@@ -3661,7 +2796,7 @@ type DeleteDeviceResponse struct {
 
 func (x *DeleteDeviceResponse) Reset() {
 	*x = DeleteDeviceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[60]
+	mi := &file_powermanage_v1_control_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3673,7 +2808,7 @@ func (x *DeleteDeviceResponse) String() string {
 func (*DeleteDeviceResponse) ProtoMessage() {}
 
 func (x *DeleteDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[60]
+	mi := &file_powermanage_v1_control_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3686,7 +2821,7 @@ func (x *DeleteDeviceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDeviceResponse.ProtoReflect.Descriptor instead.
 func (*DeleteDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{60}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{43}
 }
 
 // Device assignment (admin-only)
@@ -3709,7 +2844,7 @@ type AssignDeviceRequest struct {
 
 func (x *AssignDeviceRequest) Reset() {
 	*x = AssignDeviceRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[61]
+	mi := &file_powermanage_v1_control_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3721,7 +2856,7 @@ func (x *AssignDeviceRequest) String() string {
 func (*AssignDeviceRequest) ProtoMessage() {}
 
 func (x *AssignDeviceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[61]
+	mi := &file_powermanage_v1_control_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3734,7 +2869,7 @@ func (x *AssignDeviceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignDeviceRequest.ProtoReflect.Descriptor instead.
 func (*AssignDeviceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{61}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *AssignDeviceRequest) GetDeviceId() string {
@@ -3781,7 +2916,7 @@ type AssignDeviceResponse struct {
 
 func (x *AssignDeviceResponse) Reset() {
 	*x = AssignDeviceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[62]
+	mi := &file_powermanage_v1_control_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3793,7 +2928,7 @@ func (x *AssignDeviceResponse) String() string {
 func (*AssignDeviceResponse) ProtoMessage() {}
 
 func (x *AssignDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[62]
+	mi := &file_powermanage_v1_control_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3806,7 +2941,7 @@ func (x *AssignDeviceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignDeviceResponse.ProtoReflect.Descriptor instead.
 func (*AssignDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{62}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *AssignDeviceResponse) GetDevice() *Device {
@@ -3831,7 +2966,7 @@ type UnassignDeviceRequest struct {
 
 func (x *UnassignDeviceRequest) Reset() {
 	*x = UnassignDeviceRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[63]
+	mi := &file_powermanage_v1_control_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3843,7 +2978,7 @@ func (x *UnassignDeviceRequest) String() string {
 func (*UnassignDeviceRequest) ProtoMessage() {}
 
 func (x *UnassignDeviceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[63]
+	mi := &file_powermanage_v1_control_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3856,7 +2991,7 @@ func (x *UnassignDeviceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnassignDeviceRequest.ProtoReflect.Descriptor instead.
 func (*UnassignDeviceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{63}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *UnassignDeviceRequest) GetDeviceId() string {
@@ -3889,7 +3024,7 @@ type UnassignDeviceResponse struct {
 
 func (x *UnassignDeviceResponse) Reset() {
 	*x = UnassignDeviceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[64]
+	mi := &file_powermanage_v1_control_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3901,7 +3036,7 @@ func (x *UnassignDeviceResponse) String() string {
 func (*UnassignDeviceResponse) ProtoMessage() {}
 
 func (x *UnassignDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[64]
+	mi := &file_powermanage_v1_control_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3914,7 +3049,7 @@ func (x *UnassignDeviceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnassignDeviceResponse.ProtoReflect.Descriptor instead.
 func (*UnassignDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{64}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *UnassignDeviceResponse) GetDevice() *Device {
@@ -3928,9 +3063,9 @@ type DeviceAssignee struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // User or group ID
 	// Subset of AssignmentTargetType: only USER and USER_GROUP are valid
-	// values for a device assignee. The projection writer rejects DEVICE
-	// and DEVICE_GROUP at write-time.
-	Type          AssignmentTargetType `protobuf:"varint,2,opt,name=type,proto3,enum=pm.v1.AssignmentTargetType" json:"type,omitempty"`
+	// values for a device assignee. DEVICE and DEVICE_GROUP are rejected
+	// at write time.
+	Type          AssignmentTargetType `protobuf:"varint,2,opt,name=type,proto3,enum=powermanage.v1.AssignmentTargetType" json:"type,omitempty"`
 	Name          string               `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"` // User email or group name
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3938,7 +3073,7 @@ type DeviceAssignee struct {
 
 func (x *DeviceAssignee) Reset() {
 	*x = DeviceAssignee{}
-	mi := &file_pm_v1_control_proto_msgTypes[65]
+	mi := &file_powermanage_v1_control_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3950,7 +3085,7 @@ func (x *DeviceAssignee) String() string {
 func (*DeviceAssignee) ProtoMessage() {}
 
 func (x *DeviceAssignee) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[65]
+	mi := &file_powermanage_v1_control_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3963,7 +3098,7 @@ func (x *DeviceAssignee) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeviceAssignee.ProtoReflect.Descriptor instead.
 func (*DeviceAssignee) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{65}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *DeviceAssignee) GetId() string {
@@ -3997,7 +3132,7 @@ type ListDeviceAssigneesRequest struct {
 
 func (x *ListDeviceAssigneesRequest) Reset() {
 	*x = ListDeviceAssigneesRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[66]
+	mi := &file_powermanage_v1_control_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4009,7 +3144,7 @@ func (x *ListDeviceAssigneesRequest) String() string {
 func (*ListDeviceAssigneesRequest) ProtoMessage() {}
 
 func (x *ListDeviceAssigneesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[66]
+	mi := &file_powermanage_v1_control_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4022,7 +3157,7 @@ func (x *ListDeviceAssigneesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeviceAssigneesRequest.ProtoReflect.Descriptor instead.
 func (*ListDeviceAssigneesRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{66}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *ListDeviceAssigneesRequest) GetDeviceId() string {
@@ -4041,7 +3176,7 @@ type ListDeviceAssigneesResponse struct {
 
 func (x *ListDeviceAssigneesResponse) Reset() {
 	*x = ListDeviceAssigneesResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[67]
+	mi := &file_powermanage_v1_control_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4053,7 +3188,7 @@ func (x *ListDeviceAssigneesResponse) String() string {
 func (*ListDeviceAssigneesResponse) ProtoMessage() {}
 
 func (x *ListDeviceAssigneesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[67]
+	mi := &file_powermanage_v1_control_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4066,7 +3201,7 @@ func (x *ListDeviceAssigneesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeviceAssigneesResponse.ProtoReflect.Descriptor instead.
 func (*ListDeviceAssigneesResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{67}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *ListDeviceAssigneesResponse) GetAssignees() []*DeviceAssignee {
@@ -4089,7 +3224,7 @@ type SetDeviceSyncIntervalRequest struct {
 
 func (x *SetDeviceSyncIntervalRequest) Reset() {
 	*x = SetDeviceSyncIntervalRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[68]
+	mi := &file_powermanage_v1_control_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4101,7 +3236,7 @@ func (x *SetDeviceSyncIntervalRequest) String() string {
 func (*SetDeviceSyncIntervalRequest) ProtoMessage() {}
 
 func (x *SetDeviceSyncIntervalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[68]
+	mi := &file_powermanage_v1_control_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4114,7 +3249,7 @@ func (x *SetDeviceSyncIntervalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetDeviceSyncIntervalRequest.ProtoReflect.Descriptor instead.
 func (*SetDeviceSyncIntervalRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{68}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *SetDeviceSyncIntervalRequest) GetId() string {
@@ -4131,7 +3266,7 @@ func (x *SetDeviceSyncIntervalRequest) GetSyncIntervalMinutes() int32 {
 	return 0
 }
 
-// Update device inventory collection interval (spec 22).
+// Update device inventory collection interval.
 type SetDeviceInventoryIntervalRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -4144,7 +3279,7 @@ type SetDeviceInventoryIntervalRequest struct {
 
 func (x *SetDeviceInventoryIntervalRequest) Reset() {
 	*x = SetDeviceInventoryIntervalRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[69]
+	mi := &file_powermanage_v1_control_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4156,7 +3291,7 @@ func (x *SetDeviceInventoryIntervalRequest) String() string {
 func (*SetDeviceInventoryIntervalRequest) ProtoMessage() {}
 
 func (x *SetDeviceInventoryIntervalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[69]
+	mi := &file_powermanage_v1_control_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4169,7 +3304,7 @@ func (x *SetDeviceInventoryIntervalRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use SetDeviceInventoryIntervalRequest.ProtoReflect.Descriptor instead.
 func (*SetDeviceInventoryIntervalRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{69}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *SetDeviceInventoryIntervalRequest) GetId() string {
@@ -4205,7 +3340,7 @@ type RegistrationToken struct {
 
 func (x *RegistrationToken) Reset() {
 	*x = RegistrationToken{}
-	mi := &file_pm_v1_control_proto_msgTypes[70]
+	mi := &file_powermanage_v1_control_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4217,7 +3352,7 @@ func (x *RegistrationToken) String() string {
 func (*RegistrationToken) ProtoMessage() {}
 
 func (x *RegistrationToken) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[70]
+	mi := &file_powermanage_v1_control_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4230,7 +3365,7 @@ func (x *RegistrationToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegistrationToken.ProtoReflect.Descriptor instead.
 func (*RegistrationToken) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{70}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *RegistrationToken) GetId() string {
@@ -4331,7 +3466,7 @@ type CreateTokenRequest struct {
 
 func (x *CreateTokenRequest) Reset() {
 	*x = CreateTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[71]
+	mi := &file_powermanage_v1_control_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4343,7 +3478,7 @@ func (x *CreateTokenRequest) String() string {
 func (*CreateTokenRequest) ProtoMessage() {}
 
 func (x *CreateTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[71]
+	mi := &file_powermanage_v1_control_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4356,7 +3491,7 @@ func (x *CreateTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTokenRequest.ProtoReflect.Descriptor instead.
 func (*CreateTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{71}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *CreateTokenRequest) GetName() string {
@@ -4403,7 +3538,7 @@ type CreateTokenResponse struct {
 
 func (x *CreateTokenResponse) Reset() {
 	*x = CreateTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[72]
+	mi := &file_powermanage_v1_control_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4415,7 +3550,7 @@ func (x *CreateTokenResponse) String() string {
 func (*CreateTokenResponse) ProtoMessage() {}
 
 func (x *CreateTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[72]
+	mi := &file_powermanage_v1_control_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4428,7 +3563,7 @@ func (x *CreateTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTokenResponse.ProtoReflect.Descriptor instead.
 func (*CreateTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{72}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *CreateTokenResponse) GetToken() *RegistrationToken {
@@ -4451,7 +3586,7 @@ type ListTokensRequest struct {
 
 func (x *ListTokensRequest) Reset() {
 	*x = ListTokensRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[73]
+	mi := &file_powermanage_v1_control_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4463,7 +3598,7 @@ func (x *ListTokensRequest) String() string {
 func (*ListTokensRequest) ProtoMessage() {}
 
 func (x *ListTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[73]
+	mi := &file_powermanage_v1_control_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4476,7 +3611,7 @@ func (x *ListTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTokensRequest.ProtoReflect.Descriptor instead.
 func (*ListTokensRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{73}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *ListTokensRequest) GetPageSize() int32 {
@@ -4511,7 +3646,7 @@ type ListTokensResponse struct {
 
 func (x *ListTokensResponse) Reset() {
 	*x = ListTokensResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[74]
+	mi := &file_powermanage_v1_control_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4523,7 +3658,7 @@ func (x *ListTokensResponse) String() string {
 func (*ListTokensResponse) ProtoMessage() {}
 
 func (x *ListTokensResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[74]
+	mi := &file_powermanage_v1_control_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4536,7 +3671,7 @@ func (x *ListTokensResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTokensResponse.ProtoReflect.Descriptor instead.
 func (*ListTokensResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{74}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ListTokensResponse) GetTokens() []*RegistrationToken {
@@ -4570,7 +3705,7 @@ type GetTokenRequest struct {
 
 func (x *GetTokenRequest) Reset() {
 	*x = GetTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[75]
+	mi := &file_powermanage_v1_control_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4582,7 +3717,7 @@ func (x *GetTokenRequest) String() string {
 func (*GetTokenRequest) ProtoMessage() {}
 
 func (x *GetTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[75]
+	mi := &file_powermanage_v1_control_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4595,7 +3730,7 @@ func (x *GetTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTokenRequest.ProtoReflect.Descriptor instead.
 func (*GetTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{75}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetTokenRequest) GetId() string {
@@ -4614,7 +3749,7 @@ type GetTokenResponse struct {
 
 func (x *GetTokenResponse) Reset() {
 	*x = GetTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[76]
+	mi := &file_powermanage_v1_control_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4626,7 +3761,7 @@ func (x *GetTokenResponse) String() string {
 func (*GetTokenResponse) ProtoMessage() {}
 
 func (x *GetTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[76]
+	mi := &file_powermanage_v1_control_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4639,7 +3774,7 @@ func (x *GetTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTokenResponse.ProtoReflect.Descriptor instead.
 func (*GetTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{76}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *GetTokenResponse) GetToken() *RegistrationToken {
@@ -4662,7 +3797,7 @@ type RenameTokenRequest struct {
 
 func (x *RenameTokenRequest) Reset() {
 	*x = RenameTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[77]
+	mi := &file_powermanage_v1_control_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4674,7 +3809,7 @@ func (x *RenameTokenRequest) String() string {
 func (*RenameTokenRequest) ProtoMessage() {}
 
 func (x *RenameTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[77]
+	mi := &file_powermanage_v1_control_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4687,7 +3822,7 @@ func (x *RenameTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameTokenRequest.ProtoReflect.Descriptor instead.
 func (*RenameTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{77}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *RenameTokenRequest) GetId() string {
@@ -4715,7 +3850,7 @@ type SetTokenDisabledRequest struct {
 
 func (x *SetTokenDisabledRequest) Reset() {
 	*x = SetTokenDisabledRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[78]
+	mi := &file_powermanage_v1_control_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4727,7 +3862,7 @@ func (x *SetTokenDisabledRequest) String() string {
 func (*SetTokenDisabledRequest) ProtoMessage() {}
 
 func (x *SetTokenDisabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[78]
+	mi := &file_powermanage_v1_control_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4740,7 +3875,7 @@ func (x *SetTokenDisabledRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTokenDisabledRequest.ProtoReflect.Descriptor instead.
 func (*SetTokenDisabledRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{78}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *SetTokenDisabledRequest) GetId() string {
@@ -4766,7 +3901,7 @@ type UpdateTokenResponse struct {
 
 func (x *UpdateTokenResponse) Reset() {
 	*x = UpdateTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[79]
+	mi := &file_powermanage_v1_control_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4778,7 +3913,7 @@ func (x *UpdateTokenResponse) String() string {
 func (*UpdateTokenResponse) ProtoMessage() {}
 
 func (x *UpdateTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[79]
+	mi := &file_powermanage_v1_control_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4791,7 +3926,7 @@ func (x *UpdateTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTokenResponse.ProtoReflect.Descriptor instead.
 func (*UpdateTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{79}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *UpdateTokenResponse) GetToken() *RegistrationToken {
@@ -4811,7 +3946,7 @@ type DeleteTokenRequest struct {
 
 func (x *DeleteTokenRequest) Reset() {
 	*x = DeleteTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[80]
+	mi := &file_powermanage_v1_control_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4823,7 +3958,7 @@ func (x *DeleteTokenRequest) String() string {
 func (*DeleteTokenRequest) ProtoMessage() {}
 
 func (x *DeleteTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[80]
+	mi := &file_powermanage_v1_control_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4836,7 +3971,7 @@ func (x *DeleteTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTokenRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{80}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *DeleteTokenRequest) GetId() string {
@@ -4854,7 +3989,7 @@ type DeleteTokenResponse struct {
 
 func (x *DeleteTokenResponse) Reset() {
 	*x = DeleteTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[81]
+	mi := &file_powermanage_v1_control_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4866,7 +4001,7 @@ func (x *DeleteTokenResponse) String() string {
 func (*DeleteTokenResponse) ProtoMessage() {}
 
 func (x *DeleteTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[81]
+	mi := &file_powermanage_v1_control_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4879,7 +4014,7 @@ func (x *DeleteTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTokenResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{81}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{64}
 }
 
 type ManagedAction struct {
@@ -4887,8 +4022,8 @@ type ManagedAction struct {
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Description    string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Type           ActionType             `protobuf:"varint,4,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty"`
-	DesiredState   DesiredState           `protobuf:"varint,5,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty"`
+	Type           ActionType             `protobuf:"varint,4,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty"`
+	DesiredState   DesiredState           `protobuf:"varint,5,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.DesiredState" json:"desired_state,omitempty"`
 	TimeoutSeconds int32                  `protobuf:"varint,6,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
 	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	CreatedBy      string                 `protobuf:"bytes,8,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
@@ -4921,7 +4056,7 @@ type ManagedAction struct {
 
 func (x *ManagedAction) Reset() {
 	*x = ManagedAction{}
-	mi := &file_pm_v1_control_proto_msgTypes[82]
+	mi := &file_powermanage_v1_control_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4933,7 +4068,7 @@ func (x *ManagedAction) String() string {
 func (*ManagedAction) ProtoMessage() {}
 
 func (x *ManagedAction) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[82]
+	mi := &file_powermanage_v1_control_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4946,7 +4081,7 @@ func (x *ManagedAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagedAction.ProtoReflect.Descriptor instead.
 func (*ManagedAction) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{82}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *ManagedAction) GetId() string {
@@ -5308,9 +4443,9 @@ type CreateActionRequest struct {
 	// @gotags: validate:"omitempty,max=1024"
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=1024"`
 	// @gotags: validate:"required,ne=0"
-	Type ActionType `protobuf:"varint,3,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty" validate:"required,ne=0"`
+	Type ActionType `protobuf:"varint,3,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty" validate:"required,ne=0"`
 	// @gotags: validate:"omitempty"
-	DesiredState DesiredState `protobuf:"varint,4,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState DesiredState `protobuf:"varint,4,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0,lte=3600"
 	TimeoutSeconds int32 `protobuf:"varint,5,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty" validate:"omitempty,gte=0,lte=3600"`
 	// @gotags: validate:"omitempty"
@@ -5342,7 +4477,7 @@ type CreateActionRequest struct {
 
 func (x *CreateActionRequest) Reset() {
 	*x = CreateActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[83]
+	mi := &file_powermanage_v1_control_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5354,7 +4489,7 @@ func (x *CreateActionRequest) String() string {
 func (*CreateActionRequest) ProtoMessage() {}
 
 func (x *CreateActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[83]
+	mi := &file_powermanage_v1_control_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5367,7 +4502,7 @@ func (x *CreateActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateActionRequest.ProtoReflect.Descriptor instead.
 func (*CreateActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{83}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *CreateActionRequest) GetName() string {
@@ -5720,7 +4855,7 @@ type CreateActionResponse struct {
 
 func (x *CreateActionResponse) Reset() {
 	*x = CreateActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[84]
+	mi := &file_powermanage_v1_control_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5732,7 +4867,7 @@ func (x *CreateActionResponse) String() string {
 func (*CreateActionResponse) ProtoMessage() {}
 
 func (x *CreateActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[84]
+	mi := &file_powermanage_v1_control_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5745,7 +4880,7 @@ func (x *CreateActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateActionResponse.ProtoReflect.Descriptor instead.
 func (*CreateActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{84}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *CreateActionResponse) GetAction() *ManagedAction {
@@ -5765,7 +4900,7 @@ type GetActionRequest struct {
 
 func (x *GetActionRequest) Reset() {
 	*x = GetActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[85]
+	mi := &file_powermanage_v1_control_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5777,7 +4912,7 @@ func (x *GetActionRequest) String() string {
 func (*GetActionRequest) ProtoMessage() {}
 
 func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[85]
+	mi := &file_powermanage_v1_control_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5790,7 +4925,7 @@ func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionRequest.ProtoReflect.Descriptor instead.
 func (*GetActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{85}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *GetActionRequest) GetId() string {
@@ -5809,7 +4944,7 @@ type GetActionResponse struct {
 
 func (x *GetActionResponse) Reset() {
 	*x = GetActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[86]
+	mi := &file_powermanage_v1_control_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5821,7 +4956,7 @@ func (x *GetActionResponse) String() string {
 func (*GetActionResponse) ProtoMessage() {}
 
 func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[86]
+	mi := &file_powermanage_v1_control_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5834,7 +4969,7 @@ func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionResponse.ProtoReflect.Descriptor instead.
 func (*GetActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{86}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *GetActionResponse) GetAction() *ManagedAction {
@@ -5850,7 +4985,7 @@ type ListActionsRequest struct {
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=0,lte=100"`
 	// @gotags: validate:"omitempty"
 	PageToken      string     `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
-	TypeFilter     ActionType `protobuf:"varint,3,opt,name=type_filter,json=typeFilter,proto3,enum=pm.v1.ActionType" json:"type_filter,omitempty"`
+	TypeFilter     ActionType `protobuf:"varint,3,opt,name=type_filter,json=typeFilter,proto3,enum=powermanage.v1.ActionType" json:"type_filter,omitempty"`
 	UnassignedOnly bool       `protobuf:"varint,4,opt,name=unassigned_only,json=unassignedOnly,proto3" json:"unassigned_only,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -5858,7 +4993,7 @@ type ListActionsRequest struct {
 
 func (x *ListActionsRequest) Reset() {
 	*x = ListActionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[87]
+	mi := &file_powermanage_v1_control_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5870,7 +5005,7 @@ func (x *ListActionsRequest) String() string {
 func (*ListActionsRequest) ProtoMessage() {}
 
 func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[87]
+	mi := &file_powermanage_v1_control_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5883,7 +5018,7 @@ func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{87}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *ListActionsRequest) GetPageSize() int32 {
@@ -5925,7 +5060,7 @@ type ListActionsResponse struct {
 
 func (x *ListActionsResponse) Reset() {
 	*x = ListActionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[88]
+	mi := &file_powermanage_v1_control_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5937,7 +5072,7 @@ func (x *ListActionsResponse) String() string {
 func (*ListActionsResponse) ProtoMessage() {}
 
 func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[88]
+	mi := &file_powermanage_v1_control_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5950,7 +5085,7 @@ func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{88}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *ListActionsResponse) GetActions() []*ManagedAction {
@@ -5986,7 +5121,7 @@ type RenameActionRequest struct {
 
 func (x *RenameActionRequest) Reset() {
 	*x = RenameActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[89]
+	mi := &file_powermanage_v1_control_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5998,7 +5133,7 @@ func (x *RenameActionRequest) String() string {
 func (*RenameActionRequest) ProtoMessage() {}
 
 func (x *RenameActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[89]
+	mi := &file_powermanage_v1_control_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6011,7 +5146,7 @@ func (x *RenameActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameActionRequest.ProtoReflect.Descriptor instead.
 func (*RenameActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{89}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *RenameActionRequest) GetId() string {
@@ -6040,7 +5175,7 @@ type UpdateActionDescriptionRequest struct {
 
 func (x *UpdateActionDescriptionRequest) Reset() {
 	*x = UpdateActionDescriptionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[90]
+	mi := &file_powermanage_v1_control_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6052,7 +5187,7 @@ func (x *UpdateActionDescriptionRequest) String() string {
 func (*UpdateActionDescriptionRequest) ProtoMessage() {}
 
 func (x *UpdateActionDescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[90]
+	mi := &file_powermanage_v1_control_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6065,7 +5200,7 @@ func (x *UpdateActionDescriptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionDescriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionDescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{90}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *UpdateActionDescriptionRequest) GetId() string {
@@ -6087,7 +5222,7 @@ type UpdateActionParamsRequest struct {
 	// @gotags: validate:"required,ulid"
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"omitempty"
-	DesiredState DesiredState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
+	DesiredState DesiredState `protobuf:"varint,2,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.DesiredState" json:"desired_state,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,gte=0,lte=3600"
 	TimeoutSeconds int32 `protobuf:"varint,3,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty" validate:"omitempty,gte=0,lte=3600"`
 	// @gotags: validate:"omitempty"
@@ -6119,7 +5254,7 @@ type UpdateActionParamsRequest struct {
 
 func (x *UpdateActionParamsRequest) Reset() {
 	*x = UpdateActionParamsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[91]
+	mi := &file_powermanage_v1_control_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6131,7 +5266,7 @@ func (x *UpdateActionParamsRequest) String() string {
 func (*UpdateActionParamsRequest) ProtoMessage() {}
 
 func (x *UpdateActionParamsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[91]
+	mi := &file_powermanage_v1_control_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6144,7 +5279,7 @@ func (x *UpdateActionParamsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionParamsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionParamsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{91}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *UpdateActionParamsRequest) GetId() string {
@@ -6483,7 +5618,7 @@ type UpdateActionResponse struct {
 
 func (x *UpdateActionResponse) Reset() {
 	*x = UpdateActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[92]
+	mi := &file_powermanage_v1_control_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6495,7 +5630,7 @@ func (x *UpdateActionResponse) String() string {
 func (*UpdateActionResponse) ProtoMessage() {}
 
 func (x *UpdateActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[92]
+	mi := &file_powermanage_v1_control_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6508,7 +5643,7 @@ func (x *UpdateActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionResponse.ProtoReflect.Descriptor instead.
 func (*UpdateActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{92}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *UpdateActionResponse) GetAction() *ManagedAction {
@@ -6528,7 +5663,7 @@ type DeleteActionRequest struct {
 
 func (x *DeleteActionRequest) Reset() {
 	*x = DeleteActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[93]
+	mi := &file_powermanage_v1_control_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6540,7 +5675,7 @@ func (x *DeleteActionRequest) String() string {
 func (*DeleteActionRequest) ProtoMessage() {}
 
 func (x *DeleteActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[93]
+	mi := &file_powermanage_v1_control_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6553,7 +5688,7 @@ func (x *DeleteActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteActionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{93}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *DeleteActionRequest) GetId() string {
@@ -6571,7 +5706,7 @@ type DeleteActionResponse struct {
 
 func (x *DeleteActionResponse) Reset() {
 	*x = DeleteActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[94]
+	mi := &file_powermanage_v1_control_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6583,7 +5718,7 @@ func (x *DeleteActionResponse) String() string {
 func (*DeleteActionResponse) ProtoMessage() {}
 
 func (x *DeleteActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[94]
+	mi := &file_powermanage_v1_control_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6596,7 +5731,7 @@ func (x *DeleteActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteActionResponse.ProtoReflect.Descriptor instead.
 func (*DeleteActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{94}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{77}
 }
 
 type ActionSet struct {
@@ -6619,7 +5754,7 @@ type ActionSet struct {
 
 func (x *ActionSet) Reset() {
 	*x = ActionSet{}
-	mi := &file_pm_v1_control_proto_msgTypes[95]
+	mi := &file_powermanage_v1_control_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6631,7 +5766,7 @@ func (x *ActionSet) String() string {
 func (*ActionSet) ProtoMessage() {}
 
 func (x *ActionSet) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[95]
+	mi := &file_powermanage_v1_control_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6644,7 +5779,7 @@ func (x *ActionSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionSet.ProtoReflect.Descriptor instead.
 func (*ActionSet) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{95}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *ActionSet) GetId() string {
@@ -6713,14 +5848,14 @@ type ActionSetMember struct {
 	// @gotags: validate:"omitempty,gte=0"
 	SortOrder     int32      `protobuf:"varint,2,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty" validate:"omitempty,gte=0"`
 	ActionName    string     `protobuf:"bytes,3,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`
-	ActionType    ActionType `protobuf:"varint,4,opt,name=action_type,json=actionType,proto3,enum=pm.v1.ActionType" json:"action_type,omitempty"`
+	ActionType    ActionType `protobuf:"varint,4,opt,name=action_type,json=actionType,proto3,enum=powermanage.v1.ActionType" json:"action_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActionSetMember) Reset() {
 	*x = ActionSetMember{}
-	mi := &file_pm_v1_control_proto_msgTypes[96]
+	mi := &file_powermanage_v1_control_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6732,7 +5867,7 @@ func (x *ActionSetMember) String() string {
 func (*ActionSetMember) ProtoMessage() {}
 
 func (x *ActionSetMember) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[96]
+	mi := &file_powermanage_v1_control_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6745,7 +5880,7 @@ func (x *ActionSetMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionSetMember.ProtoReflect.Descriptor instead.
 func (*ActionSetMember) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{96}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *ActionSetMember) GetActionId() string {
@@ -6792,7 +5927,7 @@ type CreateActionSetRequest struct {
 
 func (x *CreateActionSetRequest) Reset() {
 	*x = CreateActionSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[97]
+	mi := &file_powermanage_v1_control_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6804,7 +5939,7 @@ func (x *CreateActionSetRequest) String() string {
 func (*CreateActionSetRequest) ProtoMessage() {}
 
 func (x *CreateActionSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[97]
+	mi := &file_powermanage_v1_control_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6817,7 +5952,7 @@ func (x *CreateActionSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateActionSetRequest.ProtoReflect.Descriptor instead.
 func (*CreateActionSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{97}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *CreateActionSetRequest) GetName() string {
@@ -6850,7 +5985,7 @@ type CreateActionSetResponse struct {
 
 func (x *CreateActionSetResponse) Reset() {
 	*x = CreateActionSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[98]
+	mi := &file_powermanage_v1_control_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6862,7 +5997,7 @@ func (x *CreateActionSetResponse) String() string {
 func (*CreateActionSetResponse) ProtoMessage() {}
 
 func (x *CreateActionSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[98]
+	mi := &file_powermanage_v1_control_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6875,7 +6010,7 @@ func (x *CreateActionSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateActionSetResponse.ProtoReflect.Descriptor instead.
 func (*CreateActionSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{98}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *CreateActionSetResponse) GetSet() *ActionSet {
@@ -6895,7 +6030,7 @@ type GetActionSetRequest struct {
 
 func (x *GetActionSetRequest) Reset() {
 	*x = GetActionSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[99]
+	mi := &file_powermanage_v1_control_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6907,7 +6042,7 @@ func (x *GetActionSetRequest) String() string {
 func (*GetActionSetRequest) ProtoMessage() {}
 
 func (x *GetActionSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[99]
+	mi := &file_powermanage_v1_control_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6920,7 +6055,7 @@ func (x *GetActionSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionSetRequest.ProtoReflect.Descriptor instead.
 func (*GetActionSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{99}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *GetActionSetRequest) GetId() string {
@@ -6940,7 +6075,7 @@ type GetActionSetResponse struct {
 
 func (x *GetActionSetResponse) Reset() {
 	*x = GetActionSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[100]
+	mi := &file_powermanage_v1_control_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6952,7 +6087,7 @@ func (x *GetActionSetResponse) String() string {
 func (*GetActionSetResponse) ProtoMessage() {}
 
 func (x *GetActionSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[100]
+	mi := &file_powermanage_v1_control_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6965,7 +6100,7 @@ func (x *GetActionSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionSetResponse.ProtoReflect.Descriptor instead.
 func (*GetActionSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{100}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *GetActionSetResponse) GetSet() *ActionSet {
@@ -6995,7 +6130,7 @@ type ListActionSetsRequest struct {
 
 func (x *ListActionSetsRequest) Reset() {
 	*x = ListActionSetsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[101]
+	mi := &file_powermanage_v1_control_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7007,7 +6142,7 @@ func (x *ListActionSetsRequest) String() string {
 func (*ListActionSetsRequest) ProtoMessage() {}
 
 func (x *ListActionSetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[101]
+	mi := &file_powermanage_v1_control_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7020,7 +6155,7 @@ func (x *ListActionSetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionSetsRequest.ProtoReflect.Descriptor instead.
 func (*ListActionSetsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{101}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *ListActionSetsRequest) GetPageSize() int32 {
@@ -7055,7 +6190,7 @@ type ListActionSetsResponse struct {
 
 func (x *ListActionSetsResponse) Reset() {
 	*x = ListActionSetsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[102]
+	mi := &file_powermanage_v1_control_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7067,7 +6202,7 @@ func (x *ListActionSetsResponse) String() string {
 func (*ListActionSetsResponse) ProtoMessage() {}
 
 func (x *ListActionSetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[102]
+	mi := &file_powermanage_v1_control_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7080,7 +6215,7 @@ func (x *ListActionSetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionSetsResponse.ProtoReflect.Descriptor instead.
 func (*ListActionSetsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{102}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *ListActionSetsResponse) GetSets() []*ActionSet {
@@ -7116,7 +6251,7 @@ type RenameActionSetRequest struct {
 
 func (x *RenameActionSetRequest) Reset() {
 	*x = RenameActionSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[103]
+	mi := &file_powermanage_v1_control_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7128,7 +6263,7 @@ func (x *RenameActionSetRequest) String() string {
 func (*RenameActionSetRequest) ProtoMessage() {}
 
 func (x *RenameActionSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[103]
+	mi := &file_powermanage_v1_control_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7141,7 +6276,7 @@ func (x *RenameActionSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameActionSetRequest.ProtoReflect.Descriptor instead.
 func (*RenameActionSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{103}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *RenameActionSetRequest) GetId() string {
@@ -7170,7 +6305,7 @@ type UpdateActionSetDescriptionRequest struct {
 
 func (x *UpdateActionSetDescriptionRequest) Reset() {
 	*x = UpdateActionSetDescriptionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[104]
+	mi := &file_powermanage_v1_control_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7182,7 +6317,7 @@ func (x *UpdateActionSetDescriptionRequest) String() string {
 func (*UpdateActionSetDescriptionRequest) ProtoMessage() {}
 
 func (x *UpdateActionSetDescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[104]
+	mi := &file_powermanage_v1_control_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7195,7 +6330,7 @@ func (x *UpdateActionSetDescriptionRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateActionSetDescriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionSetDescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{104}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *UpdateActionSetDescriptionRequest) GetId() string {
@@ -7225,7 +6360,7 @@ type UpdateActionSetScheduleRequest struct {
 
 func (x *UpdateActionSetScheduleRequest) Reset() {
 	*x = UpdateActionSetScheduleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[105]
+	mi := &file_powermanage_v1_control_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7237,7 +6372,7 @@ func (x *UpdateActionSetScheduleRequest) String() string {
 func (*UpdateActionSetScheduleRequest) ProtoMessage() {}
 
 func (x *UpdateActionSetScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[105]
+	mi := &file_powermanage_v1_control_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7250,7 +6385,7 @@ func (x *UpdateActionSetScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionSetScheduleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionSetScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{105}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *UpdateActionSetScheduleRequest) GetId() string {
@@ -7276,7 +6411,7 @@ type UpdateActionSetResponse struct {
 
 func (x *UpdateActionSetResponse) Reset() {
 	*x = UpdateActionSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[106]
+	mi := &file_powermanage_v1_control_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7288,7 +6423,7 @@ func (x *UpdateActionSetResponse) String() string {
 func (*UpdateActionSetResponse) ProtoMessage() {}
 
 func (x *UpdateActionSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[106]
+	mi := &file_powermanage_v1_control_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7301,7 +6436,7 @@ func (x *UpdateActionSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionSetResponse.ProtoReflect.Descriptor instead.
 func (*UpdateActionSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{106}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *UpdateActionSetResponse) GetSet() *ActionSet {
@@ -7321,7 +6456,7 @@ type DeleteActionSetRequest struct {
 
 func (x *DeleteActionSetRequest) Reset() {
 	*x = DeleteActionSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[107]
+	mi := &file_powermanage_v1_control_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7333,7 +6468,7 @@ func (x *DeleteActionSetRequest) String() string {
 func (*DeleteActionSetRequest) ProtoMessage() {}
 
 func (x *DeleteActionSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[107]
+	mi := &file_powermanage_v1_control_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7346,7 +6481,7 @@ func (x *DeleteActionSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteActionSetRequest.ProtoReflect.Descriptor instead.
 func (*DeleteActionSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{107}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *DeleteActionSetRequest) GetId() string {
@@ -7364,7 +6499,7 @@ type DeleteActionSetResponse struct {
 
 func (x *DeleteActionSetResponse) Reset() {
 	*x = DeleteActionSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[108]
+	mi := &file_powermanage_v1_control_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7376,7 +6511,7 @@ func (x *DeleteActionSetResponse) String() string {
 func (*DeleteActionSetResponse) ProtoMessage() {}
 
 func (x *DeleteActionSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[108]
+	mi := &file_powermanage_v1_control_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7389,7 +6524,7 @@ func (x *DeleteActionSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteActionSetResponse.ProtoReflect.Descriptor instead.
 func (*DeleteActionSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{108}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{91}
 }
 
 type AddActionToSetRequest struct {
@@ -7406,7 +6541,7 @@ type AddActionToSetRequest struct {
 
 func (x *AddActionToSetRequest) Reset() {
 	*x = AddActionToSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[109]
+	mi := &file_powermanage_v1_control_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7418,7 +6553,7 @@ func (x *AddActionToSetRequest) String() string {
 func (*AddActionToSetRequest) ProtoMessage() {}
 
 func (x *AddActionToSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[109]
+	mi := &file_powermanage_v1_control_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7431,7 +6566,7 @@ func (x *AddActionToSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddActionToSetRequest.ProtoReflect.Descriptor instead.
 func (*AddActionToSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{109}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *AddActionToSetRequest) GetSetId() string {
@@ -7464,7 +6599,7 @@ type AddActionToSetResponse struct {
 
 func (x *AddActionToSetResponse) Reset() {
 	*x = AddActionToSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[110]
+	mi := &file_powermanage_v1_control_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7476,7 +6611,7 @@ func (x *AddActionToSetResponse) String() string {
 func (*AddActionToSetResponse) ProtoMessage() {}
 
 func (x *AddActionToSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[110]
+	mi := &file_powermanage_v1_control_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7489,7 +6624,7 @@ func (x *AddActionToSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddActionToSetResponse.ProtoReflect.Descriptor instead.
 func (*AddActionToSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{110}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *AddActionToSetResponse) GetSet() *ActionSet {
@@ -7511,7 +6646,7 @@ type RemoveActionFromSetRequest struct {
 
 func (x *RemoveActionFromSetRequest) Reset() {
 	*x = RemoveActionFromSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[111]
+	mi := &file_powermanage_v1_control_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7523,7 +6658,7 @@ func (x *RemoveActionFromSetRequest) String() string {
 func (*RemoveActionFromSetRequest) ProtoMessage() {}
 
 func (x *RemoveActionFromSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[111]
+	mi := &file_powermanage_v1_control_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7536,7 +6671,7 @@ func (x *RemoveActionFromSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveActionFromSetRequest.ProtoReflect.Descriptor instead.
 func (*RemoveActionFromSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{111}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *RemoveActionFromSetRequest) GetSetId() string {
@@ -7562,7 +6697,7 @@ type RemoveActionFromSetResponse struct {
 
 func (x *RemoveActionFromSetResponse) Reset() {
 	*x = RemoveActionFromSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[112]
+	mi := &file_powermanage_v1_control_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7574,7 +6709,7 @@ func (x *RemoveActionFromSetResponse) String() string {
 func (*RemoveActionFromSetResponse) ProtoMessage() {}
 
 func (x *RemoveActionFromSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[112]
+	mi := &file_powermanage_v1_control_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7587,7 +6722,7 @@ func (x *RemoveActionFromSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveActionFromSetResponse.ProtoReflect.Descriptor instead.
 func (*RemoveActionFromSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{112}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *RemoveActionFromSetResponse) GetSet() *ActionSet {
@@ -7611,7 +6746,7 @@ type ReorderActionInSetRequest struct {
 
 func (x *ReorderActionInSetRequest) Reset() {
 	*x = ReorderActionInSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[113]
+	mi := &file_powermanage_v1_control_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7623,7 +6758,7 @@ func (x *ReorderActionInSetRequest) String() string {
 func (*ReorderActionInSetRequest) ProtoMessage() {}
 
 func (x *ReorderActionInSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[113]
+	mi := &file_powermanage_v1_control_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7636,7 +6771,7 @@ func (x *ReorderActionInSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReorderActionInSetRequest.ProtoReflect.Descriptor instead.
 func (*ReorderActionInSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{113}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *ReorderActionInSetRequest) GetSetId() string {
@@ -7669,7 +6804,7 @@ type ReorderActionInSetResponse struct {
 
 func (x *ReorderActionInSetResponse) Reset() {
 	*x = ReorderActionInSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[114]
+	mi := &file_powermanage_v1_control_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7681,7 +6816,7 @@ func (x *ReorderActionInSetResponse) String() string {
 func (*ReorderActionInSetResponse) ProtoMessage() {}
 
 func (x *ReorderActionInSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[114]
+	mi := &file_powermanage_v1_control_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7694,7 +6829,7 @@ func (x *ReorderActionInSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReorderActionInSetResponse.ProtoReflect.Descriptor instead.
 func (*ReorderActionInSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{114}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *ReorderActionInSetResponse) GetSet() *ActionSet {
@@ -7725,7 +6860,7 @@ type Definition struct {
 
 func (x *Definition) Reset() {
 	*x = Definition{}
-	mi := &file_pm_v1_control_proto_msgTypes[115]
+	mi := &file_powermanage_v1_control_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7737,7 +6872,7 @@ func (x *Definition) String() string {
 func (*Definition) ProtoMessage() {}
 
 func (x *Definition) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[115]
+	mi := &file_powermanage_v1_control_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7750,7 +6885,7 @@ func (x *Definition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Definition.ProtoReflect.Descriptor instead.
 func (*Definition) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{115}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *Definition) GetId() string {
@@ -7826,7 +6961,7 @@ type DefinitionMember struct {
 
 func (x *DefinitionMember) Reset() {
 	*x = DefinitionMember{}
-	mi := &file_pm_v1_control_proto_msgTypes[116]
+	mi := &file_powermanage_v1_control_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7838,7 +6973,7 @@ func (x *DefinitionMember) String() string {
 func (*DefinitionMember) ProtoMessage() {}
 
 func (x *DefinitionMember) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[116]
+	mi := &file_powermanage_v1_control_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7851,7 +6986,7 @@ func (x *DefinitionMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DefinitionMember.ProtoReflect.Descriptor instead.
 func (*DefinitionMember) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{116}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *DefinitionMember) GetActionSetId() string {
@@ -7891,7 +7026,7 @@ type CreateDefinitionRequest struct {
 
 func (x *CreateDefinitionRequest) Reset() {
 	*x = CreateDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[117]
+	mi := &file_powermanage_v1_control_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7903,7 +7038,7 @@ func (x *CreateDefinitionRequest) String() string {
 func (*CreateDefinitionRequest) ProtoMessage() {}
 
 func (x *CreateDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[117]
+	mi := &file_powermanage_v1_control_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7916,7 +7051,7 @@ func (x *CreateDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*CreateDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{117}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *CreateDefinitionRequest) GetName() string {
@@ -7949,7 +7084,7 @@ type CreateDefinitionResponse struct {
 
 func (x *CreateDefinitionResponse) Reset() {
 	*x = CreateDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[118]
+	mi := &file_powermanage_v1_control_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7961,7 +7096,7 @@ func (x *CreateDefinitionResponse) String() string {
 func (*CreateDefinitionResponse) ProtoMessage() {}
 
 func (x *CreateDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[118]
+	mi := &file_powermanage_v1_control_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7974,7 +7109,7 @@ func (x *CreateDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*CreateDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{118}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *CreateDefinitionResponse) GetDefinition() *Definition {
@@ -7994,7 +7129,7 @@ type GetDefinitionRequest struct {
 
 func (x *GetDefinitionRequest) Reset() {
 	*x = GetDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[119]
+	mi := &file_powermanage_v1_control_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8006,7 +7141,7 @@ func (x *GetDefinitionRequest) String() string {
 func (*GetDefinitionRequest) ProtoMessage() {}
 
 func (x *GetDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[119]
+	mi := &file_powermanage_v1_control_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8019,7 +7154,7 @@ func (x *GetDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*GetDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{119}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *GetDefinitionRequest) GetId() string {
@@ -8039,7 +7174,7 @@ type GetDefinitionResponse struct {
 
 func (x *GetDefinitionResponse) Reset() {
 	*x = GetDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[120]
+	mi := &file_powermanage_v1_control_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8051,7 +7186,7 @@ func (x *GetDefinitionResponse) String() string {
 func (*GetDefinitionResponse) ProtoMessage() {}
 
 func (x *GetDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[120]
+	mi := &file_powermanage_v1_control_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8064,7 +7199,7 @@ func (x *GetDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*GetDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{120}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *GetDefinitionResponse) GetDefinition() *Definition {
@@ -8093,7 +7228,7 @@ type ListDefinitionsRequest struct {
 
 func (x *ListDefinitionsRequest) Reset() {
 	*x = ListDefinitionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[121]
+	mi := &file_powermanage_v1_control_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8105,7 +7240,7 @@ func (x *ListDefinitionsRequest) String() string {
 func (*ListDefinitionsRequest) ProtoMessage() {}
 
 func (x *ListDefinitionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[121]
+	mi := &file_powermanage_v1_control_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8118,7 +7253,7 @@ func (x *ListDefinitionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDefinitionsRequest.ProtoReflect.Descriptor instead.
 func (*ListDefinitionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{121}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *ListDefinitionsRequest) GetPageSize() int32 {
@@ -8146,7 +7281,7 @@ type ListDefinitionsResponse struct {
 
 func (x *ListDefinitionsResponse) Reset() {
 	*x = ListDefinitionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[122]
+	mi := &file_powermanage_v1_control_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8158,7 +7293,7 @@ func (x *ListDefinitionsResponse) String() string {
 func (*ListDefinitionsResponse) ProtoMessage() {}
 
 func (x *ListDefinitionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[122]
+	mi := &file_powermanage_v1_control_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8171,7 +7306,7 @@ func (x *ListDefinitionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDefinitionsResponse.ProtoReflect.Descriptor instead.
 func (*ListDefinitionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{122}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *ListDefinitionsResponse) GetDefinitions() []*Definition {
@@ -8207,7 +7342,7 @@ type RenameDefinitionRequest struct {
 
 func (x *RenameDefinitionRequest) Reset() {
 	*x = RenameDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[123]
+	mi := &file_powermanage_v1_control_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8219,7 +7354,7 @@ func (x *RenameDefinitionRequest) String() string {
 func (*RenameDefinitionRequest) ProtoMessage() {}
 
 func (x *RenameDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[123]
+	mi := &file_powermanage_v1_control_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8232,7 +7367,7 @@ func (x *RenameDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*RenameDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{123}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *RenameDefinitionRequest) GetId() string {
@@ -8261,7 +7396,7 @@ type UpdateDefinitionDescriptionRequest struct {
 
 func (x *UpdateDefinitionDescriptionRequest) Reset() {
 	*x = UpdateDefinitionDescriptionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[124]
+	mi := &file_powermanage_v1_control_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8273,7 +7408,7 @@ func (x *UpdateDefinitionDescriptionRequest) String() string {
 func (*UpdateDefinitionDescriptionRequest) ProtoMessage() {}
 
 func (x *UpdateDefinitionDescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[124]
+	mi := &file_powermanage_v1_control_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8286,7 +7421,7 @@ func (x *UpdateDefinitionDescriptionRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use UpdateDefinitionDescriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDefinitionDescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{124}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *UpdateDefinitionDescriptionRequest) GetId() string {
@@ -8316,7 +7451,7 @@ type UpdateDefinitionScheduleRequest struct {
 
 func (x *UpdateDefinitionScheduleRequest) Reset() {
 	*x = UpdateDefinitionScheduleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[125]
+	mi := &file_powermanage_v1_control_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8328,7 +7463,7 @@ func (x *UpdateDefinitionScheduleRequest) String() string {
 func (*UpdateDefinitionScheduleRequest) ProtoMessage() {}
 
 func (x *UpdateDefinitionScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[125]
+	mi := &file_powermanage_v1_control_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8341,7 +7476,7 @@ func (x *UpdateDefinitionScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDefinitionScheduleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDefinitionScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{125}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *UpdateDefinitionScheduleRequest) GetId() string {
@@ -8367,7 +7502,7 @@ type UpdateDefinitionResponse struct {
 
 func (x *UpdateDefinitionResponse) Reset() {
 	*x = UpdateDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[126]
+	mi := &file_powermanage_v1_control_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8379,7 +7514,7 @@ func (x *UpdateDefinitionResponse) String() string {
 func (*UpdateDefinitionResponse) ProtoMessage() {}
 
 func (x *UpdateDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[126]
+	mi := &file_powermanage_v1_control_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8392,7 +7527,7 @@ func (x *UpdateDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*UpdateDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{126}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *UpdateDefinitionResponse) GetDefinition() *Definition {
@@ -8412,7 +7547,7 @@ type DeleteDefinitionRequest struct {
 
 func (x *DeleteDefinitionRequest) Reset() {
 	*x = DeleteDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[127]
+	mi := &file_powermanage_v1_control_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8424,7 +7559,7 @@ func (x *DeleteDefinitionRequest) String() string {
 func (*DeleteDefinitionRequest) ProtoMessage() {}
 
 func (x *DeleteDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[127]
+	mi := &file_powermanage_v1_control_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8437,7 +7572,7 @@ func (x *DeleteDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{127}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *DeleteDefinitionRequest) GetId() string {
@@ -8455,7 +7590,7 @@ type DeleteDefinitionResponse struct {
 
 func (x *DeleteDefinitionResponse) Reset() {
 	*x = DeleteDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[128]
+	mi := &file_powermanage_v1_control_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8467,7 +7602,7 @@ func (x *DeleteDefinitionResponse) String() string {
 func (*DeleteDefinitionResponse) ProtoMessage() {}
 
 func (x *DeleteDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[128]
+	mi := &file_powermanage_v1_control_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8480,7 +7615,7 @@ func (x *DeleteDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*DeleteDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{128}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{111}
 }
 
 type AddActionSetToDefinitionRequest struct {
@@ -8497,7 +7632,7 @@ type AddActionSetToDefinitionRequest struct {
 
 func (x *AddActionSetToDefinitionRequest) Reset() {
 	*x = AddActionSetToDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[129]
+	mi := &file_powermanage_v1_control_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8509,7 +7644,7 @@ func (x *AddActionSetToDefinitionRequest) String() string {
 func (*AddActionSetToDefinitionRequest) ProtoMessage() {}
 
 func (x *AddActionSetToDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[129]
+	mi := &file_powermanage_v1_control_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8522,7 +7657,7 @@ func (x *AddActionSetToDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddActionSetToDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*AddActionSetToDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{129}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *AddActionSetToDefinitionRequest) GetDefinitionId() string {
@@ -8555,7 +7690,7 @@ type AddActionSetToDefinitionResponse struct {
 
 func (x *AddActionSetToDefinitionResponse) Reset() {
 	*x = AddActionSetToDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[130]
+	mi := &file_powermanage_v1_control_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8567,7 +7702,7 @@ func (x *AddActionSetToDefinitionResponse) String() string {
 func (*AddActionSetToDefinitionResponse) ProtoMessage() {}
 
 func (x *AddActionSetToDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[130]
+	mi := &file_powermanage_v1_control_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8580,7 +7715,7 @@ func (x *AddActionSetToDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddActionSetToDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*AddActionSetToDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{130}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *AddActionSetToDefinitionResponse) GetDefinition() *Definition {
@@ -8602,7 +7737,7 @@ type RemoveActionSetFromDefinitionRequest struct {
 
 func (x *RemoveActionSetFromDefinitionRequest) Reset() {
 	*x = RemoveActionSetFromDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[131]
+	mi := &file_powermanage_v1_control_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8614,7 +7749,7 @@ func (x *RemoveActionSetFromDefinitionRequest) String() string {
 func (*RemoveActionSetFromDefinitionRequest) ProtoMessage() {}
 
 func (x *RemoveActionSetFromDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[131]
+	mi := &file_powermanage_v1_control_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8627,7 +7762,7 @@ func (x *RemoveActionSetFromDefinitionRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use RemoveActionSetFromDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*RemoveActionSetFromDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{131}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *RemoveActionSetFromDefinitionRequest) GetDefinitionId() string {
@@ -8653,7 +7788,7 @@ type RemoveActionSetFromDefinitionResponse struct {
 
 func (x *RemoveActionSetFromDefinitionResponse) Reset() {
 	*x = RemoveActionSetFromDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[132]
+	mi := &file_powermanage_v1_control_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8665,7 +7800,7 @@ func (x *RemoveActionSetFromDefinitionResponse) String() string {
 func (*RemoveActionSetFromDefinitionResponse) ProtoMessage() {}
 
 func (x *RemoveActionSetFromDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[132]
+	mi := &file_powermanage_v1_control_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8678,7 +7813,7 @@ func (x *RemoveActionSetFromDefinitionResponse) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use RemoveActionSetFromDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*RemoveActionSetFromDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{132}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *RemoveActionSetFromDefinitionResponse) GetDefinition() *Definition {
@@ -8702,7 +7837,7 @@ type ReorderActionSetInDefinitionRequest struct {
 
 func (x *ReorderActionSetInDefinitionRequest) Reset() {
 	*x = ReorderActionSetInDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[133]
+	mi := &file_powermanage_v1_control_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8714,7 +7849,7 @@ func (x *ReorderActionSetInDefinitionRequest) String() string {
 func (*ReorderActionSetInDefinitionRequest) ProtoMessage() {}
 
 func (x *ReorderActionSetInDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[133]
+	mi := &file_powermanage_v1_control_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8727,7 +7862,7 @@ func (x *ReorderActionSetInDefinitionRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use ReorderActionSetInDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*ReorderActionSetInDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{133}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *ReorderActionSetInDefinitionRequest) GetDefinitionId() string {
@@ -8760,7 +7895,7 @@ type ReorderActionSetInDefinitionResponse struct {
 
 func (x *ReorderActionSetInDefinitionResponse) Reset() {
 	*x = ReorderActionSetInDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[134]
+	mi := &file_powermanage_v1_control_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8772,7 +7907,7 @@ func (x *ReorderActionSetInDefinitionResponse) String() string {
 func (*ReorderActionSetInDefinitionResponse) ProtoMessage() {}
 
 func (x *ReorderActionSetInDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[134]
+	mi := &file_powermanage_v1_control_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8785,7 +7920,7 @@ func (x *ReorderActionSetInDefinitionResponse) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use ReorderActionSetInDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*ReorderActionSetInDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{134}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *ReorderActionSetInDefinitionResponse) GetDefinition() *Definition {
@@ -8812,12 +7947,11 @@ type DeviceGroup struct {
 	// may receive dispatches at any time. When non-empty the agent gates
 	// non-instant action dispatch by the device-local-time union across
 	// every group the device belongs to (device groups + user groups
-	// reaching it via assignments). See
-	// manchtools/power-manage-server#58.
+	// reaching it via assignments).
 	MaintenanceWindow *MaintenanceWindow `protobuf:"bytes,10,opt,name=maintenance_window,json=maintenanceWindow,proto3" json:"maintenance_window,omitempty"`
 	// Inventory collection interval in minutes for devices in this group
 	// (0 = no group contribution). A device resolves its interval as:
-	// device override, else MIN across its groups, else 1440 (spec 22).
+	// device override, else MIN across its groups, else 1440.
 	InventoryIntervalMinutes int32 `protobuf:"varint,11,opt,name=inventory_interval_minutes,json=inventoryIntervalMinutes,proto3" json:"inventory_interval_minutes,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -8825,7 +7959,7 @@ type DeviceGroup struct {
 
 func (x *DeviceGroup) Reset() {
 	*x = DeviceGroup{}
-	mi := &file_pm_v1_control_proto_msgTypes[135]
+	mi := &file_powermanage_v1_control_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8837,7 +7971,7 @@ func (x *DeviceGroup) String() string {
 func (*DeviceGroup) ProtoMessage() {}
 
 func (x *DeviceGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[135]
+	mi := &file_powermanage_v1_control_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8850,7 +7984,7 @@ func (x *DeviceGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeviceGroup.ProtoReflect.Descriptor instead.
 func (*DeviceGroup) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{135}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *DeviceGroup) GetId() string {
@@ -8946,7 +8080,7 @@ type CreateDeviceGroupRequest struct {
 
 func (x *CreateDeviceGroupRequest) Reset() {
 	*x = CreateDeviceGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[136]
+	mi := &file_powermanage_v1_control_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8958,7 +8092,7 @@ func (x *CreateDeviceGroupRequest) String() string {
 func (*CreateDeviceGroupRequest) ProtoMessage() {}
 
 func (x *CreateDeviceGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[136]
+	mi := &file_powermanage_v1_control_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8971,7 +8105,7 @@ func (x *CreateDeviceGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDeviceGroupRequest.ProtoReflect.Descriptor instead.
 func (*CreateDeviceGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{136}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *CreateDeviceGroupRequest) GetName() string {
@@ -9011,7 +8145,7 @@ type CreateDeviceGroupResponse struct {
 
 func (x *CreateDeviceGroupResponse) Reset() {
 	*x = CreateDeviceGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[137]
+	mi := &file_powermanage_v1_control_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9023,7 +8157,7 @@ func (x *CreateDeviceGroupResponse) String() string {
 func (*CreateDeviceGroupResponse) ProtoMessage() {}
 
 func (x *CreateDeviceGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[137]
+	mi := &file_powermanage_v1_control_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9036,7 +8170,7 @@ func (x *CreateDeviceGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDeviceGroupResponse.ProtoReflect.Descriptor instead.
 func (*CreateDeviceGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{137}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *CreateDeviceGroupResponse) GetGroup() *DeviceGroup {
@@ -9056,7 +8190,7 @@ type GetDeviceGroupRequest struct {
 
 func (x *GetDeviceGroupRequest) Reset() {
 	*x = GetDeviceGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[138]
+	mi := &file_powermanage_v1_control_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9068,7 +8202,7 @@ func (x *GetDeviceGroupRequest) String() string {
 func (*GetDeviceGroupRequest) ProtoMessage() {}
 
 func (x *GetDeviceGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[138]
+	mi := &file_powermanage_v1_control_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9081,7 +8215,7 @@ func (x *GetDeviceGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceGroupRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{138}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *GetDeviceGroupRequest) GetId() string {
@@ -9102,7 +8236,7 @@ type GetDeviceGroupResponse struct {
 
 func (x *GetDeviceGroupResponse) Reset() {
 	*x = GetDeviceGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[139]
+	mi := &file_powermanage_v1_control_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9114,7 +8248,7 @@ func (x *GetDeviceGroupResponse) String() string {
 func (*GetDeviceGroupResponse) ProtoMessage() {}
 
 func (x *GetDeviceGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[139]
+	mi := &file_powermanage_v1_control_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9127,7 +8261,7 @@ func (x *GetDeviceGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceGroupResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{139}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *GetDeviceGroupResponse) GetGroup() *DeviceGroup {
@@ -9163,7 +8297,7 @@ type DeviceGroupMember struct {
 
 func (x *DeviceGroupMember) Reset() {
 	*x = DeviceGroupMember{}
-	mi := &file_pm_v1_control_proto_msgTypes[140]
+	mi := &file_powermanage_v1_control_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9175,7 +8309,7 @@ func (x *DeviceGroupMember) String() string {
 func (*DeviceGroupMember) ProtoMessage() {}
 
 func (x *DeviceGroupMember) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[140]
+	mi := &file_powermanage_v1_control_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9188,7 +8322,7 @@ func (x *DeviceGroupMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeviceGroupMember.ProtoReflect.Descriptor instead.
 func (*DeviceGroupMember) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{140}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *DeviceGroupMember) GetDeviceId() string {
@@ -9231,7 +8365,7 @@ type ListDeviceGroupsRequest struct {
 
 func (x *ListDeviceGroupsRequest) Reset() {
 	*x = ListDeviceGroupsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[141]
+	mi := &file_powermanage_v1_control_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9243,7 +8377,7 @@ func (x *ListDeviceGroupsRequest) String() string {
 func (*ListDeviceGroupsRequest) ProtoMessage() {}
 
 func (x *ListDeviceGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[141]
+	mi := &file_powermanage_v1_control_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9256,7 +8390,7 @@ func (x *ListDeviceGroupsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeviceGroupsRequest.ProtoReflect.Descriptor instead.
 func (*ListDeviceGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{141}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *ListDeviceGroupsRequest) GetPageSize() int32 {
@@ -9284,7 +8418,7 @@ type ListDeviceGroupsResponse struct {
 
 func (x *ListDeviceGroupsResponse) Reset() {
 	*x = ListDeviceGroupsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[142]
+	mi := &file_powermanage_v1_control_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9296,7 +8430,7 @@ func (x *ListDeviceGroupsResponse) String() string {
 func (*ListDeviceGroupsResponse) ProtoMessage() {}
 
 func (x *ListDeviceGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[142]
+	mi := &file_powermanage_v1_control_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9309,7 +8443,7 @@ func (x *ListDeviceGroupsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeviceGroupsResponse.ProtoReflect.Descriptor instead.
 func (*ListDeviceGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{142}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *ListDeviceGroupsResponse) GetGroups() []*DeviceGroup {
@@ -9343,7 +8477,7 @@ type ListDeviceGroupsForDeviceRequest struct {
 
 func (x *ListDeviceGroupsForDeviceRequest) Reset() {
 	*x = ListDeviceGroupsForDeviceRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[143]
+	mi := &file_powermanage_v1_control_proto_msgTypes[126]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9355,7 +8489,7 @@ func (x *ListDeviceGroupsForDeviceRequest) String() string {
 func (*ListDeviceGroupsForDeviceRequest) ProtoMessage() {}
 
 func (x *ListDeviceGroupsForDeviceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[143]
+	mi := &file_powermanage_v1_control_proto_msgTypes[126]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9368,7 +8502,7 @@ func (x *ListDeviceGroupsForDeviceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeviceGroupsForDeviceRequest.ProtoReflect.Descriptor instead.
 func (*ListDeviceGroupsForDeviceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{143}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *ListDeviceGroupsForDeviceRequest) GetDeviceId() string {
@@ -9387,7 +8521,7 @@ type ListDeviceGroupsForDeviceResponse struct {
 
 func (x *ListDeviceGroupsForDeviceResponse) Reset() {
 	*x = ListDeviceGroupsForDeviceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[144]
+	mi := &file_powermanage_v1_control_proto_msgTypes[127]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9399,7 +8533,7 @@ func (x *ListDeviceGroupsForDeviceResponse) String() string {
 func (*ListDeviceGroupsForDeviceResponse) ProtoMessage() {}
 
 func (x *ListDeviceGroupsForDeviceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[144]
+	mi := &file_powermanage_v1_control_proto_msgTypes[127]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9412,7 +8546,7 @@ func (x *ListDeviceGroupsForDeviceResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ListDeviceGroupsForDeviceResponse.ProtoReflect.Descriptor instead.
 func (*ListDeviceGroupsForDeviceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{144}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *ListDeviceGroupsForDeviceResponse) GetGroups() []*DeviceGroup {
@@ -9434,7 +8568,7 @@ type RenameDeviceGroupRequest struct {
 
 func (x *RenameDeviceGroupRequest) Reset() {
 	*x = RenameDeviceGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[145]
+	mi := &file_powermanage_v1_control_proto_msgTypes[128]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9446,7 +8580,7 @@ func (x *RenameDeviceGroupRequest) String() string {
 func (*RenameDeviceGroupRequest) ProtoMessage() {}
 
 func (x *RenameDeviceGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[145]
+	mi := &file_powermanage_v1_control_proto_msgTypes[128]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9459,7 +8593,7 @@ func (x *RenameDeviceGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameDeviceGroupRequest.ProtoReflect.Descriptor instead.
 func (*RenameDeviceGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{145}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *RenameDeviceGroupRequest) GetId() string {
@@ -9488,7 +8622,7 @@ type UpdateDeviceGroupDescriptionRequest struct {
 
 func (x *UpdateDeviceGroupDescriptionRequest) Reset() {
 	*x = UpdateDeviceGroupDescriptionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[146]
+	mi := &file_powermanage_v1_control_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9500,7 +8634,7 @@ func (x *UpdateDeviceGroupDescriptionRequest) String() string {
 func (*UpdateDeviceGroupDescriptionRequest) ProtoMessage() {}
 
 func (x *UpdateDeviceGroupDescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[146]
+	mi := &file_powermanage_v1_control_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9513,7 +8647,7 @@ func (x *UpdateDeviceGroupDescriptionRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use UpdateDeviceGroupDescriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDeviceGroupDescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{146}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *UpdateDeviceGroupDescriptionRequest) GetId() string {
@@ -9539,7 +8673,7 @@ type UpdateDeviceGroupResponse struct {
 
 func (x *UpdateDeviceGroupResponse) Reset() {
 	*x = UpdateDeviceGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[147]
+	mi := &file_powermanage_v1_control_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9551,7 +8685,7 @@ func (x *UpdateDeviceGroupResponse) String() string {
 func (*UpdateDeviceGroupResponse) ProtoMessage() {}
 
 func (x *UpdateDeviceGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[147]
+	mi := &file_powermanage_v1_control_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9564,7 +8698,7 @@ func (x *UpdateDeviceGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDeviceGroupResponse.ProtoReflect.Descriptor instead.
 func (*UpdateDeviceGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{147}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *UpdateDeviceGroupResponse) GetGroup() *DeviceGroup {
@@ -9584,7 +8718,7 @@ type DeleteDeviceGroupRequest struct {
 
 func (x *DeleteDeviceGroupRequest) Reset() {
 	*x = DeleteDeviceGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[148]
+	mi := &file_powermanage_v1_control_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9596,7 +8730,7 @@ func (x *DeleteDeviceGroupRequest) String() string {
 func (*DeleteDeviceGroupRequest) ProtoMessage() {}
 
 func (x *DeleteDeviceGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[148]
+	mi := &file_powermanage_v1_control_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9609,7 +8743,7 @@ func (x *DeleteDeviceGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDeviceGroupRequest.ProtoReflect.Descriptor instead.
 func (*DeleteDeviceGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{148}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *DeleteDeviceGroupRequest) GetId() string {
@@ -9627,7 +8761,7 @@ type DeleteDeviceGroupResponse struct {
 
 func (x *DeleteDeviceGroupResponse) Reset() {
 	*x = DeleteDeviceGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[149]
+	mi := &file_powermanage_v1_control_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9639,7 +8773,7 @@ func (x *DeleteDeviceGroupResponse) String() string {
 func (*DeleteDeviceGroupResponse) ProtoMessage() {}
 
 func (x *DeleteDeviceGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[149]
+	mi := &file_powermanage_v1_control_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9652,7 +8786,7 @@ func (x *DeleteDeviceGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDeviceGroupResponse.ProtoReflect.Descriptor instead.
 func (*DeleteDeviceGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{149}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{132}
 }
 
 type AddDeviceToGroupRequest struct {
@@ -9669,7 +8803,7 @@ type AddDeviceToGroupRequest struct {
 
 func (x *AddDeviceToGroupRequest) Reset() {
 	*x = AddDeviceToGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[150]
+	mi := &file_powermanage_v1_control_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9681,7 +8815,7 @@ func (x *AddDeviceToGroupRequest) String() string {
 func (*AddDeviceToGroupRequest) ProtoMessage() {}
 
 func (x *AddDeviceToGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[150]
+	mi := &file_powermanage_v1_control_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9694,7 +8828,7 @@ func (x *AddDeviceToGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddDeviceToGroupRequest.ProtoReflect.Descriptor instead.
 func (*AddDeviceToGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{150}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *AddDeviceToGroupRequest) GetGroupId() string {
@@ -9727,7 +8861,7 @@ type AddDeviceToGroupResponse struct {
 
 func (x *AddDeviceToGroupResponse) Reset() {
 	*x = AddDeviceToGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[151]
+	mi := &file_powermanage_v1_control_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9739,7 +8873,7 @@ func (x *AddDeviceToGroupResponse) String() string {
 func (*AddDeviceToGroupResponse) ProtoMessage() {}
 
 func (x *AddDeviceToGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[151]
+	mi := &file_powermanage_v1_control_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9752,7 +8886,7 @@ func (x *AddDeviceToGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddDeviceToGroupResponse.ProtoReflect.Descriptor instead.
 func (*AddDeviceToGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{151}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *AddDeviceToGroupResponse) GetGroup() *DeviceGroup {
@@ -9774,7 +8908,7 @@ type RemoveDeviceFromGroupRequest struct {
 
 func (x *RemoveDeviceFromGroupRequest) Reset() {
 	*x = RemoveDeviceFromGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[152]
+	mi := &file_powermanage_v1_control_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9786,7 +8920,7 @@ func (x *RemoveDeviceFromGroupRequest) String() string {
 func (*RemoveDeviceFromGroupRequest) ProtoMessage() {}
 
 func (x *RemoveDeviceFromGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[152]
+	mi := &file_powermanage_v1_control_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9799,7 +8933,7 @@ func (x *RemoveDeviceFromGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveDeviceFromGroupRequest.ProtoReflect.Descriptor instead.
 func (*RemoveDeviceFromGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{152}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *RemoveDeviceFromGroupRequest) GetGroupId() string {
@@ -9825,7 +8959,7 @@ type RemoveDeviceFromGroupResponse struct {
 
 func (x *RemoveDeviceFromGroupResponse) Reset() {
 	*x = RemoveDeviceFromGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[153]
+	mi := &file_powermanage_v1_control_proto_msgTypes[136]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9837,7 +8971,7 @@ func (x *RemoveDeviceFromGroupResponse) String() string {
 func (*RemoveDeviceFromGroupResponse) ProtoMessage() {}
 
 func (x *RemoveDeviceFromGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[153]
+	mi := &file_powermanage_v1_control_proto_msgTypes[136]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9850,7 +8984,7 @@ func (x *RemoveDeviceFromGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveDeviceFromGroupResponse.ProtoReflect.Descriptor instead.
 func (*RemoveDeviceFromGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{153}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{136}
 }
 
 func (x *RemoveDeviceFromGroupResponse) GetGroup() *DeviceGroup {
@@ -9875,7 +9009,7 @@ type UpdateDeviceGroupQueryRequest struct {
 
 func (x *UpdateDeviceGroupQueryRequest) Reset() {
 	*x = UpdateDeviceGroupQueryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[154]
+	mi := &file_powermanage_v1_control_proto_msgTypes[137]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9887,7 +9021,7 @@ func (x *UpdateDeviceGroupQueryRequest) String() string {
 func (*UpdateDeviceGroupQueryRequest) ProtoMessage() {}
 
 func (x *UpdateDeviceGroupQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[154]
+	mi := &file_powermanage_v1_control_proto_msgTypes[137]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9900,7 +9034,7 @@ func (x *UpdateDeviceGroupQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDeviceGroupQueryRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDeviceGroupQueryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{154}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{137}
 }
 
 func (x *UpdateDeviceGroupQueryRequest) GetId() string {
@@ -9933,7 +9067,7 @@ type UpdateDeviceGroupQueryResponse struct {
 
 func (x *UpdateDeviceGroupQueryResponse) Reset() {
 	*x = UpdateDeviceGroupQueryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[155]
+	mi := &file_powermanage_v1_control_proto_msgTypes[138]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9945,7 +9079,7 @@ func (x *UpdateDeviceGroupQueryResponse) String() string {
 func (*UpdateDeviceGroupQueryResponse) ProtoMessage() {}
 
 func (x *UpdateDeviceGroupQueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[155]
+	mi := &file_powermanage_v1_control_proto_msgTypes[138]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9958,7 +9092,7 @@ func (x *UpdateDeviceGroupQueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDeviceGroupQueryResponse.ProtoReflect.Descriptor instead.
 func (*UpdateDeviceGroupQueryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{155}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{138}
 }
 
 func (x *UpdateDeviceGroupQueryResponse) GetGroup() *DeviceGroup {
@@ -9979,7 +9113,7 @@ type ValidateDynamicQueryRequest struct {
 
 func (x *ValidateDynamicQueryRequest) Reset() {
 	*x = ValidateDynamicQueryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[156]
+	mi := &file_powermanage_v1_control_proto_msgTypes[139]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9991,7 +9125,7 @@ func (x *ValidateDynamicQueryRequest) String() string {
 func (*ValidateDynamicQueryRequest) ProtoMessage() {}
 
 func (x *ValidateDynamicQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[156]
+	mi := &file_powermanage_v1_control_proto_msgTypes[139]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10004,7 +9138,7 @@ func (x *ValidateDynamicQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateDynamicQueryRequest.ProtoReflect.Descriptor instead.
 func (*ValidateDynamicQueryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{156}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{139}
 }
 
 func (x *ValidateDynamicQueryRequest) GetQuery() string {
@@ -10025,7 +9159,7 @@ type ValidateDynamicQueryResponse struct {
 
 func (x *ValidateDynamicQueryResponse) Reset() {
 	*x = ValidateDynamicQueryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[157]
+	mi := &file_powermanage_v1_control_proto_msgTypes[140]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10037,7 +9171,7 @@ func (x *ValidateDynamicQueryResponse) String() string {
 func (*ValidateDynamicQueryResponse) ProtoMessage() {}
 
 func (x *ValidateDynamicQueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[157]
+	mi := &file_powermanage_v1_control_proto_msgTypes[140]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10050,7 +9184,7 @@ func (x *ValidateDynamicQueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateDynamicQueryResponse.ProtoReflect.Descriptor instead.
 func (*ValidateDynamicQueryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{157}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{140}
 }
 
 func (x *ValidateDynamicQueryResponse) GetValid() bool {
@@ -10085,7 +9219,7 @@ type EvaluateDynamicGroupRequest struct {
 
 func (x *EvaluateDynamicGroupRequest) Reset() {
 	*x = EvaluateDynamicGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[158]
+	mi := &file_powermanage_v1_control_proto_msgTypes[141]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10097,7 +9231,7 @@ func (x *EvaluateDynamicGroupRequest) String() string {
 func (*EvaluateDynamicGroupRequest) ProtoMessage() {}
 
 func (x *EvaluateDynamicGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[158]
+	mi := &file_powermanage_v1_control_proto_msgTypes[141]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10110,7 +9244,7 @@ func (x *EvaluateDynamicGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateDynamicGroupRequest.ProtoReflect.Descriptor instead.
 func (*EvaluateDynamicGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{158}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{141}
 }
 
 func (x *EvaluateDynamicGroupRequest) GetId() string {
@@ -10131,7 +9265,7 @@ type EvaluateDynamicGroupResponse struct {
 
 func (x *EvaluateDynamicGroupResponse) Reset() {
 	*x = EvaluateDynamicGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[159]
+	mi := &file_powermanage_v1_control_proto_msgTypes[142]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10143,7 +9277,7 @@ func (x *EvaluateDynamicGroupResponse) String() string {
 func (*EvaluateDynamicGroupResponse) ProtoMessage() {}
 
 func (x *EvaluateDynamicGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[159]
+	mi := &file_powermanage_v1_control_proto_msgTypes[142]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10156,7 +9290,7 @@ func (x *EvaluateDynamicGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateDynamicGroupResponse.ProtoReflect.Descriptor instead.
 func (*EvaluateDynamicGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{159}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{142}
 }
 
 func (x *EvaluateDynamicGroupResponse) GetGroup() *DeviceGroup {
@@ -10193,7 +9327,7 @@ type SetDeviceGroupSyncIntervalRequest struct {
 
 func (x *SetDeviceGroupSyncIntervalRequest) Reset() {
 	*x = SetDeviceGroupSyncIntervalRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[160]
+	mi := &file_powermanage_v1_control_proto_msgTypes[143]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10205,7 +9339,7 @@ func (x *SetDeviceGroupSyncIntervalRequest) String() string {
 func (*SetDeviceGroupSyncIntervalRequest) ProtoMessage() {}
 
 func (x *SetDeviceGroupSyncIntervalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[160]
+	mi := &file_powermanage_v1_control_proto_msgTypes[143]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10218,7 +9352,7 @@ func (x *SetDeviceGroupSyncIntervalRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use SetDeviceGroupSyncIntervalRequest.ProtoReflect.Descriptor instead.
 func (*SetDeviceGroupSyncIntervalRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{160}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{143}
 }
 
 func (x *SetDeviceGroupSyncIntervalRequest) GetId() string {
@@ -10235,7 +9369,7 @@ func (x *SetDeviceGroupSyncIntervalRequest) GetSyncIntervalMinutes() int32 {
 	return 0
 }
 
-// Update device group inventory collection interval (spec 22).
+// Update device group inventory collection interval.
 type SetDeviceGroupInventoryIntervalRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -10248,7 +9382,7 @@ type SetDeviceGroupInventoryIntervalRequest struct {
 
 func (x *SetDeviceGroupInventoryIntervalRequest) Reset() {
 	*x = SetDeviceGroupInventoryIntervalRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[161]
+	mi := &file_powermanage_v1_control_proto_msgTypes[144]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10260,7 +9394,7 @@ func (x *SetDeviceGroupInventoryIntervalRequest) String() string {
 func (*SetDeviceGroupInventoryIntervalRequest) ProtoMessage() {}
 
 func (x *SetDeviceGroupInventoryIntervalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[161]
+	mi := &file_powermanage_v1_control_proto_msgTypes[144]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10273,7 +9407,7 @@ func (x *SetDeviceGroupInventoryIntervalRequest) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use SetDeviceGroupInventoryIntervalRequest.ProtoReflect.Descriptor instead.
 func (*SetDeviceGroupInventoryIntervalRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{161}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{144}
 }
 
 func (x *SetDeviceGroupInventoryIntervalRequest) GetId() string {
@@ -10293,8 +9427,7 @@ func (x *SetDeviceGroupInventoryIntervalRequest) GetInventoryIntervalMinutes() i
 // Replace the device group's maintenance window. Pass an empty
 // MaintenanceWindow (or omit the schedule) to clear it — that drops
 // the group's contribution to the device-side union, leaving the
-// device unconstrained by this group. The server stores the window
-// as JSONB on the projection.
+// device unconstrained by this group.
 type SetDeviceGroupMaintenanceWindowRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -10307,7 +9440,7 @@ type SetDeviceGroupMaintenanceWindowRequest struct {
 
 func (x *SetDeviceGroupMaintenanceWindowRequest) Reset() {
 	*x = SetDeviceGroupMaintenanceWindowRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[162]
+	mi := &file_powermanage_v1_control_proto_msgTypes[145]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10319,7 +9452,7 @@ func (x *SetDeviceGroupMaintenanceWindowRequest) String() string {
 func (*SetDeviceGroupMaintenanceWindowRequest) ProtoMessage() {}
 
 func (x *SetDeviceGroupMaintenanceWindowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[162]
+	mi := &file_powermanage_v1_control_proto_msgTypes[145]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10332,7 +9465,7 @@ func (x *SetDeviceGroupMaintenanceWindowRequest) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use SetDeviceGroupMaintenanceWindowRequest.ProtoReflect.Descriptor instead.
 func (*SetDeviceGroupMaintenanceWindowRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{162}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{145}
 }
 
 func (x *SetDeviceGroupMaintenanceWindowRequest) GetId() string {
@@ -10352,13 +9485,13 @@ func (x *SetDeviceGroupMaintenanceWindowRequest) GetMaintenanceWindow() *Mainten
 type Assignment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	SourceType    AssignmentSourceType   `protobuf:"varint,2,opt,name=source_type,json=sourceType,proto3,enum=pm.v1.AssignmentSourceType" json:"source_type,omitempty"`
+	SourceType    AssignmentSourceType   `protobuf:"varint,2,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty"`
 	SourceId      string                 `protobuf:"bytes,3,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
-	TargetType    AssignmentTargetType   `protobuf:"varint,4,opt,name=target_type,json=targetType,proto3,enum=pm.v1.AssignmentTargetType" json:"target_type,omitempty"`
+	TargetType    AssignmentTargetType   `protobuf:"varint,4,opt,name=target_type,json=targetType,proto3,enum=powermanage.v1.AssignmentTargetType" json:"target_type,omitempty"`
 	TargetId      string                 `protobuf:"bytes,5,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	CreatedBy     string                 `protobuf:"bytes,7,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	Mode          AssignmentMode         `protobuf:"varint,8,opt,name=mode,proto3,enum=pm.v1.AssignmentMode" json:"mode,omitempty"`
+	Mode          AssignmentMode         `protobuf:"varint,8,opt,name=mode,proto3,enum=powermanage.v1.AssignmentMode" json:"mode,omitempty"`
 	SourceName    string                 `protobuf:"bytes,9,opt,name=source_name,json=sourceName,proto3" json:"source_name,omitempty"`
 	TargetName    string                 `protobuf:"bytes,10,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10367,7 +9500,7 @@ type Assignment struct {
 
 func (x *Assignment) Reset() {
 	*x = Assignment{}
-	mi := &file_pm_v1_control_proto_msgTypes[163]
+	mi := &file_powermanage_v1_control_proto_msgTypes[146]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10379,7 +9512,7 @@ func (x *Assignment) String() string {
 func (*Assignment) ProtoMessage() {}
 
 func (x *Assignment) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[163]
+	mi := &file_powermanage_v1_control_proto_msgTypes[146]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10392,7 +9525,7 @@ func (x *Assignment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Assignment.ProtoReflect.Descriptor instead.
 func (*Assignment) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{163}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{146}
 }
 
 func (x *Assignment) GetId() string {
@@ -10468,22 +9601,22 @@ func (x *Assignment) GetTargetName() string {
 type CreateAssignmentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,gte=1,lte=4"
-	SourceType AssignmentSourceType `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=pm.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"required,gte=1,lte=4"`
+	SourceType AssignmentSourceType `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"required,gte=1,lte=4"`
 	// @gotags: validate:"required,ulid"
 	SourceId string `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,gte=1,lte=4"
-	TargetType AssignmentTargetType `protobuf:"varint,3,opt,name=target_type,json=targetType,proto3,enum=pm.v1.AssignmentTargetType" json:"target_type,omitempty" validate:"required,gte=1,lte=4"`
+	TargetType AssignmentTargetType `protobuf:"varint,3,opt,name=target_type,json=targetType,proto3,enum=powermanage.v1.AssignmentTargetType" json:"target_type,omitempty" validate:"required,gte=1,lte=4"`
 	// @gotags: validate:"required,ulid"
 	TargetId string `protobuf:"bytes,4,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"omitempty"
-	Mode          AssignmentMode `protobuf:"varint,5,opt,name=mode,proto3,enum=pm.v1.AssignmentMode" json:"mode,omitempty" validate:"omitempty"` // Defaults to REQUIRED (0)
+	Mode          AssignmentMode `protobuf:"varint,5,opt,name=mode,proto3,enum=powermanage.v1.AssignmentMode" json:"mode,omitempty" validate:"omitempty"` // Defaults to REQUIRED (0)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateAssignmentRequest) Reset() {
 	*x = CreateAssignmentRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[164]
+	mi := &file_powermanage_v1_control_proto_msgTypes[147]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10495,7 +9628,7 @@ func (x *CreateAssignmentRequest) String() string {
 func (*CreateAssignmentRequest) ProtoMessage() {}
 
 func (x *CreateAssignmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[164]
+	mi := &file_powermanage_v1_control_proto_msgTypes[147]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10508,7 +9641,7 @@ func (x *CreateAssignmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAssignmentRequest.ProtoReflect.Descriptor instead.
 func (*CreateAssignmentRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{164}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{147}
 }
 
 func (x *CreateAssignmentRequest) GetSourceType() AssignmentSourceType {
@@ -10555,7 +9688,7 @@ type CreateAssignmentResponse struct {
 
 func (x *CreateAssignmentResponse) Reset() {
 	*x = CreateAssignmentResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[165]
+	mi := &file_powermanage_v1_control_proto_msgTypes[148]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10567,7 +9700,7 @@ func (x *CreateAssignmentResponse) String() string {
 func (*CreateAssignmentResponse) ProtoMessage() {}
 
 func (x *CreateAssignmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[165]
+	mi := &file_powermanage_v1_control_proto_msgTypes[148]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10580,7 +9713,7 @@ func (x *CreateAssignmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAssignmentResponse.ProtoReflect.Descriptor instead.
 func (*CreateAssignmentResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{165}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{148}
 }
 
 func (x *CreateAssignmentResponse) GetAssignment() *Assignment {
@@ -10600,7 +9733,7 @@ type DeleteAssignmentRequest struct {
 
 func (x *DeleteAssignmentRequest) Reset() {
 	*x = DeleteAssignmentRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[166]
+	mi := &file_powermanage_v1_control_proto_msgTypes[149]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10612,7 +9745,7 @@ func (x *DeleteAssignmentRequest) String() string {
 func (*DeleteAssignmentRequest) ProtoMessage() {}
 
 func (x *DeleteAssignmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[166]
+	mi := &file_powermanage_v1_control_proto_msgTypes[149]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10625,7 +9758,7 @@ func (x *DeleteAssignmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAssignmentRequest.ProtoReflect.Descriptor instead.
 func (*DeleteAssignmentRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{166}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{149}
 }
 
 func (x *DeleteAssignmentRequest) GetId() string {
@@ -10643,7 +9776,7 @@ type DeleteAssignmentResponse struct {
 
 func (x *DeleteAssignmentResponse) Reset() {
 	*x = DeleteAssignmentResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[167]
+	mi := &file_powermanage_v1_control_proto_msgTypes[150]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10655,7 +9788,7 @@ func (x *DeleteAssignmentResponse) String() string {
 func (*DeleteAssignmentResponse) ProtoMessage() {}
 
 func (x *DeleteAssignmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[167]
+	mi := &file_powermanage_v1_control_proto_msgTypes[150]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10668,7 +9801,7 @@ func (x *DeleteAssignmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAssignmentResponse.ProtoReflect.Descriptor instead.
 func (*DeleteAssignmentResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{167}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{150}
 }
 
 type ListAssignmentsRequest struct {
@@ -10676,13 +9809,13 @@ type ListAssignmentsRequest struct {
 	// UNSPECIFIED (0) means "all source types"; non-zero filters to
 	// that single source type.
 	// @gotags: validate:"omitempty,gte=0,lte=4"
-	SourceType AssignmentSourceType `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=pm.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"omitempty,gte=0,lte=4"`
+	SourceType AssignmentSourceType `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"omitempty,gte=0,lte=4"`
 	// @gotags: validate:"omitempty,ulid"
 	SourceId string `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"omitempty,ulid"`
 	// UNSPECIFIED (0) means "all target types"; non-zero filters to
 	// that single target type.
 	// @gotags: validate:"omitempty,gte=0,lte=4"
-	TargetType AssignmentTargetType `protobuf:"varint,3,opt,name=target_type,json=targetType,proto3,enum=pm.v1.AssignmentTargetType" json:"target_type,omitempty" validate:"omitempty,gte=0,lte=4"`
+	TargetType AssignmentTargetType `protobuf:"varint,3,opt,name=target_type,json=targetType,proto3,enum=powermanage.v1.AssignmentTargetType" json:"target_type,omitempty" validate:"omitempty,gte=0,lte=4"`
 	// @gotags: validate:"omitempty,ulid"
 	TargetId string `protobuf:"bytes,4,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty" validate:"omitempty,ulid"`
 	// @gotags: validate:"omitempty,gte=0,lte=100"
@@ -10695,7 +9828,7 @@ type ListAssignmentsRequest struct {
 
 func (x *ListAssignmentsRequest) Reset() {
 	*x = ListAssignmentsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[168]
+	mi := &file_powermanage_v1_control_proto_msgTypes[151]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10707,7 +9840,7 @@ func (x *ListAssignmentsRequest) String() string {
 func (*ListAssignmentsRequest) ProtoMessage() {}
 
 func (x *ListAssignmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[168]
+	mi := &file_powermanage_v1_control_proto_msgTypes[151]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10720,7 +9853,7 @@ func (x *ListAssignmentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAssignmentsRequest.ProtoReflect.Descriptor instead.
 func (*ListAssignmentsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{168}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{151}
 }
 
 func (x *ListAssignmentsRequest) GetSourceType() AssignmentSourceType {
@@ -10776,7 +9909,7 @@ type ListAssignmentsResponse struct {
 
 func (x *ListAssignmentsResponse) Reset() {
 	*x = ListAssignmentsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[169]
+	mi := &file_powermanage_v1_control_proto_msgTypes[152]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10788,7 +9921,7 @@ func (x *ListAssignmentsResponse) String() string {
 func (*ListAssignmentsResponse) ProtoMessage() {}
 
 func (x *ListAssignmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[169]
+	mi := &file_powermanage_v1_control_proto_msgTypes[152]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10801,7 +9934,7 @@ func (x *ListAssignmentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAssignmentsResponse.ProtoReflect.Descriptor instead.
 func (*ListAssignmentsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{169}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{152}
 }
 
 func (x *ListAssignmentsResponse) GetAssignments() []*Assignment {
@@ -10829,7 +9962,7 @@ type UserSelection struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	DeviceId      string                 `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	SourceType    AssignmentSourceType   `protobuf:"varint,3,opt,name=source_type,json=sourceType,proto3,enum=pm.v1.AssignmentSourceType" json:"source_type,omitempty"`
+	SourceType    AssignmentSourceType   `protobuf:"varint,3,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty"`
 	SourceId      string                 `protobuf:"bytes,4,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
 	Selected      bool                   `protobuf:"varint,5,opt,name=selected,proto3" json:"selected,omitempty"` // true=user wants it (present), false=user rejected (absent)
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
@@ -10839,7 +9972,7 @@ type UserSelection struct {
 
 func (x *UserSelection) Reset() {
 	*x = UserSelection{}
-	mi := &file_pm_v1_control_proto_msgTypes[170]
+	mi := &file_powermanage_v1_control_proto_msgTypes[153]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10851,7 +9984,7 @@ func (x *UserSelection) String() string {
 func (*UserSelection) ProtoMessage() {}
 
 func (x *UserSelection) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[170]
+	mi := &file_powermanage_v1_control_proto_msgTypes[153]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10864,7 +9997,7 @@ func (x *UserSelection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserSelection.ProtoReflect.Descriptor instead.
 func (*UserSelection) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{170}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{153}
 }
 
 func (x *UserSelection) GetId() string {
@@ -10914,7 +10047,7 @@ type SetUserSelectionRequest struct {
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,gte=1,lte=4"
-	SourceType AssignmentSourceType `protobuf:"varint,2,opt,name=source_type,json=sourceType,proto3,enum=pm.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"required,gte=1,lte=4"`
+	SourceType AssignmentSourceType `protobuf:"varint,2,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty" validate:"required,gte=1,lte=4"`
 	// @gotags: validate:"required,ulid"
 	SourceId      string `protobuf:"bytes,3,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" validate:"required,ulid"`
 	Selected      bool   `protobuf:"varint,4,opt,name=selected,proto3" json:"selected,omitempty"`
@@ -10924,7 +10057,7 @@ type SetUserSelectionRequest struct {
 
 func (x *SetUserSelectionRequest) Reset() {
 	*x = SetUserSelectionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[171]
+	mi := &file_powermanage_v1_control_proto_msgTypes[154]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10936,7 +10069,7 @@ func (x *SetUserSelectionRequest) String() string {
 func (*SetUserSelectionRequest) ProtoMessage() {}
 
 func (x *SetUserSelectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[171]
+	mi := &file_powermanage_v1_control_proto_msgTypes[154]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10949,7 +10082,7 @@ func (x *SetUserSelectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserSelectionRequest.ProtoReflect.Descriptor instead.
 func (*SetUserSelectionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{171}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{154}
 }
 
 func (x *SetUserSelectionRequest) GetDeviceId() string {
@@ -10989,7 +10122,7 @@ type SetUserSelectionResponse struct {
 
 func (x *SetUserSelectionResponse) Reset() {
 	*x = SetUserSelectionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[172]
+	mi := &file_powermanage_v1_control_proto_msgTypes[155]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11001,7 +10134,7 @@ func (x *SetUserSelectionResponse) String() string {
 func (*SetUserSelectionResponse) ProtoMessage() {}
 
 func (x *SetUserSelectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[172]
+	mi := &file_powermanage_v1_control_proto_msgTypes[155]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11014,7 +10147,7 @@ func (x *SetUserSelectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserSelectionResponse.ProtoReflect.Descriptor instead.
 func (*SetUserSelectionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{172}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{155}
 }
 
 func (x *SetUserSelectionResponse) GetSelection() *UserSelection {
@@ -11034,7 +10167,7 @@ type ListAvailableActionsRequest struct {
 
 func (x *ListAvailableActionsRequest) Reset() {
 	*x = ListAvailableActionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[173]
+	mi := &file_powermanage_v1_control_proto_msgTypes[156]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11046,7 +10179,7 @@ func (x *ListAvailableActionsRequest) String() string {
 func (*ListAvailableActionsRequest) ProtoMessage() {}
 
 func (x *ListAvailableActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[173]
+	mi := &file_powermanage_v1_control_proto_msgTypes[156]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11059,7 +10192,7 @@ func (x *ListAvailableActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAvailableActionsRequest.ProtoReflect.Descriptor instead.
 func (*ListAvailableActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{173}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{156}
 }
 
 func (x *ListAvailableActionsRequest) GetDeviceId() string {
@@ -11071,7 +10204,7 @@ func (x *ListAvailableActionsRequest) GetDeviceId() string {
 
 type AvailableItem struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	SourceType        AssignmentSourceType   `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=pm.v1.AssignmentSourceType" json:"source_type,omitempty"`
+	SourceType        AssignmentSourceType   `protobuf:"varint,1,opt,name=source_type,json=sourceType,proto3,enum=powermanage.v1.AssignmentSourceType" json:"source_type,omitempty"`
 	SourceId          string                 `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
 	SourceName        string                 `protobuf:"bytes,3,opt,name=source_name,json=sourceName,proto3" json:"source_name,omitempty"`
 	SourceDescription string                 `protobuf:"bytes,4,opt,name=source_description,json=sourceDescription,proto3" json:"source_description,omitempty"`
@@ -11083,7 +10216,7 @@ type AvailableItem struct {
 
 func (x *AvailableItem) Reset() {
 	*x = AvailableItem{}
-	mi := &file_pm_v1_control_proto_msgTypes[174]
+	mi := &file_powermanage_v1_control_proto_msgTypes[157]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11095,7 +10228,7 @@ func (x *AvailableItem) String() string {
 func (*AvailableItem) ProtoMessage() {}
 
 func (x *AvailableItem) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[174]
+	mi := &file_powermanage_v1_control_proto_msgTypes[157]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11108,7 +10241,7 @@ func (x *AvailableItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AvailableItem.ProtoReflect.Descriptor instead.
 func (*AvailableItem) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{174}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{157}
 }
 
 func (x *AvailableItem) GetSourceType() AssignmentSourceType {
@@ -11162,7 +10295,7 @@ type ListAvailableActionsResponse struct {
 
 func (x *ListAvailableActionsResponse) Reset() {
 	*x = ListAvailableActionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[175]
+	mi := &file_powermanage_v1_control_proto_msgTypes[158]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11174,7 +10307,7 @@ func (x *ListAvailableActionsResponse) String() string {
 func (*ListAvailableActionsResponse) ProtoMessage() {}
 
 func (x *ListAvailableActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[175]
+	mi := &file_powermanage_v1_control_proto_msgTypes[158]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11187,7 +10320,7 @@ func (x *ListAvailableActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAvailableActionsResponse.ProtoReflect.Descriptor instead.
 func (*ListAvailableActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{175}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{158}
 }
 
 func (x *ListAvailableActionsResponse) GetItems() []*AvailableItem {
@@ -11208,7 +10341,7 @@ type GetDeviceAssignmentsRequest struct {
 
 func (x *GetDeviceAssignmentsRequest) Reset() {
 	*x = GetDeviceAssignmentsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[176]
+	mi := &file_powermanage_v1_control_proto_msgTypes[159]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11220,7 +10353,7 @@ func (x *GetDeviceAssignmentsRequest) String() string {
 func (*GetDeviceAssignmentsRequest) ProtoMessage() {}
 
 func (x *GetDeviceAssignmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[176]
+	mi := &file_powermanage_v1_control_proto_msgTypes[159]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11233,7 +10366,7 @@ func (x *GetDeviceAssignmentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceAssignmentsRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceAssignmentsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{176}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{159}
 }
 
 func (x *GetDeviceAssignmentsRequest) GetDeviceId() string {
@@ -11257,7 +10390,7 @@ type GetDeviceAssignmentsResponse struct {
 
 func (x *GetDeviceAssignmentsResponse) Reset() {
 	*x = GetDeviceAssignmentsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[177]
+	mi := &file_powermanage_v1_control_proto_msgTypes[160]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11269,7 +10402,7 @@ func (x *GetDeviceAssignmentsResponse) String() string {
 func (*GetDeviceAssignmentsResponse) ProtoMessage() {}
 
 func (x *GetDeviceAssignmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[177]
+	mi := &file_powermanage_v1_control_proto_msgTypes[160]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11282,7 +10415,7 @@ func (x *GetDeviceAssignmentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceAssignmentsResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceAssignmentsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{177}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{160}
 }
 
 func (x *GetDeviceAssignmentsResponse) GetActions() []*ManagedAction {
@@ -11338,7 +10471,7 @@ type GetUserAssignmentsRequest struct {
 
 func (x *GetUserAssignmentsRequest) Reset() {
 	*x = GetUserAssignmentsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[178]
+	mi := &file_powermanage_v1_control_proto_msgTypes[161]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11350,7 +10483,7 @@ func (x *GetUserAssignmentsRequest) String() string {
 func (*GetUserAssignmentsRequest) ProtoMessage() {}
 
 func (x *GetUserAssignmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[178]
+	mi := &file_powermanage_v1_control_proto_msgTypes[161]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11363,7 +10496,7 @@ func (x *GetUserAssignmentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserAssignmentsRequest.ProtoReflect.Descriptor instead.
 func (*GetUserAssignmentsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{178}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{161}
 }
 
 func (x *GetUserAssignmentsRequest) GetUserId() string {
@@ -11382,7 +10515,7 @@ type GetUserAssignmentsResponse struct {
 
 func (x *GetUserAssignmentsResponse) Reset() {
 	*x = GetUserAssignmentsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[179]
+	mi := &file_powermanage_v1_control_proto_msgTypes[162]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11394,7 +10527,7 @@ func (x *GetUserAssignmentsResponse) String() string {
 func (*GetUserAssignmentsResponse) ProtoMessage() {}
 
 func (x *GetUserAssignmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[179]
+	mi := &file_powermanage_v1_control_proto_msgTypes[162]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11407,7 +10540,7 @@ func (x *GetUserAssignmentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserAssignmentsResponse.ProtoReflect.Descriptor instead.
 func (*GetUserAssignmentsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{179}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{162}
 }
 
 func (x *GetUserAssignmentsResponse) GetAssignments() []*Assignment {
@@ -11422,8 +10555,8 @@ type ActionExecution struct {
 	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	DeviceId        string                 `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	ActionId        string                 `protobuf:"bytes,3,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"` // Reference to ManagedAction
-	Type            ActionType             `protobuf:"varint,4,opt,name=type,proto3,enum=pm.v1.ActionType" json:"type,omitempty"`
-	Status          ExecutionStatus        `protobuf:"varint,5,opt,name=status,proto3,enum=pm.v1.ExecutionStatus" json:"status,omitempty"`
+	Type            ActionType             `protobuf:"varint,4,opt,name=type,proto3,enum=powermanage.v1.ActionType" json:"type,omitempty"`
+	Status          ExecutionStatus        `protobuf:"varint,5,opt,name=status,proto3,enum=powermanage.v1.ExecutionStatus" json:"status,omitempty"`
 	Error           string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
 	Output          *CommandOutput         `protobuf:"bytes,7,opt,name=output,proto3" json:"output,omitempty"` // Final output (set on completion)
 	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
@@ -11431,12 +10564,12 @@ type ActionExecution struct {
 	CompletedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	DurationMs      int64                  `protobuf:"varint,11,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
 	CreatedBy       string                 `protobuf:"bytes,12,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	LiveOutput      *CommandOutput         `protobuf:"bytes,13,opt,name=live_output,json=liveOutput,proto3" json:"live_output,omitempty"`                                // Streaming output received so far (useful when status is RUNNING)
-	DesiredState    DesiredState           `protobuf:"varint,14,opt,name=desired_state,json=desiredState,proto3,enum=pm.v1.DesiredState" json:"desired_state,omitempty"` // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
-	Changed         bool                   `protobuf:"varint,15,opt,name=changed,proto3" json:"changed,omitempty"`                                                       // Whether the execution made changes to the system (false = state was already as desired)
-	Compliant       bool                   `protobuf:"varint,16,opt,name=compliant,proto3" json:"compliant,omitempty"`                                                   // Detection script result: true if compliant
-	DetectionOutput *CommandOutput         `protobuf:"bytes,17,opt,name=detection_output,json=detectionOutput,proto3" json:"detection_output,omitempty"`                 // Detection script output
-	ActionName      string                 `protobuf:"bytes,18,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`                                // Resolved from actions_projection (empty for inline actions)
+	LiveOutput      *CommandOutput         `protobuf:"bytes,13,opt,name=live_output,json=liveOutput,proto3" json:"live_output,omitempty"`                                         // Streaming output received so far (useful when status is RUNNING)
+	DesiredState    DesiredState           `protobuf:"varint,14,opt,name=desired_state,json=desiredState,proto3,enum=powermanage.v1.DesiredState" json:"desired_state,omitempty"` // Whether the action was meant to install/enable (PRESENT) or remove/disable (ABSENT)
+	Changed         bool                   `protobuf:"varint,15,opt,name=changed,proto3" json:"changed,omitempty"`                                                                // Whether the execution made changes to the system (false = state was already as desired)
+	Compliant       bool                   `protobuf:"varint,16,opt,name=compliant,proto3" json:"compliant,omitempty"`                                                            // Detection script result: true if compliant
+	DetectionOutput *CommandOutput         `protobuf:"bytes,17,opt,name=detection_output,json=detectionOutput,proto3" json:"detection_output,omitempty"`                          // Detection script output
+	ActionName      string                 `protobuf:"bytes,18,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`                                         // Resolved from the action row (empty for inline actions)
 	// Set when status is SCHEDULED (or was, before dispatch fired). The
 	// UTC timestamp at which the deferred dispatch is configured to
 	// fire. Populated when a Dispatch* request supplies the run_at
@@ -11450,7 +10583,7 @@ type ActionExecution struct {
 
 func (x *ActionExecution) Reset() {
 	*x = ActionExecution{}
-	mi := &file_pm_v1_control_proto_msgTypes[180]
+	mi := &file_powermanage_v1_control_proto_msgTypes[163]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11462,7 +10595,7 @@ func (x *ActionExecution) String() string {
 func (*ActionExecution) ProtoMessage() {}
 
 func (x *ActionExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[180]
+	mi := &file_powermanage_v1_control_proto_msgTypes[163]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11475,7 +10608,7 @@ func (x *ActionExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionExecution.ProtoReflect.Descriptor instead.
 func (*ActionExecution) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{180}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{163}
 }
 
 func (x *ActionExecution) GetId() string {
@@ -11636,9 +10769,7 @@ type DispatchActionRequest struct {
 	// When true, the dispatched action still respects the device's
 	// maintenance window if the device has one configured. The default
 	// (false) bypasses the window so admins can override an active
-	// freeze. Reserved for the maintenance-window feature
-	// (manchtools/power-manage-server#58); the server stores the flag
-	// for replay correctness even before #58 ships.
+	// freeze.
 	RespectMaintenanceWindow bool `protobuf:"varint,5,opt,name=respect_maintenance_window,json=respectMaintenanceWindow,proto3" json:"respect_maintenance_window,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -11646,7 +10777,7 @@ type DispatchActionRequest struct {
 
 func (x *DispatchActionRequest) Reset() {
 	*x = DispatchActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[181]
+	mi := &file_powermanage_v1_control_proto_msgTypes[164]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11658,7 +10789,7 @@ func (x *DispatchActionRequest) String() string {
 func (*DispatchActionRequest) ProtoMessage() {}
 
 func (x *DispatchActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[181]
+	mi := &file_powermanage_v1_control_proto_msgTypes[164]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11671,7 +10802,7 @@ func (x *DispatchActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionRequest.ProtoReflect.Descriptor instead.
 func (*DispatchActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{181}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{164}
 }
 
 func (x *DispatchActionRequest) GetDeviceId() string {
@@ -11746,7 +10877,7 @@ type DispatchActionResponse struct {
 
 func (x *DispatchActionResponse) Reset() {
 	*x = DispatchActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[182]
+	mi := &file_powermanage_v1_control_proto_msgTypes[165]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11758,7 +10889,7 @@ func (x *DispatchActionResponse) String() string {
 func (*DispatchActionResponse) ProtoMessage() {}
 
 func (x *DispatchActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[182]
+	mi := &file_powermanage_v1_control_proto_msgTypes[165]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11771,7 +10902,7 @@ func (x *DispatchActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionResponse.ProtoReflect.Descriptor instead.
 func (*DispatchActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{182}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{165}
 }
 
 func (x *DispatchActionResponse) GetExecution() *ActionExecution {
@@ -11796,7 +10927,7 @@ type DispatchToMultipleRequest struct {
 
 func (x *DispatchToMultipleRequest) Reset() {
 	*x = DispatchToMultipleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[183]
+	mi := &file_powermanage_v1_control_proto_msgTypes[166]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11808,7 +10939,7 @@ func (x *DispatchToMultipleRequest) String() string {
 func (*DispatchToMultipleRequest) ProtoMessage() {}
 
 func (x *DispatchToMultipleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[183]
+	mi := &file_powermanage_v1_control_proto_msgTypes[166]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11821,7 +10952,7 @@ func (x *DispatchToMultipleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToMultipleRequest.ProtoReflect.Descriptor instead.
 func (*DispatchToMultipleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{183}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{166}
 }
 
 func (x *DispatchToMultipleRequest) GetDeviceIds() []string {
@@ -11882,7 +11013,7 @@ type DispatchToMultipleResponse struct {
 
 func (x *DispatchToMultipleResponse) Reset() {
 	*x = DispatchToMultipleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[184]
+	mi := &file_powermanage_v1_control_proto_msgTypes[167]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11894,7 +11025,7 @@ func (x *DispatchToMultipleResponse) String() string {
 func (*DispatchToMultipleResponse) ProtoMessage() {}
 
 func (x *DispatchToMultipleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[184]
+	mi := &file_powermanage_v1_control_proto_msgTypes[167]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11907,7 +11038,7 @@ func (x *DispatchToMultipleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToMultipleResponse.ProtoReflect.Descriptor instead.
 func (*DispatchToMultipleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{184}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{167}
 }
 
 func (x *DispatchToMultipleResponse) GetExecutions() []*ActionExecution {
@@ -11928,7 +11059,7 @@ type DispatchAssignedActionsRequest struct {
 
 func (x *DispatchAssignedActionsRequest) Reset() {
 	*x = DispatchAssignedActionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[185]
+	mi := &file_powermanage_v1_control_proto_msgTypes[168]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11940,7 +11071,7 @@ func (x *DispatchAssignedActionsRequest) String() string {
 func (*DispatchAssignedActionsRequest) ProtoMessage() {}
 
 func (x *DispatchAssignedActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[185]
+	mi := &file_powermanage_v1_control_proto_msgTypes[168]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11953,7 +11084,7 @@ func (x *DispatchAssignedActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchAssignedActionsRequest.ProtoReflect.Descriptor instead.
 func (*DispatchAssignedActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{185}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{168}
 }
 
 func (x *DispatchAssignedActionsRequest) GetDeviceId() string {
@@ -11972,7 +11103,7 @@ type DispatchAssignedActionsResponse struct {
 
 func (x *DispatchAssignedActionsResponse) Reset() {
 	*x = DispatchAssignedActionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[186]
+	mi := &file_powermanage_v1_control_proto_msgTypes[169]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11984,7 +11115,7 @@ func (x *DispatchAssignedActionsResponse) String() string {
 func (*DispatchAssignedActionsResponse) ProtoMessage() {}
 
 func (x *DispatchAssignedActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[186]
+	mi := &file_powermanage_v1_control_proto_msgTypes[169]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11997,7 +11128,7 @@ func (x *DispatchAssignedActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchAssignedActionsResponse.ProtoReflect.Descriptor instead.
 func (*DispatchAssignedActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{186}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{169}
 }
 
 func (x *DispatchAssignedActionsResponse) GetExecutions() []*ActionExecution {
@@ -12020,7 +11151,7 @@ type DispatchActionSetRequest struct {
 
 func (x *DispatchActionSetRequest) Reset() {
 	*x = DispatchActionSetRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[187]
+	mi := &file_powermanage_v1_control_proto_msgTypes[170]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12032,7 +11163,7 @@ func (x *DispatchActionSetRequest) String() string {
 func (*DispatchActionSetRequest) ProtoMessage() {}
 
 func (x *DispatchActionSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[187]
+	mi := &file_powermanage_v1_control_proto_msgTypes[170]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12045,7 +11176,7 @@ func (x *DispatchActionSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionSetRequest.ProtoReflect.Descriptor instead.
 func (*DispatchActionSetRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{187}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{170}
 }
 
 func (x *DispatchActionSetRequest) GetDeviceId() string {
@@ -12071,7 +11202,7 @@ type DispatchActionSetResponse struct {
 
 func (x *DispatchActionSetResponse) Reset() {
 	*x = DispatchActionSetResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[188]
+	mi := &file_powermanage_v1_control_proto_msgTypes[171]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12083,7 +11214,7 @@ func (x *DispatchActionSetResponse) String() string {
 func (*DispatchActionSetResponse) ProtoMessage() {}
 
 func (x *DispatchActionSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[188]
+	mi := &file_powermanage_v1_control_proto_msgTypes[171]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12096,7 +11227,7 @@ func (x *DispatchActionSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchActionSetResponse.ProtoReflect.Descriptor instead.
 func (*DispatchActionSetResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{188}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{171}
 }
 
 func (x *DispatchActionSetResponse) GetExecutions() []*ActionExecution {
@@ -12119,7 +11250,7 @@ type DispatchDefinitionRequest struct {
 
 func (x *DispatchDefinitionRequest) Reset() {
 	*x = DispatchDefinitionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[189]
+	mi := &file_powermanage_v1_control_proto_msgTypes[172]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12131,7 +11262,7 @@ func (x *DispatchDefinitionRequest) String() string {
 func (*DispatchDefinitionRequest) ProtoMessage() {}
 
 func (x *DispatchDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[189]
+	mi := &file_powermanage_v1_control_proto_msgTypes[172]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12144,7 +11275,7 @@ func (x *DispatchDefinitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchDefinitionRequest.ProtoReflect.Descriptor instead.
 func (*DispatchDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{189}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{172}
 }
 
 func (x *DispatchDefinitionRequest) GetDeviceId() string {
@@ -12170,7 +11301,7 @@ type DispatchDefinitionResponse struct {
 
 func (x *DispatchDefinitionResponse) Reset() {
 	*x = DispatchDefinitionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[190]
+	mi := &file_powermanage_v1_control_proto_msgTypes[173]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12182,7 +11313,7 @@ func (x *DispatchDefinitionResponse) String() string {
 func (*DispatchDefinitionResponse) ProtoMessage() {}
 
 func (x *DispatchDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[190]
+	mi := &file_powermanage_v1_control_proto_msgTypes[173]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12195,7 +11326,7 @@ func (x *DispatchDefinitionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchDefinitionResponse.ProtoReflect.Descriptor instead.
 func (*DispatchDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{190}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{173}
 }
 
 func (x *DispatchDefinitionResponse) GetExecutions() []*ActionExecution {
@@ -12223,7 +11354,7 @@ type DispatchToGroupRequest struct {
 
 func (x *DispatchToGroupRequest) Reset() {
 	*x = DispatchToGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[191]
+	mi := &file_powermanage_v1_control_proto_msgTypes[174]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12235,7 +11366,7 @@ func (x *DispatchToGroupRequest) String() string {
 func (*DispatchToGroupRequest) ProtoMessage() {}
 
 func (x *DispatchToGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[191]
+	mi := &file_powermanage_v1_control_proto_msgTypes[174]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12248,7 +11379,7 @@ func (x *DispatchToGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToGroupRequest.ProtoReflect.Descriptor instead.
 func (*DispatchToGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{191}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{174}
 }
 
 func (x *DispatchToGroupRequest) GetGroupId() string {
@@ -12341,7 +11472,7 @@ type DispatchToGroupResponse struct {
 
 func (x *DispatchToGroupResponse) Reset() {
 	*x = DispatchToGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[192]
+	mi := &file_powermanage_v1_control_proto_msgTypes[175]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12353,7 +11484,7 @@ func (x *DispatchToGroupResponse) String() string {
 func (*DispatchToGroupResponse) ProtoMessage() {}
 
 func (x *DispatchToGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[192]
+	mi := &file_powermanage_v1_control_proto_msgTypes[175]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12366,7 +11497,7 @@ func (x *DispatchToGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchToGroupResponse.ProtoReflect.Descriptor instead.
 func (*DispatchToGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{192}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{175}
 }
 
 func (x *DispatchToGroupResponse) GetExecutions() []*ActionExecution {
@@ -12386,7 +11517,7 @@ type GetExecutionRequest struct {
 
 func (x *GetExecutionRequest) Reset() {
 	*x = GetExecutionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[193]
+	mi := &file_powermanage_v1_control_proto_msgTypes[176]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12398,7 +11529,7 @@ func (x *GetExecutionRequest) String() string {
 func (*GetExecutionRequest) ProtoMessage() {}
 
 func (x *GetExecutionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[193]
+	mi := &file_powermanage_v1_control_proto_msgTypes[176]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12411,7 +11542,7 @@ func (x *GetExecutionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExecutionRequest.ProtoReflect.Descriptor instead.
 func (*GetExecutionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{193}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{176}
 }
 
 func (x *GetExecutionRequest) GetId() string {
@@ -12430,7 +11561,7 @@ type GetExecutionResponse struct {
 
 func (x *GetExecutionResponse) Reset() {
 	*x = GetExecutionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[194]
+	mi := &file_powermanage_v1_control_proto_msgTypes[177]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12442,7 +11573,7 @@ func (x *GetExecutionResponse) String() string {
 func (*GetExecutionResponse) ProtoMessage() {}
 
 func (x *GetExecutionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[194]
+	mi := &file_powermanage_v1_control_proto_msgTypes[177]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12455,7 +11586,7 @@ func (x *GetExecutionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExecutionResponse.ProtoReflect.Descriptor instead.
 func (*GetExecutionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{194}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{177}
 }
 
 func (x *GetExecutionResponse) GetExecution() *ActionExecution {
@@ -12473,8 +11604,8 @@ type ListExecutionsRequest struct {
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,ulid"
 	DeviceId     string          `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"omitempty,ulid"` // optional filter
-	StatusFilter ExecutionStatus `protobuf:"varint,4,opt,name=status_filter,json=statusFilter,proto3,enum=pm.v1.ExecutionStatus" json:"status_filter,omitempty"`
-	TypeFilter   ActionType      `protobuf:"varint,5,opt,name=type_filter,json=typeFilter,proto3,enum=pm.v1.ActionType" json:"type_filter,omitempty"` // optional action type filter
+	StatusFilter ExecutionStatus `protobuf:"varint,4,opt,name=status_filter,json=statusFilter,proto3,enum=powermanage.v1.ExecutionStatus" json:"status_filter,omitempty"`
+	TypeFilter   ActionType      `protobuf:"varint,5,opt,name=type_filter,json=typeFilter,proto3,enum=powermanage.v1.ActionType" json:"type_filter,omitempty"` // optional action type filter
 	// @gotags: validate:"omitempty,max=255"
 	Search        string `protobuf:"bytes,6,opt,name=search,proto3" json:"search,omitempty" validate:"omitempty,max=255"` // searches action name and device hostname
 	unknownFields protoimpl.UnknownFields
@@ -12483,7 +11614,7 @@ type ListExecutionsRequest struct {
 
 func (x *ListExecutionsRequest) Reset() {
 	*x = ListExecutionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[195]
+	mi := &file_powermanage_v1_control_proto_msgTypes[178]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12495,7 +11626,7 @@ func (x *ListExecutionsRequest) String() string {
 func (*ListExecutionsRequest) ProtoMessage() {}
 
 func (x *ListExecutionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[195]
+	mi := &file_powermanage_v1_control_proto_msgTypes[178]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12508,7 +11639,7 @@ func (x *ListExecutionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExecutionsRequest.ProtoReflect.Descriptor instead.
 func (*ListExecutionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{195}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{178}
 }
 
 func (x *ListExecutionsRequest) GetPageSize() int32 {
@@ -12564,7 +11695,7 @@ type ListExecutionsResponse struct {
 
 func (x *ListExecutionsResponse) Reset() {
 	*x = ListExecutionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[196]
+	mi := &file_powermanage_v1_control_proto_msgTypes[179]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12576,7 +11707,7 @@ func (x *ListExecutionsResponse) String() string {
 func (*ListExecutionsResponse) ProtoMessage() {}
 
 func (x *ListExecutionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[196]
+	mi := &file_powermanage_v1_control_proto_msgTypes[179]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12589,7 +11720,7 @@ func (x *ListExecutionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExecutionsResponse.ProtoReflect.Descriptor instead.
 func (*ListExecutionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{196}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{179}
 }
 
 func (x *ListExecutionsResponse) GetExecutions() []*ActionExecution {
@@ -12618,7 +11749,7 @@ type DispatchInstantActionRequest struct {
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,ne=0"
-	InstantAction ActionType `protobuf:"varint,2,opt,name=instant_action,json=instantAction,proto3,enum=pm.v1.ActionType" json:"instant_action,omitempty" validate:"required,ne=0"`
+	InstantAction ActionType `protobuf:"varint,2,opt,name=instant_action,json=instantAction,proto3,enum=powermanage.v1.ActionType" json:"instant_action,omitempty" validate:"required,ne=0"`
 	// Same semantics as DispatchActionRequest.run_at: when set, defer
 	// the instant action's dispatch until this UTC timestamp.
 	RunAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=run_at,json=runAt,proto3" json:"run_at,omitempty"`
@@ -12632,7 +11763,7 @@ type DispatchInstantActionRequest struct {
 
 func (x *DispatchInstantActionRequest) Reset() {
 	*x = DispatchInstantActionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[197]
+	mi := &file_powermanage_v1_control_proto_msgTypes[180]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12644,7 +11775,7 @@ func (x *DispatchInstantActionRequest) String() string {
 func (*DispatchInstantActionRequest) ProtoMessage() {}
 
 func (x *DispatchInstantActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[197]
+	mi := &file_powermanage_v1_control_proto_msgTypes[180]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12657,7 +11788,7 @@ func (x *DispatchInstantActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchInstantActionRequest.ProtoReflect.Descriptor instead.
 func (*DispatchInstantActionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{197}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{180}
 }
 
 func (x *DispatchInstantActionRequest) GetDeviceId() string {
@@ -12697,7 +11828,7 @@ type DispatchInstantActionResponse struct {
 
 func (x *DispatchInstantActionResponse) Reset() {
 	*x = DispatchInstantActionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[198]
+	mi := &file_powermanage_v1_control_proto_msgTypes[181]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12709,7 +11840,7 @@ func (x *DispatchInstantActionResponse) String() string {
 func (*DispatchInstantActionResponse) ProtoMessage() {}
 
 func (x *DispatchInstantActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[198]
+	mi := &file_powermanage_v1_control_proto_msgTypes[181]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12722,7 +11853,7 @@ func (x *DispatchInstantActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchInstantActionResponse.ProtoReflect.Descriptor instead.
 func (*DispatchInstantActionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{198}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{181}
 }
 
 func (x *DispatchInstantActionResponse) GetExecution() *ActionExecution {
@@ -12736,7 +11867,7 @@ func (x *DispatchInstantActionResponse) GetExecution() *ActionExecution {
 // fires. Idempotent and best-effort: once an execution leaves the
 // SCHEDULED / PENDING window the cancel is a documented no-op and the
 // returned execution reflects whatever terminal state it reached on
-// its own. See manchtools/power-manage-server#57.
+// its own.
 type CancelExecutionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -12747,7 +11878,7 @@ type CancelExecutionRequest struct {
 
 func (x *CancelExecutionRequest) Reset() {
 	*x = CancelExecutionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[199]
+	mi := &file_powermanage_v1_control_proto_msgTypes[182]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12759,7 +11890,7 @@ func (x *CancelExecutionRequest) String() string {
 func (*CancelExecutionRequest) ProtoMessage() {}
 
 func (x *CancelExecutionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[199]
+	mi := &file_powermanage_v1_control_proto_msgTypes[182]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12772,7 +11903,7 @@ func (x *CancelExecutionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelExecutionRequest.ProtoReflect.Descriptor instead.
 func (*CancelExecutionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{199}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{182}
 }
 
 func (x *CancelExecutionRequest) GetExecutionId() string {
@@ -12794,7 +11925,7 @@ type CancelExecutionResponse struct {
 
 func (x *CancelExecutionResponse) Reset() {
 	*x = CancelExecutionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[200]
+	mi := &file_powermanage_v1_control_proto_msgTypes[183]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12806,7 +11937,7 @@ func (x *CancelExecutionResponse) String() string {
 func (*CancelExecutionResponse) ProtoMessage() {}
 
 func (x *CancelExecutionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[200]
+	mi := &file_powermanage_v1_control_proto_msgTypes[183]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12819,7 +11950,7 @@ func (x *CancelExecutionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelExecutionResponse.ProtoReflect.Descriptor instead.
 func (*CancelExecutionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{200}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{183}
 }
 
 func (x *CancelExecutionResponse) GetExecution() *ActionExecution {
@@ -12829,14 +11960,12 @@ func (x *CancelExecutionResponse) GetExecution() *ActionExecution {
 	return nil
 }
 
-// AuditEvent mirrors a row from the event store. The event_type,
-// stream_type, and actor_type fields are intentionally string-typed
-// (open set): the event store tracks dozens of event types across
-// every aggregate, and new events can be added without coordinating a
-// proto enum bump. The web UI populates filter dropdowns from the
-// distinct values returned by ListAuditEvents rather than a typed
-// enum. See manchtools/power-manage-sdk TECH_DEBT_AUDIT.md F013 for
-// rationale.
+// AuditEvent mirrors a row from the append-only audit log. The
+// event_type, stream_type, and actor_type fields are intentionally
+// string-typed (open set): the log records dozens of event types across
+// every domain, and a new one must not require a proto enum bump. The
+// web UI populates filter dropdowns from the distinct values returned by
+// ListAuditEvents rather than from a typed enum.
 type AuditEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -12853,7 +11982,7 @@ type AuditEvent struct {
 
 func (x *AuditEvent) Reset() {
 	*x = AuditEvent{}
-	mi := &file_pm_v1_control_proto_msgTypes[201]
+	mi := &file_powermanage_v1_control_proto_msgTypes[184]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12865,7 +11994,7 @@ func (x *AuditEvent) String() string {
 func (*AuditEvent) ProtoMessage() {}
 
 func (x *AuditEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[201]
+	mi := &file_powermanage_v1_control_proto_msgTypes[184]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12878,7 +12007,7 @@ func (x *AuditEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuditEvent.ProtoReflect.Descriptor instead.
 func (*AuditEvent) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{201}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{184}
 }
 
 func (x *AuditEvent) GetId() string {
@@ -12955,7 +12084,7 @@ type ListAuditEventsRequest struct {
 
 func (x *ListAuditEventsRequest) Reset() {
 	*x = ListAuditEventsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[202]
+	mi := &file_powermanage_v1_control_proto_msgTypes[185]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12967,7 +12096,7 @@ func (x *ListAuditEventsRequest) String() string {
 func (*ListAuditEventsRequest) ProtoMessage() {}
 
 func (x *ListAuditEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[202]
+	mi := &file_powermanage_v1_control_proto_msgTypes[185]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12980,7 +12109,7 @@ func (x *ListAuditEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditEventsRequest.ProtoReflect.Descriptor instead.
 func (*ListAuditEventsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{202}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{185}
 }
 
 func (x *ListAuditEventsRequest) GetPageSize() int32 {
@@ -13029,7 +12158,7 @@ type ListAuditEventsResponse struct {
 
 func (x *ListAuditEventsResponse) Reset() {
 	*x = ListAuditEventsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[203]
+	mi := &file_powermanage_v1_control_proto_msgTypes[186]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13041,7 +12170,7 @@ func (x *ListAuditEventsResponse) String() string {
 func (*ListAuditEventsResponse) ProtoMessage() {}
 
 func (x *ListAuditEventsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[203]
+	mi := &file_powermanage_v1_control_proto_msgTypes[186]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13054,7 +12183,7 @@ func (x *ListAuditEventsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditEventsResponse.ProtoReflect.Descriptor instead.
 func (*ListAuditEventsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{203}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{186}
 }
 
 func (x *ListAuditEventsResponse) GetEvents() []*AuditEvent {
@@ -13079,8 +12208,7 @@ func (x *ListAuditEventsResponse) GetTotalCount() int32 {
 }
 
 // ExportAuditEvents streams the audit log as CSV or JSON for DSAR /
-// external review (spec 26, manchtools/power-manage-server#501). It is
-// a *unary, chunked* export on purpose: the control server's
+// external review. It is a *unary, chunked* export on purpose: the control server's
 // interceptors are deliberately fail-closed on streaming RPCs, so the
 // client loops — pass the returned next_page_token back until it comes
 // back empty, concatenating the chunks. The server applies the same
@@ -13114,7 +12242,7 @@ type ExportAuditEventsRequest struct {
 
 func (x *ExportAuditEventsRequest) Reset() {
 	*x = ExportAuditEventsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[204]
+	mi := &file_powermanage_v1_control_proto_msgTypes[187]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13126,7 +12254,7 @@ func (x *ExportAuditEventsRequest) String() string {
 func (*ExportAuditEventsRequest) ProtoMessage() {}
 
 func (x *ExportAuditEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[204]
+	mi := &file_powermanage_v1_control_proto_msgTypes[187]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13139,7 +12267,7 @@ func (x *ExportAuditEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportAuditEventsRequest.ProtoReflect.Descriptor instead.
 func (*ExportAuditEventsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{204}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{187}
 }
 
 func (x *ExportAuditEventsRequest) GetFormat() string {
@@ -13206,7 +12334,7 @@ type ExportAuditEventsResponse struct {
 
 func (x *ExportAuditEventsResponse) Reset() {
 	*x = ExportAuditEventsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[205]
+	mi := &file_powermanage_v1_control_proto_msgTypes[188]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13218,7 +12346,7 @@ func (x *ExportAuditEventsResponse) String() string {
 func (*ExportAuditEventsResponse) ProtoMessage() {}
 
 func (x *ExportAuditEventsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[205]
+	mi := &file_powermanage_v1_control_proto_msgTypes[188]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13231,7 +12359,7 @@ func (x *ExportAuditEventsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportAuditEventsResponse.ProtoReflect.Descriptor instead.
 func (*ExportAuditEventsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{205}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{188}
 }
 
 func (x *ExportAuditEventsResponse) GetChunk() []byte {
@@ -13258,14 +12386,14 @@ type LpsPassword struct {
 	Username       string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
 	Password       string                 `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
 	RotatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
-	RotationReason RotationReason         `protobuf:"varint,8,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty"`
+	RotationReason RotationReason         `protobuf:"varint,8,opt,name=rotation_reason,json=rotationReason,proto3,enum=powermanage.v1.RotationReason" json:"rotation_reason,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *LpsPassword) Reset() {
 	*x = LpsPassword{}
-	mi := &file_pm_v1_control_proto_msgTypes[206]
+	mi := &file_powermanage_v1_control_proto_msgTypes[189]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13277,7 +12405,7 @@ func (x *LpsPassword) String() string {
 func (*LpsPassword) ProtoMessage() {}
 
 func (x *LpsPassword) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[206]
+	mi := &file_powermanage_v1_control_proto_msgTypes[189]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13290,7 +12418,7 @@ func (x *LpsPassword) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpsPassword.ProtoReflect.Descriptor instead.
 func (*LpsPassword) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{206}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{189}
 }
 
 func (x *LpsPassword) GetDeviceId() string {
@@ -13359,7 +12487,7 @@ type GetDeviceLpsPasswordsRequest struct {
 
 func (x *GetDeviceLpsPasswordsRequest) Reset() {
 	*x = GetDeviceLpsPasswordsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[207]
+	mi := &file_powermanage_v1_control_proto_msgTypes[190]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13371,7 +12499,7 @@ func (x *GetDeviceLpsPasswordsRequest) String() string {
 func (*GetDeviceLpsPasswordsRequest) ProtoMessage() {}
 
 func (x *GetDeviceLpsPasswordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[207]
+	mi := &file_powermanage_v1_control_proto_msgTypes[190]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13384,7 +12512,7 @@ func (x *GetDeviceLpsPasswordsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceLpsPasswordsRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceLpsPasswordsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{207}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{190}
 }
 
 func (x *GetDeviceLpsPasswordsRequest) GetDeviceId() string {
@@ -13406,7 +12534,7 @@ type GetDeviceLpsPasswordsResponse struct {
 
 func (x *GetDeviceLpsPasswordsResponse) Reset() {
 	*x = GetDeviceLpsPasswordsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[208]
+	mi := &file_powermanage_v1_control_proto_msgTypes[191]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13418,7 +12546,7 @@ func (x *GetDeviceLpsPasswordsResponse) String() string {
 func (*GetDeviceLpsPasswordsResponse) ProtoMessage() {}
 
 func (x *GetDeviceLpsPasswordsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[208]
+	mi := &file_powermanage_v1_control_proto_msgTypes[191]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13431,7 +12559,7 @@ func (x *GetDeviceLpsPasswordsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceLpsPasswordsResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceLpsPasswordsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{208}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{191}
 }
 
 func (x *GetDeviceLpsPasswordsResponse) GetCurrent() []*LpsPassword {
@@ -13458,8 +12586,8 @@ type LuksKey struct {
 	DevicePath       string                 `protobuf:"bytes,5,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty"`
 	Passphrase       string                 `protobuf:"bytes,6,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
 	RotatedAt        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
-	RotationReason   RotationReason         `protobuf:"varint,8,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty"`
-	RevocationStatus LuksRevocationStatus   `protobuf:"varint,9,opt,name=revocation_status,json=revocationStatus,proto3,enum=pm.v1.LuksRevocationStatus" json:"revocation_status,omitempty"`
+	RotationReason   RotationReason         `protobuf:"varint,8,opt,name=rotation_reason,json=rotationReason,proto3,enum=powermanage.v1.RotationReason" json:"rotation_reason,omitempty"`
+	RevocationStatus LuksRevocationStatus   `protobuf:"varint,9,opt,name=revocation_status,json=revocationStatus,proto3,enum=powermanage.v1.LuksRevocationStatus" json:"revocation_status,omitempty"`
 	// Error message if revocation failed
 	RevocationError string `protobuf:"bytes,10,opt,name=revocation_error,json=revocationError,proto3" json:"revocation_error,omitempty"`
 	// Timestamp of last revocation event
@@ -13470,7 +12598,7 @@ type LuksKey struct {
 
 func (x *LuksKey) Reset() {
 	*x = LuksKey{}
-	mi := &file_pm_v1_control_proto_msgTypes[209]
+	mi := &file_powermanage_v1_control_proto_msgTypes[192]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13482,7 +12610,7 @@ func (x *LuksKey) String() string {
 func (*LuksKey) ProtoMessage() {}
 
 func (x *LuksKey) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[209]
+	mi := &file_powermanage_v1_control_proto_msgTypes[192]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13495,7 +12623,7 @@ func (x *LuksKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LuksKey.ProtoReflect.Descriptor instead.
 func (*LuksKey) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{209}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{192}
 }
 
 func (x *LuksKey) GetDeviceId() string {
@@ -13585,7 +12713,7 @@ type GetDeviceLuksKeysRequest struct {
 
 func (x *GetDeviceLuksKeysRequest) Reset() {
 	*x = GetDeviceLuksKeysRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[210]
+	mi := &file_powermanage_v1_control_proto_msgTypes[193]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13597,7 +12725,7 @@ func (x *GetDeviceLuksKeysRequest) String() string {
 func (*GetDeviceLuksKeysRequest) ProtoMessage() {}
 
 func (x *GetDeviceLuksKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[210]
+	mi := &file_powermanage_v1_control_proto_msgTypes[193]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13610,7 +12738,7 @@ func (x *GetDeviceLuksKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceLuksKeysRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceLuksKeysRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{210}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{193}
 }
 
 func (x *GetDeviceLuksKeysRequest) GetDeviceId() string {
@@ -13632,7 +12760,7 @@ type GetDeviceLuksKeysResponse struct {
 
 func (x *GetDeviceLuksKeysResponse) Reset() {
 	*x = GetDeviceLuksKeysResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[211]
+	mi := &file_powermanage_v1_control_proto_msgTypes[194]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13644,7 +12772,7 @@ func (x *GetDeviceLuksKeysResponse) String() string {
 func (*GetDeviceLuksKeysResponse) ProtoMessage() {}
 
 func (x *GetDeviceLuksKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[211]
+	mi := &file_powermanage_v1_control_proto_msgTypes[194]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13657,7 +12785,7 @@ func (x *GetDeviceLuksKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceLuksKeysResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceLuksKeysResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{211}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{194}
 }
 
 func (x *GetDeviceLuksKeysResponse) GetCurrent() []*LuksKey {
@@ -13686,7 +12814,7 @@ type CreateLuksTokenRequest struct {
 
 func (x *CreateLuksTokenRequest) Reset() {
 	*x = CreateLuksTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[212]
+	mi := &file_powermanage_v1_control_proto_msgTypes[195]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13698,7 +12826,7 @@ func (x *CreateLuksTokenRequest) String() string {
 func (*CreateLuksTokenRequest) ProtoMessage() {}
 
 func (x *CreateLuksTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[212]
+	mi := &file_powermanage_v1_control_proto_msgTypes[195]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13711,7 +12839,7 @@ func (x *CreateLuksTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLuksTokenRequest.ProtoReflect.Descriptor instead.
 func (*CreateLuksTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{212}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{195}
 }
 
 func (x *CreateLuksTokenRequest) GetDeviceId() string {
@@ -13742,7 +12870,7 @@ type CreateLuksTokenResponse struct {
 
 func (x *CreateLuksTokenResponse) Reset() {
 	*x = CreateLuksTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[213]
+	mi := &file_powermanage_v1_control_proto_msgTypes[196]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13754,7 +12882,7 @@ func (x *CreateLuksTokenResponse) String() string {
 func (*CreateLuksTokenResponse) ProtoMessage() {}
 
 func (x *CreateLuksTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[213]
+	mi := &file_powermanage_v1_control_proto_msgTypes[196]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13767,7 +12895,7 @@ func (x *CreateLuksTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLuksTokenResponse.ProtoReflect.Descriptor instead.
 func (*CreateLuksTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{213}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{196}
 }
 
 func (x *CreateLuksTokenResponse) GetToken() string {
@@ -13803,7 +12931,7 @@ type RevokeLuksDeviceKeyRequest struct {
 
 func (x *RevokeLuksDeviceKeyRequest) Reset() {
 	*x = RevokeLuksDeviceKeyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[214]
+	mi := &file_powermanage_v1_control_proto_msgTypes[197]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13815,7 +12943,7 @@ func (x *RevokeLuksDeviceKeyRequest) String() string {
 func (*RevokeLuksDeviceKeyRequest) ProtoMessage() {}
 
 func (x *RevokeLuksDeviceKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[214]
+	mi := &file_powermanage_v1_control_proto_msgTypes[197]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13828,7 +12956,7 @@ func (x *RevokeLuksDeviceKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeLuksDeviceKeyRequest.ProtoReflect.Descriptor instead.
 func (*RevokeLuksDeviceKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{214}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{197}
 }
 
 func (x *RevokeLuksDeviceKeyRequest) GetDeviceId() string {
@@ -13853,7 +12981,7 @@ type RevokeLuksDeviceKeyResponse struct {
 
 func (x *RevokeLuksDeviceKeyResponse) Reset() {
 	*x = RevokeLuksDeviceKeyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[215]
+	mi := &file_powermanage_v1_control_proto_msgTypes[198]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13865,7 +12993,7 @@ func (x *RevokeLuksDeviceKeyResponse) String() string {
 func (*RevokeLuksDeviceKeyResponse) ProtoMessage() {}
 
 func (x *RevokeLuksDeviceKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[215]
+	mi := &file_powermanage_v1_control_proto_msgTypes[198]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13878,7 +13006,7 @@ func (x *RevokeLuksDeviceKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeLuksDeviceKeyResponse.ProtoReflect.Descriptor instead.
 func (*RevokeLuksDeviceKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{215}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{198}
 }
 
 // Dispatch an on-demand OSQuery to a connected device
@@ -13901,7 +13029,7 @@ type DispatchOSQueryRequest struct {
 
 func (x *DispatchOSQueryRequest) Reset() {
 	*x = DispatchOSQueryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[216]
+	mi := &file_powermanage_v1_control_proto_msgTypes[199]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13913,7 +13041,7 @@ func (x *DispatchOSQueryRequest) String() string {
 func (*DispatchOSQueryRequest) ProtoMessage() {}
 
 func (x *DispatchOSQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[216]
+	mi := &file_powermanage_v1_control_proto_msgTypes[199]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13926,7 +13054,7 @@ func (x *DispatchOSQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchOSQueryRequest.ProtoReflect.Descriptor instead.
 func (*DispatchOSQueryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{216}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{199}
 }
 
 func (x *DispatchOSQueryRequest) GetDeviceId() string {
@@ -13973,7 +13101,7 @@ type DispatchOSQueryResponse struct {
 
 func (x *DispatchOSQueryResponse) Reset() {
 	*x = DispatchOSQueryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[217]
+	mi := &file_powermanage_v1_control_proto_msgTypes[200]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13985,7 +13113,7 @@ func (x *DispatchOSQueryResponse) String() string {
 func (*DispatchOSQueryResponse) ProtoMessage() {}
 
 func (x *DispatchOSQueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[217]
+	mi := &file_powermanage_v1_control_proto_msgTypes[200]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13998,7 +13126,7 @@ func (x *DispatchOSQueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DispatchOSQueryResponse.ProtoReflect.Descriptor instead.
 func (*DispatchOSQueryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{217}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{200}
 }
 
 func (x *DispatchOSQueryResponse) GetQueryId() string {
@@ -14019,7 +13147,7 @@ type GetOSQueryResultRequest struct {
 
 func (x *GetOSQueryResultRequest) Reset() {
 	*x = GetOSQueryResultRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[218]
+	mi := &file_powermanage_v1_control_proto_msgTypes[201]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14031,7 +13159,7 @@ func (x *GetOSQueryResultRequest) String() string {
 func (*GetOSQueryResultRequest) ProtoMessage() {}
 
 func (x *GetOSQueryResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[218]
+	mi := &file_powermanage_v1_control_proto_msgTypes[201]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14044,7 +13172,7 @@ func (x *GetOSQueryResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOSQueryResultRequest.ProtoReflect.Descriptor instead.
 func (*GetOSQueryResultRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{218}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{201}
 }
 
 func (x *GetOSQueryResultRequest) GetQueryId() string {
@@ -14067,7 +13195,7 @@ type GetOSQueryResultResponse struct {
 
 func (x *GetOSQueryResultResponse) Reset() {
 	*x = GetOSQueryResultResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[219]
+	mi := &file_powermanage_v1_control_proto_msgTypes[202]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14079,7 +13207,7 @@ func (x *GetOSQueryResultResponse) String() string {
 func (*GetOSQueryResultResponse) ProtoMessage() {}
 
 func (x *GetOSQueryResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[219]
+	mi := &file_powermanage_v1_control_proto_msgTypes[202]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14092,7 +13220,7 @@ func (x *GetOSQueryResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOSQueryResultResponse.ProtoReflect.Descriptor instead.
 func (*GetOSQueryResultResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{219}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{202}
 }
 
 func (x *GetOSQueryResultResponse) GetQueryId() string {
@@ -14144,7 +13272,7 @@ type GetDeviceInventoryRequest struct {
 
 func (x *GetDeviceInventoryRequest) Reset() {
 	*x = GetDeviceInventoryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[220]
+	mi := &file_powermanage_v1_control_proto_msgTypes[203]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14156,7 +13284,7 @@ func (x *GetDeviceInventoryRequest) String() string {
 func (*GetDeviceInventoryRequest) ProtoMessage() {}
 
 func (x *GetDeviceInventoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[220]
+	mi := &file_powermanage_v1_control_proto_msgTypes[203]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14169,7 +13297,7 @@ func (x *GetDeviceInventoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceInventoryRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceInventoryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{220}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{203}
 }
 
 func (x *GetDeviceInventoryRequest) GetDeviceId() string {
@@ -14197,7 +13325,7 @@ type InventoryTableResult struct {
 
 func (x *InventoryTableResult) Reset() {
 	*x = InventoryTableResult{}
-	mi := &file_pm_v1_control_proto_msgTypes[221]
+	mi := &file_powermanage_v1_control_proto_msgTypes[204]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14209,7 +13337,7 @@ func (x *InventoryTableResult) String() string {
 func (*InventoryTableResult) ProtoMessage() {}
 
 func (x *InventoryTableResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[221]
+	mi := &file_powermanage_v1_control_proto_msgTypes[204]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14222,7 +13350,7 @@ func (x *InventoryTableResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InventoryTableResult.ProtoReflect.Descriptor instead.
 func (*InventoryTableResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{221}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{204}
 }
 
 func (x *InventoryTableResult) GetTableName() string {
@@ -14255,7 +13383,7 @@ type GetDeviceInventoryResponse struct {
 
 func (x *GetDeviceInventoryResponse) Reset() {
 	*x = GetDeviceInventoryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[222]
+	mi := &file_powermanage_v1_control_proto_msgTypes[205]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14267,7 +13395,7 @@ func (x *GetDeviceInventoryResponse) String() string {
 func (*GetDeviceInventoryResponse) ProtoMessage() {}
 
 func (x *GetDeviceInventoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[222]
+	mi := &file_powermanage_v1_control_proto_msgTypes[205]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14280,7 +13408,7 @@ func (x *GetDeviceInventoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceInventoryResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceInventoryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{222}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{205}
 }
 
 func (x *GetDeviceInventoryResponse) GetTables() []*InventoryTableResult {
@@ -14301,7 +13429,7 @@ type RefreshDeviceInventoryRequest struct {
 
 func (x *RefreshDeviceInventoryRequest) Reset() {
 	*x = RefreshDeviceInventoryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[223]
+	mi := &file_powermanage_v1_control_proto_msgTypes[206]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14313,7 +13441,7 @@ func (x *RefreshDeviceInventoryRequest) String() string {
 func (*RefreshDeviceInventoryRequest) ProtoMessage() {}
 
 func (x *RefreshDeviceInventoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[223]
+	mi := &file_powermanage_v1_control_proto_msgTypes[206]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14326,7 +13454,7 @@ func (x *RefreshDeviceInventoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshDeviceInventoryRequest.ProtoReflect.Descriptor instead.
 func (*RefreshDeviceInventoryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{223}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{206}
 }
 
 func (x *RefreshDeviceInventoryRequest) GetDeviceId() string {
@@ -14344,7 +13472,7 @@ type RefreshDeviceInventoryResponse struct {
 
 func (x *RefreshDeviceInventoryResponse) Reset() {
 	*x = RefreshDeviceInventoryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[224]
+	mi := &file_powermanage_v1_control_proto_msgTypes[207]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14356,7 +13484,7 @@ func (x *RefreshDeviceInventoryResponse) String() string {
 func (*RefreshDeviceInventoryResponse) ProtoMessage() {}
 
 func (x *RefreshDeviceInventoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[224]
+	mi := &file_powermanage_v1_control_proto_msgTypes[207]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14369,7 +13497,7 @@ func (x *RefreshDeviceInventoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshDeviceInventoryResponse.ProtoReflect.Descriptor instead.
 func (*RefreshDeviceInventoryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{224}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{207}
 }
 
 type QueryDeviceLogsRequest struct {
@@ -14395,7 +13523,7 @@ type QueryDeviceLogsRequest struct {
 
 func (x *QueryDeviceLogsRequest) Reset() {
 	*x = QueryDeviceLogsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[225]
+	mi := &file_powermanage_v1_control_proto_msgTypes[208]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14407,7 +13535,7 @@ func (x *QueryDeviceLogsRequest) String() string {
 func (*QueryDeviceLogsRequest) ProtoMessage() {}
 
 func (x *QueryDeviceLogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[225]
+	mi := &file_powermanage_v1_control_proto_msgTypes[208]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14420,7 +13548,7 @@ func (x *QueryDeviceLogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryDeviceLogsRequest.ProtoReflect.Descriptor instead.
 func (*QueryDeviceLogsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{225}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{208}
 }
 
 func (x *QueryDeviceLogsRequest) GetDeviceId() string {
@@ -14488,7 +13616,7 @@ type QueryDeviceLogsResponse struct {
 
 func (x *QueryDeviceLogsResponse) Reset() {
 	*x = QueryDeviceLogsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[226]
+	mi := &file_powermanage_v1_control_proto_msgTypes[209]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14500,7 +13628,7 @@ func (x *QueryDeviceLogsResponse) String() string {
 func (*QueryDeviceLogsResponse) ProtoMessage() {}
 
 func (x *QueryDeviceLogsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[226]
+	mi := &file_powermanage_v1_control_proto_msgTypes[209]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14513,7 +13641,7 @@ func (x *QueryDeviceLogsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryDeviceLogsResponse.ProtoReflect.Descriptor instead.
 func (*QueryDeviceLogsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{226}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{209}
 }
 
 func (x *QueryDeviceLogsResponse) GetQueryId() string {
@@ -14533,7 +13661,7 @@ type GetDeviceLogResultRequest struct {
 
 func (x *GetDeviceLogResultRequest) Reset() {
 	*x = GetDeviceLogResultRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[227]
+	mi := &file_powermanage_v1_control_proto_msgTypes[210]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14545,7 +13673,7 @@ func (x *GetDeviceLogResultRequest) String() string {
 func (*GetDeviceLogResultRequest) ProtoMessage() {}
 
 func (x *GetDeviceLogResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[227]
+	mi := &file_powermanage_v1_control_proto_msgTypes[210]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14558,7 +13686,7 @@ func (x *GetDeviceLogResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceLogResultRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceLogResultRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{227}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{210}
 }
 
 func (x *GetDeviceLogResultRequest) GetQueryId() string {
@@ -14581,7 +13709,7 @@ type GetDeviceLogResultResponse struct {
 
 func (x *GetDeviceLogResultResponse) Reset() {
 	*x = GetDeviceLogResultResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[228]
+	mi := &file_powermanage_v1_control_proto_msgTypes[211]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14593,7 +13721,7 @@ func (x *GetDeviceLogResultResponse) String() string {
 func (*GetDeviceLogResultResponse) ProtoMessage() {}
 
 func (x *GetDeviceLogResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[228]
+	mi := &file_powermanage_v1_control_proto_msgTypes[211]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14606,7 +13734,7 @@ func (x *GetDeviceLogResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceLogResultResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceLogResultResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{228}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{211}
 }
 
 func (x *GetDeviceLogResultResponse) GetQueryId() string {
@@ -14658,7 +13786,7 @@ type CreateRoleRequest struct {
 
 func (x *CreateRoleRequest) Reset() {
 	*x = CreateRoleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[229]
+	mi := &file_powermanage_v1_control_proto_msgTypes[212]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14670,7 +13798,7 @@ func (x *CreateRoleRequest) String() string {
 func (*CreateRoleRequest) ProtoMessage() {}
 
 func (x *CreateRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[229]
+	mi := &file_powermanage_v1_control_proto_msgTypes[212]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14683,7 +13811,7 @@ func (x *CreateRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRoleRequest.ProtoReflect.Descriptor instead.
 func (*CreateRoleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{229}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{212}
 }
 
 func (x *CreateRoleRequest) GetName() string {
@@ -14716,7 +13844,7 @@ type CreateRoleResponse struct {
 
 func (x *CreateRoleResponse) Reset() {
 	*x = CreateRoleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[230]
+	mi := &file_powermanage_v1_control_proto_msgTypes[213]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14728,7 +13856,7 @@ func (x *CreateRoleResponse) String() string {
 func (*CreateRoleResponse) ProtoMessage() {}
 
 func (x *CreateRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[230]
+	mi := &file_powermanage_v1_control_proto_msgTypes[213]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14741,7 +13869,7 @@ func (x *CreateRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRoleResponse.ProtoReflect.Descriptor instead.
 func (*CreateRoleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{230}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{213}
 }
 
 func (x *CreateRoleResponse) GetRole() *Role {
@@ -14761,7 +13889,7 @@ type GetRoleRequest struct {
 
 func (x *GetRoleRequest) Reset() {
 	*x = GetRoleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[231]
+	mi := &file_powermanage_v1_control_proto_msgTypes[214]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14773,7 +13901,7 @@ func (x *GetRoleRequest) String() string {
 func (*GetRoleRequest) ProtoMessage() {}
 
 func (x *GetRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[231]
+	mi := &file_powermanage_v1_control_proto_msgTypes[214]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14786,7 +13914,7 @@ func (x *GetRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRoleRequest.ProtoReflect.Descriptor instead.
 func (*GetRoleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{231}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{214}
 }
 
 func (x *GetRoleRequest) GetId() string {
@@ -14806,7 +13934,7 @@ type GetRoleResponse struct {
 
 func (x *GetRoleResponse) Reset() {
 	*x = GetRoleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[232]
+	mi := &file_powermanage_v1_control_proto_msgTypes[215]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14818,7 +13946,7 @@ func (x *GetRoleResponse) String() string {
 func (*GetRoleResponse) ProtoMessage() {}
 
 func (x *GetRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[232]
+	mi := &file_powermanage_v1_control_proto_msgTypes[215]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14831,7 +13959,7 @@ func (x *GetRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRoleResponse.ProtoReflect.Descriptor instead.
 func (*GetRoleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{232}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{215}
 }
 
 func (x *GetRoleResponse) GetRole() *Role {
@@ -14860,7 +13988,7 @@ type ListRolesRequest struct {
 
 func (x *ListRolesRequest) Reset() {
 	*x = ListRolesRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[233]
+	mi := &file_powermanage_v1_control_proto_msgTypes[216]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14872,7 +14000,7 @@ func (x *ListRolesRequest) String() string {
 func (*ListRolesRequest) ProtoMessage() {}
 
 func (x *ListRolesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[233]
+	mi := &file_powermanage_v1_control_proto_msgTypes[216]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14885,7 +14013,7 @@ func (x *ListRolesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRolesRequest.ProtoReflect.Descriptor instead.
 func (*ListRolesRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{233}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{216}
 }
 
 func (x *ListRolesRequest) GetPageSize() int32 {
@@ -14913,7 +14041,7 @@ type ListRolesResponse struct {
 
 func (x *ListRolesResponse) Reset() {
 	*x = ListRolesResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[234]
+	mi := &file_powermanage_v1_control_proto_msgTypes[217]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14925,7 +14053,7 @@ func (x *ListRolesResponse) String() string {
 func (*ListRolesResponse) ProtoMessage() {}
 
 func (x *ListRolesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[234]
+	mi := &file_powermanage_v1_control_proto_msgTypes[217]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14938,7 +14066,7 @@ func (x *ListRolesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRolesResponse.ProtoReflect.Descriptor instead.
 func (*ListRolesResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{234}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{217}
 }
 
 func (x *ListRolesResponse) GetRoles() []*Role {
@@ -14978,7 +14106,7 @@ type UpdateRoleRequest struct {
 
 func (x *UpdateRoleRequest) Reset() {
 	*x = UpdateRoleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[235]
+	mi := &file_powermanage_v1_control_proto_msgTypes[218]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14990,7 +14118,7 @@ func (x *UpdateRoleRequest) String() string {
 func (*UpdateRoleRequest) ProtoMessage() {}
 
 func (x *UpdateRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[235]
+	mi := &file_powermanage_v1_control_proto_msgTypes[218]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15003,7 +14131,7 @@ func (x *UpdateRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRoleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRoleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{235}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{218}
 }
 
 func (x *UpdateRoleRequest) GetRoleId() string {
@@ -15043,7 +14171,7 @@ type UpdateRoleResponse struct {
 
 func (x *UpdateRoleResponse) Reset() {
 	*x = UpdateRoleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[236]
+	mi := &file_powermanage_v1_control_proto_msgTypes[219]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15055,7 +14183,7 @@ func (x *UpdateRoleResponse) String() string {
 func (*UpdateRoleResponse) ProtoMessage() {}
 
 func (x *UpdateRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[236]
+	mi := &file_powermanage_v1_control_proto_msgTypes[219]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15068,7 +14196,7 @@ func (x *UpdateRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRoleResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRoleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{236}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{219}
 }
 
 func (x *UpdateRoleResponse) GetRole() *Role {
@@ -15088,7 +14216,7 @@ type DeleteRoleRequest struct {
 
 func (x *DeleteRoleRequest) Reset() {
 	*x = DeleteRoleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[237]
+	mi := &file_powermanage_v1_control_proto_msgTypes[220]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15100,7 +14228,7 @@ func (x *DeleteRoleRequest) String() string {
 func (*DeleteRoleRequest) ProtoMessage() {}
 
 func (x *DeleteRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[237]
+	mi := &file_powermanage_v1_control_proto_msgTypes[220]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15113,7 +14241,7 @@ func (x *DeleteRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRoleRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRoleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{237}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{220}
 }
 
 func (x *DeleteRoleRequest) GetId() string {
@@ -15131,7 +14259,7 @@ type DeleteRoleResponse struct {
 
 func (x *DeleteRoleResponse) Reset() {
 	*x = DeleteRoleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[238]
+	mi := &file_powermanage_v1_control_proto_msgTypes[221]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15143,7 +14271,7 @@ func (x *DeleteRoleResponse) String() string {
 func (*DeleteRoleResponse) ProtoMessage() {}
 
 func (x *DeleteRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[238]
+	mi := &file_powermanage_v1_control_proto_msgTypes[221]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15156,7 +14284,7 @@ func (x *DeleteRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRoleResponse.ProtoReflect.Descriptor instead.
 func (*DeleteRoleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{238}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{221}
 }
 
 type AssignRoleToUserRequest struct {
@@ -15169,14 +14297,13 @@ type AssignRoleToUserRequest struct {
 	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	// Optional grant scope. Paired-or-neither: both scope_kind and
 	// scope_id MUST be set together, or both absent. Absent =
-	// unscoped/global grant (backward-compatible with pre-#7 grants).
-	// Set = the grant's authorization extends only to members of the
-	// group identified by scope_id. scope_kind selects which group
-	// projection scope_id is read from. Every permission in the role
+	// unscoped/global grant. Set = the grant's authorization extends only
+	// to members of the group identified by scope_id, and scope_kind
+	// selects which kind of group that is. Every permission in the role
 	// must accept this scope_kind (PermissionInfo.target_kind must
 	// match), or the assignment is rejected. The actor must hold
-	// AssignRoleScope. See server #7.
-	ScopeKind RoleGrantScopeKind `protobuf:"varint,4,opt,name=scope_kind,json=scopeKind,proto3,enum=pm.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
+	// AssignRoleScope.
+	ScopeKind RoleGrantScopeKind `protobuf:"varint,4,opt,name=scope_kind,json=scopeKind,proto3,enum=powermanage.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
 	// @gotags: validate:"omitempty,ulid"
 	ScopeId       string `protobuf:"bytes,5,opt,name=scope_id,json=scopeId,proto3" json:"scope_id,omitempty" validate:"omitempty,ulid"`
 	unknownFields protoimpl.UnknownFields
@@ -15185,7 +14312,7 @@ type AssignRoleToUserRequest struct {
 
 func (x *AssignRoleToUserRequest) Reset() {
 	*x = AssignRoleToUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[239]
+	mi := &file_powermanage_v1_control_proto_msgTypes[222]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15197,7 +14324,7 @@ func (x *AssignRoleToUserRequest) String() string {
 func (*AssignRoleToUserRequest) ProtoMessage() {}
 
 func (x *AssignRoleToUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[239]
+	mi := &file_powermanage_v1_control_proto_msgTypes[222]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15210,7 +14337,7 @@ func (x *AssignRoleToUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignRoleToUserRequest.ProtoReflect.Descriptor instead.
 func (*AssignRoleToUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{239}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{222}
 }
 
 func (x *AssignRoleToUserRequest) GetUserId() string {
@@ -15256,7 +14383,7 @@ type AssignRoleToUserResponse struct {
 
 func (x *AssignRoleToUserResponse) Reset() {
 	*x = AssignRoleToUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[240]
+	mi := &file_powermanage_v1_control_proto_msgTypes[223]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15268,7 +14395,7 @@ func (x *AssignRoleToUserResponse) String() string {
 func (*AssignRoleToUserResponse) ProtoMessage() {}
 
 func (x *AssignRoleToUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[240]
+	mi := &file_powermanage_v1_control_proto_msgTypes[223]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15281,7 +14408,7 @@ func (x *AssignRoleToUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignRoleToUserResponse.ProtoReflect.Descriptor instead.
 func (*AssignRoleToUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{240}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{223}
 }
 
 type RevokeRoleFromUserRequest struct {
@@ -15296,8 +14423,8 @@ type RevokeRoleFromUserRequest struct {
 	// the unscoped grant; both set = revoke that one specific scoped
 	// grant. The handler rejects "revoke unscoped" when only scoped
 	// grants exist (and vice versa) to surface ambiguity rather than
-	// silently no-op. server #7.
-	ScopeKind RoleGrantScopeKind `protobuf:"varint,3,opt,name=scope_kind,json=scopeKind,proto3,enum=pm.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
+	// silently no-op.
+	ScopeKind RoleGrantScopeKind `protobuf:"varint,3,opt,name=scope_kind,json=scopeKind,proto3,enum=powermanage.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
 	// @gotags: validate:"omitempty,ulid"
 	ScopeId       string `protobuf:"bytes,4,opt,name=scope_id,json=scopeId,proto3" json:"scope_id,omitempty" validate:"omitempty,ulid"`
 	unknownFields protoimpl.UnknownFields
@@ -15306,7 +14433,7 @@ type RevokeRoleFromUserRequest struct {
 
 func (x *RevokeRoleFromUserRequest) Reset() {
 	*x = RevokeRoleFromUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[241]
+	mi := &file_powermanage_v1_control_proto_msgTypes[224]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15318,7 +14445,7 @@ func (x *RevokeRoleFromUserRequest) String() string {
 func (*RevokeRoleFromUserRequest) ProtoMessage() {}
 
 func (x *RevokeRoleFromUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[241]
+	mi := &file_powermanage_v1_control_proto_msgTypes[224]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15331,7 +14458,7 @@ func (x *RevokeRoleFromUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeRoleFromUserRequest.ProtoReflect.Descriptor instead.
 func (*RevokeRoleFromUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{241}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{224}
 }
 
 func (x *RevokeRoleFromUserRequest) GetUserId() string {
@@ -15370,7 +14497,7 @@ type RevokeRoleFromUserResponse struct {
 
 func (x *RevokeRoleFromUserResponse) Reset() {
 	*x = RevokeRoleFromUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[242]
+	mi := &file_powermanage_v1_control_proto_msgTypes[225]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15382,7 +14509,7 @@ func (x *RevokeRoleFromUserResponse) String() string {
 func (*RevokeRoleFromUserResponse) ProtoMessage() {}
 
 func (x *RevokeRoleFromUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[242]
+	mi := &file_powermanage_v1_control_proto_msgTypes[225]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15395,7 +14522,7 @@ func (x *RevokeRoleFromUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeRoleFromUserResponse.ProtoReflect.Descriptor instead.
 func (*RevokeRoleFromUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{242}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{225}
 }
 
 type ListPermissionsRequest struct {
@@ -15406,7 +14533,7 @@ type ListPermissionsRequest struct {
 
 func (x *ListPermissionsRequest) Reset() {
 	*x = ListPermissionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[243]
+	mi := &file_powermanage_v1_control_proto_msgTypes[226]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15418,7 +14545,7 @@ func (x *ListPermissionsRequest) String() string {
 func (*ListPermissionsRequest) ProtoMessage() {}
 
 func (x *ListPermissionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[243]
+	mi := &file_powermanage_v1_control_proto_msgTypes[226]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15431,7 +14558,7 @@ func (x *ListPermissionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPermissionsRequest.ProtoReflect.Descriptor instead.
 func (*ListPermissionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{243}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{226}
 }
 
 type ListPermissionsResponse struct {
@@ -15443,7 +14570,7 @@ type ListPermissionsResponse struct {
 
 func (x *ListPermissionsResponse) Reset() {
 	*x = ListPermissionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[244]
+	mi := &file_powermanage_v1_control_proto_msgTypes[227]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15455,7 +14582,7 @@ func (x *ListPermissionsResponse) String() string {
 func (*ListPermissionsResponse) ProtoMessage() {}
 
 func (x *ListPermissionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[244]
+	mi := &file_powermanage_v1_control_proto_msgTypes[227]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15468,7 +14595,7 @@ func (x *ListPermissionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPermissionsResponse.ProtoReflect.Descriptor instead.
 func (*ListPermissionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{244}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{227}
 }
 
 func (x *ListPermissionsResponse) GetPermissions() []*PermissionInfo {
@@ -15484,7 +14611,6 @@ type UserGroup struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	MemberCount   int32                  `protobuf:"varint,4,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
-	Roles         []*Role                `protobuf:"bytes,5,rep,name=roles,proto3" json:"roles,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	IsDynamic     bool                   `protobuf:"varint,7,opt,name=is_dynamic,json=isDynamic,proto3" json:"is_dynamic,omitempty"`
 	DynamicQuery  string                 `protobuf:"bytes,8,opt,name=dynamic_query,json=dynamicQuery,proto3" json:"dynamic_query,omitempty"`
@@ -15494,12 +14620,10 @@ type UserGroup struct {
 	// through an assignment, that device gates dispatches by the union of
 	// every reaching group's window (the device's own groups plus any
 	// user groups reaching it). Empty means "no constraint" for this
-	// group's contribution to the union. See
-	// manchtools/power-manage-server#58.
+	// group's contribution to the union.
 	MaintenanceWindow *MaintenanceWindow `protobuf:"bytes,10,opt,name=maintenance_window,json=maintenanceWindow,proto3" json:"maintenance_window,omitempty"`
-	// Per-grant view of the group's assigned roles with each grant's scope
-	// (#7); `roles` (field 5) stays the scope-blind set for backward
-	// compatibility. See User.role_grants.
+	// The group's assigned roles, one entry per grant, carrying each grant's
+	// scope. See User.role_grants.
 	RoleGrants    []*RoleGrant `protobuf:"bytes,11,rep,name=role_grants,json=roleGrants,proto3" json:"role_grants,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -15507,7 +14631,7 @@ type UserGroup struct {
 
 func (x *UserGroup) Reset() {
 	*x = UserGroup{}
-	mi := &file_pm_v1_control_proto_msgTypes[245]
+	mi := &file_powermanage_v1_control_proto_msgTypes[228]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15519,7 +14643,7 @@ func (x *UserGroup) String() string {
 func (*UserGroup) ProtoMessage() {}
 
 func (x *UserGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[245]
+	mi := &file_powermanage_v1_control_proto_msgTypes[228]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15532,7 +14656,7 @@ func (x *UserGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserGroup.ProtoReflect.Descriptor instead.
 func (*UserGroup) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{245}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{228}
 }
 
 func (x *UserGroup) GetId() string {
@@ -15561,13 +14685,6 @@ func (x *UserGroup) GetMemberCount() int32 {
 		return x.MemberCount
 	}
 	return 0
-}
-
-func (x *UserGroup) GetRoles() []*Role {
-	if x != nil {
-		return x.Roles
-	}
-	return nil
 }
 
 func (x *UserGroup) GetCreatedAt() *timestamppb.Timestamp {
@@ -15623,7 +14740,7 @@ type UserGroupMember struct {
 
 func (x *UserGroupMember) Reset() {
 	*x = UserGroupMember{}
-	mi := &file_pm_v1_control_proto_msgTypes[246]
+	mi := &file_powermanage_v1_control_proto_msgTypes[229]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15635,7 +14752,7 @@ func (x *UserGroupMember) String() string {
 func (*UserGroupMember) ProtoMessage() {}
 
 func (x *UserGroupMember) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[246]
+	mi := &file_powermanage_v1_control_proto_msgTypes[229]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15648,7 +14765,7 @@ func (x *UserGroupMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserGroupMember.ProtoReflect.Descriptor instead.
 func (*UserGroupMember) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{246}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{229}
 }
 
 func (x *UserGroupMember) GetUserId() string {
@@ -15687,7 +14804,7 @@ type CreateUserGroupRequest struct {
 
 func (x *CreateUserGroupRequest) Reset() {
 	*x = CreateUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[247]
+	mi := &file_powermanage_v1_control_proto_msgTypes[230]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15699,7 +14816,7 @@ func (x *CreateUserGroupRequest) String() string {
 func (*CreateUserGroupRequest) ProtoMessage() {}
 
 func (x *CreateUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[247]
+	mi := &file_powermanage_v1_control_proto_msgTypes[230]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15712,7 +14829,7 @@ func (x *CreateUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{247}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{230}
 }
 
 func (x *CreateUserGroupRequest) GetName() string {
@@ -15752,7 +14869,7 @@ type CreateUserGroupResponse struct {
 
 func (x *CreateUserGroupResponse) Reset() {
 	*x = CreateUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[248]
+	mi := &file_powermanage_v1_control_proto_msgTypes[231]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15764,7 +14881,7 @@ func (x *CreateUserGroupResponse) String() string {
 func (*CreateUserGroupResponse) ProtoMessage() {}
 
 func (x *CreateUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[248]
+	mi := &file_powermanage_v1_control_proto_msgTypes[231]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15777,7 +14894,7 @@ func (x *CreateUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*CreateUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{248}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{231}
 }
 
 func (x *CreateUserGroupResponse) GetGroup() *UserGroup {
@@ -15797,7 +14914,7 @@ type GetUserGroupRequest struct {
 
 func (x *GetUserGroupRequest) Reset() {
 	*x = GetUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[249]
+	mi := &file_powermanage_v1_control_proto_msgTypes[232]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15809,7 +14926,7 @@ func (x *GetUserGroupRequest) String() string {
 func (*GetUserGroupRequest) ProtoMessage() {}
 
 func (x *GetUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[249]
+	mi := &file_powermanage_v1_control_proto_msgTypes[232]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15822,7 +14939,7 @@ func (x *GetUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*GetUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{249}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{232}
 }
 
 func (x *GetUserGroupRequest) GetId() string {
@@ -15842,7 +14959,7 @@ type GetUserGroupResponse struct {
 
 func (x *GetUserGroupResponse) Reset() {
 	*x = GetUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[250]
+	mi := &file_powermanage_v1_control_proto_msgTypes[233]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15854,7 +14971,7 @@ func (x *GetUserGroupResponse) String() string {
 func (*GetUserGroupResponse) ProtoMessage() {}
 
 func (x *GetUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[250]
+	mi := &file_powermanage_v1_control_proto_msgTypes[233]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15867,7 +14984,7 @@ func (x *GetUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*GetUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{250}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{233}
 }
 
 func (x *GetUserGroupResponse) GetGroup() *UserGroup {
@@ -15896,7 +15013,7 @@ type ListUserGroupsRequest struct {
 
 func (x *ListUserGroupsRequest) Reset() {
 	*x = ListUserGroupsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[251]
+	mi := &file_powermanage_v1_control_proto_msgTypes[234]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15908,7 +15025,7 @@ func (x *ListUserGroupsRequest) String() string {
 func (*ListUserGroupsRequest) ProtoMessage() {}
 
 func (x *ListUserGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[251]
+	mi := &file_powermanage_v1_control_proto_msgTypes[234]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15921,7 +15038,7 @@ func (x *ListUserGroupsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserGroupsRequest.ProtoReflect.Descriptor instead.
 func (*ListUserGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{251}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{234}
 }
 
 func (x *ListUserGroupsRequest) GetPageSize() int32 {
@@ -15949,7 +15066,7 @@ type ListUserGroupsResponse struct {
 
 func (x *ListUserGroupsResponse) Reset() {
 	*x = ListUserGroupsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[252]
+	mi := &file_powermanage_v1_control_proto_msgTypes[235]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15961,7 +15078,7 @@ func (x *ListUserGroupsResponse) String() string {
 func (*ListUserGroupsResponse) ProtoMessage() {}
 
 func (x *ListUserGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[252]
+	mi := &file_powermanage_v1_control_proto_msgTypes[235]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15974,7 +15091,7 @@ func (x *ListUserGroupsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserGroupsResponse.ProtoReflect.Descriptor instead.
 func (*ListUserGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{252}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{235}
 }
 
 func (x *ListUserGroupsResponse) GetGroups() []*UserGroup {
@@ -16012,7 +15129,7 @@ type UpdateUserGroupRequest struct {
 
 func (x *UpdateUserGroupRequest) Reset() {
 	*x = UpdateUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[253]
+	mi := &file_powermanage_v1_control_proto_msgTypes[236]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16024,7 +15141,7 @@ func (x *UpdateUserGroupRequest) String() string {
 func (*UpdateUserGroupRequest) ProtoMessage() {}
 
 func (x *UpdateUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[253]
+	mi := &file_powermanage_v1_control_proto_msgTypes[236]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16037,7 +15154,7 @@ func (x *UpdateUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{253}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{236}
 }
 
 func (x *UpdateUserGroupRequest) GetGroupId() string {
@@ -16070,7 +15187,7 @@ type UpdateUserGroupResponse struct {
 
 func (x *UpdateUserGroupResponse) Reset() {
 	*x = UpdateUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[254]
+	mi := &file_powermanage_v1_control_proto_msgTypes[237]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16082,7 +15199,7 @@ func (x *UpdateUserGroupResponse) String() string {
 func (*UpdateUserGroupResponse) ProtoMessage() {}
 
 func (x *UpdateUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[254]
+	mi := &file_powermanage_v1_control_proto_msgTypes[237]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16095,7 +15212,7 @@ func (x *UpdateUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*UpdateUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{254}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{237}
 }
 
 func (x *UpdateUserGroupResponse) GetGroup() *UserGroup {
@@ -16115,7 +15232,7 @@ type DeleteUserGroupRequest struct {
 
 func (x *DeleteUserGroupRequest) Reset() {
 	*x = DeleteUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[255]
+	mi := &file_powermanage_v1_control_proto_msgTypes[238]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16127,7 +15244,7 @@ func (x *DeleteUserGroupRequest) String() string {
 func (*DeleteUserGroupRequest) ProtoMessage() {}
 
 func (x *DeleteUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[255]
+	mi := &file_powermanage_v1_control_proto_msgTypes[238]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16140,7 +15257,7 @@ func (x *DeleteUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*DeleteUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{255}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{238}
 }
 
 func (x *DeleteUserGroupRequest) GetId() string {
@@ -16158,7 +15275,7 @@ type DeleteUserGroupResponse struct {
 
 func (x *DeleteUserGroupResponse) Reset() {
 	*x = DeleteUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[256]
+	mi := &file_powermanage_v1_control_proto_msgTypes[239]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16170,7 +15287,7 @@ func (x *DeleteUserGroupResponse) String() string {
 func (*DeleteUserGroupResponse) ProtoMessage() {}
 
 func (x *DeleteUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[256]
+	mi := &file_powermanage_v1_control_proto_msgTypes[239]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16183,7 +15300,7 @@ func (x *DeleteUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*DeleteUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{256}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{239}
 }
 
 type AddUserToGroupRequest struct {
@@ -16200,7 +15317,7 @@ type AddUserToGroupRequest struct {
 
 func (x *AddUserToGroupRequest) Reset() {
 	*x = AddUserToGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[257]
+	mi := &file_powermanage_v1_control_proto_msgTypes[240]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16212,7 +15329,7 @@ func (x *AddUserToGroupRequest) String() string {
 func (*AddUserToGroupRequest) ProtoMessage() {}
 
 func (x *AddUserToGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[257]
+	mi := &file_powermanage_v1_control_proto_msgTypes[240]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16225,7 +15342,7 @@ func (x *AddUserToGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserToGroupRequest.ProtoReflect.Descriptor instead.
 func (*AddUserToGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{257}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{240}
 }
 
 func (x *AddUserToGroupRequest) GetGroupId() string {
@@ -16257,7 +15374,7 @@ type AddUserToGroupResponse struct {
 
 func (x *AddUserToGroupResponse) Reset() {
 	*x = AddUserToGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[258]
+	mi := &file_powermanage_v1_control_proto_msgTypes[241]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16269,7 +15386,7 @@ func (x *AddUserToGroupResponse) String() string {
 func (*AddUserToGroupResponse) ProtoMessage() {}
 
 func (x *AddUserToGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[258]
+	mi := &file_powermanage_v1_control_proto_msgTypes[241]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16282,7 +15399,7 @@ func (x *AddUserToGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserToGroupResponse.ProtoReflect.Descriptor instead.
 func (*AddUserToGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{258}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{241}
 }
 
 type RemoveUserFromGroupRequest struct {
@@ -16297,7 +15414,7 @@ type RemoveUserFromGroupRequest struct {
 
 func (x *RemoveUserFromGroupRequest) Reset() {
 	*x = RemoveUserFromGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[259]
+	mi := &file_powermanage_v1_control_proto_msgTypes[242]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16309,7 +15426,7 @@ func (x *RemoveUserFromGroupRequest) String() string {
 func (*RemoveUserFromGroupRequest) ProtoMessage() {}
 
 func (x *RemoveUserFromGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[259]
+	mi := &file_powermanage_v1_control_proto_msgTypes[242]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16322,7 +15439,7 @@ func (x *RemoveUserFromGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveUserFromGroupRequest.ProtoReflect.Descriptor instead.
 func (*RemoveUserFromGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{259}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{242}
 }
 
 func (x *RemoveUserFromGroupRequest) GetGroupId() string {
@@ -16347,7 +15464,7 @@ type RemoveUserFromGroupResponse struct {
 
 func (x *RemoveUserFromGroupResponse) Reset() {
 	*x = RemoveUserFromGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[260]
+	mi := &file_powermanage_v1_control_proto_msgTypes[243]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16359,7 +15476,7 @@ func (x *RemoveUserFromGroupResponse) String() string {
 func (*RemoveUserFromGroupResponse) ProtoMessage() {}
 
 func (x *RemoveUserFromGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[260]
+	mi := &file_powermanage_v1_control_proto_msgTypes[243]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16372,7 +15489,7 @@ func (x *RemoveUserFromGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveUserFromGroupResponse.ProtoReflect.Descriptor instead.
 func (*RemoveUserFromGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{260}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{243}
 }
 
 type AssignRoleToUserGroupRequest struct {
@@ -16385,8 +15502,8 @@ type AssignRoleToUserGroupRequest struct {
 	RoleIds []string `protobuf:"bytes,3,rep,name=role_ids,json=roleIds,proto3" json:"role_ids,omitempty" validate:"omitempty,max=256,dive,ulid"`
 	// Optional grant scope. Same paired-or-neither semantics as
 	// AssignRoleToUserRequest.scope_*. Every member of the target
-	// user group inherits this scope through the grant. server #7.
-	ScopeKind RoleGrantScopeKind `protobuf:"varint,4,opt,name=scope_kind,json=scopeKind,proto3,enum=pm.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
+	// user group inherits this scope through the grant.
+	ScopeKind RoleGrantScopeKind `protobuf:"varint,4,opt,name=scope_kind,json=scopeKind,proto3,enum=powermanage.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
 	// @gotags: validate:"omitempty,ulid"
 	ScopeId       string `protobuf:"bytes,5,opt,name=scope_id,json=scopeId,proto3" json:"scope_id,omitempty" validate:"omitempty,ulid"`
 	unknownFields protoimpl.UnknownFields
@@ -16395,7 +15512,7 @@ type AssignRoleToUserGroupRequest struct {
 
 func (x *AssignRoleToUserGroupRequest) Reset() {
 	*x = AssignRoleToUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[261]
+	mi := &file_powermanage_v1_control_proto_msgTypes[244]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16407,7 +15524,7 @@ func (x *AssignRoleToUserGroupRequest) String() string {
 func (*AssignRoleToUserGroupRequest) ProtoMessage() {}
 
 func (x *AssignRoleToUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[261]
+	mi := &file_powermanage_v1_control_proto_msgTypes[244]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16420,7 +15537,7 @@ func (x *AssignRoleToUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignRoleToUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*AssignRoleToUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{261}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{244}
 }
 
 func (x *AssignRoleToUserGroupRequest) GetGroupId() string {
@@ -16466,7 +15583,7 @@ type AssignRoleToUserGroupResponse struct {
 
 func (x *AssignRoleToUserGroupResponse) Reset() {
 	*x = AssignRoleToUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[262]
+	mi := &file_powermanage_v1_control_proto_msgTypes[245]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16478,7 +15595,7 @@ func (x *AssignRoleToUserGroupResponse) String() string {
 func (*AssignRoleToUserGroupResponse) ProtoMessage() {}
 
 func (x *AssignRoleToUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[262]
+	mi := &file_powermanage_v1_control_proto_msgTypes[245]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16491,7 +15608,7 @@ func (x *AssignRoleToUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignRoleToUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*AssignRoleToUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{262}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{245}
 }
 
 type RevokeRoleFromUserGroupRequest struct {
@@ -16504,8 +15621,7 @@ type RevokeRoleFromUserGroupRequest struct {
 	// grant to revoke when multiple scoped grants of the same role
 	// are attached to the same user group. Paired-or-neither with
 	// scope_id; same semantics as RevokeRoleFromUserRequest.
-	// server #7.
-	ScopeKind RoleGrantScopeKind `protobuf:"varint,3,opt,name=scope_kind,json=scopeKind,proto3,enum=pm.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
+	ScopeKind RoleGrantScopeKind `protobuf:"varint,3,opt,name=scope_kind,json=scopeKind,proto3,enum=powermanage.v1.RoleGrantScopeKind" json:"scope_kind,omitempty"`
 	// @gotags: validate:"omitempty,ulid"
 	ScopeId       string `protobuf:"bytes,4,opt,name=scope_id,json=scopeId,proto3" json:"scope_id,omitempty" validate:"omitempty,ulid"`
 	unknownFields protoimpl.UnknownFields
@@ -16514,7 +15630,7 @@ type RevokeRoleFromUserGroupRequest struct {
 
 func (x *RevokeRoleFromUserGroupRequest) Reset() {
 	*x = RevokeRoleFromUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[263]
+	mi := &file_powermanage_v1_control_proto_msgTypes[246]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16526,7 +15642,7 @@ func (x *RevokeRoleFromUserGroupRequest) String() string {
 func (*RevokeRoleFromUserGroupRequest) ProtoMessage() {}
 
 func (x *RevokeRoleFromUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[263]
+	mi := &file_powermanage_v1_control_proto_msgTypes[246]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16539,7 +15655,7 @@ func (x *RevokeRoleFromUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeRoleFromUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*RevokeRoleFromUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{263}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{246}
 }
 
 func (x *RevokeRoleFromUserGroupRequest) GetGroupId() string {
@@ -16578,7 +15694,7 @@ type RevokeRoleFromUserGroupResponse struct {
 
 func (x *RevokeRoleFromUserGroupResponse) Reset() {
 	*x = RevokeRoleFromUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[264]
+	mi := &file_powermanage_v1_control_proto_msgTypes[247]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16590,7 +15706,7 @@ func (x *RevokeRoleFromUserGroupResponse) String() string {
 func (*RevokeRoleFromUserGroupResponse) ProtoMessage() {}
 
 func (x *RevokeRoleFromUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[264]
+	mi := &file_powermanage_v1_control_proto_msgTypes[247]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16603,7 +15719,7 @@ func (x *RevokeRoleFromUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeRoleFromUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*RevokeRoleFromUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{264}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{247}
 }
 
 type ListUserGroupsForUserRequest struct {
@@ -16616,7 +15732,7 @@ type ListUserGroupsForUserRequest struct {
 
 func (x *ListUserGroupsForUserRequest) Reset() {
 	*x = ListUserGroupsForUserRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[265]
+	mi := &file_powermanage_v1_control_proto_msgTypes[248]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16628,7 +15744,7 @@ func (x *ListUserGroupsForUserRequest) String() string {
 func (*ListUserGroupsForUserRequest) ProtoMessage() {}
 
 func (x *ListUserGroupsForUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[265]
+	mi := &file_powermanage_v1_control_proto_msgTypes[248]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16641,7 +15757,7 @@ func (x *ListUserGroupsForUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserGroupsForUserRequest.ProtoReflect.Descriptor instead.
 func (*ListUserGroupsForUserRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{265}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{248}
 }
 
 func (x *ListUserGroupsForUserRequest) GetUserId() string {
@@ -16660,7 +15776,7 @@ type ListUserGroupsForUserResponse struct {
 
 func (x *ListUserGroupsForUserResponse) Reset() {
 	*x = ListUserGroupsForUserResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[266]
+	mi := &file_powermanage_v1_control_proto_msgTypes[249]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16672,7 +15788,7 @@ func (x *ListUserGroupsForUserResponse) String() string {
 func (*ListUserGroupsForUserResponse) ProtoMessage() {}
 
 func (x *ListUserGroupsForUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[266]
+	mi := &file_powermanage_v1_control_proto_msgTypes[249]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16685,7 +15801,7 @@ func (x *ListUserGroupsForUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserGroupsForUserResponse.ProtoReflect.Descriptor instead.
 func (*ListUserGroupsForUserResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{266}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{249}
 }
 
 func (x *ListUserGroupsForUserResponse) GetGroups() []*UserGroup {
@@ -16708,7 +15824,7 @@ type UpdateUserGroupQueryRequest struct {
 
 func (x *UpdateUserGroupQueryRequest) Reset() {
 	*x = UpdateUserGroupQueryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[267]
+	mi := &file_powermanage_v1_control_proto_msgTypes[250]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16720,7 +15836,7 @@ func (x *UpdateUserGroupQueryRequest) String() string {
 func (*UpdateUserGroupQueryRequest) ProtoMessage() {}
 
 func (x *UpdateUserGroupQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[267]
+	mi := &file_powermanage_v1_control_proto_msgTypes[250]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16733,7 +15849,7 @@ func (x *UpdateUserGroupQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserGroupQueryRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserGroupQueryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{267}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{250}
 }
 
 func (x *UpdateUserGroupQueryRequest) GetId() string {
@@ -16766,7 +15882,7 @@ type UpdateUserGroupQueryResponse struct {
 
 func (x *UpdateUserGroupQueryResponse) Reset() {
 	*x = UpdateUserGroupQueryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[268]
+	mi := &file_powermanage_v1_control_proto_msgTypes[251]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16778,7 +15894,7 @@ func (x *UpdateUserGroupQueryResponse) String() string {
 func (*UpdateUserGroupQueryResponse) ProtoMessage() {}
 
 func (x *UpdateUserGroupQueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[268]
+	mi := &file_powermanage_v1_control_proto_msgTypes[251]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16791,7 +15907,7 @@ func (x *UpdateUserGroupQueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserGroupQueryResponse.ProtoReflect.Descriptor instead.
 func (*UpdateUserGroupQueryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{268}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{251}
 }
 
 func (x *UpdateUserGroupQueryResponse) GetGroup() *UserGroup {
@@ -16811,7 +15927,7 @@ type ValidateUserGroupQueryRequest struct {
 
 func (x *ValidateUserGroupQueryRequest) Reset() {
 	*x = ValidateUserGroupQueryRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[269]
+	mi := &file_powermanage_v1_control_proto_msgTypes[252]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16823,7 +15939,7 @@ func (x *ValidateUserGroupQueryRequest) String() string {
 func (*ValidateUserGroupQueryRequest) ProtoMessage() {}
 
 func (x *ValidateUserGroupQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[269]
+	mi := &file_powermanage_v1_control_proto_msgTypes[252]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16836,7 +15952,7 @@ func (x *ValidateUserGroupQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateUserGroupQueryRequest.ProtoReflect.Descriptor instead.
 func (*ValidateUserGroupQueryRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{269}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{252}
 }
 
 func (x *ValidateUserGroupQueryRequest) GetQuery() string {
@@ -16857,7 +15973,7 @@ type ValidateUserGroupQueryResponse struct {
 
 func (x *ValidateUserGroupQueryResponse) Reset() {
 	*x = ValidateUserGroupQueryResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[270]
+	mi := &file_powermanage_v1_control_proto_msgTypes[253]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16869,7 +15985,7 @@ func (x *ValidateUserGroupQueryResponse) String() string {
 func (*ValidateUserGroupQueryResponse) ProtoMessage() {}
 
 func (x *ValidateUserGroupQueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[270]
+	mi := &file_powermanage_v1_control_proto_msgTypes[253]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16882,7 +15998,7 @@ func (x *ValidateUserGroupQueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateUserGroupQueryResponse.ProtoReflect.Descriptor instead.
 func (*ValidateUserGroupQueryResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{270}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{253}
 }
 
 func (x *ValidateUserGroupQueryResponse) GetValid() bool {
@@ -16916,7 +16032,7 @@ type EvaluateDynamicUserGroupRequest struct {
 
 func (x *EvaluateDynamicUserGroupRequest) Reset() {
 	*x = EvaluateDynamicUserGroupRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[271]
+	mi := &file_powermanage_v1_control_proto_msgTypes[254]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16928,7 +16044,7 @@ func (x *EvaluateDynamicUserGroupRequest) String() string {
 func (*EvaluateDynamicUserGroupRequest) ProtoMessage() {}
 
 func (x *EvaluateDynamicUserGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[271]
+	mi := &file_powermanage_v1_control_proto_msgTypes[254]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16941,7 +16057,7 @@ func (x *EvaluateDynamicUserGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateDynamicUserGroupRequest.ProtoReflect.Descriptor instead.
 func (*EvaluateDynamicUserGroupRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{271}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{254}
 }
 
 func (x *EvaluateDynamicUserGroupRequest) GetId() string {
@@ -16962,7 +16078,7 @@ type EvaluateDynamicUserGroupResponse struct {
 
 func (x *EvaluateDynamicUserGroupResponse) Reset() {
 	*x = EvaluateDynamicUserGroupResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[272]
+	mi := &file_powermanage_v1_control_proto_msgTypes[255]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16974,7 +16090,7 @@ func (x *EvaluateDynamicUserGroupResponse) String() string {
 func (*EvaluateDynamicUserGroupResponse) ProtoMessage() {}
 
 func (x *EvaluateDynamicUserGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[272]
+	mi := &file_powermanage_v1_control_proto_msgTypes[255]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16987,7 +16103,7 @@ func (x *EvaluateDynamicUserGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateDynamicUserGroupResponse.ProtoReflect.Descriptor instead.
 func (*EvaluateDynamicUserGroupResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{272}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{255}
 }
 
 func (x *EvaluateDynamicUserGroupResponse) GetGroup() *UserGroup {
@@ -17027,7 +16143,7 @@ type SetUserGroupMaintenanceWindowRequest struct {
 
 func (x *SetUserGroupMaintenanceWindowRequest) Reset() {
 	*x = SetUserGroupMaintenanceWindowRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[273]
+	mi := &file_powermanage_v1_control_proto_msgTypes[256]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17039,7 +16155,7 @@ func (x *SetUserGroupMaintenanceWindowRequest) String() string {
 func (*SetUserGroupMaintenanceWindowRequest) ProtoMessage() {}
 
 func (x *SetUserGroupMaintenanceWindowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[273]
+	mi := &file_powermanage_v1_control_proto_msgTypes[256]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17052,7 +16168,7 @@ func (x *SetUserGroupMaintenanceWindowRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use SetUserGroupMaintenanceWindowRequest.ProtoReflect.Descriptor instead.
 func (*SetUserGroupMaintenanceWindowRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{273}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{256}
 }
 
 func (x *SetUserGroupMaintenanceWindowRequest) GetId() string {
@@ -17074,29 +16190,28 @@ type IdentityProvider struct {
 	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name         string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Slug         string                 `protobuf:"bytes,3,opt,name=slug,proto3" json:"slug,omitempty"`
-	ProviderType IdentityProviderType   `protobuf:"varint,4,opt,name=provider_type,json=providerType,proto3,enum=pm.v1.IdentityProviderType" json:"provider_type,omitempty"`
+	ProviderType IdentityProviderType   `protobuf:"varint,4,opt,name=provider_type,json=providerType,proto3,enum=powermanage.v1.IdentityProviderType" json:"provider_type,omitempty"`
 	Enabled      bool                   `protobuf:"varint,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	ClientId     string                 `protobuf:"bytes,6,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	// client_secret is not returned in responses (write-only).
-	IssuerUrl                string                 `protobuf:"bytes,7,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
-	AuthorizationUrl         string                 `protobuf:"bytes,8,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
-	TokenUrl                 string                 `protobuf:"bytes,9,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
-	UserinfoUrl              string                 `protobuf:"bytes,10,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty"`
-	Scopes                   []string               `protobuf:"bytes,11,rep,name=scopes,proto3" json:"scopes,omitempty"`
-	AutoCreateUsers          bool                   `protobuf:"varint,12,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
-	AutoLinkByEmail          bool                   `protobuf:"varint,13,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
-	DefaultRoleId            string                 `protobuf:"bytes,14,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty"`
-	DisablePasswordForLinked bool                   `protobuf:"varint,15,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
-	GroupClaim               string                 `protobuf:"bytes,16,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty"`
-	GroupMapping             map[string]string      `protobuf:"bytes,17,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // external group name → user_group_id
-	CreatedAt                *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt                *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	ScimEnabled              bool                   `protobuf:"varint,20,opt,name=scim_enabled,json=scimEnabled,proto3" json:"scim_enabled,omitempty"`
-	ScimEndpointUrl          string                 `protobuf:"bytes,21,opt,name=scim_endpoint_url,json=scimEndpointUrl,proto3" json:"scim_endpoint_url,omitempty"` // read-only, computed by server
+	IssuerUrl        string                 `protobuf:"bytes,7,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
+	AuthorizationUrl string                 `protobuf:"bytes,8,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
+	TokenUrl         string                 `protobuf:"bytes,9,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
+	UserinfoUrl      string                 `protobuf:"bytes,10,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty"`
+	Scopes           []string               `protobuf:"bytes,11,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	AutoCreateUsers  bool                   `protobuf:"varint,12,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
+	AutoLinkByEmail  bool                   `protobuf:"varint,13,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
+	DefaultRoleId    string                 `protobuf:"bytes,14,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty"`
+	GroupClaim       string                 `protobuf:"bytes,16,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty"`
+	GroupMapping     map[string]string      `protobuf:"bytes,17,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // external group name → user_group_id
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt        *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	ScimEnabled      bool                   `protobuf:"varint,20,opt,name=scim_enabled,json=scimEnabled,proto3" json:"scim_enabled,omitempty"`
+	ScimEndpointUrl  string                 `protobuf:"bytes,21,opt,name=scim_endpoint_url,json=scimEndpointUrl,proto3" json:"scim_endpoint_url,omitempty"` // read-only, computed by server
 	// trust_email_assertions: operator opt-in to delegate email-identity
 	// assertion to this IdP. When true, SCIM AutoLinkByEmail may bind an asserted
-	// email to a pre-existing local PASSWORD account; default false refuses that
-	// (account-takeover guard). See server ADR 0008.
+	// email to a pre-existing account; default false refuses that
+	// (account-takeover guard across providers).
 	TrustEmailAssertions bool `protobuf:"varint,22,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -17104,7 +16219,7 @@ type IdentityProvider struct {
 
 func (x *IdentityProvider) Reset() {
 	*x = IdentityProvider{}
-	mi := &file_pm_v1_control_proto_msgTypes[274]
+	mi := &file_powermanage_v1_control_proto_msgTypes[257]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17116,7 +16231,7 @@ func (x *IdentityProvider) String() string {
 func (*IdentityProvider) ProtoMessage() {}
 
 func (x *IdentityProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[274]
+	mi := &file_powermanage_v1_control_proto_msgTypes[257]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17129,7 +16244,7 @@ func (x *IdentityProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityProvider.ProtoReflect.Descriptor instead.
 func (*IdentityProvider) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{274}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{257}
 }
 
 func (x *IdentityProvider) GetId() string {
@@ -17230,13 +16345,6 @@ func (x *IdentityProvider) GetDefaultRoleId() string {
 	return ""
 }
 
-func (x *IdentityProvider) GetDisablePasswordForLinked() bool {
-	if x != nil {
-		return x.DisablePasswordForLinked
-	}
-	return false
-}
-
 func (x *IdentityProvider) GetGroupClaim() string {
 	if x != nil {
 		return x.GroupClaim
@@ -17304,7 +16412,7 @@ type IdentityLink struct {
 
 func (x *IdentityLink) Reset() {
 	*x = IdentityLink{}
-	mi := &file_pm_v1_control_proto_msgTypes[275]
+	mi := &file_powermanage_v1_control_proto_msgTypes[258]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17316,7 +16424,7 @@ func (x *IdentityLink) String() string {
 func (*IdentityLink) ProtoMessage() {}
 
 func (x *IdentityLink) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[275]
+	mi := &file_powermanage_v1_control_proto_msgTypes[258]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17329,7 +16437,7 @@ func (x *IdentityLink) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityLink.ProtoReflect.Descriptor instead.
 func (*IdentityLink) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{275}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{258}
 }
 
 func (x *IdentityLink) GetId() string {
@@ -17409,7 +16517,7 @@ type CreateIdentityProviderRequest struct {
 	// @gotags: validate:"required,min=1,max=64,alphanum"
 	Slug string `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty" validate:"required,min=1,max=64,alphanum"`
 	// @gotags: validate:"required,gte=1,lte=1"
-	ProviderType IdentityProviderType `protobuf:"varint,3,opt,name=provider_type,json=providerType,proto3,enum=pm.v1.IdentityProviderType" json:"provider_type,omitempty" validate:"required,gte=1,lte=1"`
+	ProviderType IdentityProviderType `protobuf:"varint,3,opt,name=provider_type,json=providerType,proto3,enum=powermanage.v1.IdentityProviderType" json:"provider_type,omitempty" validate:"required,gte=1,lte=1"`
 	// @gotags: validate:"required,min=1"
 	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" validate:"required,min=1"`
 	// @gotags: validate:"required,min=1"
@@ -17427,8 +16535,7 @@ type CreateIdentityProviderRequest struct {
 	AutoCreateUsers bool     `protobuf:"varint,11,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
 	AutoLinkByEmail bool     `protobuf:"varint,12,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
 	// @gotags: validate:"omitempty,ulid"
-	DefaultRoleId            string `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty" validate:"omitempty,ulid"`
-	DisablePasswordForLinked bool   `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
+	DefaultRoleId string `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty" validate:"omitempty,ulid"`
 	// @gotags: validate:"omitempty,max=255"
 	GroupClaim string `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty" validate:"omitempty,max=255"`
 	// @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
@@ -17441,7 +16548,7 @@ type CreateIdentityProviderRequest struct {
 
 func (x *CreateIdentityProviderRequest) Reset() {
 	*x = CreateIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[276]
+	mi := &file_powermanage_v1_control_proto_msgTypes[259]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17453,7 +16560,7 @@ func (x *CreateIdentityProviderRequest) String() string {
 func (*CreateIdentityProviderRequest) ProtoMessage() {}
 
 func (x *CreateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[276]
+	mi := &file_powermanage_v1_control_proto_msgTypes[259]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17466,7 +16573,7 @@ func (x *CreateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*CreateIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{276}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{259}
 }
 
 func (x *CreateIdentityProviderRequest) GetName() string {
@@ -17560,13 +16667,6 @@ func (x *CreateIdentityProviderRequest) GetDefaultRoleId() string {
 	return ""
 }
 
-func (x *CreateIdentityProviderRequest) GetDisablePasswordForLinked() bool {
-	if x != nil {
-		return x.DisablePasswordForLinked
-	}
-	return false
-}
-
 func (x *CreateIdentityProviderRequest) GetGroupClaim() string {
 	if x != nil {
 		return x.GroupClaim
@@ -17597,7 +16697,7 @@ type CreateIdentityProviderResponse struct {
 
 func (x *CreateIdentityProviderResponse) Reset() {
 	*x = CreateIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[277]
+	mi := &file_powermanage_v1_control_proto_msgTypes[260]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17609,7 +16709,7 @@ func (x *CreateIdentityProviderResponse) String() string {
 func (*CreateIdentityProviderResponse) ProtoMessage() {}
 
 func (x *CreateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[277]
+	mi := &file_powermanage_v1_control_proto_msgTypes[260]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17622,7 +16722,7 @@ func (x *CreateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*CreateIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{277}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{260}
 }
 
 func (x *CreateIdentityProviderResponse) GetProvider() *IdentityProvider {
@@ -17642,7 +16742,7 @@ type GetIdentityProviderRequest struct {
 
 func (x *GetIdentityProviderRequest) Reset() {
 	*x = GetIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[278]
+	mi := &file_powermanage_v1_control_proto_msgTypes[261]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17654,7 +16754,7 @@ func (x *GetIdentityProviderRequest) String() string {
 func (*GetIdentityProviderRequest) ProtoMessage() {}
 
 func (x *GetIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[278]
+	mi := &file_powermanage_v1_control_proto_msgTypes[261]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17667,7 +16767,7 @@ func (x *GetIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*GetIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{278}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{261}
 }
 
 func (x *GetIdentityProviderRequest) GetId() string {
@@ -17686,7 +16786,7 @@ type GetIdentityProviderResponse struct {
 
 func (x *GetIdentityProviderResponse) Reset() {
 	*x = GetIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[279]
+	mi := &file_powermanage_v1_control_proto_msgTypes[262]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17698,7 +16798,7 @@ func (x *GetIdentityProviderResponse) String() string {
 func (*GetIdentityProviderResponse) ProtoMessage() {}
 
 func (x *GetIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[279]
+	mi := &file_powermanage_v1_control_proto_msgTypes[262]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17711,7 +16811,7 @@ func (x *GetIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*GetIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{279}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{262}
 }
 
 func (x *GetIdentityProviderResponse) GetProvider() *IdentityProvider {
@@ -17733,7 +16833,7 @@ type ListIdentityProvidersRequest struct {
 
 func (x *ListIdentityProvidersRequest) Reset() {
 	*x = ListIdentityProvidersRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[280]
+	mi := &file_powermanage_v1_control_proto_msgTypes[263]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17745,7 +16845,7 @@ func (x *ListIdentityProvidersRequest) String() string {
 func (*ListIdentityProvidersRequest) ProtoMessage() {}
 
 func (x *ListIdentityProvidersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[280]
+	mi := &file_powermanage_v1_control_proto_msgTypes[263]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17758,7 +16858,7 @@ func (x *ListIdentityProvidersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityProvidersRequest.ProtoReflect.Descriptor instead.
 func (*ListIdentityProvidersRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{280}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{263}
 }
 
 func (x *ListIdentityProvidersRequest) GetPageSize() int32 {
@@ -17786,7 +16886,7 @@ type ListIdentityProvidersResponse struct {
 
 func (x *ListIdentityProvidersResponse) Reset() {
 	*x = ListIdentityProvidersResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[281]
+	mi := &file_powermanage_v1_control_proto_msgTypes[264]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17798,7 +16898,7 @@ func (x *ListIdentityProvidersResponse) String() string {
 func (*ListIdentityProvidersResponse) ProtoMessage() {}
 
 func (x *ListIdentityProvidersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[281]
+	mi := &file_powermanage_v1_control_proto_msgTypes[264]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17811,7 +16911,7 @@ func (x *ListIdentityProvidersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityProvidersResponse.ProtoReflect.Descriptor instead.
 func (*ListIdentityProvidersResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{281}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{264}
 }
 
 func (x *ListIdentityProvidersResponse) GetProviders() []*IdentityProvider {
@@ -17860,8 +16960,7 @@ type UpdateIdentityProviderRequest struct {
 	AutoCreateUsers bool     `protobuf:"varint,11,opt,name=auto_create_users,json=autoCreateUsers,proto3" json:"auto_create_users,omitempty"`
 	AutoLinkByEmail bool     `protobuf:"varint,12,opt,name=auto_link_by_email,json=autoLinkByEmail,proto3" json:"auto_link_by_email,omitempty"`
 	// @gotags: validate:"omitempty,ulid"
-	DefaultRoleId            string `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty" validate:"omitempty,ulid"`
-	DisablePasswordForLinked bool   `protobuf:"varint,14,opt,name=disable_password_for_linked,json=disablePasswordForLinked,proto3" json:"disable_password_for_linked,omitempty"`
+	DefaultRoleId string `protobuf:"bytes,13,opt,name=default_role_id,json=defaultRoleId,proto3" json:"default_role_id,omitempty" validate:"omitempty,ulid"`
 	// @gotags: validate:"omitempty,max=255"
 	GroupClaim string `protobuf:"bytes,15,opt,name=group_claim,json=groupClaim,proto3" json:"group_claim,omitempty" validate:"omitempty,max=255"`
 	// @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
@@ -17874,7 +16973,7 @@ type UpdateIdentityProviderRequest struct {
 
 func (x *UpdateIdentityProviderRequest) Reset() {
 	*x = UpdateIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[282]
+	mi := &file_powermanage_v1_control_proto_msgTypes[265]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17886,7 +16985,7 @@ func (x *UpdateIdentityProviderRequest) String() string {
 func (*UpdateIdentityProviderRequest) ProtoMessage() {}
 
 func (x *UpdateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[282]
+	mi := &file_powermanage_v1_control_proto_msgTypes[265]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17899,7 +16998,7 @@ func (x *UpdateIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*UpdateIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{282}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{265}
 }
 
 func (x *UpdateIdentityProviderRequest) GetId() string {
@@ -17993,13 +17092,6 @@ func (x *UpdateIdentityProviderRequest) GetDefaultRoleId() string {
 	return ""
 }
 
-func (x *UpdateIdentityProviderRequest) GetDisablePasswordForLinked() bool {
-	if x != nil {
-		return x.DisablePasswordForLinked
-	}
-	return false
-}
-
 func (x *UpdateIdentityProviderRequest) GetGroupClaim() string {
 	if x != nil {
 		return x.GroupClaim
@@ -18030,7 +17122,7 @@ type UpdateIdentityProviderResponse struct {
 
 func (x *UpdateIdentityProviderResponse) Reset() {
 	*x = UpdateIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[283]
+	mi := &file_powermanage_v1_control_proto_msgTypes[266]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18042,7 +17134,7 @@ func (x *UpdateIdentityProviderResponse) String() string {
 func (*UpdateIdentityProviderResponse) ProtoMessage() {}
 
 func (x *UpdateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[283]
+	mi := &file_powermanage_v1_control_proto_msgTypes[266]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18055,7 +17147,7 @@ func (x *UpdateIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*UpdateIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{283}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{266}
 }
 
 func (x *UpdateIdentityProviderResponse) GetProvider() *IdentityProvider {
@@ -18075,7 +17167,7 @@ type DeleteIdentityProviderRequest struct {
 
 func (x *DeleteIdentityProviderRequest) Reset() {
 	*x = DeleteIdentityProviderRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[284]
+	mi := &file_powermanage_v1_control_proto_msgTypes[267]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18087,7 +17179,7 @@ func (x *DeleteIdentityProviderRequest) String() string {
 func (*DeleteIdentityProviderRequest) ProtoMessage() {}
 
 func (x *DeleteIdentityProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[284]
+	mi := &file_powermanage_v1_control_proto_msgTypes[267]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18100,7 +17192,7 @@ func (x *DeleteIdentityProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteIdentityProviderRequest.ProtoReflect.Descriptor instead.
 func (*DeleteIdentityProviderRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{284}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{267}
 }
 
 func (x *DeleteIdentityProviderRequest) GetId() string {
@@ -18118,7 +17210,7 @@ type DeleteIdentityProviderResponse struct {
 
 func (x *DeleteIdentityProviderResponse) Reset() {
 	*x = DeleteIdentityProviderResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[285]
+	mi := &file_powermanage_v1_control_proto_msgTypes[268]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18130,7 +17222,7 @@ func (x *DeleteIdentityProviderResponse) String() string {
 func (*DeleteIdentityProviderResponse) ProtoMessage() {}
 
 func (x *DeleteIdentityProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[285]
+	mi := &file_powermanage_v1_control_proto_msgTypes[268]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18143,21 +17235,21 @@ func (x *DeleteIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*DeleteIdentityProviderResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{285}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{268}
 }
 
 type AuthMethodProvider struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	ProviderType  IdentityProviderType   `protobuf:"varint,3,opt,name=provider_type,json=providerType,proto3,enum=pm.v1.IdentityProviderType" json:"provider_type,omitempty"`
+	ProviderType  IdentityProviderType   `protobuf:"varint,3,opt,name=provider_type,json=providerType,proto3,enum=powermanage.v1.IdentityProviderType" json:"provider_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AuthMethodProvider) Reset() {
 	*x = AuthMethodProvider{}
-	mi := &file_pm_v1_control_proto_msgTypes[286]
+	mi := &file_powermanage_v1_control_proto_msgTypes[269]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18169,7 +17261,7 @@ func (x *AuthMethodProvider) String() string {
 func (*AuthMethodProvider) ProtoMessage() {}
 
 func (x *AuthMethodProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[286]
+	mi := &file_powermanage_v1_control_proto_msgTypes[269]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18182,7 +17274,7 @@ func (x *AuthMethodProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthMethodProvider.ProtoReflect.Descriptor instead.
 func (*AuthMethodProvider) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{286}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{269}
 }
 
 func (x *AuthMethodProvider) GetSlug() string {
@@ -18217,7 +17309,7 @@ type ListAuthMethodsRequest struct {
 
 func (x *ListAuthMethodsRequest) Reset() {
 	*x = ListAuthMethodsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[287]
+	mi := &file_powermanage_v1_control_proto_msgTypes[270]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18229,7 +17321,7 @@ func (x *ListAuthMethodsRequest) String() string {
 func (*ListAuthMethodsRequest) ProtoMessage() {}
 
 func (x *ListAuthMethodsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[287]
+	mi := &file_powermanage_v1_control_proto_msgTypes[270]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18242,7 +17334,7 @@ func (x *ListAuthMethodsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuthMethodsRequest.ProtoReflect.Descriptor instead.
 func (*ListAuthMethodsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{287}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{270}
 }
 
 func (x *ListAuthMethodsRequest) GetEmail() string {
@@ -18253,17 +17345,15 @@ func (x *ListAuthMethodsRequest) GetEmail() string {
 }
 
 type ListAuthMethodsResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	PasswordEnabled bool                   `protobuf:"varint,1,opt,name=password_enabled,json=passwordEnabled,proto3" json:"password_enabled,omitempty"`
-	TotpEnabled     bool                   `protobuf:"varint,2,opt,name=totp_enabled,json=totpEnabled,proto3" json:"totp_enabled,omitempty"`
-	Providers       []*AuthMethodProvider  `protobuf:"bytes,3,rep,name=providers,proto3" json:"providers,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Providers     []*AuthMethodProvider  `protobuf:"bytes,3,rep,name=providers,proto3" json:"providers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListAuthMethodsResponse) Reset() {
 	*x = ListAuthMethodsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[288]
+	mi := &file_powermanage_v1_control_proto_msgTypes[271]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18275,7 +17365,7 @@ func (x *ListAuthMethodsResponse) String() string {
 func (*ListAuthMethodsResponse) ProtoMessage() {}
 
 func (x *ListAuthMethodsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[288]
+	mi := &file_powermanage_v1_control_proto_msgTypes[271]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18288,21 +17378,7 @@ func (x *ListAuthMethodsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuthMethodsResponse.ProtoReflect.Descriptor instead.
 func (*ListAuthMethodsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{288}
-}
-
-func (x *ListAuthMethodsResponse) GetPasswordEnabled() bool {
-	if x != nil {
-		return x.PasswordEnabled
-	}
-	return false
-}
-
-func (x *ListAuthMethodsResponse) GetTotpEnabled() bool {
-	if x != nil {
-		return x.TotpEnabled
-	}
-	return false
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{271}
 }
 
 func (x *ListAuthMethodsResponse) GetProviders() []*AuthMethodProvider {
@@ -18324,7 +17400,7 @@ type GetSSOLoginURLRequest struct {
 
 func (x *GetSSOLoginURLRequest) Reset() {
 	*x = GetSSOLoginURLRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[289]
+	mi := &file_powermanage_v1_control_proto_msgTypes[272]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18336,7 +17412,7 @@ func (x *GetSSOLoginURLRequest) String() string {
 func (*GetSSOLoginURLRequest) ProtoMessage() {}
 
 func (x *GetSSOLoginURLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[289]
+	mi := &file_powermanage_v1_control_proto_msgTypes[272]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18349,7 +17425,7 @@ func (x *GetSSOLoginURLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSSOLoginURLRequest.ProtoReflect.Descriptor instead.
 func (*GetSSOLoginURLRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{289}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{272}
 }
 
 func (x *GetSSOLoginURLRequest) GetSlug() string {
@@ -18375,7 +17451,7 @@ type GetSSOLoginURLResponse struct {
 
 func (x *GetSSOLoginURLResponse) Reset() {
 	*x = GetSSOLoginURLResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[290]
+	mi := &file_powermanage_v1_control_proto_msgTypes[273]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18387,7 +17463,7 @@ func (x *GetSSOLoginURLResponse) String() string {
 func (*GetSSOLoginURLResponse) ProtoMessage() {}
 
 func (x *GetSSOLoginURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[290]
+	mi := &file_powermanage_v1_control_proto_msgTypes[273]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18400,7 +17476,7 @@ func (x *GetSSOLoginURLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSSOLoginURLResponse.ProtoReflect.Descriptor instead.
 func (*GetSSOLoginURLResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{290}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{273}
 }
 
 func (x *GetSSOLoginURLResponse) GetLoginUrl() string {
@@ -18424,7 +17500,7 @@ type SSOCallbackRequest struct {
 
 func (x *SSOCallbackRequest) Reset() {
 	*x = SSOCallbackRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[291]
+	mi := &file_powermanage_v1_control_proto_msgTypes[274]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18436,7 +17512,7 @@ func (x *SSOCallbackRequest) String() string {
 func (*SSOCallbackRequest) ProtoMessage() {}
 
 func (x *SSOCallbackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[291]
+	mi := &file_powermanage_v1_control_proto_msgTypes[274]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18449,7 +17525,7 @@ func (x *SSOCallbackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SSOCallbackRequest.ProtoReflect.Descriptor instead.
 func (*SSOCallbackRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{291}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{274}
 }
 
 func (x *SSOCallbackRequest) GetSlug() string {
@@ -18474,21 +17550,18 @@ func (x *SSOCallbackRequest) GetState() string {
 }
 
 type SSOCallbackResponse struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken  string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	RefreshToken string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
-	ExpiresAt    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	User         *User                  `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
-	// When true, TOTP verification is required before tokens are issued.
-	TotpRequired  bool   `protobuf:"varint,5,opt,name=totp_required,json=totpRequired,proto3" json:"totp_required,omitempty"`
-	TotpChallenge string `protobuf:"bytes,6,opt,name=totp_challenge,json=totpChallenge,proto3" json:"totp_challenge,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	User          *User                  `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SSOCallbackResponse) Reset() {
 	*x = SSOCallbackResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[292]
+	mi := &file_powermanage_v1_control_proto_msgTypes[275]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18500,7 +17573,7 @@ func (x *SSOCallbackResponse) String() string {
 func (*SSOCallbackResponse) ProtoMessage() {}
 
 func (x *SSOCallbackResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[292]
+	mi := &file_powermanage_v1_control_proto_msgTypes[275]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18513,7 +17586,7 @@ func (x *SSOCallbackResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SSOCallbackResponse.ProtoReflect.Descriptor instead.
 func (*SSOCallbackResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{292}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{275}
 }
 
 func (x *SSOCallbackResponse) GetAccessToken() string {
@@ -18544,20 +17617,6 @@ func (x *SSOCallbackResponse) GetUser() *User {
 	return nil
 }
 
-func (x *SSOCallbackResponse) GetTotpRequired() bool {
-	if x != nil {
-		return x.TotpRequired
-	}
-	return false
-}
-
-func (x *SSOCallbackResponse) GetTotpChallenge() string {
-	if x != nil {
-		return x.TotpChallenge
-	}
-	return ""
-}
-
 type ListIdentityLinksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -18566,7 +17625,7 @@ type ListIdentityLinksRequest struct {
 
 func (x *ListIdentityLinksRequest) Reset() {
 	*x = ListIdentityLinksRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[293]
+	mi := &file_powermanage_v1_control_proto_msgTypes[276]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18578,7 +17637,7 @@ func (x *ListIdentityLinksRequest) String() string {
 func (*ListIdentityLinksRequest) ProtoMessage() {}
 
 func (x *ListIdentityLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[293]
+	mi := &file_powermanage_v1_control_proto_msgTypes[276]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18591,7 +17650,7 @@ func (x *ListIdentityLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListIdentityLinksRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{293}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{276}
 }
 
 type ListIdentityLinksResponse struct {
@@ -18603,7 +17662,7 @@ type ListIdentityLinksResponse struct {
 
 func (x *ListIdentityLinksResponse) Reset() {
 	*x = ListIdentityLinksResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[294]
+	mi := &file_powermanage_v1_control_proto_msgTypes[277]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18615,7 +17674,7 @@ func (x *ListIdentityLinksResponse) String() string {
 func (*ListIdentityLinksResponse) ProtoMessage() {}
 
 func (x *ListIdentityLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[294]
+	mi := &file_powermanage_v1_control_proto_msgTypes[277]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18628,7 +17687,7 @@ func (x *ListIdentityLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListIdentityLinksResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{294}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{277}
 }
 
 func (x *ListIdentityLinksResponse) GetLinks() []*IdentityLink {
@@ -18648,7 +17707,7 @@ type UnlinkIdentityRequest struct {
 
 func (x *UnlinkIdentityRequest) Reset() {
 	*x = UnlinkIdentityRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[295]
+	mi := &file_powermanage_v1_control_proto_msgTypes[278]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18660,7 +17719,7 @@ func (x *UnlinkIdentityRequest) String() string {
 func (*UnlinkIdentityRequest) ProtoMessage() {}
 
 func (x *UnlinkIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[295]
+	mi := &file_powermanage_v1_control_proto_msgTypes[278]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18673,7 +17732,7 @@ func (x *UnlinkIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlinkIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UnlinkIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{295}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{278}
 }
 
 func (x *UnlinkIdentityRequest) GetLinkId() string {
@@ -18691,7 +17750,7 @@ type UnlinkIdentityResponse struct {
 
 func (x *UnlinkIdentityResponse) Reset() {
 	*x = UnlinkIdentityResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[296]
+	mi := &file_powermanage_v1_control_proto_msgTypes[279]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18703,7 +17762,7 @@ func (x *UnlinkIdentityResponse) String() string {
 func (*UnlinkIdentityResponse) ProtoMessage() {}
 
 func (x *UnlinkIdentityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[296]
+	mi := &file_powermanage_v1_control_proto_msgTypes[279]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18716,7 +17775,7 @@ func (x *UnlinkIdentityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlinkIdentityResponse.ProtoReflect.Descriptor instead.
 func (*UnlinkIdentityResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{296}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{279}
 }
 
 // SCIM Provisioning
@@ -18730,7 +17789,7 @@ type EnableSCIMRequest struct {
 
 func (x *EnableSCIMRequest) Reset() {
 	*x = EnableSCIMRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[297]
+	mi := &file_powermanage_v1_control_proto_msgTypes[280]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18742,7 +17801,7 @@ func (x *EnableSCIMRequest) String() string {
 func (*EnableSCIMRequest) ProtoMessage() {}
 
 func (x *EnableSCIMRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[297]
+	mi := &file_powermanage_v1_control_proto_msgTypes[280]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18755,7 +17814,7 @@ func (x *EnableSCIMRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableSCIMRequest.ProtoReflect.Descriptor instead.
 func (*EnableSCIMRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{297}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{280}
 }
 
 func (x *EnableSCIMRequest) GetId() string {
@@ -18775,7 +17834,7 @@ type EnableSCIMResponse struct {
 
 func (x *EnableSCIMResponse) Reset() {
 	*x = EnableSCIMResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[298]
+	mi := &file_powermanage_v1_control_proto_msgTypes[281]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18787,7 +17846,7 @@ func (x *EnableSCIMResponse) String() string {
 func (*EnableSCIMResponse) ProtoMessage() {}
 
 func (x *EnableSCIMResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[298]
+	mi := &file_powermanage_v1_control_proto_msgTypes[281]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18800,7 +17859,7 @@ func (x *EnableSCIMResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableSCIMResponse.ProtoReflect.Descriptor instead.
 func (*EnableSCIMResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{298}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{281}
 }
 
 func (x *EnableSCIMResponse) GetToken() string {
@@ -18827,7 +17886,7 @@ type DisableSCIMRequest struct {
 
 func (x *DisableSCIMRequest) Reset() {
 	*x = DisableSCIMRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[299]
+	mi := &file_powermanage_v1_control_proto_msgTypes[282]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18839,7 +17898,7 @@ func (x *DisableSCIMRequest) String() string {
 func (*DisableSCIMRequest) ProtoMessage() {}
 
 func (x *DisableSCIMRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[299]
+	mi := &file_powermanage_v1_control_proto_msgTypes[282]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18852,7 +17911,7 @@ func (x *DisableSCIMRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableSCIMRequest.ProtoReflect.Descriptor instead.
 func (*DisableSCIMRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{299}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{282}
 }
 
 func (x *DisableSCIMRequest) GetId() string {
@@ -18870,7 +17929,7 @@ type DisableSCIMResponse struct {
 
 func (x *DisableSCIMResponse) Reset() {
 	*x = DisableSCIMResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[300]
+	mi := &file_powermanage_v1_control_proto_msgTypes[283]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18882,7 +17941,7 @@ func (x *DisableSCIMResponse) String() string {
 func (*DisableSCIMResponse) ProtoMessage() {}
 
 func (x *DisableSCIMResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[300]
+	mi := &file_powermanage_v1_control_proto_msgTypes[283]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18895,7 +17954,7 @@ func (x *DisableSCIMResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableSCIMResponse.ProtoReflect.Descriptor instead.
 func (*DisableSCIMResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{300}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{283}
 }
 
 type RotateSCIMTokenRequest struct {
@@ -18908,7 +17967,7 @@ type RotateSCIMTokenRequest struct {
 
 func (x *RotateSCIMTokenRequest) Reset() {
 	*x = RotateSCIMTokenRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[301]
+	mi := &file_powermanage_v1_control_proto_msgTypes[284]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18920,7 +17979,7 @@ func (x *RotateSCIMTokenRequest) String() string {
 func (*RotateSCIMTokenRequest) ProtoMessage() {}
 
 func (x *RotateSCIMTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[301]
+	mi := &file_powermanage_v1_control_proto_msgTypes[284]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18933,7 +17992,7 @@ func (x *RotateSCIMTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSCIMTokenRequest.ProtoReflect.Descriptor instead.
 func (*RotateSCIMTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{301}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{284}
 }
 
 func (x *RotateSCIMTokenRequest) GetId() string {
@@ -18952,7 +18011,7 @@ type RotateSCIMTokenResponse struct {
 
 func (x *RotateSCIMTokenResponse) Reset() {
 	*x = RotateSCIMTokenResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[302]
+	mi := &file_powermanage_v1_control_proto_msgTypes[285]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18964,7 +18023,7 @@ func (x *RotateSCIMTokenResponse) String() string {
 func (*RotateSCIMTokenResponse) ProtoMessage() {}
 
 func (x *RotateSCIMTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[302]
+	mi := &file_powermanage_v1_control_proto_msgTypes[285]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18977,7 +18036,7 @@ func (x *RotateSCIMTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSCIMTokenResponse.ProtoReflect.Descriptor instead.
 func (*RotateSCIMTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{302}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{285}
 }
 
 func (x *RotateSCIMTokenResponse) GetToken() string {
@@ -18997,7 +18056,7 @@ type GetDeviceComplianceRequest struct {
 
 func (x *GetDeviceComplianceRequest) Reset() {
 	*x = GetDeviceComplianceRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[303]
+	mi := &file_powermanage_v1_control_proto_msgTypes[286]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19009,7 +18068,7 @@ func (x *GetDeviceComplianceRequest) String() string {
 func (*GetDeviceComplianceRequest) ProtoMessage() {}
 
 func (x *GetDeviceComplianceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[303]
+	mi := &file_powermanage_v1_control_proto_msgTypes[286]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19022,7 +18081,7 @@ func (x *GetDeviceComplianceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceComplianceRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceComplianceRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{303}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{286}
 }
 
 func (x *GetDeviceComplianceRequest) GetDeviceId() string {
@@ -19034,7 +18093,7 @@ func (x *GetDeviceComplianceRequest) GetDeviceId() string {
 
 type GetDeviceComplianceResponse struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
-	Status        ComplianceStatus         `protobuf:"varint,1,opt,name=status,proto3,enum=pm.v1.ComplianceStatus" json:"status,omitempty"`
+	Status        ComplianceStatus         `protobuf:"varint,1,opt,name=status,proto3,enum=powermanage.v1.ComplianceStatus" json:"status,omitempty"`
 	Checks        []*ComplianceCheckResult `protobuf:"bytes,2,rep,name=checks,proto3" json:"checks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -19042,7 +18101,7 @@ type GetDeviceComplianceResponse struct {
 
 func (x *GetDeviceComplianceResponse) Reset() {
 	*x = GetDeviceComplianceResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[304]
+	mi := &file_powermanage_v1_control_proto_msgTypes[287]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19054,7 +18113,7 @@ func (x *GetDeviceComplianceResponse) String() string {
 func (*GetDeviceComplianceResponse) ProtoMessage() {}
 
 func (x *GetDeviceComplianceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[304]
+	mi := &file_powermanage_v1_control_proto_msgTypes[287]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19067,7 +18126,7 @@ func (x *GetDeviceComplianceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceComplianceResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceComplianceResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{304}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{287}
 }
 
 func (x *GetDeviceComplianceResponse) GetStatus() ComplianceStatus {
@@ -19097,7 +18156,7 @@ type ComplianceCheckResult struct {
 
 func (x *ComplianceCheckResult) Reset() {
 	*x = ComplianceCheckResult{}
-	mi := &file_pm_v1_control_proto_msgTypes[305]
+	mi := &file_powermanage_v1_control_proto_msgTypes[288]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19109,7 +18168,7 @@ func (x *ComplianceCheckResult) String() string {
 func (*ComplianceCheckResult) ProtoMessage() {}
 
 func (x *ComplianceCheckResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[305]
+	mi := &file_powermanage_v1_control_proto_msgTypes[288]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19122,7 +18181,7 @@ func (x *ComplianceCheckResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComplianceCheckResult.ProtoReflect.Descriptor instead.
 func (*ComplianceCheckResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{305}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{288}
 }
 
 func (x *ComplianceCheckResult) GetActionId() string {
@@ -19175,7 +18234,7 @@ type CompliancePolicy struct {
 
 func (x *CompliancePolicy) Reset() {
 	*x = CompliancePolicy{}
-	mi := &file_pm_v1_control_proto_msgTypes[306]
+	mi := &file_powermanage_v1_control_proto_msgTypes[289]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19187,7 +18246,7 @@ func (x *CompliancePolicy) String() string {
 func (*CompliancePolicy) ProtoMessage() {}
 
 func (x *CompliancePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[306]
+	mi := &file_powermanage_v1_control_proto_msgTypes[289]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19200,7 +18259,7 @@ func (x *CompliancePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompliancePolicy.ProtoReflect.Descriptor instead.
 func (*CompliancePolicy) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{306}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{289}
 }
 
 func (x *CompliancePolicy) GetId() string {
@@ -19263,7 +18322,7 @@ type CompliancePolicyRule struct {
 
 func (x *CompliancePolicyRule) Reset() {
 	*x = CompliancePolicyRule{}
-	mi := &file_pm_v1_control_proto_msgTypes[307]
+	mi := &file_powermanage_v1_control_proto_msgTypes[290]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19275,7 +18334,7 @@ func (x *CompliancePolicyRule) String() string {
 func (*CompliancePolicyRule) ProtoMessage() {}
 
 func (x *CompliancePolicyRule) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[307]
+	mi := &file_powermanage_v1_control_proto_msgTypes[290]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19288,7 +18347,7 @@ func (x *CompliancePolicyRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompliancePolicyRule.ProtoReflect.Descriptor instead.
 func (*CompliancePolicyRule) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{307}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{290}
 }
 
 func (x *CompliancePolicyRule) GetActionId() string {
@@ -19324,7 +18383,7 @@ type CreateCompliancePolicyRequest struct {
 
 func (x *CreateCompliancePolicyRequest) Reset() {
 	*x = CreateCompliancePolicyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[308]
+	mi := &file_powermanage_v1_control_proto_msgTypes[291]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19336,7 +18395,7 @@ func (x *CreateCompliancePolicyRequest) String() string {
 func (*CreateCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *CreateCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[308]
+	mi := &file_powermanage_v1_control_proto_msgTypes[291]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19349,7 +18408,7 @@ func (x *CreateCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*CreateCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{308}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{291}
 }
 
 func (x *CreateCompliancePolicyRequest) GetName() string {
@@ -19375,7 +18434,7 @@ type CreateCompliancePolicyResponse struct {
 
 func (x *CreateCompliancePolicyResponse) Reset() {
 	*x = CreateCompliancePolicyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[309]
+	mi := &file_powermanage_v1_control_proto_msgTypes[292]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19387,7 +18446,7 @@ func (x *CreateCompliancePolicyResponse) String() string {
 func (*CreateCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *CreateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[309]
+	mi := &file_powermanage_v1_control_proto_msgTypes[292]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19400,7 +18459,7 @@ func (x *CreateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*CreateCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{309}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{292}
 }
 
 func (x *CreateCompliancePolicyResponse) GetPolicy() *CompliancePolicy {
@@ -19420,7 +18479,7 @@ type GetCompliancePolicyRequest struct {
 
 func (x *GetCompliancePolicyRequest) Reset() {
 	*x = GetCompliancePolicyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[310]
+	mi := &file_powermanage_v1_control_proto_msgTypes[293]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19432,7 +18491,7 @@ func (x *GetCompliancePolicyRequest) String() string {
 func (*GetCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *GetCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[310]
+	mi := &file_powermanage_v1_control_proto_msgTypes[293]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19445,7 +18504,7 @@ func (x *GetCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*GetCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{310}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{293}
 }
 
 func (x *GetCompliancePolicyRequest) GetId() string {
@@ -19464,7 +18523,7 @@ type GetCompliancePolicyResponse struct {
 
 func (x *GetCompliancePolicyResponse) Reset() {
 	*x = GetCompliancePolicyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[311]
+	mi := &file_powermanage_v1_control_proto_msgTypes[294]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19476,7 +18535,7 @@ func (x *GetCompliancePolicyResponse) String() string {
 func (*GetCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *GetCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[311]
+	mi := &file_powermanage_v1_control_proto_msgTypes[294]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19489,7 +18548,7 @@ func (x *GetCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*GetCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{311}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{294}
 }
 
 func (x *GetCompliancePolicyResponse) GetPolicy() *CompliancePolicy {
@@ -19511,7 +18570,7 @@ type ListCompliancePoliciesRequest struct {
 
 func (x *ListCompliancePoliciesRequest) Reset() {
 	*x = ListCompliancePoliciesRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[312]
+	mi := &file_powermanage_v1_control_proto_msgTypes[295]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19523,7 +18582,7 @@ func (x *ListCompliancePoliciesRequest) String() string {
 func (*ListCompliancePoliciesRequest) ProtoMessage() {}
 
 func (x *ListCompliancePoliciesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[312]
+	mi := &file_powermanage_v1_control_proto_msgTypes[295]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19536,7 +18595,7 @@ func (x *ListCompliancePoliciesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCompliancePoliciesRequest.ProtoReflect.Descriptor instead.
 func (*ListCompliancePoliciesRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{312}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{295}
 }
 
 func (x *ListCompliancePoliciesRequest) GetPageSize() int32 {
@@ -19564,7 +18623,7 @@ type ListCompliancePoliciesResponse struct {
 
 func (x *ListCompliancePoliciesResponse) Reset() {
 	*x = ListCompliancePoliciesResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[313]
+	mi := &file_powermanage_v1_control_proto_msgTypes[296]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19576,7 +18635,7 @@ func (x *ListCompliancePoliciesResponse) String() string {
 func (*ListCompliancePoliciesResponse) ProtoMessage() {}
 
 func (x *ListCompliancePoliciesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[313]
+	mi := &file_powermanage_v1_control_proto_msgTypes[296]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19589,7 +18648,7 @@ func (x *ListCompliancePoliciesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCompliancePoliciesResponse.ProtoReflect.Descriptor instead.
 func (*ListCompliancePoliciesResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{313}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{296}
 }
 
 func (x *ListCompliancePoliciesResponse) GetPolicies() []*CompliancePolicy {
@@ -19625,7 +18684,7 @@ type RenameCompliancePolicyRequest struct {
 
 func (x *RenameCompliancePolicyRequest) Reset() {
 	*x = RenameCompliancePolicyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[314]
+	mi := &file_powermanage_v1_control_proto_msgTypes[297]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19637,7 +18696,7 @@ func (x *RenameCompliancePolicyRequest) String() string {
 func (*RenameCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *RenameCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[314]
+	mi := &file_powermanage_v1_control_proto_msgTypes[297]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19650,7 +18709,7 @@ func (x *RenameCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*RenameCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{314}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{297}
 }
 
 func (x *RenameCompliancePolicyRequest) GetId() string {
@@ -19679,7 +18738,7 @@ type UpdateCompliancePolicyDescriptionRequest struct {
 
 func (x *UpdateCompliancePolicyDescriptionRequest) Reset() {
 	*x = UpdateCompliancePolicyDescriptionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[315]
+	mi := &file_powermanage_v1_control_proto_msgTypes[298]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19691,7 +18750,7 @@ func (x *UpdateCompliancePolicyDescriptionRequest) String() string {
 func (*UpdateCompliancePolicyDescriptionRequest) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyDescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[315]
+	mi := &file_powermanage_v1_control_proto_msgTypes[298]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19704,7 +18763,7 @@ func (x *UpdateCompliancePolicyDescriptionRequest) ProtoReflect() protoreflect.M
 
 // Deprecated: Use UpdateCompliancePolicyDescriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyDescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{315}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{298}
 }
 
 func (x *UpdateCompliancePolicyDescriptionRequest) GetId() string {
@@ -19730,7 +18789,7 @@ type UpdateCompliancePolicyResponse struct {
 
 func (x *UpdateCompliancePolicyResponse) Reset() {
 	*x = UpdateCompliancePolicyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[316]
+	mi := &file_powermanage_v1_control_proto_msgTypes[299]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19742,7 +18801,7 @@ func (x *UpdateCompliancePolicyResponse) String() string {
 func (*UpdateCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[316]
+	mi := &file_powermanage_v1_control_proto_msgTypes[299]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19755,7 +18814,7 @@ func (x *UpdateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{316}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{299}
 }
 
 func (x *UpdateCompliancePolicyResponse) GetPolicy() *CompliancePolicy {
@@ -19775,7 +18834,7 @@ type DeleteCompliancePolicyRequest struct {
 
 func (x *DeleteCompliancePolicyRequest) Reset() {
 	*x = DeleteCompliancePolicyRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[317]
+	mi := &file_powermanage_v1_control_proto_msgTypes[300]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19787,7 +18846,7 @@ func (x *DeleteCompliancePolicyRequest) String() string {
 func (*DeleteCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *DeleteCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[317]
+	mi := &file_powermanage_v1_control_proto_msgTypes[300]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19800,7 +18859,7 @@ func (x *DeleteCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{317}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{300}
 }
 
 func (x *DeleteCompliancePolicyRequest) GetId() string {
@@ -19818,7 +18877,7 @@ type DeleteCompliancePolicyResponse struct {
 
 func (x *DeleteCompliancePolicyResponse) Reset() {
 	*x = DeleteCompliancePolicyResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[318]
+	mi := &file_powermanage_v1_control_proto_msgTypes[301]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19830,7 +18889,7 @@ func (x *DeleteCompliancePolicyResponse) String() string {
 func (*DeleteCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *DeleteCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[318]
+	mi := &file_powermanage_v1_control_proto_msgTypes[301]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19843,7 +18902,7 @@ func (x *DeleteCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*DeleteCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{318}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{301}
 }
 
 type AddCompliancePolicyRuleRequest struct {
@@ -19860,7 +18919,7 @@ type AddCompliancePolicyRuleRequest struct {
 
 func (x *AddCompliancePolicyRuleRequest) Reset() {
 	*x = AddCompliancePolicyRuleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[319]
+	mi := &file_powermanage_v1_control_proto_msgTypes[302]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19872,7 +18931,7 @@ func (x *AddCompliancePolicyRuleRequest) String() string {
 func (*AddCompliancePolicyRuleRequest) ProtoMessage() {}
 
 func (x *AddCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[319]
+	mi := &file_powermanage_v1_control_proto_msgTypes[302]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19885,7 +18944,7 @@ func (x *AddCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddCompliancePolicyRuleRequest.ProtoReflect.Descriptor instead.
 func (*AddCompliancePolicyRuleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{319}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{302}
 }
 
 func (x *AddCompliancePolicyRuleRequest) GetPolicyId() string {
@@ -19918,7 +18977,7 @@ type AddCompliancePolicyRuleResponse struct {
 
 func (x *AddCompliancePolicyRuleResponse) Reset() {
 	*x = AddCompliancePolicyRuleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[320]
+	mi := &file_powermanage_v1_control_proto_msgTypes[303]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19930,7 +18989,7 @@ func (x *AddCompliancePolicyRuleResponse) String() string {
 func (*AddCompliancePolicyRuleResponse) ProtoMessage() {}
 
 func (x *AddCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[320]
+	mi := &file_powermanage_v1_control_proto_msgTypes[303]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19943,7 +19002,7 @@ func (x *AddCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddCompliancePolicyRuleResponse.ProtoReflect.Descriptor instead.
 func (*AddCompliancePolicyRuleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{320}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{303}
 }
 
 func (x *AddCompliancePolicyRuleResponse) GetPolicy() *CompliancePolicy {
@@ -19965,7 +19024,7 @@ type RemoveCompliancePolicyRuleRequest struct {
 
 func (x *RemoveCompliancePolicyRuleRequest) Reset() {
 	*x = RemoveCompliancePolicyRuleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[321]
+	mi := &file_powermanage_v1_control_proto_msgTypes[304]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19977,7 +19036,7 @@ func (x *RemoveCompliancePolicyRuleRequest) String() string {
 func (*RemoveCompliancePolicyRuleRequest) ProtoMessage() {}
 
 func (x *RemoveCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[321]
+	mi := &file_powermanage_v1_control_proto_msgTypes[304]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19990,7 +19049,7 @@ func (x *RemoveCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use RemoveCompliancePolicyRuleRequest.ProtoReflect.Descriptor instead.
 func (*RemoveCompliancePolicyRuleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{321}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{304}
 }
 
 func (x *RemoveCompliancePolicyRuleRequest) GetPolicyId() string {
@@ -20016,7 +19075,7 @@ type RemoveCompliancePolicyRuleResponse struct {
 
 func (x *RemoveCompliancePolicyRuleResponse) Reset() {
 	*x = RemoveCompliancePolicyRuleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[322]
+	mi := &file_powermanage_v1_control_proto_msgTypes[305]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20028,7 +19087,7 @@ func (x *RemoveCompliancePolicyRuleResponse) String() string {
 func (*RemoveCompliancePolicyRuleResponse) ProtoMessage() {}
 
 func (x *RemoveCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[322]
+	mi := &file_powermanage_v1_control_proto_msgTypes[305]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20041,7 +19100,7 @@ func (x *RemoveCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use RemoveCompliancePolicyRuleResponse.ProtoReflect.Descriptor instead.
 func (*RemoveCompliancePolicyRuleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{322}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{305}
 }
 
 func (x *RemoveCompliancePolicyRuleResponse) GetPolicy() *CompliancePolicy {
@@ -20065,7 +19124,7 @@ type UpdateCompliancePolicyRuleRequest struct {
 
 func (x *UpdateCompliancePolicyRuleRequest) Reset() {
 	*x = UpdateCompliancePolicyRuleRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[323]
+	mi := &file_powermanage_v1_control_proto_msgTypes[306]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20077,7 +19136,7 @@ func (x *UpdateCompliancePolicyRuleRequest) String() string {
 func (*UpdateCompliancePolicyRuleRequest) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[323]
+	mi := &file_powermanage_v1_control_proto_msgTypes[306]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20090,7 +19149,7 @@ func (x *UpdateCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateCompliancePolicyRuleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyRuleRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{323}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{306}
 }
 
 func (x *UpdateCompliancePolicyRuleRequest) GetPolicyId() string {
@@ -20123,7 +19182,7 @@ type UpdateCompliancePolicyRuleResponse struct {
 
 func (x *UpdateCompliancePolicyRuleResponse) Reset() {
 	*x = UpdateCompliancePolicyRuleResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[324]
+	mi := &file_powermanage_v1_control_proto_msgTypes[307]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20135,7 +19194,7 @@ func (x *UpdateCompliancePolicyRuleResponse) String() string {
 func (*UpdateCompliancePolicyRuleResponse) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[324]
+	mi := &file_powermanage_v1_control_proto_msgTypes[307]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20148,7 +19207,7 @@ func (x *UpdateCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use UpdateCompliancePolicyRuleResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyRuleResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{324}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{307}
 }
 
 func (x *UpdateCompliancePolicyRuleResponse) GetPolicy() *CompliancePolicy {
@@ -20168,7 +19227,7 @@ type GetDeviceCompliancePolicyStatusRequest struct {
 
 func (x *GetDeviceCompliancePolicyStatusRequest) Reset() {
 	*x = GetDeviceCompliancePolicyStatusRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[325]
+	mi := &file_powermanage_v1_control_proto_msgTypes[308]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20180,7 +19239,7 @@ func (x *GetDeviceCompliancePolicyStatusRequest) String() string {
 func (*GetDeviceCompliancePolicyStatusRequest) ProtoMessage() {}
 
 func (x *GetDeviceCompliancePolicyStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[325]
+	mi := &file_powermanage_v1_control_proto_msgTypes[308]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20193,7 +19252,7 @@ func (x *GetDeviceCompliancePolicyStatusRequest) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use GetDeviceCompliancePolicyStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceCompliancePolicyStatusRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{325}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{308}
 }
 
 func (x *GetDeviceCompliancePolicyStatusRequest) GetDeviceId() string {
@@ -20205,7 +19264,7 @@ func (x *GetDeviceCompliancePolicyStatusRequest) GetDeviceId() string {
 
 type GetDeviceCompliancePolicyStatusResponse struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
-	OverallStatus ComplianceStatus          `protobuf:"varint,1,opt,name=overall_status,json=overallStatus,proto3,enum=pm.v1.ComplianceStatus" json:"overall_status,omitempty"`
+	OverallStatus ComplianceStatus          `protobuf:"varint,1,opt,name=overall_status,json=overallStatus,proto3,enum=powermanage.v1.ComplianceStatus" json:"overall_status,omitempty"`
 	Policies      []*DevicePolicyEvaluation `protobuf:"bytes,2,rep,name=policies,proto3" json:"policies,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -20213,7 +19272,7 @@ type GetDeviceCompliancePolicyStatusResponse struct {
 
 func (x *GetDeviceCompliancePolicyStatusResponse) Reset() {
 	*x = GetDeviceCompliancePolicyStatusResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[326]
+	mi := &file_powermanage_v1_control_proto_msgTypes[309]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20225,7 +19284,7 @@ func (x *GetDeviceCompliancePolicyStatusResponse) String() string {
 func (*GetDeviceCompliancePolicyStatusResponse) ProtoMessage() {}
 
 func (x *GetDeviceCompliancePolicyStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[326]
+	mi := &file_powermanage_v1_control_proto_msgTypes[309]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20238,7 +19297,7 @@ func (x *GetDeviceCompliancePolicyStatusResponse) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use GetDeviceCompliancePolicyStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceCompliancePolicyStatusResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{326}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{309}
 }
 
 func (x *GetDeviceCompliancePolicyStatusResponse) GetOverallStatus() ComplianceStatus {
@@ -20259,7 +19318,7 @@ type DevicePolicyEvaluation struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
 	PolicyId      string                        `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
 	PolicyName    string                        `protobuf:"bytes,2,opt,name=policy_name,json=policyName,proto3" json:"policy_name,omitempty"`
-	Status        ComplianceStatus              `protobuf:"varint,3,opt,name=status,proto3,enum=pm.v1.ComplianceStatus" json:"status,omitempty"`
+	Status        ComplianceStatus              `protobuf:"varint,3,opt,name=status,proto3,enum=powermanage.v1.ComplianceStatus" json:"status,omitempty"`
 	Rules         []*DevicePolicyRuleEvaluation `protobuf:"bytes,4,rep,name=rules,proto3" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -20267,7 +19326,7 @@ type DevicePolicyEvaluation struct {
 
 func (x *DevicePolicyEvaluation) Reset() {
 	*x = DevicePolicyEvaluation{}
-	mi := &file_pm_v1_control_proto_msgTypes[327]
+	mi := &file_powermanage_v1_control_proto_msgTypes[310]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20279,7 +19338,7 @@ func (x *DevicePolicyEvaluation) String() string {
 func (*DevicePolicyEvaluation) ProtoMessage() {}
 
 func (x *DevicePolicyEvaluation) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[327]
+	mi := &file_powermanage_v1_control_proto_msgTypes[310]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20292,7 +19351,7 @@ func (x *DevicePolicyEvaluation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevicePolicyEvaluation.ProtoReflect.Descriptor instead.
 func (*DevicePolicyEvaluation) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{327}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{310}
 }
 
 func (x *DevicePolicyEvaluation) GetPolicyId() string {
@@ -20327,7 +19386,7 @@ type DevicePolicyRuleEvaluation struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	ActionId         string                 `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
 	ActionName       string                 `protobuf:"bytes,2,opt,name=action_name,json=actionName,proto3" json:"action_name,omitempty"`
-	Status           ComplianceStatus       `protobuf:"varint,3,opt,name=status,proto3,enum=pm.v1.ComplianceStatus" json:"status,omitempty"`
+	Status           ComplianceStatus       `protobuf:"varint,3,opt,name=status,proto3,enum=powermanage.v1.ComplianceStatus" json:"status,omitempty"`
 	Compliant        bool                   `protobuf:"varint,4,opt,name=compliant,proto3" json:"compliant,omitempty"`
 	CheckedAt        *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=checked_at,json=checkedAt,proto3" json:"checked_at,omitempty"`
 	FirstFailedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=first_failed_at,json=firstFailedAt,proto3" json:"first_failed_at,omitempty"`
@@ -20340,7 +19399,7 @@ type DevicePolicyRuleEvaluation struct {
 
 func (x *DevicePolicyRuleEvaluation) Reset() {
 	*x = DevicePolicyRuleEvaluation{}
-	mi := &file_pm_v1_control_proto_msgTypes[328]
+	mi := &file_powermanage_v1_control_proto_msgTypes[311]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20352,7 +19411,7 @@ func (x *DevicePolicyRuleEvaluation) String() string {
 func (*DevicePolicyRuleEvaluation) ProtoMessage() {}
 
 func (x *DevicePolicyRuleEvaluation) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[328]
+	mi := &file_powermanage_v1_control_proto_msgTypes[311]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20365,7 +19424,7 @@ func (x *DevicePolicyRuleEvaluation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevicePolicyRuleEvaluation.ProtoReflect.Descriptor instead.
 func (*DevicePolicyRuleEvaluation) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{328}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{311}
 }
 
 func (x *DevicePolicyRuleEvaluation) GetActionId() string {
@@ -20442,7 +19501,7 @@ type SearchDateFilter struct {
 
 func (x *SearchDateFilter) Reset() {
 	*x = SearchDateFilter{}
-	mi := &file_pm_v1_control_proto_msgTypes[329]
+	mi := &file_powermanage_v1_control_proto_msgTypes[312]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20454,7 +19513,7 @@ func (x *SearchDateFilter) String() string {
 func (*SearchDateFilter) ProtoMessage() {}
 
 func (x *SearchDateFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[329]
+	mi := &file_powermanage_v1_control_proto_msgTypes[312]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20467,7 +19526,7 @@ func (x *SearchDateFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchDateFilter.ProtoReflect.Descriptor instead.
 func (*SearchDateFilter) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{329}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{312}
 }
 
 func (x *SearchDateFilter) GetField() string {
@@ -20497,7 +19556,7 @@ type SearchRequest struct {
 	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty" validate:"omitempty,max=1024"`
 	// UNSPECIFIED (0) means "all scopes".
 	// @gotags: validate:"omitempty,gte=0,lte=10"
-	Scope SearchScope `protobuf:"varint,2,opt,name=scope,proto3,enum=pm.v1.SearchScope" json:"scope,omitempty" validate:"omitempty,gte=0,lte=10"`
+	Scope SearchScope `protobuf:"varint,2,opt,name=scope,proto3,enum=powermanage.v1.SearchScope" json:"scope,omitempty" validate:"omitempty,gte=0,lte=10"`
 	// Matches the handler's effective clamp ([1,200], else default 50).
 	// @gotags: validate:"omitempty,gte=0,lte=200"
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,gte=0,lte=200"`
@@ -20508,16 +19567,16 @@ type SearchRequest struct {
 	TagFilters map[string]string `protobuf:"bytes,6,rep,name=tag_filters,json=tagFilters,proto3" json:"tag_filters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=64,endkeys,max=1024"` // field → value(s), pipe-separated for OR (e.g. "completed|failed")
 	// UNSPECIFIED (0) means "scope default"; server validates per-scope validity.
 	// @gotags: validate:"omitempty,gte=0,lte=21"
-	SortField SortField `protobuf:"varint,7,opt,name=sort_field,json=sortField,proto3,enum=pm.v1.SortField" json:"sort_field,omitempty" validate:"omitempty,gte=0,lte=21"`
+	SortField SortField `protobuf:"varint,7,opt,name=sort_field,json=sortField,proto3,enum=powermanage.v1.SortField" json:"sort_field,omitempty" validate:"omitempty,gte=0,lte=21"`
 	// @gotags: validate:"omitempty,gte=0,lte=2"
-	SortDirection SortDirection `protobuf:"varint,8,opt,name=sort_direction,json=sortDirection,proto3,enum=pm.v1.SortDirection" json:"sort_direction,omitempty" validate:"omitempty,gte=0,lte=2"`
+	SortDirection SortDirection `protobuf:"varint,8,opt,name=sort_direction,json=sortDirection,proto3,enum=powermanage.v1.SortDirection" json:"sort_direction,omitempty" validate:"omitempty,gte=0,lte=2"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[330]
+	mi := &file_powermanage_v1_control_proto_msgTypes[313]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20529,7 +19588,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[330]
+	mi := &file_powermanage_v1_control_proto_msgTypes[313]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20542,7 +19601,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{330}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{313}
 }
 
 func (x *SearchRequest) GetQuery() string {
@@ -20606,7 +19665,7 @@ type SearchResult struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Scope         SearchScope            `protobuf:"varint,4,opt,name=scope,proto3,enum=pm.v1.SearchScope" json:"scope,omitempty"`
+	Scope         SearchScope            `protobuf:"varint,4,opt,name=scope,proto3,enum=powermanage.v1.SearchScope" json:"scope,omitempty"`
 	MemberCount   int32                  `protobuf:"varint,5,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
 	Fields        map[string]string      `protobuf:"bytes,6,rep,name=fields,proto3" json:"fields,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // all hash fields from the search index
 	unknownFields protoimpl.UnknownFields
@@ -20615,7 +19674,7 @@ type SearchResult struct {
 
 func (x *SearchResult) Reset() {
 	*x = SearchResult{}
-	mi := &file_pm_v1_control_proto_msgTypes[331]
+	mi := &file_powermanage_v1_control_proto_msgTypes[314]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20627,7 +19686,7 @@ func (x *SearchResult) String() string {
 func (*SearchResult) ProtoMessage() {}
 
 func (x *SearchResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[331]
+	mi := &file_powermanage_v1_control_proto_msgTypes[314]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20640,7 +19699,7 @@ func (x *SearchResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchResult.ProtoReflect.Descriptor instead.
 func (*SearchResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{331}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{314}
 }
 
 func (x *SearchResult) GetId() string {
@@ -20696,7 +19755,7 @@ type SearchResponse struct {
 
 func (x *SearchResponse) Reset() {
 	*x = SearchResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[332]
+	mi := &file_powermanage_v1_control_proto_msgTypes[315]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20708,7 +19767,7 @@ func (x *SearchResponse) String() string {
 func (*SearchResponse) ProtoMessage() {}
 
 func (x *SearchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[332]
+	mi := &file_powermanage_v1_control_proto_msgTypes[315]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20721,7 +19780,7 @@ func (x *SearchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchResponse.ProtoReflect.Descriptor instead.
 func (*SearchResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{332}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{315}
 }
 
 func (x *SearchResponse) GetResults() []*SearchResult {
@@ -20753,7 +19812,7 @@ type RebuildSearchIndexRequest struct {
 
 func (x *RebuildSearchIndexRequest) Reset() {
 	*x = RebuildSearchIndexRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[333]
+	mi := &file_powermanage_v1_control_proto_msgTypes[316]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20765,7 +19824,7 @@ func (x *RebuildSearchIndexRequest) String() string {
 func (*RebuildSearchIndexRequest) ProtoMessage() {}
 
 func (x *RebuildSearchIndexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[333]
+	mi := &file_powermanage_v1_control_proto_msgTypes[316]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20778,7 +19837,7 @@ func (x *RebuildSearchIndexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RebuildSearchIndexRequest.ProtoReflect.Descriptor instead.
 func (*RebuildSearchIndexRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{333}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{316}
 }
 
 type RebuildSearchIndexResponse struct {
@@ -20789,7 +19848,7 @@ type RebuildSearchIndexResponse struct {
 
 func (x *RebuildSearchIndexResponse) Reset() {
 	*x = RebuildSearchIndexResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[334]
+	mi := &file_powermanage_v1_control_proto_msgTypes[317]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20801,7 +19860,7 @@ func (x *RebuildSearchIndexResponse) String() string {
 func (*RebuildSearchIndexResponse) ProtoMessage() {}
 
 func (x *RebuildSearchIndexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[334]
+	mi := &file_powermanage_v1_control_proto_msgTypes[317]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20814,7 +19873,7 @@ func (x *RebuildSearchIndexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RebuildSearchIndexResponse.ProtoReflect.Descriptor instead.
 func (*RebuildSearchIndexResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{334}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{317}
 }
 
 type ServerSettings struct {
@@ -20827,7 +19886,7 @@ type ServerSettings struct {
 
 func (x *ServerSettings) Reset() {
 	*x = ServerSettings{}
-	mi := &file_pm_v1_control_proto_msgTypes[335]
+	mi := &file_powermanage_v1_control_proto_msgTypes[318]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20839,7 +19898,7 @@ func (x *ServerSettings) String() string {
 func (*ServerSettings) ProtoMessage() {}
 
 func (x *ServerSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[335]
+	mi := &file_powermanage_v1_control_proto_msgTypes[318]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20852,7 +19911,7 @@ func (x *ServerSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerSettings.ProtoReflect.Descriptor instead.
 func (*ServerSettings) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{335}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{318}
 }
 
 func (x *ServerSettings) GetUserProvisioningEnabled() bool {
@@ -20877,7 +19936,7 @@ type GetServerSettingsRequest struct {
 
 func (x *GetServerSettingsRequest) Reset() {
 	*x = GetServerSettingsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[336]
+	mi := &file_powermanage_v1_control_proto_msgTypes[319]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20889,7 +19948,7 @@ func (x *GetServerSettingsRequest) String() string {
 func (*GetServerSettingsRequest) ProtoMessage() {}
 
 func (x *GetServerSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[336]
+	mi := &file_powermanage_v1_control_proto_msgTypes[319]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20902,7 +19961,7 @@ func (x *GetServerSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServerSettingsRequest.ProtoReflect.Descriptor instead.
 func (*GetServerSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{336}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{319}
 }
 
 type GetServerSettingsResponse struct {
@@ -20914,7 +19973,7 @@ type GetServerSettingsResponse struct {
 
 func (x *GetServerSettingsResponse) Reset() {
 	*x = GetServerSettingsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[337]
+	mi := &file_powermanage_v1_control_proto_msgTypes[320]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20926,7 +19985,7 @@ func (x *GetServerSettingsResponse) String() string {
 func (*GetServerSettingsResponse) ProtoMessage() {}
 
 func (x *GetServerSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[337]
+	mi := &file_powermanage_v1_control_proto_msgTypes[320]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20939,7 +19998,7 @@ func (x *GetServerSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServerSettingsResponse.ProtoReflect.Descriptor instead.
 func (*GetServerSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{337}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{320}
 }
 
 func (x *GetServerSettingsResponse) GetSettings() *ServerSettings {
@@ -20959,7 +20018,7 @@ type UpdateServerSettingsRequest struct {
 
 func (x *UpdateServerSettingsRequest) Reset() {
 	*x = UpdateServerSettingsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[338]
+	mi := &file_powermanage_v1_control_proto_msgTypes[321]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20971,7 +20030,7 @@ func (x *UpdateServerSettingsRequest) String() string {
 func (*UpdateServerSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateServerSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[338]
+	mi := &file_powermanage_v1_control_proto_msgTypes[321]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20984,7 +20043,7 @@ func (x *UpdateServerSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateServerSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateServerSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{338}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{321}
 }
 
 func (x *UpdateServerSettingsRequest) GetUserProvisioningEnabled() bool {
@@ -21010,7 +20069,7 @@ type UpdateServerSettingsResponse struct {
 
 func (x *UpdateServerSettingsResponse) Reset() {
 	*x = UpdateServerSettingsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[339]
+	mi := &file_powermanage_v1_control_proto_msgTypes[322]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21022,7 +20081,7 @@ func (x *UpdateServerSettingsResponse) String() string {
 func (*UpdateServerSettingsResponse) ProtoMessage() {}
 
 func (x *UpdateServerSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[339]
+	mi := &file_powermanage_v1_control_proto_msgTypes[322]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21035,7 +20094,7 @@ func (x *UpdateServerSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateServerSettingsResponse.ProtoReflect.Descriptor instead.
 func (*UpdateServerSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{339}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{322}
 }
 
 func (x *UpdateServerSettingsResponse) GetSettings() *ServerSettings {
@@ -21056,7 +20115,7 @@ type SetUserProvisioningEnabledRequest struct {
 
 func (x *SetUserProvisioningEnabledRequest) Reset() {
 	*x = SetUserProvisioningEnabledRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[340]
+	mi := &file_powermanage_v1_control_proto_msgTypes[323]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21068,7 +20127,7 @@ func (x *SetUserProvisioningEnabledRequest) String() string {
 func (*SetUserProvisioningEnabledRequest) ProtoMessage() {}
 
 func (x *SetUserProvisioningEnabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[340]
+	mi := &file_powermanage_v1_control_proto_msgTypes[323]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21081,7 +20140,7 @@ func (x *SetUserProvisioningEnabledRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use SetUserProvisioningEnabledRequest.ProtoReflect.Descriptor instead.
 func (*SetUserProvisioningEnabledRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{340}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{323}
 }
 
 func (x *SetUserProvisioningEnabledRequest) GetUserId() string {
@@ -21114,7 +20173,7 @@ type StartTerminalRequest struct {
 
 func (x *StartTerminalRequest) Reset() {
 	*x = StartTerminalRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[341]
+	mi := &file_powermanage_v1_control_proto_msgTypes[324]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21126,7 +20185,7 @@ func (x *StartTerminalRequest) String() string {
 func (*StartTerminalRequest) ProtoMessage() {}
 
 func (x *StartTerminalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[341]
+	mi := &file_powermanage_v1_control_proto_msgTypes[324]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21139,7 +20198,7 @@ func (x *StartTerminalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartTerminalRequest.ProtoReflect.Descriptor instead.
 func (*StartTerminalRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{341}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{324}
 }
 
 func (x *StartTerminalRequest) GetDeviceId() string {
@@ -21178,12 +20237,6 @@ type StartTerminalResponse struct {
 	// (e.g. wss://control.example.com/terminal). Clients MUST construct
 	// the final connect URL by appending ?token=<session_token>; this
 	// field never embeds the token.
-	//
-	// Spec 41 renamed this from gateway_url. The gateway was only ever the
-	// WebSocket bridge for the browser — terminal frames already travelled to
-	// the agent over the AgentService bidi stream — so with the tier deleted the
-	// bridge moves to control and the field names what it now is. Re-tagged in
-	// place rather than reserved: V1 is the only wire version.
 	// @gotags: validate:"required,url,startswith=wss://"
 	TerminalUrl string `protobuf:"bytes,3,opt,name=terminal_url,json=terminalUrl,proto3" json:"terminal_url,omitempty" validate:"required,url,startswith=wss://"`
 	// Token expiry; the client should connect well before this.
@@ -21199,7 +20252,7 @@ type StartTerminalResponse struct {
 
 func (x *StartTerminalResponse) Reset() {
 	*x = StartTerminalResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[342]
+	mi := &file_powermanage_v1_control_proto_msgTypes[325]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21211,7 +20264,7 @@ func (x *StartTerminalResponse) String() string {
 func (*StartTerminalResponse) ProtoMessage() {}
 
 func (x *StartTerminalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[342]
+	mi := &file_powermanage_v1_control_proto_msgTypes[325]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21224,7 +20277,7 @@ func (x *StartTerminalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartTerminalResponse.ProtoReflect.Descriptor instead.
 func (*StartTerminalResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{342}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{325}
 }
 
 func (x *StartTerminalResponse) GetSessionId() string {
@@ -21277,12 +20330,11 @@ func (x *StartTerminalResponse) GetTtyUser() string {
 //     returns OK both times. An unknown or already-ended session
 //     returns OK with no body, NOT NotFound, so clients can fire and
 //     forget on disconnect.
-//   - No reason field: graceful stops are not audited beyond the
-//     existing TerminalSessionEnded event the gateway already emits.
-//   - Agent/gateway failures while delivering the stop signal are
-//     logged but never surface as RPC errors — the session is
-//     considered closed once the control server has accepted the
-//     request.
+//   - No reason field: graceful stops are audited only by the ordinary
+//     session-ended record.
+//   - Agent failures while delivering the stop signal are logged but
+//     never surface as RPC errors — the session is considered closed
+//     once the control server has accepted the request.
 //
 // TerminateTerminalSession — admin/forcible termination.
 //   - Caller MUST hold the TerminateTerminalSession permission;
@@ -21291,10 +20343,10 @@ func (x *StartTerminalResponse) GetTtyUser() string {
 //     NotFound so the admin can distinguish "killed it" from "it was
 //     already gone".
 //   - Carries a reason that is recorded in the audit log alongside the
-//     terminating user, propagated through GatewayService and surfaced
-//     to the agent so the user sees why their session disappeared.
-//   - Underlying gateway/agent failures DO surface as RPC errors so
-//     the admin knows the kill did not actually land.
+//     terminating user and surfaced to the agent so the user sees why
+//     their session disappeared.
+//   - Underlying agent failures DO surface as RPC errors so the admin
+//     knows the kill did not actually land.
 type StopTerminalRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -21305,7 +20357,7 @@ type StopTerminalRequest struct {
 
 func (x *StopTerminalRequest) Reset() {
 	*x = StopTerminalRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[343]
+	mi := &file_powermanage_v1_control_proto_msgTypes[326]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21317,7 +20369,7 @@ func (x *StopTerminalRequest) String() string {
 func (*StopTerminalRequest) ProtoMessage() {}
 
 func (x *StopTerminalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[343]
+	mi := &file_powermanage_v1_control_proto_msgTypes[326]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21330,7 +20382,7 @@ func (x *StopTerminalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopTerminalRequest.ProtoReflect.Descriptor instead.
 func (*StopTerminalRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{343}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{326}
 }
 
 func (x *StopTerminalRequest) GetSessionId() string {
@@ -21348,7 +20400,7 @@ type StopTerminalResponse struct {
 
 func (x *StopTerminalResponse) Reset() {
 	*x = StopTerminalResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[344]
+	mi := &file_powermanage_v1_control_proto_msgTypes[327]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21360,7 +20412,7 @@ func (x *StopTerminalResponse) String() string {
 func (*StopTerminalResponse) ProtoMessage() {}
 
 func (x *StopTerminalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[344]
+	mi := &file_powermanage_v1_control_proto_msgTypes[327]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21373,7 +20425,7 @@ func (x *StopTerminalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopTerminalResponse.ProtoReflect.Descriptor instead.
 func (*StopTerminalResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{344}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{327}
 }
 
 // TerminalSessionInfo is the admin view of an active session, returned
@@ -21398,7 +20450,7 @@ type TerminalSessionInfo struct {
 
 func (x *TerminalSessionInfo) Reset() {
 	*x = TerminalSessionInfo{}
-	mi := &file_pm_v1_control_proto_msgTypes[345]
+	mi := &file_powermanage_v1_control_proto_msgTypes[328]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21410,7 +20462,7 @@ func (x *TerminalSessionInfo) String() string {
 func (*TerminalSessionInfo) ProtoMessage() {}
 
 func (x *TerminalSessionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[345]
+	mi := &file_powermanage_v1_control_proto_msgTypes[328]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21423,7 +20475,7 @@ func (x *TerminalSessionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalSessionInfo.ProtoReflect.Descriptor instead.
 func (*TerminalSessionInfo) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{345}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{328}
 }
 
 func (x *TerminalSessionInfo) GetSessionId() string {
@@ -21502,7 +20554,7 @@ type ListActiveTerminalSessionsRequest struct {
 
 func (x *ListActiveTerminalSessionsRequest) Reset() {
 	*x = ListActiveTerminalSessionsRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[346]
+	mi := &file_powermanage_v1_control_proto_msgTypes[329]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21514,7 +20566,7 @@ func (x *ListActiveTerminalSessionsRequest) String() string {
 func (*ListActiveTerminalSessionsRequest) ProtoMessage() {}
 
 func (x *ListActiveTerminalSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[346]
+	mi := &file_powermanage_v1_control_proto_msgTypes[329]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21527,7 +20579,7 @@ func (x *ListActiveTerminalSessionsRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ListActiveTerminalSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActiveTerminalSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{346}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{329}
 }
 
 func (x *ListActiveTerminalSessionsRequest) GetPageSize() int32 {
@@ -21569,7 +20621,7 @@ type ListActiveTerminalSessionsResponse struct {
 
 func (x *ListActiveTerminalSessionsResponse) Reset() {
 	*x = ListActiveTerminalSessionsResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[347]
+	mi := &file_powermanage_v1_control_proto_msgTypes[330]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21581,7 +20633,7 @@ func (x *ListActiveTerminalSessionsResponse) String() string {
 func (*ListActiveTerminalSessionsResponse) ProtoMessage() {}
 
 func (x *ListActiveTerminalSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[347]
+	mi := &file_powermanage_v1_control_proto_msgTypes[330]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21594,7 +20646,7 @@ func (x *ListActiveTerminalSessionsResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ListActiveTerminalSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActiveTerminalSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{347}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{330}
 }
 
 func (x *ListActiveTerminalSessionsResponse) GetSessions() []*TerminalSessionInfo {
@@ -21637,7 +20689,7 @@ type TerminateTerminalSessionRequest struct {
 
 func (x *TerminateTerminalSessionRequest) Reset() {
 	*x = TerminateTerminalSessionRequest{}
-	mi := &file_pm_v1_control_proto_msgTypes[348]
+	mi := &file_powermanage_v1_control_proto_msgTypes[331]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21649,7 +20701,7 @@ func (x *TerminateTerminalSessionRequest) String() string {
 func (*TerminateTerminalSessionRequest) ProtoMessage() {}
 
 func (x *TerminateTerminalSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[348]
+	mi := &file_powermanage_v1_control_proto_msgTypes[331]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21662,7 +20714,7 @@ func (x *TerminateTerminalSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateTerminalSessionRequest.ProtoReflect.Descriptor instead.
 func (*TerminateTerminalSessionRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{348}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{331}
 }
 
 func (x *TerminateTerminalSessionRequest) GetSessionId() string {
@@ -21687,7 +20739,7 @@ type TerminateTerminalSessionResponse struct {
 
 func (x *TerminateTerminalSessionResponse) Reset() {
 	*x = TerminateTerminalSessionResponse{}
-	mi := &file_pm_v1_control_proto_msgTypes[349]
+	mi := &file_powermanage_v1_control_proto_msgTypes[332]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21699,7 +20751,7 @@ func (x *TerminateTerminalSessionResponse) String() string {
 func (*TerminateTerminalSessionResponse) ProtoMessage() {}
 
 func (x *TerminateTerminalSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_control_proto_msgTypes[349]
+	mi := &file_powermanage_v1_control_proto_msgTypes[332]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21712,43 +20764,34 @@ func (x *TerminateTerminalSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateTerminalSessionResponse.ProtoReflect.Descriptor instead.
 func (*TerminateTerminalSessionResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_control_proto_rawDescGZIP(), []int{349}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{332}
 }
 
-var File_pm_v1_control_proto protoreflect.FileDescriptor
+var File_powermanage_v1_control_proto protoreflect.FileDescriptor
 
-const file_pm_v1_control_proto_rawDesc = "" +
+const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\n" +
-	"\x13pm/v1/control.proto\x12\x05pm.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13pm/v1/actions.proto\x1a\x11pm/v1/agent.proto\x1a\x12pm/v1/common.proto\"z\n" +
+	"\x1cpowermanage/v1/control.proto\x12\x0epowermanage.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cpowermanage/v1/actions.proto\x1a\x1apowermanage/v1/agent.proto\x1a\x1bpowermanage/v1/common.proto\"\xb3\x01\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
 	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\x12\x10\n" +
-	"\x03csr\x18\x04 \x01(\fR\x03csr\"\x9c\x01\n" +
-	"\x10RegisterResponse\x12,\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12\x17\n" +
+	"\x03csr\x18\x04 \x01(\fR\x03csr\x127\n" +
+	"\x18agent_sealing_public_key\x18\x05 \x01(\fR\x15agentSealingPublicKey\"\xe2\x01\n" +
+	"\x10RegisterResponse\x125\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x18.powermanage.v1.DeviceIdR\bdeviceId\x12\x17\n" +
 	"\aca_cert\x18\x02 \x01(\fR\x06caCert\x12 \n" +
 	"\vcertificate\x18\x03 \x01(\fR\vcertificate\x12\x1f\n" +
 	"\vcontrol_url\x18\x04 \x01(\tR\n" +
-	"controlUrl\"\\\n" +
+	"controlUrl\x12;\n" +
+	"\x1acontrol_sealing_public_key\x18\x05 \x01(\fR\x17controlSealingPublicKey\"\\\n" +
 	"\x17RenewCertificateRequest\x12\x10\n" +
 	"\x03csr\x18\x01 \x01(\fR\x03csr\x12/\n" +
 	"\x13current_certificate\x18\x02 \x01(\fR\x12currentCertificate\"\x9c\x01\n" +
 	"\x18RenewCertificateResponse\x12 \n" +
 	"\vcertificate\x18\x01 \x01(\fR\vcertificate\x127\n" +
 	"\tnot_after\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\bnotAfter\x12%\n" +
-	"\x0eca_certificate\x18\x03 \x01(\fR\rcaCertificate\"@\n" +
-	"\fLoginRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xff\x01\n" +
-	"\rLoginResponse\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
-	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x129\n" +
-	"\n" +
-	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1f\n" +
-	"\x04user\x18\x04 \x01(\v2\v.pm.v1.UserR\x04user\x12#\n" +
-	"\rtotp_required\x18\x05 \x01(\bR\ftotpRequired\x12%\n" +
-	"\x0etotp_challenge\x18\x06 \x01(\tR\rtotpChallenge\":\n" +
+	"\x0eca_certificate\x18\x03 \x01(\fR\rcaCertificate\":\n" +
 	"\x13RefreshTokenRequest\x12#\n" +
 	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"\x99\x01\n" +
 	"\x14RefreshTokenResponse\x12!\n" +
@@ -21759,52 +20802,17 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rLogoutRequest\x12#\n" +
 	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"\x10\n" +
 	"\x0eLogoutResponse\"\x17\n" +
-	"\x15GetCurrentUserRequest\"9\n" +
-	"\x16GetCurrentUserResponse\x12\x1f\n" +
-	"\x04user\x18\x01 \x01(\v2\v.pm.v1.UserR\x04user\"\x12\n" +
-	"\x10SetupTOTPRequest\"e\n" +
-	"\x11SetupTOTPResponse\x12\x16\n" +
-	"\x06secret\x18\x01 \x01(\tR\x06secret\x12\x15\n" +
-	"\x06qr_uri\x18\x02 \x01(\tR\x05qrUri\x12!\n" +
-	"\fbackup_codes\x18\x03 \x03(\tR\vbackupCodes\"'\n" +
-	"\x11VerifyTOTPRequest\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\".\n" +
-	"\x12VerifyTOTPResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"0\n" +
-	"\x12DisableTOTPRequest\x12\x1a\n" +
-	"\bpassword\x18\x01 \x01(\tR\bpassword\"\x15\n" +
-	"\x13DisableTOTPResponse\"6\n" +
-	"\x1bAdminDisableUserTOTPRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x1e\n" +
-	"\x1cAdminDisableUserTOTPResponse\"\x16\n" +
-	"\x14GetTOTPStatusRequest\"g\n" +
-	"\x15GetTOTPStatusResponse\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x124\n" +
-	"\x16backup_codes_remaining\x18\x02 \x01(\x05R\x14backupCodesRemaining\":\n" +
-	"\x1cRegenerateBackupCodesRequest\x12\x1a\n" +
-	"\bpassword\x18\x01 \x01(\tR\bpassword\"B\n" +
-	"\x1dRegenerateBackupCodesResponse\x12!\n" +
-	"\fbackup_codes\x18\x01 \x03(\tR\vbackupCodes\"J\n" +
-	"\x16VerifyLoginTOTPRequest\x12\x1c\n" +
-	"\tchallenge\x18\x01 \x01(\tR\tchallenge\x12\x12\n" +
-	"\x04code\x18\x02 \x01(\tR\x04code\"\xbd\x01\n" +
-	"\x17VerifyLoginTOTPResponse\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
-	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x129\n" +
-	"\n" +
-	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1f\n" +
-	"\x04user\x18\x04 \x01(\v2\v.pm.v1.UserR\x04user\"\xe1\a\n" +
+	"\x15GetCurrentUserRequest\"B\n" +
+	"\x16GetCurrentUserResponse\x12(\n" +
+	"\x04user\x18\x01 \x01(\v2\x14.powermanage.v1.UserR\x04user\"\x9c\a\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x129\n" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12>\n" +
 	"\rlast_login_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\x12\x1a\n" +
-	"\bdisabled\x18\x05 \x01(\bR\bdisabled\x12!\n" +
-	"\x05roles\x18\x06 \x03(\v2\v.pm.v1.RoleR\x05roles\x12!\n" +
-	"\ftotp_enabled\x18\a \x01(\bR\vtotpEnabled\x12!\n" +
-	"\fhas_password\x18\b \x01(\bR\vhasPassword\x12:\n" +
-	"\x0eidentity_links\x18\t \x03(\v2\x13.pm.v1.IdentityLinkR\ridentityLinks\x12!\n" +
+	"\bdisabled\x18\x05 \x01(\bR\bdisabled\x12C\n" +
+	"\x0eidentity_links\x18\t \x03(\v2\x1c.powermanage.v1.IdentityLinkR\ridentityLinks\x12!\n" +
 	"\fdisplay_name\x18\n" +
 	" \x01(\tR\vdisplayName\x12\x1d\n" +
 	"\n" +
@@ -21815,14 +20823,14 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\apicture\x18\x0e \x01(\tR\apicture\x12\x16\n" +
 	"\x06locale\x18\x0f \x01(\tR\x06locale\x12%\n" +
 	"\x0elinux_username\x18\x10 \x01(\tR\rlinuxUsername\x12\x1b\n" +
-	"\tlinux_uid\x18\x11 \x01(\x05R\blinuxUid\x12;\n" +
-	"\x0fssh_public_keys\x18\x12 \x03(\v2\x13.pm.v1.SshPublicKeyR\rsshPublicKeys\x12,\n" +
+	"\tlinux_uid\x18\x11 \x01(\x05R\blinuxUid\x12D\n" +
+	"\x0fssh_public_keys\x18\x12 \x03(\v2\x1c.powermanage.v1.SshPublicKeyR\rsshPublicKeys\x12,\n" +
 	"\x12ssh_access_enabled\x18\x13 \x01(\bR\x10sshAccessEnabled\x12(\n" +
 	"\x10ssh_allow_pubkey\x18\x14 \x01(\bR\x0esshAllowPubkey\x12,\n" +
 	"\x12ssh_allow_password\x18\x15 \x01(\bR\x10sshAllowPassword\x12:\n" +
-	"\x19user_provisioning_enabled\x18\x16 \x01(\bR\x17userProvisioningEnabled\x12=\n" +
-	"\x0finherited_roles\x18\x17 \x03(\v2\x14.pm.v1.InheritedRoleR\x0einheritedRoles\x121\n" +
-	"\vrole_grants\x18\x18 \x03(\v2\x10.pm.v1.RoleGrantR\n" +
+	"\x19user_provisioning_enabled\x18\x16 \x01(\bR\x17userProvisioningEnabled\x12F\n" +
+	"\x0finherited_roles\x18\x17 \x03(\v2\x1d.powermanage.v1.InheritedRoleR\x0einheritedRoles\x12:\n" +
+	"\vrole_grants\x18\x18 \x03(\v2\x19.powermanage.v1.RoleGrantR\n" +
 	"roleGrants\"\x7f\n" +
 	"\rInheritedRole\x12\x17\n" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
@@ -21843,57 +20851,52 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\vpermissions\x18\x04 \x03(\tR\vpermissions\x129\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1b\n" +
-	"\tis_system\x18\x06 \x01(\bR\bisSystem\"\xa0\x01\n" +
-	"\tRoleGrant\x12\x1f\n" +
-	"\x04role\x18\x01 \x01(\v2\v.pm.v1.RoleR\x04role\x128\n" +
+	"\tis_system\x18\x06 \x01(\bR\bisSystem\"\xb2\x01\n" +
+	"\tRoleGrant\x12(\n" +
+	"\x04role\x18\x01 \x01(\v2\x14.powermanage.v1.RoleR\x04role\x12A\n" +
 	"\n" +
-	"scope_kind\x18\x02 \x01(\x0e2\x19.pm.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
+	"scope_kind\x18\x02 \x01(\x0e2\".powermanage.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
 	"\bscope_id\x18\x03 \x01(\tR\ascopeId\x12\x1d\n" +
 	"\n" +
-	"scope_name\x18\x04 \x01(\tR\tscopeName\"\x98\x01\n" +
+	"scope_name\x18\x04 \x01(\tR\tscopeName\"\xa1\x01\n" +
 	"\x0ePermissionInfo\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05group\x18\x02 \x01(\tR\x05group\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12<\n" +
-	"\vtarget_kind\x18\x04 \x01(\x0e2\x1b.pm.v1.PermissionTargetKindR\n" +
-	"targetKind\"\xf2\x01\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12E\n" +
+	"\vtarget_kind\x18\x04 \x01(\x0e2$.powermanage.v1.PermissionTargetKindR\n" +
+	"targetKind\"\xd6\x01\n" +
 	"\x11CreateUserRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x19\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x19\n" +
 	"\brole_ids\x18\x03 \x03(\tR\aroleIds\x12!\n" +
 	"\fdisplay_name\x18\x04 \x01(\tR\vdisplayName\x12\x1d\n" +
 	"\n" +
 	"given_name\x18\x05 \x01(\tR\tgivenName\x12\x1f\n" +
 	"\vfamily_name\x18\x06 \x01(\tR\n" +
 	"familyName\x12-\n" +
-	"\x12preferred_username\x18\a \x01(\tR\x11preferredUsername\"5\n" +
-	"\x12CreateUserResponse\x12\x1f\n" +
-	"\x04user\x18\x01 \x01(\v2\v.pm.v1.UserR\x04user\" \n" +
+	"\x12preferred_username\x18\a \x01(\tR\x11preferredUsername\">\n" +
+	"\x12CreateUserResponse\x12(\n" +
+	"\x04user\x18\x01 \x01(\v2\x14.powermanage.v1.UserR\x04user\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"2\n" +
-	"\x0fGetUserResponse\x12\x1f\n" +
-	"\x04user\x18\x01 \x01(\v2\v.pm.v1.UserR\x04user\"N\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\";\n" +
+	"\x0fGetUserResponse\x12(\n" +
+	"\x04user\x18\x01 \x01(\v2\x14.powermanage.v1.UserR\x04user\"N\n" +
 	"\x10ListUsersRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x7f\n" +
-	"\x11ListUsersResponse\x12!\n" +
-	"\x05users\x18\x01 \x03(\v2\v.pm.v1.UserR\x05users\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\x88\x01\n" +
+	"\x11ListUsersResponse\x12*\n" +
+	"\x05users\x18\x01 \x03(\v2\x14.powermanage.v1.UserR\x05users\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\">\n" +
 	"\x16UpdateUserEmailRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\"y\n" +
-	"\x19UpdateUserPasswordRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12)\n" +
-	"\x10current_password\x18\x02 \x01(\tR\x0fcurrentPassword\x12!\n" +
-	"\fnew_password\x18\x03 \x01(\tR\vnewPassword\"D\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\"D\n" +
 	"\x16SetUserDisabledRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\bdisabled\x18\x02 \x01(\bR\bdisabled\"5\n" +
-	"\x12UpdateUserResponse\x12\x1f\n" +
-	"\x04user\x18\x01 \x01(\v2\v.pm.v1.UserR\x04user\"\xee\x01\n" +
+	"\bdisabled\x18\x02 \x01(\bR\bdisabled\">\n" +
+	"\x12UpdateUserResponse\x12(\n" +
+	"\x04user\x18\x01 \x01(\v2\x14.powermanage.v1.UserR\x04user\"\xee\x01\n" +
 	"\x18UpdateUserProfileRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1d\n" +
@@ -21911,9 +20914,9 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
 	"public_key\x18\x02 \x01(\tR\tpublicKey\x12\x18\n" +
-	"\acomment\x18\x03 \x01(\tR\acomment\">\n" +
-	"\x15AddUserSshKeyResponse\x12%\n" +
-	"\x03key\x18\x01 \x01(\v2\x13.pm.v1.SshPublicKeyR\x03key\"I\n" +
+	"\acomment\x18\x03 \x01(\tR\acomment\"G\n" +
+	"\x15AddUserSshKeyResponse\x12.\n" +
+	"\x03key\x18\x01 \x01(\v2\x1c.powermanage.v1.SshPublicKeyR\x03key\"I\n" +
 	"\x17RemoveUserSshKeyRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06key_id\x18\x02 \x01(\tR\x05keyId\"\x1a\n" +
@@ -21925,22 +20928,22 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x12ssh_allow_password\x18\x04 \x01(\bR\x10sshAllowPassword\"`\n" +
 	"\x1eUpdateUserLinuxUsernameRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12%\n" +
-	"\x0elinux_username\x18\x02 \x01(\tR\rlinuxUsername\"\xe8\a\n" +
+	"\x0elinux_username\x18\x02 \x01(\tR\rlinuxUsername\"\x83\b\n" +
 	"\x06Device\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
-	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\x12+\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x13.pm.v1.DeviceStatusR\x06status\x12?\n" +
+	"\ragent_version\x18\x03 \x01(\tR\fagentVersion\x124\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x1c.powermanage.v1.DeviceStatusR\x06status\x12?\n" +
 	"\rregistered_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\fregisteredAt\x12<\n" +
 	"\flast_seen_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"lastSeenAt\x12B\n" +
-	"\x0fcert_expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rcertExpiresAt\x121\n" +
-	"\x06labels\x18\b \x03(\v2\x19.pm.v1.Device.LabelsEntryR\x06labels\x12*\n" +
+	"\x0fcert_expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rcertExpiresAt\x12:\n" +
+	"\x06labels\x18\b \x03(\v2\".powermanage.v1.Device.LabelsEntryR\x06labels\x12*\n" +
 	"\x11assigned_user_ids\x18\t \x03(\tR\x0fassignedUserIds\x12,\n" +
 	"\x12assigned_group_ids\x18\n" +
 	" \x03(\tR\x10assignedGroupIds\x122\n" +
-	"\x15sync_interval_minutes\x18\v \x01(\x05R\x13syncIntervalMinutes\x12D\n" +
-	"\x11compliance_status\x18\f \x01(\x0e2\x17.pm.v1.ComplianceStatusR\x10complianceStatus\x12N\n" +
+	"\x15sync_interval_minutes\x18\v \x01(\x05R\x13syncIntervalMinutes\x12M\n" +
+	"\x11compliance_status\x18\f \x01(\x0e2 .powermanage.v1.ComplianceStatusR\x10complianceStatus\x12N\n" +
 	"\x15compliance_checked_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x13complianceCheckedAt\x12)\n" +
 	"\x10compliance_total\x18\x0e \x01(\x05R\x0fcomplianceTotal\x12-\n" +
 	"\x12compliance_passing\x18\x0f \x01(\x05R\x11compliancePassing\x12F\n" +
@@ -21949,35 +20952,35 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1ainventory_interval_minutes\x18\x12 \x01(\x05R\x18inventoryIntervalMinutes\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc1\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd3\x02\n" +
 	"\x12ListDevicesRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\x128\n" +
-	"\rstatus_filter\x18\x03 \x01(\x0e2\x13.pm.v1.DeviceStatusR\fstatusFilter\x12M\n" +
-	"\flabel_filter\x18\x04 \x03(\v2*.pm.v1.ListDevicesRequest.LabelFilterEntryR\vlabelFilter\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x12A\n" +
+	"\rstatus_filter\x18\x03 \x01(\x0e2\x1c.powermanage.v1.DeviceStatusR\fstatusFilter\x12V\n" +
+	"\flabel_filter\x18\x04 \x03(\v23.powermanage.v1.ListDevicesRequest.LabelFilterEntryR\vlabelFilter\x12&\n" +
 	"\x0fmy_devices_only\x18\x05 \x01(\bR\rmyDevicesOnly\x1a>\n" +
 	"\x10LabelFilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x87\x01\n" +
-	"\x13ListDevicesResponse\x12'\n" +
-	"\adevices\x18\x01 \x03(\v2\r.pm.v1.DeviceR\adevices\x12&\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x01\n" +
+	"\x13ListDevicesResponse\x120\n" +
+	"\adevices\x18\x01 \x03(\v2\x16.powermanage.v1.DeviceR\adevices\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"\"\n" +
 	"\x10GetDeviceRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\":\n" +
-	"\x11GetDeviceResponse\x12%\n" +
-	"\x06device\x18\x01 \x01(\v2\r.pm.v1.DeviceR\x06device\"O\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"C\n" +
+	"\x11GetDeviceResponse\x12.\n" +
+	"\x06device\x18\x01 \x01(\v2\x16.powermanage.v1.DeviceR\x06device\"O\n" +
 	"\x15SetDeviceLabelRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\tR\x05value\"<\n" +
 	"\x18RemoveDeviceLabelRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03key\"=\n" +
-	"\x14UpdateDeviceResponse\x12%\n" +
-	"\x06device\x18\x01 \x01(\v2\r.pm.v1.DeviceR\x06device\"%\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"F\n" +
+	"\x14UpdateDeviceResponse\x12.\n" +
+	"\x06device\x18\x01 \x01(\v2\x16.powermanage.v1.DeviceR\x06device\"%\n" +
 	"\x13DeleteDeviceRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x16\n" +
 	"\x14DeleteDeviceResponse\"\x9e\x01\n" +
@@ -21986,23 +20989,23 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
 	"\bgroup_id\x18\x03 \x01(\tR\agroupId\x12\x19\n" +
 	"\buser_ids\x18\x04 \x03(\tR\auserIds\x12\x1b\n" +
-	"\tgroup_ids\x18\x05 \x03(\tR\bgroupIds\"=\n" +
-	"\x14AssignDeviceResponse\x12%\n" +
-	"\x06device\x18\x01 \x01(\v2\r.pm.v1.DeviceR\x06device\"h\n" +
+	"\tgroup_ids\x18\x05 \x03(\tR\bgroupIds\"F\n" +
+	"\x14AssignDeviceResponse\x12.\n" +
+	"\x06device\x18\x01 \x01(\v2\x16.powermanage.v1.DeviceR\x06device\"h\n" +
 	"\x15UnassignDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
-	"\bgroup_id\x18\x03 \x01(\tR\agroupId\"?\n" +
-	"\x16UnassignDeviceResponse\x12%\n" +
-	"\x06device\x18\x01 \x01(\v2\r.pm.v1.DeviceR\x06device\"e\n" +
+	"\bgroup_id\x18\x03 \x01(\tR\agroupId\"H\n" +
+	"\x16UnassignDeviceResponse\x12.\n" +
+	"\x06device\x18\x01 \x01(\v2\x16.powermanage.v1.DeviceR\x06device\"n\n" +
 	"\x0eDeviceAssignee\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x1b.pm.v1.AssignmentTargetTypeR\x04type\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
+	"\x04type\x18\x02 \x01(\x0e2$.powermanage.v1.AssignmentTargetTypeR\x04type\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\"9\n" +
 	"\x1aListDeviceAssigneesRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"R\n" +
-	"\x1bListDeviceAssigneesResponse\x123\n" +
-	"\tassignees\x18\x01 \x03(\v2\x15.pm.v1.DeviceAssigneeR\tassignees\"b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"[\n" +
+	"\x1bListDeviceAssigneesResponse\x12<\n" +
+	"\tassignees\x18\x01 \x03(\v2\x1e.powermanage.v1.DeviceAssigneeR\tassignees\"b\n" +
 	"\x1cSetDeviceSyncIntervalRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
 	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\"q\n" +
@@ -22031,119 +21034,119 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\bmax_uses\x18\x03 \x01(\x05R\amaxUses\x129\n" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x19\n" +
-	"\bowner_id\x18\x05 \x01(\tR\aownerId\"E\n" +
-	"\x13CreateTokenResponse\x12.\n" +
-	"\x05token\x18\x01 \x01(\v2\x18.pm.v1.RegistrationTokenR\x05token\"z\n" +
+	"\bowner_id\x18\x05 \x01(\tR\aownerId\"N\n" +
+	"\x13CreateTokenResponse\x127\n" +
+	"\x05token\x18\x01 \x01(\v2!.powermanage.v1.RegistrationTokenR\x05token\"z\n" +
 	"\x11ListTokensRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12)\n" +
-	"\x10include_disabled\x18\x03 \x01(\bR\x0fincludeDisabled\"\x8f\x01\n" +
-	"\x12ListTokensResponse\x120\n" +
-	"\x06tokens\x18\x01 \x03(\v2\x18.pm.v1.RegistrationTokenR\x06tokens\x12&\n" +
+	"\x10include_disabled\x18\x03 \x01(\bR\x0fincludeDisabled\"\x98\x01\n" +
+	"\x12ListTokensResponse\x129\n" +
+	"\x06tokens\x18\x01 \x03(\v2!.powermanage.v1.RegistrationTokenR\x06tokens\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"!\n" +
 	"\x0fGetTokenRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"B\n" +
-	"\x10GetTokenResponse\x12.\n" +
-	"\x05token\x18\x01 \x01(\v2\x18.pm.v1.RegistrationTokenR\x05token\"8\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"K\n" +
+	"\x10GetTokenResponse\x127\n" +
+	"\x05token\x18\x01 \x01(\v2!.powermanage.v1.RegistrationTokenR\x05token\"8\n" +
 	"\x12RenameTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"E\n" +
 	"\x17SetTokenDisabledRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\bdisabled\x18\x02 \x01(\bR\bdisabled\"E\n" +
-	"\x13UpdateTokenResponse\x12.\n" +
-	"\x05token\x18\x01 \x01(\v2\x18.pm.v1.RegistrationTokenR\x05token\"$\n" +
+	"\bdisabled\x18\x02 \x01(\bR\bdisabled\"N\n" +
+	"\x13UpdateTokenResponse\x127\n" +
+	"\x05token\x18\x01 \x01(\v2!.powermanage.v1.RegistrationTokenR\x05token\"$\n" +
 	"\x12DeleteTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteTokenResponse\"\x97\n" +
-	"\n" +
+	"\x13DeleteTokenResponse\"\xd4\v\n" +
 	"\rManagedAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12%\n" +
-	"\x04type\x18\x04 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
-	"\rdesired_state\x18\x05 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12.\n" +
+	"\x04type\x18\x04 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\x04type\x12A\n" +
+	"\rdesired_state\x18\x05 \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12'\n" +
 	"\x0ftimeout_seconds\x18\x06 \x01(\x05R\x0etimeoutSeconds\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\b \x01(\tR\tcreatedBy\x121\n" +
-	"\bschedule\x18\t \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x129\n" +
+	"created_by\x18\b \x01(\tR\tcreatedBy\x12:\n" +
+	"\bschedule\x18\t \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\x129\n" +
 	"\n" +
 	"updated_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x120\n" +
-	"\apackage\x18\v \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\f \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\r \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\aservice\x18\x0e \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
-	"\x04file\x18\x0f \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\x10 \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x129\n" +
+	"\apackage\x18\v \x01(\v2\x1d.powermanage.v1.PackageParamsH\x00R\apackage\x124\n" +
+	"\x03app\x18\f \x01(\v2 .powermanage.v1.AppInstallParamsH\x00R\x03app\x123\n" +
+	"\x05shell\x18\r \x01(\v2\x1b.powermanage.v1.ShellParamsH\x00R\x05shell\x129\n" +
+	"\aservice\x18\x0e \x01(\v2\x1d.powermanage.v1.ServiceParamsH\x00R\aservice\x120\n" +
+	"\x04file\x18\x0f \x01(\v2\x1a.powermanage.v1.FileParamsH\x00R\x04file\x126\n" +
+	"\x06update\x18\x10 \x01(\v2\x1c.powermanage.v1.UpdateParamsH\x00R\x06update\x12B\n" +
 	"\n" +
-	"repository\x18\x11 \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repository\x120\n" +
-	"\aflatpak\x18\x12 \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x13 \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x14 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x15 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x16 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
-	"\fadmin_policy\x18\x17 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
-	"\x03lps\x18\x18 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x19 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
+	"repository\x18\x11 \x01(\v2 .powermanage.v1.RepositoryParamsH\x00R\n" +
+	"repository\x129\n" +
+	"\aflatpak\x18\x12 \x01(\v2\x1d.powermanage.v1.FlatpakParamsH\x00R\aflatpak\x12?\n" +
+	"\tdirectory\x18\x13 \x01(\v2\x1f.powermanage.v1.DirectoryParamsH\x00R\tdirectory\x120\n" +
+	"\x04user\x18\x14 \x01(\v2\x1a.powermanage.v1.UserParamsH\x00R\x04user\x12-\n" +
+	"\x03ssh\x18\x15 \x01(\v2\x19.powermanage.v1.SshParamsH\x00R\x03ssh\x120\n" +
+	"\x04sshd\x18\x16 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
+	"\fadmin_policy\x18\x17 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
+	"\x03lps\x18\x18 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
+	"\x05group\x18\x19 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
 	"\n" +
-	"encryption\x18\x1a \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x12'\n" +
-	"\x04wifi\x18\x1b \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
-	"\fagent_update\x18\x1c \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
-	"\x06params\"\xf8\b\n" +
+	"encryption\x18\x1a \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
+	"encryption\x120\n" +
+	"\x04wifi\x18\x1b \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"\fagent_update\x18\x1c \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
+	"\x06params\"\xb5\n" +
+	"\n" +
 	"\x13CreateActionRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x128\n" +
-	"\rdesired_state\x18\x04 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
-	"\x0ftimeout_seconds\x18\x05 \x01(\x05R\x0etimeoutSeconds\x121\n" +
-	"\bschedule\x18\x06 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
-	"\apackage\x18\a \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\b \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\t \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12.\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\x04type\x12A\n" +
+	"\rdesired_state\x18\x04 \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12'\n" +
+	"\x0ftimeout_seconds\x18\x05 \x01(\x05R\x0etimeoutSeconds\x12:\n" +
+	"\bschedule\x18\x06 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\x129\n" +
+	"\apackage\x18\a \x01(\v2\x1d.powermanage.v1.PackageParamsH\x00R\apackage\x124\n" +
+	"\x03app\x18\b \x01(\v2 .powermanage.v1.AppInstallParamsH\x00R\x03app\x123\n" +
+	"\x05shell\x18\t \x01(\v2\x1b.powermanage.v1.ShellParamsH\x00R\x05shell\x129\n" +
 	"\aservice\x18\n" +
-	" \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
-	"\x04file\x18\v \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
-	"\x06update\x18\f \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	" \x01(\v2\x1d.powermanage.v1.ServiceParamsH\x00R\aservice\x120\n" +
+	"\x04file\x18\v \x01(\v2\x1a.powermanage.v1.FileParamsH\x00R\x04file\x126\n" +
+	"\x06update\x18\f \x01(\v2\x1c.powermanage.v1.UpdateParamsH\x00R\x06update\x12B\n" +
 	"\n" +
-	"repository\x18\r \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repository\x120\n" +
-	"\aflatpak\x18\x0e \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\x0f \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x10 \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x11 \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x12 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
-	"\fadmin_policy\x18\x13 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
-	"\x03lps\x18\x14 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x15 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
+	"repository\x18\r \x01(\v2 .powermanage.v1.RepositoryParamsH\x00R\n" +
+	"repository\x129\n" +
+	"\aflatpak\x18\x0e \x01(\v2\x1d.powermanage.v1.FlatpakParamsH\x00R\aflatpak\x12?\n" +
+	"\tdirectory\x18\x0f \x01(\v2\x1f.powermanage.v1.DirectoryParamsH\x00R\tdirectory\x120\n" +
+	"\x04user\x18\x10 \x01(\v2\x1a.powermanage.v1.UserParamsH\x00R\x04user\x12-\n" +
+	"\x03ssh\x18\x11 \x01(\v2\x19.powermanage.v1.SshParamsH\x00R\x03ssh\x120\n" +
+	"\x04sshd\x18\x12 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
+	"\fadmin_policy\x18\x13 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
+	"\x03lps\x18\x14 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
+	"\x05group\x18\x15 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
 	"\n" +
-	"encryption\x18\x16 \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x12'\n" +
-	"\x04wifi\x18\x17 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
-	"\fagent_update\x18\x18 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
-	"\x06params\"D\n" +
-	"\x14CreateActionResponse\x12,\n" +
-	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"\"\n" +
+	"encryption\x18\x16 \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
+	"encryption\x120\n" +
+	"\x04wifi\x18\x17 \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"\fagent_update\x18\x18 \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
+	"\x06params\"M\n" +
+	"\x14CreateActionResponse\x125\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.powermanage.v1.ManagedActionR\x06action\"\"\n" +
 	"\x10GetActionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"A\n" +
-	"\x11GetActionResponse\x12,\n" +
-	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"\xad\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"J\n" +
+	"\x11GetActionResponse\x125\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.powermanage.v1.ManagedActionR\x06action\"\xb6\x01\n" +
 	"\x12ListActionsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\x122\n" +
-	"\vtype_filter\x18\x03 \x01(\x0e2\x11.pm.v1.ActionTypeR\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x12;\n" +
+	"\vtype_filter\x18\x03 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\n" +
 	"typeFilter\x12'\n" +
-	"\x0funassigned_only\x18\x04 \x01(\bR\x0eunassignedOnly\"\x8e\x01\n" +
-	"\x13ListActionsResponse\x12.\n" +
-	"\aactions\x18\x01 \x03(\v2\x14.pm.v1.ManagedActionR\aactions\x12&\n" +
+	"\x0funassigned_only\x18\x04 \x01(\bR\x0eunassignedOnly\"\x97\x01\n" +
+	"\x13ListActionsResponse\x127\n" +
+	"\aactions\x18\x01 \x03(\v2\x1d.powermanage.v1.ManagedActionR\aactions\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"9\n" +
@@ -22152,41 +21155,41 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"R\n" +
 	"\x1eUpdateActionDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xb1\b\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xe5\t\n" +
 	"\x19UpdateActionParamsRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
-	"\rdesired_state\x18\x02 \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12'\n" +
-	"\x0ftimeout_seconds\x18\x03 \x01(\x05R\x0etimeoutSeconds\x121\n" +
-	"\bschedule\x18\x04 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x120\n" +
-	"\apackage\x18\x05 \x01(\v2\x14.pm.v1.PackageParamsH\x00R\apackage\x12+\n" +
-	"\x03app\x18\x06 \x01(\v2\x17.pm.v1.AppInstallParamsH\x00R\x03app\x12*\n" +
-	"\x05shell\x18\a \x01(\v2\x12.pm.v1.ShellParamsH\x00R\x05shell\x120\n" +
-	"\aservice\x18\b \x01(\v2\x14.pm.v1.ServiceParamsH\x00R\aservice\x12'\n" +
-	"\x04file\x18\t \x01(\v2\x11.pm.v1.FileParamsH\x00R\x04file\x12-\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12A\n" +
+	"\rdesired_state\x18\x02 \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12'\n" +
+	"\x0ftimeout_seconds\x18\x03 \x01(\x05R\x0etimeoutSeconds\x12:\n" +
+	"\bschedule\x18\x04 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\x129\n" +
+	"\apackage\x18\x05 \x01(\v2\x1d.powermanage.v1.PackageParamsH\x00R\apackage\x124\n" +
+	"\x03app\x18\x06 \x01(\v2 .powermanage.v1.AppInstallParamsH\x00R\x03app\x123\n" +
+	"\x05shell\x18\a \x01(\v2\x1b.powermanage.v1.ShellParamsH\x00R\x05shell\x129\n" +
+	"\aservice\x18\b \x01(\v2\x1d.powermanage.v1.ServiceParamsH\x00R\aservice\x120\n" +
+	"\x04file\x18\t \x01(\v2\x1a.powermanage.v1.FileParamsH\x00R\x04file\x126\n" +
 	"\x06update\x18\n" +
-	" \x01(\v2\x13.pm.v1.UpdateParamsH\x00R\x06update\x129\n" +
+	" \x01(\v2\x1c.powermanage.v1.UpdateParamsH\x00R\x06update\x12B\n" +
 	"\n" +
-	"repository\x18\v \x01(\v2\x17.pm.v1.RepositoryParamsH\x00R\n" +
-	"repository\x120\n" +
-	"\aflatpak\x18\f \x01(\v2\x14.pm.v1.FlatpakParamsH\x00R\aflatpak\x126\n" +
-	"\tdirectory\x18\r \x01(\v2\x16.pm.v1.DirectoryParamsH\x00R\tdirectory\x12'\n" +
-	"\x04user\x18\x0e \x01(\v2\x11.pm.v1.UserParamsH\x00R\x04user\x12$\n" +
-	"\x03ssh\x18\x0f \x01(\v2\x10.pm.v1.SshParamsH\x00R\x03ssh\x12'\n" +
-	"\x04sshd\x18\x10 \x01(\v2\x11.pm.v1.SshdParamsH\x00R\x04sshd\x12=\n" +
-	"\fadmin_policy\x18\x11 \x01(\v2\x18.pm.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12$\n" +
-	"\x03lps\x18\x12 \x01(\v2\x10.pm.v1.LpsParamsH\x00R\x03lps\x12*\n" +
-	"\x05group\x18\x13 \x01(\v2\x12.pm.v1.GroupParamsH\x00R\x05group\x129\n" +
+	"repository\x18\v \x01(\v2 .powermanage.v1.RepositoryParamsH\x00R\n" +
+	"repository\x129\n" +
+	"\aflatpak\x18\f \x01(\v2\x1d.powermanage.v1.FlatpakParamsH\x00R\aflatpak\x12?\n" +
+	"\tdirectory\x18\r \x01(\v2\x1f.powermanage.v1.DirectoryParamsH\x00R\tdirectory\x120\n" +
+	"\x04user\x18\x0e \x01(\v2\x1a.powermanage.v1.UserParamsH\x00R\x04user\x12-\n" +
+	"\x03ssh\x18\x0f \x01(\v2\x19.powermanage.v1.SshParamsH\x00R\x03ssh\x120\n" +
+	"\x04sshd\x18\x10 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
+	"\fadmin_policy\x18\x11 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
+	"\x03lps\x18\x12 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
+	"\x05group\x18\x13 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
 	"\n" +
-	"encryption\x18\x14 \x01(\v2\x17.pm.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x12'\n" +
-	"\x04wifi\x18\x15 \x01(\v2\x11.pm.v1.WifiParamsH\x00R\x04wifi\x12=\n" +
-	"\fagent_update\x18\x16 \x01(\v2\x18.pm.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
-	"\x06params\"D\n" +
-	"\x14UpdateActionResponse\x12,\n" +
-	"\x06action\x18\x01 \x01(\v2\x14.pm.v1.ManagedActionR\x06action\"%\n" +
+	"encryption\x18\x14 \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
+	"encryption\x120\n" +
+	"\x04wifi\x18\x15 \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"\fagent_update\x18\x16 \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
+	"\x06params\"M\n" +
+	"\x14UpdateActionResponse\x125\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.powermanage.v1.ManagedActionR\x06action\"%\n" +
 	"\x13DeleteActionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x16\n" +
-	"\x14DeleteActionResponse\"\xbc\x02\n" +
+	"\x14DeleteActionResponse\"\xc5\x02\n" +
 	"\tActionSet\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -22197,34 +21200,34 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"created_by\x18\x06 \x01(\tR\tcreatedBy\x129\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x121\n" +
-	"\bschedule\x18\b \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\"\xa2\x01\n" +
+	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12:\n" +
+	"\bschedule\x18\b \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\"\xab\x01\n" +
 	"\x0fActionSetMember\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1d\n" +
 	"\n" +
 	"sort_order\x18\x02 \x01(\x05R\tsortOrder\x12\x1f\n" +
 	"\vaction_name\x18\x03 \x01(\tR\n" +
-	"actionName\x122\n" +
-	"\vaction_type\x18\x04 \x01(\x0e2\x11.pm.v1.ActionTypeR\n" +
-	"actionType\"\x81\x01\n" +
+	"actionName\x12;\n" +
+	"\vaction_type\x18\x04 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\n" +
+	"actionType\"\x8a\x01\n" +
 	"\x16CreateActionSetRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x121\n" +
-	"\bschedule\x18\x03 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\"=\n" +
-	"\x17CreateActionSetResponse\x12\"\n" +
-	"\x03set\x18\x01 \x01(\v2\x10.pm.v1.ActionSetR\x03set\"%\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12:\n" +
+	"\bschedule\x18\x03 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\"F\n" +
+	"\x17CreateActionSetResponse\x12+\n" +
+	"\x03set\x18\x01 \x01(\v2\x19.powermanage.v1.ActionSetR\x03set\"%\n" +
 	"\x13GetActionSetRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"l\n" +
-	"\x14GetActionSetResponse\x12\"\n" +
-	"\x03set\x18\x01 \x01(\v2\x10.pm.v1.ActionSetR\x03set\x120\n" +
-	"\amembers\x18\x02 \x03(\v2\x16.pm.v1.ActionSetMemberR\amembers\"|\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"~\n" +
+	"\x14GetActionSetResponse\x12+\n" +
+	"\x03set\x18\x01 \x01(\v2\x19.powermanage.v1.ActionSetR\x03set\x129\n" +
+	"\amembers\x18\x02 \x03(\v2\x1f.powermanage.v1.ActionSetMemberR\amembers\"|\n" +
 	"\x15ListActionSetsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12'\n" +
-	"\x0funassigned_only\x18\x03 \x01(\bR\x0eunassignedOnly\"\x87\x01\n" +
-	"\x16ListActionSetsResponse\x12$\n" +
-	"\x04sets\x18\x01 \x03(\v2\x10.pm.v1.ActionSetR\x04sets\x12&\n" +
+	"\x0funassigned_only\x18\x03 \x01(\bR\x0eunassignedOnly\"\x90\x01\n" +
+	"\x16ListActionSetsResponse\x12-\n" +
+	"\x04sets\x18\x01 \x03(\v2\x19.powermanage.v1.ActionSetR\x04sets\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"<\n" +
@@ -22233,12 +21236,12 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"U\n" +
 	"!UpdateActionSetDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"c\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"l\n" +
 	"\x1eUpdateActionSetScheduleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x121\n" +
-	"\bschedule\x18\x02 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\"=\n" +
-	"\x17UpdateActionSetResponse\x12\"\n" +
-	"\x03set\x18\x01 \x01(\v2\x10.pm.v1.ActionSetR\x03set\"(\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12:\n" +
+	"\bschedule\x18\x02 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\"F\n" +
+	"\x17UpdateActionSetResponse\x12+\n" +
+	"\x03set\x18\x01 \x01(\v2\x19.powermanage.v1.ActionSetR\x03set\"(\n" +
 	"\x16DeleteActionSetRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x19\n" +
 	"\x17DeleteActionSetResponse\"j\n" +
@@ -22246,20 +21249,20 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x06set_id\x18\x01 \x01(\tR\x05setId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1d\n" +
 	"\n" +
-	"sort_order\x18\x03 \x01(\x05R\tsortOrder\"<\n" +
-	"\x16AddActionToSetResponse\x12\"\n" +
-	"\x03set\x18\x01 \x01(\v2\x10.pm.v1.ActionSetR\x03set\"P\n" +
+	"sort_order\x18\x03 \x01(\x05R\tsortOrder\"E\n" +
+	"\x16AddActionToSetResponse\x12+\n" +
+	"\x03set\x18\x01 \x01(\v2\x19.powermanage.v1.ActionSetR\x03set\"P\n" +
 	"\x1aRemoveActionFromSetRequest\x12\x15\n" +
 	"\x06set_id\x18\x01 \x01(\tR\x05setId\x12\x1b\n" +
-	"\taction_id\x18\x02 \x01(\tR\bactionId\"A\n" +
-	"\x1bRemoveActionFromSetResponse\x12\"\n" +
-	"\x03set\x18\x01 \x01(\v2\x10.pm.v1.ActionSetR\x03set\"l\n" +
+	"\taction_id\x18\x02 \x01(\tR\bactionId\"J\n" +
+	"\x1bRemoveActionFromSetResponse\x12+\n" +
+	"\x03set\x18\x01 \x01(\v2\x19.powermanage.v1.ActionSetR\x03set\"l\n" +
 	"\x19ReorderActionInSetRequest\x12\x15\n" +
 	"\x06set_id\x18\x01 \x01(\tR\x05setId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x1b\n" +
-	"\tnew_order\x18\x03 \x01(\x05R\bnewOrder\"@\n" +
-	"\x1aReorderActionInSetResponse\x12\"\n" +
-	"\x03set\x18\x01 \x01(\v2\x10.pm.v1.ActionSetR\x03set\"\xbd\x02\n" +
+	"\tnew_order\x18\x03 \x01(\x05R\bnewOrder\"I\n" +
+	"\x1aReorderActionInSetResponse\x12+\n" +
+	"\x03set\x18\x01 \x01(\v2\x19.powermanage.v1.ActionSetR\x03set\"\xc6\x02\n" +
 	"\n" +
 	"Definition\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -22271,34 +21274,34 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"created_by\x18\x06 \x01(\tR\tcreatedBy\x129\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x121\n" +
-	"\bschedule\x18\b \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\"}\n" +
+	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12:\n" +
+	"\bschedule\x18\b \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\"}\n" +
 	"\x10DefinitionMember\x12\"\n" +
 	"\raction_set_id\x18\x01 \x01(\tR\vactionSetId\x12\x1d\n" +
 	"\n" +
 	"sort_order\x18\x02 \x01(\x05R\tsortOrder\x12&\n" +
-	"\x0faction_set_name\x18\x03 \x01(\tR\ractionSetName\"\x82\x01\n" +
+	"\x0faction_set_name\x18\x03 \x01(\tR\ractionSetName\"\x8b\x01\n" +
 	"\x17CreateDefinitionRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x121\n" +
-	"\bschedule\x18\x03 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\"M\n" +
-	"\x18CreateDefinitionResponse\x121\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12:\n" +
+	"\bschedule\x18\x03 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\"V\n" +
+	"\x18CreateDefinitionResponse\x12:\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
+	"definition\x18\x01 \x01(\v2\x1a.powermanage.v1.DefinitionR\n" +
 	"definition\"&\n" +
 	"\x14GetDefinitionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"}\n" +
-	"\x15GetDefinitionResponse\x121\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x8f\x01\n" +
+	"\x15GetDefinitionResponse\x12:\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
-	"definition\x121\n" +
-	"\amembers\x18\x02 \x03(\v2\x17.pm.v1.DefinitionMemberR\amembers\"T\n" +
+	"definition\x18\x01 \x01(\v2\x1a.powermanage.v1.DefinitionR\n" +
+	"definition\x12:\n" +
+	"\amembers\x18\x02 \x03(\v2 .powermanage.v1.DefinitionMemberR\amembers\"T\n" +
 	"\x16ListDefinitionsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x97\x01\n" +
-	"\x17ListDefinitionsResponse\x123\n" +
-	"\vdefinitions\x18\x01 \x03(\v2\x11.pm.v1.DefinitionR\vdefinitions\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\xa0\x01\n" +
+	"\x17ListDefinitionsResponse\x12<\n" +
+	"\vdefinitions\x18\x01 \x03(\v2\x1a.powermanage.v1.DefinitionR\vdefinitions\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"=\n" +
@@ -22307,13 +21310,13 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"V\n" +
 	"\"UpdateDefinitionDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"d\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"m\n" +
 	"\x1fUpdateDefinitionScheduleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x121\n" +
-	"\bschedule\x18\x02 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\"M\n" +
-	"\x18UpdateDefinitionResponse\x121\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12:\n" +
+	"\bschedule\x18\x02 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\"V\n" +
+	"\x18UpdateDefinitionResponse\x12:\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
+	"definition\x18\x01 \x01(\v2\x1a.powermanage.v1.DefinitionR\n" +
 	"definition\")\n" +
 	"\x17DeleteDefinitionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1a\n" +
@@ -22322,26 +21325,26 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rdefinition_id\x18\x01 \x01(\tR\fdefinitionId\x12\"\n" +
 	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\x12\x1d\n" +
 	"\n" +
-	"sort_order\x18\x03 \x01(\x05R\tsortOrder\"U\n" +
-	" AddActionSetToDefinitionResponse\x121\n" +
+	"sort_order\x18\x03 \x01(\x05R\tsortOrder\"^\n" +
+	" AddActionSetToDefinitionResponse\x12:\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
+	"definition\x18\x01 \x01(\v2\x1a.powermanage.v1.DefinitionR\n" +
 	"definition\"o\n" +
 	"$RemoveActionSetFromDefinitionRequest\x12#\n" +
 	"\rdefinition_id\x18\x01 \x01(\tR\fdefinitionId\x12\"\n" +
-	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\"Z\n" +
-	"%RemoveActionSetFromDefinitionResponse\x121\n" +
+	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\"c\n" +
+	"%RemoveActionSetFromDefinitionResponse\x12:\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
+	"definition\x18\x01 \x01(\v2\x1a.powermanage.v1.DefinitionR\n" +
 	"definition\"\x8b\x01\n" +
 	"#ReorderActionSetInDefinitionRequest\x12#\n" +
 	"\rdefinition_id\x18\x01 \x01(\tR\fdefinitionId\x12\"\n" +
 	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\x12\x1b\n" +
-	"\tnew_order\x18\x03 \x01(\x05R\bnewOrder\"Y\n" +
-	"$ReorderActionSetInDefinitionResponse\x121\n" +
+	"\tnew_order\x18\x03 \x01(\x05R\bnewOrder\"b\n" +
+	"$ReorderActionSetInDefinitionResponse\x12:\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x11.pm.v1.DefinitionR\n" +
-	"definition\"\xcf\x03\n" +
+	"definition\x18\x01 \x01(\v2\x1a.powermanage.v1.DefinitionR\n" +
+	"definition\"\xd8\x03\n" +
 	"\vDeviceGroup\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -22354,25 +21357,25 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"is_dynamic\x18\a \x01(\bR\tisDynamic\x12#\n" +
 	"\rdynamic_query\x18\b \x01(\tR\fdynamicQuery\x122\n" +
-	"\x15sync_interval_minutes\x18\t \x01(\x05R\x13syncIntervalMinutes\x12G\n" +
+	"\x15sync_interval_minutes\x18\t \x01(\x05R\x13syncIntervalMinutes\x12P\n" +
 	"\x12maintenance_window\x18\n" +
-	" \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindow\x12<\n" +
+	" \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\x12<\n" +
 	"\x1ainventory_interval_minutes\x18\v \x01(\x05R\x18inventoryIntervalMinutes\"\x94\x01\n" +
 	"\x18CreateDeviceGroupRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
 	"\n" +
 	"is_dynamic\x18\x03 \x01(\bR\tisDynamic\x12#\n" +
-	"\rdynamic_query\x18\x04 \x01(\tR\fdynamicQuery\"E\n" +
-	"\x19CreateDeviceGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"'\n" +
+	"\rdynamic_query\x18\x04 \x01(\tR\fdynamicQuery\"N\n" +
+	"\x19CreateDeviceGroupResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\"'\n" +
 	"\x15GetDeviceGroupRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x95\x01\n" +
-	"\x16GetDeviceGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xa7\x01\n" +
+	"\x16GetDeviceGroupResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\x12\x1d\n" +
 	"\n" +
-	"device_ids\x18\x02 \x03(\tR\tdeviceIds\x122\n" +
-	"\adevices\x18\x03 \x03(\v2\x18.pm.v1.DeviceGroupMemberR\adevices\"\xaf\x01\n" +
+	"device_ids\x18\x02 \x03(\tR\tdeviceIds\x12;\n" +
+	"\adevices\x18\x03 \x03(\v2!.powermanage.v1.DeviceGroupMemberR\adevices\"\xaf\x01\n" +
 	"\x11DeviceGroupMember\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12#\n" +
@@ -22382,24 +21385,24 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x17ListDeviceGroupsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x8f\x01\n" +
-	"\x18ListDeviceGroupsResponse\x12*\n" +
-	"\x06groups\x18\x01 \x03(\v2\x12.pm.v1.DeviceGroupR\x06groups\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\x98\x01\n" +
+	"\x18ListDeviceGroupsResponse\x123\n" +
+	"\x06groups\x18\x01 \x03(\v2\x1b.powermanage.v1.DeviceGroupR\x06groups\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"?\n" +
 	" ListDeviceGroupsForDeviceRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"O\n" +
-	"!ListDeviceGroupsForDeviceResponse\x12*\n" +
-	"\x06groups\x18\x01 \x03(\v2\x12.pm.v1.DeviceGroupR\x06groups\">\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"X\n" +
+	"!ListDeviceGroupsForDeviceResponse\x123\n" +
+	"\x06groups\x18\x01 \x03(\v2\x1b.powermanage.v1.DeviceGroupR\x06groups\">\n" +
 	"\x18RenameDeviceGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"W\n" +
 	"#UpdateDeviceGroupDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"E\n" +
-	"\x19UpdateDeviceGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"*\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"N\n" +
+	"\x19UpdateDeviceGroupResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\"*\n" +
 	"\x18DeleteDeviceGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1b\n" +
 	"\x19DeleteDeviceGroupResponse\"p\n" +
@@ -22407,21 +21410,21 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1d\n" +
 	"\n" +
-	"device_ids\x18\x03 \x03(\tR\tdeviceIds\"D\n" +
-	"\x18AddDeviceToGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"V\n" +
+	"device_ids\x18\x03 \x03(\tR\tdeviceIds\"M\n" +
+	"\x18AddDeviceToGroupResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\"V\n" +
 	"\x1cRemoveDeviceFromGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x1b\n" +
-	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\"I\n" +
-	"\x1dRemoveDeviceFromGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"s\n" +
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\"R\n" +
+	"\x1dRemoveDeviceFromGroupResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\"s\n" +
 	"\x1dUpdateDeviceGroupQueryRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"is_dynamic\x18\x02 \x01(\bR\tisDynamic\x12#\n" +
-	"\rdynamic_query\x18\x03 \x01(\tR\fdynamicQuery\"J\n" +
-	"\x1eUpdateDeviceGroupQueryResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\"3\n" +
+	"\rdynamic_query\x18\x03 \x01(\tR\fdynamicQuery\"S\n" +
+	"\x1eUpdateDeviceGroupQueryResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\"3\n" +
 	"\x1bValidateDynamicQueryRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\"~\n" +
 	"\x1cValidateDynamicQueryResponse\x12\x14\n" +
@@ -22429,9 +21432,9 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x122\n" +
 	"\x15matching_device_count\x18\x03 \x01(\x05R\x13matchingDeviceCount\"-\n" +
 	"\x1bEvaluateDynamicGroupRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x96\x01\n" +
-	"\x1cEvaluateDynamicGroupResponse\x12(\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.pm.v1.DeviceGroupR\x05group\x12#\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x9f\x01\n" +
+	"\x1cEvaluateDynamicGroupResponse\x121\n" +
+	"\x05group\x18\x01 \x01(\v2\x1b.powermanage.v1.DeviceGroupR\x05group\x12#\n" +
 	"\rdevices_added\x18\x02 \x01(\x05R\fdevicesAdded\x12'\n" +
 	"\x0fdevices_removed\x18\x03 \x01(\x05R\x0edevicesRemoved\"g\n" +
 	"!SetDeviceGroupSyncIntervalRequest\x12\x0e\n" +
@@ -22439,111 +21442,111 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\"v\n" +
 	"&SetDeviceGroupInventoryIntervalRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12<\n" +
-	"\x1ainventory_interval_minutes\x18\x02 \x01(\x05R\x18inventoryIntervalMinutes\"\x81\x01\n" +
+	"\x1ainventory_interval_minutes\x18\x02 \x01(\x05R\x18inventoryIntervalMinutes\"\x8a\x01\n" +
 	"&SetDeviceGroupMaintenanceWindowRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12G\n" +
-	"\x12maintenance_window\x18\x02 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindow\"\x99\x03\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12P\n" +
+	"\x12maintenance_window\x18\x02 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xb4\x03\n" +
 	"\n" +
 	"Assignment\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12<\n" +
-	"\vsource_type\x18\x02 \x01(\x0e2\x1b.pm.v1.AssignmentSourceTypeR\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12E\n" +
+	"\vsource_type\x18\x02 \x01(\x0e2$.powermanage.v1.AssignmentSourceTypeR\n" +
 	"sourceType\x12\x1b\n" +
-	"\tsource_id\x18\x03 \x01(\tR\bsourceId\x12<\n" +
-	"\vtarget_type\x18\x04 \x01(\x0e2\x1b.pm.v1.AssignmentTargetTypeR\n" +
+	"\tsource_id\x18\x03 \x01(\tR\bsourceId\x12E\n" +
+	"\vtarget_type\x18\x04 \x01(\x0e2$.powermanage.v1.AssignmentTargetTypeR\n" +
 	"targetType\x12\x1b\n" +
 	"\ttarget_id\x18\x05 \x01(\tR\btargetId\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\a \x01(\tR\tcreatedBy\x12)\n" +
-	"\x04mode\x18\b \x01(\x0e2\x15.pm.v1.AssignmentModeR\x04mode\x12\x1f\n" +
+	"created_by\x18\a \x01(\tR\tcreatedBy\x122\n" +
+	"\x04mode\x18\b \x01(\x0e2\x1e.powermanage.v1.AssignmentModeR\x04mode\x12\x1f\n" +
 	"\vsource_name\x18\t \x01(\tR\n" +
 	"sourceName\x12\x1f\n" +
 	"\vtarget_name\x18\n" +
 	" \x01(\tR\n" +
-	"targetName\"\xfa\x01\n" +
-	"\x17CreateAssignmentRequest\x12<\n" +
-	"\vsource_type\x18\x01 \x01(\x0e2\x1b.pm.v1.AssignmentSourceTypeR\n" +
+	"targetName\"\x95\x02\n" +
+	"\x17CreateAssignmentRequest\x12E\n" +
+	"\vsource_type\x18\x01 \x01(\x0e2$.powermanage.v1.AssignmentSourceTypeR\n" +
 	"sourceType\x12\x1b\n" +
-	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12<\n" +
-	"\vtarget_type\x18\x03 \x01(\x0e2\x1b.pm.v1.AssignmentTargetTypeR\n" +
+	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12E\n" +
+	"\vtarget_type\x18\x03 \x01(\x0e2$.powermanage.v1.AssignmentTargetTypeR\n" +
 	"targetType\x12\x1b\n" +
-	"\ttarget_id\x18\x04 \x01(\tR\btargetId\x12)\n" +
-	"\x04mode\x18\x05 \x01(\x0e2\x15.pm.v1.AssignmentModeR\x04mode\"M\n" +
-	"\x18CreateAssignmentResponse\x121\n" +
+	"\ttarget_id\x18\x04 \x01(\tR\btargetId\x122\n" +
+	"\x04mode\x18\x05 \x01(\x0e2\x1e.powermanage.v1.AssignmentModeR\x04mode\"V\n" +
+	"\x18CreateAssignmentResponse\x12:\n" +
 	"\n" +
-	"assignment\x18\x01 \x01(\v2\x11.pm.v1.AssignmentR\n" +
+	"assignment\x18\x01 \x01(\v2\x1a.powermanage.v1.AssignmentR\n" +
 	"assignment\")\n" +
 	"\x17DeleteAssignmentRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1a\n" +
-	"\x18DeleteAssignmentResponse\"\x8a\x02\n" +
-	"\x16ListAssignmentsRequest\x12<\n" +
-	"\vsource_type\x18\x01 \x01(\x0e2\x1b.pm.v1.AssignmentSourceTypeR\n" +
+	"\x18DeleteAssignmentResponse\"\x9c\x02\n" +
+	"\x16ListAssignmentsRequest\x12E\n" +
+	"\vsource_type\x18\x01 \x01(\x0e2$.powermanage.v1.AssignmentSourceTypeR\n" +
 	"sourceType\x12\x1b\n" +
-	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12<\n" +
-	"\vtarget_type\x18\x03 \x01(\x0e2\x1b.pm.v1.AssignmentTargetTypeR\n" +
+	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12E\n" +
+	"\vtarget_type\x18\x03 \x01(\x0e2$.powermanage.v1.AssignmentTargetTypeR\n" +
 	"targetType\x12\x1b\n" +
 	"\ttarget_id\x18\x04 \x01(\tR\btargetId\x12\x1b\n" +
 	"\tpage_size\x18\x05 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x06 \x01(\tR\tpageToken\"\x97\x01\n" +
-	"\x17ListAssignmentsResponse\x123\n" +
-	"\vassignments\x18\x01 \x03(\v2\x11.pm.v1.AssignmentR\vassignments\x12&\n" +
+	"page_token\x18\x06 \x01(\tR\tpageToken\"\xa0\x01\n" +
+	"\x17ListAssignmentsResponse\x12<\n" +
+	"\vassignments\x18\x01 \x03(\v2\x1a.powermanage.v1.AssignmentR\vassignments\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xee\x01\n" +
+	"totalCount\"\xf7\x01\n" +
 	"\rUserSelection\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12<\n" +
-	"\vsource_type\x18\x03 \x01(\x0e2\x1b.pm.v1.AssignmentSourceTypeR\n" +
+	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12E\n" +
+	"\vsource_type\x18\x03 \x01(\x0e2$.powermanage.v1.AssignmentSourceTypeR\n" +
 	"sourceType\x12\x1b\n" +
 	"\tsource_id\x18\x04 \x01(\tR\bsourceId\x12\x1a\n" +
 	"\bselected\x18\x05 \x01(\bR\bselected\x129\n" +
 	"\n" +
-	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xad\x01\n" +
+	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xb6\x01\n" +
 	"\x17SetUserSelectionRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12<\n" +
-	"\vsource_type\x18\x02 \x01(\x0e2\x1b.pm.v1.AssignmentSourceTypeR\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12E\n" +
+	"\vsource_type\x18\x02 \x01(\x0e2$.powermanage.v1.AssignmentSourceTypeR\n" +
 	"sourceType\x12\x1b\n" +
 	"\tsource_id\x18\x03 \x01(\tR\bsourceId\x12\x1a\n" +
-	"\bselected\x18\x04 \x01(\bR\bselected\"N\n" +
-	"\x18SetUserSelectionResponse\x122\n" +
-	"\tselection\x18\x01 \x01(\v2\x14.pm.v1.UserSelectionR\tselection\":\n" +
+	"\bselected\x18\x04 \x01(\bR\bselected\"W\n" +
+	"\x18SetUserSelectionResponse\x12;\n" +
+	"\tselection\x18\x01 \x01(\v2\x1d.powermanage.v1.UserSelectionR\tselection\":\n" +
 	"\x1bListAvailableActionsRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x86\x02\n" +
-	"\rAvailableItem\x12<\n" +
-	"\vsource_type\x18\x01 \x01(\x0e2\x1b.pm.v1.AssignmentSourceTypeR\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x98\x02\n" +
+	"\rAvailableItem\x12E\n" +
+	"\vsource_type\x18\x01 \x01(\x0e2$.powermanage.v1.AssignmentSourceTypeR\n" +
 	"sourceType\x12\x1b\n" +
 	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12\x1f\n" +
 	"\vsource_name\x18\x03 \x01(\tR\n" +
 	"sourceName\x12-\n" +
 	"\x12source_description\x18\x04 \x01(\tR\x11sourceDescription\x12\x1a\n" +
-	"\bselected\x18\x05 \x01(\bR\bselected\x12.\n" +
-	"\aactions\x18\x06 \x03(\v2\x14.pm.v1.ManagedActionR\aactions\"J\n" +
-	"\x1cListAvailableActionsResponse\x12*\n" +
-	"\x05items\x18\x01 \x03(\v2\x14.pm.v1.AvailableItemR\x05items\":\n" +
+	"\bselected\x18\x05 \x01(\bR\bselected\x127\n" +
+	"\aactions\x18\x06 \x03(\v2\x1d.powermanage.v1.ManagedActionR\aactions\"S\n" +
+	"\x1cListAvailableActionsResponse\x123\n" +
+	"\x05items\x18\x01 \x03(\v2\x1d.powermanage.v1.AvailableItemR\x05items\":\n" +
 	"\x1bGetDeviceAssignmentsRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x98\x03\n" +
-	"\x1cGetDeviceAssignmentsResponse\x12.\n" +
-	"\aactions\x18\x01 \x03(\v2\x14.pm.v1.ManagedActionR\aactions\x121\n" +
-	"\vaction_sets\x18\x02 \x03(\v2\x10.pm.v1.ActionSetR\n" +
-	"actionSets\x123\n" +
-	"\vdefinitions\x18\x03 \x03(\v2\x11.pm.v1.DefinitionR\vdefinitions\x12H\n" +
-	"\x13compliance_policies\x18\x04 \x03(\v2\x17.pm.v1.CompliancePolicyR\x12compliancePolicies\x12I\n" +
-	"\x12action_set_details\x18\x05 \x03(\v2\x1b.pm.v1.GetActionSetResponseR\x10actionSetDetails\x12K\n" +
-	"\x12definition_details\x18\x06 \x03(\v2\x1c.pm.v1.GetDefinitionResponseR\x11definitionDetails\"4\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\xce\x03\n" +
+	"\x1cGetDeviceAssignmentsResponse\x127\n" +
+	"\aactions\x18\x01 \x03(\v2\x1d.powermanage.v1.ManagedActionR\aactions\x12:\n" +
+	"\vaction_sets\x18\x02 \x03(\v2\x19.powermanage.v1.ActionSetR\n" +
+	"actionSets\x12<\n" +
+	"\vdefinitions\x18\x03 \x03(\v2\x1a.powermanage.v1.DefinitionR\vdefinitions\x12Q\n" +
+	"\x13compliance_policies\x18\x04 \x03(\v2 .powermanage.v1.CompliancePolicyR\x12compliancePolicies\x12R\n" +
+	"\x12action_set_details\x18\x05 \x03(\v2$.powermanage.v1.GetActionSetResponseR\x10actionSetDetails\x12T\n" +
+	"\x12definition_details\x18\x06 \x03(\v2%.powermanage.v1.GetDefinitionResponseR\x11definitionDetails\"4\n" +
 	"\x19GetUserAssignmentsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"Q\n" +
-	"\x1aGetUserAssignmentsResponse\x123\n" +
-	"\vassignments\x18\x01 \x03(\v2\x11.pm.v1.AssignmentR\vassignments\"\xbd\x06\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"Z\n" +
+	"\x1aGetUserAssignmentsResponse\x12<\n" +
+	"\vassignments\x18\x01 \x03(\v2\x1a.powermanage.v1.AssignmentR\vassignments\"\xf3\x06\n" +
 	"\x0fActionExecution\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1b\n" +
-	"\taction_id\x18\x03 \x01(\tR\bactionId\x12%\n" +
-	"\x04type\x18\x04 \x01(\x0e2\x11.pm.v1.ActionTypeR\x04type\x12.\n" +
-	"\x06status\x18\x05 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\x06status\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\x12,\n" +
-	"\x06output\x18\a \x01(\v2\x14.pm.v1.CommandOutputR\x06output\x129\n" +
+	"\taction_id\x18\x03 \x01(\tR\bactionId\x12.\n" +
+	"\x04type\x18\x04 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\x04type\x127\n" +
+	"\x06status\x18\x05 \x01(\x0e2\x1f.powermanage.v1.ExecutionStatusR\x06status\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x125\n" +
+	"\x06output\x18\a \x01(\v2\x1d.powermanage.v1.CommandOutputR\x06output\x129\n" +
 	"\n" +
 	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12?\n" +
 	"\rdispatched_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdispatchedAt\x12=\n" +
@@ -22552,97 +21555,97 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\vduration_ms\x18\v \x01(\x03R\n" +
 	"durationMs\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\f \x01(\tR\tcreatedBy\x125\n" +
-	"\vlive_output\x18\r \x01(\v2\x14.pm.v1.CommandOutputR\n" +
-	"liveOutput\x128\n" +
-	"\rdesired_state\x18\x0e \x01(\x0e2\x13.pm.v1.DesiredStateR\fdesiredState\x12\x18\n" +
+	"created_by\x18\f \x01(\tR\tcreatedBy\x12>\n" +
+	"\vlive_output\x18\r \x01(\v2\x1d.powermanage.v1.CommandOutputR\n" +
+	"liveOutput\x12A\n" +
+	"\rdesired_state\x18\x0e \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12\x18\n" +
 	"\achanged\x18\x0f \x01(\bR\achanged\x12\x1c\n" +
-	"\tcompliant\x18\x10 \x01(\bR\tcompliant\x12?\n" +
-	"\x10detection_output\x18\x11 \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x12\x1f\n" +
+	"\tcompliant\x18\x10 \x01(\bR\tcompliant\x12H\n" +
+	"\x10detection_output\x18\x11 \x01(\v2\x1d.powermanage.v1.CommandOutputR\x0fdetectionOutput\x12\x1f\n" +
 	"\vaction_name\x18\x12 \x01(\tR\n" +
 	"actionName\x12?\n" +
-	"\rscheduled_for\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\fscheduledFor\"\x8b\x02\n" +
+	"\rscheduled_for\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\fscheduledFor\"\x94\x02\n" +
 	"\x15DispatchActionRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1d\n" +
-	"\taction_id\x18\x02 \x01(\tH\x00R\bactionId\x124\n" +
-	"\rinline_action\x18\x03 \x01(\v2\r.pm.v1.ActionH\x00R\finlineAction\x121\n" +
+	"\taction_id\x18\x02 \x01(\tH\x00R\bactionId\x12=\n" +
+	"\rinline_action\x18\x03 \x01(\v2\x16.powermanage.v1.ActionH\x00R\finlineAction\x121\n" +
 	"\x06run_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x05runAt\x12<\n" +
 	"\x1arespect_maintenance_window\x18\x05 \x01(\bR\x18respectMaintenanceWindowB\x0f\n" +
-	"\raction_source\"N\n" +
-	"\x16DispatchActionResponse\x124\n" +
-	"\texecution\x18\x01 \x01(\v2\x16.pm.v1.ActionExecutionR\texecution\"\xa0\x01\n" +
+	"\raction_source\"W\n" +
+	"\x16DispatchActionResponse\x12=\n" +
+	"\texecution\x18\x01 \x01(\v2\x1f.powermanage.v1.ActionExecutionR\texecution\"\xa9\x01\n" +
 	"\x19DispatchToMultipleRequest\x12\x1d\n" +
 	"\n" +
 	"device_ids\x18\x01 \x03(\tR\tdeviceIds\x12\x1d\n" +
-	"\taction_id\x18\x02 \x01(\tH\x00R\bactionId\x124\n" +
-	"\rinline_action\x18\x03 \x01(\v2\r.pm.v1.ActionH\x00R\finlineActionB\x0f\n" +
-	"\raction_source\"T\n" +
-	"\x1aDispatchToMultipleResponse\x126\n" +
+	"\taction_id\x18\x02 \x01(\tH\x00R\bactionId\x12=\n" +
+	"\rinline_action\x18\x03 \x01(\v2\x16.powermanage.v1.ActionH\x00R\finlineActionB\x0f\n" +
+	"\raction_source\"]\n" +
+	"\x1aDispatchToMultipleResponse\x12?\n" +
 	"\n" +
-	"executions\x18\x01 \x03(\v2\x16.pm.v1.ActionExecutionR\n" +
+	"executions\x18\x01 \x03(\v2\x1f.powermanage.v1.ActionExecutionR\n" +
 	"executions\"=\n" +
 	"\x1eDispatchAssignedActionsRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"Y\n" +
-	"\x1fDispatchAssignedActionsResponse\x126\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"b\n" +
+	"\x1fDispatchAssignedActionsResponse\x12?\n" +
 	"\n" +
-	"executions\x18\x01 \x03(\v2\x16.pm.v1.ActionExecutionR\n" +
+	"executions\x18\x01 \x03(\v2\x1f.powermanage.v1.ActionExecutionR\n" +
 	"executions\"[\n" +
 	"\x18DispatchActionSetRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\"\n" +
-	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\"S\n" +
-	"\x19DispatchActionSetResponse\x126\n" +
+	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\"\\\n" +
+	"\x19DispatchActionSetResponse\x12?\n" +
 	"\n" +
-	"executions\x18\x01 \x03(\v2\x16.pm.v1.ActionExecutionR\n" +
+	"executions\x18\x01 \x03(\v2\x1f.powermanage.v1.ActionExecutionR\n" +
 	"executions\"]\n" +
 	"\x19DispatchDefinitionRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12#\n" +
-	"\rdefinition_id\x18\x02 \x01(\tR\fdefinitionId\"T\n" +
-	"\x1aDispatchDefinitionResponse\x126\n" +
+	"\rdefinition_id\x18\x02 \x01(\tR\fdefinitionId\"]\n" +
+	"\x1aDispatchDefinitionResponse\x12?\n" +
 	"\n" +
-	"executions\x18\x01 \x03(\v2\x16.pm.v1.ActionExecutionR\n" +
-	"executions\"\xe6\x01\n" +
+	"executions\x18\x01 \x03(\v2\x1f.powermanage.v1.ActionExecutionR\n" +
+	"executions\"\xef\x01\n" +
 	"\x16DispatchToGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x1d\n" +
 	"\taction_id\x18\x02 \x01(\tH\x00R\bactionId\x12$\n" +
 	"\raction_set_id\x18\x03 \x01(\tH\x00R\vactionSetId\x12%\n" +
-	"\rdefinition_id\x18\x04 \x01(\tH\x00R\fdefinitionId\x124\n" +
-	"\rinline_action\x18\x05 \x01(\v2\r.pm.v1.ActionH\x00R\finlineActionB\x0f\n" +
-	"\raction_source\"Q\n" +
-	"\x17DispatchToGroupResponse\x126\n" +
+	"\rdefinition_id\x18\x04 \x01(\tH\x00R\fdefinitionId\x12=\n" +
+	"\rinline_action\x18\x05 \x01(\v2\x16.powermanage.v1.ActionH\x00R\finlineActionB\x0f\n" +
+	"\raction_source\"Z\n" +
+	"\x17DispatchToGroupResponse\x12?\n" +
 	"\n" +
-	"executions\x18\x01 \x03(\v2\x16.pm.v1.ActionExecutionR\n" +
+	"executions\x18\x01 \x03(\v2\x1f.powermanage.v1.ActionExecutionR\n" +
 	"executions\"%\n" +
 	"\x13GetExecutionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"L\n" +
-	"\x14GetExecutionResponse\x124\n" +
-	"\texecution\x18\x01 \x01(\v2\x16.pm.v1.ActionExecutionR\texecution\"\xf9\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"U\n" +
+	"\x14GetExecutionResponse\x12=\n" +
+	"\texecution\x18\x01 \x01(\v2\x1f.powermanage.v1.ActionExecutionR\texecution\"\x8b\x02\n" +
 	"\x15ListExecutionsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x1b\n" +
-	"\tdevice_id\x18\x03 \x01(\tR\bdeviceId\x12;\n" +
-	"\rstatus_filter\x18\x04 \x01(\x0e2\x16.pm.v1.ExecutionStatusR\fstatusFilter\x122\n" +
-	"\vtype_filter\x18\x05 \x01(\x0e2\x11.pm.v1.ActionTypeR\n" +
+	"\tdevice_id\x18\x03 \x01(\tR\bdeviceId\x12D\n" +
+	"\rstatus_filter\x18\x04 \x01(\x0e2\x1f.powermanage.v1.ExecutionStatusR\fstatusFilter\x12;\n" +
+	"\vtype_filter\x18\x05 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\n" +
 	"typeFilter\x12\x16\n" +
-	"\x06search\x18\x06 \x01(\tR\x06search\"\x99\x01\n" +
-	"\x16ListExecutionsResponse\x126\n" +
+	"\x06search\x18\x06 \x01(\tR\x06search\"\xa2\x01\n" +
+	"\x16ListExecutionsResponse\x12?\n" +
 	"\n" +
-	"executions\x18\x01 \x03(\v2\x16.pm.v1.ActionExecutionR\n" +
+	"executions\x18\x01 \x03(\v2\x1f.powermanage.v1.ActionExecutionR\n" +
 	"executions\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xe6\x01\n" +
+	"totalCount\"\xef\x01\n" +
 	"\x1cDispatchInstantActionRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x128\n" +
-	"\x0einstant_action\x18\x02 \x01(\x0e2\x11.pm.v1.ActionTypeR\rinstantAction\x121\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12A\n" +
+	"\x0einstant_action\x18\x02 \x01(\x0e2\x1a.powermanage.v1.ActionTypeR\rinstantAction\x121\n" +
 	"\x06run_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x05runAt\x12<\n" +
-	"\x1arespect_maintenance_window\x18\x04 \x01(\bR\x18respectMaintenanceWindow\"U\n" +
-	"\x1dDispatchInstantActionResponse\x124\n" +
-	"\texecution\x18\x01 \x01(\v2\x16.pm.v1.ActionExecutionR\texecution\";\n" +
+	"\x1arespect_maintenance_window\x18\x04 \x01(\bR\x18respectMaintenanceWindow\"^\n" +
+	"\x1dDispatchInstantActionResponse\x12=\n" +
+	"\texecution\x18\x01 \x01(\v2\x1f.powermanage.v1.ActionExecutionR\texecution\";\n" +
 	"\x16CancelExecutionRequest\x12!\n" +
-	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\"O\n" +
-	"\x17CancelExecutionResponse\x124\n" +
-	"\texecution\x18\x01 \x01(\v2\x16.pm.v1.ActionExecutionR\texecution\"\x84\x02\n" +
+	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\"X\n" +
+	"\x17CancelExecutionResponse\x12=\n" +
+	"\texecution\x18\x01 \x01(\v2\x1f.powermanage.v1.ActionExecutionR\texecution\"\x84\x02\n" +
 	"\n" +
 	"AuditEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
@@ -22665,9 +21668,9 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\vstream_type\x18\x04 \x01(\tR\n" +
 	"streamType\x12\x1d\n" +
 	"\n" +
-	"event_type\x18\x05 \x01(\tR\teventType\"\x8d\x01\n" +
-	"\x17ListAuditEventsResponse\x12)\n" +
-	"\x06events\x18\x01 \x03(\v2\x11.pm.v1.AuditEventR\x06events\x12&\n" +
+	"event_type\x18\x05 \x01(\tR\teventType\"\x96\x01\n" +
+	"\x17ListAuditEventsResponse\x122\n" +
+	"\x06events\x18\x01 \x03(\v2\x1a.powermanage.v1.AuditEventR\x06events\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"\xac\x02\n" +
@@ -22684,7 +21687,7 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"page_token\x18\a \x01(\tR\tpageToken\"Y\n" +
 	"\x19ExportAuditEventsResponse\x12\x14\n" +
 	"\x05chunk\x18\x01 \x01(\fR\x05chunk\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc4\x02\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xcd\x02\n" +
 	"\vLpsPassword\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12'\n" +
 	"\x0fdevice_hostname\x18\x02 \x01(\tR\x0edeviceHostname\x12\x1b\n" +
@@ -22694,13 +21697,13 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\busername\x18\x05 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18\x06 \x01(\tR\bpassword\x129\n" +
 	"\n" +
-	"rotated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\x12>\n" +
-	"\x0frotation_reason\x18\b \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\";\n" +
+	"rotated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\x12G\n" +
+	"\x0frotation_reason\x18\b \x01(\x0e2\x1e.powermanage.v1.RotationReasonR\x0erotationReason\";\n" +
 	"\x1cGetDeviceLpsPasswordsRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"{\n" +
-	"\x1dGetDeviceLpsPasswordsResponse\x12,\n" +
-	"\acurrent\x18\x01 \x03(\v2\x12.pm.v1.LpsPasswordR\acurrent\x12,\n" +
-	"\ahistory\x18\x02 \x03(\v2\x12.pm.v1.LpsPasswordR\ahistory\"\xff\x03\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x8d\x01\n" +
+	"\x1dGetDeviceLpsPasswordsResponse\x125\n" +
+	"\acurrent\x18\x01 \x03(\v2\x1b.powermanage.v1.LpsPasswordR\acurrent\x125\n" +
+	"\ahistory\x18\x02 \x03(\v2\x1b.powermanage.v1.LpsPasswordR\ahistory\"\x91\x04\n" +
 	"\aLuksKey\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12'\n" +
 	"\x0fdevice_hostname\x18\x02 \x01(\tR\x0edeviceHostname\x12\x1b\n" +
@@ -22713,17 +21716,17 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"passphrase\x18\x06 \x01(\tR\n" +
 	"passphrase\x129\n" +
 	"\n" +
-	"rotated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\x12>\n" +
-	"\x0frotation_reason\x18\b \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\x12H\n" +
-	"\x11revocation_status\x18\t \x01(\x0e2\x1b.pm.v1.LuksRevocationStatusR\x10revocationStatus\x12)\n" +
+	"rotated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\x12G\n" +
+	"\x0frotation_reason\x18\b \x01(\x0e2\x1e.powermanage.v1.RotationReasonR\x0erotationReason\x12Q\n" +
+	"\x11revocation_status\x18\t \x01(\x0e2$.powermanage.v1.LuksRevocationStatusR\x10revocationStatus\x12)\n" +
 	"\x10revocation_error\x18\n" +
 	" \x01(\tR\x0frevocationError\x12?\n" +
 	"\rrevocation_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\frevocationAt\"7\n" +
 	"\x18GetDeviceLuksKeysRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"o\n" +
-	"\x19GetDeviceLuksKeysResponse\x12(\n" +
-	"\acurrent\x18\x01 \x03(\v2\x0e.pm.v1.LuksKeyR\acurrent\x12(\n" +
-	"\ahistory\x18\x02 \x03(\v2\x0e.pm.v1.LuksKeyR\ahistory\"R\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x81\x01\n" +
+	"\x19GetDeviceLuksKeysResponse\x121\n" +
+	"\acurrent\x18\x01 \x03(\v2\x17.powermanage.v1.LuksKeyR\acurrent\x121\n" +
+	"\ahistory\x18\x02 \x03(\v2\x17.powermanage.v1.LuksKeyR\ahistory\"R\n" +
 	"\x16CreateLuksTokenRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\"b\n" +
@@ -22745,24 +21748,24 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x17DispatchOSQueryResponse\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\"4\n" +
 	"\x17GetOSQueryResultRequest\x12\x19\n" +
-	"\bquery_id\x18\x01 \x01(\tR\aqueryId\"\xaa\x01\n" +
+	"\bquery_id\x18\x01 \x01(\tR\aqueryId\"\xb3\x01\n" +
 	"\x18GetOSQueryResultResponse\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x1c\n" +
 	"\tcompleted\x18\x02 \x01(\bR\tcompleted\x12\x18\n" +
 	"\asuccess\x18\x03 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\x12%\n" +
-	"\x04rows\x18\x05 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"Y\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12.\n" +
+	"\x04rows\x18\x05 \x03(\v2\x1a.powermanage.v1.OSQueryRowR\x04rows\"Y\n" +
 	"\x19GetDeviceInventoryRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1f\n" +
 	"\vtable_names\x18\x02 \x03(\tR\n" +
-	"tableNames\"\x9b\x01\n" +
+	"tableNames\"\xa4\x01\n" +
 	"\x14InventoryTableResult\x12\x1d\n" +
 	"\n" +
-	"table_name\x18\x01 \x01(\tR\ttableName\x12%\n" +
-	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\x12=\n" +
-	"\fcollected_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vcollectedAt\"Q\n" +
-	"\x1aGetDeviceInventoryResponse\x123\n" +
-	"\x06tables\x18\x01 \x03(\v2\x1b.pm.v1.InventoryTableResultR\x06tables\"<\n" +
+	"table_name\x18\x01 \x01(\tR\ttableName\x12.\n" +
+	"\x04rows\x18\x02 \x03(\v2\x1a.powermanage.v1.OSQueryRowR\x04rows\x12=\n" +
+	"\fcollected_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vcollectedAt\"Z\n" +
+	"\x1aGetDeviceInventoryResponse\x12<\n" +
+	"\x06tables\x18\x01 \x03(\v2$.powermanage.v1.InventoryTableResultR\x06tables\"<\n" +
 	"\x1dRefreshDeviceInventoryRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\" \n" +
 	"\x1eRefreshDeviceInventoryResponse\"\xd3\x01\n" +
@@ -22788,21 +21791,21 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x11CreateRoleRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12 \n" +
-	"\vpermissions\x18\x03 \x03(\tR\vpermissions\"5\n" +
-	"\x12CreateRoleResponse\x12\x1f\n" +
-	"\x04role\x18\x01 \x01(\v2\v.pm.v1.RoleR\x04role\" \n" +
+	"\vpermissions\x18\x03 \x03(\tR\vpermissions\">\n" +
+	"\x12CreateRoleResponse\x12(\n" +
+	"\x04role\x18\x01 \x01(\v2\x14.powermanage.v1.RoleR\x04role\" \n" +
 	"\x0eGetRoleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"Q\n" +
-	"\x0fGetRoleResponse\x12\x1f\n" +
-	"\x04role\x18\x01 \x01(\v2\v.pm.v1.RoleR\x04role\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"Z\n" +
+	"\x0fGetRoleResponse\x12(\n" +
+	"\x04role\x18\x01 \x01(\v2\x14.powermanage.v1.RoleR\x04role\x12\x1d\n" +
 	"\n" +
 	"user_count\x18\x02 \x01(\x05R\tuserCount\"N\n" +
 	"\x10ListRolesRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x7f\n" +
-	"\x11ListRolesResponse\x12!\n" +
-	"\x05roles\x18\x01 \x03(\v2\v.pm.v1.RoleR\x05roles\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\x88\x01\n" +
+	"\x11ListRolesResponse\x12*\n" +
+	"\x05roles\x18\x01 \x03(\v2\x14.powermanage.v1.RoleR\x05roles\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"\x84\x01\n" +
@@ -22810,45 +21813,44 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12 \n" +
-	"\vpermissions\x18\x04 \x03(\tR\vpermissions\"5\n" +
-	"\x12UpdateRoleResponse\x12\x1f\n" +
-	"\x04role\x18\x01 \x01(\v2\v.pm.v1.RoleR\x04role\"#\n" +
+	"\vpermissions\x18\x04 \x03(\tR\vpermissions\">\n" +
+	"\x12UpdateRoleResponse\x12(\n" +
+	"\x04role\x18\x01 \x01(\v2\x14.powermanage.v1.RoleR\x04role\"#\n" +
 	"\x11DeleteRoleRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x14\n" +
-	"\x12DeleteRoleResponse\"\xbb\x01\n" +
+	"\x12DeleteRoleResponse\"\xc4\x01\n" +
 	"\x17AssignRoleToUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12\x19\n" +
-	"\brole_ids\x18\x03 \x03(\tR\aroleIds\x128\n" +
+	"\brole_ids\x18\x03 \x03(\tR\aroleIds\x12A\n" +
 	"\n" +
-	"scope_kind\x18\x04 \x01(\x0e2\x19.pm.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
+	"scope_kind\x18\x04 \x01(\x0e2\".powermanage.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
 	"\bscope_id\x18\x05 \x01(\tR\ascopeId\"\x1a\n" +
-	"\x18AssignRoleToUserResponse\"\xa2\x01\n" +
+	"\x18AssignRoleToUserResponse\"\xab\x01\n" +
 	"\x19RevokeRoleFromUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\arole_id\x18\x02 \x01(\tR\x06roleId\x128\n" +
+	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12A\n" +
 	"\n" +
-	"scope_kind\x18\x03 \x01(\x0e2\x19.pm.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
+	"scope_kind\x18\x03 \x01(\x0e2\".powermanage.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
 	"\bscope_id\x18\x04 \x01(\tR\ascopeId\"\x1c\n" +
 	"\x1aRevokeRoleFromUserResponse\"\x18\n" +
-	"\x16ListPermissionsRequest\"R\n" +
-	"\x17ListPermissionsResponse\x127\n" +
-	"\vpermissions\x18\x01 \x03(\v2\x15.pm.v1.PermissionInfoR\vpermissions\"\xba\x03\n" +
+	"\x16ListPermissionsRequest\"[\n" +
+	"\x17ListPermissionsResponse\x12@\n" +
+	"\vpermissions\x18\x01 \x03(\v2\x1e.powermanage.v1.PermissionInfoR\vpermissions\"\xa9\x03\n" +
 	"\tUserGroup\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12!\n" +
-	"\fmember_count\x18\x04 \x01(\x05R\vmemberCount\x12!\n" +
-	"\x05roles\x18\x05 \x03(\v2\v.pm.v1.RoleR\x05roles\x129\n" +
+	"\fmember_count\x18\x04 \x01(\x05R\vmemberCount\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
 	"is_dynamic\x18\a \x01(\bR\tisDynamic\x12#\n" +
 	"\rdynamic_query\x18\b \x01(\tR\fdynamicQuery\x12&\n" +
-	"\x0fis_scim_managed\x18\t \x01(\bR\risScimManaged\x12G\n" +
+	"\x0fis_scim_managed\x18\t \x01(\bR\risScimManaged\x12P\n" +
 	"\x12maintenance_window\x18\n" +
-	" \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindow\x121\n" +
-	"\vrole_grants\x18\v \x03(\v2\x10.pm.v1.RoleGrantR\n" +
+	" \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\x12:\n" +
+	"\vrole_grants\x18\v \x03(\v2\x19.powermanage.v1.RoleGrantR\n" +
 	"roleGrants\"w\n" +
 	"\x0fUserGroupMember\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
@@ -22859,29 +21861,29 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
 	"\n" +
 	"is_dynamic\x18\x03 \x01(\bR\tisDynamic\x12#\n" +
-	"\rdynamic_query\x18\x04 \x01(\tR\fdynamicQuery\"A\n" +
-	"\x17CreateUserGroupResponse\x12&\n" +
-	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\"%\n" +
+	"\rdynamic_query\x18\x04 \x01(\tR\fdynamicQuery\"J\n" +
+	"\x17CreateUserGroupResponse\x12/\n" +
+	"\x05group\x18\x01 \x01(\v2\x19.powermanage.v1.UserGroupR\x05group\"%\n" +
 	"\x13GetUserGroupRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"p\n" +
-	"\x14GetUserGroupResponse\x12&\n" +
-	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\x120\n" +
-	"\amembers\x18\x02 \x03(\v2\x16.pm.v1.UserGroupMemberR\amembers\"S\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x82\x01\n" +
+	"\x14GetUserGroupResponse\x12/\n" +
+	"\x05group\x18\x01 \x01(\v2\x19.powermanage.v1.UserGroupR\x05group\x129\n" +
+	"\amembers\x18\x02 \x03(\v2\x1f.powermanage.v1.UserGroupMemberR\amembers\"S\n" +
 	"\x15ListUserGroupsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x8b\x01\n" +
-	"\x16ListUserGroupsResponse\x12(\n" +
-	"\x06groups\x18\x01 \x03(\v2\x10.pm.v1.UserGroupR\x06groups\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\x94\x01\n" +
+	"\x16ListUserGroupsResponse\x121\n" +
+	"\x06groups\x18\x01 \x03(\v2\x19.powermanage.v1.UserGroupR\x06groups\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"i\n" +
 	"\x16UpdateUserGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\"A\n" +
-	"\x17UpdateUserGroupResponse\x12&\n" +
-	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\"(\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"J\n" +
+	"\x17UpdateUserGroupResponse\x12/\n" +
+	"\x05group\x18\x01 \x01(\v2\x19.powermanage.v1.UserGroupR\x05group\"(\n" +
 	"\x16DeleteUserGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x19\n" +
 	"\x17DeleteUserGroupResponse\"f\n" +
@@ -22893,33 +21895,33 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x1aRemoveUserFromGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x1d\n" +
-	"\x1bRemoveUserFromGroupResponse\"\xc2\x01\n" +
+	"\x1bRemoveUserFromGroupResponse\"\xcb\x01\n" +
 	"\x1cAssignRoleToUserGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
 	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12\x19\n" +
-	"\brole_ids\x18\x03 \x03(\tR\aroleIds\x128\n" +
+	"\brole_ids\x18\x03 \x03(\tR\aroleIds\x12A\n" +
 	"\n" +
-	"scope_kind\x18\x04 \x01(\x0e2\x19.pm.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
+	"scope_kind\x18\x04 \x01(\x0e2\".powermanage.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
 	"\bscope_id\x18\x05 \x01(\tR\ascopeId\"\x1f\n" +
-	"\x1dAssignRoleToUserGroupResponse\"\xa9\x01\n" +
+	"\x1dAssignRoleToUserGroupResponse\"\xb2\x01\n" +
 	"\x1eRevokeRoleFromUserGroupRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
-	"\arole_id\x18\x02 \x01(\tR\x06roleId\x128\n" +
+	"\arole_id\x18\x02 \x01(\tR\x06roleId\x12A\n" +
 	"\n" +
-	"scope_kind\x18\x03 \x01(\x0e2\x19.pm.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
+	"scope_kind\x18\x03 \x01(\x0e2\".powermanage.v1.RoleGrantScopeKindR\tscopeKind\x12\x19\n" +
 	"\bscope_id\x18\x04 \x01(\tR\ascopeId\"!\n" +
 	"\x1fRevokeRoleFromUserGroupResponse\"7\n" +
 	"\x1cListUserGroupsForUserRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"I\n" +
-	"\x1dListUserGroupsForUserResponse\x12(\n" +
-	"\x06groups\x18\x01 \x03(\v2\x10.pm.v1.UserGroupR\x06groups\"q\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"R\n" +
+	"\x1dListUserGroupsForUserResponse\x121\n" +
+	"\x06groups\x18\x01 \x03(\v2\x19.powermanage.v1.UserGroupR\x06groups\"q\n" +
 	"\x1bUpdateUserGroupQueryRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"is_dynamic\x18\x02 \x01(\bR\tisDynamic\x12#\n" +
-	"\rdynamic_query\x18\x03 \x01(\tR\fdynamicQuery\"F\n" +
-	"\x1cUpdateUserGroupQueryResponse\x12&\n" +
-	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\"5\n" +
+	"\rdynamic_query\x18\x03 \x01(\tR\fdynamicQuery\"O\n" +
+	"\x1cUpdateUserGroupQueryResponse\x12/\n" +
+	"\x05group\x18\x01 \x01(\v2\x19.powermanage.v1.UserGroupR\x05group\"5\n" +
 	"\x1dValidateUserGroupQueryRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\"|\n" +
 	"\x1eValidateUserGroupQueryResponse\x12\x14\n" +
@@ -22927,20 +21929,20 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12.\n" +
 	"\x13matching_user_count\x18\x03 \x01(\x05R\x11matchingUserCount\"1\n" +
 	"\x1fEvaluateDynamicUserGroupRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x90\x01\n" +
-	" EvaluateDynamicUserGroupResponse\x12&\n" +
-	"\x05group\x18\x01 \x01(\v2\x10.pm.v1.UserGroupR\x05group\x12\x1f\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x99\x01\n" +
+	" EvaluateDynamicUserGroupResponse\x12/\n" +
+	"\x05group\x18\x01 \x01(\v2\x19.powermanage.v1.UserGroupR\x05group\x12\x1f\n" +
 	"\vusers_added\x18\x02 \x01(\x05R\n" +
 	"usersAdded\x12#\n" +
-	"\rusers_removed\x18\x03 \x01(\x05R\fusersRemoved\"\x7f\n" +
+	"\rusers_removed\x18\x03 \x01(\x05R\fusersRemoved\"\x88\x01\n" +
 	"$SetUserGroupMaintenanceWindowRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12G\n" +
-	"\x12maintenance_window\x18\x02 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindow\"\xd4\a\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12P\n" +
+	"\x12maintenance_window\x18\x02 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xa7\a\n" +
 	"\x10IdentityProvider\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04slug\x18\x03 \x01(\tR\x04slug\x12@\n" +
-	"\rprovider_type\x18\x04 \x01(\x0e2\x1b.pm.v1.IdentityProviderTypeR\fproviderType\x12\x18\n" +
+	"\x04slug\x18\x03 \x01(\tR\x04slug\x12I\n" +
+	"\rprovider_type\x18\x04 \x01(\x0e2$.powermanage.v1.IdentityProviderTypeR\fproviderType\x12\x18\n" +
 	"\aenabled\x18\x05 \x01(\bR\aenabled\x12\x1b\n" +
 	"\tclient_id\x18\x06 \x01(\tR\bclientId\x12\x1d\n" +
 	"\n" +
@@ -22952,11 +21954,10 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x06scopes\x18\v \x03(\tR\x06scopes\x12*\n" +
 	"\x11auto_create_users\x18\f \x01(\bR\x0fautoCreateUsers\x12+\n" +
 	"\x12auto_link_by_email\x18\r \x01(\bR\x0fautoLinkByEmail\x12&\n" +
-	"\x0fdefault_role_id\x18\x0e \x01(\tR\rdefaultRoleId\x12=\n" +
-	"\x1bdisable_password_for_linked\x18\x0f \x01(\bR\x18disablePasswordForLinked\x12\x1f\n" +
+	"\x0fdefault_role_id\x18\x0e \x01(\tR\rdefaultRoleId\x12\x1f\n" +
 	"\vgroup_claim\x18\x10 \x01(\tR\n" +
-	"groupClaim\x12N\n" +
-	"\rgroup_mapping\x18\x11 \x03(\v2).pm.v1.IdentityProvider.GroupMappingEntryR\fgroupMapping\x129\n" +
+	"groupClaim\x12W\n" +
+	"\rgroup_mapping\x18\x11 \x03(\v22.powermanage.v1.IdentityProvider.GroupMappingEntryR\fgroupMapping\x129\n" +
 	"\n" +
 	"created_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
@@ -22980,11 +21981,11 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\rexternal_name\x18\b \x01(\tR\fexternalName\x127\n" +
 	"\tlinked_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\blinkedAt\x12>\n" +
 	"\rlast_login_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\"\xa4\x06\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\"\xf7\x05\n" +
 	"\x1dCreateIdentityProviderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
-	"\x04slug\x18\x02 \x01(\tR\x04slug\x12@\n" +
-	"\rprovider_type\x18\x03 \x01(\x0e2\x1b.pm.v1.IdentityProviderTypeR\fproviderType\x12\x1b\n" +
+	"\x04slug\x18\x02 \x01(\tR\x04slug\x12I\n" +
+	"\rprovider_type\x18\x03 \x01(\x0e2$.powermanage.v1.IdentityProviderTypeR\fproviderType\x12\x1b\n" +
 	"\tclient_id\x18\x04 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x05 \x01(\tR\fclientSecret\x12\x1d\n" +
 	"\n" +
@@ -22996,30 +21997,29 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	" \x03(\tR\x06scopes\x12*\n" +
 	"\x11auto_create_users\x18\v \x01(\bR\x0fautoCreateUsers\x12+\n" +
 	"\x12auto_link_by_email\x18\f \x01(\bR\x0fautoLinkByEmail\x12&\n" +
-	"\x0fdefault_role_id\x18\r \x01(\tR\rdefaultRoleId\x12=\n" +
-	"\x1bdisable_password_for_linked\x18\x0e \x01(\bR\x18disablePasswordForLinked\x12\x1f\n" +
+	"\x0fdefault_role_id\x18\r \x01(\tR\rdefaultRoleId\x12\x1f\n" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
-	"groupClaim\x12[\n" +
-	"\rgroup_mapping\x18\x10 \x03(\v26.pm.v1.CreateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
+	"groupClaim\x12d\n" +
+	"\rgroup_mapping\x18\x10 \x03(\v2?.powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
 	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
-	"\x1eCreateIdentityProviderResponse\x123\n" +
-	"\bprovider\x18\x01 \x01(\v2\x17.pm.v1.IdentityProviderR\bprovider\",\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"^\n" +
+	"\x1eCreateIdentityProviderResponse\x12<\n" +
+	"\bprovider\x18\x01 \x01(\v2 .powermanage.v1.IdentityProviderR\bprovider\",\n" +
 	"\x1aGetIdentityProviderRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"R\n" +
-	"\x1bGetIdentityProviderResponse\x123\n" +
-	"\bprovider\x18\x01 \x01(\v2\x17.pm.v1.IdentityProviderR\bprovider\"Z\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"[\n" +
+	"\x1bGetIdentityProviderResponse\x12<\n" +
+	"\bprovider\x18\x01 \x01(\v2 .powermanage.v1.IdentityProviderR\bprovider\"Z\n" +
 	"\x1cListIdentityProvidersRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x9f\x01\n" +
-	"\x1dListIdentityProvidersResponse\x125\n" +
-	"\tproviders\x18\x01 \x03(\v2\x17.pm.v1.IdentityProviderR\tproviders\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\xa8\x01\n" +
+	"\x1dListIdentityProvidersResponse\x12>\n" +
+	"\tproviders\x18\x01 \x03(\v2 .powermanage.v1.IdentityProviderR\tproviders\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xf8\x05\n" +
+	"totalCount\"\xc2\x05\n" +
 	"\x1dUpdateIdentityProviderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -23035,30 +22035,27 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	" \x03(\tR\x06scopes\x12*\n" +
 	"\x11auto_create_users\x18\v \x01(\bR\x0fautoCreateUsers\x12+\n" +
 	"\x12auto_link_by_email\x18\f \x01(\bR\x0fautoLinkByEmail\x12&\n" +
-	"\x0fdefault_role_id\x18\r \x01(\tR\rdefaultRoleId\x12=\n" +
-	"\x1bdisable_password_for_linked\x18\x0e \x01(\bR\x18disablePasswordForLinked\x12\x1f\n" +
+	"\x0fdefault_role_id\x18\r \x01(\tR\rdefaultRoleId\x12\x1f\n" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
-	"groupClaim\x12[\n" +
-	"\rgroup_mapping\x18\x10 \x03(\v26.pm.v1.UpdateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
+	"groupClaim\x12d\n" +
+	"\rgroup_mapping\x18\x10 \x03(\v2?.powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
 	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
-	"\x1eUpdateIdentityProviderResponse\x123\n" +
-	"\bprovider\x18\x01 \x01(\v2\x17.pm.v1.IdentityProviderR\bprovider\"/\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"^\n" +
+	"\x1eUpdateIdentityProviderResponse\x12<\n" +
+	"\bprovider\x18\x01 \x01(\v2 .powermanage.v1.IdentityProviderR\bprovider\"/\n" +
 	"\x1dDeleteIdentityProviderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\" \n" +
-	"\x1eDeleteIdentityProviderResponse\"~\n" +
+	"\x1eDeleteIdentityProviderResponse\"\x87\x01\n" +
 	"\x12AuthMethodProvider\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12@\n" +
-	"\rprovider_type\x18\x03 \x01(\x0e2\x1b.pm.v1.IdentityProviderTypeR\fproviderType\".\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12I\n" +
+	"\rprovider_type\x18\x03 \x01(\x0e2$.powermanage.v1.IdentityProviderTypeR\fproviderType\".\n" +
 	"\x16ListAuthMethodsRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"\xa0\x01\n" +
-	"\x17ListAuthMethodsResponse\x12)\n" +
-	"\x10password_enabled\x18\x01 \x01(\bR\x0fpasswordEnabled\x12!\n" +
-	"\ftotp_enabled\x18\x02 \x01(\bR\vtotpEnabled\x127\n" +
-	"\tproviders\x18\x03 \x03(\v2\x19.pm.v1.AuthMethodProviderR\tproviders\"N\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"[\n" +
+	"\x17ListAuthMethodsResponse\x12@\n" +
+	"\tproviders\x18\x03 \x03(\v2\".powermanage.v1.AuthMethodProviderR\tproviders\"N\n" +
 	"\x15GetSSOLoginURLRequest\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12!\n" +
 	"\fredirect_url\x18\x02 \x01(\tR\vredirectUrl\"5\n" +
@@ -23067,18 +22064,16 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x12SSOCallbackRequest\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12\x14\n" +
-	"\x05state\x18\x03 \x01(\tR\x05state\"\x85\x02\n" +
+	"\x05state\x18\x03 \x01(\tR\x05state\"\xc2\x01\n" +
 	"\x13SSOCallbackResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x129\n" +
 	"\n" +
-	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1f\n" +
-	"\x04user\x18\x04 \x01(\v2\v.pm.v1.UserR\x04user\x12#\n" +
-	"\rtotp_required\x18\x05 \x01(\bR\ftotpRequired\x12%\n" +
-	"\x0etotp_challenge\x18\x06 \x01(\tR\rtotpChallenge\"\x1a\n" +
-	"\x18ListIdentityLinksRequest\"F\n" +
-	"\x19ListIdentityLinksResponse\x12)\n" +
-	"\x05links\x18\x01 \x03(\v2\x13.pm.v1.IdentityLinkR\x05links\"0\n" +
+	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12(\n" +
+	"\x04user\x18\x04 \x01(\v2\x14.powermanage.v1.UserR\x04user\"\x1a\n" +
+	"\x18ListIdentityLinksRequest\"O\n" +
+	"\x19ListIdentityLinksResponse\x122\n" +
+	"\x05links\x18\x01 \x03(\v2\x1c.powermanage.v1.IdentityLinkR\x05links\"0\n" +
 	"\x15UnlinkIdentityRequest\x12\x17\n" +
 	"\alink_id\x18\x01 \x01(\tR\x06linkId\"\x18\n" +
 	"\x16UnlinkIdentityResponse\"#\n" +
@@ -23095,23 +22090,23 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x17RotateSCIMTokenResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"9\n" +
 	"\x1aGetDeviceComplianceRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x84\x01\n" +
-	"\x1bGetDeviceComplianceResponse\x12/\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x17.pm.v1.ComplianceStatusR\x06status\x124\n" +
-	"\x06checks\x18\x02 \x03(\v2\x1c.pm.v1.ComplianceCheckResultR\x06checks\"\xef\x01\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x96\x01\n" +
+	"\x1bGetDeviceComplianceResponse\x128\n" +
+	"\x06status\x18\x01 \x01(\x0e2 .powermanage.v1.ComplianceStatusR\x06status\x12=\n" +
+	"\x06checks\x18\x02 \x03(\v2%.powermanage.v1.ComplianceCheckResultR\x06checks\"\xf8\x01\n" +
 	"\x15ComplianceCheckResult\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vaction_name\x18\x02 \x01(\tR\n" +
 	"actionName\x12\x1c\n" +
-	"\tcompliant\x18\x03 \x01(\bR\tcompliant\x12?\n" +
-	"\x10detection_output\x18\x04 \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\x129\n" +
+	"\tcompliant\x18\x03 \x01(\bR\tcompliant\x12H\n" +
+	"\x10detection_output\x18\x04 \x01(\v2\x1d.powermanage.v1.CommandOutputR\x0fdetectionOutput\x129\n" +
 	"\n" +
-	"checked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\"\x84\x02\n" +
+	"checked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\"\x8d\x02\n" +
 	"\x10CompliancePolicy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x121\n" +
-	"\x05rules\x18\x04 \x03(\v2\x1b.pm.v1.CompliancePolicyRuleR\x05rules\x12\x1d\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12:\n" +
+	"\x05rules\x18\x04 \x03(\v2$.powermanage.v1.CompliancePolicyRuleR\x05rules\x12\x1d\n" +
 	"\n" +
 	"rule_count\x18\x05 \x01(\x05R\truleCount\x129\n" +
 	"\n" +
@@ -23125,19 +22120,19 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x12grace_period_hours\x18\x03 \x01(\x05R\x10gracePeriodHours\"U\n" +
 	"\x1dCreateCompliancePolicyRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"Q\n" +
-	"\x1eCreateCompliancePolicyResponse\x12/\n" +
-	"\x06policy\x18\x01 \x01(\v2\x17.pm.v1.CompliancePolicyR\x06policy\",\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"Z\n" +
+	"\x1eCreateCompliancePolicyResponse\x128\n" +
+	"\x06policy\x18\x01 \x01(\v2 .powermanage.v1.CompliancePolicyR\x06policy\",\n" +
 	"\x1aGetCompliancePolicyRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"N\n" +
-	"\x1bGetCompliancePolicyResponse\x12/\n" +
-	"\x06policy\x18\x01 \x01(\v2\x17.pm.v1.CompliancePolicyR\x06policy\"[\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"W\n" +
+	"\x1bGetCompliancePolicyResponse\x128\n" +
+	"\x06policy\x18\x01 \x01(\v2 .powermanage.v1.CompliancePolicyR\x06policy\"[\n" +
 	"\x1dListCompliancePoliciesRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"\x9e\x01\n" +
-	"\x1eListCompliancePoliciesResponse\x123\n" +
-	"\bpolicies\x18\x01 \x03(\v2\x17.pm.v1.CompliancePolicyR\bpolicies\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\xa7\x01\n" +
+	"\x1eListCompliancePoliciesResponse\x12<\n" +
+	"\bpolicies\x18\x01 \x03(\v2 .powermanage.v1.CompliancePolicyR\bpolicies\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"C\n" +
@@ -23146,99 +22141,99 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"\\\n" +
 	"(UpdateCompliancePolicyDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"Q\n" +
-	"\x1eUpdateCompliancePolicyResponse\x12/\n" +
-	"\x06policy\x18\x01 \x01(\v2\x17.pm.v1.CompliancePolicyR\x06policy\"/\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"Z\n" +
+	"\x1eUpdateCompliancePolicyResponse\x128\n" +
+	"\x06policy\x18\x01 \x01(\v2 .powermanage.v1.CompliancePolicyR\x06policy\"/\n" +
 	"\x1dDeleteCompliancePolicyRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\" \n" +
 	"\x1eDeleteCompliancePolicyResponse\"\x88\x01\n" +
 	"\x1eAddCompliancePolicyRuleRequest\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12,\n" +
-	"\x12grace_period_hours\x18\x03 \x01(\x05R\x10gracePeriodHours\"R\n" +
-	"\x1fAddCompliancePolicyRuleResponse\x12/\n" +
-	"\x06policy\x18\x01 \x01(\v2\x17.pm.v1.CompliancePolicyR\x06policy\"]\n" +
+	"\x12grace_period_hours\x18\x03 \x01(\x05R\x10gracePeriodHours\"[\n" +
+	"\x1fAddCompliancePolicyRuleResponse\x128\n" +
+	"\x06policy\x18\x01 \x01(\v2 .powermanage.v1.CompliancePolicyR\x06policy\"]\n" +
 	"!RemoveCompliancePolicyRuleRequest\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\x1b\n" +
-	"\taction_id\x18\x02 \x01(\tR\bactionId\"U\n" +
-	"\"RemoveCompliancePolicyRuleResponse\x12/\n" +
-	"\x06policy\x18\x01 \x01(\v2\x17.pm.v1.CompliancePolicyR\x06policy\"\x8b\x01\n" +
+	"\taction_id\x18\x02 \x01(\tR\bactionId\"^\n" +
+	"\"RemoveCompliancePolicyRuleResponse\x128\n" +
+	"\x06policy\x18\x01 \x01(\v2 .powermanage.v1.CompliancePolicyR\x06policy\"\x8b\x01\n" +
 	"!UpdateCompliancePolicyRuleRequest\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12,\n" +
-	"\x12grace_period_hours\x18\x03 \x01(\x05R\x10gracePeriodHours\"U\n" +
-	"\"UpdateCompliancePolicyRuleResponse\x12/\n" +
-	"\x06policy\x18\x01 \x01(\v2\x17.pm.v1.CompliancePolicyR\x06policy\"E\n" +
+	"\x12grace_period_hours\x18\x03 \x01(\x05R\x10gracePeriodHours\"^\n" +
+	"\"UpdateCompliancePolicyRuleResponse\x128\n" +
+	"\x06policy\x18\x01 \x01(\v2 .powermanage.v1.CompliancePolicyR\x06policy\"E\n" +
 	"&GetDeviceCompliancePolicyStatusRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\xa4\x01\n" +
-	"'GetDeviceCompliancePolicyStatusResponse\x12>\n" +
-	"\x0eoverall_status\x18\x01 \x01(\x0e2\x17.pm.v1.ComplianceStatusR\roverallStatus\x129\n" +
-	"\bpolicies\x18\x02 \x03(\v2\x1d.pm.v1.DevicePolicyEvaluationR\bpolicies\"\xc0\x01\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\xb6\x01\n" +
+	"'GetDeviceCompliancePolicyStatusResponse\x12G\n" +
+	"\x0eoverall_status\x18\x01 \x01(\x0e2 .powermanage.v1.ComplianceStatusR\roverallStatus\x12B\n" +
+	"\bpolicies\x18\x02 \x03(\v2&.powermanage.v1.DevicePolicyEvaluationR\bpolicies\"\xd2\x01\n" +
 	"\x16DevicePolicyEvaluation\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\x1f\n" +
 	"\vpolicy_name\x18\x02 \x01(\tR\n" +
-	"policyName\x12/\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x17.pm.v1.ComplianceStatusR\x06status\x127\n" +
-	"\x05rules\x18\x04 \x03(\v2!.pm.v1.DevicePolicyRuleEvaluationR\x05rules\"\xdd\x03\n" +
+	"policyName\x128\n" +
+	"\x06status\x18\x03 \x01(\x0e2 .powermanage.v1.ComplianceStatusR\x06status\x12@\n" +
+	"\x05rules\x18\x04 \x03(\v2*.powermanage.v1.DevicePolicyRuleEvaluationR\x05rules\"\xef\x03\n" +
 	"\x1aDevicePolicyRuleEvaluation\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vaction_name\x18\x02 \x01(\tR\n" +
-	"actionName\x12/\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x17.pm.v1.ComplianceStatusR\x06status\x12\x1c\n" +
+	"actionName\x128\n" +
+	"\x06status\x18\x03 \x01(\x0e2 .powermanage.v1.ComplianceStatusR\x06status\x12\x1c\n" +
 	"\tcompliant\x18\x04 \x01(\bR\tcompliant\x129\n" +
 	"\n" +
 	"checked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x12B\n" +
 	"\x0ffirst_failed_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\rfirstFailedAt\x12,\n" +
 	"\x12grace_period_hours\x18\a \x01(\x05R\x10gracePeriodHours\x12D\n" +
-	"\x10grace_expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0egraceExpiresAt\x12?\n" +
-	"\x10detection_output\x18\t \x01(\v2\x14.pm.v1.CommandOutputR\x0fdetectionOutput\"P\n" +
+	"\x10grace_expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0egraceExpiresAt\x12H\n" +
+	"\x10detection_output\x18\t \x01(\v2\x1d.powermanage.v1.CommandOutputR\x0fdetectionOutput\"P\n" +
 	"\x10SearchDateFilter\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05start\x18\x02 \x01(\x03R\x05start\x12\x10\n" +
-	"\x03end\x18\x03 \x01(\x03R\x03end\"\xbb\x03\n" +
+	"\x03end\x18\x03 \x01(\x03R\x03end\"\xe8\x03\n" +
 	"\rSearchRequest\x12\x14\n" +
-	"\x05query\x18\x01 \x01(\tR\x05query\x12(\n" +
-	"\x05scope\x18\x02 \x01(\x0e2\x12.pm.v1.SearchScopeR\x05scope\x12\x1b\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x121\n" +
+	"\x05scope\x18\x02 \x01(\x0e2\x1b.powermanage.v1.SearchScopeR\x05scope\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\x12:\n" +
-	"\fdate_filters\x18\x05 \x03(\v2\x17.pm.v1.SearchDateFilterR\vdateFilters\x12E\n" +
-	"\vtag_filters\x18\x06 \x03(\v2$.pm.v1.SearchRequest.TagFiltersEntryR\n" +
-	"tagFilters\x12/\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\x12C\n" +
+	"\fdate_filters\x18\x05 \x03(\v2 .powermanage.v1.SearchDateFilterR\vdateFilters\x12N\n" +
+	"\vtag_filters\x18\x06 \x03(\v2-.powermanage.v1.SearchRequest.TagFiltersEntryR\n" +
+	"tagFilters\x128\n" +
 	"\n" +
-	"sort_field\x18\a \x01(\x0e2\x10.pm.v1.SortFieldR\tsortField\x12;\n" +
-	"\x0esort_direction\x18\b \x01(\x0e2\x14.pm.v1.SortDirectionR\rsortDirection\x1a=\n" +
+	"sort_field\x18\a \x01(\x0e2\x19.powermanage.v1.SortFieldR\tsortField\x12D\n" +
+	"\x0esort_direction\x18\b \x01(\x0e2\x1d.powermanage.v1.SortDirectionR\rsortDirection\x1a=\n" +
 	"\x0fTagFiltersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x95\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa7\x02\n" +
 	"\fSearchResult\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12(\n" +
-	"\x05scope\x18\x04 \x01(\x0e2\x12.pm.v1.SearchScopeR\x05scope\x12!\n" +
-	"\fmember_count\x18\x05 \x01(\x05R\vmemberCount\x127\n" +
-	"\x06fields\x18\x06 \x03(\v2\x1f.pm.v1.SearchResult.FieldsEntryR\x06fields\x1a9\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x121\n" +
+	"\x05scope\x18\x04 \x01(\x0e2\x1b.powermanage.v1.SearchScopeR\x05scope\x12!\n" +
+	"\fmember_count\x18\x05 \x01(\x05R\vmemberCount\x12@\n" +
+	"\x06fields\x18\x06 \x03(\v2(.powermanage.v1.SearchResult.FieldsEntryR\x06fields\x1a9\n" +
 	"\vFieldsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x01\n" +
-	"\x0eSearchResponse\x12-\n" +
-	"\aresults\x18\x01 \x03(\v2\x13.pm.v1.SearchResultR\aresults\x12&\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x91\x01\n" +
+	"\x0eSearchResponse\x126\n" +
+	"\aresults\x18\x01 \x03(\v2\x1c.powermanage.v1.SearchResultR\aresults\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"\x1b\n" +
 	"\x19RebuildSearchIndexRequest\"\x1c\n" +
-	"\x1aRebuildSearchIndexResponse\"\x93\x01\n" +
+	"\x1aRebuildSearchIndexResponse\"y\n" +
 	"\x0eServerSettings\x12:\n" +
 	"\x19user_provisioning_enabled\x18\x01 \x01(\bR\x17userProvisioningEnabled\x12+\n" +
-	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAllJ\x04\b\x03\x10\x04R\x12auto_update_agents\"\x1a\n" +
-	"\x18GetServerSettingsRequest\"N\n" +
-	"\x19GetServerSettingsResponse\x121\n" +
-	"\bsettings\x18\x01 \x01(\v2\x15.pm.v1.ServerSettingsR\bsettings\"\xa0\x01\n" +
+	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAll\"\x1a\n" +
+	"\x18GetServerSettingsRequest\"W\n" +
+	"\x19GetServerSettingsResponse\x12:\n" +
+	"\bsettings\x18\x01 \x01(\v2\x1e.powermanage.v1.ServerSettingsR\bsettings\"\x86\x01\n" +
 	"\x1bUpdateServerSettingsRequest\x12:\n" +
 	"\x19user_provisioning_enabled\x18\x01 \x01(\bR\x17userProvisioningEnabled\x12+\n" +
-	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAllJ\x04\b\x03\x10\x04R\x12auto_update_agents\"Q\n" +
-	"\x1cUpdateServerSettingsResponse\x121\n" +
-	"\bsettings\x18\x01 \x01(\v2\x15.pm.v1.ServerSettingsR\bsettings\"V\n" +
+	"\x12ssh_access_for_all\x18\x02 \x01(\bR\x0fsshAccessForAll\"Z\n" +
+	"\x1cUpdateServerSettingsResponse\x12:\n" +
+	"\bsettings\x18\x01 \x01(\v2\x1e.powermanage.v1.ServerSettingsR\bsettings\"V\n" +
 	"!SetUserProvisioningEnabledRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\"[\n" +
@@ -23275,9 +22270,9 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x1b\n" +
 	"\tdevice_id\x18\x03 \x01(\tR\bdeviceId\x12\x17\n" +
-	"\auser_id\x18\x04 \x01(\tR\x06userId\"\xa5\x01\n" +
-	"\"ListActiveTerminalSessionsResponse\x126\n" +
-	"\bsessions\x18\x01 \x03(\v2\x1a.pm.v1.TerminalSessionInfoR\bsessions\x12&\n" +
+	"\auser_id\x18\x04 \x01(\tR\x06userId\"\xae\x01\n" +
+	"\"ListActiveTerminalSessionsResponse\x12?\n" +
+	"\bsessions\x18\x01 \x03(\v2#.powermanage.v1.TerminalSessionInfoR\bsessions\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
 	"totalCount\"X\n" +
@@ -23285,1255 +22280,1204 @@ const file_pm_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"\"\n" +
-	" TerminateTerminalSessionResponse2\xb0q\n" +
-	"\x0eControlService\x12;\n" +
-	"\bRegister\x12\x16.pm.v1.RegisterRequest\x1a\x17.pm.v1.RegisterResponse\x12S\n" +
-	"\x10RenewCertificate\x12\x1e.pm.v1.RenewCertificateRequest\x1a\x1f.pm.v1.RenewCertificateResponse\x122\n" +
-	"\x05Login\x12\x13.pm.v1.LoginRequest\x1a\x14.pm.v1.LoginResponse\x12G\n" +
-	"\fRefreshToken\x12\x1a.pm.v1.RefreshTokenRequest\x1a\x1b.pm.v1.RefreshTokenResponse\x125\n" +
-	"\x06Logout\x12\x14.pm.v1.LogoutRequest\x1a\x15.pm.v1.LogoutResponse\x12M\n" +
-	"\x0eGetCurrentUser\x12\x1c.pm.v1.GetCurrentUserRequest\x1a\x1d.pm.v1.GetCurrentUserResponse\x12P\n" +
-	"\x0fVerifyLoginTOTP\x12\x1d.pm.v1.VerifyLoginTOTPRequest\x1a\x1e.pm.v1.VerifyLoginTOTPResponse\x12>\n" +
-	"\tSetupTOTP\x12\x17.pm.v1.SetupTOTPRequest\x1a\x18.pm.v1.SetupTOTPResponse\x12A\n" +
+	" TerminateTerminalSessionResponse2\xa2\x82\x01\n" +
+	"\x0eControlService\x12M\n" +
+	"\bRegister\x12\x1f.powermanage.v1.RegisterRequest\x1a .powermanage.v1.RegisterResponse\x12e\n" +
+	"\x10RenewCertificate\x12'.powermanage.v1.RenewCertificateRequest\x1a(.powermanage.v1.RenewCertificateResponse\x12Y\n" +
+	"\fRefreshToken\x12#.powermanage.v1.RefreshTokenRequest\x1a$.powermanage.v1.RefreshTokenResponse\x12G\n" +
+	"\x06Logout\x12\x1d.powermanage.v1.LogoutRequest\x1a\x1e.powermanage.v1.LogoutResponse\x12_\n" +
+	"\x0eGetCurrentUser\x12%.powermanage.v1.GetCurrentUserRequest\x1a&.powermanage.v1.GetCurrentUserResponse\x12b\n" +
+	"\x0fListAuthMethods\x12&.powermanage.v1.ListAuthMethodsRequest\x1a'.powermanage.v1.ListAuthMethodsResponse\x12_\n" +
+	"\x0eGetSSOLoginURL\x12%.powermanage.v1.GetSSOLoginURLRequest\x1a&.powermanage.v1.GetSSOLoginURLResponse\x12V\n" +
+	"\vSSOCallback\x12\".powermanage.v1.SSOCallbackRequest\x1a#.powermanage.v1.SSOCallbackResponse\x12w\n" +
+	"\x16CreateIdentityProvider\x12-.powermanage.v1.CreateIdentityProviderRequest\x1a..powermanage.v1.CreateIdentityProviderResponse\x12n\n" +
+	"\x13GetIdentityProvider\x12*.powermanage.v1.GetIdentityProviderRequest\x1a+.powermanage.v1.GetIdentityProviderResponse\x12t\n" +
+	"\x15ListIdentityProviders\x12,.powermanage.v1.ListIdentityProvidersRequest\x1a-.powermanage.v1.ListIdentityProvidersResponse\x12w\n" +
+	"\x16UpdateIdentityProvider\x12-.powermanage.v1.UpdateIdentityProviderRequest\x1a..powermanage.v1.UpdateIdentityProviderResponse\x12w\n" +
+	"\x16DeleteIdentityProvider\x12-.powermanage.v1.DeleteIdentityProviderRequest\x1a..powermanage.v1.DeleteIdentityProviderResponse\x12h\n" +
+	"\x11ListIdentityLinks\x12(.powermanage.v1.ListIdentityLinksRequest\x1a).powermanage.v1.ListIdentityLinksResponse\x12_\n" +
+	"\x0eUnlinkIdentity\x12%.powermanage.v1.UnlinkIdentityRequest\x1a&.powermanage.v1.UnlinkIdentityResponse\x12S\n" +
 	"\n" +
-	"VerifyTOTP\x12\x18.pm.v1.VerifyTOTPRequest\x1a\x19.pm.v1.VerifyTOTPResponse\x12D\n" +
-	"\vDisableTOTP\x12\x19.pm.v1.DisableTOTPRequest\x1a\x1a.pm.v1.DisableTOTPResponse\x12_\n" +
-	"\x14AdminDisableUserTOTP\x12\".pm.v1.AdminDisableUserTOTPRequest\x1a#.pm.v1.AdminDisableUserTOTPResponse\x12J\n" +
-	"\rGetTOTPStatus\x12\x1b.pm.v1.GetTOTPStatusRequest\x1a\x1c.pm.v1.GetTOTPStatusResponse\x12b\n" +
-	"\x15RegenerateBackupCodes\x12#.pm.v1.RegenerateBackupCodesRequest\x1a$.pm.v1.RegenerateBackupCodesResponse\x12P\n" +
-	"\x0fListAuthMethods\x12\x1d.pm.v1.ListAuthMethodsRequest\x1a\x1e.pm.v1.ListAuthMethodsResponse\x12M\n" +
-	"\x0eGetSSOLoginURL\x12\x1c.pm.v1.GetSSOLoginURLRequest\x1a\x1d.pm.v1.GetSSOLoginURLResponse\x12D\n" +
-	"\vSSOCallback\x12\x19.pm.v1.SSOCallbackRequest\x1a\x1a.pm.v1.SSOCallbackResponse\x12e\n" +
-	"\x16CreateIdentityProvider\x12$.pm.v1.CreateIdentityProviderRequest\x1a%.pm.v1.CreateIdentityProviderResponse\x12\\\n" +
-	"\x13GetIdentityProvider\x12!.pm.v1.GetIdentityProviderRequest\x1a\".pm.v1.GetIdentityProviderResponse\x12b\n" +
-	"\x15ListIdentityProviders\x12#.pm.v1.ListIdentityProvidersRequest\x1a$.pm.v1.ListIdentityProvidersResponse\x12e\n" +
-	"\x16UpdateIdentityProvider\x12$.pm.v1.UpdateIdentityProviderRequest\x1a%.pm.v1.UpdateIdentityProviderResponse\x12e\n" +
-	"\x16DeleteIdentityProvider\x12$.pm.v1.DeleteIdentityProviderRequest\x1a%.pm.v1.DeleteIdentityProviderResponse\x12V\n" +
-	"\x11ListIdentityLinks\x12\x1f.pm.v1.ListIdentityLinksRequest\x1a .pm.v1.ListIdentityLinksResponse\x12M\n" +
-	"\x0eUnlinkIdentity\x12\x1c.pm.v1.UnlinkIdentityRequest\x1a\x1d.pm.v1.UnlinkIdentityResponse\x12A\n" +
+	"EnableSCIM\x12!.powermanage.v1.EnableSCIMRequest\x1a\".powermanage.v1.EnableSCIMResponse\x12V\n" +
+	"\vDisableSCIM\x12\".powermanage.v1.DisableSCIMRequest\x1a#.powermanage.v1.DisableSCIMResponse\x12b\n" +
+	"\x0fRotateSCIMToken\x12&.powermanage.v1.RotateSCIMTokenRequest\x1a'.powermanage.v1.RotateSCIMTokenResponse\x12S\n" +
 	"\n" +
-	"EnableSCIM\x12\x18.pm.v1.EnableSCIMRequest\x1a\x19.pm.v1.EnableSCIMResponse\x12D\n" +
-	"\vDisableSCIM\x12\x19.pm.v1.DisableSCIMRequest\x1a\x1a.pm.v1.DisableSCIMResponse\x12P\n" +
-	"\x0fRotateSCIMToken\x12\x1d.pm.v1.RotateSCIMTokenRequest\x1a\x1e.pm.v1.RotateSCIMTokenResponse\x12A\n" +
+	"CreateUser\x12!.powermanage.v1.CreateUserRequest\x1a\".powermanage.v1.CreateUserResponse\x12J\n" +
+	"\aGetUser\x12\x1e.powermanage.v1.GetUserRequest\x1a\x1f.powermanage.v1.GetUserResponse\x12P\n" +
+	"\tListUsers\x12 .powermanage.v1.ListUsersRequest\x1a!.powermanage.v1.ListUsersResponse\x12]\n" +
+	"\x0fUpdateUserEmail\x12&.powermanage.v1.UpdateUserEmailRequest\x1a\".powermanage.v1.UpdateUserResponse\x12]\n" +
+	"\x0fSetUserDisabled\x12&.powermanage.v1.SetUserDisabledRequest\x1a\".powermanage.v1.UpdateUserResponse\x12a\n" +
+	"\x11UpdateUserProfile\x12(.powermanage.v1.UpdateUserProfileRequest\x1a\".powermanage.v1.UpdateUserResponse\x12m\n" +
+	"\x17UpdateUserLinuxUsername\x12..powermanage.v1.UpdateUserLinuxUsernameRequest\x1a\".powermanage.v1.UpdateUserResponse\x12\\\n" +
+	"\rAddUserSshKey\x12$.powermanage.v1.AddUserSshKeyRequest\x1a%.powermanage.v1.AddUserSshKeyResponse\x12e\n" +
+	"\x10RemoveUserSshKey\x12'.powermanage.v1.RemoveUserSshKeyRequest\x1a(.powermanage.v1.RemoveUserSshKeyResponse\x12i\n" +
+	"\x15UpdateUserSshSettings\x12,.powermanage.v1.UpdateUserSshSettingsRequest\x1a\".powermanage.v1.UpdateUserResponse\x12S\n" +
 	"\n" +
-	"CreateUser\x12\x18.pm.v1.CreateUserRequest\x1a\x19.pm.v1.CreateUserResponse\x128\n" +
-	"\aGetUser\x12\x15.pm.v1.GetUserRequest\x1a\x16.pm.v1.GetUserResponse\x12>\n" +
-	"\tListUsers\x12\x17.pm.v1.ListUsersRequest\x1a\x18.pm.v1.ListUsersResponse\x12K\n" +
-	"\x0fUpdateUserEmail\x12\x1d.pm.v1.UpdateUserEmailRequest\x1a\x19.pm.v1.UpdateUserResponse\x12Q\n" +
-	"\x12UpdateUserPassword\x12 .pm.v1.UpdateUserPasswordRequest\x1a\x19.pm.v1.UpdateUserResponse\x12K\n" +
-	"\x0fSetUserDisabled\x12\x1d.pm.v1.SetUserDisabledRequest\x1a\x19.pm.v1.UpdateUserResponse\x12O\n" +
-	"\x11UpdateUserProfile\x12\x1f.pm.v1.UpdateUserProfileRequest\x1a\x19.pm.v1.UpdateUserResponse\x12[\n" +
-	"\x17UpdateUserLinuxUsername\x12%.pm.v1.UpdateUserLinuxUsernameRequest\x1a\x19.pm.v1.UpdateUserResponse\x12J\n" +
-	"\rAddUserSshKey\x12\x1b.pm.v1.AddUserSshKeyRequest\x1a\x1c.pm.v1.AddUserSshKeyResponse\x12S\n" +
-	"\x10RemoveUserSshKey\x12\x1e.pm.v1.RemoveUserSshKeyRequest\x1a\x1f.pm.v1.RemoveUserSshKeyResponse\x12W\n" +
-	"\x15UpdateUserSshSettings\x12#.pm.v1.UpdateUserSshSettingsRequest\x1a\x19.pm.v1.UpdateUserResponse\x12A\n" +
+	"DeleteUser\x12!.powermanage.v1.DeleteUserRequest\x1a\".powermanage.v1.DeleteUserResponse\x12V\n" +
+	"\vListDevices\x12\".powermanage.v1.ListDevicesRequest\x1a#.powermanage.v1.ListDevicesResponse\x12P\n" +
+	"\tGetDevice\x12 .powermanage.v1.GetDeviceRequest\x1a!.powermanage.v1.GetDeviceResponse\x12]\n" +
+	"\x0eSetDeviceLabel\x12%.powermanage.v1.SetDeviceLabelRequest\x1a$.powermanage.v1.UpdateDeviceResponse\x12c\n" +
+	"\x11RemoveDeviceLabel\x12(.powermanage.v1.RemoveDeviceLabelRequest\x1a$.powermanage.v1.UpdateDeviceResponse\x12Y\n" +
+	"\fAssignDevice\x12#.powermanage.v1.AssignDeviceRequest\x1a$.powermanage.v1.AssignDeviceResponse\x12_\n" +
+	"\x0eUnassignDevice\x12%.powermanage.v1.UnassignDeviceRequest\x1a&.powermanage.v1.UnassignDeviceResponse\x12n\n" +
+	"\x13ListDeviceAssignees\x12*.powermanage.v1.ListDeviceAssigneesRequest\x1a+.powermanage.v1.ListDeviceAssigneesResponse\x12k\n" +
+	"\x15SetDeviceSyncInterval\x12,.powermanage.v1.SetDeviceSyncIntervalRequest\x1a$.powermanage.v1.UpdateDeviceResponse\x12u\n" +
+	"\x1aSetDeviceInventoryInterval\x121.powermanage.v1.SetDeviceInventoryIntervalRequest\x1a$.powermanage.v1.UpdateDeviceResponse\x12Y\n" +
+	"\fDeleteDevice\x12#.powermanage.v1.DeleteDeviceRequest\x1a$.powermanage.v1.DeleteDeviceResponse\x12V\n" +
+	"\vCreateToken\x12\".powermanage.v1.CreateTokenRequest\x1a#.powermanage.v1.CreateTokenResponse\x12M\n" +
+	"\bGetToken\x12\x1f.powermanage.v1.GetTokenRequest\x1a .powermanage.v1.GetTokenResponse\x12S\n" +
 	"\n" +
-	"DeleteUser\x12\x18.pm.v1.DeleteUserRequest\x1a\x19.pm.v1.DeleteUserResponse\x12D\n" +
-	"\vListDevices\x12\x19.pm.v1.ListDevicesRequest\x1a\x1a.pm.v1.ListDevicesResponse\x12>\n" +
-	"\tGetDevice\x12\x17.pm.v1.GetDeviceRequest\x1a\x18.pm.v1.GetDeviceResponse\x12K\n" +
-	"\x0eSetDeviceLabel\x12\x1c.pm.v1.SetDeviceLabelRequest\x1a\x1b.pm.v1.UpdateDeviceResponse\x12Q\n" +
-	"\x11RemoveDeviceLabel\x12\x1f.pm.v1.RemoveDeviceLabelRequest\x1a\x1b.pm.v1.UpdateDeviceResponse\x12G\n" +
-	"\fAssignDevice\x12\x1a.pm.v1.AssignDeviceRequest\x1a\x1b.pm.v1.AssignDeviceResponse\x12M\n" +
-	"\x0eUnassignDevice\x12\x1c.pm.v1.UnassignDeviceRequest\x1a\x1d.pm.v1.UnassignDeviceResponse\x12\\\n" +
-	"\x13ListDeviceAssignees\x12!.pm.v1.ListDeviceAssigneesRequest\x1a\".pm.v1.ListDeviceAssigneesResponse\x12Y\n" +
-	"\x15SetDeviceSyncInterval\x12#.pm.v1.SetDeviceSyncIntervalRequest\x1a\x1b.pm.v1.UpdateDeviceResponse\x12c\n" +
-	"\x1aSetDeviceInventoryInterval\x12(.pm.v1.SetDeviceInventoryIntervalRequest\x1a\x1b.pm.v1.UpdateDeviceResponse\x12G\n" +
-	"\fDeleteDevice\x12\x1a.pm.v1.DeleteDeviceRequest\x1a\x1b.pm.v1.DeleteDeviceResponse\x12D\n" +
-	"\vCreateToken\x12\x19.pm.v1.CreateTokenRequest\x1a\x1a.pm.v1.CreateTokenResponse\x12;\n" +
-	"\bGetToken\x12\x16.pm.v1.GetTokenRequest\x1a\x17.pm.v1.GetTokenResponse\x12A\n" +
+	"ListTokens\x12!.powermanage.v1.ListTokensRequest\x1a\".powermanage.v1.ListTokensResponse\x12V\n" +
+	"\vRenameToken\x12\".powermanage.v1.RenameTokenRequest\x1a#.powermanage.v1.UpdateTokenResponse\x12`\n" +
+	"\x10SetTokenDisabled\x12'.powermanage.v1.SetTokenDisabledRequest\x1a#.powermanage.v1.UpdateTokenResponse\x12V\n" +
+	"\vDeleteToken\x12\".powermanage.v1.DeleteTokenRequest\x1a#.powermanage.v1.DeleteTokenResponse\x12Y\n" +
+	"\fCreateAction\x12#.powermanage.v1.CreateActionRequest\x1a$.powermanage.v1.CreateActionResponse\x12P\n" +
+	"\tGetAction\x12 .powermanage.v1.GetActionRequest\x1a!.powermanage.v1.GetActionResponse\x12V\n" +
+	"\vListActions\x12\".powermanage.v1.ListActionsRequest\x1a#.powermanage.v1.ListActionsResponse\x12Y\n" +
+	"\fRenameAction\x12#.powermanage.v1.RenameActionRequest\x1a$.powermanage.v1.UpdateActionResponse\x12o\n" +
+	"\x17UpdateActionDescription\x12..powermanage.v1.UpdateActionDescriptionRequest\x1a$.powermanage.v1.UpdateActionResponse\x12e\n" +
+	"\x12UpdateActionParams\x12).powermanage.v1.UpdateActionParamsRequest\x1a$.powermanage.v1.UpdateActionResponse\x12Y\n" +
+	"\fDeleteAction\x12#.powermanage.v1.DeleteActionRequest\x1a$.powermanage.v1.DeleteActionResponse\x12b\n" +
+	"\x0fCreateActionSet\x12&.powermanage.v1.CreateActionSetRequest\x1a'.powermanage.v1.CreateActionSetResponse\x12Y\n" +
+	"\fGetActionSet\x12#.powermanage.v1.GetActionSetRequest\x1a$.powermanage.v1.GetActionSetResponse\x12_\n" +
+	"\x0eListActionSets\x12%.powermanage.v1.ListActionSetsRequest\x1a&.powermanage.v1.ListActionSetsResponse\x12b\n" +
+	"\x0fRenameActionSet\x12&.powermanage.v1.RenameActionSetRequest\x1a'.powermanage.v1.UpdateActionSetResponse\x12x\n" +
+	"\x1aUpdateActionSetDescription\x121.powermanage.v1.UpdateActionSetDescriptionRequest\x1a'.powermanage.v1.UpdateActionSetResponse\x12r\n" +
+	"\x17UpdateActionSetSchedule\x12..powermanage.v1.UpdateActionSetScheduleRequest\x1a'.powermanage.v1.UpdateActionSetResponse\x12b\n" +
+	"\x0fDeleteActionSet\x12&.powermanage.v1.DeleteActionSetRequest\x1a'.powermanage.v1.DeleteActionSetResponse\x12_\n" +
+	"\x0eAddActionToSet\x12%.powermanage.v1.AddActionToSetRequest\x1a&.powermanage.v1.AddActionToSetResponse\x12n\n" +
+	"\x13RemoveActionFromSet\x12*.powermanage.v1.RemoveActionFromSetRequest\x1a+.powermanage.v1.RemoveActionFromSetResponse\x12k\n" +
+	"\x12ReorderActionInSet\x12).powermanage.v1.ReorderActionInSetRequest\x1a*.powermanage.v1.ReorderActionInSetResponse\x12e\n" +
+	"\x10CreateDefinition\x12'.powermanage.v1.CreateDefinitionRequest\x1a(.powermanage.v1.CreateDefinitionResponse\x12\\\n" +
+	"\rGetDefinition\x12$.powermanage.v1.GetDefinitionRequest\x1a%.powermanage.v1.GetDefinitionResponse\x12b\n" +
+	"\x0fListDefinitions\x12&.powermanage.v1.ListDefinitionsRequest\x1a'.powermanage.v1.ListDefinitionsResponse\x12e\n" +
+	"\x10RenameDefinition\x12'.powermanage.v1.RenameDefinitionRequest\x1a(.powermanage.v1.UpdateDefinitionResponse\x12{\n" +
+	"\x1bUpdateDefinitionDescription\x122.powermanage.v1.UpdateDefinitionDescriptionRequest\x1a(.powermanage.v1.UpdateDefinitionResponse\x12u\n" +
+	"\x18UpdateDefinitionSchedule\x12/.powermanage.v1.UpdateDefinitionScheduleRequest\x1a(.powermanage.v1.UpdateDefinitionResponse\x12e\n" +
+	"\x10DeleteDefinition\x12'.powermanage.v1.DeleteDefinitionRequest\x1a(.powermanage.v1.DeleteDefinitionResponse\x12}\n" +
+	"\x18AddActionSetToDefinition\x12/.powermanage.v1.AddActionSetToDefinitionRequest\x1a0.powermanage.v1.AddActionSetToDefinitionResponse\x12\x8c\x01\n" +
+	"\x1dRemoveActionSetFromDefinition\x124.powermanage.v1.RemoveActionSetFromDefinitionRequest\x1a5.powermanage.v1.RemoveActionSetFromDefinitionResponse\x12\x89\x01\n" +
+	"\x1cReorderActionSetInDefinition\x123.powermanage.v1.ReorderActionSetInDefinitionRequest\x1a4.powermanage.v1.ReorderActionSetInDefinitionResponse\x12h\n" +
+	"\x11CreateDeviceGroup\x12(.powermanage.v1.CreateDeviceGroupRequest\x1a).powermanage.v1.CreateDeviceGroupResponse\x12_\n" +
+	"\x0eGetDeviceGroup\x12%.powermanage.v1.GetDeviceGroupRequest\x1a&.powermanage.v1.GetDeviceGroupResponse\x12e\n" +
+	"\x10ListDeviceGroups\x12'.powermanage.v1.ListDeviceGroupsRequest\x1a(.powermanage.v1.ListDeviceGroupsResponse\x12\x80\x01\n" +
+	"\x19ListDeviceGroupsForDevice\x120.powermanage.v1.ListDeviceGroupsForDeviceRequest\x1a1.powermanage.v1.ListDeviceGroupsForDeviceResponse\x12h\n" +
+	"\x11RenameDeviceGroup\x12(.powermanage.v1.RenameDeviceGroupRequest\x1a).powermanage.v1.UpdateDeviceGroupResponse\x12~\n" +
+	"\x1cUpdateDeviceGroupDescription\x123.powermanage.v1.UpdateDeviceGroupDescriptionRequest\x1a).powermanage.v1.UpdateDeviceGroupResponse\x12w\n" +
+	"\x16UpdateDeviceGroupQuery\x12-.powermanage.v1.UpdateDeviceGroupQueryRequest\x1a..powermanage.v1.UpdateDeviceGroupQueryResponse\x12h\n" +
+	"\x11DeleteDeviceGroup\x12(.powermanage.v1.DeleteDeviceGroupRequest\x1a).powermanage.v1.DeleteDeviceGroupResponse\x12e\n" +
+	"\x10AddDeviceToGroup\x12'.powermanage.v1.AddDeviceToGroupRequest\x1a(.powermanage.v1.AddDeviceToGroupResponse\x12t\n" +
+	"\x15RemoveDeviceFromGroup\x12,.powermanage.v1.RemoveDeviceFromGroupRequest\x1a-.powermanage.v1.RemoveDeviceFromGroupResponse\x12q\n" +
+	"\x14ValidateDynamicQuery\x12+.powermanage.v1.ValidateDynamicQueryRequest\x1a,.powermanage.v1.ValidateDynamicQueryResponse\x12q\n" +
+	"\x14EvaluateDynamicGroup\x12+.powermanage.v1.EvaluateDynamicGroupRequest\x1a,.powermanage.v1.EvaluateDynamicGroupResponse\x12z\n" +
+	"\x1aSetDeviceGroupSyncInterval\x121.powermanage.v1.SetDeviceGroupSyncIntervalRequest\x1a).powermanage.v1.UpdateDeviceGroupResponse\x12\x84\x01\n" +
+	"\x1fSetDeviceGroupInventoryInterval\x126.powermanage.v1.SetDeviceGroupInventoryIntervalRequest\x1a).powermanage.v1.UpdateDeviceGroupResponse\x12\x84\x01\n" +
+	"\x1fSetDeviceGroupMaintenanceWindow\x126.powermanage.v1.SetDeviceGroupMaintenanceWindowRequest\x1a).powermanage.v1.UpdateDeviceGroupResponse\x12e\n" +
+	"\x10CreateAssignment\x12'.powermanage.v1.CreateAssignmentRequest\x1a(.powermanage.v1.CreateAssignmentResponse\x12e\n" +
+	"\x10DeleteAssignment\x12'.powermanage.v1.DeleteAssignmentRequest\x1a(.powermanage.v1.DeleteAssignmentResponse\x12b\n" +
+	"\x0fListAssignments\x12&.powermanage.v1.ListAssignmentsRequest\x1a'.powermanage.v1.ListAssignmentsResponse\x12q\n" +
+	"\x14GetDeviceAssignments\x12+.powermanage.v1.GetDeviceAssignmentsRequest\x1a,.powermanage.v1.GetDeviceAssignmentsResponse\x12k\n" +
+	"\x12GetUserAssignments\x12).powermanage.v1.GetUserAssignmentsRequest\x1a*.powermanage.v1.GetUserAssignmentsResponse\x12e\n" +
+	"\x10SetUserSelection\x12'.powermanage.v1.SetUserSelectionRequest\x1a(.powermanage.v1.SetUserSelectionResponse\x12q\n" +
+	"\x14ListAvailableActions\x12+.powermanage.v1.ListAvailableActionsRequest\x1a,.powermanage.v1.ListAvailableActionsResponse\x12_\n" +
+	"\x0eDispatchAction\x12%.powermanage.v1.DispatchActionRequest\x1a&.powermanage.v1.DispatchActionResponse\x12k\n" +
+	"\x12DispatchToMultiple\x12).powermanage.v1.DispatchToMultipleRequest\x1a*.powermanage.v1.DispatchToMultipleResponse\x12z\n" +
+	"\x17DispatchAssignedActions\x12..powermanage.v1.DispatchAssignedActionsRequest\x1a/.powermanage.v1.DispatchAssignedActionsResponse\x12h\n" +
+	"\x11DispatchActionSet\x12(.powermanage.v1.DispatchActionSetRequest\x1a).powermanage.v1.DispatchActionSetResponse\x12k\n" +
+	"\x12DispatchDefinition\x12).powermanage.v1.DispatchDefinitionRequest\x1a*.powermanage.v1.DispatchDefinitionResponse\x12b\n" +
+	"\x0fDispatchToGroup\x12&.powermanage.v1.DispatchToGroupRequest\x1a'.powermanage.v1.DispatchToGroupResponse\x12t\n" +
+	"\x15DispatchInstantAction\x12,.powermanage.v1.DispatchInstantActionRequest\x1a-.powermanage.v1.DispatchInstantActionResponse\x12b\n" +
+	"\x0fCancelExecution\x12&.powermanage.v1.CancelExecutionRequest\x1a'.powermanage.v1.CancelExecutionResponse\x12Y\n" +
+	"\fGetExecution\x12#.powermanage.v1.GetExecutionRequest\x1a$.powermanage.v1.GetExecutionResponse\x12_\n" +
+	"\x0eListExecutions\x12%.powermanage.v1.ListExecutionsRequest\x1a&.powermanage.v1.ListExecutionsResponse\x12b\n" +
+	"\x0fListAuditEvents\x12&.powermanage.v1.ListAuditEventsRequest\x1a'.powermanage.v1.ListAuditEventsResponse\x12h\n" +
+	"\x11ExportAuditEvents\x12(.powermanage.v1.ExportAuditEventsRequest\x1a).powermanage.v1.ExportAuditEventsResponse\x12t\n" +
+	"\x15GetDeviceLpsPasswords\x12,.powermanage.v1.GetDeviceLpsPasswordsRequest\x1a-.powermanage.v1.GetDeviceLpsPasswordsResponse\x12h\n" +
+	"\x11GetDeviceLuksKeys\x12(.powermanage.v1.GetDeviceLuksKeysRequest\x1a).powermanage.v1.GetDeviceLuksKeysResponse\x12b\n" +
+	"\x0fCreateLuksToken\x12&.powermanage.v1.CreateLuksTokenRequest\x1a'.powermanage.v1.CreateLuksTokenResponse\x12n\n" +
+	"\x13RevokeLuksDeviceKey\x12*.powermanage.v1.RevokeLuksDeviceKeyRequest\x1a+.powermanage.v1.RevokeLuksDeviceKeyResponse\x12b\n" +
+	"\x0fDispatchOSQuery\x12&.powermanage.v1.DispatchOSQueryRequest\x1a'.powermanage.v1.DispatchOSQueryResponse\x12e\n" +
+	"\x10GetOSQueryResult\x12'.powermanage.v1.GetOSQueryResultRequest\x1a(.powermanage.v1.GetOSQueryResultResponse\x12k\n" +
+	"\x12GetDeviceInventory\x12).powermanage.v1.GetDeviceInventoryRequest\x1a*.powermanage.v1.GetDeviceInventoryResponse\x12w\n" +
+	"\x16RefreshDeviceInventory\x12-.powermanage.v1.RefreshDeviceInventoryRequest\x1a..powermanage.v1.RefreshDeviceInventoryResponse\x12b\n" +
+	"\x0fQueryDeviceLogs\x12&.powermanage.v1.QueryDeviceLogsRequest\x1a'.powermanage.v1.QueryDeviceLogsResponse\x12k\n" +
+	"\x12GetDeviceLogResult\x12).powermanage.v1.GetDeviceLogResultRequest\x1a*.powermanage.v1.GetDeviceLogResultResponse\x12S\n" +
 	"\n" +
-	"ListTokens\x12\x18.pm.v1.ListTokensRequest\x1a\x19.pm.v1.ListTokensResponse\x12D\n" +
-	"\vRenameToken\x12\x19.pm.v1.RenameTokenRequest\x1a\x1a.pm.v1.UpdateTokenResponse\x12N\n" +
-	"\x10SetTokenDisabled\x12\x1e.pm.v1.SetTokenDisabledRequest\x1a\x1a.pm.v1.UpdateTokenResponse\x12D\n" +
-	"\vDeleteToken\x12\x19.pm.v1.DeleteTokenRequest\x1a\x1a.pm.v1.DeleteTokenResponse\x12G\n" +
-	"\fCreateAction\x12\x1a.pm.v1.CreateActionRequest\x1a\x1b.pm.v1.CreateActionResponse\x12>\n" +
-	"\tGetAction\x12\x17.pm.v1.GetActionRequest\x1a\x18.pm.v1.GetActionResponse\x12D\n" +
-	"\vListActions\x12\x19.pm.v1.ListActionsRequest\x1a\x1a.pm.v1.ListActionsResponse\x12G\n" +
-	"\fRenameAction\x12\x1a.pm.v1.RenameActionRequest\x1a\x1b.pm.v1.UpdateActionResponse\x12]\n" +
-	"\x17UpdateActionDescription\x12%.pm.v1.UpdateActionDescriptionRequest\x1a\x1b.pm.v1.UpdateActionResponse\x12S\n" +
-	"\x12UpdateActionParams\x12 .pm.v1.UpdateActionParamsRequest\x1a\x1b.pm.v1.UpdateActionResponse\x12G\n" +
-	"\fDeleteAction\x12\x1a.pm.v1.DeleteActionRequest\x1a\x1b.pm.v1.DeleteActionResponse\x12P\n" +
-	"\x0fCreateActionSet\x12\x1d.pm.v1.CreateActionSetRequest\x1a\x1e.pm.v1.CreateActionSetResponse\x12G\n" +
-	"\fGetActionSet\x12\x1a.pm.v1.GetActionSetRequest\x1a\x1b.pm.v1.GetActionSetResponse\x12M\n" +
-	"\x0eListActionSets\x12\x1c.pm.v1.ListActionSetsRequest\x1a\x1d.pm.v1.ListActionSetsResponse\x12P\n" +
-	"\x0fRenameActionSet\x12\x1d.pm.v1.RenameActionSetRequest\x1a\x1e.pm.v1.UpdateActionSetResponse\x12f\n" +
-	"\x1aUpdateActionSetDescription\x12(.pm.v1.UpdateActionSetDescriptionRequest\x1a\x1e.pm.v1.UpdateActionSetResponse\x12`\n" +
-	"\x17UpdateActionSetSchedule\x12%.pm.v1.UpdateActionSetScheduleRequest\x1a\x1e.pm.v1.UpdateActionSetResponse\x12P\n" +
-	"\x0fDeleteActionSet\x12\x1d.pm.v1.DeleteActionSetRequest\x1a\x1e.pm.v1.DeleteActionSetResponse\x12M\n" +
-	"\x0eAddActionToSet\x12\x1c.pm.v1.AddActionToSetRequest\x1a\x1d.pm.v1.AddActionToSetResponse\x12\\\n" +
-	"\x13RemoveActionFromSet\x12!.pm.v1.RemoveActionFromSetRequest\x1a\".pm.v1.RemoveActionFromSetResponse\x12Y\n" +
-	"\x12ReorderActionInSet\x12 .pm.v1.ReorderActionInSetRequest\x1a!.pm.v1.ReorderActionInSetResponse\x12S\n" +
-	"\x10CreateDefinition\x12\x1e.pm.v1.CreateDefinitionRequest\x1a\x1f.pm.v1.CreateDefinitionResponse\x12J\n" +
-	"\rGetDefinition\x12\x1b.pm.v1.GetDefinitionRequest\x1a\x1c.pm.v1.GetDefinitionResponse\x12P\n" +
-	"\x0fListDefinitions\x12\x1d.pm.v1.ListDefinitionsRequest\x1a\x1e.pm.v1.ListDefinitionsResponse\x12S\n" +
-	"\x10RenameDefinition\x12\x1e.pm.v1.RenameDefinitionRequest\x1a\x1f.pm.v1.UpdateDefinitionResponse\x12i\n" +
-	"\x1bUpdateDefinitionDescription\x12).pm.v1.UpdateDefinitionDescriptionRequest\x1a\x1f.pm.v1.UpdateDefinitionResponse\x12c\n" +
-	"\x18UpdateDefinitionSchedule\x12&.pm.v1.UpdateDefinitionScheduleRequest\x1a\x1f.pm.v1.UpdateDefinitionResponse\x12S\n" +
-	"\x10DeleteDefinition\x12\x1e.pm.v1.DeleteDefinitionRequest\x1a\x1f.pm.v1.DeleteDefinitionResponse\x12k\n" +
-	"\x18AddActionSetToDefinition\x12&.pm.v1.AddActionSetToDefinitionRequest\x1a'.pm.v1.AddActionSetToDefinitionResponse\x12z\n" +
-	"\x1dRemoveActionSetFromDefinition\x12+.pm.v1.RemoveActionSetFromDefinitionRequest\x1a,.pm.v1.RemoveActionSetFromDefinitionResponse\x12w\n" +
-	"\x1cReorderActionSetInDefinition\x12*.pm.v1.ReorderActionSetInDefinitionRequest\x1a+.pm.v1.ReorderActionSetInDefinitionResponse\x12V\n" +
-	"\x11CreateDeviceGroup\x12\x1f.pm.v1.CreateDeviceGroupRequest\x1a .pm.v1.CreateDeviceGroupResponse\x12M\n" +
-	"\x0eGetDeviceGroup\x12\x1c.pm.v1.GetDeviceGroupRequest\x1a\x1d.pm.v1.GetDeviceGroupResponse\x12S\n" +
-	"\x10ListDeviceGroups\x12\x1e.pm.v1.ListDeviceGroupsRequest\x1a\x1f.pm.v1.ListDeviceGroupsResponse\x12n\n" +
-	"\x19ListDeviceGroupsForDevice\x12'.pm.v1.ListDeviceGroupsForDeviceRequest\x1a(.pm.v1.ListDeviceGroupsForDeviceResponse\x12V\n" +
-	"\x11RenameDeviceGroup\x12\x1f.pm.v1.RenameDeviceGroupRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12l\n" +
-	"\x1cUpdateDeviceGroupDescription\x12*.pm.v1.UpdateDeviceGroupDescriptionRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12e\n" +
-	"\x16UpdateDeviceGroupQuery\x12$.pm.v1.UpdateDeviceGroupQueryRequest\x1a%.pm.v1.UpdateDeviceGroupQueryResponse\x12V\n" +
-	"\x11DeleteDeviceGroup\x12\x1f.pm.v1.DeleteDeviceGroupRequest\x1a .pm.v1.DeleteDeviceGroupResponse\x12S\n" +
-	"\x10AddDeviceToGroup\x12\x1e.pm.v1.AddDeviceToGroupRequest\x1a\x1f.pm.v1.AddDeviceToGroupResponse\x12b\n" +
-	"\x15RemoveDeviceFromGroup\x12#.pm.v1.RemoveDeviceFromGroupRequest\x1a$.pm.v1.RemoveDeviceFromGroupResponse\x12_\n" +
-	"\x14ValidateDynamicQuery\x12\".pm.v1.ValidateDynamicQueryRequest\x1a#.pm.v1.ValidateDynamicQueryResponse\x12_\n" +
-	"\x14EvaluateDynamicGroup\x12\".pm.v1.EvaluateDynamicGroupRequest\x1a#.pm.v1.EvaluateDynamicGroupResponse\x12h\n" +
-	"\x1aSetDeviceGroupSyncInterval\x12(.pm.v1.SetDeviceGroupSyncIntervalRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12r\n" +
-	"\x1fSetDeviceGroupInventoryInterval\x12-.pm.v1.SetDeviceGroupInventoryIntervalRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12r\n" +
-	"\x1fSetDeviceGroupMaintenanceWindow\x12-.pm.v1.SetDeviceGroupMaintenanceWindowRequest\x1a .pm.v1.UpdateDeviceGroupResponse\x12S\n" +
-	"\x10CreateAssignment\x12\x1e.pm.v1.CreateAssignmentRequest\x1a\x1f.pm.v1.CreateAssignmentResponse\x12S\n" +
-	"\x10DeleteAssignment\x12\x1e.pm.v1.DeleteAssignmentRequest\x1a\x1f.pm.v1.DeleteAssignmentResponse\x12P\n" +
-	"\x0fListAssignments\x12\x1d.pm.v1.ListAssignmentsRequest\x1a\x1e.pm.v1.ListAssignmentsResponse\x12_\n" +
-	"\x14GetDeviceAssignments\x12\".pm.v1.GetDeviceAssignmentsRequest\x1a#.pm.v1.GetDeviceAssignmentsResponse\x12Y\n" +
-	"\x12GetUserAssignments\x12 .pm.v1.GetUserAssignmentsRequest\x1a!.pm.v1.GetUserAssignmentsResponse\x12S\n" +
-	"\x10SetUserSelection\x12\x1e.pm.v1.SetUserSelectionRequest\x1a\x1f.pm.v1.SetUserSelectionResponse\x12_\n" +
-	"\x14ListAvailableActions\x12\".pm.v1.ListAvailableActionsRequest\x1a#.pm.v1.ListAvailableActionsResponse\x12M\n" +
-	"\x0eDispatchAction\x12\x1c.pm.v1.DispatchActionRequest\x1a\x1d.pm.v1.DispatchActionResponse\x12Y\n" +
-	"\x12DispatchToMultiple\x12 .pm.v1.DispatchToMultipleRequest\x1a!.pm.v1.DispatchToMultipleResponse\x12h\n" +
-	"\x17DispatchAssignedActions\x12%.pm.v1.DispatchAssignedActionsRequest\x1a&.pm.v1.DispatchAssignedActionsResponse\x12V\n" +
-	"\x11DispatchActionSet\x12\x1f.pm.v1.DispatchActionSetRequest\x1a .pm.v1.DispatchActionSetResponse\x12Y\n" +
-	"\x12DispatchDefinition\x12 .pm.v1.DispatchDefinitionRequest\x1a!.pm.v1.DispatchDefinitionResponse\x12P\n" +
-	"\x0fDispatchToGroup\x12\x1d.pm.v1.DispatchToGroupRequest\x1a\x1e.pm.v1.DispatchToGroupResponse\x12b\n" +
-	"\x15DispatchInstantAction\x12#.pm.v1.DispatchInstantActionRequest\x1a$.pm.v1.DispatchInstantActionResponse\x12P\n" +
-	"\x0fCancelExecution\x12\x1d.pm.v1.CancelExecutionRequest\x1a\x1e.pm.v1.CancelExecutionResponse\x12G\n" +
-	"\fGetExecution\x12\x1a.pm.v1.GetExecutionRequest\x1a\x1b.pm.v1.GetExecutionResponse\x12M\n" +
-	"\x0eListExecutions\x12\x1c.pm.v1.ListExecutionsRequest\x1a\x1d.pm.v1.ListExecutionsResponse\x12P\n" +
-	"\x0fListAuditEvents\x12\x1d.pm.v1.ListAuditEventsRequest\x1a\x1e.pm.v1.ListAuditEventsResponse\x12V\n" +
-	"\x11ExportAuditEvents\x12\x1f.pm.v1.ExportAuditEventsRequest\x1a .pm.v1.ExportAuditEventsResponse\x12b\n" +
-	"\x15GetDeviceLpsPasswords\x12#.pm.v1.GetDeviceLpsPasswordsRequest\x1a$.pm.v1.GetDeviceLpsPasswordsResponse\x12V\n" +
-	"\x11GetDeviceLuksKeys\x12\x1f.pm.v1.GetDeviceLuksKeysRequest\x1a .pm.v1.GetDeviceLuksKeysResponse\x12P\n" +
-	"\x0fCreateLuksToken\x12\x1d.pm.v1.CreateLuksTokenRequest\x1a\x1e.pm.v1.CreateLuksTokenResponse\x12\\\n" +
-	"\x13RevokeLuksDeviceKey\x12!.pm.v1.RevokeLuksDeviceKeyRequest\x1a\".pm.v1.RevokeLuksDeviceKeyResponse\x12P\n" +
-	"\x0fDispatchOSQuery\x12\x1d.pm.v1.DispatchOSQueryRequest\x1a\x1e.pm.v1.DispatchOSQueryResponse\x12S\n" +
-	"\x10GetOSQueryResult\x12\x1e.pm.v1.GetOSQueryResultRequest\x1a\x1f.pm.v1.GetOSQueryResultResponse\x12Y\n" +
-	"\x12GetDeviceInventory\x12 .pm.v1.GetDeviceInventoryRequest\x1a!.pm.v1.GetDeviceInventoryResponse\x12e\n" +
-	"\x16RefreshDeviceInventory\x12$.pm.v1.RefreshDeviceInventoryRequest\x1a%.pm.v1.RefreshDeviceInventoryResponse\x12P\n" +
-	"\x0fQueryDeviceLogs\x12\x1d.pm.v1.QueryDeviceLogsRequest\x1a\x1e.pm.v1.QueryDeviceLogsResponse\x12Y\n" +
-	"\x12GetDeviceLogResult\x12 .pm.v1.GetDeviceLogResultRequest\x1a!.pm.v1.GetDeviceLogResultResponse\x12A\n" +
+	"CreateRole\x12!.powermanage.v1.CreateRoleRequest\x1a\".powermanage.v1.CreateRoleResponse\x12J\n" +
+	"\aGetRole\x12\x1e.powermanage.v1.GetRoleRequest\x1a\x1f.powermanage.v1.GetRoleResponse\x12P\n" +
+	"\tListRoles\x12 .powermanage.v1.ListRolesRequest\x1a!.powermanage.v1.ListRolesResponse\x12S\n" +
 	"\n" +
-	"CreateRole\x12\x18.pm.v1.CreateRoleRequest\x1a\x19.pm.v1.CreateRoleResponse\x128\n" +
-	"\aGetRole\x12\x15.pm.v1.GetRoleRequest\x1a\x16.pm.v1.GetRoleResponse\x12>\n" +
-	"\tListRoles\x12\x17.pm.v1.ListRolesRequest\x1a\x18.pm.v1.ListRolesResponse\x12A\n" +
+	"UpdateRole\x12!.powermanage.v1.UpdateRoleRequest\x1a\".powermanage.v1.UpdateRoleResponse\x12S\n" +
 	"\n" +
-	"UpdateRole\x12\x18.pm.v1.UpdateRoleRequest\x1a\x19.pm.v1.UpdateRoleResponse\x12A\n" +
-	"\n" +
-	"DeleteRole\x12\x18.pm.v1.DeleteRoleRequest\x1a\x19.pm.v1.DeleteRoleResponse\x12S\n" +
-	"\x10AssignRoleToUser\x12\x1e.pm.v1.AssignRoleToUserRequest\x1a\x1f.pm.v1.AssignRoleToUserResponse\x12Y\n" +
-	"\x12RevokeRoleFromUser\x12 .pm.v1.RevokeRoleFromUserRequest\x1a!.pm.v1.RevokeRoleFromUserResponse\x12P\n" +
-	"\x0fListPermissions\x12\x1d.pm.v1.ListPermissionsRequest\x1a\x1e.pm.v1.ListPermissionsResponse\x12P\n" +
-	"\x0fCreateUserGroup\x12\x1d.pm.v1.CreateUserGroupRequest\x1a\x1e.pm.v1.CreateUserGroupResponse\x12G\n" +
-	"\fGetUserGroup\x12\x1a.pm.v1.GetUserGroupRequest\x1a\x1b.pm.v1.GetUserGroupResponse\x12M\n" +
-	"\x0eListUserGroups\x12\x1c.pm.v1.ListUserGroupsRequest\x1a\x1d.pm.v1.ListUserGroupsResponse\x12P\n" +
-	"\x0fUpdateUserGroup\x12\x1d.pm.v1.UpdateUserGroupRequest\x1a\x1e.pm.v1.UpdateUserGroupResponse\x12P\n" +
-	"\x0fDeleteUserGroup\x12\x1d.pm.v1.DeleteUserGroupRequest\x1a\x1e.pm.v1.DeleteUserGroupResponse\x12M\n" +
-	"\x0eAddUserToGroup\x12\x1c.pm.v1.AddUserToGroupRequest\x1a\x1d.pm.v1.AddUserToGroupResponse\x12\\\n" +
-	"\x13RemoveUserFromGroup\x12!.pm.v1.RemoveUserFromGroupRequest\x1a\".pm.v1.RemoveUserFromGroupResponse\x12b\n" +
-	"\x15AssignRoleToUserGroup\x12#.pm.v1.AssignRoleToUserGroupRequest\x1a$.pm.v1.AssignRoleToUserGroupResponse\x12h\n" +
-	"\x17RevokeRoleFromUserGroup\x12%.pm.v1.RevokeRoleFromUserGroupRequest\x1a&.pm.v1.RevokeRoleFromUserGroupResponse\x12b\n" +
-	"\x15ListUserGroupsForUser\x12#.pm.v1.ListUserGroupsForUserRequest\x1a$.pm.v1.ListUserGroupsForUserResponse\x12_\n" +
-	"\x14UpdateUserGroupQuery\x12\".pm.v1.UpdateUserGroupQueryRequest\x1a#.pm.v1.UpdateUserGroupQueryResponse\x12e\n" +
-	"\x16ValidateUserGroupQuery\x12$.pm.v1.ValidateUserGroupQueryRequest\x1a%.pm.v1.ValidateUserGroupQueryResponse\x12k\n" +
-	"\x18EvaluateDynamicUserGroup\x12&.pm.v1.EvaluateDynamicUserGroupRequest\x1a'.pm.v1.EvaluateDynamicUserGroupResponse\x12l\n" +
-	"\x1dSetUserGroupMaintenanceWindow\x12+.pm.v1.SetUserGroupMaintenanceWindowRequest\x1a\x1e.pm.v1.UpdateUserGroupResponse\x12\\\n" +
-	"\x13GetDeviceCompliance\x12!.pm.v1.GetDeviceComplianceRequest\x1a\".pm.v1.GetDeviceComplianceResponse\x12e\n" +
-	"\x16CreateCompliancePolicy\x12$.pm.v1.CreateCompliancePolicyRequest\x1a%.pm.v1.CreateCompliancePolicyResponse\x12\\\n" +
-	"\x13GetCompliancePolicy\x12!.pm.v1.GetCompliancePolicyRequest\x1a\".pm.v1.GetCompliancePolicyResponse\x12e\n" +
-	"\x16ListCompliancePolicies\x12$.pm.v1.ListCompliancePoliciesRequest\x1a%.pm.v1.ListCompliancePoliciesResponse\x12e\n" +
-	"\x16RenameCompliancePolicy\x12$.pm.v1.RenameCompliancePolicyRequest\x1a%.pm.v1.UpdateCompliancePolicyResponse\x12{\n" +
-	"!UpdateCompliancePolicyDescription\x12/.pm.v1.UpdateCompliancePolicyDescriptionRequest\x1a%.pm.v1.UpdateCompliancePolicyResponse\x12e\n" +
-	"\x16DeleteCompliancePolicy\x12$.pm.v1.DeleteCompliancePolicyRequest\x1a%.pm.v1.DeleteCompliancePolicyResponse\x12h\n" +
-	"\x17AddCompliancePolicyRule\x12%.pm.v1.AddCompliancePolicyRuleRequest\x1a&.pm.v1.AddCompliancePolicyRuleResponse\x12q\n" +
-	"\x1aRemoveCompliancePolicyRule\x12(.pm.v1.RemoveCompliancePolicyRuleRequest\x1a).pm.v1.RemoveCompliancePolicyRuleResponse\x12q\n" +
-	"\x1aUpdateCompliancePolicyRule\x12(.pm.v1.UpdateCompliancePolicyRuleRequest\x1a).pm.v1.UpdateCompliancePolicyRuleResponse\x12\x80\x01\n" +
-	"\x1fGetDeviceCompliancePolicyStatus\x12-.pm.v1.GetDeviceCompliancePolicyStatusRequest\x1a..pm.v1.GetDeviceCompliancePolicyStatusResponse\x125\n" +
-	"\x06Search\x12\x14.pm.v1.SearchRequest\x1a\x15.pm.v1.SearchResponse\x12Y\n" +
-	"\x12RebuildSearchIndex\x12 .pm.v1.RebuildSearchIndexRequest\x1a!.pm.v1.RebuildSearchIndexResponse\x12V\n" +
-	"\x11GetServerSettings\x12\x1f.pm.v1.GetServerSettingsRequest\x1a .pm.v1.GetServerSettingsResponse\x12_\n" +
-	"\x14UpdateServerSettings\x12\".pm.v1.UpdateServerSettingsRequest\x1a#.pm.v1.UpdateServerSettingsResponse\x12a\n" +
-	"\x1aSetUserProvisioningEnabled\x12(.pm.v1.SetUserProvisioningEnabledRequest\x1a\x19.pm.v1.UpdateUserResponse\x12J\n" +
-	"\rStartTerminal\x12\x1b.pm.v1.StartTerminalRequest\x1a\x1c.pm.v1.StartTerminalResponse\x12G\n" +
-	"\fStopTerminal\x12\x1a.pm.v1.StopTerminalRequest\x1a\x1b.pm.v1.StopTerminalResponse\x12q\n" +
-	"\x1aListActiveTerminalSessions\x12(.pm.v1.ListActiveTerminalSessionsRequest\x1a).pm.v1.ListActiveTerminalSessionsResponse\x12k\n" +
-	"\x18TerminateTerminalSession\x12&.pm.v1.TerminateTerminalSessionRequest\x1a'.pm.v1.TerminateTerminalSessionResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"DeleteRole\x12!.powermanage.v1.DeleteRoleRequest\x1a\".powermanage.v1.DeleteRoleResponse\x12e\n" +
+	"\x10AssignRoleToUser\x12'.powermanage.v1.AssignRoleToUserRequest\x1a(.powermanage.v1.AssignRoleToUserResponse\x12k\n" +
+	"\x12RevokeRoleFromUser\x12).powermanage.v1.RevokeRoleFromUserRequest\x1a*.powermanage.v1.RevokeRoleFromUserResponse\x12b\n" +
+	"\x0fListPermissions\x12&.powermanage.v1.ListPermissionsRequest\x1a'.powermanage.v1.ListPermissionsResponse\x12b\n" +
+	"\x0fCreateUserGroup\x12&.powermanage.v1.CreateUserGroupRequest\x1a'.powermanage.v1.CreateUserGroupResponse\x12Y\n" +
+	"\fGetUserGroup\x12#.powermanage.v1.GetUserGroupRequest\x1a$.powermanage.v1.GetUserGroupResponse\x12_\n" +
+	"\x0eListUserGroups\x12%.powermanage.v1.ListUserGroupsRequest\x1a&.powermanage.v1.ListUserGroupsResponse\x12b\n" +
+	"\x0fUpdateUserGroup\x12&.powermanage.v1.UpdateUserGroupRequest\x1a'.powermanage.v1.UpdateUserGroupResponse\x12b\n" +
+	"\x0fDeleteUserGroup\x12&.powermanage.v1.DeleteUserGroupRequest\x1a'.powermanage.v1.DeleteUserGroupResponse\x12_\n" +
+	"\x0eAddUserToGroup\x12%.powermanage.v1.AddUserToGroupRequest\x1a&.powermanage.v1.AddUserToGroupResponse\x12n\n" +
+	"\x13RemoveUserFromGroup\x12*.powermanage.v1.RemoveUserFromGroupRequest\x1a+.powermanage.v1.RemoveUserFromGroupResponse\x12t\n" +
+	"\x15AssignRoleToUserGroup\x12,.powermanage.v1.AssignRoleToUserGroupRequest\x1a-.powermanage.v1.AssignRoleToUserGroupResponse\x12z\n" +
+	"\x17RevokeRoleFromUserGroup\x12..powermanage.v1.RevokeRoleFromUserGroupRequest\x1a/.powermanage.v1.RevokeRoleFromUserGroupResponse\x12t\n" +
+	"\x15ListUserGroupsForUser\x12,.powermanage.v1.ListUserGroupsForUserRequest\x1a-.powermanage.v1.ListUserGroupsForUserResponse\x12q\n" +
+	"\x14UpdateUserGroupQuery\x12+.powermanage.v1.UpdateUserGroupQueryRequest\x1a,.powermanage.v1.UpdateUserGroupQueryResponse\x12w\n" +
+	"\x16ValidateUserGroupQuery\x12-.powermanage.v1.ValidateUserGroupQueryRequest\x1a..powermanage.v1.ValidateUserGroupQueryResponse\x12}\n" +
+	"\x18EvaluateDynamicUserGroup\x12/.powermanage.v1.EvaluateDynamicUserGroupRequest\x1a0.powermanage.v1.EvaluateDynamicUserGroupResponse\x12~\n" +
+	"\x1dSetUserGroupMaintenanceWindow\x124.powermanage.v1.SetUserGroupMaintenanceWindowRequest\x1a'.powermanage.v1.UpdateUserGroupResponse\x12n\n" +
+	"\x13GetDeviceCompliance\x12*.powermanage.v1.GetDeviceComplianceRequest\x1a+.powermanage.v1.GetDeviceComplianceResponse\x12w\n" +
+	"\x16CreateCompliancePolicy\x12-.powermanage.v1.CreateCompliancePolicyRequest\x1a..powermanage.v1.CreateCompliancePolicyResponse\x12n\n" +
+	"\x13GetCompliancePolicy\x12*.powermanage.v1.GetCompliancePolicyRequest\x1a+.powermanage.v1.GetCompliancePolicyResponse\x12w\n" +
+	"\x16ListCompliancePolicies\x12-.powermanage.v1.ListCompliancePoliciesRequest\x1a..powermanage.v1.ListCompliancePoliciesResponse\x12w\n" +
+	"\x16RenameCompliancePolicy\x12-.powermanage.v1.RenameCompliancePolicyRequest\x1a..powermanage.v1.UpdateCompliancePolicyResponse\x12\x8d\x01\n" +
+	"!UpdateCompliancePolicyDescription\x128.powermanage.v1.UpdateCompliancePolicyDescriptionRequest\x1a..powermanage.v1.UpdateCompliancePolicyResponse\x12w\n" +
+	"\x16DeleteCompliancePolicy\x12-.powermanage.v1.DeleteCompliancePolicyRequest\x1a..powermanage.v1.DeleteCompliancePolicyResponse\x12z\n" +
+	"\x17AddCompliancePolicyRule\x12..powermanage.v1.AddCompliancePolicyRuleRequest\x1a/.powermanage.v1.AddCompliancePolicyRuleResponse\x12\x83\x01\n" +
+	"\x1aRemoveCompliancePolicyRule\x121.powermanage.v1.RemoveCompliancePolicyRuleRequest\x1a2.powermanage.v1.RemoveCompliancePolicyRuleResponse\x12\x83\x01\n" +
+	"\x1aUpdateCompliancePolicyRule\x121.powermanage.v1.UpdateCompliancePolicyRuleRequest\x1a2.powermanage.v1.UpdateCompliancePolicyRuleResponse\x12\x92\x01\n" +
+	"\x1fGetDeviceCompliancePolicyStatus\x126.powermanage.v1.GetDeviceCompliancePolicyStatusRequest\x1a7.powermanage.v1.GetDeviceCompliancePolicyStatusResponse\x12G\n" +
+	"\x06Search\x12\x1d.powermanage.v1.SearchRequest\x1a\x1e.powermanage.v1.SearchResponse\x12k\n" +
+	"\x12RebuildSearchIndex\x12).powermanage.v1.RebuildSearchIndexRequest\x1a*.powermanage.v1.RebuildSearchIndexResponse\x12h\n" +
+	"\x11GetServerSettings\x12(.powermanage.v1.GetServerSettingsRequest\x1a).powermanage.v1.GetServerSettingsResponse\x12q\n" +
+	"\x14UpdateServerSettings\x12+.powermanage.v1.UpdateServerSettingsRequest\x1a,.powermanage.v1.UpdateServerSettingsResponse\x12s\n" +
+	"\x1aSetUserProvisioningEnabled\x121.powermanage.v1.SetUserProvisioningEnabledRequest\x1a\".powermanage.v1.UpdateUserResponse\x12\\\n" +
+	"\rStartTerminal\x12$.powermanage.v1.StartTerminalRequest\x1a%.powermanage.v1.StartTerminalResponse\x12Y\n" +
+	"\fStopTerminal\x12#.powermanage.v1.StopTerminalRequest\x1a$.powermanage.v1.StopTerminalResponse\x12\x83\x01\n" +
+	"\x1aListActiveTerminalSessions\x121.powermanage.v1.ListActiveTerminalSessionsRequest\x1a2.powermanage.v1.ListActiveTerminalSessionsResponse\x12}\n" +
+	"\x18TerminateTerminalSession\x12/.powermanage.v1.TerminateTerminalSessionRequest\x1a0.powermanage.v1.TerminateTerminalSessionResponseBLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
-	file_pm_v1_control_proto_rawDescOnce sync.Once
-	file_pm_v1_control_proto_rawDescData []byte
+	file_powermanage_v1_control_proto_rawDescOnce sync.Once
+	file_powermanage_v1_control_proto_rawDescData []byte
 )
 
-func file_pm_v1_control_proto_rawDescGZIP() []byte {
-	file_pm_v1_control_proto_rawDescOnce.Do(func() {
-		file_pm_v1_control_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_control_proto_rawDesc), len(file_pm_v1_control_proto_rawDesc)))
+func file_powermanage_v1_control_proto_rawDescGZIP() []byte {
+	file_powermanage_v1_control_proto_rawDescOnce.Do(func() {
+		file_powermanage_v1_control_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_control_proto_rawDesc), len(file_powermanage_v1_control_proto_rawDesc)))
 	})
-	return file_pm_v1_control_proto_rawDescData
+	return file_powermanage_v1_control_proto_rawDescData
 }
 
-var file_pm_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 357)
-var file_pm_v1_control_proto_goTypes = []any{
-	(*RegisterRequest)(nil),                          // 0: pm.v1.RegisterRequest
-	(*RegisterResponse)(nil),                         // 1: pm.v1.RegisterResponse
-	(*RenewCertificateRequest)(nil),                  // 2: pm.v1.RenewCertificateRequest
-	(*RenewCertificateResponse)(nil),                 // 3: pm.v1.RenewCertificateResponse
-	(*LoginRequest)(nil),                             // 4: pm.v1.LoginRequest
-	(*LoginResponse)(nil),                            // 5: pm.v1.LoginResponse
-	(*RefreshTokenRequest)(nil),                      // 6: pm.v1.RefreshTokenRequest
-	(*RefreshTokenResponse)(nil),                     // 7: pm.v1.RefreshTokenResponse
-	(*LogoutRequest)(nil),                            // 8: pm.v1.LogoutRequest
-	(*LogoutResponse)(nil),                           // 9: pm.v1.LogoutResponse
-	(*GetCurrentUserRequest)(nil),                    // 10: pm.v1.GetCurrentUserRequest
-	(*GetCurrentUserResponse)(nil),                   // 11: pm.v1.GetCurrentUserResponse
-	(*SetupTOTPRequest)(nil),                         // 12: pm.v1.SetupTOTPRequest
-	(*SetupTOTPResponse)(nil),                        // 13: pm.v1.SetupTOTPResponse
-	(*VerifyTOTPRequest)(nil),                        // 14: pm.v1.VerifyTOTPRequest
-	(*VerifyTOTPResponse)(nil),                       // 15: pm.v1.VerifyTOTPResponse
-	(*DisableTOTPRequest)(nil),                       // 16: pm.v1.DisableTOTPRequest
-	(*DisableTOTPResponse)(nil),                      // 17: pm.v1.DisableTOTPResponse
-	(*AdminDisableUserTOTPRequest)(nil),              // 18: pm.v1.AdminDisableUserTOTPRequest
-	(*AdminDisableUserTOTPResponse)(nil),             // 19: pm.v1.AdminDisableUserTOTPResponse
-	(*GetTOTPStatusRequest)(nil),                     // 20: pm.v1.GetTOTPStatusRequest
-	(*GetTOTPStatusResponse)(nil),                    // 21: pm.v1.GetTOTPStatusResponse
-	(*RegenerateBackupCodesRequest)(nil),             // 22: pm.v1.RegenerateBackupCodesRequest
-	(*RegenerateBackupCodesResponse)(nil),            // 23: pm.v1.RegenerateBackupCodesResponse
-	(*VerifyLoginTOTPRequest)(nil),                   // 24: pm.v1.VerifyLoginTOTPRequest
-	(*VerifyLoginTOTPResponse)(nil),                  // 25: pm.v1.VerifyLoginTOTPResponse
-	(*User)(nil),                                     // 26: pm.v1.User
-	(*InheritedRole)(nil),                            // 27: pm.v1.InheritedRole
-	(*SshPublicKey)(nil),                             // 28: pm.v1.SshPublicKey
-	(*Role)(nil),                                     // 29: pm.v1.Role
-	(*RoleGrant)(nil),                                // 30: pm.v1.RoleGrant
-	(*PermissionInfo)(nil),                           // 31: pm.v1.PermissionInfo
-	(*CreateUserRequest)(nil),                        // 32: pm.v1.CreateUserRequest
-	(*CreateUserResponse)(nil),                       // 33: pm.v1.CreateUserResponse
-	(*GetUserRequest)(nil),                           // 34: pm.v1.GetUserRequest
-	(*GetUserResponse)(nil),                          // 35: pm.v1.GetUserResponse
-	(*ListUsersRequest)(nil),                         // 36: pm.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),                        // 37: pm.v1.ListUsersResponse
-	(*UpdateUserEmailRequest)(nil),                   // 38: pm.v1.UpdateUserEmailRequest
-	(*UpdateUserPasswordRequest)(nil),                // 39: pm.v1.UpdateUserPasswordRequest
-	(*SetUserDisabledRequest)(nil),                   // 40: pm.v1.SetUserDisabledRequest
-	(*UpdateUserResponse)(nil),                       // 41: pm.v1.UpdateUserResponse
-	(*UpdateUserProfileRequest)(nil),                 // 42: pm.v1.UpdateUserProfileRequest
-	(*DeleteUserRequest)(nil),                        // 43: pm.v1.DeleteUserRequest
-	(*DeleteUserResponse)(nil),                       // 44: pm.v1.DeleteUserResponse
-	(*AddUserSshKeyRequest)(nil),                     // 45: pm.v1.AddUserSshKeyRequest
-	(*AddUserSshKeyResponse)(nil),                    // 46: pm.v1.AddUserSshKeyResponse
-	(*RemoveUserSshKeyRequest)(nil),                  // 47: pm.v1.RemoveUserSshKeyRequest
-	(*RemoveUserSshKeyResponse)(nil),                 // 48: pm.v1.RemoveUserSshKeyResponse
-	(*UpdateUserSshSettingsRequest)(nil),             // 49: pm.v1.UpdateUserSshSettingsRequest
-	(*UpdateUserLinuxUsernameRequest)(nil),           // 50: pm.v1.UpdateUserLinuxUsernameRequest
-	(*Device)(nil),                                   // 51: pm.v1.Device
-	(*ListDevicesRequest)(nil),                       // 52: pm.v1.ListDevicesRequest
-	(*ListDevicesResponse)(nil),                      // 53: pm.v1.ListDevicesResponse
-	(*GetDeviceRequest)(nil),                         // 54: pm.v1.GetDeviceRequest
-	(*GetDeviceResponse)(nil),                        // 55: pm.v1.GetDeviceResponse
-	(*SetDeviceLabelRequest)(nil),                    // 56: pm.v1.SetDeviceLabelRequest
-	(*RemoveDeviceLabelRequest)(nil),                 // 57: pm.v1.RemoveDeviceLabelRequest
-	(*UpdateDeviceResponse)(nil),                     // 58: pm.v1.UpdateDeviceResponse
-	(*DeleteDeviceRequest)(nil),                      // 59: pm.v1.DeleteDeviceRequest
-	(*DeleteDeviceResponse)(nil),                     // 60: pm.v1.DeleteDeviceResponse
-	(*AssignDeviceRequest)(nil),                      // 61: pm.v1.AssignDeviceRequest
-	(*AssignDeviceResponse)(nil),                     // 62: pm.v1.AssignDeviceResponse
-	(*UnassignDeviceRequest)(nil),                    // 63: pm.v1.UnassignDeviceRequest
-	(*UnassignDeviceResponse)(nil),                   // 64: pm.v1.UnassignDeviceResponse
-	(*DeviceAssignee)(nil),                           // 65: pm.v1.DeviceAssignee
-	(*ListDeviceAssigneesRequest)(nil),               // 66: pm.v1.ListDeviceAssigneesRequest
-	(*ListDeviceAssigneesResponse)(nil),              // 67: pm.v1.ListDeviceAssigneesResponse
-	(*SetDeviceSyncIntervalRequest)(nil),             // 68: pm.v1.SetDeviceSyncIntervalRequest
-	(*SetDeviceInventoryIntervalRequest)(nil),        // 69: pm.v1.SetDeviceInventoryIntervalRequest
-	(*RegistrationToken)(nil),                        // 70: pm.v1.RegistrationToken
-	(*CreateTokenRequest)(nil),                       // 71: pm.v1.CreateTokenRequest
-	(*CreateTokenResponse)(nil),                      // 72: pm.v1.CreateTokenResponse
-	(*ListTokensRequest)(nil),                        // 73: pm.v1.ListTokensRequest
-	(*ListTokensResponse)(nil),                       // 74: pm.v1.ListTokensResponse
-	(*GetTokenRequest)(nil),                          // 75: pm.v1.GetTokenRequest
-	(*GetTokenResponse)(nil),                         // 76: pm.v1.GetTokenResponse
-	(*RenameTokenRequest)(nil),                       // 77: pm.v1.RenameTokenRequest
-	(*SetTokenDisabledRequest)(nil),                  // 78: pm.v1.SetTokenDisabledRequest
-	(*UpdateTokenResponse)(nil),                      // 79: pm.v1.UpdateTokenResponse
-	(*DeleteTokenRequest)(nil),                       // 80: pm.v1.DeleteTokenRequest
-	(*DeleteTokenResponse)(nil),                      // 81: pm.v1.DeleteTokenResponse
-	(*ManagedAction)(nil),                            // 82: pm.v1.ManagedAction
-	(*CreateActionRequest)(nil),                      // 83: pm.v1.CreateActionRequest
-	(*CreateActionResponse)(nil),                     // 84: pm.v1.CreateActionResponse
-	(*GetActionRequest)(nil),                         // 85: pm.v1.GetActionRequest
-	(*GetActionResponse)(nil),                        // 86: pm.v1.GetActionResponse
-	(*ListActionsRequest)(nil),                       // 87: pm.v1.ListActionsRequest
-	(*ListActionsResponse)(nil),                      // 88: pm.v1.ListActionsResponse
-	(*RenameActionRequest)(nil),                      // 89: pm.v1.RenameActionRequest
-	(*UpdateActionDescriptionRequest)(nil),           // 90: pm.v1.UpdateActionDescriptionRequest
-	(*UpdateActionParamsRequest)(nil),                // 91: pm.v1.UpdateActionParamsRequest
-	(*UpdateActionResponse)(nil),                     // 92: pm.v1.UpdateActionResponse
-	(*DeleteActionRequest)(nil),                      // 93: pm.v1.DeleteActionRequest
-	(*DeleteActionResponse)(nil),                     // 94: pm.v1.DeleteActionResponse
-	(*ActionSet)(nil),                                // 95: pm.v1.ActionSet
-	(*ActionSetMember)(nil),                          // 96: pm.v1.ActionSetMember
-	(*CreateActionSetRequest)(nil),                   // 97: pm.v1.CreateActionSetRequest
-	(*CreateActionSetResponse)(nil),                  // 98: pm.v1.CreateActionSetResponse
-	(*GetActionSetRequest)(nil),                      // 99: pm.v1.GetActionSetRequest
-	(*GetActionSetResponse)(nil),                     // 100: pm.v1.GetActionSetResponse
-	(*ListActionSetsRequest)(nil),                    // 101: pm.v1.ListActionSetsRequest
-	(*ListActionSetsResponse)(nil),                   // 102: pm.v1.ListActionSetsResponse
-	(*RenameActionSetRequest)(nil),                   // 103: pm.v1.RenameActionSetRequest
-	(*UpdateActionSetDescriptionRequest)(nil),        // 104: pm.v1.UpdateActionSetDescriptionRequest
-	(*UpdateActionSetScheduleRequest)(nil),           // 105: pm.v1.UpdateActionSetScheduleRequest
-	(*UpdateActionSetResponse)(nil),                  // 106: pm.v1.UpdateActionSetResponse
-	(*DeleteActionSetRequest)(nil),                   // 107: pm.v1.DeleteActionSetRequest
-	(*DeleteActionSetResponse)(nil),                  // 108: pm.v1.DeleteActionSetResponse
-	(*AddActionToSetRequest)(nil),                    // 109: pm.v1.AddActionToSetRequest
-	(*AddActionToSetResponse)(nil),                   // 110: pm.v1.AddActionToSetResponse
-	(*RemoveActionFromSetRequest)(nil),               // 111: pm.v1.RemoveActionFromSetRequest
-	(*RemoveActionFromSetResponse)(nil),              // 112: pm.v1.RemoveActionFromSetResponse
-	(*ReorderActionInSetRequest)(nil),                // 113: pm.v1.ReorderActionInSetRequest
-	(*ReorderActionInSetResponse)(nil),               // 114: pm.v1.ReorderActionInSetResponse
-	(*Definition)(nil),                               // 115: pm.v1.Definition
-	(*DefinitionMember)(nil),                         // 116: pm.v1.DefinitionMember
-	(*CreateDefinitionRequest)(nil),                  // 117: pm.v1.CreateDefinitionRequest
-	(*CreateDefinitionResponse)(nil),                 // 118: pm.v1.CreateDefinitionResponse
-	(*GetDefinitionRequest)(nil),                     // 119: pm.v1.GetDefinitionRequest
-	(*GetDefinitionResponse)(nil),                    // 120: pm.v1.GetDefinitionResponse
-	(*ListDefinitionsRequest)(nil),                   // 121: pm.v1.ListDefinitionsRequest
-	(*ListDefinitionsResponse)(nil),                  // 122: pm.v1.ListDefinitionsResponse
-	(*RenameDefinitionRequest)(nil),                  // 123: pm.v1.RenameDefinitionRequest
-	(*UpdateDefinitionDescriptionRequest)(nil),       // 124: pm.v1.UpdateDefinitionDescriptionRequest
-	(*UpdateDefinitionScheduleRequest)(nil),          // 125: pm.v1.UpdateDefinitionScheduleRequest
-	(*UpdateDefinitionResponse)(nil),                 // 126: pm.v1.UpdateDefinitionResponse
-	(*DeleteDefinitionRequest)(nil),                  // 127: pm.v1.DeleteDefinitionRequest
-	(*DeleteDefinitionResponse)(nil),                 // 128: pm.v1.DeleteDefinitionResponse
-	(*AddActionSetToDefinitionRequest)(nil),          // 129: pm.v1.AddActionSetToDefinitionRequest
-	(*AddActionSetToDefinitionResponse)(nil),         // 130: pm.v1.AddActionSetToDefinitionResponse
-	(*RemoveActionSetFromDefinitionRequest)(nil),     // 131: pm.v1.RemoveActionSetFromDefinitionRequest
-	(*RemoveActionSetFromDefinitionResponse)(nil),    // 132: pm.v1.RemoveActionSetFromDefinitionResponse
-	(*ReorderActionSetInDefinitionRequest)(nil),      // 133: pm.v1.ReorderActionSetInDefinitionRequest
-	(*ReorderActionSetInDefinitionResponse)(nil),     // 134: pm.v1.ReorderActionSetInDefinitionResponse
-	(*DeviceGroup)(nil),                              // 135: pm.v1.DeviceGroup
-	(*CreateDeviceGroupRequest)(nil),                 // 136: pm.v1.CreateDeviceGroupRequest
-	(*CreateDeviceGroupResponse)(nil),                // 137: pm.v1.CreateDeviceGroupResponse
-	(*GetDeviceGroupRequest)(nil),                    // 138: pm.v1.GetDeviceGroupRequest
-	(*GetDeviceGroupResponse)(nil),                   // 139: pm.v1.GetDeviceGroupResponse
-	(*DeviceGroupMember)(nil),                        // 140: pm.v1.DeviceGroupMember
-	(*ListDeviceGroupsRequest)(nil),                  // 141: pm.v1.ListDeviceGroupsRequest
-	(*ListDeviceGroupsResponse)(nil),                 // 142: pm.v1.ListDeviceGroupsResponse
-	(*ListDeviceGroupsForDeviceRequest)(nil),         // 143: pm.v1.ListDeviceGroupsForDeviceRequest
-	(*ListDeviceGroupsForDeviceResponse)(nil),        // 144: pm.v1.ListDeviceGroupsForDeviceResponse
-	(*RenameDeviceGroupRequest)(nil),                 // 145: pm.v1.RenameDeviceGroupRequest
-	(*UpdateDeviceGroupDescriptionRequest)(nil),      // 146: pm.v1.UpdateDeviceGroupDescriptionRequest
-	(*UpdateDeviceGroupResponse)(nil),                // 147: pm.v1.UpdateDeviceGroupResponse
-	(*DeleteDeviceGroupRequest)(nil),                 // 148: pm.v1.DeleteDeviceGroupRequest
-	(*DeleteDeviceGroupResponse)(nil),                // 149: pm.v1.DeleteDeviceGroupResponse
-	(*AddDeviceToGroupRequest)(nil),                  // 150: pm.v1.AddDeviceToGroupRequest
-	(*AddDeviceToGroupResponse)(nil),                 // 151: pm.v1.AddDeviceToGroupResponse
-	(*RemoveDeviceFromGroupRequest)(nil),             // 152: pm.v1.RemoveDeviceFromGroupRequest
-	(*RemoveDeviceFromGroupResponse)(nil),            // 153: pm.v1.RemoveDeviceFromGroupResponse
-	(*UpdateDeviceGroupQueryRequest)(nil),            // 154: pm.v1.UpdateDeviceGroupQueryRequest
-	(*UpdateDeviceGroupQueryResponse)(nil),           // 155: pm.v1.UpdateDeviceGroupQueryResponse
-	(*ValidateDynamicQueryRequest)(nil),              // 156: pm.v1.ValidateDynamicQueryRequest
-	(*ValidateDynamicQueryResponse)(nil),             // 157: pm.v1.ValidateDynamicQueryResponse
-	(*EvaluateDynamicGroupRequest)(nil),              // 158: pm.v1.EvaluateDynamicGroupRequest
-	(*EvaluateDynamicGroupResponse)(nil),             // 159: pm.v1.EvaluateDynamicGroupResponse
-	(*SetDeviceGroupSyncIntervalRequest)(nil),        // 160: pm.v1.SetDeviceGroupSyncIntervalRequest
-	(*SetDeviceGroupInventoryIntervalRequest)(nil),   // 161: pm.v1.SetDeviceGroupInventoryIntervalRequest
-	(*SetDeviceGroupMaintenanceWindowRequest)(nil),   // 162: pm.v1.SetDeviceGroupMaintenanceWindowRequest
-	(*Assignment)(nil),                               // 163: pm.v1.Assignment
-	(*CreateAssignmentRequest)(nil),                  // 164: pm.v1.CreateAssignmentRequest
-	(*CreateAssignmentResponse)(nil),                 // 165: pm.v1.CreateAssignmentResponse
-	(*DeleteAssignmentRequest)(nil),                  // 166: pm.v1.DeleteAssignmentRequest
-	(*DeleteAssignmentResponse)(nil),                 // 167: pm.v1.DeleteAssignmentResponse
-	(*ListAssignmentsRequest)(nil),                   // 168: pm.v1.ListAssignmentsRequest
-	(*ListAssignmentsResponse)(nil),                  // 169: pm.v1.ListAssignmentsResponse
-	(*UserSelection)(nil),                            // 170: pm.v1.UserSelection
-	(*SetUserSelectionRequest)(nil),                  // 171: pm.v1.SetUserSelectionRequest
-	(*SetUserSelectionResponse)(nil),                 // 172: pm.v1.SetUserSelectionResponse
-	(*ListAvailableActionsRequest)(nil),              // 173: pm.v1.ListAvailableActionsRequest
-	(*AvailableItem)(nil),                            // 174: pm.v1.AvailableItem
-	(*ListAvailableActionsResponse)(nil),             // 175: pm.v1.ListAvailableActionsResponse
-	(*GetDeviceAssignmentsRequest)(nil),              // 176: pm.v1.GetDeviceAssignmentsRequest
-	(*GetDeviceAssignmentsResponse)(nil),             // 177: pm.v1.GetDeviceAssignmentsResponse
-	(*GetUserAssignmentsRequest)(nil),                // 178: pm.v1.GetUserAssignmentsRequest
-	(*GetUserAssignmentsResponse)(nil),               // 179: pm.v1.GetUserAssignmentsResponse
-	(*ActionExecution)(nil),                          // 180: pm.v1.ActionExecution
-	(*DispatchActionRequest)(nil),                    // 181: pm.v1.DispatchActionRequest
-	(*DispatchActionResponse)(nil),                   // 182: pm.v1.DispatchActionResponse
-	(*DispatchToMultipleRequest)(nil),                // 183: pm.v1.DispatchToMultipleRequest
-	(*DispatchToMultipleResponse)(nil),               // 184: pm.v1.DispatchToMultipleResponse
-	(*DispatchAssignedActionsRequest)(nil),           // 185: pm.v1.DispatchAssignedActionsRequest
-	(*DispatchAssignedActionsResponse)(nil),          // 186: pm.v1.DispatchAssignedActionsResponse
-	(*DispatchActionSetRequest)(nil),                 // 187: pm.v1.DispatchActionSetRequest
-	(*DispatchActionSetResponse)(nil),                // 188: pm.v1.DispatchActionSetResponse
-	(*DispatchDefinitionRequest)(nil),                // 189: pm.v1.DispatchDefinitionRequest
-	(*DispatchDefinitionResponse)(nil),               // 190: pm.v1.DispatchDefinitionResponse
-	(*DispatchToGroupRequest)(nil),                   // 191: pm.v1.DispatchToGroupRequest
-	(*DispatchToGroupResponse)(nil),                  // 192: pm.v1.DispatchToGroupResponse
-	(*GetExecutionRequest)(nil),                      // 193: pm.v1.GetExecutionRequest
-	(*GetExecutionResponse)(nil),                     // 194: pm.v1.GetExecutionResponse
-	(*ListExecutionsRequest)(nil),                    // 195: pm.v1.ListExecutionsRequest
-	(*ListExecutionsResponse)(nil),                   // 196: pm.v1.ListExecutionsResponse
-	(*DispatchInstantActionRequest)(nil),             // 197: pm.v1.DispatchInstantActionRequest
-	(*DispatchInstantActionResponse)(nil),            // 198: pm.v1.DispatchInstantActionResponse
-	(*CancelExecutionRequest)(nil),                   // 199: pm.v1.CancelExecutionRequest
-	(*CancelExecutionResponse)(nil),                  // 200: pm.v1.CancelExecutionResponse
-	(*AuditEvent)(nil),                               // 201: pm.v1.AuditEvent
-	(*ListAuditEventsRequest)(nil),                   // 202: pm.v1.ListAuditEventsRequest
-	(*ListAuditEventsResponse)(nil),                  // 203: pm.v1.ListAuditEventsResponse
-	(*ExportAuditEventsRequest)(nil),                 // 204: pm.v1.ExportAuditEventsRequest
-	(*ExportAuditEventsResponse)(nil),                // 205: pm.v1.ExportAuditEventsResponse
-	(*LpsPassword)(nil),                              // 206: pm.v1.LpsPassword
-	(*GetDeviceLpsPasswordsRequest)(nil),             // 207: pm.v1.GetDeviceLpsPasswordsRequest
-	(*GetDeviceLpsPasswordsResponse)(nil),            // 208: pm.v1.GetDeviceLpsPasswordsResponse
-	(*LuksKey)(nil),                                  // 209: pm.v1.LuksKey
-	(*GetDeviceLuksKeysRequest)(nil),                 // 210: pm.v1.GetDeviceLuksKeysRequest
-	(*GetDeviceLuksKeysResponse)(nil),                // 211: pm.v1.GetDeviceLuksKeysResponse
-	(*CreateLuksTokenRequest)(nil),                   // 212: pm.v1.CreateLuksTokenRequest
-	(*CreateLuksTokenResponse)(nil),                  // 213: pm.v1.CreateLuksTokenResponse
-	(*RevokeLuksDeviceKeyRequest)(nil),               // 214: pm.v1.RevokeLuksDeviceKeyRequest
-	(*RevokeLuksDeviceKeyResponse)(nil),              // 215: pm.v1.RevokeLuksDeviceKeyResponse
-	(*DispatchOSQueryRequest)(nil),                   // 216: pm.v1.DispatchOSQueryRequest
-	(*DispatchOSQueryResponse)(nil),                  // 217: pm.v1.DispatchOSQueryResponse
-	(*GetOSQueryResultRequest)(nil),                  // 218: pm.v1.GetOSQueryResultRequest
-	(*GetOSQueryResultResponse)(nil),                 // 219: pm.v1.GetOSQueryResultResponse
-	(*GetDeviceInventoryRequest)(nil),                // 220: pm.v1.GetDeviceInventoryRequest
-	(*InventoryTableResult)(nil),                     // 221: pm.v1.InventoryTableResult
-	(*GetDeviceInventoryResponse)(nil),               // 222: pm.v1.GetDeviceInventoryResponse
-	(*RefreshDeviceInventoryRequest)(nil),            // 223: pm.v1.RefreshDeviceInventoryRequest
-	(*RefreshDeviceInventoryResponse)(nil),           // 224: pm.v1.RefreshDeviceInventoryResponse
-	(*QueryDeviceLogsRequest)(nil),                   // 225: pm.v1.QueryDeviceLogsRequest
-	(*QueryDeviceLogsResponse)(nil),                  // 226: pm.v1.QueryDeviceLogsResponse
-	(*GetDeviceLogResultRequest)(nil),                // 227: pm.v1.GetDeviceLogResultRequest
-	(*GetDeviceLogResultResponse)(nil),               // 228: pm.v1.GetDeviceLogResultResponse
-	(*CreateRoleRequest)(nil),                        // 229: pm.v1.CreateRoleRequest
-	(*CreateRoleResponse)(nil),                       // 230: pm.v1.CreateRoleResponse
-	(*GetRoleRequest)(nil),                           // 231: pm.v1.GetRoleRequest
-	(*GetRoleResponse)(nil),                          // 232: pm.v1.GetRoleResponse
-	(*ListRolesRequest)(nil),                         // 233: pm.v1.ListRolesRequest
-	(*ListRolesResponse)(nil),                        // 234: pm.v1.ListRolesResponse
-	(*UpdateRoleRequest)(nil),                        // 235: pm.v1.UpdateRoleRequest
-	(*UpdateRoleResponse)(nil),                       // 236: pm.v1.UpdateRoleResponse
-	(*DeleteRoleRequest)(nil),                        // 237: pm.v1.DeleteRoleRequest
-	(*DeleteRoleResponse)(nil),                       // 238: pm.v1.DeleteRoleResponse
-	(*AssignRoleToUserRequest)(nil),                  // 239: pm.v1.AssignRoleToUserRequest
-	(*AssignRoleToUserResponse)(nil),                 // 240: pm.v1.AssignRoleToUserResponse
-	(*RevokeRoleFromUserRequest)(nil),                // 241: pm.v1.RevokeRoleFromUserRequest
-	(*RevokeRoleFromUserResponse)(nil),               // 242: pm.v1.RevokeRoleFromUserResponse
-	(*ListPermissionsRequest)(nil),                   // 243: pm.v1.ListPermissionsRequest
-	(*ListPermissionsResponse)(nil),                  // 244: pm.v1.ListPermissionsResponse
-	(*UserGroup)(nil),                                // 245: pm.v1.UserGroup
-	(*UserGroupMember)(nil),                          // 246: pm.v1.UserGroupMember
-	(*CreateUserGroupRequest)(nil),                   // 247: pm.v1.CreateUserGroupRequest
-	(*CreateUserGroupResponse)(nil),                  // 248: pm.v1.CreateUserGroupResponse
-	(*GetUserGroupRequest)(nil),                      // 249: pm.v1.GetUserGroupRequest
-	(*GetUserGroupResponse)(nil),                     // 250: pm.v1.GetUserGroupResponse
-	(*ListUserGroupsRequest)(nil),                    // 251: pm.v1.ListUserGroupsRequest
-	(*ListUserGroupsResponse)(nil),                   // 252: pm.v1.ListUserGroupsResponse
-	(*UpdateUserGroupRequest)(nil),                   // 253: pm.v1.UpdateUserGroupRequest
-	(*UpdateUserGroupResponse)(nil),                  // 254: pm.v1.UpdateUserGroupResponse
-	(*DeleteUserGroupRequest)(nil),                   // 255: pm.v1.DeleteUserGroupRequest
-	(*DeleteUserGroupResponse)(nil),                  // 256: pm.v1.DeleteUserGroupResponse
-	(*AddUserToGroupRequest)(nil),                    // 257: pm.v1.AddUserToGroupRequest
-	(*AddUserToGroupResponse)(nil),                   // 258: pm.v1.AddUserToGroupResponse
-	(*RemoveUserFromGroupRequest)(nil),               // 259: pm.v1.RemoveUserFromGroupRequest
-	(*RemoveUserFromGroupResponse)(nil),              // 260: pm.v1.RemoveUserFromGroupResponse
-	(*AssignRoleToUserGroupRequest)(nil),             // 261: pm.v1.AssignRoleToUserGroupRequest
-	(*AssignRoleToUserGroupResponse)(nil),            // 262: pm.v1.AssignRoleToUserGroupResponse
-	(*RevokeRoleFromUserGroupRequest)(nil),           // 263: pm.v1.RevokeRoleFromUserGroupRequest
-	(*RevokeRoleFromUserGroupResponse)(nil),          // 264: pm.v1.RevokeRoleFromUserGroupResponse
-	(*ListUserGroupsForUserRequest)(nil),             // 265: pm.v1.ListUserGroupsForUserRequest
-	(*ListUserGroupsForUserResponse)(nil),            // 266: pm.v1.ListUserGroupsForUserResponse
-	(*UpdateUserGroupQueryRequest)(nil),              // 267: pm.v1.UpdateUserGroupQueryRequest
-	(*UpdateUserGroupQueryResponse)(nil),             // 268: pm.v1.UpdateUserGroupQueryResponse
-	(*ValidateUserGroupQueryRequest)(nil),            // 269: pm.v1.ValidateUserGroupQueryRequest
-	(*ValidateUserGroupQueryResponse)(nil),           // 270: pm.v1.ValidateUserGroupQueryResponse
-	(*EvaluateDynamicUserGroupRequest)(nil),          // 271: pm.v1.EvaluateDynamicUserGroupRequest
-	(*EvaluateDynamicUserGroupResponse)(nil),         // 272: pm.v1.EvaluateDynamicUserGroupResponse
-	(*SetUserGroupMaintenanceWindowRequest)(nil),     // 273: pm.v1.SetUserGroupMaintenanceWindowRequest
-	(*IdentityProvider)(nil),                         // 274: pm.v1.IdentityProvider
-	(*IdentityLink)(nil),                             // 275: pm.v1.IdentityLink
-	(*CreateIdentityProviderRequest)(nil),            // 276: pm.v1.CreateIdentityProviderRequest
-	(*CreateIdentityProviderResponse)(nil),           // 277: pm.v1.CreateIdentityProviderResponse
-	(*GetIdentityProviderRequest)(nil),               // 278: pm.v1.GetIdentityProviderRequest
-	(*GetIdentityProviderResponse)(nil),              // 279: pm.v1.GetIdentityProviderResponse
-	(*ListIdentityProvidersRequest)(nil),             // 280: pm.v1.ListIdentityProvidersRequest
-	(*ListIdentityProvidersResponse)(nil),            // 281: pm.v1.ListIdentityProvidersResponse
-	(*UpdateIdentityProviderRequest)(nil),            // 282: pm.v1.UpdateIdentityProviderRequest
-	(*UpdateIdentityProviderResponse)(nil),           // 283: pm.v1.UpdateIdentityProviderResponse
-	(*DeleteIdentityProviderRequest)(nil),            // 284: pm.v1.DeleteIdentityProviderRequest
-	(*DeleteIdentityProviderResponse)(nil),           // 285: pm.v1.DeleteIdentityProviderResponse
-	(*AuthMethodProvider)(nil),                       // 286: pm.v1.AuthMethodProvider
-	(*ListAuthMethodsRequest)(nil),                   // 287: pm.v1.ListAuthMethodsRequest
-	(*ListAuthMethodsResponse)(nil),                  // 288: pm.v1.ListAuthMethodsResponse
-	(*GetSSOLoginURLRequest)(nil),                    // 289: pm.v1.GetSSOLoginURLRequest
-	(*GetSSOLoginURLResponse)(nil),                   // 290: pm.v1.GetSSOLoginURLResponse
-	(*SSOCallbackRequest)(nil),                       // 291: pm.v1.SSOCallbackRequest
-	(*SSOCallbackResponse)(nil),                      // 292: pm.v1.SSOCallbackResponse
-	(*ListIdentityLinksRequest)(nil),                 // 293: pm.v1.ListIdentityLinksRequest
-	(*ListIdentityLinksResponse)(nil),                // 294: pm.v1.ListIdentityLinksResponse
-	(*UnlinkIdentityRequest)(nil),                    // 295: pm.v1.UnlinkIdentityRequest
-	(*UnlinkIdentityResponse)(nil),                   // 296: pm.v1.UnlinkIdentityResponse
-	(*EnableSCIMRequest)(nil),                        // 297: pm.v1.EnableSCIMRequest
-	(*EnableSCIMResponse)(nil),                       // 298: pm.v1.EnableSCIMResponse
-	(*DisableSCIMRequest)(nil),                       // 299: pm.v1.DisableSCIMRequest
-	(*DisableSCIMResponse)(nil),                      // 300: pm.v1.DisableSCIMResponse
-	(*RotateSCIMTokenRequest)(nil),                   // 301: pm.v1.RotateSCIMTokenRequest
-	(*RotateSCIMTokenResponse)(nil),                  // 302: pm.v1.RotateSCIMTokenResponse
-	(*GetDeviceComplianceRequest)(nil),               // 303: pm.v1.GetDeviceComplianceRequest
-	(*GetDeviceComplianceResponse)(nil),              // 304: pm.v1.GetDeviceComplianceResponse
-	(*ComplianceCheckResult)(nil),                    // 305: pm.v1.ComplianceCheckResult
-	(*CompliancePolicy)(nil),                         // 306: pm.v1.CompliancePolicy
-	(*CompliancePolicyRule)(nil),                     // 307: pm.v1.CompliancePolicyRule
-	(*CreateCompliancePolicyRequest)(nil),            // 308: pm.v1.CreateCompliancePolicyRequest
-	(*CreateCompliancePolicyResponse)(nil),           // 309: pm.v1.CreateCompliancePolicyResponse
-	(*GetCompliancePolicyRequest)(nil),               // 310: pm.v1.GetCompliancePolicyRequest
-	(*GetCompliancePolicyResponse)(nil),              // 311: pm.v1.GetCompliancePolicyResponse
-	(*ListCompliancePoliciesRequest)(nil),            // 312: pm.v1.ListCompliancePoliciesRequest
-	(*ListCompliancePoliciesResponse)(nil),           // 313: pm.v1.ListCompliancePoliciesResponse
-	(*RenameCompliancePolicyRequest)(nil),            // 314: pm.v1.RenameCompliancePolicyRequest
-	(*UpdateCompliancePolicyDescriptionRequest)(nil), // 315: pm.v1.UpdateCompliancePolicyDescriptionRequest
-	(*UpdateCompliancePolicyResponse)(nil),           // 316: pm.v1.UpdateCompliancePolicyResponse
-	(*DeleteCompliancePolicyRequest)(nil),            // 317: pm.v1.DeleteCompliancePolicyRequest
-	(*DeleteCompliancePolicyResponse)(nil),           // 318: pm.v1.DeleteCompliancePolicyResponse
-	(*AddCompliancePolicyRuleRequest)(nil),           // 319: pm.v1.AddCompliancePolicyRuleRequest
-	(*AddCompliancePolicyRuleResponse)(nil),          // 320: pm.v1.AddCompliancePolicyRuleResponse
-	(*RemoveCompliancePolicyRuleRequest)(nil),        // 321: pm.v1.RemoveCompliancePolicyRuleRequest
-	(*RemoveCompliancePolicyRuleResponse)(nil),       // 322: pm.v1.RemoveCompliancePolicyRuleResponse
-	(*UpdateCompliancePolicyRuleRequest)(nil),        // 323: pm.v1.UpdateCompliancePolicyRuleRequest
-	(*UpdateCompliancePolicyRuleResponse)(nil),       // 324: pm.v1.UpdateCompliancePolicyRuleResponse
-	(*GetDeviceCompliancePolicyStatusRequest)(nil),   // 325: pm.v1.GetDeviceCompliancePolicyStatusRequest
-	(*GetDeviceCompliancePolicyStatusResponse)(nil),  // 326: pm.v1.GetDeviceCompliancePolicyStatusResponse
-	(*DevicePolicyEvaluation)(nil),                   // 327: pm.v1.DevicePolicyEvaluation
-	(*DevicePolicyRuleEvaluation)(nil),               // 328: pm.v1.DevicePolicyRuleEvaluation
-	(*SearchDateFilter)(nil),                         // 329: pm.v1.SearchDateFilter
-	(*SearchRequest)(nil),                            // 330: pm.v1.SearchRequest
-	(*SearchResult)(nil),                             // 331: pm.v1.SearchResult
-	(*SearchResponse)(nil),                           // 332: pm.v1.SearchResponse
-	(*RebuildSearchIndexRequest)(nil),                // 333: pm.v1.RebuildSearchIndexRequest
-	(*RebuildSearchIndexResponse)(nil),               // 334: pm.v1.RebuildSearchIndexResponse
-	(*ServerSettings)(nil),                           // 335: pm.v1.ServerSettings
-	(*GetServerSettingsRequest)(nil),                 // 336: pm.v1.GetServerSettingsRequest
-	(*GetServerSettingsResponse)(nil),                // 337: pm.v1.GetServerSettingsResponse
-	(*UpdateServerSettingsRequest)(nil),              // 338: pm.v1.UpdateServerSettingsRequest
-	(*UpdateServerSettingsResponse)(nil),             // 339: pm.v1.UpdateServerSettingsResponse
-	(*SetUserProvisioningEnabledRequest)(nil),        // 340: pm.v1.SetUserProvisioningEnabledRequest
-	(*StartTerminalRequest)(nil),                     // 341: pm.v1.StartTerminalRequest
-	(*StartTerminalResponse)(nil),                    // 342: pm.v1.StartTerminalResponse
-	(*StopTerminalRequest)(nil),                      // 343: pm.v1.StopTerminalRequest
-	(*StopTerminalResponse)(nil),                     // 344: pm.v1.StopTerminalResponse
-	(*TerminalSessionInfo)(nil),                      // 345: pm.v1.TerminalSessionInfo
-	(*ListActiveTerminalSessionsRequest)(nil),        // 346: pm.v1.ListActiveTerminalSessionsRequest
-	(*ListActiveTerminalSessionsResponse)(nil),       // 347: pm.v1.ListActiveTerminalSessionsResponse
-	(*TerminateTerminalSessionRequest)(nil),          // 348: pm.v1.TerminateTerminalSessionRequest
-	(*TerminateTerminalSessionResponse)(nil),         // 349: pm.v1.TerminateTerminalSessionResponse
-	nil,                                              // 350: pm.v1.Device.LabelsEntry
-	nil,                                              // 351: pm.v1.ListDevicesRequest.LabelFilterEntry
-	nil,                                              // 352: pm.v1.IdentityProvider.GroupMappingEntry
-	nil,                                              // 353: pm.v1.CreateIdentityProviderRequest.GroupMappingEntry
-	nil,                                              // 354: pm.v1.UpdateIdentityProviderRequest.GroupMappingEntry
-	nil,                                              // 355: pm.v1.SearchRequest.TagFiltersEntry
-	nil,                                              // 356: pm.v1.SearchResult.FieldsEntry
-	(*DeviceId)(nil),                                 // 357: pm.v1.DeviceId
-	(*timestamppb.Timestamp)(nil),                    // 358: google.protobuf.Timestamp
-	(RoleGrantScopeKind)(0),                          // 359: pm.v1.RoleGrantScopeKind
-	(PermissionTargetKind)(0),                        // 360: pm.v1.PermissionTargetKind
-	(DeviceStatus)(0),                                // 361: pm.v1.DeviceStatus
-	(ComplianceStatus)(0),                            // 362: pm.v1.ComplianceStatus
-	(AssignmentTargetType)(0),                        // 363: pm.v1.AssignmentTargetType
-	(ActionType)(0),                                  // 364: pm.v1.ActionType
-	(DesiredState)(0),                                // 365: pm.v1.DesiredState
-	(*ActionSchedule)(nil),                           // 366: pm.v1.ActionSchedule
-	(*PackageParams)(nil),                            // 367: pm.v1.PackageParams
-	(*AppInstallParams)(nil),                         // 368: pm.v1.AppInstallParams
-	(*ShellParams)(nil),                              // 369: pm.v1.ShellParams
-	(*ServiceParams)(nil),                            // 370: pm.v1.ServiceParams
-	(*FileParams)(nil),                               // 371: pm.v1.FileParams
-	(*UpdateParams)(nil),                             // 372: pm.v1.UpdateParams
-	(*RepositoryParams)(nil),                         // 373: pm.v1.RepositoryParams
-	(*FlatpakParams)(nil),                            // 374: pm.v1.FlatpakParams
-	(*DirectoryParams)(nil),                          // 375: pm.v1.DirectoryParams
-	(*UserParams)(nil),                               // 376: pm.v1.UserParams
-	(*SshParams)(nil),                                // 377: pm.v1.SshParams
-	(*SshdParams)(nil),                               // 378: pm.v1.SshdParams
-	(*AdminPolicyParams)(nil),                        // 379: pm.v1.AdminPolicyParams
-	(*LpsParams)(nil),                                // 380: pm.v1.LpsParams
-	(*GroupParams)(nil),                              // 381: pm.v1.GroupParams
-	(*EncryptionParams)(nil),                         // 382: pm.v1.EncryptionParams
-	(*WifiParams)(nil),                               // 383: pm.v1.WifiParams
-	(*AgentUpdateParams)(nil),                        // 384: pm.v1.AgentUpdateParams
-	(*MaintenanceWindow)(nil),                        // 385: pm.v1.MaintenanceWindow
-	(AssignmentSourceType)(0),                        // 386: pm.v1.AssignmentSourceType
-	(AssignmentMode)(0),                              // 387: pm.v1.AssignmentMode
-	(ExecutionStatus)(0),                             // 388: pm.v1.ExecutionStatus
-	(*CommandOutput)(nil),                            // 389: pm.v1.CommandOutput
-	(*Action)(nil),                                   // 390: pm.v1.Action
-	(RotationReason)(0),                              // 391: pm.v1.RotationReason
-	(LuksRevocationStatus)(0),                        // 392: pm.v1.LuksRevocationStatus
-	(*OSQueryRow)(nil),                               // 393: pm.v1.OSQueryRow
-	(IdentityProviderType)(0),                        // 394: pm.v1.IdentityProviderType
-	(SearchScope)(0),                                 // 395: pm.v1.SearchScope
-	(SortField)(0),                                   // 396: pm.v1.SortField
-	(SortDirection)(0),                               // 397: pm.v1.SortDirection
+var file_powermanage_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 340)
+var file_powermanage_v1_control_proto_goTypes = []any{
+	(*RegisterRequest)(nil),                          // 0: powermanage.v1.RegisterRequest
+	(*RegisterResponse)(nil),                         // 1: powermanage.v1.RegisterResponse
+	(*RenewCertificateRequest)(nil),                  // 2: powermanage.v1.RenewCertificateRequest
+	(*RenewCertificateResponse)(nil),                 // 3: powermanage.v1.RenewCertificateResponse
+	(*RefreshTokenRequest)(nil),                      // 4: powermanage.v1.RefreshTokenRequest
+	(*RefreshTokenResponse)(nil),                     // 5: powermanage.v1.RefreshTokenResponse
+	(*LogoutRequest)(nil),                            // 6: powermanage.v1.LogoutRequest
+	(*LogoutResponse)(nil),                           // 7: powermanage.v1.LogoutResponse
+	(*GetCurrentUserRequest)(nil),                    // 8: powermanage.v1.GetCurrentUserRequest
+	(*GetCurrentUserResponse)(nil),                   // 9: powermanage.v1.GetCurrentUserResponse
+	(*User)(nil),                                     // 10: powermanage.v1.User
+	(*InheritedRole)(nil),                            // 11: powermanage.v1.InheritedRole
+	(*SshPublicKey)(nil),                             // 12: powermanage.v1.SshPublicKey
+	(*Role)(nil),                                     // 13: powermanage.v1.Role
+	(*RoleGrant)(nil),                                // 14: powermanage.v1.RoleGrant
+	(*PermissionInfo)(nil),                           // 15: powermanage.v1.PermissionInfo
+	(*CreateUserRequest)(nil),                        // 16: powermanage.v1.CreateUserRequest
+	(*CreateUserResponse)(nil),                       // 17: powermanage.v1.CreateUserResponse
+	(*GetUserRequest)(nil),                           // 18: powermanage.v1.GetUserRequest
+	(*GetUserResponse)(nil),                          // 19: powermanage.v1.GetUserResponse
+	(*ListUsersRequest)(nil),                         // 20: powermanage.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),                        // 21: powermanage.v1.ListUsersResponse
+	(*UpdateUserEmailRequest)(nil),                   // 22: powermanage.v1.UpdateUserEmailRequest
+	(*SetUserDisabledRequest)(nil),                   // 23: powermanage.v1.SetUserDisabledRequest
+	(*UpdateUserResponse)(nil),                       // 24: powermanage.v1.UpdateUserResponse
+	(*UpdateUserProfileRequest)(nil),                 // 25: powermanage.v1.UpdateUserProfileRequest
+	(*DeleteUserRequest)(nil),                        // 26: powermanage.v1.DeleteUserRequest
+	(*DeleteUserResponse)(nil),                       // 27: powermanage.v1.DeleteUserResponse
+	(*AddUserSshKeyRequest)(nil),                     // 28: powermanage.v1.AddUserSshKeyRequest
+	(*AddUserSshKeyResponse)(nil),                    // 29: powermanage.v1.AddUserSshKeyResponse
+	(*RemoveUserSshKeyRequest)(nil),                  // 30: powermanage.v1.RemoveUserSshKeyRequest
+	(*RemoveUserSshKeyResponse)(nil),                 // 31: powermanage.v1.RemoveUserSshKeyResponse
+	(*UpdateUserSshSettingsRequest)(nil),             // 32: powermanage.v1.UpdateUserSshSettingsRequest
+	(*UpdateUserLinuxUsernameRequest)(nil),           // 33: powermanage.v1.UpdateUserLinuxUsernameRequest
+	(*Device)(nil),                                   // 34: powermanage.v1.Device
+	(*ListDevicesRequest)(nil),                       // 35: powermanage.v1.ListDevicesRequest
+	(*ListDevicesResponse)(nil),                      // 36: powermanage.v1.ListDevicesResponse
+	(*GetDeviceRequest)(nil),                         // 37: powermanage.v1.GetDeviceRequest
+	(*GetDeviceResponse)(nil),                        // 38: powermanage.v1.GetDeviceResponse
+	(*SetDeviceLabelRequest)(nil),                    // 39: powermanage.v1.SetDeviceLabelRequest
+	(*RemoveDeviceLabelRequest)(nil),                 // 40: powermanage.v1.RemoveDeviceLabelRequest
+	(*UpdateDeviceResponse)(nil),                     // 41: powermanage.v1.UpdateDeviceResponse
+	(*DeleteDeviceRequest)(nil),                      // 42: powermanage.v1.DeleteDeviceRequest
+	(*DeleteDeviceResponse)(nil),                     // 43: powermanage.v1.DeleteDeviceResponse
+	(*AssignDeviceRequest)(nil),                      // 44: powermanage.v1.AssignDeviceRequest
+	(*AssignDeviceResponse)(nil),                     // 45: powermanage.v1.AssignDeviceResponse
+	(*UnassignDeviceRequest)(nil),                    // 46: powermanage.v1.UnassignDeviceRequest
+	(*UnassignDeviceResponse)(nil),                   // 47: powermanage.v1.UnassignDeviceResponse
+	(*DeviceAssignee)(nil),                           // 48: powermanage.v1.DeviceAssignee
+	(*ListDeviceAssigneesRequest)(nil),               // 49: powermanage.v1.ListDeviceAssigneesRequest
+	(*ListDeviceAssigneesResponse)(nil),              // 50: powermanage.v1.ListDeviceAssigneesResponse
+	(*SetDeviceSyncIntervalRequest)(nil),             // 51: powermanage.v1.SetDeviceSyncIntervalRequest
+	(*SetDeviceInventoryIntervalRequest)(nil),        // 52: powermanage.v1.SetDeviceInventoryIntervalRequest
+	(*RegistrationToken)(nil),                        // 53: powermanage.v1.RegistrationToken
+	(*CreateTokenRequest)(nil),                       // 54: powermanage.v1.CreateTokenRequest
+	(*CreateTokenResponse)(nil),                      // 55: powermanage.v1.CreateTokenResponse
+	(*ListTokensRequest)(nil),                        // 56: powermanage.v1.ListTokensRequest
+	(*ListTokensResponse)(nil),                       // 57: powermanage.v1.ListTokensResponse
+	(*GetTokenRequest)(nil),                          // 58: powermanage.v1.GetTokenRequest
+	(*GetTokenResponse)(nil),                         // 59: powermanage.v1.GetTokenResponse
+	(*RenameTokenRequest)(nil),                       // 60: powermanage.v1.RenameTokenRequest
+	(*SetTokenDisabledRequest)(nil),                  // 61: powermanage.v1.SetTokenDisabledRequest
+	(*UpdateTokenResponse)(nil),                      // 62: powermanage.v1.UpdateTokenResponse
+	(*DeleteTokenRequest)(nil),                       // 63: powermanage.v1.DeleteTokenRequest
+	(*DeleteTokenResponse)(nil),                      // 64: powermanage.v1.DeleteTokenResponse
+	(*ManagedAction)(nil),                            // 65: powermanage.v1.ManagedAction
+	(*CreateActionRequest)(nil),                      // 66: powermanage.v1.CreateActionRequest
+	(*CreateActionResponse)(nil),                     // 67: powermanage.v1.CreateActionResponse
+	(*GetActionRequest)(nil),                         // 68: powermanage.v1.GetActionRequest
+	(*GetActionResponse)(nil),                        // 69: powermanage.v1.GetActionResponse
+	(*ListActionsRequest)(nil),                       // 70: powermanage.v1.ListActionsRequest
+	(*ListActionsResponse)(nil),                      // 71: powermanage.v1.ListActionsResponse
+	(*RenameActionRequest)(nil),                      // 72: powermanage.v1.RenameActionRequest
+	(*UpdateActionDescriptionRequest)(nil),           // 73: powermanage.v1.UpdateActionDescriptionRequest
+	(*UpdateActionParamsRequest)(nil),                // 74: powermanage.v1.UpdateActionParamsRequest
+	(*UpdateActionResponse)(nil),                     // 75: powermanage.v1.UpdateActionResponse
+	(*DeleteActionRequest)(nil),                      // 76: powermanage.v1.DeleteActionRequest
+	(*DeleteActionResponse)(nil),                     // 77: powermanage.v1.DeleteActionResponse
+	(*ActionSet)(nil),                                // 78: powermanage.v1.ActionSet
+	(*ActionSetMember)(nil),                          // 79: powermanage.v1.ActionSetMember
+	(*CreateActionSetRequest)(nil),                   // 80: powermanage.v1.CreateActionSetRequest
+	(*CreateActionSetResponse)(nil),                  // 81: powermanage.v1.CreateActionSetResponse
+	(*GetActionSetRequest)(nil),                      // 82: powermanage.v1.GetActionSetRequest
+	(*GetActionSetResponse)(nil),                     // 83: powermanage.v1.GetActionSetResponse
+	(*ListActionSetsRequest)(nil),                    // 84: powermanage.v1.ListActionSetsRequest
+	(*ListActionSetsResponse)(nil),                   // 85: powermanage.v1.ListActionSetsResponse
+	(*RenameActionSetRequest)(nil),                   // 86: powermanage.v1.RenameActionSetRequest
+	(*UpdateActionSetDescriptionRequest)(nil),        // 87: powermanage.v1.UpdateActionSetDescriptionRequest
+	(*UpdateActionSetScheduleRequest)(nil),           // 88: powermanage.v1.UpdateActionSetScheduleRequest
+	(*UpdateActionSetResponse)(nil),                  // 89: powermanage.v1.UpdateActionSetResponse
+	(*DeleteActionSetRequest)(nil),                   // 90: powermanage.v1.DeleteActionSetRequest
+	(*DeleteActionSetResponse)(nil),                  // 91: powermanage.v1.DeleteActionSetResponse
+	(*AddActionToSetRequest)(nil),                    // 92: powermanage.v1.AddActionToSetRequest
+	(*AddActionToSetResponse)(nil),                   // 93: powermanage.v1.AddActionToSetResponse
+	(*RemoveActionFromSetRequest)(nil),               // 94: powermanage.v1.RemoveActionFromSetRequest
+	(*RemoveActionFromSetResponse)(nil),              // 95: powermanage.v1.RemoveActionFromSetResponse
+	(*ReorderActionInSetRequest)(nil),                // 96: powermanage.v1.ReorderActionInSetRequest
+	(*ReorderActionInSetResponse)(nil),               // 97: powermanage.v1.ReorderActionInSetResponse
+	(*Definition)(nil),                               // 98: powermanage.v1.Definition
+	(*DefinitionMember)(nil),                         // 99: powermanage.v1.DefinitionMember
+	(*CreateDefinitionRequest)(nil),                  // 100: powermanage.v1.CreateDefinitionRequest
+	(*CreateDefinitionResponse)(nil),                 // 101: powermanage.v1.CreateDefinitionResponse
+	(*GetDefinitionRequest)(nil),                     // 102: powermanage.v1.GetDefinitionRequest
+	(*GetDefinitionResponse)(nil),                    // 103: powermanage.v1.GetDefinitionResponse
+	(*ListDefinitionsRequest)(nil),                   // 104: powermanage.v1.ListDefinitionsRequest
+	(*ListDefinitionsResponse)(nil),                  // 105: powermanage.v1.ListDefinitionsResponse
+	(*RenameDefinitionRequest)(nil),                  // 106: powermanage.v1.RenameDefinitionRequest
+	(*UpdateDefinitionDescriptionRequest)(nil),       // 107: powermanage.v1.UpdateDefinitionDescriptionRequest
+	(*UpdateDefinitionScheduleRequest)(nil),          // 108: powermanage.v1.UpdateDefinitionScheduleRequest
+	(*UpdateDefinitionResponse)(nil),                 // 109: powermanage.v1.UpdateDefinitionResponse
+	(*DeleteDefinitionRequest)(nil),                  // 110: powermanage.v1.DeleteDefinitionRequest
+	(*DeleteDefinitionResponse)(nil),                 // 111: powermanage.v1.DeleteDefinitionResponse
+	(*AddActionSetToDefinitionRequest)(nil),          // 112: powermanage.v1.AddActionSetToDefinitionRequest
+	(*AddActionSetToDefinitionResponse)(nil),         // 113: powermanage.v1.AddActionSetToDefinitionResponse
+	(*RemoveActionSetFromDefinitionRequest)(nil),     // 114: powermanage.v1.RemoveActionSetFromDefinitionRequest
+	(*RemoveActionSetFromDefinitionResponse)(nil),    // 115: powermanage.v1.RemoveActionSetFromDefinitionResponse
+	(*ReorderActionSetInDefinitionRequest)(nil),      // 116: powermanage.v1.ReorderActionSetInDefinitionRequest
+	(*ReorderActionSetInDefinitionResponse)(nil),     // 117: powermanage.v1.ReorderActionSetInDefinitionResponse
+	(*DeviceGroup)(nil),                              // 118: powermanage.v1.DeviceGroup
+	(*CreateDeviceGroupRequest)(nil),                 // 119: powermanage.v1.CreateDeviceGroupRequest
+	(*CreateDeviceGroupResponse)(nil),                // 120: powermanage.v1.CreateDeviceGroupResponse
+	(*GetDeviceGroupRequest)(nil),                    // 121: powermanage.v1.GetDeviceGroupRequest
+	(*GetDeviceGroupResponse)(nil),                   // 122: powermanage.v1.GetDeviceGroupResponse
+	(*DeviceGroupMember)(nil),                        // 123: powermanage.v1.DeviceGroupMember
+	(*ListDeviceGroupsRequest)(nil),                  // 124: powermanage.v1.ListDeviceGroupsRequest
+	(*ListDeviceGroupsResponse)(nil),                 // 125: powermanage.v1.ListDeviceGroupsResponse
+	(*ListDeviceGroupsForDeviceRequest)(nil),         // 126: powermanage.v1.ListDeviceGroupsForDeviceRequest
+	(*ListDeviceGroupsForDeviceResponse)(nil),        // 127: powermanage.v1.ListDeviceGroupsForDeviceResponse
+	(*RenameDeviceGroupRequest)(nil),                 // 128: powermanage.v1.RenameDeviceGroupRequest
+	(*UpdateDeviceGroupDescriptionRequest)(nil),      // 129: powermanage.v1.UpdateDeviceGroupDescriptionRequest
+	(*UpdateDeviceGroupResponse)(nil),                // 130: powermanage.v1.UpdateDeviceGroupResponse
+	(*DeleteDeviceGroupRequest)(nil),                 // 131: powermanage.v1.DeleteDeviceGroupRequest
+	(*DeleteDeviceGroupResponse)(nil),                // 132: powermanage.v1.DeleteDeviceGroupResponse
+	(*AddDeviceToGroupRequest)(nil),                  // 133: powermanage.v1.AddDeviceToGroupRequest
+	(*AddDeviceToGroupResponse)(nil),                 // 134: powermanage.v1.AddDeviceToGroupResponse
+	(*RemoveDeviceFromGroupRequest)(nil),             // 135: powermanage.v1.RemoveDeviceFromGroupRequest
+	(*RemoveDeviceFromGroupResponse)(nil),            // 136: powermanage.v1.RemoveDeviceFromGroupResponse
+	(*UpdateDeviceGroupQueryRequest)(nil),            // 137: powermanage.v1.UpdateDeviceGroupQueryRequest
+	(*UpdateDeviceGroupQueryResponse)(nil),           // 138: powermanage.v1.UpdateDeviceGroupQueryResponse
+	(*ValidateDynamicQueryRequest)(nil),              // 139: powermanage.v1.ValidateDynamicQueryRequest
+	(*ValidateDynamicQueryResponse)(nil),             // 140: powermanage.v1.ValidateDynamicQueryResponse
+	(*EvaluateDynamicGroupRequest)(nil),              // 141: powermanage.v1.EvaluateDynamicGroupRequest
+	(*EvaluateDynamicGroupResponse)(nil),             // 142: powermanage.v1.EvaluateDynamicGroupResponse
+	(*SetDeviceGroupSyncIntervalRequest)(nil),        // 143: powermanage.v1.SetDeviceGroupSyncIntervalRequest
+	(*SetDeviceGroupInventoryIntervalRequest)(nil),   // 144: powermanage.v1.SetDeviceGroupInventoryIntervalRequest
+	(*SetDeviceGroupMaintenanceWindowRequest)(nil),   // 145: powermanage.v1.SetDeviceGroupMaintenanceWindowRequest
+	(*Assignment)(nil),                               // 146: powermanage.v1.Assignment
+	(*CreateAssignmentRequest)(nil),                  // 147: powermanage.v1.CreateAssignmentRequest
+	(*CreateAssignmentResponse)(nil),                 // 148: powermanage.v1.CreateAssignmentResponse
+	(*DeleteAssignmentRequest)(nil),                  // 149: powermanage.v1.DeleteAssignmentRequest
+	(*DeleteAssignmentResponse)(nil),                 // 150: powermanage.v1.DeleteAssignmentResponse
+	(*ListAssignmentsRequest)(nil),                   // 151: powermanage.v1.ListAssignmentsRequest
+	(*ListAssignmentsResponse)(nil),                  // 152: powermanage.v1.ListAssignmentsResponse
+	(*UserSelection)(nil),                            // 153: powermanage.v1.UserSelection
+	(*SetUserSelectionRequest)(nil),                  // 154: powermanage.v1.SetUserSelectionRequest
+	(*SetUserSelectionResponse)(nil),                 // 155: powermanage.v1.SetUserSelectionResponse
+	(*ListAvailableActionsRequest)(nil),              // 156: powermanage.v1.ListAvailableActionsRequest
+	(*AvailableItem)(nil),                            // 157: powermanage.v1.AvailableItem
+	(*ListAvailableActionsResponse)(nil),             // 158: powermanage.v1.ListAvailableActionsResponse
+	(*GetDeviceAssignmentsRequest)(nil),              // 159: powermanage.v1.GetDeviceAssignmentsRequest
+	(*GetDeviceAssignmentsResponse)(nil),             // 160: powermanage.v1.GetDeviceAssignmentsResponse
+	(*GetUserAssignmentsRequest)(nil),                // 161: powermanage.v1.GetUserAssignmentsRequest
+	(*GetUserAssignmentsResponse)(nil),               // 162: powermanage.v1.GetUserAssignmentsResponse
+	(*ActionExecution)(nil),                          // 163: powermanage.v1.ActionExecution
+	(*DispatchActionRequest)(nil),                    // 164: powermanage.v1.DispatchActionRequest
+	(*DispatchActionResponse)(nil),                   // 165: powermanage.v1.DispatchActionResponse
+	(*DispatchToMultipleRequest)(nil),                // 166: powermanage.v1.DispatchToMultipleRequest
+	(*DispatchToMultipleResponse)(nil),               // 167: powermanage.v1.DispatchToMultipleResponse
+	(*DispatchAssignedActionsRequest)(nil),           // 168: powermanage.v1.DispatchAssignedActionsRequest
+	(*DispatchAssignedActionsResponse)(nil),          // 169: powermanage.v1.DispatchAssignedActionsResponse
+	(*DispatchActionSetRequest)(nil),                 // 170: powermanage.v1.DispatchActionSetRequest
+	(*DispatchActionSetResponse)(nil),                // 171: powermanage.v1.DispatchActionSetResponse
+	(*DispatchDefinitionRequest)(nil),                // 172: powermanage.v1.DispatchDefinitionRequest
+	(*DispatchDefinitionResponse)(nil),               // 173: powermanage.v1.DispatchDefinitionResponse
+	(*DispatchToGroupRequest)(nil),                   // 174: powermanage.v1.DispatchToGroupRequest
+	(*DispatchToGroupResponse)(nil),                  // 175: powermanage.v1.DispatchToGroupResponse
+	(*GetExecutionRequest)(nil),                      // 176: powermanage.v1.GetExecutionRequest
+	(*GetExecutionResponse)(nil),                     // 177: powermanage.v1.GetExecutionResponse
+	(*ListExecutionsRequest)(nil),                    // 178: powermanage.v1.ListExecutionsRequest
+	(*ListExecutionsResponse)(nil),                   // 179: powermanage.v1.ListExecutionsResponse
+	(*DispatchInstantActionRequest)(nil),             // 180: powermanage.v1.DispatchInstantActionRequest
+	(*DispatchInstantActionResponse)(nil),            // 181: powermanage.v1.DispatchInstantActionResponse
+	(*CancelExecutionRequest)(nil),                   // 182: powermanage.v1.CancelExecutionRequest
+	(*CancelExecutionResponse)(nil),                  // 183: powermanage.v1.CancelExecutionResponse
+	(*AuditEvent)(nil),                               // 184: powermanage.v1.AuditEvent
+	(*ListAuditEventsRequest)(nil),                   // 185: powermanage.v1.ListAuditEventsRequest
+	(*ListAuditEventsResponse)(nil),                  // 186: powermanage.v1.ListAuditEventsResponse
+	(*ExportAuditEventsRequest)(nil),                 // 187: powermanage.v1.ExportAuditEventsRequest
+	(*ExportAuditEventsResponse)(nil),                // 188: powermanage.v1.ExportAuditEventsResponse
+	(*LpsPassword)(nil),                              // 189: powermanage.v1.LpsPassword
+	(*GetDeviceLpsPasswordsRequest)(nil),             // 190: powermanage.v1.GetDeviceLpsPasswordsRequest
+	(*GetDeviceLpsPasswordsResponse)(nil),            // 191: powermanage.v1.GetDeviceLpsPasswordsResponse
+	(*LuksKey)(nil),                                  // 192: powermanage.v1.LuksKey
+	(*GetDeviceLuksKeysRequest)(nil),                 // 193: powermanage.v1.GetDeviceLuksKeysRequest
+	(*GetDeviceLuksKeysResponse)(nil),                // 194: powermanage.v1.GetDeviceLuksKeysResponse
+	(*CreateLuksTokenRequest)(nil),                   // 195: powermanage.v1.CreateLuksTokenRequest
+	(*CreateLuksTokenResponse)(nil),                  // 196: powermanage.v1.CreateLuksTokenResponse
+	(*RevokeLuksDeviceKeyRequest)(nil),               // 197: powermanage.v1.RevokeLuksDeviceKeyRequest
+	(*RevokeLuksDeviceKeyResponse)(nil),              // 198: powermanage.v1.RevokeLuksDeviceKeyResponse
+	(*DispatchOSQueryRequest)(nil),                   // 199: powermanage.v1.DispatchOSQueryRequest
+	(*DispatchOSQueryResponse)(nil),                  // 200: powermanage.v1.DispatchOSQueryResponse
+	(*GetOSQueryResultRequest)(nil),                  // 201: powermanage.v1.GetOSQueryResultRequest
+	(*GetOSQueryResultResponse)(nil),                 // 202: powermanage.v1.GetOSQueryResultResponse
+	(*GetDeviceInventoryRequest)(nil),                // 203: powermanage.v1.GetDeviceInventoryRequest
+	(*InventoryTableResult)(nil),                     // 204: powermanage.v1.InventoryTableResult
+	(*GetDeviceInventoryResponse)(nil),               // 205: powermanage.v1.GetDeviceInventoryResponse
+	(*RefreshDeviceInventoryRequest)(nil),            // 206: powermanage.v1.RefreshDeviceInventoryRequest
+	(*RefreshDeviceInventoryResponse)(nil),           // 207: powermanage.v1.RefreshDeviceInventoryResponse
+	(*QueryDeviceLogsRequest)(nil),                   // 208: powermanage.v1.QueryDeviceLogsRequest
+	(*QueryDeviceLogsResponse)(nil),                  // 209: powermanage.v1.QueryDeviceLogsResponse
+	(*GetDeviceLogResultRequest)(nil),                // 210: powermanage.v1.GetDeviceLogResultRequest
+	(*GetDeviceLogResultResponse)(nil),               // 211: powermanage.v1.GetDeviceLogResultResponse
+	(*CreateRoleRequest)(nil),                        // 212: powermanage.v1.CreateRoleRequest
+	(*CreateRoleResponse)(nil),                       // 213: powermanage.v1.CreateRoleResponse
+	(*GetRoleRequest)(nil),                           // 214: powermanage.v1.GetRoleRequest
+	(*GetRoleResponse)(nil),                          // 215: powermanage.v1.GetRoleResponse
+	(*ListRolesRequest)(nil),                         // 216: powermanage.v1.ListRolesRequest
+	(*ListRolesResponse)(nil),                        // 217: powermanage.v1.ListRolesResponse
+	(*UpdateRoleRequest)(nil),                        // 218: powermanage.v1.UpdateRoleRequest
+	(*UpdateRoleResponse)(nil),                       // 219: powermanage.v1.UpdateRoleResponse
+	(*DeleteRoleRequest)(nil),                        // 220: powermanage.v1.DeleteRoleRequest
+	(*DeleteRoleResponse)(nil),                       // 221: powermanage.v1.DeleteRoleResponse
+	(*AssignRoleToUserRequest)(nil),                  // 222: powermanage.v1.AssignRoleToUserRequest
+	(*AssignRoleToUserResponse)(nil),                 // 223: powermanage.v1.AssignRoleToUserResponse
+	(*RevokeRoleFromUserRequest)(nil),                // 224: powermanage.v1.RevokeRoleFromUserRequest
+	(*RevokeRoleFromUserResponse)(nil),               // 225: powermanage.v1.RevokeRoleFromUserResponse
+	(*ListPermissionsRequest)(nil),                   // 226: powermanage.v1.ListPermissionsRequest
+	(*ListPermissionsResponse)(nil),                  // 227: powermanage.v1.ListPermissionsResponse
+	(*UserGroup)(nil),                                // 228: powermanage.v1.UserGroup
+	(*UserGroupMember)(nil),                          // 229: powermanage.v1.UserGroupMember
+	(*CreateUserGroupRequest)(nil),                   // 230: powermanage.v1.CreateUserGroupRequest
+	(*CreateUserGroupResponse)(nil),                  // 231: powermanage.v1.CreateUserGroupResponse
+	(*GetUserGroupRequest)(nil),                      // 232: powermanage.v1.GetUserGroupRequest
+	(*GetUserGroupResponse)(nil),                     // 233: powermanage.v1.GetUserGroupResponse
+	(*ListUserGroupsRequest)(nil),                    // 234: powermanage.v1.ListUserGroupsRequest
+	(*ListUserGroupsResponse)(nil),                   // 235: powermanage.v1.ListUserGroupsResponse
+	(*UpdateUserGroupRequest)(nil),                   // 236: powermanage.v1.UpdateUserGroupRequest
+	(*UpdateUserGroupResponse)(nil),                  // 237: powermanage.v1.UpdateUserGroupResponse
+	(*DeleteUserGroupRequest)(nil),                   // 238: powermanage.v1.DeleteUserGroupRequest
+	(*DeleteUserGroupResponse)(nil),                  // 239: powermanage.v1.DeleteUserGroupResponse
+	(*AddUserToGroupRequest)(nil),                    // 240: powermanage.v1.AddUserToGroupRequest
+	(*AddUserToGroupResponse)(nil),                   // 241: powermanage.v1.AddUserToGroupResponse
+	(*RemoveUserFromGroupRequest)(nil),               // 242: powermanage.v1.RemoveUserFromGroupRequest
+	(*RemoveUserFromGroupResponse)(nil),              // 243: powermanage.v1.RemoveUserFromGroupResponse
+	(*AssignRoleToUserGroupRequest)(nil),             // 244: powermanage.v1.AssignRoleToUserGroupRequest
+	(*AssignRoleToUserGroupResponse)(nil),            // 245: powermanage.v1.AssignRoleToUserGroupResponse
+	(*RevokeRoleFromUserGroupRequest)(nil),           // 246: powermanage.v1.RevokeRoleFromUserGroupRequest
+	(*RevokeRoleFromUserGroupResponse)(nil),          // 247: powermanage.v1.RevokeRoleFromUserGroupResponse
+	(*ListUserGroupsForUserRequest)(nil),             // 248: powermanage.v1.ListUserGroupsForUserRequest
+	(*ListUserGroupsForUserResponse)(nil),            // 249: powermanage.v1.ListUserGroupsForUserResponse
+	(*UpdateUserGroupQueryRequest)(nil),              // 250: powermanage.v1.UpdateUserGroupQueryRequest
+	(*UpdateUserGroupQueryResponse)(nil),             // 251: powermanage.v1.UpdateUserGroupQueryResponse
+	(*ValidateUserGroupQueryRequest)(nil),            // 252: powermanage.v1.ValidateUserGroupQueryRequest
+	(*ValidateUserGroupQueryResponse)(nil),           // 253: powermanage.v1.ValidateUserGroupQueryResponse
+	(*EvaluateDynamicUserGroupRequest)(nil),          // 254: powermanage.v1.EvaluateDynamicUserGroupRequest
+	(*EvaluateDynamicUserGroupResponse)(nil),         // 255: powermanage.v1.EvaluateDynamicUserGroupResponse
+	(*SetUserGroupMaintenanceWindowRequest)(nil),     // 256: powermanage.v1.SetUserGroupMaintenanceWindowRequest
+	(*IdentityProvider)(nil),                         // 257: powermanage.v1.IdentityProvider
+	(*IdentityLink)(nil),                             // 258: powermanage.v1.IdentityLink
+	(*CreateIdentityProviderRequest)(nil),            // 259: powermanage.v1.CreateIdentityProviderRequest
+	(*CreateIdentityProviderResponse)(nil),           // 260: powermanage.v1.CreateIdentityProviderResponse
+	(*GetIdentityProviderRequest)(nil),               // 261: powermanage.v1.GetIdentityProviderRequest
+	(*GetIdentityProviderResponse)(nil),              // 262: powermanage.v1.GetIdentityProviderResponse
+	(*ListIdentityProvidersRequest)(nil),             // 263: powermanage.v1.ListIdentityProvidersRequest
+	(*ListIdentityProvidersResponse)(nil),            // 264: powermanage.v1.ListIdentityProvidersResponse
+	(*UpdateIdentityProviderRequest)(nil),            // 265: powermanage.v1.UpdateIdentityProviderRequest
+	(*UpdateIdentityProviderResponse)(nil),           // 266: powermanage.v1.UpdateIdentityProviderResponse
+	(*DeleteIdentityProviderRequest)(nil),            // 267: powermanage.v1.DeleteIdentityProviderRequest
+	(*DeleteIdentityProviderResponse)(nil),           // 268: powermanage.v1.DeleteIdentityProviderResponse
+	(*AuthMethodProvider)(nil),                       // 269: powermanage.v1.AuthMethodProvider
+	(*ListAuthMethodsRequest)(nil),                   // 270: powermanage.v1.ListAuthMethodsRequest
+	(*ListAuthMethodsResponse)(nil),                  // 271: powermanage.v1.ListAuthMethodsResponse
+	(*GetSSOLoginURLRequest)(nil),                    // 272: powermanage.v1.GetSSOLoginURLRequest
+	(*GetSSOLoginURLResponse)(nil),                   // 273: powermanage.v1.GetSSOLoginURLResponse
+	(*SSOCallbackRequest)(nil),                       // 274: powermanage.v1.SSOCallbackRequest
+	(*SSOCallbackResponse)(nil),                      // 275: powermanage.v1.SSOCallbackResponse
+	(*ListIdentityLinksRequest)(nil),                 // 276: powermanage.v1.ListIdentityLinksRequest
+	(*ListIdentityLinksResponse)(nil),                // 277: powermanage.v1.ListIdentityLinksResponse
+	(*UnlinkIdentityRequest)(nil),                    // 278: powermanage.v1.UnlinkIdentityRequest
+	(*UnlinkIdentityResponse)(nil),                   // 279: powermanage.v1.UnlinkIdentityResponse
+	(*EnableSCIMRequest)(nil),                        // 280: powermanage.v1.EnableSCIMRequest
+	(*EnableSCIMResponse)(nil),                       // 281: powermanage.v1.EnableSCIMResponse
+	(*DisableSCIMRequest)(nil),                       // 282: powermanage.v1.DisableSCIMRequest
+	(*DisableSCIMResponse)(nil),                      // 283: powermanage.v1.DisableSCIMResponse
+	(*RotateSCIMTokenRequest)(nil),                   // 284: powermanage.v1.RotateSCIMTokenRequest
+	(*RotateSCIMTokenResponse)(nil),                  // 285: powermanage.v1.RotateSCIMTokenResponse
+	(*GetDeviceComplianceRequest)(nil),               // 286: powermanage.v1.GetDeviceComplianceRequest
+	(*GetDeviceComplianceResponse)(nil),              // 287: powermanage.v1.GetDeviceComplianceResponse
+	(*ComplianceCheckResult)(nil),                    // 288: powermanage.v1.ComplianceCheckResult
+	(*CompliancePolicy)(nil),                         // 289: powermanage.v1.CompliancePolicy
+	(*CompliancePolicyRule)(nil),                     // 290: powermanage.v1.CompliancePolicyRule
+	(*CreateCompliancePolicyRequest)(nil),            // 291: powermanage.v1.CreateCompliancePolicyRequest
+	(*CreateCompliancePolicyResponse)(nil),           // 292: powermanage.v1.CreateCompliancePolicyResponse
+	(*GetCompliancePolicyRequest)(nil),               // 293: powermanage.v1.GetCompliancePolicyRequest
+	(*GetCompliancePolicyResponse)(nil),              // 294: powermanage.v1.GetCompliancePolicyResponse
+	(*ListCompliancePoliciesRequest)(nil),            // 295: powermanage.v1.ListCompliancePoliciesRequest
+	(*ListCompliancePoliciesResponse)(nil),           // 296: powermanage.v1.ListCompliancePoliciesResponse
+	(*RenameCompliancePolicyRequest)(nil),            // 297: powermanage.v1.RenameCompliancePolicyRequest
+	(*UpdateCompliancePolicyDescriptionRequest)(nil), // 298: powermanage.v1.UpdateCompliancePolicyDescriptionRequest
+	(*UpdateCompliancePolicyResponse)(nil),           // 299: powermanage.v1.UpdateCompliancePolicyResponse
+	(*DeleteCompliancePolicyRequest)(nil),            // 300: powermanage.v1.DeleteCompliancePolicyRequest
+	(*DeleteCompliancePolicyResponse)(nil),           // 301: powermanage.v1.DeleteCompliancePolicyResponse
+	(*AddCompliancePolicyRuleRequest)(nil),           // 302: powermanage.v1.AddCompliancePolicyRuleRequest
+	(*AddCompliancePolicyRuleResponse)(nil),          // 303: powermanage.v1.AddCompliancePolicyRuleResponse
+	(*RemoveCompliancePolicyRuleRequest)(nil),        // 304: powermanage.v1.RemoveCompliancePolicyRuleRequest
+	(*RemoveCompliancePolicyRuleResponse)(nil),       // 305: powermanage.v1.RemoveCompliancePolicyRuleResponse
+	(*UpdateCompliancePolicyRuleRequest)(nil),        // 306: powermanage.v1.UpdateCompliancePolicyRuleRequest
+	(*UpdateCompliancePolicyRuleResponse)(nil),       // 307: powermanage.v1.UpdateCompliancePolicyRuleResponse
+	(*GetDeviceCompliancePolicyStatusRequest)(nil),   // 308: powermanage.v1.GetDeviceCompliancePolicyStatusRequest
+	(*GetDeviceCompliancePolicyStatusResponse)(nil),  // 309: powermanage.v1.GetDeviceCompliancePolicyStatusResponse
+	(*DevicePolicyEvaluation)(nil),                   // 310: powermanage.v1.DevicePolicyEvaluation
+	(*DevicePolicyRuleEvaluation)(nil),               // 311: powermanage.v1.DevicePolicyRuleEvaluation
+	(*SearchDateFilter)(nil),                         // 312: powermanage.v1.SearchDateFilter
+	(*SearchRequest)(nil),                            // 313: powermanage.v1.SearchRequest
+	(*SearchResult)(nil),                             // 314: powermanage.v1.SearchResult
+	(*SearchResponse)(nil),                           // 315: powermanage.v1.SearchResponse
+	(*RebuildSearchIndexRequest)(nil),                // 316: powermanage.v1.RebuildSearchIndexRequest
+	(*RebuildSearchIndexResponse)(nil),               // 317: powermanage.v1.RebuildSearchIndexResponse
+	(*ServerSettings)(nil),                           // 318: powermanage.v1.ServerSettings
+	(*GetServerSettingsRequest)(nil),                 // 319: powermanage.v1.GetServerSettingsRequest
+	(*GetServerSettingsResponse)(nil),                // 320: powermanage.v1.GetServerSettingsResponse
+	(*UpdateServerSettingsRequest)(nil),              // 321: powermanage.v1.UpdateServerSettingsRequest
+	(*UpdateServerSettingsResponse)(nil),             // 322: powermanage.v1.UpdateServerSettingsResponse
+	(*SetUserProvisioningEnabledRequest)(nil),        // 323: powermanage.v1.SetUserProvisioningEnabledRequest
+	(*StartTerminalRequest)(nil),                     // 324: powermanage.v1.StartTerminalRequest
+	(*StartTerminalResponse)(nil),                    // 325: powermanage.v1.StartTerminalResponse
+	(*StopTerminalRequest)(nil),                      // 326: powermanage.v1.StopTerminalRequest
+	(*StopTerminalResponse)(nil),                     // 327: powermanage.v1.StopTerminalResponse
+	(*TerminalSessionInfo)(nil),                      // 328: powermanage.v1.TerminalSessionInfo
+	(*ListActiveTerminalSessionsRequest)(nil),        // 329: powermanage.v1.ListActiveTerminalSessionsRequest
+	(*ListActiveTerminalSessionsResponse)(nil),       // 330: powermanage.v1.ListActiveTerminalSessionsResponse
+	(*TerminateTerminalSessionRequest)(nil),          // 331: powermanage.v1.TerminateTerminalSessionRequest
+	(*TerminateTerminalSessionResponse)(nil),         // 332: powermanage.v1.TerminateTerminalSessionResponse
+	nil,                                              // 333: powermanage.v1.Device.LabelsEntry
+	nil,                                              // 334: powermanage.v1.ListDevicesRequest.LabelFilterEntry
+	nil,                                              // 335: powermanage.v1.IdentityProvider.GroupMappingEntry
+	nil,                                              // 336: powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	nil,                                              // 337: powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	nil,                                              // 338: powermanage.v1.SearchRequest.TagFiltersEntry
+	nil,                                              // 339: powermanage.v1.SearchResult.FieldsEntry
+	(*DeviceId)(nil),                                 // 340: powermanage.v1.DeviceId
+	(*timestamppb.Timestamp)(nil),                    // 341: google.protobuf.Timestamp
+	(RoleGrantScopeKind)(0),                          // 342: powermanage.v1.RoleGrantScopeKind
+	(PermissionTargetKind)(0),                        // 343: powermanage.v1.PermissionTargetKind
+	(DeviceStatus)(0),                                // 344: powermanage.v1.DeviceStatus
+	(ComplianceStatus)(0),                            // 345: powermanage.v1.ComplianceStatus
+	(AssignmentTargetType)(0),                        // 346: powermanage.v1.AssignmentTargetType
+	(ActionType)(0),                                  // 347: powermanage.v1.ActionType
+	(DesiredState)(0),                                // 348: powermanage.v1.DesiredState
+	(*ActionSchedule)(nil),                           // 349: powermanage.v1.ActionSchedule
+	(*PackageParams)(nil),                            // 350: powermanage.v1.PackageParams
+	(*AppInstallParams)(nil),                         // 351: powermanage.v1.AppInstallParams
+	(*ShellParams)(nil),                              // 352: powermanage.v1.ShellParams
+	(*ServiceParams)(nil),                            // 353: powermanage.v1.ServiceParams
+	(*FileParams)(nil),                               // 354: powermanage.v1.FileParams
+	(*UpdateParams)(nil),                             // 355: powermanage.v1.UpdateParams
+	(*RepositoryParams)(nil),                         // 356: powermanage.v1.RepositoryParams
+	(*FlatpakParams)(nil),                            // 357: powermanage.v1.FlatpakParams
+	(*DirectoryParams)(nil),                          // 358: powermanage.v1.DirectoryParams
+	(*UserParams)(nil),                               // 359: powermanage.v1.UserParams
+	(*SshParams)(nil),                                // 360: powermanage.v1.SshParams
+	(*SshdParams)(nil),                               // 361: powermanage.v1.SshdParams
+	(*AdminPolicyParams)(nil),                        // 362: powermanage.v1.AdminPolicyParams
+	(*LpsParams)(nil),                                // 363: powermanage.v1.LpsParams
+	(*GroupParams)(nil),                              // 364: powermanage.v1.GroupParams
+	(*EncryptionParams)(nil),                         // 365: powermanage.v1.EncryptionParams
+	(*WifiParams)(nil),                               // 366: powermanage.v1.WifiParams
+	(*AgentUpdateParams)(nil),                        // 367: powermanage.v1.AgentUpdateParams
+	(*MaintenanceWindow)(nil),                        // 368: powermanage.v1.MaintenanceWindow
+	(AssignmentSourceType)(0),                        // 369: powermanage.v1.AssignmentSourceType
+	(AssignmentMode)(0),                              // 370: powermanage.v1.AssignmentMode
+	(ExecutionStatus)(0),                             // 371: powermanage.v1.ExecutionStatus
+	(*CommandOutput)(nil),                            // 372: powermanage.v1.CommandOutput
+	(*Action)(nil),                                   // 373: powermanage.v1.Action
+	(RotationReason)(0),                              // 374: powermanage.v1.RotationReason
+	(LuksRevocationStatus)(0),                        // 375: powermanage.v1.LuksRevocationStatus
+	(*OSQueryRow)(nil),                               // 376: powermanage.v1.OSQueryRow
+	(IdentityProviderType)(0),                        // 377: powermanage.v1.IdentityProviderType
+	(SearchScope)(0),                                 // 378: powermanage.v1.SearchScope
+	(SortField)(0),                                   // 379: powermanage.v1.SortField
+	(SortDirection)(0),                               // 380: powermanage.v1.SortDirection
 }
-var file_pm_v1_control_proto_depIdxs = []int32{
-	357, // 0: pm.v1.RegisterResponse.device_id:type_name -> pm.v1.DeviceId
-	358, // 1: pm.v1.RenewCertificateResponse.not_after:type_name -> google.protobuf.Timestamp
-	358, // 2: pm.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
-	26,  // 3: pm.v1.LoginResponse.user:type_name -> pm.v1.User
-	358, // 4: pm.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
-	26,  // 5: pm.v1.GetCurrentUserResponse.user:type_name -> pm.v1.User
-	358, // 6: pm.v1.VerifyLoginTOTPResponse.expires_at:type_name -> google.protobuf.Timestamp
-	26,  // 7: pm.v1.VerifyLoginTOTPResponse.user:type_name -> pm.v1.User
-	358, // 8: pm.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	358, // 9: pm.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
-	29,  // 10: pm.v1.User.roles:type_name -> pm.v1.Role
-	275, // 11: pm.v1.User.identity_links:type_name -> pm.v1.IdentityLink
-	28,  // 12: pm.v1.User.ssh_public_keys:type_name -> pm.v1.SshPublicKey
-	27,  // 13: pm.v1.User.inherited_roles:type_name -> pm.v1.InheritedRole
-	30,  // 14: pm.v1.User.role_grants:type_name -> pm.v1.RoleGrant
-	358, // 15: pm.v1.SshPublicKey.added_at:type_name -> google.protobuf.Timestamp
-	358, // 16: pm.v1.Role.created_at:type_name -> google.protobuf.Timestamp
-	29,  // 17: pm.v1.RoleGrant.role:type_name -> pm.v1.Role
-	359, // 18: pm.v1.RoleGrant.scope_kind:type_name -> pm.v1.RoleGrantScopeKind
-	360, // 19: pm.v1.PermissionInfo.target_kind:type_name -> pm.v1.PermissionTargetKind
-	26,  // 20: pm.v1.CreateUserResponse.user:type_name -> pm.v1.User
-	26,  // 21: pm.v1.GetUserResponse.user:type_name -> pm.v1.User
-	26,  // 22: pm.v1.ListUsersResponse.users:type_name -> pm.v1.User
-	26,  // 23: pm.v1.UpdateUserResponse.user:type_name -> pm.v1.User
-	28,  // 24: pm.v1.AddUserSshKeyResponse.key:type_name -> pm.v1.SshPublicKey
-	361, // 25: pm.v1.Device.status:type_name -> pm.v1.DeviceStatus
-	358, // 26: pm.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
-	358, // 27: pm.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	358, // 28: pm.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
-	350, // 29: pm.v1.Device.labels:type_name -> pm.v1.Device.LabelsEntry
-	362, // 30: pm.v1.Device.compliance_status:type_name -> pm.v1.ComplianceStatus
-	358, // 31: pm.v1.Device.compliance_checked_at:type_name -> google.protobuf.Timestamp
-	358, // 32: pm.v1.Device.last_inventory_at:type_name -> google.protobuf.Timestamp
-	361, // 33: pm.v1.ListDevicesRequest.status_filter:type_name -> pm.v1.DeviceStatus
-	351, // 34: pm.v1.ListDevicesRequest.label_filter:type_name -> pm.v1.ListDevicesRequest.LabelFilterEntry
-	51,  // 35: pm.v1.ListDevicesResponse.devices:type_name -> pm.v1.Device
-	51,  // 36: pm.v1.GetDeviceResponse.device:type_name -> pm.v1.Device
-	51,  // 37: pm.v1.UpdateDeviceResponse.device:type_name -> pm.v1.Device
-	51,  // 38: pm.v1.AssignDeviceResponse.device:type_name -> pm.v1.Device
-	51,  // 39: pm.v1.UnassignDeviceResponse.device:type_name -> pm.v1.Device
-	363, // 40: pm.v1.DeviceAssignee.type:type_name -> pm.v1.AssignmentTargetType
-	65,  // 41: pm.v1.ListDeviceAssigneesResponse.assignees:type_name -> pm.v1.DeviceAssignee
-	358, // 42: pm.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
-	358, // 43: pm.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
-	358, // 44: pm.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
-	70,  // 45: pm.v1.CreateTokenResponse.token:type_name -> pm.v1.RegistrationToken
-	70,  // 46: pm.v1.ListTokensResponse.tokens:type_name -> pm.v1.RegistrationToken
-	70,  // 47: pm.v1.GetTokenResponse.token:type_name -> pm.v1.RegistrationToken
-	70,  // 48: pm.v1.UpdateTokenResponse.token:type_name -> pm.v1.RegistrationToken
-	364, // 49: pm.v1.ManagedAction.type:type_name -> pm.v1.ActionType
-	365, // 50: pm.v1.ManagedAction.desired_state:type_name -> pm.v1.DesiredState
-	358, // 51: pm.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	366, // 52: pm.v1.ManagedAction.schedule:type_name -> pm.v1.ActionSchedule
-	358, // 53: pm.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
-	367, // 54: pm.v1.ManagedAction.package:type_name -> pm.v1.PackageParams
-	368, // 55: pm.v1.ManagedAction.app:type_name -> pm.v1.AppInstallParams
-	369, // 56: pm.v1.ManagedAction.shell:type_name -> pm.v1.ShellParams
-	370, // 57: pm.v1.ManagedAction.service:type_name -> pm.v1.ServiceParams
-	371, // 58: pm.v1.ManagedAction.file:type_name -> pm.v1.FileParams
-	372, // 59: pm.v1.ManagedAction.update:type_name -> pm.v1.UpdateParams
-	373, // 60: pm.v1.ManagedAction.repository:type_name -> pm.v1.RepositoryParams
-	374, // 61: pm.v1.ManagedAction.flatpak:type_name -> pm.v1.FlatpakParams
-	375, // 62: pm.v1.ManagedAction.directory:type_name -> pm.v1.DirectoryParams
-	376, // 63: pm.v1.ManagedAction.user:type_name -> pm.v1.UserParams
-	377, // 64: pm.v1.ManagedAction.ssh:type_name -> pm.v1.SshParams
-	378, // 65: pm.v1.ManagedAction.sshd:type_name -> pm.v1.SshdParams
-	379, // 66: pm.v1.ManagedAction.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	380, // 67: pm.v1.ManagedAction.lps:type_name -> pm.v1.LpsParams
-	381, // 68: pm.v1.ManagedAction.group:type_name -> pm.v1.GroupParams
-	382, // 69: pm.v1.ManagedAction.encryption:type_name -> pm.v1.EncryptionParams
-	383, // 70: pm.v1.ManagedAction.wifi:type_name -> pm.v1.WifiParams
-	384, // 71: pm.v1.ManagedAction.agent_update:type_name -> pm.v1.AgentUpdateParams
-	364, // 72: pm.v1.CreateActionRequest.type:type_name -> pm.v1.ActionType
-	365, // 73: pm.v1.CreateActionRequest.desired_state:type_name -> pm.v1.DesiredState
-	366, // 74: pm.v1.CreateActionRequest.schedule:type_name -> pm.v1.ActionSchedule
-	367, // 75: pm.v1.CreateActionRequest.package:type_name -> pm.v1.PackageParams
-	368, // 76: pm.v1.CreateActionRequest.app:type_name -> pm.v1.AppInstallParams
-	369, // 77: pm.v1.CreateActionRequest.shell:type_name -> pm.v1.ShellParams
-	370, // 78: pm.v1.CreateActionRequest.service:type_name -> pm.v1.ServiceParams
-	371, // 79: pm.v1.CreateActionRequest.file:type_name -> pm.v1.FileParams
-	372, // 80: pm.v1.CreateActionRequest.update:type_name -> pm.v1.UpdateParams
-	373, // 81: pm.v1.CreateActionRequest.repository:type_name -> pm.v1.RepositoryParams
-	374, // 82: pm.v1.CreateActionRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	375, // 83: pm.v1.CreateActionRequest.directory:type_name -> pm.v1.DirectoryParams
-	376, // 84: pm.v1.CreateActionRequest.user:type_name -> pm.v1.UserParams
-	377, // 85: pm.v1.CreateActionRequest.ssh:type_name -> pm.v1.SshParams
-	378, // 86: pm.v1.CreateActionRequest.sshd:type_name -> pm.v1.SshdParams
-	379, // 87: pm.v1.CreateActionRequest.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	380, // 88: pm.v1.CreateActionRequest.lps:type_name -> pm.v1.LpsParams
-	381, // 89: pm.v1.CreateActionRequest.group:type_name -> pm.v1.GroupParams
-	382, // 90: pm.v1.CreateActionRequest.encryption:type_name -> pm.v1.EncryptionParams
-	383, // 91: pm.v1.CreateActionRequest.wifi:type_name -> pm.v1.WifiParams
-	384, // 92: pm.v1.CreateActionRequest.agent_update:type_name -> pm.v1.AgentUpdateParams
-	82,  // 93: pm.v1.CreateActionResponse.action:type_name -> pm.v1.ManagedAction
-	82,  // 94: pm.v1.GetActionResponse.action:type_name -> pm.v1.ManagedAction
-	364, // 95: pm.v1.ListActionsRequest.type_filter:type_name -> pm.v1.ActionType
-	82,  // 96: pm.v1.ListActionsResponse.actions:type_name -> pm.v1.ManagedAction
-	365, // 97: pm.v1.UpdateActionParamsRequest.desired_state:type_name -> pm.v1.DesiredState
-	366, // 98: pm.v1.UpdateActionParamsRequest.schedule:type_name -> pm.v1.ActionSchedule
-	367, // 99: pm.v1.UpdateActionParamsRequest.package:type_name -> pm.v1.PackageParams
-	368, // 100: pm.v1.UpdateActionParamsRequest.app:type_name -> pm.v1.AppInstallParams
-	369, // 101: pm.v1.UpdateActionParamsRequest.shell:type_name -> pm.v1.ShellParams
-	370, // 102: pm.v1.UpdateActionParamsRequest.service:type_name -> pm.v1.ServiceParams
-	371, // 103: pm.v1.UpdateActionParamsRequest.file:type_name -> pm.v1.FileParams
-	372, // 104: pm.v1.UpdateActionParamsRequest.update:type_name -> pm.v1.UpdateParams
-	373, // 105: pm.v1.UpdateActionParamsRequest.repository:type_name -> pm.v1.RepositoryParams
-	374, // 106: pm.v1.UpdateActionParamsRequest.flatpak:type_name -> pm.v1.FlatpakParams
-	375, // 107: pm.v1.UpdateActionParamsRequest.directory:type_name -> pm.v1.DirectoryParams
-	376, // 108: pm.v1.UpdateActionParamsRequest.user:type_name -> pm.v1.UserParams
-	377, // 109: pm.v1.UpdateActionParamsRequest.ssh:type_name -> pm.v1.SshParams
-	378, // 110: pm.v1.UpdateActionParamsRequest.sshd:type_name -> pm.v1.SshdParams
-	379, // 111: pm.v1.UpdateActionParamsRequest.admin_policy:type_name -> pm.v1.AdminPolicyParams
-	380, // 112: pm.v1.UpdateActionParamsRequest.lps:type_name -> pm.v1.LpsParams
-	381, // 113: pm.v1.UpdateActionParamsRequest.group:type_name -> pm.v1.GroupParams
-	382, // 114: pm.v1.UpdateActionParamsRequest.encryption:type_name -> pm.v1.EncryptionParams
-	383, // 115: pm.v1.UpdateActionParamsRequest.wifi:type_name -> pm.v1.WifiParams
-	384, // 116: pm.v1.UpdateActionParamsRequest.agent_update:type_name -> pm.v1.AgentUpdateParams
-	82,  // 117: pm.v1.UpdateActionResponse.action:type_name -> pm.v1.ManagedAction
-	358, // 118: pm.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
-	358, // 119: pm.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
-	366, // 120: pm.v1.ActionSet.schedule:type_name -> pm.v1.ActionSchedule
-	364, // 121: pm.v1.ActionSetMember.action_type:type_name -> pm.v1.ActionType
-	366, // 122: pm.v1.CreateActionSetRequest.schedule:type_name -> pm.v1.ActionSchedule
-	95,  // 123: pm.v1.CreateActionSetResponse.set:type_name -> pm.v1.ActionSet
-	95,  // 124: pm.v1.GetActionSetResponse.set:type_name -> pm.v1.ActionSet
-	96,  // 125: pm.v1.GetActionSetResponse.members:type_name -> pm.v1.ActionSetMember
-	95,  // 126: pm.v1.ListActionSetsResponse.sets:type_name -> pm.v1.ActionSet
-	366, // 127: pm.v1.UpdateActionSetScheduleRequest.schedule:type_name -> pm.v1.ActionSchedule
-	95,  // 128: pm.v1.UpdateActionSetResponse.set:type_name -> pm.v1.ActionSet
-	95,  // 129: pm.v1.AddActionToSetResponse.set:type_name -> pm.v1.ActionSet
-	95,  // 130: pm.v1.RemoveActionFromSetResponse.set:type_name -> pm.v1.ActionSet
-	95,  // 131: pm.v1.ReorderActionInSetResponse.set:type_name -> pm.v1.ActionSet
-	358, // 132: pm.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
-	358, // 133: pm.v1.Definition.updated_at:type_name -> google.protobuf.Timestamp
-	366, // 134: pm.v1.Definition.schedule:type_name -> pm.v1.ActionSchedule
-	366, // 135: pm.v1.CreateDefinitionRequest.schedule:type_name -> pm.v1.ActionSchedule
-	115, // 136: pm.v1.CreateDefinitionResponse.definition:type_name -> pm.v1.Definition
-	115, // 137: pm.v1.GetDefinitionResponse.definition:type_name -> pm.v1.Definition
-	116, // 138: pm.v1.GetDefinitionResponse.members:type_name -> pm.v1.DefinitionMember
-	115, // 139: pm.v1.ListDefinitionsResponse.definitions:type_name -> pm.v1.Definition
-	366, // 140: pm.v1.UpdateDefinitionScheduleRequest.schedule:type_name -> pm.v1.ActionSchedule
-	115, // 141: pm.v1.UpdateDefinitionResponse.definition:type_name -> pm.v1.Definition
-	115, // 142: pm.v1.AddActionSetToDefinitionResponse.definition:type_name -> pm.v1.Definition
-	115, // 143: pm.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> pm.v1.Definition
-	115, // 144: pm.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> pm.v1.Definition
-	358, // 145: pm.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
-	385, // 146: pm.v1.DeviceGroup.maintenance_window:type_name -> pm.v1.MaintenanceWindow
-	135, // 147: pm.v1.CreateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	135, // 148: pm.v1.GetDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	140, // 149: pm.v1.GetDeviceGroupResponse.devices:type_name -> pm.v1.DeviceGroupMember
-	358, // 150: pm.v1.DeviceGroupMember.last_seen_at:type_name -> google.protobuf.Timestamp
-	135, // 151: pm.v1.ListDeviceGroupsResponse.groups:type_name -> pm.v1.DeviceGroup
-	135, // 152: pm.v1.ListDeviceGroupsForDeviceResponse.groups:type_name -> pm.v1.DeviceGroup
-	135, // 153: pm.v1.UpdateDeviceGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	135, // 154: pm.v1.AddDeviceToGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	135, // 155: pm.v1.RemoveDeviceFromGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	135, // 156: pm.v1.UpdateDeviceGroupQueryResponse.group:type_name -> pm.v1.DeviceGroup
-	135, // 157: pm.v1.EvaluateDynamicGroupResponse.group:type_name -> pm.v1.DeviceGroup
-	385, // 158: pm.v1.SetDeviceGroupMaintenanceWindowRequest.maintenance_window:type_name -> pm.v1.MaintenanceWindow
-	386, // 159: pm.v1.Assignment.source_type:type_name -> pm.v1.AssignmentSourceType
-	363, // 160: pm.v1.Assignment.target_type:type_name -> pm.v1.AssignmentTargetType
-	358, // 161: pm.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
-	387, // 162: pm.v1.Assignment.mode:type_name -> pm.v1.AssignmentMode
-	386, // 163: pm.v1.CreateAssignmentRequest.source_type:type_name -> pm.v1.AssignmentSourceType
-	363, // 164: pm.v1.CreateAssignmentRequest.target_type:type_name -> pm.v1.AssignmentTargetType
-	387, // 165: pm.v1.CreateAssignmentRequest.mode:type_name -> pm.v1.AssignmentMode
-	163, // 166: pm.v1.CreateAssignmentResponse.assignment:type_name -> pm.v1.Assignment
-	386, // 167: pm.v1.ListAssignmentsRequest.source_type:type_name -> pm.v1.AssignmentSourceType
-	363, // 168: pm.v1.ListAssignmentsRequest.target_type:type_name -> pm.v1.AssignmentTargetType
-	163, // 169: pm.v1.ListAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
-	386, // 170: pm.v1.UserSelection.source_type:type_name -> pm.v1.AssignmentSourceType
-	358, // 171: pm.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
-	386, // 172: pm.v1.SetUserSelectionRequest.source_type:type_name -> pm.v1.AssignmentSourceType
-	170, // 173: pm.v1.SetUserSelectionResponse.selection:type_name -> pm.v1.UserSelection
-	386, // 174: pm.v1.AvailableItem.source_type:type_name -> pm.v1.AssignmentSourceType
-	82,  // 175: pm.v1.AvailableItem.actions:type_name -> pm.v1.ManagedAction
-	174, // 176: pm.v1.ListAvailableActionsResponse.items:type_name -> pm.v1.AvailableItem
-	82,  // 177: pm.v1.GetDeviceAssignmentsResponse.actions:type_name -> pm.v1.ManagedAction
-	95,  // 178: pm.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> pm.v1.ActionSet
-	115, // 179: pm.v1.GetDeviceAssignmentsResponse.definitions:type_name -> pm.v1.Definition
-	306, // 180: pm.v1.GetDeviceAssignmentsResponse.compliance_policies:type_name -> pm.v1.CompliancePolicy
-	100, // 181: pm.v1.GetDeviceAssignmentsResponse.action_set_details:type_name -> pm.v1.GetActionSetResponse
-	120, // 182: pm.v1.GetDeviceAssignmentsResponse.definition_details:type_name -> pm.v1.GetDefinitionResponse
-	163, // 183: pm.v1.GetUserAssignmentsResponse.assignments:type_name -> pm.v1.Assignment
-	364, // 184: pm.v1.ActionExecution.type:type_name -> pm.v1.ActionType
-	388, // 185: pm.v1.ActionExecution.status:type_name -> pm.v1.ExecutionStatus
-	389, // 186: pm.v1.ActionExecution.output:type_name -> pm.v1.CommandOutput
-	358, // 187: pm.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
-	358, // 188: pm.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
-	358, // 189: pm.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
-	389, // 190: pm.v1.ActionExecution.live_output:type_name -> pm.v1.CommandOutput
-	365, // 191: pm.v1.ActionExecution.desired_state:type_name -> pm.v1.DesiredState
-	389, // 192: pm.v1.ActionExecution.detection_output:type_name -> pm.v1.CommandOutput
-	358, // 193: pm.v1.ActionExecution.scheduled_for:type_name -> google.protobuf.Timestamp
-	390, // 194: pm.v1.DispatchActionRequest.inline_action:type_name -> pm.v1.Action
-	358, // 195: pm.v1.DispatchActionRequest.run_at:type_name -> google.protobuf.Timestamp
-	180, // 196: pm.v1.DispatchActionResponse.execution:type_name -> pm.v1.ActionExecution
-	390, // 197: pm.v1.DispatchToMultipleRequest.inline_action:type_name -> pm.v1.Action
-	180, // 198: pm.v1.DispatchToMultipleResponse.executions:type_name -> pm.v1.ActionExecution
-	180, // 199: pm.v1.DispatchAssignedActionsResponse.executions:type_name -> pm.v1.ActionExecution
-	180, // 200: pm.v1.DispatchActionSetResponse.executions:type_name -> pm.v1.ActionExecution
-	180, // 201: pm.v1.DispatchDefinitionResponse.executions:type_name -> pm.v1.ActionExecution
-	390, // 202: pm.v1.DispatchToGroupRequest.inline_action:type_name -> pm.v1.Action
-	180, // 203: pm.v1.DispatchToGroupResponse.executions:type_name -> pm.v1.ActionExecution
-	180, // 204: pm.v1.GetExecutionResponse.execution:type_name -> pm.v1.ActionExecution
-	388, // 205: pm.v1.ListExecutionsRequest.status_filter:type_name -> pm.v1.ExecutionStatus
-	364, // 206: pm.v1.ListExecutionsRequest.type_filter:type_name -> pm.v1.ActionType
-	180, // 207: pm.v1.ListExecutionsResponse.executions:type_name -> pm.v1.ActionExecution
-	364, // 208: pm.v1.DispatchInstantActionRequest.instant_action:type_name -> pm.v1.ActionType
-	358, // 209: pm.v1.DispatchInstantActionRequest.run_at:type_name -> google.protobuf.Timestamp
-	180, // 210: pm.v1.DispatchInstantActionResponse.execution:type_name -> pm.v1.ActionExecution
-	180, // 211: pm.v1.CancelExecutionResponse.execution:type_name -> pm.v1.ActionExecution
-	358, // 212: pm.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
-	201, // 213: pm.v1.ListAuditEventsResponse.events:type_name -> pm.v1.AuditEvent
-	358, // 214: pm.v1.ExportAuditEventsRequest.occurred_from:type_name -> google.protobuf.Timestamp
-	358, // 215: pm.v1.ExportAuditEventsRequest.occurred_to:type_name -> google.protobuf.Timestamp
-	358, // 216: pm.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
-	391, // 217: pm.v1.LpsPassword.rotation_reason:type_name -> pm.v1.RotationReason
-	206, // 218: pm.v1.GetDeviceLpsPasswordsResponse.current:type_name -> pm.v1.LpsPassword
-	206, // 219: pm.v1.GetDeviceLpsPasswordsResponse.history:type_name -> pm.v1.LpsPassword
-	358, // 220: pm.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
-	391, // 221: pm.v1.LuksKey.rotation_reason:type_name -> pm.v1.RotationReason
-	392, // 222: pm.v1.LuksKey.revocation_status:type_name -> pm.v1.LuksRevocationStatus
-	358, // 223: pm.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
-	209, // 224: pm.v1.GetDeviceLuksKeysResponse.current:type_name -> pm.v1.LuksKey
-	209, // 225: pm.v1.GetDeviceLuksKeysResponse.history:type_name -> pm.v1.LuksKey
-	393, // 226: pm.v1.GetOSQueryResultResponse.rows:type_name -> pm.v1.OSQueryRow
-	393, // 227: pm.v1.InventoryTableResult.rows:type_name -> pm.v1.OSQueryRow
-	358, // 228: pm.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
-	221, // 229: pm.v1.GetDeviceInventoryResponse.tables:type_name -> pm.v1.InventoryTableResult
-	29,  // 230: pm.v1.CreateRoleResponse.role:type_name -> pm.v1.Role
-	29,  // 231: pm.v1.GetRoleResponse.role:type_name -> pm.v1.Role
-	29,  // 232: pm.v1.ListRolesResponse.roles:type_name -> pm.v1.Role
-	29,  // 233: pm.v1.UpdateRoleResponse.role:type_name -> pm.v1.Role
-	359, // 234: pm.v1.AssignRoleToUserRequest.scope_kind:type_name -> pm.v1.RoleGrantScopeKind
-	359, // 235: pm.v1.RevokeRoleFromUserRequest.scope_kind:type_name -> pm.v1.RoleGrantScopeKind
-	31,  // 236: pm.v1.ListPermissionsResponse.permissions:type_name -> pm.v1.PermissionInfo
-	29,  // 237: pm.v1.UserGroup.roles:type_name -> pm.v1.Role
-	358, // 238: pm.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
-	385, // 239: pm.v1.UserGroup.maintenance_window:type_name -> pm.v1.MaintenanceWindow
-	30,  // 240: pm.v1.UserGroup.role_grants:type_name -> pm.v1.RoleGrant
-	358, // 241: pm.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
-	245, // 242: pm.v1.CreateUserGroupResponse.group:type_name -> pm.v1.UserGroup
-	245, // 243: pm.v1.GetUserGroupResponse.group:type_name -> pm.v1.UserGroup
-	246, // 244: pm.v1.GetUserGroupResponse.members:type_name -> pm.v1.UserGroupMember
-	245, // 245: pm.v1.ListUserGroupsResponse.groups:type_name -> pm.v1.UserGroup
-	245, // 246: pm.v1.UpdateUserGroupResponse.group:type_name -> pm.v1.UserGroup
-	359, // 247: pm.v1.AssignRoleToUserGroupRequest.scope_kind:type_name -> pm.v1.RoleGrantScopeKind
-	359, // 248: pm.v1.RevokeRoleFromUserGroupRequest.scope_kind:type_name -> pm.v1.RoleGrantScopeKind
-	245, // 249: pm.v1.ListUserGroupsForUserResponse.groups:type_name -> pm.v1.UserGroup
-	245, // 250: pm.v1.UpdateUserGroupQueryResponse.group:type_name -> pm.v1.UserGroup
-	245, // 251: pm.v1.EvaluateDynamicUserGroupResponse.group:type_name -> pm.v1.UserGroup
-	385, // 252: pm.v1.SetUserGroupMaintenanceWindowRequest.maintenance_window:type_name -> pm.v1.MaintenanceWindow
-	394, // 253: pm.v1.IdentityProvider.provider_type:type_name -> pm.v1.IdentityProviderType
-	352, // 254: pm.v1.IdentityProvider.group_mapping:type_name -> pm.v1.IdentityProvider.GroupMappingEntry
-	358, // 255: pm.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
-	358, // 256: pm.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
-	358, // 257: pm.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
-	358, // 258: pm.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
-	394, // 259: pm.v1.CreateIdentityProviderRequest.provider_type:type_name -> pm.v1.IdentityProviderType
-	353, // 260: pm.v1.CreateIdentityProviderRequest.group_mapping:type_name -> pm.v1.CreateIdentityProviderRequest.GroupMappingEntry
-	274, // 261: pm.v1.CreateIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
-	274, // 262: pm.v1.GetIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
-	274, // 263: pm.v1.ListIdentityProvidersResponse.providers:type_name -> pm.v1.IdentityProvider
-	354, // 264: pm.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> pm.v1.UpdateIdentityProviderRequest.GroupMappingEntry
-	274, // 265: pm.v1.UpdateIdentityProviderResponse.provider:type_name -> pm.v1.IdentityProvider
-	394, // 266: pm.v1.AuthMethodProvider.provider_type:type_name -> pm.v1.IdentityProviderType
-	286, // 267: pm.v1.ListAuthMethodsResponse.providers:type_name -> pm.v1.AuthMethodProvider
-	358, // 268: pm.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
-	26,  // 269: pm.v1.SSOCallbackResponse.user:type_name -> pm.v1.User
-	275, // 270: pm.v1.ListIdentityLinksResponse.links:type_name -> pm.v1.IdentityLink
-	362, // 271: pm.v1.GetDeviceComplianceResponse.status:type_name -> pm.v1.ComplianceStatus
-	305, // 272: pm.v1.GetDeviceComplianceResponse.checks:type_name -> pm.v1.ComplianceCheckResult
-	389, // 273: pm.v1.ComplianceCheckResult.detection_output:type_name -> pm.v1.CommandOutput
-	358, // 274: pm.v1.ComplianceCheckResult.checked_at:type_name -> google.protobuf.Timestamp
-	307, // 275: pm.v1.CompliancePolicy.rules:type_name -> pm.v1.CompliancePolicyRule
-	358, // 276: pm.v1.CompliancePolicy.created_at:type_name -> google.protobuf.Timestamp
-	306, // 277: pm.v1.CreateCompliancePolicyResponse.policy:type_name -> pm.v1.CompliancePolicy
-	306, // 278: pm.v1.GetCompliancePolicyResponse.policy:type_name -> pm.v1.CompliancePolicy
-	306, // 279: pm.v1.ListCompliancePoliciesResponse.policies:type_name -> pm.v1.CompliancePolicy
-	306, // 280: pm.v1.UpdateCompliancePolicyResponse.policy:type_name -> pm.v1.CompliancePolicy
-	306, // 281: pm.v1.AddCompliancePolicyRuleResponse.policy:type_name -> pm.v1.CompliancePolicy
-	306, // 282: pm.v1.RemoveCompliancePolicyRuleResponse.policy:type_name -> pm.v1.CompliancePolicy
-	306, // 283: pm.v1.UpdateCompliancePolicyRuleResponse.policy:type_name -> pm.v1.CompliancePolicy
-	362, // 284: pm.v1.GetDeviceCompliancePolicyStatusResponse.overall_status:type_name -> pm.v1.ComplianceStatus
-	327, // 285: pm.v1.GetDeviceCompliancePolicyStatusResponse.policies:type_name -> pm.v1.DevicePolicyEvaluation
-	362, // 286: pm.v1.DevicePolicyEvaluation.status:type_name -> pm.v1.ComplianceStatus
-	328, // 287: pm.v1.DevicePolicyEvaluation.rules:type_name -> pm.v1.DevicePolicyRuleEvaluation
-	362, // 288: pm.v1.DevicePolicyRuleEvaluation.status:type_name -> pm.v1.ComplianceStatus
-	358, // 289: pm.v1.DevicePolicyRuleEvaluation.checked_at:type_name -> google.protobuf.Timestamp
-	358, // 290: pm.v1.DevicePolicyRuleEvaluation.first_failed_at:type_name -> google.protobuf.Timestamp
-	358, // 291: pm.v1.DevicePolicyRuleEvaluation.grace_expires_at:type_name -> google.protobuf.Timestamp
-	389, // 292: pm.v1.DevicePolicyRuleEvaluation.detection_output:type_name -> pm.v1.CommandOutput
-	395, // 293: pm.v1.SearchRequest.scope:type_name -> pm.v1.SearchScope
-	329, // 294: pm.v1.SearchRequest.date_filters:type_name -> pm.v1.SearchDateFilter
-	355, // 295: pm.v1.SearchRequest.tag_filters:type_name -> pm.v1.SearchRequest.TagFiltersEntry
-	396, // 296: pm.v1.SearchRequest.sort_field:type_name -> pm.v1.SortField
-	397, // 297: pm.v1.SearchRequest.sort_direction:type_name -> pm.v1.SortDirection
-	395, // 298: pm.v1.SearchResult.scope:type_name -> pm.v1.SearchScope
-	356, // 299: pm.v1.SearchResult.fields:type_name -> pm.v1.SearchResult.FieldsEntry
-	331, // 300: pm.v1.SearchResponse.results:type_name -> pm.v1.SearchResult
-	335, // 301: pm.v1.GetServerSettingsResponse.settings:type_name -> pm.v1.ServerSettings
-	335, // 302: pm.v1.UpdateServerSettingsResponse.settings:type_name -> pm.v1.ServerSettings
-	358, // 303: pm.v1.StartTerminalResponse.expires_at:type_name -> google.protobuf.Timestamp
-	358, // 304: pm.v1.TerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
-	358, // 305: pm.v1.TerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
-	345, // 306: pm.v1.ListActiveTerminalSessionsResponse.sessions:type_name -> pm.v1.TerminalSessionInfo
-	0,   // 307: pm.v1.ControlService.Register:input_type -> pm.v1.RegisterRequest
-	2,   // 308: pm.v1.ControlService.RenewCertificate:input_type -> pm.v1.RenewCertificateRequest
-	4,   // 309: pm.v1.ControlService.Login:input_type -> pm.v1.LoginRequest
-	6,   // 310: pm.v1.ControlService.RefreshToken:input_type -> pm.v1.RefreshTokenRequest
-	8,   // 311: pm.v1.ControlService.Logout:input_type -> pm.v1.LogoutRequest
-	10,  // 312: pm.v1.ControlService.GetCurrentUser:input_type -> pm.v1.GetCurrentUserRequest
-	24,  // 313: pm.v1.ControlService.VerifyLoginTOTP:input_type -> pm.v1.VerifyLoginTOTPRequest
-	12,  // 314: pm.v1.ControlService.SetupTOTP:input_type -> pm.v1.SetupTOTPRequest
-	14,  // 315: pm.v1.ControlService.VerifyTOTP:input_type -> pm.v1.VerifyTOTPRequest
-	16,  // 316: pm.v1.ControlService.DisableTOTP:input_type -> pm.v1.DisableTOTPRequest
-	18,  // 317: pm.v1.ControlService.AdminDisableUserTOTP:input_type -> pm.v1.AdminDisableUserTOTPRequest
-	20,  // 318: pm.v1.ControlService.GetTOTPStatus:input_type -> pm.v1.GetTOTPStatusRequest
-	22,  // 319: pm.v1.ControlService.RegenerateBackupCodes:input_type -> pm.v1.RegenerateBackupCodesRequest
-	287, // 320: pm.v1.ControlService.ListAuthMethods:input_type -> pm.v1.ListAuthMethodsRequest
-	289, // 321: pm.v1.ControlService.GetSSOLoginURL:input_type -> pm.v1.GetSSOLoginURLRequest
-	291, // 322: pm.v1.ControlService.SSOCallback:input_type -> pm.v1.SSOCallbackRequest
-	276, // 323: pm.v1.ControlService.CreateIdentityProvider:input_type -> pm.v1.CreateIdentityProviderRequest
-	278, // 324: pm.v1.ControlService.GetIdentityProvider:input_type -> pm.v1.GetIdentityProviderRequest
-	280, // 325: pm.v1.ControlService.ListIdentityProviders:input_type -> pm.v1.ListIdentityProvidersRequest
-	282, // 326: pm.v1.ControlService.UpdateIdentityProvider:input_type -> pm.v1.UpdateIdentityProviderRequest
-	284, // 327: pm.v1.ControlService.DeleteIdentityProvider:input_type -> pm.v1.DeleteIdentityProviderRequest
-	293, // 328: pm.v1.ControlService.ListIdentityLinks:input_type -> pm.v1.ListIdentityLinksRequest
-	295, // 329: pm.v1.ControlService.UnlinkIdentity:input_type -> pm.v1.UnlinkIdentityRequest
-	297, // 330: pm.v1.ControlService.EnableSCIM:input_type -> pm.v1.EnableSCIMRequest
-	299, // 331: pm.v1.ControlService.DisableSCIM:input_type -> pm.v1.DisableSCIMRequest
-	301, // 332: pm.v1.ControlService.RotateSCIMToken:input_type -> pm.v1.RotateSCIMTokenRequest
-	32,  // 333: pm.v1.ControlService.CreateUser:input_type -> pm.v1.CreateUserRequest
-	34,  // 334: pm.v1.ControlService.GetUser:input_type -> pm.v1.GetUserRequest
-	36,  // 335: pm.v1.ControlService.ListUsers:input_type -> pm.v1.ListUsersRequest
-	38,  // 336: pm.v1.ControlService.UpdateUserEmail:input_type -> pm.v1.UpdateUserEmailRequest
-	39,  // 337: pm.v1.ControlService.UpdateUserPassword:input_type -> pm.v1.UpdateUserPasswordRequest
-	40,  // 338: pm.v1.ControlService.SetUserDisabled:input_type -> pm.v1.SetUserDisabledRequest
-	42,  // 339: pm.v1.ControlService.UpdateUserProfile:input_type -> pm.v1.UpdateUserProfileRequest
-	50,  // 340: pm.v1.ControlService.UpdateUserLinuxUsername:input_type -> pm.v1.UpdateUserLinuxUsernameRequest
-	45,  // 341: pm.v1.ControlService.AddUserSshKey:input_type -> pm.v1.AddUserSshKeyRequest
-	47,  // 342: pm.v1.ControlService.RemoveUserSshKey:input_type -> pm.v1.RemoveUserSshKeyRequest
-	49,  // 343: pm.v1.ControlService.UpdateUserSshSettings:input_type -> pm.v1.UpdateUserSshSettingsRequest
-	43,  // 344: pm.v1.ControlService.DeleteUser:input_type -> pm.v1.DeleteUserRequest
-	52,  // 345: pm.v1.ControlService.ListDevices:input_type -> pm.v1.ListDevicesRequest
-	54,  // 346: pm.v1.ControlService.GetDevice:input_type -> pm.v1.GetDeviceRequest
-	56,  // 347: pm.v1.ControlService.SetDeviceLabel:input_type -> pm.v1.SetDeviceLabelRequest
-	57,  // 348: pm.v1.ControlService.RemoveDeviceLabel:input_type -> pm.v1.RemoveDeviceLabelRequest
-	61,  // 349: pm.v1.ControlService.AssignDevice:input_type -> pm.v1.AssignDeviceRequest
-	63,  // 350: pm.v1.ControlService.UnassignDevice:input_type -> pm.v1.UnassignDeviceRequest
-	66,  // 351: pm.v1.ControlService.ListDeviceAssignees:input_type -> pm.v1.ListDeviceAssigneesRequest
-	68,  // 352: pm.v1.ControlService.SetDeviceSyncInterval:input_type -> pm.v1.SetDeviceSyncIntervalRequest
-	69,  // 353: pm.v1.ControlService.SetDeviceInventoryInterval:input_type -> pm.v1.SetDeviceInventoryIntervalRequest
-	59,  // 354: pm.v1.ControlService.DeleteDevice:input_type -> pm.v1.DeleteDeviceRequest
-	71,  // 355: pm.v1.ControlService.CreateToken:input_type -> pm.v1.CreateTokenRequest
-	75,  // 356: pm.v1.ControlService.GetToken:input_type -> pm.v1.GetTokenRequest
-	73,  // 357: pm.v1.ControlService.ListTokens:input_type -> pm.v1.ListTokensRequest
-	77,  // 358: pm.v1.ControlService.RenameToken:input_type -> pm.v1.RenameTokenRequest
-	78,  // 359: pm.v1.ControlService.SetTokenDisabled:input_type -> pm.v1.SetTokenDisabledRequest
-	80,  // 360: pm.v1.ControlService.DeleteToken:input_type -> pm.v1.DeleteTokenRequest
-	83,  // 361: pm.v1.ControlService.CreateAction:input_type -> pm.v1.CreateActionRequest
-	85,  // 362: pm.v1.ControlService.GetAction:input_type -> pm.v1.GetActionRequest
-	87,  // 363: pm.v1.ControlService.ListActions:input_type -> pm.v1.ListActionsRequest
-	89,  // 364: pm.v1.ControlService.RenameAction:input_type -> pm.v1.RenameActionRequest
-	90,  // 365: pm.v1.ControlService.UpdateActionDescription:input_type -> pm.v1.UpdateActionDescriptionRequest
-	91,  // 366: pm.v1.ControlService.UpdateActionParams:input_type -> pm.v1.UpdateActionParamsRequest
-	93,  // 367: pm.v1.ControlService.DeleteAction:input_type -> pm.v1.DeleteActionRequest
-	97,  // 368: pm.v1.ControlService.CreateActionSet:input_type -> pm.v1.CreateActionSetRequest
-	99,  // 369: pm.v1.ControlService.GetActionSet:input_type -> pm.v1.GetActionSetRequest
-	101, // 370: pm.v1.ControlService.ListActionSets:input_type -> pm.v1.ListActionSetsRequest
-	103, // 371: pm.v1.ControlService.RenameActionSet:input_type -> pm.v1.RenameActionSetRequest
-	104, // 372: pm.v1.ControlService.UpdateActionSetDescription:input_type -> pm.v1.UpdateActionSetDescriptionRequest
-	105, // 373: pm.v1.ControlService.UpdateActionSetSchedule:input_type -> pm.v1.UpdateActionSetScheduleRequest
-	107, // 374: pm.v1.ControlService.DeleteActionSet:input_type -> pm.v1.DeleteActionSetRequest
-	109, // 375: pm.v1.ControlService.AddActionToSet:input_type -> pm.v1.AddActionToSetRequest
-	111, // 376: pm.v1.ControlService.RemoveActionFromSet:input_type -> pm.v1.RemoveActionFromSetRequest
-	113, // 377: pm.v1.ControlService.ReorderActionInSet:input_type -> pm.v1.ReorderActionInSetRequest
-	117, // 378: pm.v1.ControlService.CreateDefinition:input_type -> pm.v1.CreateDefinitionRequest
-	119, // 379: pm.v1.ControlService.GetDefinition:input_type -> pm.v1.GetDefinitionRequest
-	121, // 380: pm.v1.ControlService.ListDefinitions:input_type -> pm.v1.ListDefinitionsRequest
-	123, // 381: pm.v1.ControlService.RenameDefinition:input_type -> pm.v1.RenameDefinitionRequest
-	124, // 382: pm.v1.ControlService.UpdateDefinitionDescription:input_type -> pm.v1.UpdateDefinitionDescriptionRequest
-	125, // 383: pm.v1.ControlService.UpdateDefinitionSchedule:input_type -> pm.v1.UpdateDefinitionScheduleRequest
-	127, // 384: pm.v1.ControlService.DeleteDefinition:input_type -> pm.v1.DeleteDefinitionRequest
-	129, // 385: pm.v1.ControlService.AddActionSetToDefinition:input_type -> pm.v1.AddActionSetToDefinitionRequest
-	131, // 386: pm.v1.ControlService.RemoveActionSetFromDefinition:input_type -> pm.v1.RemoveActionSetFromDefinitionRequest
-	133, // 387: pm.v1.ControlService.ReorderActionSetInDefinition:input_type -> pm.v1.ReorderActionSetInDefinitionRequest
-	136, // 388: pm.v1.ControlService.CreateDeviceGroup:input_type -> pm.v1.CreateDeviceGroupRequest
-	138, // 389: pm.v1.ControlService.GetDeviceGroup:input_type -> pm.v1.GetDeviceGroupRequest
-	141, // 390: pm.v1.ControlService.ListDeviceGroups:input_type -> pm.v1.ListDeviceGroupsRequest
-	143, // 391: pm.v1.ControlService.ListDeviceGroupsForDevice:input_type -> pm.v1.ListDeviceGroupsForDeviceRequest
-	145, // 392: pm.v1.ControlService.RenameDeviceGroup:input_type -> pm.v1.RenameDeviceGroupRequest
-	146, // 393: pm.v1.ControlService.UpdateDeviceGroupDescription:input_type -> pm.v1.UpdateDeviceGroupDescriptionRequest
-	154, // 394: pm.v1.ControlService.UpdateDeviceGroupQuery:input_type -> pm.v1.UpdateDeviceGroupQueryRequest
-	148, // 395: pm.v1.ControlService.DeleteDeviceGroup:input_type -> pm.v1.DeleteDeviceGroupRequest
-	150, // 396: pm.v1.ControlService.AddDeviceToGroup:input_type -> pm.v1.AddDeviceToGroupRequest
-	152, // 397: pm.v1.ControlService.RemoveDeviceFromGroup:input_type -> pm.v1.RemoveDeviceFromGroupRequest
-	156, // 398: pm.v1.ControlService.ValidateDynamicQuery:input_type -> pm.v1.ValidateDynamicQueryRequest
-	158, // 399: pm.v1.ControlService.EvaluateDynamicGroup:input_type -> pm.v1.EvaluateDynamicGroupRequest
-	160, // 400: pm.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> pm.v1.SetDeviceGroupSyncIntervalRequest
-	161, // 401: pm.v1.ControlService.SetDeviceGroupInventoryInterval:input_type -> pm.v1.SetDeviceGroupInventoryIntervalRequest
-	162, // 402: pm.v1.ControlService.SetDeviceGroupMaintenanceWindow:input_type -> pm.v1.SetDeviceGroupMaintenanceWindowRequest
-	164, // 403: pm.v1.ControlService.CreateAssignment:input_type -> pm.v1.CreateAssignmentRequest
-	166, // 404: pm.v1.ControlService.DeleteAssignment:input_type -> pm.v1.DeleteAssignmentRequest
-	168, // 405: pm.v1.ControlService.ListAssignments:input_type -> pm.v1.ListAssignmentsRequest
-	176, // 406: pm.v1.ControlService.GetDeviceAssignments:input_type -> pm.v1.GetDeviceAssignmentsRequest
-	178, // 407: pm.v1.ControlService.GetUserAssignments:input_type -> pm.v1.GetUserAssignmentsRequest
-	171, // 408: pm.v1.ControlService.SetUserSelection:input_type -> pm.v1.SetUserSelectionRequest
-	173, // 409: pm.v1.ControlService.ListAvailableActions:input_type -> pm.v1.ListAvailableActionsRequest
-	181, // 410: pm.v1.ControlService.DispatchAction:input_type -> pm.v1.DispatchActionRequest
-	183, // 411: pm.v1.ControlService.DispatchToMultiple:input_type -> pm.v1.DispatchToMultipleRequest
-	185, // 412: pm.v1.ControlService.DispatchAssignedActions:input_type -> pm.v1.DispatchAssignedActionsRequest
-	187, // 413: pm.v1.ControlService.DispatchActionSet:input_type -> pm.v1.DispatchActionSetRequest
-	189, // 414: pm.v1.ControlService.DispatchDefinition:input_type -> pm.v1.DispatchDefinitionRequest
-	191, // 415: pm.v1.ControlService.DispatchToGroup:input_type -> pm.v1.DispatchToGroupRequest
-	197, // 416: pm.v1.ControlService.DispatchInstantAction:input_type -> pm.v1.DispatchInstantActionRequest
-	199, // 417: pm.v1.ControlService.CancelExecution:input_type -> pm.v1.CancelExecutionRequest
-	193, // 418: pm.v1.ControlService.GetExecution:input_type -> pm.v1.GetExecutionRequest
-	195, // 419: pm.v1.ControlService.ListExecutions:input_type -> pm.v1.ListExecutionsRequest
-	202, // 420: pm.v1.ControlService.ListAuditEvents:input_type -> pm.v1.ListAuditEventsRequest
-	204, // 421: pm.v1.ControlService.ExportAuditEvents:input_type -> pm.v1.ExportAuditEventsRequest
-	207, // 422: pm.v1.ControlService.GetDeviceLpsPasswords:input_type -> pm.v1.GetDeviceLpsPasswordsRequest
-	210, // 423: pm.v1.ControlService.GetDeviceLuksKeys:input_type -> pm.v1.GetDeviceLuksKeysRequest
-	212, // 424: pm.v1.ControlService.CreateLuksToken:input_type -> pm.v1.CreateLuksTokenRequest
-	214, // 425: pm.v1.ControlService.RevokeLuksDeviceKey:input_type -> pm.v1.RevokeLuksDeviceKeyRequest
-	216, // 426: pm.v1.ControlService.DispatchOSQuery:input_type -> pm.v1.DispatchOSQueryRequest
-	218, // 427: pm.v1.ControlService.GetOSQueryResult:input_type -> pm.v1.GetOSQueryResultRequest
-	220, // 428: pm.v1.ControlService.GetDeviceInventory:input_type -> pm.v1.GetDeviceInventoryRequest
-	223, // 429: pm.v1.ControlService.RefreshDeviceInventory:input_type -> pm.v1.RefreshDeviceInventoryRequest
-	225, // 430: pm.v1.ControlService.QueryDeviceLogs:input_type -> pm.v1.QueryDeviceLogsRequest
-	227, // 431: pm.v1.ControlService.GetDeviceLogResult:input_type -> pm.v1.GetDeviceLogResultRequest
-	229, // 432: pm.v1.ControlService.CreateRole:input_type -> pm.v1.CreateRoleRequest
-	231, // 433: pm.v1.ControlService.GetRole:input_type -> pm.v1.GetRoleRequest
-	233, // 434: pm.v1.ControlService.ListRoles:input_type -> pm.v1.ListRolesRequest
-	235, // 435: pm.v1.ControlService.UpdateRole:input_type -> pm.v1.UpdateRoleRequest
-	237, // 436: pm.v1.ControlService.DeleteRole:input_type -> pm.v1.DeleteRoleRequest
-	239, // 437: pm.v1.ControlService.AssignRoleToUser:input_type -> pm.v1.AssignRoleToUserRequest
-	241, // 438: pm.v1.ControlService.RevokeRoleFromUser:input_type -> pm.v1.RevokeRoleFromUserRequest
-	243, // 439: pm.v1.ControlService.ListPermissions:input_type -> pm.v1.ListPermissionsRequest
-	247, // 440: pm.v1.ControlService.CreateUserGroup:input_type -> pm.v1.CreateUserGroupRequest
-	249, // 441: pm.v1.ControlService.GetUserGroup:input_type -> pm.v1.GetUserGroupRequest
-	251, // 442: pm.v1.ControlService.ListUserGroups:input_type -> pm.v1.ListUserGroupsRequest
-	253, // 443: pm.v1.ControlService.UpdateUserGroup:input_type -> pm.v1.UpdateUserGroupRequest
-	255, // 444: pm.v1.ControlService.DeleteUserGroup:input_type -> pm.v1.DeleteUserGroupRequest
-	257, // 445: pm.v1.ControlService.AddUserToGroup:input_type -> pm.v1.AddUserToGroupRequest
-	259, // 446: pm.v1.ControlService.RemoveUserFromGroup:input_type -> pm.v1.RemoveUserFromGroupRequest
-	261, // 447: pm.v1.ControlService.AssignRoleToUserGroup:input_type -> pm.v1.AssignRoleToUserGroupRequest
-	263, // 448: pm.v1.ControlService.RevokeRoleFromUserGroup:input_type -> pm.v1.RevokeRoleFromUserGroupRequest
-	265, // 449: pm.v1.ControlService.ListUserGroupsForUser:input_type -> pm.v1.ListUserGroupsForUserRequest
-	267, // 450: pm.v1.ControlService.UpdateUserGroupQuery:input_type -> pm.v1.UpdateUserGroupQueryRequest
-	269, // 451: pm.v1.ControlService.ValidateUserGroupQuery:input_type -> pm.v1.ValidateUserGroupQueryRequest
-	271, // 452: pm.v1.ControlService.EvaluateDynamicUserGroup:input_type -> pm.v1.EvaluateDynamicUserGroupRequest
-	273, // 453: pm.v1.ControlService.SetUserGroupMaintenanceWindow:input_type -> pm.v1.SetUserGroupMaintenanceWindowRequest
-	303, // 454: pm.v1.ControlService.GetDeviceCompliance:input_type -> pm.v1.GetDeviceComplianceRequest
-	308, // 455: pm.v1.ControlService.CreateCompliancePolicy:input_type -> pm.v1.CreateCompliancePolicyRequest
-	310, // 456: pm.v1.ControlService.GetCompliancePolicy:input_type -> pm.v1.GetCompliancePolicyRequest
-	312, // 457: pm.v1.ControlService.ListCompliancePolicies:input_type -> pm.v1.ListCompliancePoliciesRequest
-	314, // 458: pm.v1.ControlService.RenameCompliancePolicy:input_type -> pm.v1.RenameCompliancePolicyRequest
-	315, // 459: pm.v1.ControlService.UpdateCompliancePolicyDescription:input_type -> pm.v1.UpdateCompliancePolicyDescriptionRequest
-	317, // 460: pm.v1.ControlService.DeleteCompliancePolicy:input_type -> pm.v1.DeleteCompliancePolicyRequest
-	319, // 461: pm.v1.ControlService.AddCompliancePolicyRule:input_type -> pm.v1.AddCompliancePolicyRuleRequest
-	321, // 462: pm.v1.ControlService.RemoveCompliancePolicyRule:input_type -> pm.v1.RemoveCompliancePolicyRuleRequest
-	323, // 463: pm.v1.ControlService.UpdateCompliancePolicyRule:input_type -> pm.v1.UpdateCompliancePolicyRuleRequest
-	325, // 464: pm.v1.ControlService.GetDeviceCompliancePolicyStatus:input_type -> pm.v1.GetDeviceCompliancePolicyStatusRequest
-	330, // 465: pm.v1.ControlService.Search:input_type -> pm.v1.SearchRequest
-	333, // 466: pm.v1.ControlService.RebuildSearchIndex:input_type -> pm.v1.RebuildSearchIndexRequest
-	336, // 467: pm.v1.ControlService.GetServerSettings:input_type -> pm.v1.GetServerSettingsRequest
-	338, // 468: pm.v1.ControlService.UpdateServerSettings:input_type -> pm.v1.UpdateServerSettingsRequest
-	340, // 469: pm.v1.ControlService.SetUserProvisioningEnabled:input_type -> pm.v1.SetUserProvisioningEnabledRequest
-	341, // 470: pm.v1.ControlService.StartTerminal:input_type -> pm.v1.StartTerminalRequest
-	343, // 471: pm.v1.ControlService.StopTerminal:input_type -> pm.v1.StopTerminalRequest
-	346, // 472: pm.v1.ControlService.ListActiveTerminalSessions:input_type -> pm.v1.ListActiveTerminalSessionsRequest
-	348, // 473: pm.v1.ControlService.TerminateTerminalSession:input_type -> pm.v1.TerminateTerminalSessionRequest
-	1,   // 474: pm.v1.ControlService.Register:output_type -> pm.v1.RegisterResponse
-	3,   // 475: pm.v1.ControlService.RenewCertificate:output_type -> pm.v1.RenewCertificateResponse
-	5,   // 476: pm.v1.ControlService.Login:output_type -> pm.v1.LoginResponse
-	7,   // 477: pm.v1.ControlService.RefreshToken:output_type -> pm.v1.RefreshTokenResponse
-	9,   // 478: pm.v1.ControlService.Logout:output_type -> pm.v1.LogoutResponse
-	11,  // 479: pm.v1.ControlService.GetCurrentUser:output_type -> pm.v1.GetCurrentUserResponse
-	25,  // 480: pm.v1.ControlService.VerifyLoginTOTP:output_type -> pm.v1.VerifyLoginTOTPResponse
-	13,  // 481: pm.v1.ControlService.SetupTOTP:output_type -> pm.v1.SetupTOTPResponse
-	15,  // 482: pm.v1.ControlService.VerifyTOTP:output_type -> pm.v1.VerifyTOTPResponse
-	17,  // 483: pm.v1.ControlService.DisableTOTP:output_type -> pm.v1.DisableTOTPResponse
-	19,  // 484: pm.v1.ControlService.AdminDisableUserTOTP:output_type -> pm.v1.AdminDisableUserTOTPResponse
-	21,  // 485: pm.v1.ControlService.GetTOTPStatus:output_type -> pm.v1.GetTOTPStatusResponse
-	23,  // 486: pm.v1.ControlService.RegenerateBackupCodes:output_type -> pm.v1.RegenerateBackupCodesResponse
-	288, // 487: pm.v1.ControlService.ListAuthMethods:output_type -> pm.v1.ListAuthMethodsResponse
-	290, // 488: pm.v1.ControlService.GetSSOLoginURL:output_type -> pm.v1.GetSSOLoginURLResponse
-	292, // 489: pm.v1.ControlService.SSOCallback:output_type -> pm.v1.SSOCallbackResponse
-	277, // 490: pm.v1.ControlService.CreateIdentityProvider:output_type -> pm.v1.CreateIdentityProviderResponse
-	279, // 491: pm.v1.ControlService.GetIdentityProvider:output_type -> pm.v1.GetIdentityProviderResponse
-	281, // 492: pm.v1.ControlService.ListIdentityProviders:output_type -> pm.v1.ListIdentityProvidersResponse
-	283, // 493: pm.v1.ControlService.UpdateIdentityProvider:output_type -> pm.v1.UpdateIdentityProviderResponse
-	285, // 494: pm.v1.ControlService.DeleteIdentityProvider:output_type -> pm.v1.DeleteIdentityProviderResponse
-	294, // 495: pm.v1.ControlService.ListIdentityLinks:output_type -> pm.v1.ListIdentityLinksResponse
-	296, // 496: pm.v1.ControlService.UnlinkIdentity:output_type -> pm.v1.UnlinkIdentityResponse
-	298, // 497: pm.v1.ControlService.EnableSCIM:output_type -> pm.v1.EnableSCIMResponse
-	300, // 498: pm.v1.ControlService.DisableSCIM:output_type -> pm.v1.DisableSCIMResponse
-	302, // 499: pm.v1.ControlService.RotateSCIMToken:output_type -> pm.v1.RotateSCIMTokenResponse
-	33,  // 500: pm.v1.ControlService.CreateUser:output_type -> pm.v1.CreateUserResponse
-	35,  // 501: pm.v1.ControlService.GetUser:output_type -> pm.v1.GetUserResponse
-	37,  // 502: pm.v1.ControlService.ListUsers:output_type -> pm.v1.ListUsersResponse
-	41,  // 503: pm.v1.ControlService.UpdateUserEmail:output_type -> pm.v1.UpdateUserResponse
-	41,  // 504: pm.v1.ControlService.UpdateUserPassword:output_type -> pm.v1.UpdateUserResponse
-	41,  // 505: pm.v1.ControlService.SetUserDisabled:output_type -> pm.v1.UpdateUserResponse
-	41,  // 506: pm.v1.ControlService.UpdateUserProfile:output_type -> pm.v1.UpdateUserResponse
-	41,  // 507: pm.v1.ControlService.UpdateUserLinuxUsername:output_type -> pm.v1.UpdateUserResponse
-	46,  // 508: pm.v1.ControlService.AddUserSshKey:output_type -> pm.v1.AddUserSshKeyResponse
-	48,  // 509: pm.v1.ControlService.RemoveUserSshKey:output_type -> pm.v1.RemoveUserSshKeyResponse
-	41,  // 510: pm.v1.ControlService.UpdateUserSshSettings:output_type -> pm.v1.UpdateUserResponse
-	44,  // 511: pm.v1.ControlService.DeleteUser:output_type -> pm.v1.DeleteUserResponse
-	53,  // 512: pm.v1.ControlService.ListDevices:output_type -> pm.v1.ListDevicesResponse
-	55,  // 513: pm.v1.ControlService.GetDevice:output_type -> pm.v1.GetDeviceResponse
-	58,  // 514: pm.v1.ControlService.SetDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	58,  // 515: pm.v1.ControlService.RemoveDeviceLabel:output_type -> pm.v1.UpdateDeviceResponse
-	62,  // 516: pm.v1.ControlService.AssignDevice:output_type -> pm.v1.AssignDeviceResponse
-	64,  // 517: pm.v1.ControlService.UnassignDevice:output_type -> pm.v1.UnassignDeviceResponse
-	67,  // 518: pm.v1.ControlService.ListDeviceAssignees:output_type -> pm.v1.ListDeviceAssigneesResponse
-	58,  // 519: pm.v1.ControlService.SetDeviceSyncInterval:output_type -> pm.v1.UpdateDeviceResponse
-	58,  // 520: pm.v1.ControlService.SetDeviceInventoryInterval:output_type -> pm.v1.UpdateDeviceResponse
-	60,  // 521: pm.v1.ControlService.DeleteDevice:output_type -> pm.v1.DeleteDeviceResponse
-	72,  // 522: pm.v1.ControlService.CreateToken:output_type -> pm.v1.CreateTokenResponse
-	76,  // 523: pm.v1.ControlService.GetToken:output_type -> pm.v1.GetTokenResponse
-	74,  // 524: pm.v1.ControlService.ListTokens:output_type -> pm.v1.ListTokensResponse
-	79,  // 525: pm.v1.ControlService.RenameToken:output_type -> pm.v1.UpdateTokenResponse
-	79,  // 526: pm.v1.ControlService.SetTokenDisabled:output_type -> pm.v1.UpdateTokenResponse
-	81,  // 527: pm.v1.ControlService.DeleteToken:output_type -> pm.v1.DeleteTokenResponse
-	84,  // 528: pm.v1.ControlService.CreateAction:output_type -> pm.v1.CreateActionResponse
-	86,  // 529: pm.v1.ControlService.GetAction:output_type -> pm.v1.GetActionResponse
-	88,  // 530: pm.v1.ControlService.ListActions:output_type -> pm.v1.ListActionsResponse
-	92,  // 531: pm.v1.ControlService.RenameAction:output_type -> pm.v1.UpdateActionResponse
-	92,  // 532: pm.v1.ControlService.UpdateActionDescription:output_type -> pm.v1.UpdateActionResponse
-	92,  // 533: pm.v1.ControlService.UpdateActionParams:output_type -> pm.v1.UpdateActionResponse
-	94,  // 534: pm.v1.ControlService.DeleteAction:output_type -> pm.v1.DeleteActionResponse
-	98,  // 535: pm.v1.ControlService.CreateActionSet:output_type -> pm.v1.CreateActionSetResponse
-	100, // 536: pm.v1.ControlService.GetActionSet:output_type -> pm.v1.GetActionSetResponse
-	102, // 537: pm.v1.ControlService.ListActionSets:output_type -> pm.v1.ListActionSetsResponse
-	106, // 538: pm.v1.ControlService.RenameActionSet:output_type -> pm.v1.UpdateActionSetResponse
-	106, // 539: pm.v1.ControlService.UpdateActionSetDescription:output_type -> pm.v1.UpdateActionSetResponse
-	106, // 540: pm.v1.ControlService.UpdateActionSetSchedule:output_type -> pm.v1.UpdateActionSetResponse
-	108, // 541: pm.v1.ControlService.DeleteActionSet:output_type -> pm.v1.DeleteActionSetResponse
-	110, // 542: pm.v1.ControlService.AddActionToSet:output_type -> pm.v1.AddActionToSetResponse
-	112, // 543: pm.v1.ControlService.RemoveActionFromSet:output_type -> pm.v1.RemoveActionFromSetResponse
-	114, // 544: pm.v1.ControlService.ReorderActionInSet:output_type -> pm.v1.ReorderActionInSetResponse
-	118, // 545: pm.v1.ControlService.CreateDefinition:output_type -> pm.v1.CreateDefinitionResponse
-	120, // 546: pm.v1.ControlService.GetDefinition:output_type -> pm.v1.GetDefinitionResponse
-	122, // 547: pm.v1.ControlService.ListDefinitions:output_type -> pm.v1.ListDefinitionsResponse
-	126, // 548: pm.v1.ControlService.RenameDefinition:output_type -> pm.v1.UpdateDefinitionResponse
-	126, // 549: pm.v1.ControlService.UpdateDefinitionDescription:output_type -> pm.v1.UpdateDefinitionResponse
-	126, // 550: pm.v1.ControlService.UpdateDefinitionSchedule:output_type -> pm.v1.UpdateDefinitionResponse
-	128, // 551: pm.v1.ControlService.DeleteDefinition:output_type -> pm.v1.DeleteDefinitionResponse
-	130, // 552: pm.v1.ControlService.AddActionSetToDefinition:output_type -> pm.v1.AddActionSetToDefinitionResponse
-	132, // 553: pm.v1.ControlService.RemoveActionSetFromDefinition:output_type -> pm.v1.RemoveActionSetFromDefinitionResponse
-	134, // 554: pm.v1.ControlService.ReorderActionSetInDefinition:output_type -> pm.v1.ReorderActionSetInDefinitionResponse
-	137, // 555: pm.v1.ControlService.CreateDeviceGroup:output_type -> pm.v1.CreateDeviceGroupResponse
-	139, // 556: pm.v1.ControlService.GetDeviceGroup:output_type -> pm.v1.GetDeviceGroupResponse
-	142, // 557: pm.v1.ControlService.ListDeviceGroups:output_type -> pm.v1.ListDeviceGroupsResponse
-	144, // 558: pm.v1.ControlService.ListDeviceGroupsForDevice:output_type -> pm.v1.ListDeviceGroupsForDeviceResponse
-	147, // 559: pm.v1.ControlService.RenameDeviceGroup:output_type -> pm.v1.UpdateDeviceGroupResponse
-	147, // 560: pm.v1.ControlService.UpdateDeviceGroupDescription:output_type -> pm.v1.UpdateDeviceGroupResponse
-	155, // 561: pm.v1.ControlService.UpdateDeviceGroupQuery:output_type -> pm.v1.UpdateDeviceGroupQueryResponse
-	149, // 562: pm.v1.ControlService.DeleteDeviceGroup:output_type -> pm.v1.DeleteDeviceGroupResponse
-	151, // 563: pm.v1.ControlService.AddDeviceToGroup:output_type -> pm.v1.AddDeviceToGroupResponse
-	153, // 564: pm.v1.ControlService.RemoveDeviceFromGroup:output_type -> pm.v1.RemoveDeviceFromGroupResponse
-	157, // 565: pm.v1.ControlService.ValidateDynamicQuery:output_type -> pm.v1.ValidateDynamicQueryResponse
-	159, // 566: pm.v1.ControlService.EvaluateDynamicGroup:output_type -> pm.v1.EvaluateDynamicGroupResponse
-	147, // 567: pm.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> pm.v1.UpdateDeviceGroupResponse
-	147, // 568: pm.v1.ControlService.SetDeviceGroupInventoryInterval:output_type -> pm.v1.UpdateDeviceGroupResponse
-	147, // 569: pm.v1.ControlService.SetDeviceGroupMaintenanceWindow:output_type -> pm.v1.UpdateDeviceGroupResponse
-	165, // 570: pm.v1.ControlService.CreateAssignment:output_type -> pm.v1.CreateAssignmentResponse
-	167, // 571: pm.v1.ControlService.DeleteAssignment:output_type -> pm.v1.DeleteAssignmentResponse
-	169, // 572: pm.v1.ControlService.ListAssignments:output_type -> pm.v1.ListAssignmentsResponse
-	177, // 573: pm.v1.ControlService.GetDeviceAssignments:output_type -> pm.v1.GetDeviceAssignmentsResponse
-	179, // 574: pm.v1.ControlService.GetUserAssignments:output_type -> pm.v1.GetUserAssignmentsResponse
-	172, // 575: pm.v1.ControlService.SetUserSelection:output_type -> pm.v1.SetUserSelectionResponse
-	175, // 576: pm.v1.ControlService.ListAvailableActions:output_type -> pm.v1.ListAvailableActionsResponse
-	182, // 577: pm.v1.ControlService.DispatchAction:output_type -> pm.v1.DispatchActionResponse
-	184, // 578: pm.v1.ControlService.DispatchToMultiple:output_type -> pm.v1.DispatchToMultipleResponse
-	186, // 579: pm.v1.ControlService.DispatchAssignedActions:output_type -> pm.v1.DispatchAssignedActionsResponse
-	188, // 580: pm.v1.ControlService.DispatchActionSet:output_type -> pm.v1.DispatchActionSetResponse
-	190, // 581: pm.v1.ControlService.DispatchDefinition:output_type -> pm.v1.DispatchDefinitionResponse
-	192, // 582: pm.v1.ControlService.DispatchToGroup:output_type -> pm.v1.DispatchToGroupResponse
-	198, // 583: pm.v1.ControlService.DispatchInstantAction:output_type -> pm.v1.DispatchInstantActionResponse
-	200, // 584: pm.v1.ControlService.CancelExecution:output_type -> pm.v1.CancelExecutionResponse
-	194, // 585: pm.v1.ControlService.GetExecution:output_type -> pm.v1.GetExecutionResponse
-	196, // 586: pm.v1.ControlService.ListExecutions:output_type -> pm.v1.ListExecutionsResponse
-	203, // 587: pm.v1.ControlService.ListAuditEvents:output_type -> pm.v1.ListAuditEventsResponse
-	205, // 588: pm.v1.ControlService.ExportAuditEvents:output_type -> pm.v1.ExportAuditEventsResponse
-	208, // 589: pm.v1.ControlService.GetDeviceLpsPasswords:output_type -> pm.v1.GetDeviceLpsPasswordsResponse
-	211, // 590: pm.v1.ControlService.GetDeviceLuksKeys:output_type -> pm.v1.GetDeviceLuksKeysResponse
-	213, // 591: pm.v1.ControlService.CreateLuksToken:output_type -> pm.v1.CreateLuksTokenResponse
-	215, // 592: pm.v1.ControlService.RevokeLuksDeviceKey:output_type -> pm.v1.RevokeLuksDeviceKeyResponse
-	217, // 593: pm.v1.ControlService.DispatchOSQuery:output_type -> pm.v1.DispatchOSQueryResponse
-	219, // 594: pm.v1.ControlService.GetOSQueryResult:output_type -> pm.v1.GetOSQueryResultResponse
-	222, // 595: pm.v1.ControlService.GetDeviceInventory:output_type -> pm.v1.GetDeviceInventoryResponse
-	224, // 596: pm.v1.ControlService.RefreshDeviceInventory:output_type -> pm.v1.RefreshDeviceInventoryResponse
-	226, // 597: pm.v1.ControlService.QueryDeviceLogs:output_type -> pm.v1.QueryDeviceLogsResponse
-	228, // 598: pm.v1.ControlService.GetDeviceLogResult:output_type -> pm.v1.GetDeviceLogResultResponse
-	230, // 599: pm.v1.ControlService.CreateRole:output_type -> pm.v1.CreateRoleResponse
-	232, // 600: pm.v1.ControlService.GetRole:output_type -> pm.v1.GetRoleResponse
-	234, // 601: pm.v1.ControlService.ListRoles:output_type -> pm.v1.ListRolesResponse
-	236, // 602: pm.v1.ControlService.UpdateRole:output_type -> pm.v1.UpdateRoleResponse
-	238, // 603: pm.v1.ControlService.DeleteRole:output_type -> pm.v1.DeleteRoleResponse
-	240, // 604: pm.v1.ControlService.AssignRoleToUser:output_type -> pm.v1.AssignRoleToUserResponse
-	242, // 605: pm.v1.ControlService.RevokeRoleFromUser:output_type -> pm.v1.RevokeRoleFromUserResponse
-	244, // 606: pm.v1.ControlService.ListPermissions:output_type -> pm.v1.ListPermissionsResponse
-	248, // 607: pm.v1.ControlService.CreateUserGroup:output_type -> pm.v1.CreateUserGroupResponse
-	250, // 608: pm.v1.ControlService.GetUserGroup:output_type -> pm.v1.GetUserGroupResponse
-	252, // 609: pm.v1.ControlService.ListUserGroups:output_type -> pm.v1.ListUserGroupsResponse
-	254, // 610: pm.v1.ControlService.UpdateUserGroup:output_type -> pm.v1.UpdateUserGroupResponse
-	256, // 611: pm.v1.ControlService.DeleteUserGroup:output_type -> pm.v1.DeleteUserGroupResponse
-	258, // 612: pm.v1.ControlService.AddUserToGroup:output_type -> pm.v1.AddUserToGroupResponse
-	260, // 613: pm.v1.ControlService.RemoveUserFromGroup:output_type -> pm.v1.RemoveUserFromGroupResponse
-	262, // 614: pm.v1.ControlService.AssignRoleToUserGroup:output_type -> pm.v1.AssignRoleToUserGroupResponse
-	264, // 615: pm.v1.ControlService.RevokeRoleFromUserGroup:output_type -> pm.v1.RevokeRoleFromUserGroupResponse
-	266, // 616: pm.v1.ControlService.ListUserGroupsForUser:output_type -> pm.v1.ListUserGroupsForUserResponse
-	268, // 617: pm.v1.ControlService.UpdateUserGroupQuery:output_type -> pm.v1.UpdateUserGroupQueryResponse
-	270, // 618: pm.v1.ControlService.ValidateUserGroupQuery:output_type -> pm.v1.ValidateUserGroupQueryResponse
-	272, // 619: pm.v1.ControlService.EvaluateDynamicUserGroup:output_type -> pm.v1.EvaluateDynamicUserGroupResponse
-	254, // 620: pm.v1.ControlService.SetUserGroupMaintenanceWindow:output_type -> pm.v1.UpdateUserGroupResponse
-	304, // 621: pm.v1.ControlService.GetDeviceCompliance:output_type -> pm.v1.GetDeviceComplianceResponse
-	309, // 622: pm.v1.ControlService.CreateCompliancePolicy:output_type -> pm.v1.CreateCompliancePolicyResponse
-	311, // 623: pm.v1.ControlService.GetCompliancePolicy:output_type -> pm.v1.GetCompliancePolicyResponse
-	313, // 624: pm.v1.ControlService.ListCompliancePolicies:output_type -> pm.v1.ListCompliancePoliciesResponse
-	316, // 625: pm.v1.ControlService.RenameCompliancePolicy:output_type -> pm.v1.UpdateCompliancePolicyResponse
-	316, // 626: pm.v1.ControlService.UpdateCompliancePolicyDescription:output_type -> pm.v1.UpdateCompliancePolicyResponse
-	318, // 627: pm.v1.ControlService.DeleteCompliancePolicy:output_type -> pm.v1.DeleteCompliancePolicyResponse
-	320, // 628: pm.v1.ControlService.AddCompliancePolicyRule:output_type -> pm.v1.AddCompliancePolicyRuleResponse
-	322, // 629: pm.v1.ControlService.RemoveCompliancePolicyRule:output_type -> pm.v1.RemoveCompliancePolicyRuleResponse
-	324, // 630: pm.v1.ControlService.UpdateCompliancePolicyRule:output_type -> pm.v1.UpdateCompliancePolicyRuleResponse
-	326, // 631: pm.v1.ControlService.GetDeviceCompliancePolicyStatus:output_type -> pm.v1.GetDeviceCompliancePolicyStatusResponse
-	332, // 632: pm.v1.ControlService.Search:output_type -> pm.v1.SearchResponse
-	334, // 633: pm.v1.ControlService.RebuildSearchIndex:output_type -> pm.v1.RebuildSearchIndexResponse
-	337, // 634: pm.v1.ControlService.GetServerSettings:output_type -> pm.v1.GetServerSettingsResponse
-	339, // 635: pm.v1.ControlService.UpdateServerSettings:output_type -> pm.v1.UpdateServerSettingsResponse
-	41,  // 636: pm.v1.ControlService.SetUserProvisioningEnabled:output_type -> pm.v1.UpdateUserResponse
-	342, // 637: pm.v1.ControlService.StartTerminal:output_type -> pm.v1.StartTerminalResponse
-	344, // 638: pm.v1.ControlService.StopTerminal:output_type -> pm.v1.StopTerminalResponse
-	347, // 639: pm.v1.ControlService.ListActiveTerminalSessions:output_type -> pm.v1.ListActiveTerminalSessionsResponse
-	349, // 640: pm.v1.ControlService.TerminateTerminalSession:output_type -> pm.v1.TerminateTerminalSessionResponse
-	474, // [474:641] is the sub-list for method output_type
-	307, // [307:474] is the sub-list for method input_type
-	307, // [307:307] is the sub-list for extension type_name
-	307, // [307:307] is the sub-list for extension extendee
-	0,   // [0:307] is the sub-list for field type_name
+var file_powermanage_v1_control_proto_depIdxs = []int32{
+	340, // 0: powermanage.v1.RegisterResponse.device_id:type_name -> powermanage.v1.DeviceId
+	341, // 1: powermanage.v1.RenewCertificateResponse.not_after:type_name -> google.protobuf.Timestamp
+	341, // 2: powermanage.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	10,  // 3: powermanage.v1.GetCurrentUserResponse.user:type_name -> powermanage.v1.User
+	341, // 4: powermanage.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	341, // 5: powermanage.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	258, // 6: powermanage.v1.User.identity_links:type_name -> powermanage.v1.IdentityLink
+	12,  // 7: powermanage.v1.User.ssh_public_keys:type_name -> powermanage.v1.SshPublicKey
+	11,  // 8: powermanage.v1.User.inherited_roles:type_name -> powermanage.v1.InheritedRole
+	14,  // 9: powermanage.v1.User.role_grants:type_name -> powermanage.v1.RoleGrant
+	341, // 10: powermanage.v1.SshPublicKey.added_at:type_name -> google.protobuf.Timestamp
+	341, // 11: powermanage.v1.Role.created_at:type_name -> google.protobuf.Timestamp
+	13,  // 12: powermanage.v1.RoleGrant.role:type_name -> powermanage.v1.Role
+	342, // 13: powermanage.v1.RoleGrant.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	343, // 14: powermanage.v1.PermissionInfo.target_kind:type_name -> powermanage.v1.PermissionTargetKind
+	10,  // 15: powermanage.v1.CreateUserResponse.user:type_name -> powermanage.v1.User
+	10,  // 16: powermanage.v1.GetUserResponse.user:type_name -> powermanage.v1.User
+	10,  // 17: powermanage.v1.ListUsersResponse.users:type_name -> powermanage.v1.User
+	10,  // 18: powermanage.v1.UpdateUserResponse.user:type_name -> powermanage.v1.User
+	12,  // 19: powermanage.v1.AddUserSshKeyResponse.key:type_name -> powermanage.v1.SshPublicKey
+	344, // 20: powermanage.v1.Device.status:type_name -> powermanage.v1.DeviceStatus
+	341, // 21: powermanage.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
+	341, // 22: powermanage.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	341, // 23: powermanage.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
+	333, // 24: powermanage.v1.Device.labels:type_name -> powermanage.v1.Device.LabelsEntry
+	345, // 25: powermanage.v1.Device.compliance_status:type_name -> powermanage.v1.ComplianceStatus
+	341, // 26: powermanage.v1.Device.compliance_checked_at:type_name -> google.protobuf.Timestamp
+	341, // 27: powermanage.v1.Device.last_inventory_at:type_name -> google.protobuf.Timestamp
+	344, // 28: powermanage.v1.ListDevicesRequest.status_filter:type_name -> powermanage.v1.DeviceStatus
+	334, // 29: powermanage.v1.ListDevicesRequest.label_filter:type_name -> powermanage.v1.ListDevicesRequest.LabelFilterEntry
+	34,  // 30: powermanage.v1.ListDevicesResponse.devices:type_name -> powermanage.v1.Device
+	34,  // 31: powermanage.v1.GetDeviceResponse.device:type_name -> powermanage.v1.Device
+	34,  // 32: powermanage.v1.UpdateDeviceResponse.device:type_name -> powermanage.v1.Device
+	34,  // 33: powermanage.v1.AssignDeviceResponse.device:type_name -> powermanage.v1.Device
+	34,  // 34: powermanage.v1.UnassignDeviceResponse.device:type_name -> powermanage.v1.Device
+	346, // 35: powermanage.v1.DeviceAssignee.type:type_name -> powermanage.v1.AssignmentTargetType
+	48,  // 36: powermanage.v1.ListDeviceAssigneesResponse.assignees:type_name -> powermanage.v1.DeviceAssignee
+	341, // 37: powermanage.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
+	341, // 38: powermanage.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
+	341, // 39: powermanage.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	53,  // 40: powermanage.v1.CreateTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
+	53,  // 41: powermanage.v1.ListTokensResponse.tokens:type_name -> powermanage.v1.RegistrationToken
+	53,  // 42: powermanage.v1.GetTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
+	53,  // 43: powermanage.v1.UpdateTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
+	347, // 44: powermanage.v1.ManagedAction.type:type_name -> powermanage.v1.ActionType
+	348, // 45: powermanage.v1.ManagedAction.desired_state:type_name -> powermanage.v1.DesiredState
+	341, // 46: powermanage.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	349, // 47: powermanage.v1.ManagedAction.schedule:type_name -> powermanage.v1.ActionSchedule
+	341, // 48: powermanage.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
+	350, // 49: powermanage.v1.ManagedAction.package:type_name -> powermanage.v1.PackageParams
+	351, // 50: powermanage.v1.ManagedAction.app:type_name -> powermanage.v1.AppInstallParams
+	352, // 51: powermanage.v1.ManagedAction.shell:type_name -> powermanage.v1.ShellParams
+	353, // 52: powermanage.v1.ManagedAction.service:type_name -> powermanage.v1.ServiceParams
+	354, // 53: powermanage.v1.ManagedAction.file:type_name -> powermanage.v1.FileParams
+	355, // 54: powermanage.v1.ManagedAction.update:type_name -> powermanage.v1.UpdateParams
+	356, // 55: powermanage.v1.ManagedAction.repository:type_name -> powermanage.v1.RepositoryParams
+	357, // 56: powermanage.v1.ManagedAction.flatpak:type_name -> powermanage.v1.FlatpakParams
+	358, // 57: powermanage.v1.ManagedAction.directory:type_name -> powermanage.v1.DirectoryParams
+	359, // 58: powermanage.v1.ManagedAction.user:type_name -> powermanage.v1.UserParams
+	360, // 59: powermanage.v1.ManagedAction.ssh:type_name -> powermanage.v1.SshParams
+	361, // 60: powermanage.v1.ManagedAction.sshd:type_name -> powermanage.v1.SshdParams
+	362, // 61: powermanage.v1.ManagedAction.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	363, // 62: powermanage.v1.ManagedAction.lps:type_name -> powermanage.v1.LpsParams
+	364, // 63: powermanage.v1.ManagedAction.group:type_name -> powermanage.v1.GroupParams
+	365, // 64: powermanage.v1.ManagedAction.encryption:type_name -> powermanage.v1.EncryptionParams
+	366, // 65: powermanage.v1.ManagedAction.wifi:type_name -> powermanage.v1.WifiParams
+	367, // 66: powermanage.v1.ManagedAction.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	347, // 67: powermanage.v1.CreateActionRequest.type:type_name -> powermanage.v1.ActionType
+	348, // 68: powermanage.v1.CreateActionRequest.desired_state:type_name -> powermanage.v1.DesiredState
+	349, // 69: powermanage.v1.CreateActionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	350, // 70: powermanage.v1.CreateActionRequest.package:type_name -> powermanage.v1.PackageParams
+	351, // 71: powermanage.v1.CreateActionRequest.app:type_name -> powermanage.v1.AppInstallParams
+	352, // 72: powermanage.v1.CreateActionRequest.shell:type_name -> powermanage.v1.ShellParams
+	353, // 73: powermanage.v1.CreateActionRequest.service:type_name -> powermanage.v1.ServiceParams
+	354, // 74: powermanage.v1.CreateActionRequest.file:type_name -> powermanage.v1.FileParams
+	355, // 75: powermanage.v1.CreateActionRequest.update:type_name -> powermanage.v1.UpdateParams
+	356, // 76: powermanage.v1.CreateActionRequest.repository:type_name -> powermanage.v1.RepositoryParams
+	357, // 77: powermanage.v1.CreateActionRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
+	358, // 78: powermanage.v1.CreateActionRequest.directory:type_name -> powermanage.v1.DirectoryParams
+	359, // 79: powermanage.v1.CreateActionRequest.user:type_name -> powermanage.v1.UserParams
+	360, // 80: powermanage.v1.CreateActionRequest.ssh:type_name -> powermanage.v1.SshParams
+	361, // 81: powermanage.v1.CreateActionRequest.sshd:type_name -> powermanage.v1.SshdParams
+	362, // 82: powermanage.v1.CreateActionRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	363, // 83: powermanage.v1.CreateActionRequest.lps:type_name -> powermanage.v1.LpsParams
+	364, // 84: powermanage.v1.CreateActionRequest.group:type_name -> powermanage.v1.GroupParams
+	365, // 85: powermanage.v1.CreateActionRequest.encryption:type_name -> powermanage.v1.EncryptionParams
+	366, // 86: powermanage.v1.CreateActionRequest.wifi:type_name -> powermanage.v1.WifiParams
+	367, // 87: powermanage.v1.CreateActionRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	65,  // 88: powermanage.v1.CreateActionResponse.action:type_name -> powermanage.v1.ManagedAction
+	65,  // 89: powermanage.v1.GetActionResponse.action:type_name -> powermanage.v1.ManagedAction
+	347, // 90: powermanage.v1.ListActionsRequest.type_filter:type_name -> powermanage.v1.ActionType
+	65,  // 91: powermanage.v1.ListActionsResponse.actions:type_name -> powermanage.v1.ManagedAction
+	348, // 92: powermanage.v1.UpdateActionParamsRequest.desired_state:type_name -> powermanage.v1.DesiredState
+	349, // 93: powermanage.v1.UpdateActionParamsRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	350, // 94: powermanage.v1.UpdateActionParamsRequest.package:type_name -> powermanage.v1.PackageParams
+	351, // 95: powermanage.v1.UpdateActionParamsRequest.app:type_name -> powermanage.v1.AppInstallParams
+	352, // 96: powermanage.v1.UpdateActionParamsRequest.shell:type_name -> powermanage.v1.ShellParams
+	353, // 97: powermanage.v1.UpdateActionParamsRequest.service:type_name -> powermanage.v1.ServiceParams
+	354, // 98: powermanage.v1.UpdateActionParamsRequest.file:type_name -> powermanage.v1.FileParams
+	355, // 99: powermanage.v1.UpdateActionParamsRequest.update:type_name -> powermanage.v1.UpdateParams
+	356, // 100: powermanage.v1.UpdateActionParamsRequest.repository:type_name -> powermanage.v1.RepositoryParams
+	357, // 101: powermanage.v1.UpdateActionParamsRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
+	358, // 102: powermanage.v1.UpdateActionParamsRequest.directory:type_name -> powermanage.v1.DirectoryParams
+	359, // 103: powermanage.v1.UpdateActionParamsRequest.user:type_name -> powermanage.v1.UserParams
+	360, // 104: powermanage.v1.UpdateActionParamsRequest.ssh:type_name -> powermanage.v1.SshParams
+	361, // 105: powermanage.v1.UpdateActionParamsRequest.sshd:type_name -> powermanage.v1.SshdParams
+	362, // 106: powermanage.v1.UpdateActionParamsRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	363, // 107: powermanage.v1.UpdateActionParamsRequest.lps:type_name -> powermanage.v1.LpsParams
+	364, // 108: powermanage.v1.UpdateActionParamsRequest.group:type_name -> powermanage.v1.GroupParams
+	365, // 109: powermanage.v1.UpdateActionParamsRequest.encryption:type_name -> powermanage.v1.EncryptionParams
+	366, // 110: powermanage.v1.UpdateActionParamsRequest.wifi:type_name -> powermanage.v1.WifiParams
+	367, // 111: powermanage.v1.UpdateActionParamsRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	65,  // 112: powermanage.v1.UpdateActionResponse.action:type_name -> powermanage.v1.ManagedAction
+	341, // 113: powermanage.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
+	341, // 114: powermanage.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
+	349, // 115: powermanage.v1.ActionSet.schedule:type_name -> powermanage.v1.ActionSchedule
+	347, // 116: powermanage.v1.ActionSetMember.action_type:type_name -> powermanage.v1.ActionType
+	349, // 117: powermanage.v1.CreateActionSetRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	78,  // 118: powermanage.v1.CreateActionSetResponse.set:type_name -> powermanage.v1.ActionSet
+	78,  // 119: powermanage.v1.GetActionSetResponse.set:type_name -> powermanage.v1.ActionSet
+	79,  // 120: powermanage.v1.GetActionSetResponse.members:type_name -> powermanage.v1.ActionSetMember
+	78,  // 121: powermanage.v1.ListActionSetsResponse.sets:type_name -> powermanage.v1.ActionSet
+	349, // 122: powermanage.v1.UpdateActionSetScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	78,  // 123: powermanage.v1.UpdateActionSetResponse.set:type_name -> powermanage.v1.ActionSet
+	78,  // 124: powermanage.v1.AddActionToSetResponse.set:type_name -> powermanage.v1.ActionSet
+	78,  // 125: powermanage.v1.RemoveActionFromSetResponse.set:type_name -> powermanage.v1.ActionSet
+	78,  // 126: powermanage.v1.ReorderActionInSetResponse.set:type_name -> powermanage.v1.ActionSet
+	341, // 127: powermanage.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
+	341, // 128: powermanage.v1.Definition.updated_at:type_name -> google.protobuf.Timestamp
+	349, // 129: powermanage.v1.Definition.schedule:type_name -> powermanage.v1.ActionSchedule
+	349, // 130: powermanage.v1.CreateDefinitionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	98,  // 131: powermanage.v1.CreateDefinitionResponse.definition:type_name -> powermanage.v1.Definition
+	98,  // 132: powermanage.v1.GetDefinitionResponse.definition:type_name -> powermanage.v1.Definition
+	99,  // 133: powermanage.v1.GetDefinitionResponse.members:type_name -> powermanage.v1.DefinitionMember
+	98,  // 134: powermanage.v1.ListDefinitionsResponse.definitions:type_name -> powermanage.v1.Definition
+	349, // 135: powermanage.v1.UpdateDefinitionScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	98,  // 136: powermanage.v1.UpdateDefinitionResponse.definition:type_name -> powermanage.v1.Definition
+	98,  // 137: powermanage.v1.AddActionSetToDefinitionResponse.definition:type_name -> powermanage.v1.Definition
+	98,  // 138: powermanage.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> powermanage.v1.Definition
+	98,  // 139: powermanage.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> powermanage.v1.Definition
+	341, // 140: powermanage.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
+	368, // 141: powermanage.v1.DeviceGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	118, // 142: powermanage.v1.CreateDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
+	118, // 143: powermanage.v1.GetDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
+	123, // 144: powermanage.v1.GetDeviceGroupResponse.devices:type_name -> powermanage.v1.DeviceGroupMember
+	341, // 145: powermanage.v1.DeviceGroupMember.last_seen_at:type_name -> google.protobuf.Timestamp
+	118, // 146: powermanage.v1.ListDeviceGroupsResponse.groups:type_name -> powermanage.v1.DeviceGroup
+	118, // 147: powermanage.v1.ListDeviceGroupsForDeviceResponse.groups:type_name -> powermanage.v1.DeviceGroup
+	118, // 148: powermanage.v1.UpdateDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
+	118, // 149: powermanage.v1.AddDeviceToGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
+	118, // 150: powermanage.v1.RemoveDeviceFromGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
+	118, // 151: powermanage.v1.UpdateDeviceGroupQueryResponse.group:type_name -> powermanage.v1.DeviceGroup
+	118, // 152: powermanage.v1.EvaluateDynamicGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
+	368, // 153: powermanage.v1.SetDeviceGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	369, // 154: powermanage.v1.Assignment.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	346, // 155: powermanage.v1.Assignment.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	341, // 156: powermanage.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
+	370, // 157: powermanage.v1.Assignment.mode:type_name -> powermanage.v1.AssignmentMode
+	369, // 158: powermanage.v1.CreateAssignmentRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	346, // 159: powermanage.v1.CreateAssignmentRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	370, // 160: powermanage.v1.CreateAssignmentRequest.mode:type_name -> powermanage.v1.AssignmentMode
+	146, // 161: powermanage.v1.CreateAssignmentResponse.assignment:type_name -> powermanage.v1.Assignment
+	369, // 162: powermanage.v1.ListAssignmentsRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	346, // 163: powermanage.v1.ListAssignmentsRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	146, // 164: powermanage.v1.ListAssignmentsResponse.assignments:type_name -> powermanage.v1.Assignment
+	369, // 165: powermanage.v1.UserSelection.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	341, // 166: powermanage.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
+	369, // 167: powermanage.v1.SetUserSelectionRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	153, // 168: powermanage.v1.SetUserSelectionResponse.selection:type_name -> powermanage.v1.UserSelection
+	369, // 169: powermanage.v1.AvailableItem.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	65,  // 170: powermanage.v1.AvailableItem.actions:type_name -> powermanage.v1.ManagedAction
+	157, // 171: powermanage.v1.ListAvailableActionsResponse.items:type_name -> powermanage.v1.AvailableItem
+	65,  // 172: powermanage.v1.GetDeviceAssignmentsResponse.actions:type_name -> powermanage.v1.ManagedAction
+	78,  // 173: powermanage.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> powermanage.v1.ActionSet
+	98,  // 174: powermanage.v1.GetDeviceAssignmentsResponse.definitions:type_name -> powermanage.v1.Definition
+	289, // 175: powermanage.v1.GetDeviceAssignmentsResponse.compliance_policies:type_name -> powermanage.v1.CompliancePolicy
+	83,  // 176: powermanage.v1.GetDeviceAssignmentsResponse.action_set_details:type_name -> powermanage.v1.GetActionSetResponse
+	103, // 177: powermanage.v1.GetDeviceAssignmentsResponse.definition_details:type_name -> powermanage.v1.GetDefinitionResponse
+	146, // 178: powermanage.v1.GetUserAssignmentsResponse.assignments:type_name -> powermanage.v1.Assignment
+	347, // 179: powermanage.v1.ActionExecution.type:type_name -> powermanage.v1.ActionType
+	371, // 180: powermanage.v1.ActionExecution.status:type_name -> powermanage.v1.ExecutionStatus
+	372, // 181: powermanage.v1.ActionExecution.output:type_name -> powermanage.v1.CommandOutput
+	341, // 182: powermanage.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
+	341, // 183: powermanage.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
+	341, // 184: powermanage.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
+	372, // 185: powermanage.v1.ActionExecution.live_output:type_name -> powermanage.v1.CommandOutput
+	348, // 186: powermanage.v1.ActionExecution.desired_state:type_name -> powermanage.v1.DesiredState
+	372, // 187: powermanage.v1.ActionExecution.detection_output:type_name -> powermanage.v1.CommandOutput
+	341, // 188: powermanage.v1.ActionExecution.scheduled_for:type_name -> google.protobuf.Timestamp
+	373, // 189: powermanage.v1.DispatchActionRequest.inline_action:type_name -> powermanage.v1.Action
+	341, // 190: powermanage.v1.DispatchActionRequest.run_at:type_name -> google.protobuf.Timestamp
+	163, // 191: powermanage.v1.DispatchActionResponse.execution:type_name -> powermanage.v1.ActionExecution
+	373, // 192: powermanage.v1.DispatchToMultipleRequest.inline_action:type_name -> powermanage.v1.Action
+	163, // 193: powermanage.v1.DispatchToMultipleResponse.executions:type_name -> powermanage.v1.ActionExecution
+	163, // 194: powermanage.v1.DispatchAssignedActionsResponse.executions:type_name -> powermanage.v1.ActionExecution
+	163, // 195: powermanage.v1.DispatchActionSetResponse.executions:type_name -> powermanage.v1.ActionExecution
+	163, // 196: powermanage.v1.DispatchDefinitionResponse.executions:type_name -> powermanage.v1.ActionExecution
+	373, // 197: powermanage.v1.DispatchToGroupRequest.inline_action:type_name -> powermanage.v1.Action
+	163, // 198: powermanage.v1.DispatchToGroupResponse.executions:type_name -> powermanage.v1.ActionExecution
+	163, // 199: powermanage.v1.GetExecutionResponse.execution:type_name -> powermanage.v1.ActionExecution
+	371, // 200: powermanage.v1.ListExecutionsRequest.status_filter:type_name -> powermanage.v1.ExecutionStatus
+	347, // 201: powermanage.v1.ListExecutionsRequest.type_filter:type_name -> powermanage.v1.ActionType
+	163, // 202: powermanage.v1.ListExecutionsResponse.executions:type_name -> powermanage.v1.ActionExecution
+	347, // 203: powermanage.v1.DispatchInstantActionRequest.instant_action:type_name -> powermanage.v1.ActionType
+	341, // 204: powermanage.v1.DispatchInstantActionRequest.run_at:type_name -> google.protobuf.Timestamp
+	163, // 205: powermanage.v1.DispatchInstantActionResponse.execution:type_name -> powermanage.v1.ActionExecution
+	163, // 206: powermanage.v1.CancelExecutionResponse.execution:type_name -> powermanage.v1.ActionExecution
+	341, // 207: powermanage.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	184, // 208: powermanage.v1.ListAuditEventsResponse.events:type_name -> powermanage.v1.AuditEvent
+	341, // 209: powermanage.v1.ExportAuditEventsRequest.occurred_from:type_name -> google.protobuf.Timestamp
+	341, // 210: powermanage.v1.ExportAuditEventsRequest.occurred_to:type_name -> google.protobuf.Timestamp
+	341, // 211: powermanage.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
+	374, // 212: powermanage.v1.LpsPassword.rotation_reason:type_name -> powermanage.v1.RotationReason
+	189, // 213: powermanage.v1.GetDeviceLpsPasswordsResponse.current:type_name -> powermanage.v1.LpsPassword
+	189, // 214: powermanage.v1.GetDeviceLpsPasswordsResponse.history:type_name -> powermanage.v1.LpsPassword
+	341, // 215: powermanage.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
+	374, // 216: powermanage.v1.LuksKey.rotation_reason:type_name -> powermanage.v1.RotationReason
+	375, // 217: powermanage.v1.LuksKey.revocation_status:type_name -> powermanage.v1.LuksRevocationStatus
+	341, // 218: powermanage.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
+	192, // 219: powermanage.v1.GetDeviceLuksKeysResponse.current:type_name -> powermanage.v1.LuksKey
+	192, // 220: powermanage.v1.GetDeviceLuksKeysResponse.history:type_name -> powermanage.v1.LuksKey
+	376, // 221: powermanage.v1.GetOSQueryResultResponse.rows:type_name -> powermanage.v1.OSQueryRow
+	376, // 222: powermanage.v1.InventoryTableResult.rows:type_name -> powermanage.v1.OSQueryRow
+	341, // 223: powermanage.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
+	204, // 224: powermanage.v1.GetDeviceInventoryResponse.tables:type_name -> powermanage.v1.InventoryTableResult
+	13,  // 225: powermanage.v1.CreateRoleResponse.role:type_name -> powermanage.v1.Role
+	13,  // 226: powermanage.v1.GetRoleResponse.role:type_name -> powermanage.v1.Role
+	13,  // 227: powermanage.v1.ListRolesResponse.roles:type_name -> powermanage.v1.Role
+	13,  // 228: powermanage.v1.UpdateRoleResponse.role:type_name -> powermanage.v1.Role
+	342, // 229: powermanage.v1.AssignRoleToUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	342, // 230: powermanage.v1.RevokeRoleFromUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	15,  // 231: powermanage.v1.ListPermissionsResponse.permissions:type_name -> powermanage.v1.PermissionInfo
+	341, // 232: powermanage.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
+	368, // 233: powermanage.v1.UserGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	14,  // 234: powermanage.v1.UserGroup.role_grants:type_name -> powermanage.v1.RoleGrant
+	341, // 235: powermanage.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
+	228, // 236: powermanage.v1.CreateUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
+	228, // 237: powermanage.v1.GetUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
+	229, // 238: powermanage.v1.GetUserGroupResponse.members:type_name -> powermanage.v1.UserGroupMember
+	228, // 239: powermanage.v1.ListUserGroupsResponse.groups:type_name -> powermanage.v1.UserGroup
+	228, // 240: powermanage.v1.UpdateUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
+	342, // 241: powermanage.v1.AssignRoleToUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	342, // 242: powermanage.v1.RevokeRoleFromUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	228, // 243: powermanage.v1.ListUserGroupsForUserResponse.groups:type_name -> powermanage.v1.UserGroup
+	228, // 244: powermanage.v1.UpdateUserGroupQueryResponse.group:type_name -> powermanage.v1.UserGroup
+	228, // 245: powermanage.v1.EvaluateDynamicUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
+	368, // 246: powermanage.v1.SetUserGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	377, // 247: powermanage.v1.IdentityProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	335, // 248: powermanage.v1.IdentityProvider.group_mapping:type_name -> powermanage.v1.IdentityProvider.GroupMappingEntry
+	341, // 249: powermanage.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
+	341, // 250: powermanage.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
+	341, // 251: powermanage.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
+	341, // 252: powermanage.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
+	377, // 253: powermanage.v1.CreateIdentityProviderRequest.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	336, // 254: powermanage.v1.CreateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	257, // 255: powermanage.v1.CreateIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
+	257, // 256: powermanage.v1.GetIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
+	257, // 257: powermanage.v1.ListIdentityProvidersResponse.providers:type_name -> powermanage.v1.IdentityProvider
+	337, // 258: powermanage.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	257, // 259: powermanage.v1.UpdateIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
+	377, // 260: powermanage.v1.AuthMethodProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	269, // 261: powermanage.v1.ListAuthMethodsResponse.providers:type_name -> powermanage.v1.AuthMethodProvider
+	341, // 262: powermanage.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
+	10,  // 263: powermanage.v1.SSOCallbackResponse.user:type_name -> powermanage.v1.User
+	258, // 264: powermanage.v1.ListIdentityLinksResponse.links:type_name -> powermanage.v1.IdentityLink
+	345, // 265: powermanage.v1.GetDeviceComplianceResponse.status:type_name -> powermanage.v1.ComplianceStatus
+	288, // 266: powermanage.v1.GetDeviceComplianceResponse.checks:type_name -> powermanage.v1.ComplianceCheckResult
+	372, // 267: powermanage.v1.ComplianceCheckResult.detection_output:type_name -> powermanage.v1.CommandOutput
+	341, // 268: powermanage.v1.ComplianceCheckResult.checked_at:type_name -> google.protobuf.Timestamp
+	290, // 269: powermanage.v1.CompliancePolicy.rules:type_name -> powermanage.v1.CompliancePolicyRule
+	341, // 270: powermanage.v1.CompliancePolicy.created_at:type_name -> google.protobuf.Timestamp
+	289, // 271: powermanage.v1.CreateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	289, // 272: powermanage.v1.GetCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	289, // 273: powermanage.v1.ListCompliancePoliciesResponse.policies:type_name -> powermanage.v1.CompliancePolicy
+	289, // 274: powermanage.v1.UpdateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	289, // 275: powermanage.v1.AddCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	289, // 276: powermanage.v1.RemoveCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	289, // 277: powermanage.v1.UpdateCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	345, // 278: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.overall_status:type_name -> powermanage.v1.ComplianceStatus
+	310, // 279: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.policies:type_name -> powermanage.v1.DevicePolicyEvaluation
+	345, // 280: powermanage.v1.DevicePolicyEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
+	311, // 281: powermanage.v1.DevicePolicyEvaluation.rules:type_name -> powermanage.v1.DevicePolicyRuleEvaluation
+	345, // 282: powermanage.v1.DevicePolicyRuleEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
+	341, // 283: powermanage.v1.DevicePolicyRuleEvaluation.checked_at:type_name -> google.protobuf.Timestamp
+	341, // 284: powermanage.v1.DevicePolicyRuleEvaluation.first_failed_at:type_name -> google.protobuf.Timestamp
+	341, // 285: powermanage.v1.DevicePolicyRuleEvaluation.grace_expires_at:type_name -> google.protobuf.Timestamp
+	372, // 286: powermanage.v1.DevicePolicyRuleEvaluation.detection_output:type_name -> powermanage.v1.CommandOutput
+	378, // 287: powermanage.v1.SearchRequest.scope:type_name -> powermanage.v1.SearchScope
+	312, // 288: powermanage.v1.SearchRequest.date_filters:type_name -> powermanage.v1.SearchDateFilter
+	338, // 289: powermanage.v1.SearchRequest.tag_filters:type_name -> powermanage.v1.SearchRequest.TagFiltersEntry
+	379, // 290: powermanage.v1.SearchRequest.sort_field:type_name -> powermanage.v1.SortField
+	380, // 291: powermanage.v1.SearchRequest.sort_direction:type_name -> powermanage.v1.SortDirection
+	378, // 292: powermanage.v1.SearchResult.scope:type_name -> powermanage.v1.SearchScope
+	339, // 293: powermanage.v1.SearchResult.fields:type_name -> powermanage.v1.SearchResult.FieldsEntry
+	314, // 294: powermanage.v1.SearchResponse.results:type_name -> powermanage.v1.SearchResult
+	318, // 295: powermanage.v1.GetServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
+	318, // 296: powermanage.v1.UpdateServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
+	341, // 297: powermanage.v1.StartTerminalResponse.expires_at:type_name -> google.protobuf.Timestamp
+	341, // 298: powermanage.v1.TerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
+	341, // 299: powermanage.v1.TerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
+	328, // 300: powermanage.v1.ListActiveTerminalSessionsResponse.sessions:type_name -> powermanage.v1.TerminalSessionInfo
+	0,   // 301: powermanage.v1.ControlService.Register:input_type -> powermanage.v1.RegisterRequest
+	2,   // 302: powermanage.v1.ControlService.RenewCertificate:input_type -> powermanage.v1.RenewCertificateRequest
+	4,   // 303: powermanage.v1.ControlService.RefreshToken:input_type -> powermanage.v1.RefreshTokenRequest
+	6,   // 304: powermanage.v1.ControlService.Logout:input_type -> powermanage.v1.LogoutRequest
+	8,   // 305: powermanage.v1.ControlService.GetCurrentUser:input_type -> powermanage.v1.GetCurrentUserRequest
+	270, // 306: powermanage.v1.ControlService.ListAuthMethods:input_type -> powermanage.v1.ListAuthMethodsRequest
+	272, // 307: powermanage.v1.ControlService.GetSSOLoginURL:input_type -> powermanage.v1.GetSSOLoginURLRequest
+	274, // 308: powermanage.v1.ControlService.SSOCallback:input_type -> powermanage.v1.SSOCallbackRequest
+	259, // 309: powermanage.v1.ControlService.CreateIdentityProvider:input_type -> powermanage.v1.CreateIdentityProviderRequest
+	261, // 310: powermanage.v1.ControlService.GetIdentityProvider:input_type -> powermanage.v1.GetIdentityProviderRequest
+	263, // 311: powermanage.v1.ControlService.ListIdentityProviders:input_type -> powermanage.v1.ListIdentityProvidersRequest
+	265, // 312: powermanage.v1.ControlService.UpdateIdentityProvider:input_type -> powermanage.v1.UpdateIdentityProviderRequest
+	267, // 313: powermanage.v1.ControlService.DeleteIdentityProvider:input_type -> powermanage.v1.DeleteIdentityProviderRequest
+	276, // 314: powermanage.v1.ControlService.ListIdentityLinks:input_type -> powermanage.v1.ListIdentityLinksRequest
+	278, // 315: powermanage.v1.ControlService.UnlinkIdentity:input_type -> powermanage.v1.UnlinkIdentityRequest
+	280, // 316: powermanage.v1.ControlService.EnableSCIM:input_type -> powermanage.v1.EnableSCIMRequest
+	282, // 317: powermanage.v1.ControlService.DisableSCIM:input_type -> powermanage.v1.DisableSCIMRequest
+	284, // 318: powermanage.v1.ControlService.RotateSCIMToken:input_type -> powermanage.v1.RotateSCIMTokenRequest
+	16,  // 319: powermanage.v1.ControlService.CreateUser:input_type -> powermanage.v1.CreateUserRequest
+	18,  // 320: powermanage.v1.ControlService.GetUser:input_type -> powermanage.v1.GetUserRequest
+	20,  // 321: powermanage.v1.ControlService.ListUsers:input_type -> powermanage.v1.ListUsersRequest
+	22,  // 322: powermanage.v1.ControlService.UpdateUserEmail:input_type -> powermanage.v1.UpdateUserEmailRequest
+	23,  // 323: powermanage.v1.ControlService.SetUserDisabled:input_type -> powermanage.v1.SetUserDisabledRequest
+	25,  // 324: powermanage.v1.ControlService.UpdateUserProfile:input_type -> powermanage.v1.UpdateUserProfileRequest
+	33,  // 325: powermanage.v1.ControlService.UpdateUserLinuxUsername:input_type -> powermanage.v1.UpdateUserLinuxUsernameRequest
+	28,  // 326: powermanage.v1.ControlService.AddUserSshKey:input_type -> powermanage.v1.AddUserSshKeyRequest
+	30,  // 327: powermanage.v1.ControlService.RemoveUserSshKey:input_type -> powermanage.v1.RemoveUserSshKeyRequest
+	32,  // 328: powermanage.v1.ControlService.UpdateUserSshSettings:input_type -> powermanage.v1.UpdateUserSshSettingsRequest
+	26,  // 329: powermanage.v1.ControlService.DeleteUser:input_type -> powermanage.v1.DeleteUserRequest
+	35,  // 330: powermanage.v1.ControlService.ListDevices:input_type -> powermanage.v1.ListDevicesRequest
+	37,  // 331: powermanage.v1.ControlService.GetDevice:input_type -> powermanage.v1.GetDeviceRequest
+	39,  // 332: powermanage.v1.ControlService.SetDeviceLabel:input_type -> powermanage.v1.SetDeviceLabelRequest
+	40,  // 333: powermanage.v1.ControlService.RemoveDeviceLabel:input_type -> powermanage.v1.RemoveDeviceLabelRequest
+	44,  // 334: powermanage.v1.ControlService.AssignDevice:input_type -> powermanage.v1.AssignDeviceRequest
+	46,  // 335: powermanage.v1.ControlService.UnassignDevice:input_type -> powermanage.v1.UnassignDeviceRequest
+	49,  // 336: powermanage.v1.ControlService.ListDeviceAssignees:input_type -> powermanage.v1.ListDeviceAssigneesRequest
+	51,  // 337: powermanage.v1.ControlService.SetDeviceSyncInterval:input_type -> powermanage.v1.SetDeviceSyncIntervalRequest
+	52,  // 338: powermanage.v1.ControlService.SetDeviceInventoryInterval:input_type -> powermanage.v1.SetDeviceInventoryIntervalRequest
+	42,  // 339: powermanage.v1.ControlService.DeleteDevice:input_type -> powermanage.v1.DeleteDeviceRequest
+	54,  // 340: powermanage.v1.ControlService.CreateToken:input_type -> powermanage.v1.CreateTokenRequest
+	58,  // 341: powermanage.v1.ControlService.GetToken:input_type -> powermanage.v1.GetTokenRequest
+	56,  // 342: powermanage.v1.ControlService.ListTokens:input_type -> powermanage.v1.ListTokensRequest
+	60,  // 343: powermanage.v1.ControlService.RenameToken:input_type -> powermanage.v1.RenameTokenRequest
+	61,  // 344: powermanage.v1.ControlService.SetTokenDisabled:input_type -> powermanage.v1.SetTokenDisabledRequest
+	63,  // 345: powermanage.v1.ControlService.DeleteToken:input_type -> powermanage.v1.DeleteTokenRequest
+	66,  // 346: powermanage.v1.ControlService.CreateAction:input_type -> powermanage.v1.CreateActionRequest
+	68,  // 347: powermanage.v1.ControlService.GetAction:input_type -> powermanage.v1.GetActionRequest
+	70,  // 348: powermanage.v1.ControlService.ListActions:input_type -> powermanage.v1.ListActionsRequest
+	72,  // 349: powermanage.v1.ControlService.RenameAction:input_type -> powermanage.v1.RenameActionRequest
+	73,  // 350: powermanage.v1.ControlService.UpdateActionDescription:input_type -> powermanage.v1.UpdateActionDescriptionRequest
+	74,  // 351: powermanage.v1.ControlService.UpdateActionParams:input_type -> powermanage.v1.UpdateActionParamsRequest
+	76,  // 352: powermanage.v1.ControlService.DeleteAction:input_type -> powermanage.v1.DeleteActionRequest
+	80,  // 353: powermanage.v1.ControlService.CreateActionSet:input_type -> powermanage.v1.CreateActionSetRequest
+	82,  // 354: powermanage.v1.ControlService.GetActionSet:input_type -> powermanage.v1.GetActionSetRequest
+	84,  // 355: powermanage.v1.ControlService.ListActionSets:input_type -> powermanage.v1.ListActionSetsRequest
+	86,  // 356: powermanage.v1.ControlService.RenameActionSet:input_type -> powermanage.v1.RenameActionSetRequest
+	87,  // 357: powermanage.v1.ControlService.UpdateActionSetDescription:input_type -> powermanage.v1.UpdateActionSetDescriptionRequest
+	88,  // 358: powermanage.v1.ControlService.UpdateActionSetSchedule:input_type -> powermanage.v1.UpdateActionSetScheduleRequest
+	90,  // 359: powermanage.v1.ControlService.DeleteActionSet:input_type -> powermanage.v1.DeleteActionSetRequest
+	92,  // 360: powermanage.v1.ControlService.AddActionToSet:input_type -> powermanage.v1.AddActionToSetRequest
+	94,  // 361: powermanage.v1.ControlService.RemoveActionFromSet:input_type -> powermanage.v1.RemoveActionFromSetRequest
+	96,  // 362: powermanage.v1.ControlService.ReorderActionInSet:input_type -> powermanage.v1.ReorderActionInSetRequest
+	100, // 363: powermanage.v1.ControlService.CreateDefinition:input_type -> powermanage.v1.CreateDefinitionRequest
+	102, // 364: powermanage.v1.ControlService.GetDefinition:input_type -> powermanage.v1.GetDefinitionRequest
+	104, // 365: powermanage.v1.ControlService.ListDefinitions:input_type -> powermanage.v1.ListDefinitionsRequest
+	106, // 366: powermanage.v1.ControlService.RenameDefinition:input_type -> powermanage.v1.RenameDefinitionRequest
+	107, // 367: powermanage.v1.ControlService.UpdateDefinitionDescription:input_type -> powermanage.v1.UpdateDefinitionDescriptionRequest
+	108, // 368: powermanage.v1.ControlService.UpdateDefinitionSchedule:input_type -> powermanage.v1.UpdateDefinitionScheduleRequest
+	110, // 369: powermanage.v1.ControlService.DeleteDefinition:input_type -> powermanage.v1.DeleteDefinitionRequest
+	112, // 370: powermanage.v1.ControlService.AddActionSetToDefinition:input_type -> powermanage.v1.AddActionSetToDefinitionRequest
+	114, // 371: powermanage.v1.ControlService.RemoveActionSetFromDefinition:input_type -> powermanage.v1.RemoveActionSetFromDefinitionRequest
+	116, // 372: powermanage.v1.ControlService.ReorderActionSetInDefinition:input_type -> powermanage.v1.ReorderActionSetInDefinitionRequest
+	119, // 373: powermanage.v1.ControlService.CreateDeviceGroup:input_type -> powermanage.v1.CreateDeviceGroupRequest
+	121, // 374: powermanage.v1.ControlService.GetDeviceGroup:input_type -> powermanage.v1.GetDeviceGroupRequest
+	124, // 375: powermanage.v1.ControlService.ListDeviceGroups:input_type -> powermanage.v1.ListDeviceGroupsRequest
+	126, // 376: powermanage.v1.ControlService.ListDeviceGroupsForDevice:input_type -> powermanage.v1.ListDeviceGroupsForDeviceRequest
+	128, // 377: powermanage.v1.ControlService.RenameDeviceGroup:input_type -> powermanage.v1.RenameDeviceGroupRequest
+	129, // 378: powermanage.v1.ControlService.UpdateDeviceGroupDescription:input_type -> powermanage.v1.UpdateDeviceGroupDescriptionRequest
+	137, // 379: powermanage.v1.ControlService.UpdateDeviceGroupQuery:input_type -> powermanage.v1.UpdateDeviceGroupQueryRequest
+	131, // 380: powermanage.v1.ControlService.DeleteDeviceGroup:input_type -> powermanage.v1.DeleteDeviceGroupRequest
+	133, // 381: powermanage.v1.ControlService.AddDeviceToGroup:input_type -> powermanage.v1.AddDeviceToGroupRequest
+	135, // 382: powermanage.v1.ControlService.RemoveDeviceFromGroup:input_type -> powermanage.v1.RemoveDeviceFromGroupRequest
+	139, // 383: powermanage.v1.ControlService.ValidateDynamicQuery:input_type -> powermanage.v1.ValidateDynamicQueryRequest
+	141, // 384: powermanage.v1.ControlService.EvaluateDynamicGroup:input_type -> powermanage.v1.EvaluateDynamicGroupRequest
+	143, // 385: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> powermanage.v1.SetDeviceGroupSyncIntervalRequest
+	144, // 386: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:input_type -> powermanage.v1.SetDeviceGroupInventoryIntervalRequest
+	145, // 387: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:input_type -> powermanage.v1.SetDeviceGroupMaintenanceWindowRequest
+	147, // 388: powermanage.v1.ControlService.CreateAssignment:input_type -> powermanage.v1.CreateAssignmentRequest
+	149, // 389: powermanage.v1.ControlService.DeleteAssignment:input_type -> powermanage.v1.DeleteAssignmentRequest
+	151, // 390: powermanage.v1.ControlService.ListAssignments:input_type -> powermanage.v1.ListAssignmentsRequest
+	159, // 391: powermanage.v1.ControlService.GetDeviceAssignments:input_type -> powermanage.v1.GetDeviceAssignmentsRequest
+	161, // 392: powermanage.v1.ControlService.GetUserAssignments:input_type -> powermanage.v1.GetUserAssignmentsRequest
+	154, // 393: powermanage.v1.ControlService.SetUserSelection:input_type -> powermanage.v1.SetUserSelectionRequest
+	156, // 394: powermanage.v1.ControlService.ListAvailableActions:input_type -> powermanage.v1.ListAvailableActionsRequest
+	164, // 395: powermanage.v1.ControlService.DispatchAction:input_type -> powermanage.v1.DispatchActionRequest
+	166, // 396: powermanage.v1.ControlService.DispatchToMultiple:input_type -> powermanage.v1.DispatchToMultipleRequest
+	168, // 397: powermanage.v1.ControlService.DispatchAssignedActions:input_type -> powermanage.v1.DispatchAssignedActionsRequest
+	170, // 398: powermanage.v1.ControlService.DispatchActionSet:input_type -> powermanage.v1.DispatchActionSetRequest
+	172, // 399: powermanage.v1.ControlService.DispatchDefinition:input_type -> powermanage.v1.DispatchDefinitionRequest
+	174, // 400: powermanage.v1.ControlService.DispatchToGroup:input_type -> powermanage.v1.DispatchToGroupRequest
+	180, // 401: powermanage.v1.ControlService.DispatchInstantAction:input_type -> powermanage.v1.DispatchInstantActionRequest
+	182, // 402: powermanage.v1.ControlService.CancelExecution:input_type -> powermanage.v1.CancelExecutionRequest
+	176, // 403: powermanage.v1.ControlService.GetExecution:input_type -> powermanage.v1.GetExecutionRequest
+	178, // 404: powermanage.v1.ControlService.ListExecutions:input_type -> powermanage.v1.ListExecutionsRequest
+	185, // 405: powermanage.v1.ControlService.ListAuditEvents:input_type -> powermanage.v1.ListAuditEventsRequest
+	187, // 406: powermanage.v1.ControlService.ExportAuditEvents:input_type -> powermanage.v1.ExportAuditEventsRequest
+	190, // 407: powermanage.v1.ControlService.GetDeviceLpsPasswords:input_type -> powermanage.v1.GetDeviceLpsPasswordsRequest
+	193, // 408: powermanage.v1.ControlService.GetDeviceLuksKeys:input_type -> powermanage.v1.GetDeviceLuksKeysRequest
+	195, // 409: powermanage.v1.ControlService.CreateLuksToken:input_type -> powermanage.v1.CreateLuksTokenRequest
+	197, // 410: powermanage.v1.ControlService.RevokeLuksDeviceKey:input_type -> powermanage.v1.RevokeLuksDeviceKeyRequest
+	199, // 411: powermanage.v1.ControlService.DispatchOSQuery:input_type -> powermanage.v1.DispatchOSQueryRequest
+	201, // 412: powermanage.v1.ControlService.GetOSQueryResult:input_type -> powermanage.v1.GetOSQueryResultRequest
+	203, // 413: powermanage.v1.ControlService.GetDeviceInventory:input_type -> powermanage.v1.GetDeviceInventoryRequest
+	206, // 414: powermanage.v1.ControlService.RefreshDeviceInventory:input_type -> powermanage.v1.RefreshDeviceInventoryRequest
+	208, // 415: powermanage.v1.ControlService.QueryDeviceLogs:input_type -> powermanage.v1.QueryDeviceLogsRequest
+	210, // 416: powermanage.v1.ControlService.GetDeviceLogResult:input_type -> powermanage.v1.GetDeviceLogResultRequest
+	212, // 417: powermanage.v1.ControlService.CreateRole:input_type -> powermanage.v1.CreateRoleRequest
+	214, // 418: powermanage.v1.ControlService.GetRole:input_type -> powermanage.v1.GetRoleRequest
+	216, // 419: powermanage.v1.ControlService.ListRoles:input_type -> powermanage.v1.ListRolesRequest
+	218, // 420: powermanage.v1.ControlService.UpdateRole:input_type -> powermanage.v1.UpdateRoleRequest
+	220, // 421: powermanage.v1.ControlService.DeleteRole:input_type -> powermanage.v1.DeleteRoleRequest
+	222, // 422: powermanage.v1.ControlService.AssignRoleToUser:input_type -> powermanage.v1.AssignRoleToUserRequest
+	224, // 423: powermanage.v1.ControlService.RevokeRoleFromUser:input_type -> powermanage.v1.RevokeRoleFromUserRequest
+	226, // 424: powermanage.v1.ControlService.ListPermissions:input_type -> powermanage.v1.ListPermissionsRequest
+	230, // 425: powermanage.v1.ControlService.CreateUserGroup:input_type -> powermanage.v1.CreateUserGroupRequest
+	232, // 426: powermanage.v1.ControlService.GetUserGroup:input_type -> powermanage.v1.GetUserGroupRequest
+	234, // 427: powermanage.v1.ControlService.ListUserGroups:input_type -> powermanage.v1.ListUserGroupsRequest
+	236, // 428: powermanage.v1.ControlService.UpdateUserGroup:input_type -> powermanage.v1.UpdateUserGroupRequest
+	238, // 429: powermanage.v1.ControlService.DeleteUserGroup:input_type -> powermanage.v1.DeleteUserGroupRequest
+	240, // 430: powermanage.v1.ControlService.AddUserToGroup:input_type -> powermanage.v1.AddUserToGroupRequest
+	242, // 431: powermanage.v1.ControlService.RemoveUserFromGroup:input_type -> powermanage.v1.RemoveUserFromGroupRequest
+	244, // 432: powermanage.v1.ControlService.AssignRoleToUserGroup:input_type -> powermanage.v1.AssignRoleToUserGroupRequest
+	246, // 433: powermanage.v1.ControlService.RevokeRoleFromUserGroup:input_type -> powermanage.v1.RevokeRoleFromUserGroupRequest
+	248, // 434: powermanage.v1.ControlService.ListUserGroupsForUser:input_type -> powermanage.v1.ListUserGroupsForUserRequest
+	250, // 435: powermanage.v1.ControlService.UpdateUserGroupQuery:input_type -> powermanage.v1.UpdateUserGroupQueryRequest
+	252, // 436: powermanage.v1.ControlService.ValidateUserGroupQuery:input_type -> powermanage.v1.ValidateUserGroupQueryRequest
+	254, // 437: powermanage.v1.ControlService.EvaluateDynamicUserGroup:input_type -> powermanage.v1.EvaluateDynamicUserGroupRequest
+	256, // 438: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:input_type -> powermanage.v1.SetUserGroupMaintenanceWindowRequest
+	286, // 439: powermanage.v1.ControlService.GetDeviceCompliance:input_type -> powermanage.v1.GetDeviceComplianceRequest
+	291, // 440: powermanage.v1.ControlService.CreateCompliancePolicy:input_type -> powermanage.v1.CreateCompliancePolicyRequest
+	293, // 441: powermanage.v1.ControlService.GetCompliancePolicy:input_type -> powermanage.v1.GetCompliancePolicyRequest
+	295, // 442: powermanage.v1.ControlService.ListCompliancePolicies:input_type -> powermanage.v1.ListCompliancePoliciesRequest
+	297, // 443: powermanage.v1.ControlService.RenameCompliancePolicy:input_type -> powermanage.v1.RenameCompliancePolicyRequest
+	298, // 444: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:input_type -> powermanage.v1.UpdateCompliancePolicyDescriptionRequest
+	300, // 445: powermanage.v1.ControlService.DeleteCompliancePolicy:input_type -> powermanage.v1.DeleteCompliancePolicyRequest
+	302, // 446: powermanage.v1.ControlService.AddCompliancePolicyRule:input_type -> powermanage.v1.AddCompliancePolicyRuleRequest
+	304, // 447: powermanage.v1.ControlService.RemoveCompliancePolicyRule:input_type -> powermanage.v1.RemoveCompliancePolicyRuleRequest
+	306, // 448: powermanage.v1.ControlService.UpdateCompliancePolicyRule:input_type -> powermanage.v1.UpdateCompliancePolicyRuleRequest
+	308, // 449: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:input_type -> powermanage.v1.GetDeviceCompliancePolicyStatusRequest
+	313, // 450: powermanage.v1.ControlService.Search:input_type -> powermanage.v1.SearchRequest
+	316, // 451: powermanage.v1.ControlService.RebuildSearchIndex:input_type -> powermanage.v1.RebuildSearchIndexRequest
+	319, // 452: powermanage.v1.ControlService.GetServerSettings:input_type -> powermanage.v1.GetServerSettingsRequest
+	321, // 453: powermanage.v1.ControlService.UpdateServerSettings:input_type -> powermanage.v1.UpdateServerSettingsRequest
+	323, // 454: powermanage.v1.ControlService.SetUserProvisioningEnabled:input_type -> powermanage.v1.SetUserProvisioningEnabledRequest
+	324, // 455: powermanage.v1.ControlService.StartTerminal:input_type -> powermanage.v1.StartTerminalRequest
+	326, // 456: powermanage.v1.ControlService.StopTerminal:input_type -> powermanage.v1.StopTerminalRequest
+	329, // 457: powermanage.v1.ControlService.ListActiveTerminalSessions:input_type -> powermanage.v1.ListActiveTerminalSessionsRequest
+	331, // 458: powermanage.v1.ControlService.TerminateTerminalSession:input_type -> powermanage.v1.TerminateTerminalSessionRequest
+	1,   // 459: powermanage.v1.ControlService.Register:output_type -> powermanage.v1.RegisterResponse
+	3,   // 460: powermanage.v1.ControlService.RenewCertificate:output_type -> powermanage.v1.RenewCertificateResponse
+	5,   // 461: powermanage.v1.ControlService.RefreshToken:output_type -> powermanage.v1.RefreshTokenResponse
+	7,   // 462: powermanage.v1.ControlService.Logout:output_type -> powermanage.v1.LogoutResponse
+	9,   // 463: powermanage.v1.ControlService.GetCurrentUser:output_type -> powermanage.v1.GetCurrentUserResponse
+	271, // 464: powermanage.v1.ControlService.ListAuthMethods:output_type -> powermanage.v1.ListAuthMethodsResponse
+	273, // 465: powermanage.v1.ControlService.GetSSOLoginURL:output_type -> powermanage.v1.GetSSOLoginURLResponse
+	275, // 466: powermanage.v1.ControlService.SSOCallback:output_type -> powermanage.v1.SSOCallbackResponse
+	260, // 467: powermanage.v1.ControlService.CreateIdentityProvider:output_type -> powermanage.v1.CreateIdentityProviderResponse
+	262, // 468: powermanage.v1.ControlService.GetIdentityProvider:output_type -> powermanage.v1.GetIdentityProviderResponse
+	264, // 469: powermanage.v1.ControlService.ListIdentityProviders:output_type -> powermanage.v1.ListIdentityProvidersResponse
+	266, // 470: powermanage.v1.ControlService.UpdateIdentityProvider:output_type -> powermanage.v1.UpdateIdentityProviderResponse
+	268, // 471: powermanage.v1.ControlService.DeleteIdentityProvider:output_type -> powermanage.v1.DeleteIdentityProviderResponse
+	277, // 472: powermanage.v1.ControlService.ListIdentityLinks:output_type -> powermanage.v1.ListIdentityLinksResponse
+	279, // 473: powermanage.v1.ControlService.UnlinkIdentity:output_type -> powermanage.v1.UnlinkIdentityResponse
+	281, // 474: powermanage.v1.ControlService.EnableSCIM:output_type -> powermanage.v1.EnableSCIMResponse
+	283, // 475: powermanage.v1.ControlService.DisableSCIM:output_type -> powermanage.v1.DisableSCIMResponse
+	285, // 476: powermanage.v1.ControlService.RotateSCIMToken:output_type -> powermanage.v1.RotateSCIMTokenResponse
+	17,  // 477: powermanage.v1.ControlService.CreateUser:output_type -> powermanage.v1.CreateUserResponse
+	19,  // 478: powermanage.v1.ControlService.GetUser:output_type -> powermanage.v1.GetUserResponse
+	21,  // 479: powermanage.v1.ControlService.ListUsers:output_type -> powermanage.v1.ListUsersResponse
+	24,  // 480: powermanage.v1.ControlService.UpdateUserEmail:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 481: powermanage.v1.ControlService.SetUserDisabled:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 482: powermanage.v1.ControlService.UpdateUserProfile:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 483: powermanage.v1.ControlService.UpdateUserLinuxUsername:output_type -> powermanage.v1.UpdateUserResponse
+	29,  // 484: powermanage.v1.ControlService.AddUserSshKey:output_type -> powermanage.v1.AddUserSshKeyResponse
+	31,  // 485: powermanage.v1.ControlService.RemoveUserSshKey:output_type -> powermanage.v1.RemoveUserSshKeyResponse
+	24,  // 486: powermanage.v1.ControlService.UpdateUserSshSettings:output_type -> powermanage.v1.UpdateUserResponse
+	27,  // 487: powermanage.v1.ControlService.DeleteUser:output_type -> powermanage.v1.DeleteUserResponse
+	36,  // 488: powermanage.v1.ControlService.ListDevices:output_type -> powermanage.v1.ListDevicesResponse
+	38,  // 489: powermanage.v1.ControlService.GetDevice:output_type -> powermanage.v1.GetDeviceResponse
+	41,  // 490: powermanage.v1.ControlService.SetDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
+	41,  // 491: powermanage.v1.ControlService.RemoveDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
+	45,  // 492: powermanage.v1.ControlService.AssignDevice:output_type -> powermanage.v1.AssignDeviceResponse
+	47,  // 493: powermanage.v1.ControlService.UnassignDevice:output_type -> powermanage.v1.UnassignDeviceResponse
+	50,  // 494: powermanage.v1.ControlService.ListDeviceAssignees:output_type -> powermanage.v1.ListDeviceAssigneesResponse
+	41,  // 495: powermanage.v1.ControlService.SetDeviceSyncInterval:output_type -> powermanage.v1.UpdateDeviceResponse
+	41,  // 496: powermanage.v1.ControlService.SetDeviceInventoryInterval:output_type -> powermanage.v1.UpdateDeviceResponse
+	43,  // 497: powermanage.v1.ControlService.DeleteDevice:output_type -> powermanage.v1.DeleteDeviceResponse
+	55,  // 498: powermanage.v1.ControlService.CreateToken:output_type -> powermanage.v1.CreateTokenResponse
+	59,  // 499: powermanage.v1.ControlService.GetToken:output_type -> powermanage.v1.GetTokenResponse
+	57,  // 500: powermanage.v1.ControlService.ListTokens:output_type -> powermanage.v1.ListTokensResponse
+	62,  // 501: powermanage.v1.ControlService.RenameToken:output_type -> powermanage.v1.UpdateTokenResponse
+	62,  // 502: powermanage.v1.ControlService.SetTokenDisabled:output_type -> powermanage.v1.UpdateTokenResponse
+	64,  // 503: powermanage.v1.ControlService.DeleteToken:output_type -> powermanage.v1.DeleteTokenResponse
+	67,  // 504: powermanage.v1.ControlService.CreateAction:output_type -> powermanage.v1.CreateActionResponse
+	69,  // 505: powermanage.v1.ControlService.GetAction:output_type -> powermanage.v1.GetActionResponse
+	71,  // 506: powermanage.v1.ControlService.ListActions:output_type -> powermanage.v1.ListActionsResponse
+	75,  // 507: powermanage.v1.ControlService.RenameAction:output_type -> powermanage.v1.UpdateActionResponse
+	75,  // 508: powermanage.v1.ControlService.UpdateActionDescription:output_type -> powermanage.v1.UpdateActionResponse
+	75,  // 509: powermanage.v1.ControlService.UpdateActionParams:output_type -> powermanage.v1.UpdateActionResponse
+	77,  // 510: powermanage.v1.ControlService.DeleteAction:output_type -> powermanage.v1.DeleteActionResponse
+	81,  // 511: powermanage.v1.ControlService.CreateActionSet:output_type -> powermanage.v1.CreateActionSetResponse
+	83,  // 512: powermanage.v1.ControlService.GetActionSet:output_type -> powermanage.v1.GetActionSetResponse
+	85,  // 513: powermanage.v1.ControlService.ListActionSets:output_type -> powermanage.v1.ListActionSetsResponse
+	89,  // 514: powermanage.v1.ControlService.RenameActionSet:output_type -> powermanage.v1.UpdateActionSetResponse
+	89,  // 515: powermanage.v1.ControlService.UpdateActionSetDescription:output_type -> powermanage.v1.UpdateActionSetResponse
+	89,  // 516: powermanage.v1.ControlService.UpdateActionSetSchedule:output_type -> powermanage.v1.UpdateActionSetResponse
+	91,  // 517: powermanage.v1.ControlService.DeleteActionSet:output_type -> powermanage.v1.DeleteActionSetResponse
+	93,  // 518: powermanage.v1.ControlService.AddActionToSet:output_type -> powermanage.v1.AddActionToSetResponse
+	95,  // 519: powermanage.v1.ControlService.RemoveActionFromSet:output_type -> powermanage.v1.RemoveActionFromSetResponse
+	97,  // 520: powermanage.v1.ControlService.ReorderActionInSet:output_type -> powermanage.v1.ReorderActionInSetResponse
+	101, // 521: powermanage.v1.ControlService.CreateDefinition:output_type -> powermanage.v1.CreateDefinitionResponse
+	103, // 522: powermanage.v1.ControlService.GetDefinition:output_type -> powermanage.v1.GetDefinitionResponse
+	105, // 523: powermanage.v1.ControlService.ListDefinitions:output_type -> powermanage.v1.ListDefinitionsResponse
+	109, // 524: powermanage.v1.ControlService.RenameDefinition:output_type -> powermanage.v1.UpdateDefinitionResponse
+	109, // 525: powermanage.v1.ControlService.UpdateDefinitionDescription:output_type -> powermanage.v1.UpdateDefinitionResponse
+	109, // 526: powermanage.v1.ControlService.UpdateDefinitionSchedule:output_type -> powermanage.v1.UpdateDefinitionResponse
+	111, // 527: powermanage.v1.ControlService.DeleteDefinition:output_type -> powermanage.v1.DeleteDefinitionResponse
+	113, // 528: powermanage.v1.ControlService.AddActionSetToDefinition:output_type -> powermanage.v1.AddActionSetToDefinitionResponse
+	115, // 529: powermanage.v1.ControlService.RemoveActionSetFromDefinition:output_type -> powermanage.v1.RemoveActionSetFromDefinitionResponse
+	117, // 530: powermanage.v1.ControlService.ReorderActionSetInDefinition:output_type -> powermanage.v1.ReorderActionSetInDefinitionResponse
+	120, // 531: powermanage.v1.ControlService.CreateDeviceGroup:output_type -> powermanage.v1.CreateDeviceGroupResponse
+	122, // 532: powermanage.v1.ControlService.GetDeviceGroup:output_type -> powermanage.v1.GetDeviceGroupResponse
+	125, // 533: powermanage.v1.ControlService.ListDeviceGroups:output_type -> powermanage.v1.ListDeviceGroupsResponse
+	127, // 534: powermanage.v1.ControlService.ListDeviceGroupsForDevice:output_type -> powermanage.v1.ListDeviceGroupsForDeviceResponse
+	130, // 535: powermanage.v1.ControlService.RenameDeviceGroup:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	130, // 536: powermanage.v1.ControlService.UpdateDeviceGroupDescription:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	138, // 537: powermanage.v1.ControlService.UpdateDeviceGroupQuery:output_type -> powermanage.v1.UpdateDeviceGroupQueryResponse
+	132, // 538: powermanage.v1.ControlService.DeleteDeviceGroup:output_type -> powermanage.v1.DeleteDeviceGroupResponse
+	134, // 539: powermanage.v1.ControlService.AddDeviceToGroup:output_type -> powermanage.v1.AddDeviceToGroupResponse
+	136, // 540: powermanage.v1.ControlService.RemoveDeviceFromGroup:output_type -> powermanage.v1.RemoveDeviceFromGroupResponse
+	140, // 541: powermanage.v1.ControlService.ValidateDynamicQuery:output_type -> powermanage.v1.ValidateDynamicQueryResponse
+	142, // 542: powermanage.v1.ControlService.EvaluateDynamicGroup:output_type -> powermanage.v1.EvaluateDynamicGroupResponse
+	130, // 543: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	130, // 544: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	130, // 545: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	148, // 546: powermanage.v1.ControlService.CreateAssignment:output_type -> powermanage.v1.CreateAssignmentResponse
+	150, // 547: powermanage.v1.ControlService.DeleteAssignment:output_type -> powermanage.v1.DeleteAssignmentResponse
+	152, // 548: powermanage.v1.ControlService.ListAssignments:output_type -> powermanage.v1.ListAssignmentsResponse
+	160, // 549: powermanage.v1.ControlService.GetDeviceAssignments:output_type -> powermanage.v1.GetDeviceAssignmentsResponse
+	162, // 550: powermanage.v1.ControlService.GetUserAssignments:output_type -> powermanage.v1.GetUserAssignmentsResponse
+	155, // 551: powermanage.v1.ControlService.SetUserSelection:output_type -> powermanage.v1.SetUserSelectionResponse
+	158, // 552: powermanage.v1.ControlService.ListAvailableActions:output_type -> powermanage.v1.ListAvailableActionsResponse
+	165, // 553: powermanage.v1.ControlService.DispatchAction:output_type -> powermanage.v1.DispatchActionResponse
+	167, // 554: powermanage.v1.ControlService.DispatchToMultiple:output_type -> powermanage.v1.DispatchToMultipleResponse
+	169, // 555: powermanage.v1.ControlService.DispatchAssignedActions:output_type -> powermanage.v1.DispatchAssignedActionsResponse
+	171, // 556: powermanage.v1.ControlService.DispatchActionSet:output_type -> powermanage.v1.DispatchActionSetResponse
+	173, // 557: powermanage.v1.ControlService.DispatchDefinition:output_type -> powermanage.v1.DispatchDefinitionResponse
+	175, // 558: powermanage.v1.ControlService.DispatchToGroup:output_type -> powermanage.v1.DispatchToGroupResponse
+	181, // 559: powermanage.v1.ControlService.DispatchInstantAction:output_type -> powermanage.v1.DispatchInstantActionResponse
+	183, // 560: powermanage.v1.ControlService.CancelExecution:output_type -> powermanage.v1.CancelExecutionResponse
+	177, // 561: powermanage.v1.ControlService.GetExecution:output_type -> powermanage.v1.GetExecutionResponse
+	179, // 562: powermanage.v1.ControlService.ListExecutions:output_type -> powermanage.v1.ListExecutionsResponse
+	186, // 563: powermanage.v1.ControlService.ListAuditEvents:output_type -> powermanage.v1.ListAuditEventsResponse
+	188, // 564: powermanage.v1.ControlService.ExportAuditEvents:output_type -> powermanage.v1.ExportAuditEventsResponse
+	191, // 565: powermanage.v1.ControlService.GetDeviceLpsPasswords:output_type -> powermanage.v1.GetDeviceLpsPasswordsResponse
+	194, // 566: powermanage.v1.ControlService.GetDeviceLuksKeys:output_type -> powermanage.v1.GetDeviceLuksKeysResponse
+	196, // 567: powermanage.v1.ControlService.CreateLuksToken:output_type -> powermanage.v1.CreateLuksTokenResponse
+	198, // 568: powermanage.v1.ControlService.RevokeLuksDeviceKey:output_type -> powermanage.v1.RevokeLuksDeviceKeyResponse
+	200, // 569: powermanage.v1.ControlService.DispatchOSQuery:output_type -> powermanage.v1.DispatchOSQueryResponse
+	202, // 570: powermanage.v1.ControlService.GetOSQueryResult:output_type -> powermanage.v1.GetOSQueryResultResponse
+	205, // 571: powermanage.v1.ControlService.GetDeviceInventory:output_type -> powermanage.v1.GetDeviceInventoryResponse
+	207, // 572: powermanage.v1.ControlService.RefreshDeviceInventory:output_type -> powermanage.v1.RefreshDeviceInventoryResponse
+	209, // 573: powermanage.v1.ControlService.QueryDeviceLogs:output_type -> powermanage.v1.QueryDeviceLogsResponse
+	211, // 574: powermanage.v1.ControlService.GetDeviceLogResult:output_type -> powermanage.v1.GetDeviceLogResultResponse
+	213, // 575: powermanage.v1.ControlService.CreateRole:output_type -> powermanage.v1.CreateRoleResponse
+	215, // 576: powermanage.v1.ControlService.GetRole:output_type -> powermanage.v1.GetRoleResponse
+	217, // 577: powermanage.v1.ControlService.ListRoles:output_type -> powermanage.v1.ListRolesResponse
+	219, // 578: powermanage.v1.ControlService.UpdateRole:output_type -> powermanage.v1.UpdateRoleResponse
+	221, // 579: powermanage.v1.ControlService.DeleteRole:output_type -> powermanage.v1.DeleteRoleResponse
+	223, // 580: powermanage.v1.ControlService.AssignRoleToUser:output_type -> powermanage.v1.AssignRoleToUserResponse
+	225, // 581: powermanage.v1.ControlService.RevokeRoleFromUser:output_type -> powermanage.v1.RevokeRoleFromUserResponse
+	227, // 582: powermanage.v1.ControlService.ListPermissions:output_type -> powermanage.v1.ListPermissionsResponse
+	231, // 583: powermanage.v1.ControlService.CreateUserGroup:output_type -> powermanage.v1.CreateUserGroupResponse
+	233, // 584: powermanage.v1.ControlService.GetUserGroup:output_type -> powermanage.v1.GetUserGroupResponse
+	235, // 585: powermanage.v1.ControlService.ListUserGroups:output_type -> powermanage.v1.ListUserGroupsResponse
+	237, // 586: powermanage.v1.ControlService.UpdateUserGroup:output_type -> powermanage.v1.UpdateUserGroupResponse
+	239, // 587: powermanage.v1.ControlService.DeleteUserGroup:output_type -> powermanage.v1.DeleteUserGroupResponse
+	241, // 588: powermanage.v1.ControlService.AddUserToGroup:output_type -> powermanage.v1.AddUserToGroupResponse
+	243, // 589: powermanage.v1.ControlService.RemoveUserFromGroup:output_type -> powermanage.v1.RemoveUserFromGroupResponse
+	245, // 590: powermanage.v1.ControlService.AssignRoleToUserGroup:output_type -> powermanage.v1.AssignRoleToUserGroupResponse
+	247, // 591: powermanage.v1.ControlService.RevokeRoleFromUserGroup:output_type -> powermanage.v1.RevokeRoleFromUserGroupResponse
+	249, // 592: powermanage.v1.ControlService.ListUserGroupsForUser:output_type -> powermanage.v1.ListUserGroupsForUserResponse
+	251, // 593: powermanage.v1.ControlService.UpdateUserGroupQuery:output_type -> powermanage.v1.UpdateUserGroupQueryResponse
+	253, // 594: powermanage.v1.ControlService.ValidateUserGroupQuery:output_type -> powermanage.v1.ValidateUserGroupQueryResponse
+	255, // 595: powermanage.v1.ControlService.EvaluateDynamicUserGroup:output_type -> powermanage.v1.EvaluateDynamicUserGroupResponse
+	237, // 596: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateUserGroupResponse
+	287, // 597: powermanage.v1.ControlService.GetDeviceCompliance:output_type -> powermanage.v1.GetDeviceComplianceResponse
+	292, // 598: powermanage.v1.ControlService.CreateCompliancePolicy:output_type -> powermanage.v1.CreateCompliancePolicyResponse
+	294, // 599: powermanage.v1.ControlService.GetCompliancePolicy:output_type -> powermanage.v1.GetCompliancePolicyResponse
+	296, // 600: powermanage.v1.ControlService.ListCompliancePolicies:output_type -> powermanage.v1.ListCompliancePoliciesResponse
+	299, // 601: powermanage.v1.ControlService.RenameCompliancePolicy:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
+	299, // 602: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
+	301, // 603: powermanage.v1.ControlService.DeleteCompliancePolicy:output_type -> powermanage.v1.DeleteCompliancePolicyResponse
+	303, // 604: powermanage.v1.ControlService.AddCompliancePolicyRule:output_type -> powermanage.v1.AddCompliancePolicyRuleResponse
+	305, // 605: powermanage.v1.ControlService.RemoveCompliancePolicyRule:output_type -> powermanage.v1.RemoveCompliancePolicyRuleResponse
+	307, // 606: powermanage.v1.ControlService.UpdateCompliancePolicyRule:output_type -> powermanage.v1.UpdateCompliancePolicyRuleResponse
+	309, // 607: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:output_type -> powermanage.v1.GetDeviceCompliancePolicyStatusResponse
+	315, // 608: powermanage.v1.ControlService.Search:output_type -> powermanage.v1.SearchResponse
+	317, // 609: powermanage.v1.ControlService.RebuildSearchIndex:output_type -> powermanage.v1.RebuildSearchIndexResponse
+	320, // 610: powermanage.v1.ControlService.GetServerSettings:output_type -> powermanage.v1.GetServerSettingsResponse
+	322, // 611: powermanage.v1.ControlService.UpdateServerSettings:output_type -> powermanage.v1.UpdateServerSettingsResponse
+	24,  // 612: powermanage.v1.ControlService.SetUserProvisioningEnabled:output_type -> powermanage.v1.UpdateUserResponse
+	325, // 613: powermanage.v1.ControlService.StartTerminal:output_type -> powermanage.v1.StartTerminalResponse
+	327, // 614: powermanage.v1.ControlService.StopTerminal:output_type -> powermanage.v1.StopTerminalResponse
+	330, // 615: powermanage.v1.ControlService.ListActiveTerminalSessions:output_type -> powermanage.v1.ListActiveTerminalSessionsResponse
+	332, // 616: powermanage.v1.ControlService.TerminateTerminalSession:output_type -> powermanage.v1.TerminateTerminalSessionResponse
+	459, // [459:617] is the sub-list for method output_type
+	301, // [301:459] is the sub-list for method input_type
+	301, // [301:301] is the sub-list for extension type_name
+	301, // [301:301] is the sub-list for extension extendee
+	0,   // [0:301] is the sub-list for field type_name
 }
 
-func init() { file_pm_v1_control_proto_init() }
-func file_pm_v1_control_proto_init() {
-	if File_pm_v1_control_proto != nil {
+func init() { file_powermanage_v1_control_proto_init() }
+func file_powermanage_v1_control_proto_init() {
+	if File_powermanage_v1_control_proto != nil {
 		return
 	}
-	file_pm_v1_actions_proto_init()
-	file_pm_v1_agent_proto_init()
-	file_pm_v1_common_proto_init()
-	file_pm_v1_control_proto_msgTypes[82].OneofWrappers = []any{
+	file_powermanage_v1_actions_proto_init()
+	file_powermanage_v1_agent_proto_init()
+	file_powermanage_v1_common_proto_init()
+	file_powermanage_v1_control_proto_msgTypes[65].OneofWrappers = []any{
 		(*ManagedAction_Package)(nil),
 		(*ManagedAction_App)(nil),
 		(*ManagedAction_Shell)(nil),
@@ -24553,7 +23497,7 @@ func file_pm_v1_control_proto_init() {
 		(*ManagedAction_Wifi)(nil),
 		(*ManagedAction_AgentUpdate)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[83].OneofWrappers = []any{
+	file_powermanage_v1_control_proto_msgTypes[66].OneofWrappers = []any{
 		(*CreateActionRequest_Package)(nil),
 		(*CreateActionRequest_App)(nil),
 		(*CreateActionRequest_Shell)(nil),
@@ -24573,7 +23517,7 @@ func file_pm_v1_control_proto_init() {
 		(*CreateActionRequest_Wifi)(nil),
 		(*CreateActionRequest_AgentUpdate)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[91].OneofWrappers = []any{
+	file_powermanage_v1_control_proto_msgTypes[74].OneofWrappers = []any{
 		(*UpdateActionParamsRequest_Package)(nil),
 		(*UpdateActionParamsRequest_App)(nil),
 		(*UpdateActionParamsRequest_Shell)(nil),
@@ -24593,15 +23537,15 @@ func file_pm_v1_control_proto_init() {
 		(*UpdateActionParamsRequest_Wifi)(nil),
 		(*UpdateActionParamsRequest_AgentUpdate)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[181].OneofWrappers = []any{
+	file_powermanage_v1_control_proto_msgTypes[164].OneofWrappers = []any{
 		(*DispatchActionRequest_ActionId)(nil),
 		(*DispatchActionRequest_InlineAction)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[183].OneofWrappers = []any{
+	file_powermanage_v1_control_proto_msgTypes[166].OneofWrappers = []any{
 		(*DispatchToMultipleRequest_ActionId)(nil),
 		(*DispatchToMultipleRequest_InlineAction)(nil),
 	}
-	file_pm_v1_control_proto_msgTypes[191].OneofWrappers = []any{
+	file_powermanage_v1_control_proto_msgTypes[174].OneofWrappers = []any{
 		(*DispatchToGroupRequest_ActionId)(nil),
 		(*DispatchToGroupRequest_ActionSetId)(nil),
 		(*DispatchToGroupRequest_DefinitionId)(nil),
@@ -24611,17 +23555,17 @@ func file_pm_v1_control_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_control_proto_rawDesc), len(file_pm_v1_control_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_control_proto_rawDesc), len(file_powermanage_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   357,
+			NumMessages:   340,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_pm_v1_control_proto_goTypes,
-		DependencyIndexes: file_pm_v1_control_proto_depIdxs,
-		MessageInfos:      file_pm_v1_control_proto_msgTypes,
+		GoTypes:           file_powermanage_v1_control_proto_goTypes,
+		DependencyIndexes: file_powermanage_v1_control_proto_depIdxs,
+		MessageInfos:      file_powermanage_v1_control_proto_msgTypes,
 	}.Build()
-	File_pm_v1_control_proto = out.File
-	file_pm_v1_control_proto_goTypes = nil
-	file_pm_v1_control_proto_depIdxs = nil
+	File_powermanage_v1_control_proto = out.File
+	file_powermanage_v1_control_proto_goTypes = nil
+	file_powermanage_v1_control_proto_depIdxs = nil
 }

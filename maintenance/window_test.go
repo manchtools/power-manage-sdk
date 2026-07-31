@@ -5,35 +5,35 @@ import (
 	"testing"
 	"time"
 
-	pmv1 "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	powermanagev1 "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 	"github.com/manchtools/power-manage-sdk/maintenance"
 )
 
 func TestValidate(t *testing.T) {
 	cases := []struct {
 		name    string
-		w       *pmv1.MaintenanceWindow
+		w       *powermanagev1.MaintenanceWindow
 		wantErr bool
 	}{
 		{"nil window", nil, false},
-		{"empty schedule", &pmv1.MaintenanceWindow{}, false},
+		{"empty schedule", &powermanagev1.MaintenanceWindow{}, false},
 		{
 			"valid same-day",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"mon", "tue"}, Allow: "09:00-17:00"},
 			}},
 			false,
 		},
 		{
 			"valid crosses midnight",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"fri"}, Allow: "22:00-06:00"},
 			}},
 			false,
 		},
 		{
 			"bad day",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"funday"}, Allow: "00:00-23:59"},
 			}},
 			true,
@@ -43,56 +43,56 @@ func TestValidate(t *testing.T) {
 			// silently round-trip through the projector and then never
 			// match at runtime. Callers must lowercase before calling.
 			"uppercase day rejected",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"MON"}, Allow: "09:00-17:00"},
 			}},
 			true,
 		},
 		{
 			"mixed-case day rejected",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"Mon"}, Allow: "09:00-17:00"},
 			}},
 			true,
 		},
 		{
 			"duplicate day",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"mon", "mon"}, Allow: "09:00-17:00"},
 			}},
 			true,
 		},
 		{
 			"empty days",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: nil, Allow: "09:00-17:00"},
 			}},
 			true,
 		},
 		{
 			"bad clock",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"mon"}, Allow: "25:00-26:00"},
 			}},
 			true,
 		},
 		{
 			"signed hour rejected",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"mon"}, Allow: "+9:00-17:00"},
 			}},
 			true,
 		},
 		{
 			"missing dash",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"mon"}, Allow: "09:0017:00X"},
 			}},
 			true,
 		},
 		{
 			"zero-length range",
-			&pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+			&powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 				{Days: []string{"mon"}, Allow: "09:00-09:00"},
 			}},
 			true,
@@ -116,7 +116,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestIsAllowedSameDay(t *testing.T) {
-	w := &pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+	w := &powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 		{Days: []string{"mon", "tue", "wed", "thu", "fri"}, Allow: "09:00-17:00"},
 	}}
 	// Monday 2026-05-04 — note May 3 (today's date in conv context) is Sunday.
@@ -143,7 +143,7 @@ func TestIsAllowedSameDay(t *testing.T) {
 }
 
 func TestIsAllowedCrossesMidnight(t *testing.T) {
-	w := &pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+	w := &powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 		{Days: []string{"mon", "tue", "wed", "thu", "fri"}, Allow: "22:00-06:00"},
 	}}
 	// Monday 22:00 — exactly the window start. Inclusive boundary
@@ -178,13 +178,13 @@ func TestIsAllowedCrossesMidnight(t *testing.T) {
 }
 
 func TestUnion(t *testing.T) {
-	weekdays := &pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+	weekdays := &powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 		{Days: []string{"mon", "tue", "wed", "thu", "fri"}, Allow: "22:00-06:00"},
 	}}
-	weekends := &pmv1.MaintenanceWindow{Schedule: []*pmv1.MaintenanceWindowEntry{
+	weekends := &powermanagev1.MaintenanceWindow{Schedule: []*powermanagev1.MaintenanceWindowEntry{
 		{Days: []string{"sat", "sun"}, Allow: "00:00-23:59"},
 	}}
-	empty := &pmv1.MaintenanceWindow{}
+	empty := &powermanagev1.MaintenanceWindow{}
 
 	got := maintenance.Union(weekdays, weekends)
 	if len(got.GetSchedule()) != 2 {
@@ -219,7 +219,7 @@ func TestIsAllowedNilOrEmpty(t *testing.T) {
 	if !maintenance.IsAllowed(nil, now) {
 		t.Fatalf("nil window must allow")
 	}
-	if !maintenance.IsAllowed(&pmv1.MaintenanceWindow{}, now) {
+	if !maintenance.IsAllowed(&powermanagev1.MaintenanceWindow{}, now) {
 		t.Fatalf("empty schedule must allow")
 	}
 }

@@ -18,9 +18,9 @@ export { getActionTypeEnum, actionTypeToString, ACTION_TYPE_OPTIONS } from './ac
 export * from './errors';
 
 // Re-export generated types
-export * from '../gen/ts/pm/v1/control_pb';
-export * from '../gen/ts/pm/v1/actions_pb';
-export * from '../gen/ts/pm/v1/common_pb';
+export * from '../gen/ts/powermanage/v1/control_pb';
+export * from '../gen/ts/powermanage/v1/actions_pb';
+export * from '../gen/ts/powermanage/v1/common_pb';
 
 // Helper to format protobuf Timestamp to a localized date string
 export function formatTimestamp(timestamp: Timestamp | undefined): string {

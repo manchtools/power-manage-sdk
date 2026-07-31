@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 // WS6 #11: dispatchServerMessage spawned an UNBOUNDED goroutine for every
 // RequestInventory and every RevokeLuksDeviceKey. A compromised or buggy
-// gateway could flood the agent with these and exhaust memory/goroutines
+// control could flood the agent with these and exhaust memory/goroutines
 // (each inventory collection forks osquery). The fix bounds in-flight
 // handlers with a small semaphore and DROPS overflow rather than queuing
 // it unboundedly.
@@ -44,8 +44,8 @@ func (h *blockingFanoutHandler) enter() {
 }
 
 func (h *blockingFanoutHandler) OnWelcome(ctx context.Context, w *pm.Welcome) error { return nil }
-func (h *blockingFanoutHandler) OnAction(ctx context.Context, envelope, signature []byte) (*pm.ActionResult, error) {
-	return nil, nil
+func (h *blockingFanoutHandler) OnManifestDelivery(ctx context.Context, d *pm.ManifestDelivery) error {
+	return nil
 }
 func (h *blockingFanoutHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {
 	return nil, nil
@@ -87,7 +87,7 @@ func TestDispatchServerMessage_InventoryConcurrencyBounded(t *testing.T) {
 		msg := &pm.ServerMessage{
 			Id: "m",
 			Payload: &pm.ServerMessage_RequestInventory{
-				RequestInventory: &pm.RequestInventory{QueryId: "01HQ0000000000000000000000", TargetDeviceId: "01HQ0000000000000000000000"},
+				RequestInventory: &pm.RequestInventory{QueryId: "01HQ0000000000000000000000"},
 			},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
@@ -125,7 +125,7 @@ func TestDispatchServerMessage_LuksRevokeConcurrencyBounded(t *testing.T) {
 		msg := &pm.ServerMessage{
 			Id: "m",
 			Payload: &pm.ServerMessage_RevokeLuksDeviceKey{
-				RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: "01HQ0000000000000000000000", TargetDeviceId: "01HQ0000000000000000000000"},
+				RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: "01HQ0000000000000000000000"},
 			},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {

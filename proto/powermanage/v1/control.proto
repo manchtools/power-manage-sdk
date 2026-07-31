@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package pm.v1;
+package powermanage.v1;
 
 import "google/protobuf/timestamp.proto";
-import "pm/v1/actions.proto";
-import "pm/v1/agent.proto";
-import "pm/v1/common.proto";
+import "powermanage/v1/actions.proto";
+import "powermanage/v1/agent.proto";
+import "powermanage/v1/common.proto";
 
-option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1";
 
 // ============================================================================
 // Agent Registration (called by agent during first-time setup)
@@ -24,6 +24,13 @@ message RegisterRequest {
   // Agent generates its own key pair and sends CSR for signing
   // @gotags: validate:"required"
   bytes csr = 4;
+  // The agent's X25519 recipient public key, raw 32-byte encoding. Generated
+  // on the device at enrollment alongside the Ed25519 identity key; the
+  // private half never leaves the device. Control seals every secret it sends
+  // this agent to this key, and pins it to the device identity it issues here
+  // — the key and the certificate are bound by the same enrollment.
+  // @gotags: validate:"required,len=32"
+  bytes agent_sealing_public_key = 5;
 }
 
 message RegisterResponse {
@@ -36,12 +43,18 @@ message RegisterResponse {
   // @gotags: validate:"required"
   bytes certificate = 3;
   // Control URL for the agent's streaming connection; the agent stores this and
-  // dials it for the AgentService bidi stream. Spec 41 renamed this from
-  // gateway_url when the gateway tier was deleted — control now terminates agent
-  // mTLS itself, so the address the agent keeps is control's. Re-tagged in place
-  // rather than reserved: V1 is the only wire version and clean breaks are the rule.
+  // dials it for the AgentService bidi stream. Control terminates agent mTLS
+  // itself, so this is control's own agent-listener address, which is normally
+  // a different host from the web/API URL the agent registered against.
   // @gotags: validate:"required,url"
   string control_url = 4;
+  // Control's deployment sealing public key, raw 32-byte X25519 encoding. The
+  // agent seals every secret it reports (LUKS passphrases, LPS passwords) to
+  // this key and pins it to the CA it accepts in the same response, so a later
+  // substitution is a visible identity change rather than a silent redirect of
+  // where secrets can be opened.
+  // @gotags: validate:"required,len=32"
+  bytes control_sealing_public_key = 5;
 }
 
 // ============================================================================
@@ -71,25 +84,6 @@ message RenewCertificateResponse {
 // Authentication
 // ============================================================================
 
-message LoginRequest {
-  // @gotags: validate:"required,email"
-  string email = 1;
-  // @gotags: validate:"required,min=8"
-  string password = 2;
-}
-
-message LoginResponse {
-  string access_token = 1;
-  string refresh_token = 2;
-  google.protobuf.Timestamp expires_at = 3;
-  User user = 4;
-  // When true, TOTP verification is required before tokens are issued.
-  // The client must call VerifyLoginTOTP with the totp_challenge.
-  bool totp_required = 5;
-  // Short-lived challenge token for TOTP verification (only set when totp_required=true).
-  string totp_challenge = 6;
-}
-
 message RefreshTokenRequest {
   // @gotags: validate:"required"
   string refresh_token = 1;
@@ -115,77 +109,6 @@ message GetCurrentUserResponse {
 }
 
 // ============================================================================
-// TOTP Two-Factor Authentication
-// ============================================================================
-
-message SetupTOTPRequest {}
-
-message SetupTOTPResponse {
-  // Base32-encoded TOTP secret for manual entry.
-  string secret = 1;
-  // otpauth:// URI for QR code generation.
-  string qr_uri = 2;
-  // One-time backup codes (shown once, user must save them).
-  repeated string backup_codes = 3;
-}
-
-message VerifyTOTPRequest {
-  // @gotags: validate:"required,len=6,numeric"
-  string code = 1;
-}
-
-message VerifyTOTPResponse {
-  bool success = 1;
-}
-
-message DisableTOTPRequest {
-  // @gotags: validate:"required,min=8"
-  string password = 1;
-}
-
-message DisableTOTPResponse {}
-
-// Admin: disable TOTP for another user (no password required).
-message AdminDisableUserTOTPRequest {
-  // @gotags: validate:"required,ulid"
-  string user_id = 1;
-}
-
-message AdminDisableUserTOTPResponse {}
-
-message GetTOTPStatusRequest {}
-
-message GetTOTPStatusResponse {
-  bool enabled = 1;
-  int32 backup_codes_remaining = 2;
-}
-
-message RegenerateBackupCodesRequest {
-  // @gotags: validate:"required,min=8"
-  string password = 1;
-}
-
-message RegenerateBackupCodesResponse {
-  repeated string backup_codes = 1;
-}
-
-message VerifyLoginTOTPRequest {
-  // Short-lived challenge token from LoginResponse.totp_challenge.
-  // @gotags: validate:"required"
-  string challenge = 1;
-  // 6-digit TOTP code or 16-character backup code.
-  // @gotags: validate:"required,min=6,max=16"
-  string code = 2;
-}
-
-message VerifyLoginTOTPResponse {
-  string access_token = 1;
-  string refresh_token = 2;
-  google.protobuf.Timestamp expires_at = 3;
-  User user = 4;
-}
-
-// ============================================================================
 // Users
 // ============================================================================
 
@@ -195,9 +118,6 @@ message User {
   google.protobuf.Timestamp created_at = 3;
   google.protobuf.Timestamp last_login_at = 4;
   bool disabled = 5;
-  repeated Role roles = 6;
-  bool totp_enabled = 7;
-  bool has_password = 8;
   repeated IdentityLink identity_links = 9;
   // OIDC profile scope properties
   string display_name = 10;
@@ -216,12 +136,10 @@ message User {
   bool ssh_allow_password = 21;
   bool user_provisioning_enabled = 22;
   repeated InheritedRole inherited_roles = 23;
-  // Per-grant view of the user's directly-assigned roles, carrying each
-  // grant's scope (#7). `roles` (field 6) remains the de-duplicated,
-  // scope-blind set for backward compatibility; `role_grants` is the
-  // authoritative source for scoped-grant display and revocation — a
-  // role granted both globally and scoped to a device group appears as
-  // two RoleGrant entries.
+  // The user's directly-assigned roles, one entry per grant, carrying each
+  // grant's scope. This is the role surface: a role granted both globally and
+  // scoped to a device group appears as two RoleGrant entries, and revocation
+  // names the grant, not just the role.
   repeated RoleGrant role_grants = 24;
 }
 
@@ -250,7 +168,7 @@ message Role {
 }
 
 // A single role grant on a user or user group, with its optional scope
-// (#7). scope_kind == UNSPECIFIED is an unscoped/global grant (scope_id
+// scope_kind == UNSPECIFIED is an unscoped/global grant (scope_id
 // and scope_name empty). For a scoped grant, scope_id is the device- or
 // user-group id and scope_name is that group's resolved display name
 // (empty if the group was deleted).
@@ -270,15 +188,12 @@ message PermissionInfo {
   // UNSPECIFIED = not scopable (fail-closed default). DEVICE = takes
   // RoleGrantScopeKind=DEVICE_GROUP. USER = takes USER_GROUP.
   // Surfaced so the web role-builder can gate the scope picker.
-  // manchtools/power-manage-server#7.
   PermissionTargetKind target_kind = 4;
 }
 
 message CreateUserRequest {
   // @gotags: validate:"required,email"
   string email = 1;
-  // @gotags: validate:"required,min=8"
-  string password = 2;
   // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
   // @gotags: validate:"omitempty,max=256,dive,ulid"
   repeated string role_ids = 3;
@@ -325,15 +240,6 @@ message UpdateUserEmailRequest {
   string id = 1;
   // @gotags: validate:"required,email"
   string email = 2;
-}
-
-message UpdateUserPasswordRequest {
-  // @gotags: validate:"required,ulid"
-  string id = 1;
-  // @gotags: validate:"omitempty,min=8"
-  string current_password = 2; // Required for self-update
-  // @gotags: validate:"required,min=8"
-  string new_password = 3;
 }
 
 message SetUserDisabledRequest {
@@ -431,7 +337,7 @@ message Device {
   google.protobuf.Timestamp compliance_checked_at = 13;
   int32 compliance_total = 14; // Total number of compliance checks
   int32 compliance_passing = 15; // Number of passing checks
-  // Freshness of the server-scheduled inventory collection (spec 22).
+  // Freshness of the server-scheduled inventory collection.
   // last_inventory_at is MAX(collected_at) across the device's inventory;
   // unset when no inventory has ever been collected.
   google.protobuf.Timestamp last_inventory_at = 16;
@@ -538,8 +444,8 @@ message UnassignDeviceResponse {
 message DeviceAssignee {
   string id = 1; // User or group ID
   // Subset of AssignmentTargetType: only USER and USER_GROUP are valid
-  // values for a device assignee. The projection writer rejects DEVICE
-  // and DEVICE_GROUP at write-time.
+  // values for a device assignee. DEVICE and DEVICE_GROUP are rejected
+  // at write time.
   AssignmentTargetType type = 2;
   string name = 3; // User email or group name
 }
@@ -561,7 +467,7 @@ message SetDeviceSyncIntervalRequest {
   int32 sync_interval_minutes = 2; // 0 = use default (30 min), max 24 hours
 }
 
-// Update device inventory collection interval (spec 22).
+// Update device inventory collection interval.
 message SetDeviceInventoryIntervalRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
@@ -1150,12 +1056,11 @@ message DeviceGroup {
   // may receive dispatches at any time. When non-empty the agent gates
   // non-instant action dispatch by the device-local-time union across
   // every group the device belongs to (device groups + user groups
-  // reaching it via assignments). See
-  // manchtools/power-manage-server#58.
+  // reaching it via assignments).
   MaintenanceWindow maintenance_window = 10;
   // Inventory collection interval in minutes for devices in this group
   // (0 = no group contribution). A device resolves its interval as:
-  // device override, else MIN across its groups, else 1440 (spec 22).
+  // device override, else MIN across its groups, else 1440.
   int32 inventory_interval_minutes = 11;
 }
 
@@ -1309,7 +1214,7 @@ message SetDeviceGroupSyncIntervalRequest {
   int32 sync_interval_minutes = 2; // 0 = use device/default, max 24 hours
 }
 
-// Update device group inventory collection interval (spec 22).
+// Update device group inventory collection interval.
 message SetDeviceGroupInventoryIntervalRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
@@ -1320,8 +1225,7 @@ message SetDeviceGroupInventoryIntervalRequest {
 // Replace the device group's maintenance window. Pass an empty
 // MaintenanceWindow (or omit the schedule) to clear it — that drops
 // the group's contribution to the device-side union, leaving the
-// device unconstrained by this group. The server stores the window
-// as JSONB on the projection.
+// device unconstrained by this group.
 message SetDeviceGroupMaintenanceWindowRequest {
   // @gotags: validate:"required,ulid"
   string id = 1;
@@ -1487,7 +1391,7 @@ message ActionExecution {
   bool changed = 15; // Whether the execution made changes to the system (false = state was already as desired)
   bool compliant = 16; // Detection script result: true if compliant
   CommandOutput detection_output = 17; // Detection script output
-  string action_name = 18; // Resolved from actions_projection (empty for inline actions)
+  string action_name = 18; // Resolved from the action row (empty for inline actions)
   // Set when status is SCHEDULED (or was, before dispatch fired). The
   // UTC timestamp at which the deferred dispatch is configured to
   // fire. Populated when a Dispatch* request supplies the run_at
@@ -1520,9 +1424,7 @@ message DispatchActionRequest {
   // When true, the dispatched action still respects the device's
   // maintenance window if the device has one configured. The default
   // (false) bypasses the window so admins can override an active
-  // freeze. Reserved for the maintenance-window feature
-  // (manchtools/power-manage-server#58); the server stores the flag
-  // for replay correctness even before #58 ships.
+  // freeze.
   bool respect_maintenance_window = 5;
 }
 
@@ -1651,7 +1553,7 @@ message DispatchInstantActionResponse {
 // fires. Idempotent and best-effort: once an execution leaves the
 // SCHEDULED / PENDING window the cancel is a documented no-op and the
 // returned execution reflects whatever terminal state it reached on
-// its own. See manchtools/power-manage-server#57.
+// its own.
 message CancelExecutionRequest {
   // @gotags: validate:"required,ulid"
   string execution_id = 1;
@@ -1668,14 +1570,12 @@ message CancelExecutionResponse {
 // Audit Log
 // ============================================================================
 
-// AuditEvent mirrors a row from the event store. The event_type,
-// stream_type, and actor_type fields are intentionally string-typed
-// (open set): the event store tracks dozens of event types across
-// every aggregate, and new events can be added without coordinating a
-// proto enum bump. The web UI populates filter dropdowns from the
-// distinct values returned by ListAuditEvents rather than a typed
-// enum. See manchtools/power-manage-sdk TECH_DEBT_AUDIT.md F013 for
-// rationale.
+// AuditEvent mirrors a row from the append-only audit log. The
+// event_type, stream_type, and actor_type fields are intentionally
+// string-typed (open set): the log records dozens of event types across
+// every domain, and a new one must not require a proto enum bump. The
+// web UI populates filter dropdowns from the distinct values returned by
+// ListAuditEvents rather than from a typed enum.
 message AuditEvent {
   string id = 1;
   string event_type = 2;
@@ -1707,8 +1607,7 @@ message ListAuditEventsResponse {
 }
 
 // ExportAuditEvents streams the audit log as CSV or JSON for DSAR /
-// external review (spec 26, manchtools/power-manage-server#501). It is
-// a *unary, chunked* export on purpose: the control server's
+// external review. It is a *unary, chunked* export on purpose: the control server's
 // interceptors are deliberately fail-closed on streaming RPCs, so the
 // client loops — pass the returned next_page_token back until it comes
 // back empty, concatenating the chunks. The server applies the same
@@ -2007,13 +1906,12 @@ message AssignRoleToUserRequest {
   repeated string role_ids = 3;
   // Optional grant scope. Paired-or-neither: both scope_kind and
   // scope_id MUST be set together, or both absent. Absent =
-  // unscoped/global grant (backward-compatible with pre-#7 grants).
-  // Set = the grant's authorization extends only to members of the
-  // group identified by scope_id. scope_kind selects which group
-  // projection scope_id is read from. Every permission in the role
+  // unscoped/global grant. Set = the grant's authorization extends only
+  // to members of the group identified by scope_id, and scope_kind
+  // selects which kind of group that is. Every permission in the role
   // must accept this scope_kind (PermissionInfo.target_kind must
   // match), or the assignment is rejected. The actor must hold
-  // AssignRoleScope. See server #7.
+  // AssignRoleScope.
   RoleGrantScopeKind scope_kind = 4;
   // @gotags: validate:"omitempty,ulid"
   string scope_id = 5;
@@ -2032,7 +1930,7 @@ message RevokeRoleFromUserRequest {
   // the unscoped grant; both set = revoke that one specific scoped
   // grant. The handler rejects "revoke unscoped" when only scoped
   // grants exist (and vice versa) to surface ambiguity rather than
-  // silently no-op. server #7.
+  // silently no-op.
   RoleGrantScopeKind scope_kind = 3;
   // @gotags: validate:"omitempty,ulid"
   string scope_id = 4;
@@ -2055,7 +1953,6 @@ message UserGroup {
   string name = 2;
   string description = 3;
   int32 member_count = 4;
-  repeated Role roles = 5;
   google.protobuf.Timestamp created_at = 6;
   bool is_dynamic = 7;
   string dynamic_query = 8;
@@ -2065,12 +1962,10 @@ message UserGroup {
   // through an assignment, that device gates dispatches by the union of
   // every reaching group's window (the device's own groups plus any
   // user groups reaching it). Empty means "no constraint" for this
-  // group's contribution to the union. See
-  // manchtools/power-manage-server#58.
+  // group's contribution to the union.
   MaintenanceWindow maintenance_window = 10;
-  // Per-grant view of the group's assigned roles with each grant's scope
-  // (#7); `roles` (field 5) stays the scope-blind set for backward
-  // compatibility. See User.role_grants.
+  // The group's assigned roles, one entry per grant, carrying each grant's
+  // scope. See User.role_grants.
   repeated RoleGrant role_grants = 11;
 }
 
@@ -2166,7 +2061,7 @@ message AssignRoleToUserGroupRequest {
   repeated string role_ids = 3;
   // Optional grant scope. Same paired-or-neither semantics as
   // AssignRoleToUserRequest.scope_*. Every member of the target
-  // user group inherits this scope through the grant. server #7.
+  // user group inherits this scope through the grant.
   RoleGrantScopeKind scope_kind = 4;
   // @gotags: validate:"omitempty,ulid"
   string scope_id = 5;
@@ -2183,7 +2078,6 @@ message RevokeRoleFromUserGroupRequest {
   // grant to revoke when multiple scoped grants of the same role
   // are attached to the same user group. Paired-or-neither with
   // scope_id; same semantics as RevokeRoleFromUserRequest.
-  // server #7.
   RoleGrantScopeKind scope_kind = 3;
   // @gotags: validate:"omitempty,ulid"
   string scope_id = 4;
@@ -2265,7 +2159,6 @@ message IdentityProvider {
   bool auto_create_users = 12;
   bool auto_link_by_email = 13;
   string default_role_id = 14;
-  bool disable_password_for_linked = 15;
   string group_claim = 16;
   map<string, string> group_mapping = 17; // external group name → user_group_id
   google.protobuf.Timestamp created_at = 18;
@@ -2274,8 +2167,8 @@ message IdentityProvider {
   string scim_endpoint_url = 21; // read-only, computed by server
   // trust_email_assertions: operator opt-in to delegate email-identity
   // assertion to this IdP. When true, SCIM AutoLinkByEmail may bind an asserted
-  // email to a pre-existing local PASSWORD account; default false refuses that
-  // (account-takeover guard). See server ADR 0008.
+  // email to a pre-existing account; default false refuses that
+  // (account-takeover guard across providers).
   bool trust_email_assertions = 22;
 }
 
@@ -2317,7 +2210,6 @@ message CreateIdentityProviderRequest {
   bool auto_link_by_email = 12;
   // @gotags: validate:"omitempty,ulid"
   string default_role_id = 13;
-  bool disable_password_for_linked = 14;
   // @gotags: validate:"omitempty,max=255"
   string group_claim = 15;
   // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
@@ -2377,7 +2269,6 @@ message UpdateIdentityProviderRequest {
   bool auto_link_by_email = 12;
   // @gotags: validate:"omitempty,ulid"
   string default_role_id = 13;
-  bool disable_password_for_linked = 14;
   // @gotags: validate:"omitempty,max=255"
   string group_claim = 15;
   // @gotags: validate:"omitempty,dive,keys,max=255,endkeys,max=255"
@@ -2414,8 +2305,6 @@ message ListAuthMethodsRequest {
 }
 
 message ListAuthMethodsResponse {
-  bool password_enabled = 1;
-  bool totp_enabled = 2;
   repeated AuthMethodProvider providers = 3;
 }
 
@@ -2444,9 +2333,6 @@ message SSOCallbackResponse {
   string refresh_token = 2;
   google.protobuf.Timestamp expires_at = 3;
   User user = 4;
-  // When true, TOTP verification is required before tokens are issued.
-  bool totp_required = 5;
-  string totp_challenge = 6;
 }
 
 // ============================================================================
@@ -2715,10 +2601,6 @@ message RebuildSearchIndexResponse {}
 message ServerSettings {
   bool user_provisioning_enabled = 1;
   bool ssh_access_for_all = 2;
-
-  // Field 3 removed (auto_update_agents, replaced by ACTION_TYPE_AGENT_UPDATE)
-  reserved 3;
-  reserved "auto_update_agents";
 }
 
 message GetServerSettingsRequest {}
@@ -2729,10 +2611,6 @@ message GetServerSettingsResponse {
 message UpdateServerSettingsRequest {
   bool user_provisioning_enabled = 1;
   bool ssh_access_for_all = 2;
-
-  // Field 3 removed (auto_update_agents)
-  reserved 3;
-  reserved "auto_update_agents";
 }
 message UpdateServerSettingsResponse {
   ServerSettings settings = 1;
@@ -2759,30 +2637,14 @@ service ControlService {
   // Certificate Renewal
   rpc RenewCertificate(RenewCertificateRequest) returns (RenewCertificateResponse);
 
-  // Spec 41 removed GetCertificateRevocationList, RevokeGatewayCertificate and
-  // ListGateways along with the gateway tier. The CRL was agent-facing so an
-  // agent could check the gateway server-cert it connected to; with no gateway
-  // the agent's peer is control itself, and re-scoping the list to control's own
-  // certificate would be circular — fetched over a connection authenticated by
-  // the certificate under judgement, behind a gate that fails closed before the
-  // first load. Agent-certificate revocation survives on the control side as a
-  // store lookup during the mTLS handshake: no published list, no distribution
-  // RPC, no agent-side cache.
+  // Agent-certificate revocation is a control-side indexed lookup during the
+  // mTLS handshake. There is no published list, no distribution RPC, and no
+  // agent-side cache.
 
   // Authentication
-  rpc Login(LoginRequest) returns (LoginResponse);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
-  rpc VerifyLoginTOTP(VerifyLoginTOTPRequest) returns (VerifyLoginTOTPResponse);
-
-  // TOTP Two-Factor Authentication
-  rpc SetupTOTP(SetupTOTPRequest) returns (SetupTOTPResponse);
-  rpc VerifyTOTP(VerifyTOTPRequest) returns (VerifyTOTPResponse);
-  rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
-  rpc AdminDisableUserTOTP(AdminDisableUserTOTPRequest) returns (AdminDisableUserTOTPResponse);
-  rpc GetTOTPStatus(GetTOTPStatusRequest) returns (GetTOTPStatusResponse);
-  rpc RegenerateBackupCodes(RegenerateBackupCodesRequest) returns (RegenerateBackupCodesResponse);
 
   // SSO / Identity Providers
   rpc ListAuthMethods(ListAuthMethodsRequest) returns (ListAuthMethodsResponse);
@@ -2806,7 +2668,6 @@ service ControlService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);
-  rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserResponse);
   rpc SetUserDisabled(SetUserDisabledRequest) returns (UpdateUserResponse);
   rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserResponse);
   rpc UpdateUserLinuxUsername(UpdateUserLinuxUsernameRequest) returns (UpdateUserResponse);
@@ -2994,18 +2855,17 @@ service ControlService {
 // ============================================================================
 //
 // StartTerminal verifies the caller's TerminalAccess permission, resolves
-// the dedicated TTY username (pm-tty-<linux_username>), creates an audit
-// event, mints a short-lived session token, and returns the gateway
-// WebSocket URL the web client should connect to.
+// the dedicated TTY username (pm-tty-<linux_username>), records an audit
+// event, mints a short-lived session token, and returns the WebSocket URL
+// of control's own terminal endpoint.
 //
-// The control server is NOT in the data path: it only handles signaling.
-// The actual PTY traffic flows web ↔ gateway ↔ agent over WebSocket and
-// the existing AgentService Stream RPC.
+// Control bridges the browser WebSocket to the device; PTY frames reach the
+// agent over the AgentService Stream RPC like every other frame. Session
+// state lives in control, which is also where the whole fleet's sessions
+// are enumerated from.
 //
 // ListActiveTerminalSessions and TerminateTerminalSession are admin-only
-// operations gated by the corresponding permissions. Both fan out to the
-// gateways via internal.proto's GatewayService since session state lives
-// in gateway memory.
+// operations gated by the corresponding permissions.
 
 message StartTerminalRequest {
   // @gotags: validate:"required,ulid"
@@ -3032,12 +2892,6 @@ message StartTerminalResponse {
   // (e.g. wss://control.example.com/terminal). Clients MUST construct
   // the final connect URL by appending ?token=<session_token>; this
   // field never embeds the token.
-  //
-  // Spec 41 renamed this from gateway_url. The gateway was only ever the
-  // WebSocket bridge for the browser — terminal frames already travelled to
-  // the agent over the AgentService bidi stream — so with the tier deleted the
-  // bridge moves to control and the field names what it now is. Re-tagged in
-  // place rather than reserved: V1 is the only wire version.
   // @gotags: validate:"required,url,startswith=wss://"
   string terminal_url = 3;
   // Token expiry; the client should connect well before this.
@@ -3064,12 +2918,11 @@ message StartTerminalResponse {
 //     returns OK both times. An unknown or already-ended session
 //     returns OK with no body, NOT NotFound, so clients can fire and
 //     forget on disconnect.
-//   - No reason field: graceful stops are not audited beyond the
-//     existing TerminalSessionEnded event the gateway already emits.
-//   - Agent/gateway failures while delivering the stop signal are
-//     logged but never surface as RPC errors — the session is
-//     considered closed once the control server has accepted the
-//     request.
+//   - No reason field: graceful stops are audited only by the ordinary
+//     session-ended record.
+//   - Agent failures while delivering the stop signal are logged but
+//     never surface as RPC errors — the session is considered closed
+//     once the control server has accepted the request.
 //
 // TerminateTerminalSession — admin/forcible termination.
 //   - Caller MUST hold the TerminateTerminalSession permission;
@@ -3078,10 +2931,10 @@ message StartTerminalResponse {
 //     NotFound so the admin can distinguish "killed it" from "it was
 //     already gone".
 //   - Carries a reason that is recorded in the audit log alongside the
-//     terminating user, propagated through GatewayService and surfaced
-//     to the agent so the user sees why their session disappeared.
-//   - Underlying gateway/agent failures DO surface as RPC errors so
-//     the admin knows the kill did not actually land.
+//     terminating user and surfaced to the agent so the user sees why
+//     their session disappeared.
+//   - Underlying agent failures DO surface as RPC errors so the admin
+//     knows the kill did not actually land.
 message StopTerminalRequest {
   // @gotags: validate:"required,ulid"
   string session_id = 1;
@@ -3104,10 +2957,6 @@ message TerminalSessionInfo {
   google.protobuf.Timestamp started_at = 7;
   // Last activity timestamp (any input or output traffic).
   google.protobuf.Timestamp last_activity_at = 8;
-  // Field 9 held gateway_id: the gateway instance hosting the session, for
-  // correlating with that gateway's logs in a clustered deployment. Control
-  // hosts every session itself now, so there is no second process to correlate
-  // with and no instance to name.
 }
 
 // ListActiveTerminalSessionsRequest follows the project-wide pagination

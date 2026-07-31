@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	pb "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pb "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 	"github.com/manchtools/power-manage-sdk/sys/desktop"
 	"github.com/manchtools/power-manage-sdk/sys/dns"
 	"github.com/manchtools/power-manage-sdk/sys/encryption"

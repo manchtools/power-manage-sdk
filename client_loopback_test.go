@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
@@ -21,8 +22,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/manchtools/power-manage-sdk/cryptotest"
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
-	"github.com/manchtools/power-manage-sdk/gen/go/pm/v1/pmv1connect"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
+	"github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1/powermanagev1connect"
 )
 
 // agentLoopback wires an in-process AgentService handler behind an h2c
@@ -92,7 +93,7 @@ func newAgentLoopback(t *testing.T) *agentLoopback {
 	t.Helper()
 
 	handler := &recordingAgentHandler{}
-	path, h := pmv1connect.NewAgentServiceHandler(handler)
+	path, h := powermanagev1connect.NewAgentServiceHandler(handler)
 	mux := http.NewServeMux()
 	mux.Handle(path, h)
 
@@ -137,7 +138,7 @@ type controlLoopback struct {
 }
 
 type recordingControlHandler struct {
-	pmv1connect.UnimplementedControlServiceHandler
+	powermanagev1connect.UnimplementedControlServiceHandler
 
 	registerFn         func(*connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error)
 	renewCertificateFn func(*connect.Request[pm.RenewCertificateRequest]) (*connect.Response[pm.RenewCertificateResponse], error)
@@ -161,7 +162,7 @@ func newControlLoopback(t *testing.T) *controlLoopback {
 	t.Helper()
 
 	handler := &recordingControlHandler{}
-	path, h := pmv1connect.NewControlServiceHandler(handler)
+	path, h := powermanagev1connect.NewControlServiceHandler(handler)
 	mux := http.NewServeMux()
 	mux.Handle(path, h)
 
@@ -186,17 +187,19 @@ func TestRegisterAgent_HappyPath(t *testing.T) {
 	cl.handler.registerFn = func(req *connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error) {
 		observed = req.Msg
 		return connect.NewResponse(&pm.RegisterResponse{
-			DeviceId:    &pm.DeviceId{Value: "01HXXXXXXXXXXXXXXXXXXXXXX0"},
-			CaCert:      []byte("ca"),
-			Certificate: []byte("cert"),
-			ControlUrl:  "https://control.example",
+			DeviceId:                &pm.DeviceId{Value: "01HXXXXXXXXXXXXXXXXXXXXXX0"},
+			CaCert:                  []byte("ca"),
+			Certificate:             []byte("cert"),
+			ControlUrl:              "https://control.example",
+			ControlSealingPublicKey: controlSealingKey,
 		}), nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	got, err := RegisterAgent(ctx, cl.serverURL, "token-x", "host-1", "v1.2.3", []byte("csr-bytes"))
+	agentKey := testSealingPubKey()
+	got, err := RegisterAgent(ctx, cl.serverURL, "token-x", "host-1", "v1.2.3", []byte("csr-bytes"), agentKey)
 	if err != nil {
 		t.Fatalf("RegisterAgent: %v", err)
 	}
@@ -216,7 +219,28 @@ func TestRegisterAgent_HappyPath(t *testing.T) {
 		observed.AgentVersion != "v1.2.3" || string(observed.Csr) != "csr-bytes" {
 		t.Errorf("request fields lost in transit: %+v", observed)
 	}
+	// The enrollment key exchange is the whole basis for field sealing, and it
+	// only exists if BOTH halves survive the round trip. A facade that dropped
+	// either one would leave a device that looks enrolled and can never send or
+	// receive a secret.
+	if !bytes.Equal(observed.AgentSealingPublicKey, agentKey) {
+		t.Errorf("agent sealing public key lost in transit: got %x, want %x",
+			observed.AgentSealingPublicKey, agentKey)
+	}
+	if !bytes.Equal(got.ControlSealingPublicKey, controlSealingKey) {
+		t.Errorf("control sealing public key dropped by the RegisterAgent facade: got %x, want %x",
+			got.ControlSealingPublicKey, controlSealingKey)
+	}
 }
+
+// controlSealingKey is a distinct 32-byte fixture so a facade that mixed up the
+// two directions cannot pass by echoing the agent's own key back.
+var controlSealingKey = bytes.Repeat([]byte{0x02}, 32)
+
+// testSealingPubKey is a well-formed 32-byte X25519 public key encoding. The
+// length matters: Register declares len=32, so a short fixture would be
+// rejected at the boundary rather than exercising the path under test.
+func testSealingPubKey() []byte { return bytes.Repeat([]byte{0x01}, 32) }
 
 func TestRegisterAgent_ServerErrorPropagates(t *testing.T) {
 	cl := newControlLoopback(t)
@@ -224,7 +248,7 @@ func TestRegisterAgent_ServerErrorPropagates(t *testing.T) {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("bad token"))
 	}
 
-	_, err := RegisterAgent(context.Background(), cl.serverURL, "wrong", "host", "v0", []byte("csr"))
+	_, err := RegisterAgent(context.Background(), cl.serverURL, "wrong", "host", "v0", []byte("csr"), testSealingPubKey())
 	if err == nil {
 		t.Fatal("expected error from server-side PermissionDenied")
 	}
@@ -275,7 +299,7 @@ func TestRenewCertificate_HappyPath(t *testing.T) {
 // and re-scoping the list to control's own certificate would be circular.
 //
 // Replacement coverage, deliberately stronger than these were: the RPC's
-// ABSENCE is now asserted by TestRPCSurface_MatchesGoldenMinusSpec41Removals in
+// ABSENCE is now asserted by TestRPCSurface_MatchesGoldenMinusApprovedRemovals in
 // contract_rpc_surface_test.go, against a golden list captured from the
 // predecessor descriptor. A stub test proves an endpoint answers; the contract
 // test proves the endpoint is gone and that nothing else went with it.
@@ -614,8 +638,8 @@ func (h *welcomeRecordingHandler) OnWelcome(ctx context.Context, w *pm.Welcome) 
 	h.welcomed.Store(true)
 	return nil
 }
-func (h *welcomeRecordingHandler) OnAction(ctx context.Context, envelope []byte, signature []byte) (*pm.ActionResult, error) {
-	return nil, nil
+func (h *welcomeRecordingHandler) OnManifestDelivery(ctx context.Context, d *pm.ManifestDelivery) error {
+	return nil
 }
 func (h *welcomeRecordingHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {
 	return nil, nil
@@ -645,7 +669,7 @@ func TestWithMTLSFromPEM_ClientPresentsCertificate(t *testing.T) {
 			t.Fatalf("WithMTLSFromPEM: %v", err)
 		}
 		got, err := RegisterAgent(context.Background(), srvURL,
-			"tok", "host", "v0", []byte("csr"), opt)
+			"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
 		if err != nil {
 			t.Fatalf("RegisterAgent: %v", err)
 		}
@@ -662,7 +686,7 @@ func TestWithMTLSFromPEM_ClientPresentsCertificate(t *testing.T) {
 		}
 		hc := newHTTPClientWithTLS(tlsConfig)
 		_, err := RegisterAgent(context.Background(), srvURL,
-			"tok", "host", "v0", []byte("csr"), WithHTTPClient(hc))
+			"tok", "host", "v0", []byte("csr"), testSealingPubKey(), WithHTTPClient(hc))
 		if err == nil {
 			t.Fatal("expected handshake failure without client cert")
 		}
@@ -683,7 +707,7 @@ func startMTLSTestServer(t *testing.T, serverCertPEM, serverKeyPEM []byte, clien
 	handler.registerFn = func(*connect.Request[pm.RegisterRequest]) (*connect.Response[pm.RegisterResponse], error) {
 		return connect.NewResponse(&pm.RegisterResponse{DeviceId: &pm.DeviceId{Value: "ok"}}), nil
 	}
-	path, h := pmv1connect.NewControlServiceHandler(handler)
+	path, h := powermanagev1connect.NewControlServiceHandler(handler)
 	mux := http.NewServeMux()
 	mux.Handle(path, h)
 	srv := httptest.NewUnstartedServer(mux)
@@ -726,7 +750,7 @@ func TestWithMTLSFromPEM_RejectsServerSignedByForeignCA(t *testing.T) {
 		t.Fatalf("WithMTLSFromPEM: %v", err)
 	}
 	_, err = RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), opt)
+		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
 	if err == nil {
 		t.Fatal("strict mTLS must reject a server signed by a CA other than the pinned internal CA")
 	}
@@ -773,7 +797,7 @@ func TestWithMTLSFromPEMAndRevocationCheck_RejectsRevokedGateway(t *testing.T) {
 		t.Fatalf("WithMTLSFromPEMAndRevocationCheck: %v", err)
 	}
 	if _, err := RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), opt); err == nil {
+		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt); err == nil {
 		t.Fatal("revocation check must refuse a revoked gateway cert even though it chains to the pinned CA")
 	}
 }
@@ -799,7 +823,7 @@ func TestWithMTLSFromPEMAndRevocationCheck_AllowsUnrevokedGateway(t *testing.T) 
 		t.Fatalf("WithMTLSFromPEMAndRevocationCheck: %v", err)
 	}
 	got, err := RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), opt)
+		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
 	if err != nil {
 		t.Fatalf("unrevoked gateway must connect: %v", err)
 	}
@@ -840,7 +864,7 @@ func TestWithMTLSFromPEMAndSystemRoots_TrustsInternalCA(t *testing.T) {
 		t.Fatalf("WithMTLSFromPEMAndSystemRoots: %v", err)
 	}
 	got, err := RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), opt)
+		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
 	if err != nil {
 		t.Fatalf("system-roots variant must trust a server signed by the internal CA: %v", err)
 	}
@@ -872,7 +896,7 @@ func TestWithMTLSFromPEMAndSystemRoots_RejectsUntrustedServer(t *testing.T) {
 		t.Fatalf("WithMTLSFromPEMAndSystemRoots: %v", err)
 	}
 	_, err = RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), opt)
+		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
 	if err == nil {
 		t.Fatal("system-roots variant must still reject a server signed by an untrusted CA")
 	}
@@ -892,7 +916,7 @@ func TestWithHTTPClient_AppliedToControlCalls(t *testing.T) {
 	hc := &http.Client{Transport: rt}
 
 	if _, err := RegisterAgent(context.Background(), cl.serverURL,
-		"tok", "host", "v0", []byte("csr"), WithHTTPClient(hc)); err != nil {
+		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), WithHTTPClient(hc)); err != nil {
 		t.Fatalf("RegisterAgent: %v", err)
 	}
 	if called.Load() == 0 {

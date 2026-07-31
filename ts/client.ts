@@ -9,7 +9,6 @@ import { timestampFromDate, type Timestamp } from '@bufbuild/protobuf/wkt';
 
 import {
 	ControlService,
-	LoginRequestSchema,
 	RefreshTokenRequestSchema,
 	LogoutRequestSchema,
 	GetCurrentUserRequestSchema,
@@ -17,7 +16,6 @@ import {
 	GetUserRequestSchema,
 	ListUsersRequestSchema,
 	UpdateUserEmailRequestSchema,
-	UpdateUserPasswordRequestSchema,
 	SetUserDisabledRequestSchema,
 	UpdateUserProfileRequestSchema,
 	DeleteUserRequestSchema,
@@ -135,14 +133,6 @@ import {
 	AssignRoleToUserRequestSchema,
 	RevokeRoleFromUserRequestSchema,
 	ListPermissionsRequestSchema,
-	// TOTP
-	SetupTOTPRequestSchema,
-	VerifyTOTPRequestSchema,
-	DisableTOTPRequestSchema,
-	AdminDisableUserTOTPRequestSchema,
-	GetTOTPStatusRequestSchema,
-	RegenerateBackupCodesRequestSchema,
-	VerifyLoginTOTPRequestSchema,
 	// User Groups
 	CreateUserGroupRequestSchema,
 	GetUserGroupRequestSchema,
@@ -235,8 +225,8 @@ import {
 	TerminateTerminalSessionRequestSchema,
 	type StartTerminalResponse,
 	type TerminalSessionInfo
-} from '../gen/ts/pm/v1/control_pb';
-import type { ActionType, Action, ActionSchedule } from '../gen/ts/pm/v1/actions_pb';
+} from '../gen/ts/powermanage/v1/control_pb';
+import type { ActionType, Action, ActionSchedule } from '../gen/ts/powermanage/v1/actions_pb';
 import {
 	type ExecutionStatus,
 	ErrorDetailSchema,
@@ -249,7 +239,7 @@ import {
 	SortField,
 	SortDirection,
 	RoleGrantScopeKind
-} from '../gen/ts/pm/v1/common_pb';
+} from '../gen/ts/powermanage/v1/common_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
 export interface ClientOptions {
@@ -380,46 +370,6 @@ export class ApiClient {
 	// Authentication
 	// ============================================================================
 
-	async login(email: string, password: string) {
-		const client = this.getAuthClient();
-		const response = await client.login(
-			create(LoginRequestSchema, { email, password })
-		);
-
-		if (response.totpRequired) {
-			return response;
-		}
-
-		if (response.accessToken && response.refreshToken && response.expiresAt && response.user) {
-			this.opts.onAuthResponse(
-				response.accessToken,
-				response.refreshToken,
-				timestampDate(response.expiresAt),
-				response.user
-			);
-		}
-
-		return response;
-	}
-
-	async verifyLoginTOTP(challenge: string, code: string) {
-		const client = this.getAuthClient();
-		const response = await client.verifyLoginTOTP(
-			create(VerifyLoginTOTPRequestSchema, { challenge, code })
-		);
-
-		if (response.accessToken && response.refreshToken && response.expiresAt && response.user) {
-			this.opts.onAuthResponse(
-				response.accessToken,
-				response.refreshToken,
-				timestampDate(response.expiresAt),
-				response.user
-			);
-		}
-
-		return response;
-	}
-
 	async refreshTokenRPC() {
 		const client = this.getAuthClient();
 		return client.refreshToken(
@@ -446,48 +396,10 @@ export class ApiClient {
 	}
 
 	// ============================================================================
-	// TOTP Two-Factor Authentication
-	// ============================================================================
-
-	async setupTOTP() {
-		const client = this.getClient();
-		return client.setupTOTP(create(SetupTOTPRequestSchema, {}));
-	}
-
-	async verifyTOTP(code: string) {
-		const client = this.getClient();
-		return client.verifyTOTP(create(VerifyTOTPRequestSchema, { code }));
-	}
-
-	async disableTOTP(password: string) {
-		const client = this.getClient();
-		return client.disableTOTP(create(DisableTOTPRequestSchema, { password }));
-	}
-
-	async adminDisableUserTOTP(userId: string) {
-		const client = this.getClient();
-		return client.adminDisableUserTOTP(
-			create(AdminDisableUserTOTPRequestSchema, { userId })
-		);
-	}
-
-	async getTOTPStatus() {
-		const client = this.getClient();
-		return client.getTOTPStatus(create(GetTOTPStatusRequestSchema, {}));
-	}
-
-	async regenerateBackupCodes(password: string) {
-		const client = this.getClient();
-		return client.regenerateBackupCodes(
-			create(RegenerateBackupCodesRequestSchema, { password })
-		);
-	}
-
-	// ============================================================================
 	// Users
 	// ============================================================================
 
-	async createUser(email: string, password: string, roleIds: string[] = [], profile?: {
+	async createUser(email: string, roleIds: string[] = [], profile?: {
 		displayName?: string;
 		givenName?: string;
 		familyName?: string;
@@ -495,7 +407,7 @@ export class ApiClient {
 	}) {
 		const client = this.getClient();
 		const response = await client.createUser(
-			create(CreateUserRequestSchema, { email, password, roleIds, ...profile })
+			create(CreateUserRequestSchema, { email, roleIds, ...profile })
 		);
 		return response.user;
 	}
@@ -517,14 +429,6 @@ export class ApiClient {
 		const client = this.getClient();
 		const response = await client.updateUserEmail(
 			create(UpdateUserEmailRequestSchema, { id, email })
-		);
-		return response.user;
-	}
-
-	async updateUserPassword(id: string, currentPassword: string, newPassword: string) {
-		const client = this.getClient();
-		const response = await client.updateUserPassword(
-			create(UpdateUserPasswordRequestSchema, { id, currentPassword, newPassword })
 		);
 		return response.user;
 	}
@@ -1708,10 +1612,6 @@ export class ApiClient {
 			create(SSOCallbackRequestSchema, { slug, code, state })
 		);
 
-		if (response.totpRequired) {
-			return response;
-		}
-
 		if (response.accessToken && response.refreshToken && response.expiresAt && response.user) {
 			this.opts.onAuthResponse(
 				response.accessToken,
@@ -1739,7 +1639,6 @@ export class ApiClient {
 		autoLinkByEmail?: boolean;
 		trustEmailAssertions?: boolean;
 		defaultRoleId?: string;
-		disablePasswordForLinked?: boolean;
 		groupClaim?: string;
 		groupMapping?: Record<string, string>;
 	}) {
@@ -1780,7 +1679,6 @@ export class ApiClient {
 		autoLinkByEmail?: boolean;
 		trustEmailAssertions?: boolean;
 		defaultRoleId?: string;
-		disablePasswordForLinked?: boolean;
 		groupClaim?: string;
 		groupMapping?: Record<string, string>;
 	}) {

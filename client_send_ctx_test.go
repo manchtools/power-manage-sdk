@@ -8,7 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 // WS16 finding #1: the Send* methods take a ctx but (*Client).send ignored

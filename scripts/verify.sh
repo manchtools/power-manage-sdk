@@ -49,34 +49,29 @@ staticcheck ./...
 echo "== go test"
 go test ./... -count=1
 
-# buf runs from proto/ — there is no buf.yaml, so the module root is the cwd and
-# `import "pm/v1/common.proto"` only resolves from there. CI sets
+# buf runs from proto/ — proto/buf.yaml is the module root, so
+# `import "powermanage/v1/common.proto"` only resolves from there. CI sets
 # working-directory: proto for exactly this reason.
 #
-# CI invokes it as `npx --prefix .. buf`, where `..` is the runner workspace;
-# that path does not exist in the multi-repo checkout, so resolve buf the way it
-# is actually available here.
-# REPO_ROOT is captured before any cd: the lock-installed binary lives at the
-# repo root, and resolving it relative to the cwd meant `cd proto` silently
-# missed it and fell through to a bare `npx`, which downloads and runs
-# registry-latest. A verification gate must not execute code the lockfile did
-# not pin, so the fallback is an instruction rather than a download.
-buf_cmd() {
-  if [ -x "$REPO_ROOT/node_modules/.bin/buf" ]; then
-    "$REPO_ROOT/node_modules/.bin/buf" "$@"
-  elif command -v buf >/dev/null 2>&1; then
-    buf "$@"
-  else
-    echo "buf is not installed — run 'npm ci' in $REPO_ROOT; the gate will not fetch it at run time" >&2
-    exit 1
-  fi
-}
+# The binary is resolved by scripts/buf.sh, which is fail-closed to the single
+# lockfile-pinned install at the repo root. It is a separate script rather than
+# a function here because `make generate` below ALSO shells out to buf: with the
+# resolution inlined in this file, the drift check would regenerate gen/ts with
+# whatever `npx` picked while these two steps linted with the pinned copy, and
+# the gate would certify a tree no single buf ever produced.
+#
+# This previously fell back to a PATH `buf` when the lock install was absent.
+# That is not a fallback, it is an unpinned execution: on this machine
+# `command -v buf` resolves a go-installed binary with no relation to
+# package-lock.json, so a missing `npm ci` turned "the gate ran the pinned buf"
+# into "the gate ran some buf" with no signal either way.
+BUF="$REPO_ROOT/scripts/buf.sh"
 
 echo "== buf lint"
-(cd proto && buf_cmd lint)
+(cd proto && "$BUF" lint)
 
 echo "== buf format (drift)"
-(cd proto && buf_cmd format --diff --exit-code)
+(cd proto && "$BUF" format --diff --exit-code)
 
 if ! command -v docref >/dev/null 2>&1; then
   echo "docref is not installed — the gate cannot certify this tree" >&2

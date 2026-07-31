@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package pm.v1;
+package powermanage.v1;
 
 import "google/protobuf/timestamp.proto";
-import "pm/v1/common.proto";
+import "powermanage/v1/common.proto";
 
-option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1";
 
 // ============================================================================
 // Action Types
@@ -79,29 +79,13 @@ message Action {
   // @gotags: validate:"omitempty,gte=0,lte=3600"
   int32 timeout_seconds = 4;
 
-  // Scheduling configuration for autonomous agent execution.
-  // Authoritative ONLY when this Action is delivered as a member of
-  // SyncActionsResponse.standalone_actions. When delivered inside an
-  // ActionGroup (i.e. via SyncActionsResponse.grouped_actions), this
-  // field is ignored — the group's schedule fires the action and every
-  // sibling in declared order.
+  // The action's own authored schedule. It is carried for display and for
+  // authoring round-trips; execution is driven by the schedule on the
+  // Manifest the occurrence belongs to, which fires every occurrence in
+  // declared order. A singleton-Action manifest simply carries this schedule
+  // at the manifest level.
   // @gotags: validate:"omitempty"
   ActionSchedule schedule = 5;
-
-  // CA signature over `signed_envelope` (the deterministic wire bytes of
-  // a SignedActionEnvelope). The agent verifies this over `signed_envelope`
-  // and unmarshals THOSE bytes to execute — the executed action is the
-  // verified action.
-  bytes signature = 6;
-
-  // Deterministic wire bytes of the device-bound SignedActionEnvelope this
-  // action executes. Carried on actions delivered via SyncActions (the
-  // offline-scheduler pull path) so the agent verifies and executes the
-  // same bytes it would on the push (ActionDispatch) path. Reuses field 7,
-  // freed by the params_canonical removal. The typed params/schedule fields
-  // below remain for the scheduler's display/ordering, but EXECUTION and
-  // all security-relevant decisions use the verified envelope.
-  bytes signed_envelope = 7;
 
   // Type-specific parameters
   oneof params {
@@ -123,62 +107,6 @@ message Action {
     EncryptionParams encryption = 23;
     WifiParams wifi = 24;
     AgentUpdateParams agent_update = 25;
-  }
-}
-
-// SignedActionEnvelope is the canonical, signed representation of an
-// executable action. The control server's CA signs the DETERMINISTIC
-// protobuf wire bytes of this message (proto.MarshalOptions{Deterministic:
-// true}); the agent verifies the signature over the received bytes and
-// unmarshals THOSE SAME bytes to execute. There is exactly one
-// representation: the executed message IS the verified message.
-//
-// Binding the full executed envelope closes the gap (sdk#82 / audit
-// F-C2 / SA-C1) where a compromised gateway or Valkey relay could rewrite
-// the executed action — flip desired_state PRESENT->ABSENT, swap params,
-// change the timeout/schedule, or retarget the device — under a signature
-// that covered only (id, type, params). Every field below is bound:
-//
-//   - target_device_id binds the action to one device (no cross-device
-//     replay of a captured envelope).
-//   - action_type binds the type (no lifting a signed envelope onto SYNC).
-//   - desired_state / timeout_seconds / schedule bind the execution
-//     semantics.
-//   - the params oneof binds exactly what runs.
-//
-// There is no signature field inside the envelope — the signature is over
-// the envelope's bytes and travels alongside them (see ActionDispatch).
-message SignedActionEnvelope {
-  // Execution id this envelope authorizes (the wire ActionId.value).
-  ActionId action_id = 1;
-  ActionType action_type = 2;
-  DesiredState desired_state = 3;
-  int32 timeout_seconds = 4;
-  ActionSchedule schedule = 5;
-  // The single device this envelope is authorized to run on.
-  string target_device_id = 6;
-
-  // Type-specific parameters — the same param message types as Action,
-  // re-declared here so the signed bytes carry exactly what executes.
-  oneof params {
-    PackageParams package = 7;
-    AppInstallParams app = 8;
-    ShellParams shell = 9;
-    ServiceParams service = 10;
-    FileParams file = 11;
-    UpdateParams update = 12;
-    RepositoryParams repository = 13;
-    FlatpakParams flatpak = 14;
-    DirectoryParams directory = 15;
-    UserParams user = 16;
-    SshParams ssh = 17;
-    SshdParams sshd = 18;
-    AdminPolicyParams admin_policy = 19;
-    LpsParams lps = 20;
-    GroupParams group = 21;
-    EncryptionParams encryption = 22;
-    WifiParams wifi = 23;
-    AgentUpdateParams agent_update = 24;
   }
 }
 
@@ -321,8 +249,8 @@ message ServiceParams {
   bool enable = 3;
   // @gotags: validate:"omitempty,max=65536"
   string unit_content = 4;
-  // Service manager backend. Defaults to SERVICE_BACKEND_SYSTEMD for
-  // compatibility with devices that don't explicitly set it.
+  // Service manager backend. Unset means SERVICE_BACKEND_SYSTEMD, which is
+  // what most managed Linux runs.
   // @gotags: validate:"omitempty"
   ServiceBackend backend = 5;
 }
@@ -729,8 +657,7 @@ message AdminPolicyParams {
   // @gotags: validate:"required_if=AccessLevel 3,max=65536"
   string custom_config = 3;
 
-  // Privilege backend. Defaults to PRIVILEGE_BACKEND_SUDO for
-  // compatibility with devices that don't explicitly set it.
+  // Privilege backend. Unset means PRIVILEGE_BACKEND_SUDO.
   // @gotags: validate:"omitempty"
   PrivilegeBackend backend = 4;
 }
@@ -901,6 +828,22 @@ message ActionResult {
   // Detection script output (separate from execution output)
   // @gotags: validate:"omitempty"
   CommandOutput detection_output = 10;
+  // The delivery this result belongs to, and the authored position within
+  // that delivery's manifest. Together they make ingestion idempotent:
+  // control keys the stored result on (delivery_id, occurrence_id), so a
+  // result replayed after a reconnect updates the same row instead of
+  // creating a second one. action_id alone cannot do this — duplicate
+  // authored occurrences of the same action are preserved and executed, so
+  // one delivery legitimately produces several results with the same
+  // action_id.
+  //
+  // Both are mandatory. Every execution descends from a delivery — the pull
+  // path carries the same ManifestDelivery the push path does — so a result
+  // that can name neither did not come from an assignment.
+  // @gotags: validate:"required,ulid"
+  string delivery_id = 11;
+  // @gotags: validate:"required,ulid"
+  string occurrence_id = 12;
 }
 
 // ============================================================================
@@ -926,13 +869,12 @@ message AgentUpdateArch {
   string checksum_url = 2;
 
   // Optional pinned SHA-256 of the binary, lowercase hex. When set it is
-  // the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: it
-  // travels inside the CA-signed action, so the agent verifies the
-  // downloaded binary against a hash bound to the control server's
-  // signature rather than a checksum file fetched from the download
-  // origin. Use it to pin an exact binary (staged rollouts) or for
-  // stronger authenticity; leave it unset to track "latest" via
-  // checksum_url.
+  // the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: the agent
+  // verifies the downloaded binary against a hash control authored and sent
+  // over the authenticated mTLS stream, rather than against a checksum file
+  // fetched from the download origin. Use it to pin an exact binary (staged
+  // rollouts) or for stronger authenticity; leave it unset to track "latest"
+  // via checksum_url.
   // @gotags: validate:"omitempty,len=64,hexadecimal"
   string expected_sha256 = 3;
 }
@@ -949,9 +891,9 @@ message AgentUpdateParams {
 
   // When true, the agent installs the target binary even if its version
   // is older than or equal to the running version (downgrade). The flag
-  // rides inside the CA-signed action, so a downgrade is an explicit,
-  // authenticated operator decision — the agent otherwise refuses an
-  // older version (anti-rollback). Default false.
+  // reaches the agent over the authenticated mTLS stream, so a downgrade is
+  // an explicit operator decision — the agent otherwise refuses an older
+  // version (anti-rollback). Default false.
   // @gotags: validate:"omitempty"
   bool allow_downgrade = 3;
 
@@ -962,10 +904,9 @@ message AgentUpdateParams {
   // redirect is refused and the download must reach the configured host
   // directly. The binary is still verified against SHA-256 and an
   // https->http downgrade is refused regardless; when expected_sha256 is
-  // set that hash is pinned inside the CA-signed action, otherwise
-  // verification comes from checksum_url. So this opts into a host-changing
-  // hop, not into unchecked bytes. Rides inside the CA-signed action, so it
-  // is an explicit, authenticated operator decision.
+  // set that hash is the pinned gate, otherwise verification comes from
+  // checksum_url. So this opts into a host-changing hop, not into unchecked
+  // bytes, and it is an explicit operator decision either way.
   // @gotags: validate:"omitempty"
   bool allow_redirect = 4;
 }

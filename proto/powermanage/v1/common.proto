@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package pm.v1;
+package powermanage.v1;
 
-option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1";
 
 // Unique identifier for an action instance
 message ActionId {
@@ -48,6 +48,13 @@ enum ExecutionStatus {
   // in that NOT_APPLICABLE is a property of the device+action pair,
   // not of the moment.
   EXECUTION_STATUS_NOT_APPLICABLE = 9;
+  // The agent persisted STARTED before a non-idempotent side effect and
+  // then crashed, so whether the effect landed is unknown. Reported on
+  // recovery instead of silently re-running the action: a second attempt
+  // could double-apply, and claiming FAILED would be a guess. Terminal
+  // from the agent's side — resolving it is an operator/product decision
+  // (a reboot resolves via the boot marker; other actions do not).
+  EXECUTION_STATUS_INDETERMINATE = 10;
 }
 
 // Desired state for stateful actions
@@ -65,11 +72,7 @@ enum AssignmentMode {
 }
 
 // AssignmentSourceType identifies what kind of policy artefact an
-// Assignment links to a target. The wire enum replaces the legacy
-// stringly-typed `source_type` field (action / action_set /
-// definition / compliance_policy). The event-store payload still
-// keeps the lowercase string form for backward replay; conversion
-// happens at the RPC boundary.
+// Assignment links to a target.
 enum AssignmentSourceType {
   ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0;
   ASSIGNMENT_SOURCE_TYPE_ACTION = 1;
@@ -79,9 +82,7 @@ enum AssignmentSourceType {
 }
 
 // AssignmentTargetType identifies what kind of subject an Assignment
-// applies to. Same wire/event-store split as AssignmentSourceType:
-// the proto uses the enum, the JSONB event payload keeps the legacy
-// lowercase string (device / device_group / user / user_group).
+// applies to.
 enum AssignmentTargetType {
   ASSIGNMENT_TARGET_TYPE_UNSPECIFIED = 0;
   ASSIGNMENT_TARGET_TYPE_DEVICE = 1;
@@ -91,22 +92,13 @@ enum AssignmentTargetType {
 }
 
 // RoleGrantScopeKind names which kind of group anchors a scoped role
-// grant (manchtools/power-manage-server#7). Kinds are exclusive — a
-// grant is either device-group-scoped, user-group-scoped, or
-// unscoped/global (UNSPECIFIED). Permissions declare a single target
-// kind on their PermissionInfo; a grant whose scope_kind doesn't
-// match every permission in the role is rejected at the
-// role-assignment handler.
-//
-// Wire/projection split: the proto carries the enum on the wire;
-// the user_roles_projection / user_group_roles_projection rows
-// store the lowercase string form ("device_group" / "user_group") so
-// the SQL CHECK constraint reads naturally and existing event-replay
-// keeps working. Conversion happens at the projector boundary.
+// grant. Kinds are exclusive — a grant is either device-group-scoped,
+// user-group-scoped, or unscoped/global (UNSPECIFIED). Permissions
+// declare a single target kind on their PermissionInfo; a grant whose
+// scope_kind doesn't match every permission in the role is rejected at
+// the role-assignment handler.
 enum RoleGrantScopeKind {
-  // UNSPECIFIED on a grant means the grant is unscoped/global —
-  // matches the historical NULL-scope grant shape and is
-  // backward-compatible with grants emitted before #7.
+  // UNSPECIFIED on a grant means the grant is unscoped/global.
   ROLE_GRANT_SCOPE_KIND_UNSPECIFIED = 0;
   ROLE_GRANT_SCOPE_KIND_DEVICE_GROUP = 1;
   ROLE_GRANT_SCOPE_KIND_USER_GROUP = 2;
@@ -114,7 +106,7 @@ enum RoleGrantScopeKind {
 
 // PermissionTargetKind classifies the target kind a permission acts
 // on, which determines which RoleGrantScopeKind it accepts on a
-// scoped grant (manchtools/power-manage-server#7). Returned on
+// scoped grant. Returned on
 // PermissionInfo by ListPermissions so the role-builder UI can
 // surface scopable permissions and gate the scope picker by kind.
 //
@@ -137,11 +129,9 @@ enum PermissionTargetKind {
   PERMISSION_TARGET_KIND_USER = 2;
 }
 
-// DeviceStatus replaces the legacy stringly-typed Device.status /
-// ListDevicesRequest.status_filter ("online" / "offline"). The status
-// is computed by the server from the device's last_seen_at timestamp,
-// so it is wire-only — there is no event payload or DB column to
-// translate. UNSPECIFIED on the request means "no status filter".
+// DeviceStatus is computed by the server from the device's last_seen_at
+// timestamp, so it is wire-only — no column stores it. UNSPECIFIED on
+// the request means "no status filter".
 enum DeviceStatus {
   DEVICE_STATUS_UNSPECIFIED = 0;
   DEVICE_STATUS_ONLINE = 1;
@@ -149,9 +139,8 @@ enum DeviceStatus {
 }
 
 // SearchScope identifies which search index a SearchRequest targets,
-// and which index a SearchResult came from. Replaces the legacy
-// stringly-typed scope field. UNSPECIFIED on the request means "all
-// scopes" — previously expressed by an empty string.
+// and which index a SearchResult came from. UNSPECIFIED on the request
+// means "all scopes".
 enum SearchScope {
   SEARCH_SCOPE_UNSPECIFIED = 0;
   SEARCH_SCOPE_ACTIONS = 1;
@@ -205,10 +194,7 @@ enum SortDirection {
 
 // IdentityProviderType identifies the auth protocol an
 // IdentityProvider speaks. Today only OIDC ships, but the enum is
-// forward-looking — SAML2, LDAP, etc. can be added without another
-// stringly-typed migration. Like AssignmentSourceType, the event
-// payload and DB column keep the lowercase string form for backward
-// replay; conversion happens at the RPC boundary.
+// forward-looking — SAML2, LDAP, etc. can be added later.
 enum IdentityProviderType {
   IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0;
   IDENTITY_PROVIDER_TYPE_OIDC = 1;
@@ -218,13 +204,9 @@ enum IdentityProviderType {
 // agent emits INITIAL (first time the action ran on the device, no
 // previous credential to retain), SCHEDULED (interval-based policy
 // rotation), and AUTH_GRACE (LPS only — user authenticated since the
-// last rotation and the grace period has now elapsed). Same wire /
-// event-store split as the other PR-A/B enums: the proto carries the
-// typed enum, the JSONB event payload and projection columns keep the
-// lowercase string form ("initial" / "scheduled" / "auth_grace") for
-// backward replay; conversion happens at the RPC boundary. Used by
-// LUKS passphrase rotations (INITIAL / SCHEDULED only — LUKS does not
-// run the auth-grace path) and LPS password rotations.
+// last rotation and the grace period has now elapsed). Used by LUKS
+// passphrase rotations (INITIAL / SCHEDULED only — LUKS does not run
+// the auth-grace path) and LPS password rotations.
 enum RotationReason {
   ROTATION_REASON_UNSPECIFIED = 0;
   ROTATION_REASON_INITIAL = 1;
@@ -234,13 +216,9 @@ enum RotationReason {
 
 // LuksRevocationStatus tracks the lifecycle of a LUKS passphrase
 // revocation. NONE is the wire-default for keys that have not been
-// revoked. Once an admin triggers revocation the projection moves the
-// key through DISPATCHED (task enqueued) and then SUCCESS or FAILED
-// based on the agent's response. Same wire / event-store split as the
-// other PR-D enums: the proto carries the typed enum, the projection
-// column keeps the lowercase string form ("" / "dispatched" /
-// "success" / "failed") for backward replay; conversion happens at
-// the RPC boundary.
+// revoked. Once an admin triggers revocation the key moves through
+// DISPATCHED (work committed) and then SUCCESS or FAILED based on the
+// agent's response.
 enum LuksRevocationStatus {
   LUKS_REVOCATION_STATUS_UNSPECIFIED = 0;
   LUKS_REVOCATION_STATUS_NONE = 1;
@@ -281,7 +259,7 @@ enum ComplianceStatus {
 // Multiple entries combine as OR. The agent evaluates against
 // time.Now().Local() at dispatch time so "02:00 local" means 02:00
 // wherever the device runs; the server never tries to interpret the
-// device's timezone. See manchtools/power-manage-server#58.
+// device's timezone.
 message MaintenanceWindow {
   // @gotags: validate:"omitempty,dive"
   repeated MaintenanceWindowEntry schedule = 1;
@@ -298,6 +276,40 @@ message MaintenanceWindowEntry {
   repeated string days = 1;
   // @gotags: validate:"required,min=11,max=11"
   string allow = 2;
+}
+
+// SealedValue is the wire form of a secret-classified field: a versioned,
+// opaque X25519 sealed envelope produced by the SDK's crypto.SealToPublicKey
+// (sdk/crypto/seal.go). Agent->control values seal to control's deployment
+// sealing key; control->agent values seal to that agent's enrollment recipient
+// key. Both public keys are exchanged on Register and pinned with the endpoint
+// identity.
+//
+// The AAD binds, in this order, the protocol version, the direction
+// (agent->control or control->agent), the fully-qualified message and field
+// name, the device ULID, and the one action, delivery or terminal session the
+// value belongs to. So a sealed value cannot be relocated to another field,
+// another device, another action, or the opposite direction: it only opens in
+// the exact context it was produced for.
+//
+// LpsPasswordRotation.password additionally binds the username, because the
+// password is only meaningful as a (username, password) pair — without that
+// binding control cannot verify that the password it stores under a username
+// is the one the agent generated for it.
+//
+// Decryption happens only at the narrow feature sink immediately before use or
+// re-encryption at rest. Transport-field sealing is never reused as storage
+// encryption.
+message SealedValue {
+  // Sealing-scheme version. Lets the construction change without a field or
+  // message rename; a recipient refuses a version it does not implement.
+  // @gotags: validate:"required,gte=1"
+  uint32 version = 1;
+  // ephemeral X25519 public key (32) || AEAD nonce (12) || ciphertext || tag
+  // (16). The floor is crypto.MinSealedLen — anything shorter cannot be a
+  // sealed blob, so it is refused at the boundary rather than at the sink.
+  // @gotags: validate:"required,min=61,max=1048576"
+  bytes ciphertext = 2;
 }
 
 // Output from command execution

@@ -2,14 +2,15 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: pm/v1/agent.proto
+// source: powermanage/v1/agent.proto
 
-package pmv1
+package powermanagev1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -56,11 +57,11 @@ func (x OutputStreamType) String() string {
 }
 
 func (OutputStreamType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[0].Descriptor()
+	return file_powermanage_v1_agent_proto_enumTypes[0].Descriptor()
 }
 
 func (OutputStreamType) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[0]
+	return &file_powermanage_v1_agent_proto_enumTypes[0]
 }
 
 func (x OutputStreamType) Number() protoreflect.EnumNumber {
@@ -69,7 +70,7 @@ func (x OutputStreamType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OutputStreamType.Descriptor instead.
 func (OutputStreamType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{0}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
 // Security alert types for audit logging
@@ -112,11 +113,11 @@ func (x SecurityAlertType) String() string {
 }
 
 func (SecurityAlertType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[1].Descriptor()
+	return file_powermanage_v1_agent_proto_enumTypes[1].Descriptor()
 }
 
 func (SecurityAlertType) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[1]
+	return &file_powermanage_v1_agent_proto_enumTypes[1]
 }
 
 func (x SecurityAlertType) Number() protoreflect.EnumNumber {
@@ -125,7 +126,57 @@ func (x SecurityAlertType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SecurityAlertType.Descriptor instead.
 func (SecurityAlertType) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{1}
+}
+
+// OnFailure decides what the rest of a manifest does after an occurrence
+// fails. CONTINUE is the wire default because the policy default is CONTINUE
+// and STOP is the explicit choice; there is no UNSPECIFIED sentinel to map, so
+// a manifest built without setting the field behaves as authored.
+type OnFailure int32
+
+const (
+	OnFailure_ON_FAILURE_CONTINUE OnFailure = 0 // default — run the remaining occurrences
+	OnFailure_ON_FAILURE_STOP     OnFailure = 1 // abandon the remaining occurrences
+)
+
+// Enum value maps for OnFailure.
+var (
+	OnFailure_name = map[int32]string{
+		0: "ON_FAILURE_CONTINUE",
+		1: "ON_FAILURE_STOP",
+	}
+	OnFailure_value = map[string]int32{
+		"ON_FAILURE_CONTINUE": 0,
+		"ON_FAILURE_STOP":     1,
+	}
+)
+
+func (x OnFailure) Enum() *OnFailure {
+	p := new(OnFailure)
+	*p = x
+	return p
+}
+
+func (x OnFailure) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (OnFailure) Descriptor() protoreflect.EnumDescriptor {
+	return file_powermanage_v1_agent_proto_enumTypes[2].Descriptor()
+}
+
+func (OnFailure) Type() protoreflect.EnumType {
+	return &file_powermanage_v1_agent_proto_enumTypes[2]
+}
+
+func (x OnFailure) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use OnFailure.Descriptor instead.
+func (OnFailure) EnumDescriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
 type OSQueryOp int32
@@ -179,11 +230,11 @@ func (x OSQueryOp) String() string {
 }
 
 func (OSQueryOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[2].Descriptor()
+	return file_powermanage_v1_agent_proto_enumTypes[3].Descriptor()
 }
 
 func (OSQueryOp) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[2]
+	return &file_powermanage_v1_agent_proto_enumTypes[3]
 }
 
 func (x OSQueryOp) Number() protoreflect.EnumNumber {
@@ -192,7 +243,7 @@ func (x OSQueryOp) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OSQueryOp.Descriptor instead.
 func (OSQueryOp) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
 // LogSource selects which system log source the agent queries.
@@ -231,11 +282,11 @@ func (x LogSource) String() string {
 }
 
 func (LogSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[3].Descriptor()
+	return file_powermanage_v1_agent_proto_enumTypes[4].Descriptor()
 }
 
 func (LogSource) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[3]
+	return &file_powermanage_v1_agent_proto_enumTypes[4]
 }
 
 func (x LogSource) Number() protoreflect.EnumNumber {
@@ -244,7 +295,7 @@ func (x LogSource) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LogSource.Descriptor instead.
 func (LogSource) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{4}
 }
 
 // Terminal session lifecycle states reported by the agent.
@@ -288,11 +339,11 @@ func (x TerminalSessionState) String() string {
 }
 
 func (TerminalSessionState) Descriptor() protoreflect.EnumDescriptor {
-	return file_pm_v1_agent_proto_enumTypes[4].Descriptor()
+	return file_powermanage_v1_agent_proto_enumTypes[5].Descriptor()
 }
 
 func (TerminalSessionState) Type() protoreflect.EnumType {
-	return &file_pm_v1_agent_proto_enumTypes[4]
+	return &file_powermanage_v1_agent_proto_enumTypes[5]
 }
 
 func (x TerminalSessionState) Number() protoreflect.EnumNumber {
@@ -301,7 +352,7 @@ func (x TerminalSessionState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TerminalSessionState.Descriptor instead.
 func (TerminalSessionState) EnumDescriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 type AgentMessage struct {
@@ -314,6 +365,8 @@ type AgentMessage struct {
 	//	*AgentMessage_Heartbeat
 	//	*AgentMessage_ActionResult
 	//	*AgentMessage_OutputChunk
+	//	*AgentMessage_DeliveryReceipt
+	//	*AgentMessage_ManifestResult
 	//	*AgentMessage_QueryResult
 	//	*AgentMessage_Inventory
 	//	*AgentMessage_SecurityAlert
@@ -331,7 +384,7 @@ type AgentMessage struct {
 
 func (x *AgentMessage) Reset() {
 	*x = AgentMessage{}
-	mi := &file_pm_v1_agent_proto_msgTypes[0]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +396,7 @@ func (x *AgentMessage) String() string {
 func (*AgentMessage) ProtoMessage() {}
 
 func (x *AgentMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[0]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +409,7 @@ func (x *AgentMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentMessage.ProtoReflect.Descriptor instead.
 func (*AgentMessage) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{0}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *AgentMessage) GetId() string {
@@ -404,6 +457,24 @@ func (x *AgentMessage) GetOutputChunk() *OutputChunk {
 	if x != nil {
 		if x, ok := x.Payload.(*AgentMessage_OutputChunk); ok {
 			return x.OutputChunk
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetDeliveryReceipt() *DeliveryReceipt {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_DeliveryReceipt); ok {
+			return x.DeliveryReceipt
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetManifestResult() *ManifestResult {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_ManifestResult); ok {
+			return x.ManifestResult
 		}
 	}
 	return nil
@@ -523,6 +594,16 @@ type AgentMessage_OutputChunk struct {
 	OutputChunk *OutputChunk `protobuf:"bytes,21,opt,name=output_chunk,json=outputChunk,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_DeliveryReceipt struct {
+	// @gotags: validate:"omitempty"
+	DeliveryReceipt *DeliveryReceipt `protobuf:"bytes,22,opt,name=delivery_receipt,json=deliveryReceipt,proto3,oneof" validate:"omitempty"`
+}
+
+type AgentMessage_ManifestResult struct {
+	// @gotags: validate:"omitempty"
+	ManifestResult *ManifestResult `protobuf:"bytes,23,opt,name=manifest_result,json=manifestResult,proto3,oneof" validate:"omitempty"`
+}
+
 type AgentMessage_QueryResult struct {
 	// @gotags: validate:"omitempty"
 	QueryResult *OSQueryResult `protobuf:"bytes,30,opt,name=query_result,json=queryResult,proto3,oneof" validate:"omitempty"`
@@ -555,11 +636,7 @@ type AgentMessage_RevokeLuksDeviceKeyResult struct {
 }
 
 type AgentMessage_StoreLpsPasswords struct {
-	// LPS password rotations. Spec 41 moved this onto the stream: it used to
-	// reach control through InternalService/ProxyStoreLpsPasswords, i.e. the
-	// gateway relayed the batch. LUKS was already a stream message; LPS was not,
-	// purely because it went via the proxy. With the proxy deleted the agent
-	// reports rotations the same way it reports everything else.
+	// LPS password rotations, batched per execution.
 	// @gotags: validate:"omitempty"
 	StoreLpsPasswords *StoreLpsPasswordsRequest `protobuf:"bytes,53,opt,name=store_lps_passwords,json=storeLpsPasswords,proto3,oneof" validate:"omitempty"`
 }
@@ -589,6 +666,10 @@ func (*AgentMessage_ActionResult) isAgentMessage_Payload() {}
 
 func (*AgentMessage_OutputChunk) isAgentMessage_Payload() {}
 
+func (*AgentMessage_DeliveryReceipt) isAgentMessage_Payload() {}
+
+func (*AgentMessage_ManifestResult) isAgentMessage_Payload() {}
+
 func (*AgentMessage_QueryResult) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Inventory) isAgentMessage_Payload() {}
@@ -615,7 +696,7 @@ type OutputChunk struct {
 	// @gotags: validate:"required,ulid"
 	ExecutionId string `protobuf:"bytes,1,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,ne=0"
-	Stream OutputStreamType `protobuf:"varint,2,opt,name=stream,proto3,enum=pm.v1.OutputStreamType" json:"stream,omitempty" validate:"required,ne=0"`
+	Stream OutputStreamType `protobuf:"varint,2,opt,name=stream,proto3,enum=powermanage.v1.OutputStreamType" json:"stream,omitempty" validate:"required,ne=0"`
 	// @gotags: validate:"required,max=65536"
 	Data []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty" validate:"required,max=65536"`
 	// @gotags: validate:"gte=0"
@@ -626,7 +707,7 @@ type OutputChunk struct {
 
 func (x *OutputChunk) Reset() {
 	*x = OutputChunk{}
-	mi := &file_pm_v1_agent_proto_msgTypes[1]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -638,7 +719,7 @@ func (x *OutputChunk) String() string {
 func (*OutputChunk) ProtoMessage() {}
 
 func (x *OutputChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[1]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -651,7 +732,7 @@ func (x *OutputChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutputChunk.ProtoReflect.Descriptor instead.
 func (*OutputChunk) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *OutputChunk) GetExecutionId() string {
@@ -700,7 +781,7 @@ type Hello struct {
 
 func (x *Hello) Reset() {
 	*x = Hello{}
-	mi := &file_pm_v1_agent_proto_msgTypes[2]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -712,7 +793,7 @@ func (x *Hello) String() string {
 func (*Hello) ProtoMessage() {}
 
 func (x *Hello) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[2]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -725,7 +806,7 @@ func (x *Hello) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Hello.ProtoReflect.Descriptor instead.
 func (*Hello) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Hello) GetDeviceId() *DeviceId {
@@ -779,7 +860,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_pm_v1_agent_proto_msgTypes[3]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -791,7 +872,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[3]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -804,7 +885,7 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Heartbeat) GetUptime() *durationpb.Duration {
@@ -839,7 +920,7 @@ func (x *Heartbeat) GetDiskPercent() float32 {
 type SecurityAlert struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ne=0"
-	Type SecurityAlertType `protobuf:"varint,1,opt,name=type,proto3,enum=pm.v1.SecurityAlertType" json:"type,omitempty" validate:"required,ne=0"`
+	Type SecurityAlertType `protobuf:"varint,1,opt,name=type,proto3,enum=powermanage.v1.SecurityAlertType" json:"type,omitempty" validate:"required,ne=0"`
 	// @gotags: validate:"required,min=1,max=1024"
 	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty" validate:"required,min=1,max=1024"`
 	// Additional context as key-value pairs
@@ -851,7 +932,7 @@ type SecurityAlert struct {
 
 func (x *SecurityAlert) Reset() {
 	*x = SecurityAlert{}
-	mi := &file_pm_v1_agent_proto_msgTypes[4]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -863,7 +944,7 @@ func (x *SecurityAlert) String() string {
 func (*SecurityAlert) ProtoMessage() {}
 
 func (x *SecurityAlert) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[4]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -876,7 +957,7 @@ func (x *SecurityAlert) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecurityAlert.ProtoReflect.Descriptor instead.
 func (*SecurityAlert) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SecurityAlert) GetType() SecurityAlertType {
@@ -907,7 +988,7 @@ type ServerMessage struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*ServerMessage_Welcome
-	//	*ServerMessage_Action
+	//	*ServerMessage_ManifestDelivery
 	//	*ServerMessage_Query
 	//	*ServerMessage_RequestInventory
 	//	*ServerMessage_Error
@@ -927,7 +1008,7 @@ type ServerMessage struct {
 
 func (x *ServerMessage) Reset() {
 	*x = ServerMessage{}
-	mi := &file_pm_v1_agent_proto_msgTypes[5]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -939,7 +1020,7 @@ func (x *ServerMessage) String() string {
 func (*ServerMessage) ProtoMessage() {}
 
 func (x *ServerMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[5]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -952,7 +1033,7 @@ func (x *ServerMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerMessage.ProtoReflect.Descriptor instead.
 func (*ServerMessage) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ServerMessage) GetId() string {
@@ -978,10 +1059,10 @@ func (x *ServerMessage) GetWelcome() *Welcome {
 	return nil
 }
 
-func (x *ServerMessage) GetAction() *ActionDispatch {
+func (x *ServerMessage) GetManifestDelivery() *ManifestDelivery {
 	if x != nil {
-		if x, ok := x.Payload.(*ServerMessage_Action); ok {
-			return x.Action
+		if x, ok := x.Payload.(*ServerMessage_ManifestDelivery); ok {
+			return x.ManifestDelivery
 		}
 	}
 	return nil
@@ -1104,9 +1185,9 @@ type ServerMessage_Welcome struct {
 	Welcome *Welcome `protobuf:"bytes,10,opt,name=welcome,proto3,oneof" validate:"omitempty"`
 }
 
-type ServerMessage_Action struct {
+type ServerMessage_ManifestDelivery struct {
 	// @gotags: validate:"omitempty"
-	Action *ActionDispatch `protobuf:"bytes,20,opt,name=action,proto3,oneof" validate:"omitempty"`
+	ManifestDelivery *ManifestDelivery `protobuf:"bytes,20,opt,name=manifest_delivery,json=manifestDelivery,proto3,oneof" validate:"omitempty"`
 }
 
 type ServerMessage_Query struct {
@@ -1174,7 +1255,7 @@ type ServerMessage_TerminalStop struct {
 
 func (*ServerMessage_Welcome) isServerMessage_Payload() {}
 
-func (*ServerMessage_Action) isServerMessage_Payload() {}
+func (*ServerMessage_ManifestDelivery) isServerMessage_Payload() {}
 
 func (*ServerMessage_Query) isServerMessage_Payload() {}
 
@@ -1215,7 +1296,7 @@ type Welcome struct {
 
 func (x *Welcome) Reset() {
 	*x = Welcome{}
-	mi := &file_pm_v1_agent_proto_msgTypes[6]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1227,7 +1308,7 @@ func (x *Welcome) String() string {
 func (*Welcome) ProtoMessage() {}
 
 func (x *Welcome) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[6]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1240,7 +1321,7 @@ func (x *Welcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Welcome.ProtoReflect.Descriptor instead.
 func (*Welcome) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Welcome) GetServerVersion() string {
@@ -1264,37 +1345,42 @@ func (x *Welcome) GetDeviceLoginUrl() string {
 	return ""
 }
 
-type ActionDispatch struct {
+// ManifestProvenance is the bounded, structured record of where a manifest was
+// authored from: at most one Definition, one ActionSet and one Action, in that
+// order. It is a path, never a tree — the agent does not receive a recursive
+// composition and does not resolve one.
+//
+// Which levels are populated follows the assignment that produced the
+// manifest: a Definition assignment sets definition_id and action_set_id (one
+// manifest per contained set), an ActionSet assignment sets action_set_id
+// alone, and a singleton Action assignment sets action_id alone.
+type ManifestProvenance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Deterministic protobuf wire bytes of the signed SignedActionEnvelope.
-	// The agent verifies `signature` over these exact bytes, then unmarshals
-	// THESE SAME bytes to execute — the executed message is the verified
-	// message. Clean break from carrying a typed Action with a separate
-	// params_canonical (sdk#82).
-	// @gotags: validate:"required,min=1"
-	Envelope []byte `protobuf:"bytes,1,opt,name=envelope,proto3" json:"envelope,omitempty" validate:"required,min=1"`
-	// CA signature over the `envelope` bytes (control's CA key).
-	// @gotags: validate:"required,min=1"
-	Signature     []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,ulid"
+	DefinitionId string `protobuf:"bytes,1,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,ulid"
+	ActionSetId string `protobuf:"bytes,2,opt,name=action_set_id,json=actionSetId,proto3" json:"action_set_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,ulid"
+	ActionId      string `protobuf:"bytes,3,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"omitempty,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ActionDispatch) Reset() {
-	*x = ActionDispatch{}
-	mi := &file_pm_v1_agent_proto_msgTypes[7]
+func (x *ManifestProvenance) Reset() {
+	*x = ManifestProvenance{}
+	mi := &file_powermanage_v1_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ActionDispatch) String() string {
+func (x *ManifestProvenance) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ActionDispatch) ProtoMessage() {}
+func (*ManifestProvenance) ProtoMessage() {}
 
-func (x *ActionDispatch) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[7]
+func (x *ManifestProvenance) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1305,23 +1391,408 @@ func (x *ActionDispatch) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ActionDispatch.ProtoReflect.Descriptor instead.
-func (*ActionDispatch) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{7}
+// Deprecated: Use ManifestProvenance.ProtoReflect.Descriptor instead.
+func (*ManifestProvenance) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ActionDispatch) GetEnvelope() []byte {
+func (x *ManifestProvenance) GetDefinitionId() string {
 	if x != nil {
-		return x.Envelope
+		return x.DefinitionId
+	}
+	return ""
+}
+
+func (x *ManifestProvenance) GetActionSetId() string {
+	if x != nil {
+		return x.ActionSetId
+	}
+	return ""
+}
+
+func (x *ManifestProvenance) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+// ManifestOccurrence is one authored position in a manifest's ordered list.
+//
+// Occurrence identity is NOT delivery identity: occurrence_id names a position
+// the author created, delivery_id names one attempt to hand the whole manifest
+// to a device. Duplicate authored occurrences — the same action reached twice
+// through different sets composing one definition — are preserved and executed
+// at each position; they are not collapsed, and the distinct occurrence_ids
+// are what keeps their results apart.
+type ManifestOccurrence struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	OccurrenceId string `protobuf:"bytes,1,opt,name=occurrence_id,json=occurrenceId,proto3" json:"occurrence_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required"
+	Action *Action `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty" validate:"required"`
+	// What the manifest does if this occurrence fails. Control resolves the
+	// set's declared policy onto each position, so the agent reads this value
+	// and needs no fallback.
+	// @gotags: validate:"omitempty"
+	OnFailure     OnFailure `protobuf:"varint,3,opt,name=on_failure,json=onFailure,proto3,enum=powermanage.v1.OnFailure" json:"on_failure,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManifestOccurrence) Reset() {
+	*x = ManifestOccurrence{}
+	mi := &file_powermanage_v1_agent_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestOccurrence) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestOccurrence) ProtoMessage() {}
+
+func (x *ManifestOccurrence) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_agent_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestOccurrence.ProtoReflect.Descriptor instead.
+func (*ManifestOccurrence) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ManifestOccurrence) GetOccurrenceId() string {
+	if x != nil {
+		return x.OccurrenceId
+	}
+	return ""
+}
+
+func (x *ManifestOccurrence) GetAction() *Action {
+	if x != nil {
+		return x.Action
 	}
 	return nil
 }
 
-func (x *ActionDispatch) GetSignature() []byte {
+func (x *ManifestOccurrence) GetOnFailure() OnFailure {
 	if x != nil {
-		return x.Signature
+		return x.OnFailure
+	}
+	return OnFailure_ON_FAILURE_CONTINUE
+}
+
+// Manifest is the unit of assignment the agent executes: a flat, ordered list
+// of action occurrences under one schedule and one failure policy.
+//
+// Assigning an Action creates a singleton manifest; assigning an ActionSet
+// creates one manifest; assigning a Definition creates one manifest per
+// contained ActionSet, because sets keep independent schedules and failure
+// policies.
+type Manifest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	ManifestId string `protobuf:"bytes,1,opt,name=manifest_id,json=manifestId,proto3" json:"manifest_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required"
+	Provenance *ManifestProvenance `protobuf:"bytes,2,opt,name=provenance,proto3" json:"provenance,omitempty" validate:"required"`
+	// The schedule that fires this manifest: every occurrence runs in declared
+	// order when it does. It is the only schedule the agent executes on — the
+	// per-Action schedule field is authoring data, not an execution trigger.
+	// run_on_assign and skip_if_unchanged keep their existing meaning.
+	// @gotags: validate:"required"
+	Schedule *ActionSchedule `protobuf:"bytes,3,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"required"`
+	// The set-level failure policy, as authored. Each occurrence carries the
+	// resolved value it executes under; this records what the set declared, so
+	// the agent's logs and results can name the policy rather than infer it.
+	// @gotags: validate:"omitempty"
+	DefaultOnFailure OnFailure `protobuf:"varint,4,opt,name=default_on_failure,json=defaultOnFailure,proto3,enum=powermanage.v1.OnFailure" json:"default_on_failure,omitempty" validate:"omitempty"`
+	// Execution order is list order.
+	// @gotags: validate:"required,min=1,dive"
+	Occurrences   []*ManifestOccurrence `protobuf:"bytes,5,rep,name=occurrences,proto3" json:"occurrences,omitempty" validate:"required,min=1,dive"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Manifest) Reset() {
+	*x = Manifest{}
+	mi := &file_powermanage_v1_agent_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Manifest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Manifest) ProtoMessage() {}
+
+func (x *Manifest) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_agent_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Manifest.ProtoReflect.Descriptor instead.
+func (*Manifest) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Manifest) GetManifestId() string {
+	if x != nil {
+		return x.ManifestId
+	}
+	return ""
+}
+
+func (x *Manifest) GetProvenance() *ManifestProvenance {
+	if x != nil {
+		return x.Provenance
 	}
 	return nil
+}
+
+func (x *Manifest) GetSchedule() *ActionSchedule {
+	if x != nil {
+		return x.Schedule
+	}
+	return nil
+}
+
+func (x *Manifest) GetDefaultOnFailure() OnFailure {
+	if x != nil {
+		return x.DefaultOnFailure
+	}
+	return OnFailure_ON_FAILURE_CONTINUE
+}
+
+func (x *Manifest) GetOccurrences() []*ManifestOccurrence {
+	if x != nil {
+		return x.Occurrences
+	}
+	return nil
+}
+
+// Control -> agent: one attempt to hand a complete manifest to a device.
+//
+// The delivery row, with the whole manifest in it, is committed before this
+// frame is sent. delivery_id is minted once at that commit and stays the same
+// across every transport retry, reconnect and sweep re-send, so the agent's
+// receipt table recognises a repeat and executes the work once.
+type ManifestDelivery struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeliveryId string `protobuf:"bytes,1,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required"
+	Manifest      *Manifest `protobuf:"bytes,2,opt,name=manifest,proto3" json:"manifest,omitempty" validate:"required"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManifestDelivery) Reset() {
+	*x = ManifestDelivery{}
+	mi := &file_powermanage_v1_agent_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestDelivery) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestDelivery) ProtoMessage() {}
+
+func (x *ManifestDelivery) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_agent_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestDelivery.ProtoReflect.Descriptor instead.
+func (*ManifestDelivery) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ManifestDelivery) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
+}
+
+func (x *ManifestDelivery) GetManifest() *Manifest {
+	if x != nil {
+		return x.Manifest
+	}
+	return nil
+}
+
+// Agent -> control: the delivery is durably recorded on the device.
+//
+// Sent ONLY after the agent has committed the delivery to its own store, never
+// on arrival. Control advances the delivery out of PUSHED when this frame
+// arrives and never on a successful socket write — a write that the device
+// never persisted must be retried, and it is this frame that distinguishes the
+// two.
+type DeliveryReceipt struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeliveryId    string `protobuf:"bytes,1,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeliveryReceipt) Reset() {
+	*x = DeliveryReceipt{}
+	mi := &file_powermanage_v1_agent_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeliveryReceipt) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeliveryReceipt) ProtoMessage() {}
+
+func (x *DeliveryReceipt) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_agent_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeliveryReceipt.ProtoReflect.Descriptor instead.
+func (*DeliveryReceipt) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DeliveryReceipt) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
+}
+
+// Agent -> control: the outcome of a complete manifest.
+//
+// Results exist per action (ActionResult, carrying the same delivery_id plus
+// its occurrence_id) and once for the manifest as a whole. status is the
+// aggregate: SUCCESS when every executed occurrence succeeded, FAILED when any
+// did, and INDETERMINATE when a crash left an occurrence's effect unknown.
+type ManifestResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,ulid"
+	DeliveryId string `protobuf:"bytes,1,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ulid"
+	ManifestId string `protobuf:"bytes,2,opt,name=manifest_id,json=manifestId,proto3" json:"manifest_id,omitempty" validate:"required,ulid"`
+	// @gotags: validate:"required,ne=0"
+	Status ExecutionStatus `protobuf:"varint,3,opt,name=status,proto3,enum=powermanage.v1.ExecutionStatus" json:"status,omitempty" validate:"required,ne=0"`
+	// @gotags: validate:"omitempty"
+	CompletedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,gte=0"
+	DurationMs int64 `protobuf:"varint,5,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty" validate:"omitempty,gte=0"`
+	// @gotags: validate:"omitempty,max=4096"
+	Error         string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty" validate:"omitempty,max=4096"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManifestResult) Reset() {
+	*x = ManifestResult{}
+	mi := &file_powermanage_v1_agent_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestResult) ProtoMessage() {}
+
+func (x *ManifestResult) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_agent_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestResult.ProtoReflect.Descriptor instead.
+func (*ManifestResult) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ManifestResult) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
+}
+
+func (x *ManifestResult) GetManifestId() string {
+	if x != nil {
+		return x.ManifestId
+	}
+	return ""
+}
+
+func (x *ManifestResult) GetStatus() ExecutionStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ExecutionStatus_EXECUTION_STATUS_UNSPECIFIED
+}
+
+func (x *ManifestResult) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
+func (x *ManifestResult) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *ManifestResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
 }
 
 type Error struct {
@@ -1336,7 +1807,7 @@ type Error struct {
 
 func (x *Error) Reset() {
 	*x = Error{}
-	mi := &file_pm_v1_agent_proto_msgTypes[8]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1348,7 +1819,7 @@ func (x *Error) String() string {
 func (*Error) ProtoMessage() {}
 
 func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[8]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1361,7 +1832,7 @@ func (x *Error) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Error.ProtoReflect.Descriptor instead.
 func (*Error) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Error) GetCode() string {
@@ -1392,30 +1863,14 @@ type OSQuery struct {
 	Limit int32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty" validate:"omitempty,gte=0,lte=10000"`
 	// Raw SQL query — when set, table/columns/where/limit are ignored.
 	// @gotags: validate:"omitempty,max=4096"
-	RawSql string `protobuf:"bytes,6,opt,name=raw_sql,json=rawSql,proto3" json:"raw_sql,omitempty" validate:"omitempty,max=4096"`
-	// CA signature over the deterministic wire bytes of this message with
-	// signature cleared, under the osquery signing domain. Signed at the
-	// control server, relayed opaquely by the gateway, verified fail-closed
-	// by the agent before any osquery execution (incl. raw_sql). A compromised
-	// gateway/Valkey relay cannot originate or tamper a query under a valid
-	// signature.
-	// @gotags: validate:"omitempty"
-	Signature []byte `protobuf:"bytes,7,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	// The single device this query is authorized to run on. Bound INSIDE the
-	// signed canonical bytes (signature covers every field but itself), so a
-	// compromised gateway/relay cannot replay one device's validly-signed query
-	// onto another device that trusts the same CA (PMSEC-001, sibling of
-	// SignedActionEnvelope.target_device_id). The agent verifies target ==
-	// itself after the signature and refuses otherwise.
-	// @gotags: validate:"required,ulid"
-	TargetDeviceId string `protobuf:"bytes,8,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	RawSql        string `protobuf:"bytes,6,opt,name=raw_sql,json=rawSql,proto3" json:"raw_sql,omitempty" validate:"omitempty,max=4096"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OSQuery) Reset() {
 	*x = OSQuery{}
-	mi := &file_pm_v1_agent_proto_msgTypes[9]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1427,7 +1882,7 @@ func (x *OSQuery) String() string {
 func (*OSQuery) ProtoMessage() {}
 
 func (x *OSQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[9]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1440,7 +1895,7 @@ func (x *OSQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQuery.ProtoReflect.Descriptor instead.
 func (*OSQuery) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{9}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *OSQuery) GetQueryId() string {
@@ -1485,26 +1940,12 @@ func (x *OSQuery) GetRawSql() string {
 	return ""
 }
 
-func (x *OSQuery) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *OSQuery) GetTargetDeviceId() string {
-	if x != nil {
-		return x.TargetDeviceId
-	}
-	return ""
-}
-
 type OSQueryCondition struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,min=1,max=64"
 	Column string `protobuf:"bytes,1,opt,name=column,proto3" json:"column,omitempty" validate:"required,min=1,max=64"`
 	// @gotags: validate:"required"
-	Op OSQueryOp `protobuf:"varint,2,opt,name=op,proto3,enum=pm.v1.OSQueryOp" json:"op,omitempty" validate:"required"`
+	Op OSQueryOp `protobuf:"varint,2,opt,name=op,proto3,enum=powermanage.v1.OSQueryOp" json:"op,omitempty" validate:"required"`
 	// @gotags: validate:"required,max=4096"
 	Value         string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty" validate:"required,max=4096"`
 	unknownFields protoimpl.UnknownFields
@@ -1513,7 +1954,7 @@ type OSQueryCondition struct {
 
 func (x *OSQueryCondition) Reset() {
 	*x = OSQueryCondition{}
-	mi := &file_pm_v1_agent_proto_msgTypes[10]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1525,7 +1966,7 @@ func (x *OSQueryCondition) String() string {
 func (*OSQueryCondition) ProtoMessage() {}
 
 func (x *OSQueryCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[10]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1538,7 +1979,7 @@ func (x *OSQueryCondition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryCondition.ProtoReflect.Descriptor instead.
 func (*OSQueryCondition) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *OSQueryCondition) GetColumn() string {
@@ -1578,7 +2019,7 @@ type OSQueryResult struct {
 
 func (x *OSQueryResult) Reset() {
 	*x = OSQueryResult{}
-	mi := &file_pm_v1_agent_proto_msgTypes[11]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1590,7 +2031,7 @@ func (x *OSQueryResult) String() string {
 func (*OSQueryResult) ProtoMessage() {}
 
 func (x *OSQueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[11]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1603,7 +2044,7 @@ func (x *OSQueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryResult.ProtoReflect.Descriptor instead.
 func (*OSQueryResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{11}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *OSQueryResult) GetQueryId() string {
@@ -1644,7 +2085,7 @@ type OSQueryRow struct {
 
 func (x *OSQueryRow) Reset() {
 	*x = OSQueryRow{}
-	mi := &file_pm_v1_agent_proto_msgTypes[12]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1656,7 +2097,7 @@ func (x *OSQueryRow) String() string {
 func (*OSQueryRow) ProtoMessage() {}
 
 func (x *OSQueryRow) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[12]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1669,7 +2110,7 @@ func (x *OSQueryRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSQueryRow.ProtoReflect.Descriptor instead.
 func (*OSQueryRow) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *OSQueryRow) GetData() map[string]string {
@@ -1688,7 +2129,7 @@ type DeviceInventory struct {
 
 func (x *DeviceInventory) Reset() {
 	*x = DeviceInventory{}
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1700,7 +2141,7 @@ func (x *DeviceInventory) String() string {
 func (*DeviceInventory) ProtoMessage() {}
 
 func (x *DeviceInventory) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[13]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1713,7 +2154,7 @@ func (x *DeviceInventory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeviceInventory.ProtoReflect.Descriptor instead.
 func (*DeviceInventory) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{13}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DeviceInventory) GetTables() []*InventoryTable {
@@ -1735,7 +2176,7 @@ type InventoryTable struct {
 
 func (x *InventoryTable) Reset() {
 	*x = InventoryTable{}
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1747,7 +2188,7 @@ func (x *InventoryTable) String() string {
 func (*InventoryTable) ProtoMessage() {}
 
 func (x *InventoryTable) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[14]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1760,7 +2201,7 @@ func (x *InventoryTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InventoryTable.ProtoReflect.Descriptor instead.
 func (*InventoryTable) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{14}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *InventoryTable) GetTableName() string {
@@ -1777,36 +2218,22 @@ func (x *InventoryTable) GetRows() []*OSQueryRow {
 	return nil
 }
 
-// Server -> Agent: request fresh inventory collection.
+// Server -> Agent: request fresh inventory collection. query_id correlates the
+// DeviceInventory the agent sends back.
 //
-// query_id + signature bind a server-originated collection request so a
-// compromised gateway cannot make the agent run osquery as root on a forged
-// request. Agent-initiated periodic inventory (on connect + every 24h) does
-// NOT travel this message and needs no signature — it is the agent's own
-// decision, not a relayed command.
+// Agent-initiated periodic inventory (on connect + every 24h) does NOT travel
+// this message — it is the agent's own decision, not a command.
 type RequestInventory struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	QueryId string `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty" validate:"required,ulid"`
-	// CA signature over the deterministic wire bytes of this message with
-	// signature cleared, under the inventory signing domain. Verified
-	// fail-closed by the agent before any osquery collection.
-	// @gotags: validate:"omitempty"
-	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	// The single device this collection request is authorized for. Bound INSIDE
-	// the signed canonical bytes so a compromised gateway/relay cannot replay one
-	// device's validly-signed request onto another (PMSEC-001, sibling of
-	// SignedActionEnvelope.target_device_id). The agent verifies target == itself
-	// after the signature and refuses otherwise.
-	// @gotags: validate:"required,ulid"
-	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	QueryId       string `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RequestInventory) Reset() {
 	*x = RequestInventory{}
-	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1818,7 +2245,7 @@ func (x *RequestInventory) String() string {
 func (*RequestInventory) ProtoMessage() {}
 
 func (x *RequestInventory) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[15]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1831,7 +2258,7 @@ func (x *RequestInventory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestInventory.ProtoReflect.Descriptor instead.
 func (*RequestInventory) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{15}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RequestInventory) GetQueryId() string {
@@ -1841,22 +2268,8 @@ func (x *RequestInventory) GetQueryId() string {
 	return ""
 }
 
-func (x *RequestInventory) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *RequestInventory) GetTargetDeviceId() string {
-	if x != nil {
-		return x.TargetDeviceId
-	}
-	return ""
-}
-
 // Agent requests the current managed passphrase for a LUKS action.
-// device_id is omitted — the gateway knows the device from the mTLS cert.
+// device_id is omitted — control derives the device from the mTLS certificate.
 type GetLuksKeyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -1867,7 +2280,7 @@ type GetLuksKeyRequest struct {
 
 func (x *GetLuksKeyRequest) Reset() {
 	*x = GetLuksKeyRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1879,7 +2292,7 @@ func (x *GetLuksKeyRequest) String() string {
 func (*GetLuksKeyRequest) ProtoMessage() {}
 
 func (x *GetLuksKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[16]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1892,7 +2305,7 @@ func (x *GetLuksKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLuksKeyRequest.ProtoReflect.Descriptor instead.
 func (*GetLuksKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{16}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetLuksKeyRequest) GetActionId() string {
@@ -1904,25 +2317,24 @@ func (x *GetLuksKeyRequest) GetActionId() string {
 
 type GetLuksKeyResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Bounded like the storage side, so the two halves of the round trip agree on
-	// what a passphrase can be.
+	// The managed passphrase, sealed to this agent's enrollment recipient key.
 	//
-	// debug_redact marks this field as secret. It does NOT redact anything at
-	// runtime: protobuf-go defines the option and no encoder in it consults the
-	// option, so the generated String() prints this value like any other. What
-	// the annotation buys is a machine-readable marker — TestProtoSecretFieldSinks
-	// reads it off the descriptor to derive the set of fields whose plaintext may
-	// only be touched at an enumerated sink, so a slog or fmt argument fails the
-	// build rather than shipping a credential into a log.
-	// @gotags: validate:"required,min=1,max=4096"
-	Passphrase    string `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=4096"`
+	// debug_redact is the machine-readable secret classification. It redacts
+	// nothing at runtime — no encoder in protobuf-go consults the option — but
+	// structural sink guards read it off the descriptor to derive the set of
+	// fields whose plaintext may only be touched at an enumerated sink, so a
+	// slog or fmt argument fails the build instead of shipping a credential into
+	// a log. It stays on the sealed field because opening the value produces
+	// exactly that plaintext.
+	// @gotags: validate:"required"
+	Passphrase    *SealedValue `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLuksKeyResponse) Reset() {
 	*x = GetLuksKeyResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[17]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1934,7 +2346,7 @@ func (x *GetLuksKeyResponse) String() string {
 func (*GetLuksKeyResponse) ProtoMessage() {}
 
 func (x *GetLuksKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[17]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1947,14 +2359,14 @@ func (x *GetLuksKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLuksKeyResponse.ProtoReflect.Descriptor instead.
 func (*GetLuksKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{17}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *GetLuksKeyResponse) GetPassphrase() string {
+func (x *GetLuksKeyResponse) GetPassphrase() *SealedValue {
 	if x != nil {
 		return x.Passphrase
 	}
-	return ""
+	return nil
 }
 
 // Agent stores a new managed passphrase on the server.
@@ -1969,38 +2381,30 @@ type StoreLuksKeyRequest struct {
 	// encrypted and persisted.
 	// @gotags: validate:"required,startswith=/,max=4096"
 	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty" validate:"required,startswith=/,max=4096"`
-	// Managed passphrase, sent over the agent's direct mTLS connection to
-	// control. Spec 41 removed the X25519 transport sealing along with the
-	// gateway: the seal existed so a relaying gateway could not read
-	// disk-encryption secrets (spec 25), and with no relay the agent's TLS
-	// terminates at control — the only party that could have opened the blob.
-	//
-	// What did NOT go with the seal: control encrypts this at rest with
-	// AES-256-GCM (sdk crypto.SealWithAAD) under SecretAAD(device, action,
-	// "luks"), which is byte-identical to the AAD the transport seal used — so
-	// for LUKS the relocation and domain-separation properties carry over exactly.
-	// (LPS differs: its transport AAD also bound the username, which the at-rest
-	// AAD deliberately omits per ADR 0009. See sdk docs/02-concepts/04-crypto.md.)
-	// debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
-	// runtime protection (see GetLuksKeyResponse.passphrase).
-	// @gotags: validate:"required,min=1,max=4096"
-	Passphrase string `protobuf:"bytes,3,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=4096"`
+	// The managed passphrase, sealed to control's deployment sealing key. The
+	// AAD binds this device and this action_id, so a captured blob cannot be
+	// replayed under another device or another action. Control opens it at the
+	// storage sink and re-encrypts at rest under its own resource-context AAD;
+	// the transport seal is never reused as storage encryption.
+	// debug_redact is the secret classification (see
+	// GetLuksKeyResponse.passphrase).
+	// @gotags: validate:"required"
+	Passphrase *SealedValue `protobuf:"bytes,3,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required"`
 	// Why this rotation happened. INITIAL on the first time the action
 	// runs on a device (no previous passphrase to retain); SCHEDULED for
 	// any subsequent policy-driven rotation. LUKS does not use
-	// AUTH_GRACE — that reason is reserved for LPS, where a user
-	// authenticated during the grace period. Validated against the
-	// enum at the boundary; the event payload keeps the lowercase
-	// string form ("initial" / "scheduled") for backward replay.
+	// AUTH_GRACE — that reason belongs to LPS, where a user
+	// authenticated during the grace period. Validated against the enum
+	// at the boundary.
 	// @gotags: validate:"required,oneof=1 2"
-	RotationReason RotationReason `protobuf:"varint,4,opt,name=rotation_reason,json=rotationReason,proto3,enum=pm.v1.RotationReason" json:"rotation_reason,omitempty" validate:"required,oneof=1 2"`
+	RotationReason RotationReason `protobuf:"varint,4,opt,name=rotation_reason,json=rotationReason,proto3,enum=powermanage.v1.RotationReason" json:"rotation_reason,omitempty" validate:"required,oneof=1 2"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *StoreLuksKeyRequest) Reset() {
 	*x = StoreLuksKeyRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[18]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2012,7 +2416,7 @@ func (x *StoreLuksKeyRequest) String() string {
 func (*StoreLuksKeyRequest) ProtoMessage() {}
 
 func (x *StoreLuksKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[18]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2025,7 +2429,7 @@ func (x *StoreLuksKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreLuksKeyRequest.ProtoReflect.Descriptor instead.
 func (*StoreLuksKeyRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{18}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *StoreLuksKeyRequest) GetActionId() string {
@@ -2042,11 +2446,11 @@ func (x *StoreLuksKeyRequest) GetDevicePath() string {
 	return ""
 }
 
-func (x *StoreLuksKeyRequest) GetPassphrase() string {
+func (x *StoreLuksKeyRequest) GetPassphrase() *SealedValue {
 	if x != nil {
 		return x.Passphrase
 	}
-	return ""
+	return nil
 }
 
 func (x *StoreLuksKeyRequest) GetRotationReason() RotationReason {
@@ -2065,7 +2469,7 @@ type StoreLuksKeyResponse struct {
 
 func (x *StoreLuksKeyResponse) Reset() {
 	*x = StoreLuksKeyResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[19]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2077,7 +2481,7 @@ func (x *StoreLuksKeyResponse) String() string {
 func (*StoreLuksKeyResponse) ProtoMessage() {}
 
 func (x *StoreLuksKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[19]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2090,7 +2494,7 @@ func (x *StoreLuksKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreLuksKeyResponse.ProtoReflect.Descriptor instead.
 func (*StoreLuksKeyResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{19}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *StoreLuksKeyResponse) GetSuccess() bool {
@@ -2101,33 +2505,23 @@ func (x *StoreLuksKeyResponse) GetSuccess() bool {
 }
 
 // One password rotation the agent performed during an LPS execution.
-//
-// Spec 41 moved this onto the agent stream. It previously travelled as
-// InternalStoreLpsPasswordsRequest through InternalService/ProxyStoreLpsPasswords
-// — the gateway relayed the batch to control — and the password was X25519-sealed
-// so that relay could not read it. There is no relay: the agent's mTLS terminates
-// at control, which was always the only party able to open the seal.
 type LpsPasswordRotation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Local Linux username whose password was rotated.
 	// @gotags: validate:"required,min=1,max=64"
 	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty" validate:"required,min=1,max=64"`
-	// The rotated password, sent over the agent's direct mTLS connection.
-	// Control encrypts it at rest on receipt.
+	// The rotated password, sealed to control's deployment sealing key.
 	//
-	// NOTE, because it is the one property that genuinely changes: the transport
-	// seal's AAD bound device|action|username, and the at-rest AAD binds
-	// device|action|"lps" with NO username — ADR 0009 omits it deliberately. So
-	// control no longer cryptographically verifies that the password it stores
-	// under a username is the one the agent generated for that username. That was
-	// an end-to-end correctness check, not a confidentiality boundary; a caller
-	// authorised to read one username's password on a device already receives all
-	// of them. Closing it means adding username to the at-rest AAD, which is ruled
-	// separately (spec 41, criterion 8a).
-	// debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
-	// runtime protection (see GetLuksKeyResponse.passphrase).
-	// @gotags: validate:"required,min=1,max=4096"
-	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=1,max=4096"`
+	// This field's AAD binds `username` in addition to the device and action, so
+	// the pairing is cryptographically checked: control cannot open a blob under
+	// a username other than the one the agent generated it for, and a blob
+	// cannot be moved between the entries of one batch. A password is only
+	// meaningful as a (username, password) pair, so the pair is what the seal
+	// authenticates.
+	// debug_redact is the secret classification (see
+	// GetLuksKeyResponse.passphrase).
+	// @gotags: validate:"required"
+	Password *SealedValue `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required"`
 	// RFC 3339 timestamp the agent observed the rotation. Control keeps the
 	// agent's clock here rather than re-stamping at receipt, so the timeline
 	// reflects the device's reality.
@@ -2147,14 +2541,14 @@ type LpsPasswordRotation struct {
 	// signals "rotate now to limit the leaked-password window", never emitted from
 	// LUKS. Stored on the event as the lowercase string form.
 	// @gotags: validate:"required,oneof=1 2 3"
-	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=pm.v1.RotationReason" json:"reason,omitempty" validate:"required,oneof=1 2 3"`
+	Reason        RotationReason `protobuf:"varint,4,opt,name=reason,proto3,enum=powermanage.v1.RotationReason" json:"reason,omitempty" validate:"required,oneof=1 2 3"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LpsPasswordRotation) Reset() {
 	*x = LpsPasswordRotation{}
-	mi := &file_pm_v1_agent_proto_msgTypes[20]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2166,7 +2560,7 @@ func (x *LpsPasswordRotation) String() string {
 func (*LpsPasswordRotation) ProtoMessage() {}
 
 func (x *LpsPasswordRotation) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[20]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2179,7 +2573,7 @@ func (x *LpsPasswordRotation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LpsPasswordRotation.ProtoReflect.Descriptor instead.
 func (*LpsPasswordRotation) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{20}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *LpsPasswordRotation) GetUsername() string {
@@ -2189,11 +2583,11 @@ func (x *LpsPasswordRotation) GetUsername() string {
 	return ""
 }
 
-func (x *LpsPasswordRotation) GetPassword() string {
+func (x *LpsPasswordRotation) GetPassword() *SealedValue {
 	if x != nil {
 		return x.Password
 	}
-	return ""
+	return nil
 }
 
 func (x *LpsPasswordRotation) GetRotatedAt() string {
@@ -2227,7 +2621,7 @@ type StoreLpsPasswordsRequest struct {
 
 func (x *StoreLpsPasswordsRequest) Reset() {
 	*x = StoreLpsPasswordsRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[21]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2239,7 +2633,7 @@ func (x *StoreLpsPasswordsRequest) String() string {
 func (*StoreLpsPasswordsRequest) ProtoMessage() {}
 
 func (x *StoreLpsPasswordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[21]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2252,7 +2646,7 @@ func (x *StoreLpsPasswordsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreLpsPasswordsRequest.ProtoReflect.Descriptor instead.
 func (*StoreLpsPasswordsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{21}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *StoreLpsPasswordsRequest) GetActionId() string {
@@ -2278,7 +2672,7 @@ type StoreLpsPasswordsResponse struct {
 
 func (x *StoreLpsPasswordsResponse) Reset() {
 	*x = StoreLpsPasswordsResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[22]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2290,7 +2684,7 @@ func (x *StoreLpsPasswordsResponse) String() string {
 func (*StoreLpsPasswordsResponse) ProtoMessage() {}
 
 func (x *StoreLpsPasswordsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[22]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2303,7 +2697,7 @@ func (x *StoreLpsPasswordsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreLpsPasswordsResponse.ProtoReflect.Descriptor instead.
 func (*StoreLpsPasswordsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{22}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *StoreLpsPasswordsResponse) GetSuccess() bool {
@@ -2318,28 +2712,14 @@ func (x *StoreLpsPasswordsResponse) GetSuccess() bool {
 type RevokeLuksDeviceKey struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
-	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
-	// CA signature over the deterministic wire bytes of this message with
-	// signature cleared, under the LUKS-revoke signing domain. The slot-7
-	// device-key wipe is destructive and irreversible, so the agent verifies
-	// fail-closed before revoking — a compromised gateway cannot forge or
-	// replay a revocation onto any known action_id.
-	// @gotags: validate:"omitempty"
-	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	// The single device this destructive slot-7 wipe is authorized for. Bound
-	// INSIDE the signed canonical bytes so a compromised gateway/relay cannot
-	// replay one device's validly-signed revocation onto another that trusts the
-	// same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
-	// agent verifies target == itself after the signature and refuses otherwise.
-	// @gotags: validate:"required,ulid"
-	TargetDeviceId string `protobuf:"bytes,3,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	ActionId      string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty" validate:"required,ulid"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RevokeLuksDeviceKey) Reset() {
 	*x = RevokeLuksDeviceKey{}
-	mi := &file_pm_v1_agent_proto_msgTypes[23]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2351,7 +2731,7 @@ func (x *RevokeLuksDeviceKey) String() string {
 func (*RevokeLuksDeviceKey) ProtoMessage() {}
 
 func (x *RevokeLuksDeviceKey) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[23]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2364,26 +2744,12 @@ func (x *RevokeLuksDeviceKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeLuksDeviceKey.ProtoReflect.Descriptor instead.
 func (*RevokeLuksDeviceKey) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{23}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RevokeLuksDeviceKey) GetActionId() string {
 	if x != nil {
 		return x.ActionId
-	}
-	return ""
-}
-
-func (x *RevokeLuksDeviceKey) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *RevokeLuksDeviceKey) GetTargetDeviceId() string {
-	if x != nil {
-		return x.TargetDeviceId
 	}
 	return ""
 }
@@ -2402,7 +2768,7 @@ type RevokeLuksDeviceKeyResult struct {
 
 func (x *RevokeLuksDeviceKeyResult) Reset() {
 	*x = RevokeLuksDeviceKeyResult{}
-	mi := &file_pm_v1_agent_proto_msgTypes[24]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2414,7 +2780,7 @@ func (x *RevokeLuksDeviceKeyResult) String() string {
 func (*RevokeLuksDeviceKeyResult) ProtoMessage() {}
 
 func (x *RevokeLuksDeviceKeyResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[24]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2427,7 +2793,7 @@ func (x *RevokeLuksDeviceKeyResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeLuksDeviceKeyResult.ProtoReflect.Descriptor instead.
 func (*RevokeLuksDeviceKeyResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{24}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *RevokeLuksDeviceKeyResult) GetActionId() string {
@@ -2470,7 +2836,7 @@ type ValidateLuksTokenRequest struct {
 
 func (x *ValidateLuksTokenRequest) Reset() {
 	*x = ValidateLuksTokenRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[25]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2482,7 +2848,7 @@ func (x *ValidateLuksTokenRequest) String() string {
 func (*ValidateLuksTokenRequest) ProtoMessage() {}
 
 func (x *ValidateLuksTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[25]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2495,7 +2861,7 @@ func (x *ValidateLuksTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateLuksTokenRequest.ProtoReflect.Descriptor instead.
 func (*ValidateLuksTokenRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{25}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ValidateLuksTokenRequest) GetDeviceId() string {
@@ -2520,14 +2886,14 @@ type ValidateLuksTokenResponse struct {
 	// Minimum passphrase length (>= 16)
 	MinLength int32 `protobuf:"varint,3,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
 	// Complexity requirement for user-defined passphrases
-	Complexity    LpsPasswordComplexity `protobuf:"varint,4,opt,name=complexity,proto3,enum=pm.v1.LpsPasswordComplexity" json:"complexity,omitempty"`
+	Complexity    LpsPasswordComplexity `protobuf:"varint,4,opt,name=complexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"complexity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ValidateLuksTokenResponse) Reset() {
 	*x = ValidateLuksTokenResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[26]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2539,7 +2905,7 @@ func (x *ValidateLuksTokenResponse) String() string {
 func (*ValidateLuksTokenResponse) ProtoMessage() {}
 
 func (x *ValidateLuksTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[26]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2552,7 +2918,7 @@ func (x *ValidateLuksTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateLuksTokenResponse.ProtoReflect.Descriptor instead.
 func (*ValidateLuksTokenResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{26}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ValidateLuksTokenResponse) GetActionId() string {
@@ -2593,7 +2959,7 @@ type SyncActionsRequest struct {
 
 func (x *SyncActionsRequest) Reset() {
 	*x = SyncActionsRequest{}
-	mi := &file_pm_v1_agent_proto_msgTypes[27]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2605,7 +2971,7 @@ func (x *SyncActionsRequest) String() string {
 func (*SyncActionsRequest) ProtoMessage() {}
 
 func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[27]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2618,7 +2984,7 @@ func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsRequest.ProtoReflect.Descriptor instead.
 func (*SyncActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{27}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
@@ -2628,110 +2994,27 @@ func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
 	return nil
 }
 
-// ActionGroup represents a set or definition's worth of actions that share a
-// single schedule. When the schedule fires, every member action executes in
-// the order given. The schedule overrides each member action's own schedule
-// field — that field is meaningful only for actions delivered via
-// SyncActionsResponse.standalone_actions.
-//
-// The same action_id may appear at multiple positions within one group (e.g.
-// the same action being a member of two sets that compose the same
-// definition); idempotent execution absorbs the redundancy. Across groups,
-// duplicates are also expected — each group runs independently when its
-// schedule fires.
-type ActionGroup struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Diagnostic label identifying the source of this group, e.g.
-	// "definition:<ulid>" or "action_set:<ulid>". For logs and UI only;
-	// the agent does not interpret the contents.
-	SourceLabel string `protobuf:"bytes,1,opt,name=source_label,json=sourceLabel,proto3" json:"source_label,omitempty"`
-	// Schedule that triggers this group. When fired, every member action runs
-	// in order through the existing executor.
-	// @gotags: validate:"required"
-	Schedule *ActionSchedule `protobuf:"bytes,2,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"required"`
-	// Member actions in execution order. Each Action's own `schedule` field is
-	// ignored — only the group's schedule above applies. The `desired_state`
-	// and other fields on each Action are honored as the server resolved them.
-	// @gotags: validate:"min=1,dive"
-	Actions       []*Action `protobuf:"bytes,3,rep,name=actions,proto3" json:"actions,omitempty" validate:"min=1,dive"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ActionGroup) Reset() {
-	*x = ActionGroup{}
-	mi := &file_pm_v1_agent_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ActionGroup) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ActionGroup) ProtoMessage() {}
-
-func (x *ActionGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ActionGroup.ProtoReflect.Descriptor instead.
-func (*ActionGroup) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{28}
-}
-
-func (x *ActionGroup) GetSourceLabel() string {
-	if x != nil {
-		return x.SourceLabel
-	}
-	return ""
-}
-
-func (x *ActionGroup) GetSchedule() *ActionSchedule {
-	if x != nil {
-		return x.Schedule
-	}
-	return nil
-}
-
-func (x *ActionGroup) GetActions() []*Action {
-	if x != nil {
-		return x.Actions
-	}
-	return nil
-}
-
+// SyncActionsResponse carries the same durable units as the stream. Pull and
+// push are two ways of reaching one dispatch model, not two models: the agent
+// records each delivery under its delivery_id, answers with the same
+// DeliveryReceipt frame, and executes each manifest exactly once no matter
+// which path it arrived on.
 type SyncActionsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Effective sync interval in minutes for this device
-	// Agent should use this for the next sync interval
-	// 0 means use default (30 minutes)
+	// Effective sync interval in minutes for this device. The agent uses it for
+	// the next sync; 0 means the default (30 minutes).
 	SyncIntervalMinutes int32 `protobuf:"varint,2,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
-	// Actions assigned directly to this device (or its groups) at the action
-	// layer — i.e. not absorbed by a reached set or definition. Each action
-	// fires on its own schedule, independent of every other action.
-	// The agent should replace its local standalone-action store with this list.
-	StandaloneActions []*Action `protobuf:"bytes,3,rep,name=standalone_actions,json=standaloneActions,proto3" json:"standalone_actions,omitempty"`
-	// Action sets / definitions that reach this device, expressed as groups
-	// sharing a single schedule each. Each group's actions run in declared
-	// order when the group's schedule fires.
-	// The agent should replace its local action-group store with this list.
-	GroupedActions []*ActionGroup `protobuf:"bytes,4,rep,name=grouped_actions,json=groupedActions,proto3" json:"grouped_actions,omitempty"`
+	// Every delivery currently assigned to this device. delivery_id is the same
+	// value the push path would use for the same delivery row, so a manifest the
+	// agent already recorded from the stream is recognised as a repeat here.
+	// @gotags: validate:"omitempty,dive"
+	Deliveries []*ManifestDelivery `protobuf:"bytes,3,rep,name=deliveries,proto3" json:"deliveries,omitempty" validate:"omitempty,dive"`
 	// Resolved maintenance window. Server-computed union across every
 	// group the device belongs to (its own device groups plus any user
 	// groups reaching it through an assignment). Empty schedule = no
 	// gating; the agent dispatches non-instant actions any time. Empty
 	// is also the response when no groups carry a window. The agent
-	// evaluates this against time.Now().Local() at dispatch time. See
-	// manchtools/power-manage-server#58.
+	// evaluates this against time.Now().Local() at dispatch time.
 	MaintenanceWindow *MaintenanceWindow `protobuf:"bytes,5,opt,name=maintenance_window,json=maintenanceWindow,proto3" json:"maintenance_window,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -2739,7 +3022,7 @@ type SyncActionsResponse struct {
 
 func (x *SyncActionsResponse) Reset() {
 	*x = SyncActionsResponse{}
-	mi := &file_pm_v1_agent_proto_msgTypes[29]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2751,7 +3034,7 @@ func (x *SyncActionsResponse) String() string {
 func (*SyncActionsResponse) ProtoMessage() {}
 
 func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[29]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2764,7 +3047,7 @@ func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncActionsResponse.ProtoReflect.Descriptor instead.
 func (*SyncActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{29}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *SyncActionsResponse) GetSyncIntervalMinutes() int32 {
@@ -2774,16 +3057,9 @@ func (x *SyncActionsResponse) GetSyncIntervalMinutes() int32 {
 	return 0
 }
 
-func (x *SyncActionsResponse) GetStandaloneActions() []*Action {
+func (x *SyncActionsResponse) GetDeliveries() []*ManifestDelivery {
 	if x != nil {
-		return x.StandaloneActions
-	}
-	return nil
-}
-
-func (x *SyncActionsResponse) GetGroupedActions() []*ActionGroup {
-	if x != nil {
-		return x.GroupedActions
+		return x.Deliveries
 	}
 	return nil
 }
@@ -2816,28 +3092,14 @@ type LogQuery struct {
 	// Log source. Defaults to LOG_SOURCE_JOURNALD. Agents without
 	// support for a requested source return an error.
 	// @gotags: validate:"omitempty"
-	Source LogSource `protobuf:"varint,9,opt,name=source,proto3,enum=pm.v1.LogSource" json:"source,omitempty" validate:"omitempty"`
-	// CA signature over the deterministic wire bytes of this message with
-	// signature cleared, under the logquery signing domain. journalctl runs as
-	// root, so the agent verifies fail-closed before building any journalctl
-	// invocation — a compromised gateway cannot originate or retarget
-	// (e.g. swap the unit) a log read under a valid signature.
-	// @gotags: validate:"omitempty"
-	Signature []byte `protobuf:"bytes,10,opt,name=signature,proto3" json:"signature,omitempty" validate:"omitempty"`
-	// The single device this log read is authorized for. Bound INSIDE the signed
-	// canonical bytes so a compromised gateway/relay cannot replay one device's
-	// validly-signed log query onto another that trusts the same CA (PMSEC-001,
-	// sibling of SignedActionEnvelope.target_device_id). The agent verifies
-	// target == itself after the signature and refuses otherwise.
-	// @gotags: validate:"required,ulid"
-	TargetDeviceId string `protobuf:"bytes,11,opt,name=target_device_id,json=targetDeviceId,proto3" json:"target_device_id,omitempty" validate:"required,ulid"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	Source        LogSource `protobuf:"varint,9,opt,name=source,proto3,enum=powermanage.v1.LogSource" json:"source,omitempty" validate:"omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LogQuery) Reset() {
 	*x = LogQuery{}
-	mi := &file_pm_v1_agent_proto_msgTypes[30]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2849,7 +3111,7 @@ func (x *LogQuery) String() string {
 func (*LogQuery) ProtoMessage() {}
 
 func (x *LogQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[30]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2862,7 +3124,7 @@ func (x *LogQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogQuery.ProtoReflect.Descriptor instead.
 func (*LogQuery) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{30}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *LogQuery) GetQueryId() string {
@@ -2928,20 +3190,6 @@ func (x *LogQuery) GetSource() LogSource {
 	return LogSource_LOG_SOURCE_JOURNALD
 }
 
-func (x *LogQuery) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *LogQuery) GetTargetDeviceId() string {
-	if x != nil {
-		return x.TargetDeviceId
-	}
-	return ""
-}
-
 // Agent -> Server: journalctl output result
 type LogQueryResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2958,7 +3206,7 @@ type LogQueryResult struct {
 
 func (x *LogQueryResult) Reset() {
 	*x = LogQueryResult{}
-	mi := &file_pm_v1_agent_proto_msgTypes[31]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2970,7 +3218,7 @@ func (x *LogQueryResult) String() string {
 func (*LogQueryResult) ProtoMessage() {}
 
 func (x *LogQueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[31]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2983,7 +3231,7 @@ func (x *LogQueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogQueryResult.ProtoReflect.Descriptor instead.
 func (*LogQueryResult) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{31}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *LogQueryResult) GetQueryId() string {
@@ -3036,7 +3284,7 @@ type TerminalStart struct {
 
 func (x *TerminalStart) Reset() {
 	*x = TerminalStart{}
-	mi := &file_pm_v1_agent_proto_msgTypes[32]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3048,7 +3296,7 @@ func (x *TerminalStart) String() string {
 func (*TerminalStart) ProtoMessage() {}
 
 func (x *TerminalStart) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[32]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3061,7 +3309,7 @@ func (x *TerminalStart) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalStart.ProtoReflect.Descriptor instead.
 func (*TerminalStart) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{32}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *TerminalStart) GetSessionId() string {
@@ -3105,7 +3353,7 @@ type TerminalInput struct {
 
 func (x *TerminalInput) Reset() {
 	*x = TerminalInput{}
-	mi := &file_pm_v1_agent_proto_msgTypes[33]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3117,7 +3365,7 @@ func (x *TerminalInput) String() string {
 func (*TerminalInput) ProtoMessage() {}
 
 func (x *TerminalInput) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[33]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3130,7 +3378,7 @@ func (x *TerminalInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalInput.ProtoReflect.Descriptor instead.
 func (*TerminalInput) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{33}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *TerminalInput) GetSessionId() string {
@@ -3163,7 +3411,7 @@ type TerminalResize struct {
 
 func (x *TerminalResize) Reset() {
 	*x = TerminalResize{}
-	mi := &file_pm_v1_agent_proto_msgTypes[34]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3175,7 +3423,7 @@ func (x *TerminalResize) String() string {
 func (*TerminalResize) ProtoMessage() {}
 
 func (x *TerminalResize) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[34]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3188,7 +3436,7 @@ func (x *TerminalResize) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalResize.ProtoReflect.Descriptor instead.
 func (*TerminalResize) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{34}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *TerminalResize) GetSessionId() string {
@@ -3214,11 +3462,9 @@ func (x *TerminalResize) GetRows() uint32 {
 
 // Server -> Agent: terminate an active session.
 // The agent SIGTERMs the shell process group and reverts the user's
-// shell to nologin. The optional reason is propagated end-to-end from
-// ControlService.TerminateTerminalSession through
-// GatewayService.TerminateGatewayTerminalSession so the agent can
-// surface it in logs and the audit trail captures why the session
-// was killed.
+// shell to nologin. The optional reason comes from
+// ControlService.TerminateTerminalSession so the agent can surface it in
+// logs and the audit trail records why the session was killed.
 type TerminalStop struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
@@ -3231,7 +3477,7 @@ type TerminalStop struct {
 
 func (x *TerminalStop) Reset() {
 	*x = TerminalStop{}
-	mi := &file_pm_v1_agent_proto_msgTypes[35]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3243,7 +3489,7 @@ func (x *TerminalStop) String() string {
 func (*TerminalStop) ProtoMessage() {}
 
 func (x *TerminalStop) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[35]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3256,7 +3502,7 @@ func (x *TerminalStop) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalStop.ProtoReflect.Descriptor instead.
 func (*TerminalStop) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{35}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *TerminalStop) GetSessionId() string {
@@ -3286,7 +3532,7 @@ type TerminalOutput struct {
 
 func (x *TerminalOutput) Reset() {
 	*x = TerminalOutput{}
-	mi := &file_pm_v1_agent_proto_msgTypes[36]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3298,7 +3544,7 @@ func (x *TerminalOutput) String() string {
 func (*TerminalOutput) ProtoMessage() {}
 
 func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[36]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3311,7 +3557,7 @@ func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOutput.ProtoReflect.Descriptor instead.
 func (*TerminalOutput) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{36}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *TerminalOutput) GetSessionId() string {
@@ -3338,7 +3584,7 @@ type TerminalStateChange struct {
 	// @gotags: validate:"required,ulid"
 	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty" validate:"required,ulid"`
 	// @gotags: validate:"required,ne=0"
-	State TerminalSessionState `protobuf:"varint,2,opt,name=state,proto3,enum=pm.v1.TerminalSessionState" json:"state,omitempty" validate:"required,ne=0"`
+	State TerminalSessionState `protobuf:"varint,2,opt,name=state,proto3,enum=powermanage.v1.TerminalSessionState" json:"state,omitempty" validate:"required,ne=0"`
 	// Set when state is EXITED.
 	ExitCode int32 `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
 	// Set when state is ERROR.
@@ -3350,7 +3596,7 @@ type TerminalStateChange struct {
 
 func (x *TerminalStateChange) Reset() {
 	*x = TerminalStateChange{}
-	mi := &file_pm_v1_agent_proto_msgTypes[37]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3362,7 +3608,7 @@ func (x *TerminalStateChange) String() string {
 func (*TerminalStateChange) ProtoMessage() {}
 
 func (x *TerminalStateChange) ProtoReflect() protoreflect.Message {
-	mi := &file_pm_v1_agent_proto_msgTypes[37]
+	mi := &file_powermanage_v1_agent_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3375,7 +3621,7 @@ func (x *TerminalStateChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalStateChange.ProtoReflect.Descriptor instead.
 func (*TerminalStateChange) Descriptor() ([]byte, []int) {
-	return file_pm_v1_agent_proto_rawDescGZIP(), []int{37}
+	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *TerminalStateChange) GetSessionId() string {
@@ -3406,37 +3652,39 @@ func (x *TerminalStateChange) GetError() string {
 	return ""
 }
 
-var File_pm_v1_agent_proto protoreflect.FileDescriptor
+var File_powermanage_v1_agent_proto protoreflect.FileDescriptor
 
-const file_pm_v1_agent_proto_rawDesc = "" +
+const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x11pm/v1/agent.proto\x12\x05pm.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x13pm/v1/actions.proto\x1a\x12pm/v1/common.proto\"\xba\a\n" +
+	"\x1apowermanage/v1/agent.proto\x12\x0epowermanage.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cpowermanage/v1/actions.proto\x1a\x1bpowermanage/v1/common.proto\"\xd1\t\n" +
 	"\fAgentMessage\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12-\n" +
 	"\x05hello\x18\n" +
-	" \x01(\v2\f.pm.v1.HelloH\x00R\x05hello\x120\n" +
-	"\theartbeat\x18\v \x01(\v2\x10.pm.v1.HeartbeatH\x00R\theartbeat\x12:\n" +
-	"\raction_result\x18\x14 \x01(\v2\x13.pm.v1.ActionResultH\x00R\factionResult\x127\n" +
-	"\foutput_chunk\x18\x15 \x01(\v2\x12.pm.v1.OutputChunkH\x00R\voutputChunk\x129\n" +
-	"\fquery_result\x18\x1e \x01(\v2\x14.pm.v1.OSQueryResultH\x00R\vqueryResult\x126\n" +
-	"\tinventory\x18\x1f \x01(\v2\x16.pm.v1.DeviceInventoryH\x00R\tinventory\x12=\n" +
-	"\x0esecurity_alert\x18( \x01(\v2\x14.pm.v1.SecurityAlertH\x00R\rsecurityAlert\x12<\n" +
-	"\fget_luks_key\x182 \x01(\v2\x18.pm.v1.GetLuksKeyRequestH\x00R\n" +
-	"getLuksKey\x12B\n" +
-	"\x0estore_luks_key\x183 \x01(\v2\x1a.pm.v1.StoreLuksKeyRequestH\x00R\fstoreLuksKey\x12d\n" +
-	"\x1drevoke_luks_device_key_result\x184 \x01(\v2 .pm.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResult\x12Q\n" +
-	"\x13store_lps_passwords\x185 \x01(\v2\x1f.pm.v1.StoreLpsPasswordsRequestH\x00R\x11storeLpsPasswords\x12A\n" +
-	"\x10log_query_result\x18< \x01(\v2\x15.pm.v1.LogQueryResultH\x00R\x0elogQueryResult\x12@\n" +
-	"\x0fterminal_output\x18F \x01(\v2\x15.pm.v1.TerminalOutputH\x00R\x0eterminalOutput\x12P\n" +
-	"\x15terminal_state_change\x18G \x01(\v2\x1a.pm.v1.TerminalStateChangeH\x00R\x13terminalStateChangeB\t\n" +
-	"\apayload\"\x91\x01\n" +
+	" \x01(\v2\x15.powermanage.v1.HelloH\x00R\x05hello\x129\n" +
+	"\theartbeat\x18\v \x01(\v2\x19.powermanage.v1.HeartbeatH\x00R\theartbeat\x12C\n" +
+	"\raction_result\x18\x14 \x01(\v2\x1c.powermanage.v1.ActionResultH\x00R\factionResult\x12@\n" +
+	"\foutput_chunk\x18\x15 \x01(\v2\x1b.powermanage.v1.OutputChunkH\x00R\voutputChunk\x12L\n" +
+	"\x10delivery_receipt\x18\x16 \x01(\v2\x1f.powermanage.v1.DeliveryReceiptH\x00R\x0fdeliveryReceipt\x12I\n" +
+	"\x0fmanifest_result\x18\x17 \x01(\v2\x1e.powermanage.v1.ManifestResultH\x00R\x0emanifestResult\x12B\n" +
+	"\fquery_result\x18\x1e \x01(\v2\x1d.powermanage.v1.OSQueryResultH\x00R\vqueryResult\x12?\n" +
+	"\tinventory\x18\x1f \x01(\v2\x1f.powermanage.v1.DeviceInventoryH\x00R\tinventory\x12F\n" +
+	"\x0esecurity_alert\x18( \x01(\v2\x1d.powermanage.v1.SecurityAlertH\x00R\rsecurityAlert\x12E\n" +
+	"\fget_luks_key\x182 \x01(\v2!.powermanage.v1.GetLuksKeyRequestH\x00R\n" +
+	"getLuksKey\x12K\n" +
+	"\x0estore_luks_key\x183 \x01(\v2#.powermanage.v1.StoreLuksKeyRequestH\x00R\fstoreLuksKey\x12m\n" +
+	"\x1drevoke_luks_device_key_result\x184 \x01(\v2).powermanage.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResult\x12Z\n" +
+	"\x13store_lps_passwords\x185 \x01(\v2(.powermanage.v1.StoreLpsPasswordsRequestH\x00R\x11storeLpsPasswords\x12J\n" +
+	"\x10log_query_result\x18< \x01(\v2\x1e.powermanage.v1.LogQueryResultH\x00R\x0elogQueryResult\x12I\n" +
+	"\x0fterminal_output\x18F \x01(\v2\x1e.powermanage.v1.TerminalOutputH\x00R\x0eterminalOutput\x12Y\n" +
+	"\x15terminal_state_change\x18G \x01(\v2#.powermanage.v1.TerminalStateChangeH\x00R\x13terminalStateChangeB\t\n" +
+	"\apayload\"\x9a\x01\n" +
 	"\vOutputChunk\x12!\n" +
-	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12/\n" +
-	"\x06stream\x18\x02 \x01(\x0e2\x17.pm.v1.OutputStreamTypeR\x06stream\x12\x12\n" +
+	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x128\n" +
+	"\x06stream\x18\x02 \x01(\x0e2 .powermanage.v1.OutputStreamTypeR\x06stream\x12\x12\n" +
 	"\x04data\x18\x03 \x01(\fR\x04data\x12\x1a\n" +
-	"\bsequence\x18\x04 \x01(\x03R\bsequence\"\xa9\x01\n" +
-	"\x05Hello\x12,\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\x12#\n" +
+	"\bsequence\x18\x04 \x01(\x03R\bsequence\"\xb2\x01\n" +
+	"\x05Hello\x125\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x18.powermanage.v1.DeviceIdR\bdeviceId\x12#\n" +
 	"\ragent_version\x18\x02 \x01(\tR\fagentVersion\x12\x1a\n" +
 	"\bhostname\x18\x03 \x01(\tR\bhostname\x12\x1d\n" +
 	"\n" +
@@ -3447,136 +3695,158 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\vcpu_percent\x18\x02 \x01(\x02R\n" +
 	"cpuPercent\x12%\n" +
 	"\x0ememory_percent\x18\x03 \x01(\x02R\rmemoryPercent\x12!\n" +
-	"\fdisk_percent\x18\x04 \x01(\x02R\vdiskPercent\"\xd0\x01\n" +
-	"\rSecurityAlert\x12,\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x18.pm.v1.SecurityAlertTypeR\x04type\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12;\n" +
-	"\adetails\x18\x03 \x03(\v2!.pm.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
+	"\fdisk_percent\x18\x04 \x01(\x02R\vdiskPercent\"\xe2\x01\n" +
+	"\rSecurityAlert\x125\n" +
+	"\x04type\x18\x01 \x01(\x0e2!.powermanage.v1.SecurityAlertTypeR\x04type\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12D\n" +
+	"\adetails\x18\x03 \x03(\v2*.powermanage.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf4\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x89\b\n" +
 	"\rServerMessage\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x123\n" +
 	"\awelcome\x18\n" +
-	" \x01(\v2\x0e.pm.v1.WelcomeH\x00R\awelcome\x12/\n" +
-	"\x06action\x18\x14 \x01(\v2\x15.pm.v1.ActionDispatchH\x00R\x06action\x12&\n" +
-	"\x05query\x18\x1e \x01(\v2\x0e.pm.v1.OSQueryH\x00R\x05query\x12F\n" +
-	"\x11request_inventory\x18\x1f \x01(\v2\x17.pm.v1.RequestInventoryH\x00R\x10requestInventory\x12$\n" +
-	"\x05error\x18( \x01(\v2\f.pm.v1.ErrorH\x00R\x05error\x12=\n" +
-	"\fget_luks_key\x182 \x01(\v2\x19.pm.v1.GetLuksKeyResponseH\x00R\n" +
-	"getLuksKey\x12C\n" +
-	"\x0estore_luks_key\x183 \x01(\v2\x1b.pm.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Q\n" +
-	"\x16revoke_luks_device_key\x184 \x01(\v2\x1a.pm.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12R\n" +
-	"\x13store_lps_passwords\x185 \x01(\v2 .pm.v1.StoreLpsPasswordsResponseH\x00R\x11storeLpsPasswords\x12.\n" +
-	"\tlog_query\x18< \x01(\v2\x0f.pm.v1.LogQueryH\x00R\blogQuery\x12=\n" +
-	"\x0eterminal_start\x18F \x01(\v2\x14.pm.v1.TerminalStartH\x00R\rterminalStart\x12=\n" +
-	"\x0eterminal_input\x18G \x01(\v2\x14.pm.v1.TerminalInputH\x00R\rterminalInput\x12@\n" +
-	"\x0fterminal_resize\x18H \x01(\v2\x15.pm.v1.TerminalResizeH\x00R\x0eterminalResize\x12:\n" +
-	"\rterminal_stop\x18I \x01(\v2\x13.pm.v1.TerminalStopH\x00R\fterminalStopB\t\n" +
-	"\apayload\"\xe9\x01\n" +
+	" \x01(\v2\x17.powermanage.v1.WelcomeH\x00R\awelcome\x12O\n" +
+	"\x11manifest_delivery\x18\x14 \x01(\v2 .powermanage.v1.ManifestDeliveryH\x00R\x10manifestDelivery\x12/\n" +
+	"\x05query\x18\x1e \x01(\v2\x17.powermanage.v1.OSQueryH\x00R\x05query\x12O\n" +
+	"\x11request_inventory\x18\x1f \x01(\v2 .powermanage.v1.RequestInventoryH\x00R\x10requestInventory\x12-\n" +
+	"\x05error\x18( \x01(\v2\x15.powermanage.v1.ErrorH\x00R\x05error\x12F\n" +
+	"\fget_luks_key\x182 \x01(\v2\".powermanage.v1.GetLuksKeyResponseH\x00R\n" +
+	"getLuksKey\x12L\n" +
+	"\x0estore_luks_key\x183 \x01(\v2$.powermanage.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Z\n" +
+	"\x16revoke_luks_device_key\x184 \x01(\v2#.powermanage.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12[\n" +
+	"\x13store_lps_passwords\x185 \x01(\v2).powermanage.v1.StoreLpsPasswordsResponseH\x00R\x11storeLpsPasswords\x127\n" +
+	"\tlog_query\x18< \x01(\v2\x18.powermanage.v1.LogQueryH\x00R\blogQuery\x12F\n" +
+	"\x0eterminal_start\x18F \x01(\v2\x1d.powermanage.v1.TerminalStartH\x00R\rterminalStart\x12F\n" +
+	"\x0eterminal_input\x18G \x01(\v2\x1d.powermanage.v1.TerminalInputH\x00R\rterminalInput\x12I\n" +
+	"\x0fterminal_resize\x18H \x01(\v2\x1e.powermanage.v1.TerminalResizeH\x00R\x0eterminalResize\x12C\n" +
+	"\rterminal_stop\x18I \x01(\v2\x1c.powermanage.v1.TerminalStopH\x00R\fterminalStopB\t\n" +
+	"\apayload\"\xa4\x01\n" +
 	"\aWelcome\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12H\n" +
 	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\x12(\n" +
-	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrlJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x14latest_agent_versionR\n" +
-	"update_urlR\x0fupdate_checksum\"J\n" +
-	"\x0eActionDispatch\x12\x1a\n" +
-	"\benvelope\x18\x01 \x01(\fR\benvelope\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\"5\n" +
+	"\x10device_login_url\x18\x03 \x01(\tR\x0edeviceLoginUrl\"z\n" +
+	"\x12ManifestProvenance\x12#\n" +
+	"\rdefinition_id\x18\x01 \x01(\tR\fdefinitionId\x12\"\n" +
+	"\raction_set_id\x18\x02 \x01(\tR\vactionSetId\x12\x1b\n" +
+	"\taction_id\x18\x03 \x01(\tR\bactionId\"\xa3\x01\n" +
+	"\x12ManifestOccurrence\x12#\n" +
+	"\roccurrence_id\x18\x01 \x01(\tR\foccurrenceId\x12.\n" +
+	"\x06action\x18\x02 \x01(\v2\x16.powermanage.v1.ActionR\x06action\x128\n" +
+	"\n" +
+	"on_failure\x18\x03 \x01(\x0e2\x19.powermanage.v1.OnFailureR\tonFailure\"\xba\x02\n" +
+	"\bManifest\x12\x1f\n" +
+	"\vmanifest_id\x18\x01 \x01(\tR\n" +
+	"manifestId\x12B\n" +
+	"\n" +
+	"provenance\x18\x02 \x01(\v2\".powermanage.v1.ManifestProvenanceR\n" +
+	"provenance\x12:\n" +
+	"\bschedule\x18\x03 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\x12G\n" +
+	"\x12default_on_failure\x18\x04 \x01(\x0e2\x19.powermanage.v1.OnFailureR\x10defaultOnFailure\x12D\n" +
+	"\voccurrences\x18\x05 \x03(\v2\".powermanage.v1.ManifestOccurrenceR\voccurrences\"i\n" +
+	"\x10ManifestDelivery\x12\x1f\n" +
+	"\vdelivery_id\x18\x01 \x01(\tR\n" +
+	"deliveryId\x124\n" +
+	"\bmanifest\x18\x02 \x01(\v2\x18.powermanage.v1.ManifestR\bmanifest\"2\n" +
+	"\x0fDeliveryReceipt\x12\x1f\n" +
+	"\vdelivery_id\x18\x01 \x01(\tR\n" +
+	"deliveryId\"\x81\x02\n" +
+	"\x0eManifestResult\x12\x1f\n" +
+	"\vdelivery_id\x18\x01 \x01(\tR\n" +
+	"deliveryId\x12\x1f\n" +
+	"\vmanifest_id\x18\x02 \x01(\tR\n" +
+	"manifestId\x127\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1f.powermanage.v1.ExecutionStatusR\x06status\x12=\n" +
+	"\fcompleted_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1f\n" +
+	"\vduration_ms\x18\x05 \x01(\x03R\n" +
+	"durationMs\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"5\n" +
 	"\x05Error\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xfa\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xbb\x01\n" +
 	"\aOSQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05table\x12\x18\n" +
-	"\acolumns\x18\x03 \x03(\tR\acolumns\x12-\n" +
-	"\x05where\x18\x04 \x03(\v2\x17.pm.v1.OSQueryConditionR\x05where\x12\x14\n" +
+	"\acolumns\x18\x03 \x03(\tR\acolumns\x126\n" +
+	"\x05where\x18\x04 \x03(\v2 .powermanage.v1.OSQueryConditionR\x05where\x12\x14\n" +
 	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x17\n" +
-	"\araw_sql\x18\x06 \x01(\tR\x06rawSql\x12\x1c\n" +
-	"\tsignature\x18\a \x01(\fR\tsignature\x12(\n" +
-	"\x10target_device_id\x18\b \x01(\tR\x0etargetDeviceId\"b\n" +
+	"\araw_sql\x18\x06 \x01(\tR\x06rawSql\"k\n" +
 	"\x10OSQueryCondition\x12\x16\n" +
-	"\x06column\x18\x01 \x01(\tR\x06column\x12 \n" +
-	"\x02op\x18\x02 \x01(\x0e2\x10.pm.v1.OSQueryOpR\x02op\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\"\x81\x01\n" +
+	"\x06column\x18\x01 \x01(\tR\x06column\x12)\n" +
+	"\x02op\x18\x02 \x01(\x0e2\x19.powermanage.v1.OSQueryOpR\x02op\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\tR\x05value\"\x8a\x01\n" +
 	"\rOSQueryResult\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\x12%\n" +
-	"\x04rows\x18\x04 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"v\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12.\n" +
+	"\x04rows\x18\x04 \x03(\v2\x1a.powermanage.v1.OSQueryRowR\x04rows\"\x7f\n" +
 	"\n" +
-	"OSQueryRow\x12/\n" +
-	"\x04data\x18\x01 \x03(\v2\x1b.pm.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
+	"OSQueryRow\x128\n" +
+	"\x04data\x18\x01 \x03(\v2$.powermanage.v1.OSQueryRow.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
-	"\x0fDeviceInventory\x12-\n" +
-	"\x06tables\x18\x01 \x03(\v2\x15.pm.v1.InventoryTableR\x06tables\"V\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"I\n" +
+	"\x0fDeviceInventory\x126\n" +
+	"\x06tables\x18\x01 \x03(\v2\x1e.powermanage.v1.InventoryTableR\x06tables\"_\n" +
 	"\x0eInventoryTable\x12\x1d\n" +
 	"\n" +
-	"table_name\x18\x01 \x01(\tR\ttableName\x12%\n" +
-	"\x04rows\x18\x02 \x03(\v2\x11.pm.v1.OSQueryRowR\x04rows\"u\n" +
+	"table_name\x18\x01 \x01(\tR\ttableName\x12.\n" +
+	"\x04rows\x18\x02 \x03(\v2\x1a.powermanage.v1.OSQueryRowR\x04rows\"-\n" +
 	"\x10RequestInventory\x12\x19\n" +
-	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\x12(\n" +
-	"\x10target_device_id\x18\x03 \x01(\tR\x0etargetDeviceId\"0\n" +
+	"\bquery_id\x18\x01 \x01(\tR\aqueryId\"0\n" +
 	"\x11GetLuksKeyRequest\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\"9\n" +
-	"\x12GetLuksKeyResponse\x12#\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\"V\n" +
+	"\x12GetLuksKeyResponse\x12@\n" +
 	"\n" +
-	"passphrase\x18\x01 \x01(\tB\x03\x80\x01\x01R\n" +
-	"passphrase\"\xb8\x01\n" +
+	"passphrase\x18\x01 \x01(\v2\x1b.powermanage.v1.SealedValueB\x03\x80\x01\x01R\n" +
+	"passphrase\"\xde\x01\n" +
 	"\x13StoreLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x02 \x01(\tR\n" +
-	"devicePath\x12#\n" +
+	"devicePath\x12@\n" +
 	"\n" +
-	"passphrase\x18\x03 \x01(\tB\x03\x80\x01\x01R\n" +
-	"passphrase\x12>\n" +
-	"\x0frotation_reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"0\n" +
+	"passphrase\x18\x03 \x01(\v2\x1b.powermanage.v1.SealedValueB\x03\x80\x01\x01R\n" +
+	"passphrase\x12G\n" +
+	"\x0frotation_reason\x18\x04 \x01(\x0e2\x1e.powermanage.v1.RotationReasonR\x0erotationReason\"0\n" +
 	"\x14StoreLuksKeyResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xa0\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xc6\x01\n" +
 	"\x13LpsPasswordRotation\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1f\n" +
-	"\bpassword\x18\x02 \x01(\tB\x03\x80\x01\x01R\bpassword\x12\x1d\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12<\n" +
+	"\bpassword\x18\x02 \x01(\v2\x1b.powermanage.v1.SealedValueB\x03\x80\x01\x01R\bpassword\x12\x1d\n" +
 	"\n" +
-	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x12-\n" +
-	"\x06reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x06reason\"q\n" +
+	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x126\n" +
+	"\x06reason\x18\x04 \x01(\x0e2\x1e.powermanage.v1.RotationReasonR\x06reason\"z\n" +
 	"\x18StoreLpsPasswordsRequest\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\x128\n" +
-	"\trotations\x18\x02 \x03(\v2\x1a.pm.v1.LpsPasswordRotationR\trotations\"5\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12A\n" +
+	"\trotations\x18\x02 \x03(\v2#.powermanage.v1.LpsPasswordRotationR\trotations\"5\n" +
 	"\x19StoreLpsPasswordsResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"z\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"2\n" +
 	"\x13RevokeLuksDeviceKey\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\x12(\n" +
-	"\x10target_device_id\x18\x03 \x01(\tR\x0etargetDeviceId\"h\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\"h\n" +
 	"\x19RevokeLuksDeviceKeyResult\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x03 \x01(\tR\x05error\"M\n" +
 	"\x18ValidateLuksTokenRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"\xb6\x01\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\xbf\x01\n" +
 	"\x19ValidateLuksTokenResponse\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x02 \x01(\tR\n" +
 	"devicePath\x12\x1d\n" +
 	"\n" +
-	"min_length\x18\x03 \x01(\x05R\tminLength\x12<\n" +
+	"min_length\x18\x03 \x01(\x05R\tminLength\x12E\n" +
 	"\n" +
-	"complexity\x18\x04 \x01(\x0e2\x1c.pm.v1.LpsPasswordComplexityR\n" +
-	"complexity\"B\n" +
-	"\x12SyncActionsRequest\x12,\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x0f.pm.v1.DeviceIdR\bdeviceId\"\x8c\x01\n" +
-	"\vActionGroup\x12!\n" +
-	"\fsource_label\x18\x01 \x01(\tR\vsourceLabel\x121\n" +
-	"\bschedule\x18\x02 \x01(\v2\x15.pm.v1.ActionScheduleR\bschedule\x12'\n" +
-	"\aactions\x18\x03 \x03(\v2\r.pm.v1.ActionR\aactions\"\x9c\x02\n" +
+	"complexity\x18\x04 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\n" +
+	"complexity\"K\n" +
+	"\x12SyncActionsRequest\x125\n" +
+	"\tdevice_id\x18\x01 \x01(\v2\x18.powermanage.v1.DeviceIdR\bdeviceId\"\xdd\x01\n" +
 	"\x13SyncActionsResponse\x122\n" +
-	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\x12<\n" +
-	"\x12standalone_actions\x18\x03 \x03(\v2\r.pm.v1.ActionR\x11standaloneActions\x12;\n" +
-	"\x0fgrouped_actions\x18\x04 \x03(\v2\x12.pm.v1.ActionGroupR\x0egroupedActions\x12G\n" +
-	"\x12maintenance_window\x18\x05 \x01(\v2\x18.pm.v1.MaintenanceWindowR\x11maintenanceWindowJ\x04\b\x01\x10\x02R\aactions\"\xb5\x02\n" +
+	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\x12@\n" +
+	"\n" +
+	"deliveries\x18\x03 \x03(\v2 .powermanage.v1.ManifestDeliveryR\n" +
+	"deliveries\x12P\n" +
+	"\x12maintenance_window\x18\x05 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xf6\x01\n" +
 	"\bLogQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
@@ -3585,11 +3855,8 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x05until\x18\x05 \x01(\tR\x05until\x12\x1a\n" +
 	"\bpriority\x18\x06 \x01(\tR\bpriority\x12\x12\n" +
 	"\x04grep\x18\a \x01(\tR\x04grep\x12\x16\n" +
-	"\x06kernel\x18\b \x01(\bR\x06kernel\x12(\n" +
-	"\x06source\x18\t \x01(\x0e2\x10.pm.v1.LogSourceR\x06source\x12\x1c\n" +
-	"\tsignature\x18\n" +
-	" \x01(\fR\tsignature\x12(\n" +
-	"\x10target_device_id\x18\v \x01(\tR\x0etargetDeviceId\"o\n" +
+	"\x06kernel\x18\b \x01(\bR\x06kernel\x121\n" +
+	"\x06source\x18\t \x01(\x0e2\x19.powermanage.v1.LogSourceR\x06source\"o\n" +
 	"\x0eLogQueryResult\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
@@ -3617,11 +3884,11 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x0eTerminalOutput\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data\"\x9a\x01\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"\xa3\x01\n" +
 	"\x13TerminalStateChange\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x121\n" +
-	"\x05state\x18\x02 \x01(\x0e2\x1b.pm.v1.TerminalSessionStateR\x05state\x12\x1b\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12:\n" +
+	"\x05state\x18\x02 \x01(\x0e2$.powermanage.v1.TerminalSessionStateR\x05state\x12\x1b\n" +
 	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12\x14\n" +
 	"\x05error\x18\x04 \x01(\tR\x05error*t\n" +
 	"\x10OutputStreamType\x12\"\n" +
@@ -3632,7 +3899,10 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\x1fSECURITY_ALERT_TYPE_UNSPECIFIED\x10\x00\x123\n" +
 	"/SECURITY_ALERT_TYPE_SERVER_REASSIGNMENT_ATTEMPT\x10\x01\x12,\n" +
 	"(SECURITY_ALERT_TYPE_CREDENTIAL_TAMPERING\x10\x02\x12+\n" +
-	"'SECURITY_ALERT_TYPE_INVALID_CERTIFICATE\x10\x03*\xcc\x01\n" +
+	"'SECURITY_ALERT_TYPE_INVALID_CERTIFICATE\x10\x03*9\n" +
+	"\tOnFailure\x12\x17\n" +
+	"\x13ON_FAILURE_CONTINUE\x10\x00\x12\x13\n" +
+	"\x0fON_FAILURE_STOP\x10\x01*\xcc\x01\n" +
 	"\tOSQueryOp\x12\x1b\n" +
 	"\x17OS_QUERY_OP_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eOS_QUERY_OP_EQ\x10\x01\x12\x12\n" +
@@ -3650,159 +3920,180 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\"TERMINAL_SESSION_STATE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eTERMINAL_SESSION_STATE_STARTED\x10\x01\x12!\n" +
 	"\x1dTERMINAL_SESSION_STATE_EXITED\x10\x02\x12 \n" +
-	"\x1cTERMINAL_SESSION_STATE_ERROR\x10\x032\xe5\x01\n" +
-	"\fAgentService\x127\n" +
-	"\x06Stream\x12\x13.pm.v1.AgentMessage\x1a\x14.pm.v1.ServerMessage(\x010\x01\x12D\n" +
-	"\vSyncActions\x12\x19.pm.v1.SyncActionsRequest\x1a\x1a.pm.v1.SyncActionsResponse\x12V\n" +
-	"\x11ValidateLuksToken\x12\x1f.pm.v1.ValidateLuksTokenRequest\x1a .pm.v1.ValidateLuksTokenResponseB:Z8github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1b\x06proto3"
+	"\x1cTERMINAL_SESSION_STATE_ERROR\x10\x032\x9b\x02\n" +
+	"\fAgentService\x12I\n" +
+	"\x06Stream\x12\x1c.powermanage.v1.AgentMessage\x1a\x1d.powermanage.v1.ServerMessage(\x010\x01\x12V\n" +
+	"\vSyncActions\x12\".powermanage.v1.SyncActionsRequest\x1a#.powermanage.v1.SyncActionsResponse\x12h\n" +
+	"\x11ValidateLuksToken\x12(.powermanage.v1.ValidateLuksTokenRequest\x1a).powermanage.v1.ValidateLuksTokenResponseBLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
-	file_pm_v1_agent_proto_rawDescOnce sync.Once
-	file_pm_v1_agent_proto_rawDescData []byte
+	file_powermanage_v1_agent_proto_rawDescOnce sync.Once
+	file_powermanage_v1_agent_proto_rawDescData []byte
 )
 
-func file_pm_v1_agent_proto_rawDescGZIP() []byte {
-	file_pm_v1_agent_proto_rawDescOnce.Do(func() {
-		file_pm_v1_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)))
+func file_powermanage_v1_agent_proto_rawDescGZIP() []byte {
+	file_powermanage_v1_agent_proto_rawDescOnce.Do(func() {
+		file_powermanage_v1_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_powermanage_v1_agent_proto_rawDesc), len(file_powermanage_v1_agent_proto_rawDesc)))
 	})
-	return file_pm_v1_agent_proto_rawDescData
+	return file_powermanage_v1_agent_proto_rawDescData
 }
 
-var file_pm_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_pm_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
-var file_pm_v1_agent_proto_goTypes = []any{
-	(OutputStreamType)(0),             // 0: pm.v1.OutputStreamType
-	(SecurityAlertType)(0),            // 1: pm.v1.SecurityAlertType
-	(OSQueryOp)(0),                    // 2: pm.v1.OSQueryOp
-	(LogSource)(0),                    // 3: pm.v1.LogSource
-	(TerminalSessionState)(0),         // 4: pm.v1.TerminalSessionState
-	(*AgentMessage)(nil),              // 5: pm.v1.AgentMessage
-	(*OutputChunk)(nil),               // 6: pm.v1.OutputChunk
-	(*Hello)(nil),                     // 7: pm.v1.Hello
-	(*Heartbeat)(nil),                 // 8: pm.v1.Heartbeat
-	(*SecurityAlert)(nil),             // 9: pm.v1.SecurityAlert
-	(*ServerMessage)(nil),             // 10: pm.v1.ServerMessage
-	(*Welcome)(nil),                   // 11: pm.v1.Welcome
-	(*ActionDispatch)(nil),            // 12: pm.v1.ActionDispatch
-	(*Error)(nil),                     // 13: pm.v1.Error
-	(*OSQuery)(nil),                   // 14: pm.v1.OSQuery
-	(*OSQueryCondition)(nil),          // 15: pm.v1.OSQueryCondition
-	(*OSQueryResult)(nil),             // 16: pm.v1.OSQueryResult
-	(*OSQueryRow)(nil),                // 17: pm.v1.OSQueryRow
-	(*DeviceInventory)(nil),           // 18: pm.v1.DeviceInventory
-	(*InventoryTable)(nil),            // 19: pm.v1.InventoryTable
-	(*RequestInventory)(nil),          // 20: pm.v1.RequestInventory
-	(*GetLuksKeyRequest)(nil),         // 21: pm.v1.GetLuksKeyRequest
-	(*GetLuksKeyResponse)(nil),        // 22: pm.v1.GetLuksKeyResponse
-	(*StoreLuksKeyRequest)(nil),       // 23: pm.v1.StoreLuksKeyRequest
-	(*StoreLuksKeyResponse)(nil),      // 24: pm.v1.StoreLuksKeyResponse
-	(*LpsPasswordRotation)(nil),       // 25: pm.v1.LpsPasswordRotation
-	(*StoreLpsPasswordsRequest)(nil),  // 26: pm.v1.StoreLpsPasswordsRequest
-	(*StoreLpsPasswordsResponse)(nil), // 27: pm.v1.StoreLpsPasswordsResponse
-	(*RevokeLuksDeviceKey)(nil),       // 28: pm.v1.RevokeLuksDeviceKey
-	(*RevokeLuksDeviceKeyResult)(nil), // 29: pm.v1.RevokeLuksDeviceKeyResult
-	(*ValidateLuksTokenRequest)(nil),  // 30: pm.v1.ValidateLuksTokenRequest
-	(*ValidateLuksTokenResponse)(nil), // 31: pm.v1.ValidateLuksTokenResponse
-	(*SyncActionsRequest)(nil),        // 32: pm.v1.SyncActionsRequest
-	(*ActionGroup)(nil),               // 33: pm.v1.ActionGroup
-	(*SyncActionsResponse)(nil),       // 34: pm.v1.SyncActionsResponse
-	(*LogQuery)(nil),                  // 35: pm.v1.LogQuery
-	(*LogQueryResult)(nil),            // 36: pm.v1.LogQueryResult
-	(*TerminalStart)(nil),             // 37: pm.v1.TerminalStart
-	(*TerminalInput)(nil),             // 38: pm.v1.TerminalInput
-	(*TerminalResize)(nil),            // 39: pm.v1.TerminalResize
-	(*TerminalStop)(nil),              // 40: pm.v1.TerminalStop
-	(*TerminalOutput)(nil),            // 41: pm.v1.TerminalOutput
-	(*TerminalStateChange)(nil),       // 42: pm.v1.TerminalStateChange
-	nil,                               // 43: pm.v1.SecurityAlert.DetailsEntry
-	nil,                               // 44: pm.v1.OSQueryRow.DataEntry
-	(*ActionResult)(nil),              // 45: pm.v1.ActionResult
-	(*DeviceId)(nil),                  // 46: pm.v1.DeviceId
-	(*durationpb.Duration)(nil),       // 47: google.protobuf.Duration
-	(RotationReason)(0),               // 48: pm.v1.RotationReason
-	(LpsPasswordComplexity)(0),        // 49: pm.v1.LpsPasswordComplexity
-	(*ActionSchedule)(nil),            // 50: pm.v1.ActionSchedule
-	(*Action)(nil),                    // 51: pm.v1.Action
-	(*MaintenanceWindow)(nil),         // 52: pm.v1.MaintenanceWindow
+var file_powermanage_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_powermanage_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
+var file_powermanage_v1_agent_proto_goTypes = []any{
+	(OutputStreamType)(0),             // 0: powermanage.v1.OutputStreamType
+	(SecurityAlertType)(0),            // 1: powermanage.v1.SecurityAlertType
+	(OnFailure)(0),                    // 2: powermanage.v1.OnFailure
+	(OSQueryOp)(0),                    // 3: powermanage.v1.OSQueryOp
+	(LogSource)(0),                    // 4: powermanage.v1.LogSource
+	(TerminalSessionState)(0),         // 5: powermanage.v1.TerminalSessionState
+	(*AgentMessage)(nil),              // 6: powermanage.v1.AgentMessage
+	(*OutputChunk)(nil),               // 7: powermanage.v1.OutputChunk
+	(*Hello)(nil),                     // 8: powermanage.v1.Hello
+	(*Heartbeat)(nil),                 // 9: powermanage.v1.Heartbeat
+	(*SecurityAlert)(nil),             // 10: powermanage.v1.SecurityAlert
+	(*ServerMessage)(nil),             // 11: powermanage.v1.ServerMessage
+	(*Welcome)(nil),                   // 12: powermanage.v1.Welcome
+	(*ManifestProvenance)(nil),        // 13: powermanage.v1.ManifestProvenance
+	(*ManifestOccurrence)(nil),        // 14: powermanage.v1.ManifestOccurrence
+	(*Manifest)(nil),                  // 15: powermanage.v1.Manifest
+	(*ManifestDelivery)(nil),          // 16: powermanage.v1.ManifestDelivery
+	(*DeliveryReceipt)(nil),           // 17: powermanage.v1.DeliveryReceipt
+	(*ManifestResult)(nil),            // 18: powermanage.v1.ManifestResult
+	(*Error)(nil),                     // 19: powermanage.v1.Error
+	(*OSQuery)(nil),                   // 20: powermanage.v1.OSQuery
+	(*OSQueryCondition)(nil),          // 21: powermanage.v1.OSQueryCondition
+	(*OSQueryResult)(nil),             // 22: powermanage.v1.OSQueryResult
+	(*OSQueryRow)(nil),                // 23: powermanage.v1.OSQueryRow
+	(*DeviceInventory)(nil),           // 24: powermanage.v1.DeviceInventory
+	(*InventoryTable)(nil),            // 25: powermanage.v1.InventoryTable
+	(*RequestInventory)(nil),          // 26: powermanage.v1.RequestInventory
+	(*GetLuksKeyRequest)(nil),         // 27: powermanage.v1.GetLuksKeyRequest
+	(*GetLuksKeyResponse)(nil),        // 28: powermanage.v1.GetLuksKeyResponse
+	(*StoreLuksKeyRequest)(nil),       // 29: powermanage.v1.StoreLuksKeyRequest
+	(*StoreLuksKeyResponse)(nil),      // 30: powermanage.v1.StoreLuksKeyResponse
+	(*LpsPasswordRotation)(nil),       // 31: powermanage.v1.LpsPasswordRotation
+	(*StoreLpsPasswordsRequest)(nil),  // 32: powermanage.v1.StoreLpsPasswordsRequest
+	(*StoreLpsPasswordsResponse)(nil), // 33: powermanage.v1.StoreLpsPasswordsResponse
+	(*RevokeLuksDeviceKey)(nil),       // 34: powermanage.v1.RevokeLuksDeviceKey
+	(*RevokeLuksDeviceKeyResult)(nil), // 35: powermanage.v1.RevokeLuksDeviceKeyResult
+	(*ValidateLuksTokenRequest)(nil),  // 36: powermanage.v1.ValidateLuksTokenRequest
+	(*ValidateLuksTokenResponse)(nil), // 37: powermanage.v1.ValidateLuksTokenResponse
+	(*SyncActionsRequest)(nil),        // 38: powermanage.v1.SyncActionsRequest
+	(*SyncActionsResponse)(nil),       // 39: powermanage.v1.SyncActionsResponse
+	(*LogQuery)(nil),                  // 40: powermanage.v1.LogQuery
+	(*LogQueryResult)(nil),            // 41: powermanage.v1.LogQueryResult
+	(*TerminalStart)(nil),             // 42: powermanage.v1.TerminalStart
+	(*TerminalInput)(nil),             // 43: powermanage.v1.TerminalInput
+	(*TerminalResize)(nil),            // 44: powermanage.v1.TerminalResize
+	(*TerminalStop)(nil),              // 45: powermanage.v1.TerminalStop
+	(*TerminalOutput)(nil),            // 46: powermanage.v1.TerminalOutput
+	(*TerminalStateChange)(nil),       // 47: powermanage.v1.TerminalStateChange
+	nil,                               // 48: powermanage.v1.SecurityAlert.DetailsEntry
+	nil,                               // 49: powermanage.v1.OSQueryRow.DataEntry
+	(*ActionResult)(nil),              // 50: powermanage.v1.ActionResult
+	(*DeviceId)(nil),                  // 51: powermanage.v1.DeviceId
+	(*durationpb.Duration)(nil),       // 52: google.protobuf.Duration
+	(*Action)(nil),                    // 53: powermanage.v1.Action
+	(*ActionSchedule)(nil),            // 54: powermanage.v1.ActionSchedule
+	(ExecutionStatus)(0),              // 55: powermanage.v1.ExecutionStatus
+	(*timestamppb.Timestamp)(nil),     // 56: google.protobuf.Timestamp
+	(*SealedValue)(nil),               // 57: powermanage.v1.SealedValue
+	(RotationReason)(0),               // 58: powermanage.v1.RotationReason
+	(LpsPasswordComplexity)(0),        // 59: powermanage.v1.LpsPasswordComplexity
+	(*MaintenanceWindow)(nil),         // 60: powermanage.v1.MaintenanceWindow
 }
-var file_pm_v1_agent_proto_depIdxs = []int32{
-	7,  // 0: pm.v1.AgentMessage.hello:type_name -> pm.v1.Hello
-	8,  // 1: pm.v1.AgentMessage.heartbeat:type_name -> pm.v1.Heartbeat
-	45, // 2: pm.v1.AgentMessage.action_result:type_name -> pm.v1.ActionResult
-	6,  // 3: pm.v1.AgentMessage.output_chunk:type_name -> pm.v1.OutputChunk
-	16, // 4: pm.v1.AgentMessage.query_result:type_name -> pm.v1.OSQueryResult
-	18, // 5: pm.v1.AgentMessage.inventory:type_name -> pm.v1.DeviceInventory
-	9,  // 6: pm.v1.AgentMessage.security_alert:type_name -> pm.v1.SecurityAlert
-	21, // 7: pm.v1.AgentMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyRequest
-	23, // 8: pm.v1.AgentMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyRequest
-	29, // 9: pm.v1.AgentMessage.revoke_luks_device_key_result:type_name -> pm.v1.RevokeLuksDeviceKeyResult
-	26, // 10: pm.v1.AgentMessage.store_lps_passwords:type_name -> pm.v1.StoreLpsPasswordsRequest
-	36, // 11: pm.v1.AgentMessage.log_query_result:type_name -> pm.v1.LogQueryResult
-	41, // 12: pm.v1.AgentMessage.terminal_output:type_name -> pm.v1.TerminalOutput
-	42, // 13: pm.v1.AgentMessage.terminal_state_change:type_name -> pm.v1.TerminalStateChange
-	0,  // 14: pm.v1.OutputChunk.stream:type_name -> pm.v1.OutputStreamType
-	46, // 15: pm.v1.Hello.device_id:type_name -> pm.v1.DeviceId
-	47, // 16: pm.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	1,  // 17: pm.v1.SecurityAlert.type:type_name -> pm.v1.SecurityAlertType
-	43, // 18: pm.v1.SecurityAlert.details:type_name -> pm.v1.SecurityAlert.DetailsEntry
-	11, // 19: pm.v1.ServerMessage.welcome:type_name -> pm.v1.Welcome
-	12, // 20: pm.v1.ServerMessage.action:type_name -> pm.v1.ActionDispatch
-	14, // 21: pm.v1.ServerMessage.query:type_name -> pm.v1.OSQuery
-	20, // 22: pm.v1.ServerMessage.request_inventory:type_name -> pm.v1.RequestInventory
-	13, // 23: pm.v1.ServerMessage.error:type_name -> pm.v1.Error
-	22, // 24: pm.v1.ServerMessage.get_luks_key:type_name -> pm.v1.GetLuksKeyResponse
-	24, // 25: pm.v1.ServerMessage.store_luks_key:type_name -> pm.v1.StoreLuksKeyResponse
-	28, // 26: pm.v1.ServerMessage.revoke_luks_device_key:type_name -> pm.v1.RevokeLuksDeviceKey
-	27, // 27: pm.v1.ServerMessage.store_lps_passwords:type_name -> pm.v1.StoreLpsPasswordsResponse
-	35, // 28: pm.v1.ServerMessage.log_query:type_name -> pm.v1.LogQuery
-	37, // 29: pm.v1.ServerMessage.terminal_start:type_name -> pm.v1.TerminalStart
-	38, // 30: pm.v1.ServerMessage.terminal_input:type_name -> pm.v1.TerminalInput
-	39, // 31: pm.v1.ServerMessage.terminal_resize:type_name -> pm.v1.TerminalResize
-	40, // 32: pm.v1.ServerMessage.terminal_stop:type_name -> pm.v1.TerminalStop
-	47, // 33: pm.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	15, // 34: pm.v1.OSQuery.where:type_name -> pm.v1.OSQueryCondition
-	2,  // 35: pm.v1.OSQueryCondition.op:type_name -> pm.v1.OSQueryOp
-	17, // 36: pm.v1.OSQueryResult.rows:type_name -> pm.v1.OSQueryRow
-	44, // 37: pm.v1.OSQueryRow.data:type_name -> pm.v1.OSQueryRow.DataEntry
-	19, // 38: pm.v1.DeviceInventory.tables:type_name -> pm.v1.InventoryTable
-	17, // 39: pm.v1.InventoryTable.rows:type_name -> pm.v1.OSQueryRow
-	48, // 40: pm.v1.StoreLuksKeyRequest.rotation_reason:type_name -> pm.v1.RotationReason
-	48, // 41: pm.v1.LpsPasswordRotation.reason:type_name -> pm.v1.RotationReason
-	25, // 42: pm.v1.StoreLpsPasswordsRequest.rotations:type_name -> pm.v1.LpsPasswordRotation
-	49, // 43: pm.v1.ValidateLuksTokenResponse.complexity:type_name -> pm.v1.LpsPasswordComplexity
-	46, // 44: pm.v1.SyncActionsRequest.device_id:type_name -> pm.v1.DeviceId
-	50, // 45: pm.v1.ActionGroup.schedule:type_name -> pm.v1.ActionSchedule
-	51, // 46: pm.v1.ActionGroup.actions:type_name -> pm.v1.Action
-	51, // 47: pm.v1.SyncActionsResponse.standalone_actions:type_name -> pm.v1.Action
-	33, // 48: pm.v1.SyncActionsResponse.grouped_actions:type_name -> pm.v1.ActionGroup
-	52, // 49: pm.v1.SyncActionsResponse.maintenance_window:type_name -> pm.v1.MaintenanceWindow
-	3,  // 50: pm.v1.LogQuery.source:type_name -> pm.v1.LogSource
-	4,  // 51: pm.v1.TerminalStateChange.state:type_name -> pm.v1.TerminalSessionState
-	5,  // 52: pm.v1.AgentService.Stream:input_type -> pm.v1.AgentMessage
-	32, // 53: pm.v1.AgentService.SyncActions:input_type -> pm.v1.SyncActionsRequest
-	30, // 54: pm.v1.AgentService.ValidateLuksToken:input_type -> pm.v1.ValidateLuksTokenRequest
-	10, // 55: pm.v1.AgentService.Stream:output_type -> pm.v1.ServerMessage
-	34, // 56: pm.v1.AgentService.SyncActions:output_type -> pm.v1.SyncActionsResponse
-	31, // 57: pm.v1.AgentService.ValidateLuksToken:output_type -> pm.v1.ValidateLuksTokenResponse
-	55, // [55:58] is the sub-list for method output_type
-	52, // [52:55] is the sub-list for method input_type
-	52, // [52:52] is the sub-list for extension type_name
-	52, // [52:52] is the sub-list for extension extendee
-	0,  // [0:52] is the sub-list for field type_name
+var file_powermanage_v1_agent_proto_depIdxs = []int32{
+	8,  // 0: powermanage.v1.AgentMessage.hello:type_name -> powermanage.v1.Hello
+	9,  // 1: powermanage.v1.AgentMessage.heartbeat:type_name -> powermanage.v1.Heartbeat
+	50, // 2: powermanage.v1.AgentMessage.action_result:type_name -> powermanage.v1.ActionResult
+	7,  // 3: powermanage.v1.AgentMessage.output_chunk:type_name -> powermanage.v1.OutputChunk
+	17, // 4: powermanage.v1.AgentMessage.delivery_receipt:type_name -> powermanage.v1.DeliveryReceipt
+	18, // 5: powermanage.v1.AgentMessage.manifest_result:type_name -> powermanage.v1.ManifestResult
+	22, // 6: powermanage.v1.AgentMessage.query_result:type_name -> powermanage.v1.OSQueryResult
+	24, // 7: powermanage.v1.AgentMessage.inventory:type_name -> powermanage.v1.DeviceInventory
+	10, // 8: powermanage.v1.AgentMessage.security_alert:type_name -> powermanage.v1.SecurityAlert
+	27, // 9: powermanage.v1.AgentMessage.get_luks_key:type_name -> powermanage.v1.GetLuksKeyRequest
+	29, // 10: powermanage.v1.AgentMessage.store_luks_key:type_name -> powermanage.v1.StoreLuksKeyRequest
+	35, // 11: powermanage.v1.AgentMessage.revoke_luks_device_key_result:type_name -> powermanage.v1.RevokeLuksDeviceKeyResult
+	32, // 12: powermanage.v1.AgentMessage.store_lps_passwords:type_name -> powermanage.v1.StoreLpsPasswordsRequest
+	41, // 13: powermanage.v1.AgentMessage.log_query_result:type_name -> powermanage.v1.LogQueryResult
+	46, // 14: powermanage.v1.AgentMessage.terminal_output:type_name -> powermanage.v1.TerminalOutput
+	47, // 15: powermanage.v1.AgentMessage.terminal_state_change:type_name -> powermanage.v1.TerminalStateChange
+	0,  // 16: powermanage.v1.OutputChunk.stream:type_name -> powermanage.v1.OutputStreamType
+	51, // 17: powermanage.v1.Hello.device_id:type_name -> powermanage.v1.DeviceId
+	52, // 18: powermanage.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 19: powermanage.v1.SecurityAlert.type:type_name -> powermanage.v1.SecurityAlertType
+	48, // 20: powermanage.v1.SecurityAlert.details:type_name -> powermanage.v1.SecurityAlert.DetailsEntry
+	12, // 21: powermanage.v1.ServerMessage.welcome:type_name -> powermanage.v1.Welcome
+	16, // 22: powermanage.v1.ServerMessage.manifest_delivery:type_name -> powermanage.v1.ManifestDelivery
+	20, // 23: powermanage.v1.ServerMessage.query:type_name -> powermanage.v1.OSQuery
+	26, // 24: powermanage.v1.ServerMessage.request_inventory:type_name -> powermanage.v1.RequestInventory
+	19, // 25: powermanage.v1.ServerMessage.error:type_name -> powermanage.v1.Error
+	28, // 26: powermanage.v1.ServerMessage.get_luks_key:type_name -> powermanage.v1.GetLuksKeyResponse
+	30, // 27: powermanage.v1.ServerMessage.store_luks_key:type_name -> powermanage.v1.StoreLuksKeyResponse
+	34, // 28: powermanage.v1.ServerMessage.revoke_luks_device_key:type_name -> powermanage.v1.RevokeLuksDeviceKey
+	33, // 29: powermanage.v1.ServerMessage.store_lps_passwords:type_name -> powermanage.v1.StoreLpsPasswordsResponse
+	40, // 30: powermanage.v1.ServerMessage.log_query:type_name -> powermanage.v1.LogQuery
+	42, // 31: powermanage.v1.ServerMessage.terminal_start:type_name -> powermanage.v1.TerminalStart
+	43, // 32: powermanage.v1.ServerMessage.terminal_input:type_name -> powermanage.v1.TerminalInput
+	44, // 33: powermanage.v1.ServerMessage.terminal_resize:type_name -> powermanage.v1.TerminalResize
+	45, // 34: powermanage.v1.ServerMessage.terminal_stop:type_name -> powermanage.v1.TerminalStop
+	52, // 35: powermanage.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	53, // 36: powermanage.v1.ManifestOccurrence.action:type_name -> powermanage.v1.Action
+	2,  // 37: powermanage.v1.ManifestOccurrence.on_failure:type_name -> powermanage.v1.OnFailure
+	13, // 38: powermanage.v1.Manifest.provenance:type_name -> powermanage.v1.ManifestProvenance
+	54, // 39: powermanage.v1.Manifest.schedule:type_name -> powermanage.v1.ActionSchedule
+	2,  // 40: powermanage.v1.Manifest.default_on_failure:type_name -> powermanage.v1.OnFailure
+	14, // 41: powermanage.v1.Manifest.occurrences:type_name -> powermanage.v1.ManifestOccurrence
+	15, // 42: powermanage.v1.ManifestDelivery.manifest:type_name -> powermanage.v1.Manifest
+	55, // 43: powermanage.v1.ManifestResult.status:type_name -> powermanage.v1.ExecutionStatus
+	56, // 44: powermanage.v1.ManifestResult.completed_at:type_name -> google.protobuf.Timestamp
+	21, // 45: powermanage.v1.OSQuery.where:type_name -> powermanage.v1.OSQueryCondition
+	3,  // 46: powermanage.v1.OSQueryCondition.op:type_name -> powermanage.v1.OSQueryOp
+	23, // 47: powermanage.v1.OSQueryResult.rows:type_name -> powermanage.v1.OSQueryRow
+	49, // 48: powermanage.v1.OSQueryRow.data:type_name -> powermanage.v1.OSQueryRow.DataEntry
+	25, // 49: powermanage.v1.DeviceInventory.tables:type_name -> powermanage.v1.InventoryTable
+	23, // 50: powermanage.v1.InventoryTable.rows:type_name -> powermanage.v1.OSQueryRow
+	57, // 51: powermanage.v1.GetLuksKeyResponse.passphrase:type_name -> powermanage.v1.SealedValue
+	57, // 52: powermanage.v1.StoreLuksKeyRequest.passphrase:type_name -> powermanage.v1.SealedValue
+	58, // 53: powermanage.v1.StoreLuksKeyRequest.rotation_reason:type_name -> powermanage.v1.RotationReason
+	57, // 54: powermanage.v1.LpsPasswordRotation.password:type_name -> powermanage.v1.SealedValue
+	58, // 55: powermanage.v1.LpsPasswordRotation.reason:type_name -> powermanage.v1.RotationReason
+	31, // 56: powermanage.v1.StoreLpsPasswordsRequest.rotations:type_name -> powermanage.v1.LpsPasswordRotation
+	59, // 57: powermanage.v1.ValidateLuksTokenResponse.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	51, // 58: powermanage.v1.SyncActionsRequest.device_id:type_name -> powermanage.v1.DeviceId
+	16, // 59: powermanage.v1.SyncActionsResponse.deliveries:type_name -> powermanage.v1.ManifestDelivery
+	60, // 60: powermanage.v1.SyncActionsResponse.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	4,  // 61: powermanage.v1.LogQuery.source:type_name -> powermanage.v1.LogSource
+	5,  // 62: powermanage.v1.TerminalStateChange.state:type_name -> powermanage.v1.TerminalSessionState
+	6,  // 63: powermanage.v1.AgentService.Stream:input_type -> powermanage.v1.AgentMessage
+	38, // 64: powermanage.v1.AgentService.SyncActions:input_type -> powermanage.v1.SyncActionsRequest
+	36, // 65: powermanage.v1.AgentService.ValidateLuksToken:input_type -> powermanage.v1.ValidateLuksTokenRequest
+	11, // 66: powermanage.v1.AgentService.Stream:output_type -> powermanage.v1.ServerMessage
+	39, // 67: powermanage.v1.AgentService.SyncActions:output_type -> powermanage.v1.SyncActionsResponse
+	37, // 68: powermanage.v1.AgentService.ValidateLuksToken:output_type -> powermanage.v1.ValidateLuksTokenResponse
+	66, // [66:69] is the sub-list for method output_type
+	63, // [63:66] is the sub-list for method input_type
+	63, // [63:63] is the sub-list for extension type_name
+	63, // [63:63] is the sub-list for extension extendee
+	0,  // [0:63] is the sub-list for field type_name
 }
 
-func init() { file_pm_v1_agent_proto_init() }
-func file_pm_v1_agent_proto_init() {
-	if File_pm_v1_agent_proto != nil {
+func init() { file_powermanage_v1_agent_proto_init() }
+func file_powermanage_v1_agent_proto_init() {
+	if File_powermanage_v1_agent_proto != nil {
 		return
 	}
-	file_pm_v1_actions_proto_init()
-	file_pm_v1_common_proto_init()
-	file_pm_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
+	file_powermanage_v1_actions_proto_init()
+	file_powermanage_v1_common_proto_init()
+	file_powermanage_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
 		(*AgentMessage_Hello)(nil),
 		(*AgentMessage_Heartbeat)(nil),
 		(*AgentMessage_ActionResult)(nil),
 		(*AgentMessage_OutputChunk)(nil),
+		(*AgentMessage_DeliveryReceipt)(nil),
+		(*AgentMessage_ManifestResult)(nil),
 		(*AgentMessage_QueryResult)(nil),
 		(*AgentMessage_Inventory)(nil),
 		(*AgentMessage_SecurityAlert)(nil),
@@ -3814,9 +4105,9 @@ func file_pm_v1_agent_proto_init() {
 		(*AgentMessage_TerminalOutput)(nil),
 		(*AgentMessage_TerminalStateChange)(nil),
 	}
-	file_pm_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
+	file_powermanage_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
-		(*ServerMessage_Action)(nil),
+		(*ServerMessage_ManifestDelivery)(nil),
 		(*ServerMessage_Query)(nil),
 		(*ServerMessage_RequestInventory)(nil),
 		(*ServerMessage_Error)(nil),
@@ -3834,18 +4125,18 @@ func file_pm_v1_agent_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pm_v1_agent_proto_rawDesc), len(file_pm_v1_agent_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   40,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_agent_proto_rawDesc), len(file_powermanage_v1_agent_proto_rawDesc)),
+			NumEnums:      6,
+			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_pm_v1_agent_proto_goTypes,
-		DependencyIndexes: file_pm_v1_agent_proto_depIdxs,
-		EnumInfos:         file_pm_v1_agent_proto_enumTypes,
-		MessageInfos:      file_pm_v1_agent_proto_msgTypes,
+		GoTypes:           file_powermanage_v1_agent_proto_goTypes,
+		DependencyIndexes: file_powermanage_v1_agent_proto_depIdxs,
+		EnumInfos:         file_powermanage_v1_agent_proto_enumTypes,
+		MessageInfos:      file_powermanage_v1_agent_proto_msgTypes,
 	}.Build()
-	File_pm_v1_agent_proto = out.File
-	file_pm_v1_agent_proto_goTypes = nil
-	file_pm_v1_agent_proto_depIdxs = nil
+	File_powermanage_v1_agent_proto = out.File
+	file_powermanage_v1_agent_proto_goTypes = nil
+	file_powermanage_v1_agent_proto_depIdxs = nil
 }

@@ -1,12 +1,13 @@
 syntax = "proto3";
 
-package pm.v1;
+package powermanage.v1;
 
 import "google/protobuf/duration.proto";
-import "pm/v1/actions.proto";
-import "pm/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+import "powermanage/v1/actions.proto";
+import "powermanage/v1/common.proto";
 
-option go_package = "github.com/manchtools/power-manage-sdk/gen/go/pm/v1;pmv1";
+option go_package = "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1";
 
 // ============================================================================
 // Agent Service
@@ -43,6 +44,10 @@ message AgentMessage {
     // @gotags: validate:"omitempty"
     OutputChunk output_chunk = 21;
     // @gotags: validate:"omitempty"
+    DeliveryReceipt delivery_receipt = 22;
+    // @gotags: validate:"omitempty"
+    ManifestResult manifest_result = 23;
+    // @gotags: validate:"omitempty"
     OSQueryResult query_result = 30;
     // @gotags: validate:"omitempty"
     DeviceInventory inventory = 31;
@@ -55,11 +60,7 @@ message AgentMessage {
     StoreLuksKeyRequest store_luks_key = 51;
     // @gotags: validate:"omitempty"
     RevokeLuksDeviceKeyResult revoke_luks_device_key_result = 52;
-    // LPS password rotations. Spec 41 moved this onto the stream: it used to
-    // reach control through InternalService/ProxyStoreLpsPasswords, i.e. the
-    // gateway relayed the batch. LUKS was already a stream message; LPS was not,
-    // purely because it went via the proxy. With the proxy deleted the agent
-    // reports rotations the same way it reports everything else.
+    // LPS password rotations, batched per execution.
     // @gotags: validate:"omitempty"
     StoreLpsPasswordsRequest store_lps_passwords = 53;
     // Log query result (journalctl output)
@@ -158,7 +159,7 @@ message ServerMessage {
     // @gotags: validate:"omitempty"
     Welcome welcome = 10;
     // @gotags: validate:"omitempty"
-    ActionDispatch action = 20;
+    ManifestDelivery manifest_delivery = 20;
     // @gotags: validate:"omitempty"
     OSQuery query = 30;
     // @gotags: validate:"omitempty"
@@ -197,23 +198,131 @@ message Welcome {
   // Base URL for browser-based device login (configurable, defaults to built-in PM web app).
   // Used by PAM module to open the OIDC login page for display manager sessions.
   string device_login_url = 3;
-
-  // Fields 4-6 removed (old auto-update mechanism, replaced by ACTION_TYPE_AGENT_UPDATE)
-  reserved 4, 5, 6;
-  reserved "latest_agent_version", "update_url", "update_checksum";
 }
 
-message ActionDispatch {
-  // Deterministic protobuf wire bytes of the signed SignedActionEnvelope.
-  // The agent verifies `signature` over these exact bytes, then unmarshals
-  // THESE SAME bytes to execute — the executed message is the verified
-  // message. Clean break from carrying a typed Action with a separate
-  // params_canonical (sdk#82).
-  // @gotags: validate:"required,min=1"
-  bytes envelope = 1;
-  // CA signature over the `envelope` bytes (control's CA key).
-  // @gotags: validate:"required,min=1"
-  bytes signature = 2;
+// ============================================================================
+// Manifests and durable delivery
+// ============================================================================
+
+// OnFailure decides what the rest of a manifest does after an occurrence
+// fails. CONTINUE is the wire default because the policy default is CONTINUE
+// and STOP is the explicit choice; there is no UNSPECIFIED sentinel to map, so
+// a manifest built without setting the field behaves as authored.
+enum OnFailure {
+  ON_FAILURE_CONTINUE = 0; // default — run the remaining occurrences
+  ON_FAILURE_STOP = 1; // abandon the remaining occurrences
+}
+
+// ManifestProvenance is the bounded, structured record of where a manifest was
+// authored from: at most one Definition, one ActionSet and one Action, in that
+// order. It is a path, never a tree — the agent does not receive a recursive
+// composition and does not resolve one.
+//
+// Which levels are populated follows the assignment that produced the
+// manifest: a Definition assignment sets definition_id and action_set_id (one
+// manifest per contained set), an ActionSet assignment sets action_set_id
+// alone, and a singleton Action assignment sets action_id alone.
+message ManifestProvenance {
+  // @gotags: validate:"omitempty,ulid"
+  string definition_id = 1;
+  // @gotags: validate:"omitempty,ulid"
+  string action_set_id = 2;
+  // @gotags: validate:"omitempty,ulid"
+  string action_id = 3;
+}
+
+// ManifestOccurrence is one authored position in a manifest's ordered list.
+//
+// Occurrence identity is NOT delivery identity: occurrence_id names a position
+// the author created, delivery_id names one attempt to hand the whole manifest
+// to a device. Duplicate authored occurrences — the same action reached twice
+// through different sets composing one definition — are preserved and executed
+// at each position; they are not collapsed, and the distinct occurrence_ids
+// are what keeps their results apart.
+message ManifestOccurrence {
+  // @gotags: validate:"required,ulid"
+  string occurrence_id = 1;
+  // @gotags: validate:"required"
+  Action action = 2;
+  // What the manifest does if this occurrence fails. Control resolves the
+  // set's declared policy onto each position, so the agent reads this value
+  // and needs no fallback.
+  // @gotags: validate:"omitempty"
+  OnFailure on_failure = 3;
+}
+
+// Manifest is the unit of assignment the agent executes: a flat, ordered list
+// of action occurrences under one schedule and one failure policy.
+//
+// Assigning an Action creates a singleton manifest; assigning an ActionSet
+// creates one manifest; assigning a Definition creates one manifest per
+// contained ActionSet, because sets keep independent schedules and failure
+// policies.
+message Manifest {
+  // @gotags: validate:"required,ulid"
+  string manifest_id = 1;
+  // @gotags: validate:"required"
+  ManifestProvenance provenance = 2;
+  // The schedule that fires this manifest: every occurrence runs in declared
+  // order when it does. It is the only schedule the agent executes on — the
+  // per-Action schedule field is authoring data, not an execution trigger.
+  // run_on_assign and skip_if_unchanged keep their existing meaning.
+  // @gotags: validate:"required"
+  ActionSchedule schedule = 3;
+  // The set-level failure policy, as authored. Each occurrence carries the
+  // resolved value it executes under; this records what the set declared, so
+  // the agent's logs and results can name the policy rather than infer it.
+  // @gotags: validate:"omitempty"
+  OnFailure default_on_failure = 4;
+  // Execution order is list order.
+  // @gotags: validate:"required,min=1,dive"
+  repeated ManifestOccurrence occurrences = 5;
+}
+
+// Control -> agent: one attempt to hand a complete manifest to a device.
+//
+// The delivery row, with the whole manifest in it, is committed before this
+// frame is sent. delivery_id is minted once at that commit and stays the same
+// across every transport retry, reconnect and sweep re-send, so the agent's
+// receipt table recognises a repeat and executes the work once.
+message ManifestDelivery {
+  // @gotags: validate:"required,ulid"
+  string delivery_id = 1;
+  // @gotags: validate:"required"
+  Manifest manifest = 2;
+}
+
+// Agent -> control: the delivery is durably recorded on the device.
+//
+// Sent ONLY after the agent has committed the delivery to its own store, never
+// on arrival. Control advances the delivery out of PUSHED when this frame
+// arrives and never on a successful socket write — a write that the device
+// never persisted must be retried, and it is this frame that distinguishes the
+// two.
+message DeliveryReceipt {
+  // @gotags: validate:"required,ulid"
+  string delivery_id = 1;
+}
+
+// Agent -> control: the outcome of a complete manifest.
+//
+// Results exist per action (ActionResult, carrying the same delivery_id plus
+// its occurrence_id) and once for the manifest as a whole. status is the
+// aggregate: SUCCESS when every executed occurrence succeeded, FAILED when any
+// did, and INDETERMINATE when a crash left an occurrence's effect unknown.
+message ManifestResult {
+  // @gotags: validate:"required,ulid"
+  string delivery_id = 1;
+  // @gotags: validate:"required,ulid"
+  string manifest_id = 2;
+  // @gotags: validate:"required,ne=0"
+  ExecutionStatus status = 3;
+  // @gotags: validate:"omitempty"
+  google.protobuf.Timestamp completed_at = 4;
+  // @gotags: validate:"omitempty,gte=0"
+  int64 duration_ms = 5;
+  // @gotags: validate:"omitempty,max=4096"
+  string error = 6;
 }
 
 message Error {
@@ -241,22 +350,6 @@ message OSQuery {
   // Raw SQL query — when set, table/columns/where/limit are ignored.
   // @gotags: validate:"omitempty,max=4096"
   string raw_sql = 6;
-  // CA signature over the deterministic wire bytes of this message with
-  // signature cleared, under the osquery signing domain. Signed at the
-  // control server, relayed opaquely by the gateway, verified fail-closed
-  // by the agent before any osquery execution (incl. raw_sql). A compromised
-  // gateway/Valkey relay cannot originate or tamper a query under a valid
-  // signature.
-  // @gotags: validate:"omitempty"
-  bytes signature = 7;
-  // The single device this query is authorized to run on. Bound INSIDE the
-  // signed canonical bytes (signature covers every field but itself), so a
-  // compromised gateway/relay cannot replay one device's validly-signed query
-  // onto another device that trusts the same CA (PMSEC-001, sibling of
-  // SignedActionEnvelope.target_device_id). The agent verifies target ==
-  // itself after the signature and refuses otherwise.
-  // @gotags: validate:"required,ulid"
-  string target_device_id = 8;
 }
 
 message OSQueryCondition {
@@ -311,28 +404,14 @@ message InventoryTable {
   repeated OSQueryRow rows = 2;
 }
 
-// Server -> Agent: request fresh inventory collection.
+// Server -> Agent: request fresh inventory collection. query_id correlates the
+// DeviceInventory the agent sends back.
 //
-// query_id + signature bind a server-originated collection request so a
-// compromised gateway cannot make the agent run osquery as root on a forged
-// request. Agent-initiated periodic inventory (on connect + every 24h) does
-// NOT travel this message and needs no signature — it is the agent's own
-// decision, not a relayed command.
+// Agent-initiated periodic inventory (on connect + every 24h) does NOT travel
+// this message — it is the agent's own decision, not a command.
 message RequestInventory {
   // @gotags: validate:"required,ulid"
   string query_id = 1;
-  // CA signature over the deterministic wire bytes of this message with
-  // signature cleared, under the inventory signing domain. Verified
-  // fail-closed by the agent before any osquery collection.
-  // @gotags: validate:"omitempty"
-  bytes signature = 2;
-  // The single device this collection request is authorized for. Bound INSIDE
-  // the signed canonical bytes so a compromised gateway/relay cannot replay one
-  // device's validly-signed request onto another (PMSEC-001, sibling of
-  // SignedActionEnvelope.target_device_id). The agent verifies target == itself
-  // after the signature and refuses otherwise.
-  // @gotags: validate:"required,ulid"
-  string target_device_id = 3;
 }
 
 // ============================================================================
@@ -358,25 +437,24 @@ message RequestInventory {
 // ============================================================================
 
 // Agent requests the current managed passphrase for a LUKS action.
-// device_id is omitted — the gateway knows the device from the mTLS cert.
+// device_id is omitted — control derives the device from the mTLS certificate.
 message GetLuksKeyRequest {
   // @gotags: validate:"required,ulid"
   string action_id = 1;
 }
 
 message GetLuksKeyResponse {
-  // Bounded like the storage side, so the two halves of the round trip agree on
-  // what a passphrase can be.
+  // The managed passphrase, sealed to this agent's enrollment recipient key.
   //
-  // debug_redact marks this field as secret. It does NOT redact anything at
-  // runtime: protobuf-go defines the option and no encoder in it consults the
-  // option, so the generated String() prints this value like any other. What
-  // the annotation buys is a machine-readable marker — TestProtoSecretFieldSinks
-  // reads it off the descriptor to derive the set of fields whose plaintext may
-  // only be touched at an enumerated sink, so a slog or fmt argument fails the
-  // build rather than shipping a credential into a log.
-  // @gotags: validate:"required,min=1,max=4096"
-  string passphrase = 1 [debug_redact = true];
+  // debug_redact is the machine-readable secret classification. It redacts
+  // nothing at runtime — no encoder in protobuf-go consults the option — but
+  // structural sink guards read it off the descriptor to derive the set of
+  // fields whose plaintext may only be touched at an enumerated sink, so a
+  // slog or fmt argument fails the build instead of shipping a credential into
+  // a log. It stays on the sealed field because opening the value produces
+  // exactly that plaintext.
+  // @gotags: validate:"required"
+  SealedValue passphrase = 1 [debug_redact = true];
 }
 
 // Agent stores a new managed passphrase on the server.
@@ -390,29 +468,21 @@ message StoreLuksKeyRequest {
   // encrypted and persisted.
   // @gotags: validate:"required,startswith=/,max=4096"
   string device_path = 2;
-  // Managed passphrase, sent over the agent's direct mTLS connection to
-  // control. Spec 41 removed the X25519 transport sealing along with the
-  // gateway: the seal existed so a relaying gateway could not read
-  // disk-encryption secrets (spec 25), and with no relay the agent's TLS
-  // terminates at control — the only party that could have opened the blob.
-  //
-  // What did NOT go with the seal: control encrypts this at rest with
-  // AES-256-GCM (sdk crypto.SealWithAAD) under SecretAAD(device, action,
-  // "luks"), which is byte-identical to the AAD the transport seal used — so
-  // for LUKS the relocation and domain-separation properties carry over exactly.
-  // (LPS differs: its transport AAD also bound the username, which the at-rest
-  // AAD deliberately omits per ADR 0009. See sdk docs/02-concepts/04-crypto.md.)
-  // debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
-  // runtime protection (see GetLuksKeyResponse.passphrase).
-  // @gotags: validate:"required,min=1,max=4096"
-  string passphrase = 3 [debug_redact = true];
+  // The managed passphrase, sealed to control's deployment sealing key. The
+  // AAD binds this device and this action_id, so a captured blob cannot be
+  // replayed under another device or another action. Control opens it at the
+  // storage sink and re-encrypts at rest under its own resource-context AAD;
+  // the transport seal is never reused as storage encryption.
+  // debug_redact is the secret classification (see
+  // GetLuksKeyResponse.passphrase).
+  // @gotags: validate:"required"
+  SealedValue passphrase = 3 [debug_redact = true];
   // Why this rotation happened. INITIAL on the first time the action
   // runs on a device (no previous passphrase to retain); SCHEDULED for
   // any subsequent policy-driven rotation. LUKS does not use
-  // AUTH_GRACE — that reason is reserved for LPS, where a user
-  // authenticated during the grace period. Validated against the
-  // enum at the boundary; the event payload keeps the lowercase
-  // string form ("initial" / "scheduled") for backward replay.
+  // AUTH_GRACE — that reason belongs to LPS, where a user
+  // authenticated during the grace period. Validated against the enum
+  // at the boundary.
   // @gotags: validate:"required,oneof=1 2"
   RotationReason rotation_reason = 4;
 }
@@ -422,32 +492,22 @@ message StoreLuksKeyResponse {
 }
 
 // One password rotation the agent performed during an LPS execution.
-//
-// Spec 41 moved this onto the agent stream. It previously travelled as
-// InternalStoreLpsPasswordsRequest through InternalService/ProxyStoreLpsPasswords
-// — the gateway relayed the batch to control — and the password was X25519-sealed
-// so that relay could not read it. There is no relay: the agent's mTLS terminates
-// at control, which was always the only party able to open the seal.
 message LpsPasswordRotation {
   // Local Linux username whose password was rotated.
   // @gotags: validate:"required,min=1,max=64"
   string username = 1;
-  // The rotated password, sent over the agent's direct mTLS connection.
-  // Control encrypts it at rest on receipt.
+  // The rotated password, sealed to control's deployment sealing key.
   //
-  // NOTE, because it is the one property that genuinely changes: the transport
-  // seal's AAD bound device|action|username, and the at-rest AAD binds
-  // device|action|"lps" with NO username — ADR 0009 omits it deliberately. So
-  // control no longer cryptographically verifies that the password it stores
-  // under a username is the one the agent generated for that username. That was
-  // an end-to-end correctness check, not a confidentiality boundary; a caller
-  // authorised to read one username's password on a device already receives all
-  // of them. Closing it means adding username to the at-rest AAD, which is ruled
-  // separately (spec 41, criterion 8a).
-  // debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
-  // runtime protection (see GetLuksKeyResponse.passphrase).
-  // @gotags: validate:"required,min=1,max=4096"
-  string password = 2 [debug_redact = true];
+  // This field's AAD binds `username` in addition to the device and action, so
+  // the pairing is cryptographically checked: control cannot open a blob under
+  // a username other than the one the agent generated it for, and a blob
+  // cannot be moved between the entries of one batch. A password is only
+  // meaningful as a (username, password) pair, so the pair is what the seal
+  // authenticates.
+  // debug_redact is the secret classification (see
+  // GetLuksKeyResponse.passphrase).
+  // @gotags: validate:"required"
+  SealedValue password = 2 [debug_redact = true];
   // RFC 3339 timestamp the agent observed the rotation. Control keeps the
   // agent's clock here rather than re-stamping at receipt, so the timeline
   // reflects the device's reality.
@@ -491,20 +551,6 @@ message StoreLpsPasswordsResponse {
 message RevokeLuksDeviceKey {
   // @gotags: validate:"required,ulid"
   string action_id = 1;
-  // CA signature over the deterministic wire bytes of this message with
-  // signature cleared, under the LUKS-revoke signing domain. The slot-7
-  // device-key wipe is destructive and irreversible, so the agent verifies
-  // fail-closed before revoking — a compromised gateway cannot forge or
-  // replay a revocation onto any known action_id.
-  // @gotags: validate:"omitempty"
-  bytes signature = 2;
-  // The single device this destructive slot-7 wipe is authorized for. Bound
-  // INSIDE the signed canonical bytes so a compromised gateway/relay cannot
-  // replay one device's validly-signed revocation onto another that trusts the
-  // same CA (PMSEC-001, sibling of SignedActionEnvelope.target_device_id). The
-  // agent verifies target == itself after the signature and refuses otherwise.
-  // @gotags: validate:"required,ulid"
-  string target_device_id = 3;
 }
 
 // Agent reports the result of revoking the device-bound key.
@@ -545,7 +591,7 @@ message ValidateLuksTokenResponse {
 }
 
 // ============================================================================
-// Action Sync (Agent pulls assigned actions from server)
+// Action Sync (agent pulls the deliveries currently assigned to it)
 // ============================================================================
 
 message SyncActionsRequest {
@@ -553,79 +599,29 @@ message SyncActionsRequest {
   DeviceId device_id = 1;
 }
 
-// ActionGroup represents a set or definition's worth of actions that share a
-// single schedule. When the schedule fires, every member action executes in
-// the order given. The schedule overrides each member action's own schedule
-// field — that field is meaningful only for actions delivered via
-// SyncActionsResponse.standalone_actions.
-//
-// The same action_id may appear at multiple positions within one group (e.g.
-// the same action being a member of two sets that compose the same
-// definition); idempotent execution absorbs the redundancy. Across groups,
-// duplicates are also expected — each group runs independently when its
-// schedule fires.
-message ActionGroup {
-  // Diagnostic label identifying the source of this group, e.g.
-  // "definition:<ulid>" or "action_set:<ulid>". For logs and UI only;
-  // the agent does not interpret the contents.
-  string source_label = 1;
-
-  // Schedule that triggers this group. When fired, every member action runs
-  // in order through the existing executor.
-  // @gotags: validate:"required"
-  ActionSchedule schedule = 2;
-
-  // Member actions in execution order. Each Action's own `schedule` field is
-  // ignored — only the group's schedule above applies. The `desired_state`
-  // and other fields on each Action are honored as the server resolved them.
-  // @gotags: validate:"min=1,dive"
-  repeated Action actions = 3;
-}
-
+// SyncActionsResponse carries the same durable units as the stream. Pull and
+// push are two ways of reaching one dispatch model, not two models: the agent
+// records each delivery under its delivery_id, answers with the same
+// DeliveryReceipt frame, and executes each manifest exactly once no matter
+// which path it arrived on.
 message SyncActionsResponse {
-  // The "actions" field (number 1) used to carry every assigned action as a
-  // flat list. It is replaced by the split below: standalone_actions for
-  // independently-scheduled actions and grouped_actions for set/definition-
-  // bound actions that share a single schedule and a defined execution order.
-  reserved 1;
-  reserved "actions";
-
-  // Effective sync interval in minutes for this device
-  // Agent should use this for the next sync interval
-  // 0 means use default (30 minutes)
+  // Effective sync interval in minutes for this device. The agent uses it for
+  // the next sync; 0 means the default (30 minutes).
   int32 sync_interval_minutes = 2;
 
-  // Actions assigned directly to this device (or its groups) at the action
-  // layer — i.e. not absorbed by a reached set or definition. Each action
-  // fires on its own schedule, independent of every other action.
-  // The agent should replace its local standalone-action store with this list.
-  repeated Action standalone_actions = 3;
-
-  // Action sets / definitions that reach this device, expressed as groups
-  // sharing a single schedule each. Each group's actions run in declared
-  // order when the group's schedule fires.
-  // The agent should replace its local action-group store with this list.
-  repeated ActionGroup grouped_actions = 4;
+  // Every delivery currently assigned to this device. delivery_id is the same
+  // value the push path would use for the same delivery row, so a manifest the
+  // agent already recorded from the stream is recognised as a repeat here.
+  // @gotags: validate:"omitempty,dive"
+  repeated ManifestDelivery deliveries = 3;
 
   // Resolved maintenance window. Server-computed union across every
   // group the device belongs to (its own device groups plus any user
   // groups reaching it through an assignment). Empty schedule = no
   // gating; the agent dispatches non-instant actions any time. Empty
   // is also the response when no groups carry a window. The agent
-  // evaluates this against time.Now().Local() at dispatch time. See
-  // manchtools/power-manage-server#58.
+  // evaluates this against time.Now().Local() at dispatch time.
   MaintenanceWindow maintenance_window = 5;
-
-  // Spec 41 removed lps_public_key (field 6) and the LpsPublicKey message. The
-  // key was distributed to agents so they could SEAL LPS passwords to control,
-  // and was CA-signed specifically so "the relaying gateway cannot substitute
-  // its own key". With no gateway there is no substitution risk and no sealing:
-  // the agent sends the password over its direct mTLS connection to control,
-  // which encrypts it at rest. Distributing a sealing key to a party that no
-  // longer seals is dead contract.
-  //
-  // Field number 6 is NOT reserved — V1 is the only wire version and clean
-  // breaks are the rule here, so it may be reused.
 }
 
 // ============================================================================
@@ -664,20 +660,6 @@ message LogQuery {
   // support for a requested source return an error.
   // @gotags: validate:"omitempty"
   LogSource source = 9;
-  // CA signature over the deterministic wire bytes of this message with
-  // signature cleared, under the logquery signing domain. journalctl runs as
-  // root, so the agent verifies fail-closed before building any journalctl
-  // invocation — a compromised gateway cannot originate or retarget
-  // (e.g. swap the unit) a log read under a valid signature.
-  // @gotags: validate:"omitempty"
-  bytes signature = 10;
-  // The single device this log read is authorized for. Bound INSIDE the signed
-  // canonical bytes so a compromised gateway/relay cannot replay one device's
-  // validly-signed log query onto another that trusts the same CA (PMSEC-001,
-  // sibling of SignedActionEnvelope.target_device_id). The agent verifies
-  // target == itself after the signature and refuses otherwise.
-  // @gotags: validate:"required,ulid"
-  string target_device_id = 11;
 }
 
 // Agent -> Server: journalctl output result
@@ -695,10 +677,10 @@ message LogQueryResult {
 // Remote Terminal (PTY) Sessions
 // ============================================================================
 //
-// Terminal sessions flow over the existing bidirectional Stream RPC. The
-// gateway is the source of truth for active sessions: it bridges WebSocket
-// traffic from the web client to the agent and tees stdin to the
-// control:inbox queue for audit. Stdout is NOT audited (high volume).
+// Terminal sessions flow over the same bidirectional Stream RPC as every
+// other frame. Control owns session state: it bridges WebSocket traffic
+// from the web client to the agent and audits stdin. Stdout is NOT audited
+// (high volume).
 //
 // cols/rows use uint32 because proto3 has no uint16. Validation caps both
 // at 65535 (the underlying TIOCSWINSZ ioctl uses unsigned shorts).
@@ -753,11 +735,9 @@ message TerminalResize {
 
 // Server -> Agent: terminate an active session.
 // The agent SIGTERMs the shell process group and reverts the user's
-// shell to nologin. The optional reason is propagated end-to-end from
-// ControlService.TerminateTerminalSession through
-// GatewayService.TerminateGatewayTerminalSession so the agent can
-// surface it in logs and the audit trail captures why the session
-// was killed.
+// shell to nologin. The optional reason comes from
+// ControlService.TerminateTerminalSession so the agent can surface it in
+// logs and the audit trail records why the session was killed.
 message TerminalStop {
   // @gotags: validate:"required,ulid"
   string session_id = 1;

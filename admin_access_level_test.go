@@ -14,7 +14,7 @@ package sdk
 import (
 	"testing"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 func TestAdminAccessLevel_WireNumbersAreStable(t *testing.T) {

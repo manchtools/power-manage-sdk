@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 
-	pm "github.com/manchtools/power-manage-sdk/gen/go/pm/v1"
+	pm "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1"
 )
 
 // WS15 #2 — stream-dispatch robustness.
@@ -23,10 +22,10 @@ import (
 //     fan-out legs) must be caught and turned into a NON-fatal, logged drop —
 //     one bad handler invocation must not crash-loop the whole agent (fleet
 //     DoS). It must NOT propagate as the returned error.
-//   - A malformed Action oneof (nil inner Action/envelope) on the wire must be
-//     dropped, never dereferenced. Intent: "every Action on the wire carries an
-//     id ULID and a signed envelope"; an Action that doesn't is malformed and
-//     is refused, not crashed on.
+//   - A malformed manifest-delivery oneof (nil inner message) on the wire must
+//     be dropped, never dereferenced. Intent: "every delivery on the wire
+//     carries a delivery_id ULID and a manifest"; one that doesn't is
+//     malformed and is refused, not crashed on.
 //   - The inbound ServerMessage size must be bounded so the client refuses an
 //     over-large frame (resource-exhausted) rather than allocating it.
 
@@ -34,18 +33,18 @@ import (
 // #2 — handler panic recovery
 // ---------------------------------------------------------------------------
 
-// panicStreamingHandler is a StreamingHandler whose OnActionWithStreaming
-// signals it actually ran (via `ran`) and then panics. The signal proves the
-// recover happens AFTER the handler body executed, not because the handler was
-// skipped — a test that passes by never reaching the handler proves nothing.
+// panicStreamingHandler is a StreamingHandler whose
+// OnManifestDeliveryWithStreaming signals it actually ran (via `ran`) and then
+// panics. The signal proves the recover happens AFTER the handler body
+// executed, not because the handler was skipped — a case that passes by never
+// reaching the handler proves nothing.
 type panicStreamingHandler struct {
-	ran          chan struct{}
-	panicAction  bool
-	panicInv     bool
-	panicRevoke  bool
-	normalResult *pm.ActionResult
-	mu           sync.Mutex
-	closed       bool
+	ran           chan struct{}
+	panicDelivery bool
+	panicInv      bool
+	panicRevoke   bool
+	mu            sync.Mutex
+	closed        bool
 }
 
 func (h *panicStreamingHandler) signalRan() {
@@ -58,20 +57,20 @@ func (h *panicStreamingHandler) signalRan() {
 }
 
 func (h *panicStreamingHandler) OnWelcome(ctx context.Context, w *pm.Welcome) error { return nil }
-func (h *panicStreamingHandler) OnAction(ctx context.Context, envelope, signature []byte) (*pm.ActionResult, error) {
-	return h.normalResult, nil
+func (h *panicStreamingHandler) OnManifestDelivery(ctx context.Context, d *pm.ManifestDelivery) error {
+	return nil
 }
 func (h *panicStreamingHandler) OnQuery(ctx context.Context, q *pm.OSQuery) (*pm.OSQueryResult, error) {
 	return nil, nil
 }
 func (h *panicStreamingHandler) OnError(ctx context.Context, e *pm.Error) error { return nil }
 
-func (h *panicStreamingHandler) OnActionWithStreaming(ctx context.Context, envelope, signature []byte, sendChunk func(*pm.OutputChunk) error) (*pm.ActionResult, error) {
-	if h.panicAction {
+func (h *panicStreamingHandler) OnManifestDeliveryWithStreaming(ctx context.Context, d *pm.ManifestDelivery, sendChunk func(*pm.OutputChunk) error) error {
+	if h.panicDelivery {
 		h.signalRan()
 		panic("boom: handler exploded mid-dispatch")
 	}
-	return h.normalResult, nil
+	return nil
 }
 
 func (h *panicStreamingHandler) CollectInventory(ctx context.Context) *pm.DeviceInventory { return nil }
@@ -90,24 +89,34 @@ func (h *panicStreamingHandler) OnRevokeLuksDeviceKey(ctx context.Context, req *
 	return false, ""
 }
 
-// validActionMessage builds a well-formed Action ServerMessage. The envelope
-// bytes are advisory for these dispatch tests (the panic handler never reads
-// them) but must be non-nil so the dispatch path that reads p.Action.Envelope
-// does not itself crash.
-func validActionMessage(t *testing.T) *pm.ServerMessage {
+// validDeliveryMessage builds a well-formed manifest-delivery ServerMessage.
+// It must actually survive validateInbound: a builder that quietly produced an
+// invalid frame would make every "the handler ran" assertion below vacuous.
+func validDeliveryMessage(t *testing.T) *pm.ServerMessage {
 	t.Helper()
-	env := &pm.SignedActionEnvelope{
-		ActionId:   &pm.ActionId{Value: "01HQ0000000000000000000000"},
-		ActionType: pm.ActionType_ACTION_TYPE_SHELL,
-	}
-	b, err := proto.Marshal(env)
-	if err != nil {
-		t.Fatalf("marshal envelope: %v", err)
-	}
 	return &pm.ServerMessage{
 		Id: NewULID(),
-		Payload: &pm.ServerMessage_Action{
-			Action: &pm.ActionDispatch{Envelope: b, Signature: []byte("sig")},
+		Payload: &pm.ServerMessage_ManifestDelivery{
+			ManifestDelivery: newTestDelivery(),
+		},
+	}
+}
+
+// newTestDelivery is the minimal delivery that passes inbound validation.
+func newTestDelivery() *pm.ManifestDelivery {
+	return &pm.ManifestDelivery{
+		DeliveryId: NewULID(),
+		Manifest: &pm.Manifest{
+			ManifestId: NewULID(),
+			Provenance: &pm.ManifestProvenance{ActionId: NewULID()},
+			Schedule:   &pm.ActionSchedule{IntervalHours: 8},
+			Occurrences: []*pm.ManifestOccurrence{{
+				OccurrenceId: NewULID(),
+				Action: &pm.Action{
+					Id:   &pm.ActionId{Value: NewULID()},
+					Type: pm.ActionType_ACTION_TYPE_SHELL,
+				},
+			}},
 		},
 	}
 }
@@ -116,21 +125,20 @@ func TestDispatch_HandlerPanic_Recovered_LoopSurvives(t *testing.T) {
 	t.Run("correct: handler returns normally, no recovery", func(t *testing.T) {
 		c := NewClient("https://gw.invalid", WithAuth("01HZZZZZZZZZZZZZZZZZZZZZZZZ", ""))
 		h := &panicStreamingHandler{ran: make(chan struct{})}
-		// No stream is connected, so a returned ActionResult would try to
-		// Send and fail; keep it nil so the happy path returns clean nil.
-		if err := c.dispatchServerMessage(context.Background(), validActionMessage(t), h); err != nil {
+		// No stream is connected, so the receipt send fails; that is logged,
+		// not returned, so the happy path is still a clean nil.
+		if err := c.dispatchServerMessage(context.Background(), validDeliveryMessage(t), h); err != nil {
 			t.Fatalf("normal dispatch returned error: %v", err)
 		}
 	})
 
 	t.Run("the bug: handler panic must be caught and turned non-fatal", func(t *testing.T) {
 		c := NewClient("https://gw.invalid", WithAuth("01HZZZZZZZZZZZZZZZZZZZZZZZZ", ""))
-		h := &panicStreamingHandler{ran: make(chan struct{}), panicAction: true}
+		h := &panicStreamingHandler{ran: make(chan struct{}), panicDelivery: true}
 
-		// RED today: the panic escapes dispatchServerMessage (no recover),
-		// crashing the test goroutine. After the fix, the panic is recovered
-		// and dispatch returns nil (NON-fatal — Run must keep the loop alive).
-		err := c.dispatchServerMessage(context.Background(), validActionMessage(t), h)
+		// The panic must be recovered and dispatch must return nil (NON-fatal —
+		// Run must keep the loop alive).
+		err := c.dispatchServerMessage(context.Background(), validDeliveryMessage(t), h)
 		if err != nil {
 			t.Fatalf("recovered handler panic must be non-fatal (nil), got: %v", err)
 		}
@@ -149,7 +157,7 @@ func TestDispatch_HandlerPanic_Recovered_LoopSurvives(t *testing.T) {
 		msg := &pm.ServerMessage{
 			Id: NewULID(),
 			Payload: &pm.ServerMessage_RequestInventory{
-				RequestInventory: &pm.RequestInventory{QueryId: "01HQ0000000000000000000000", TargetDeviceId: "01HQ0000000000000000000000"},
+				RequestInventory: &pm.RequestInventory{QueryId: "01HQ0000000000000000000000"},
 			},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
@@ -172,7 +180,7 @@ func TestDispatch_HandlerPanic_Recovered_LoopSurvives(t *testing.T) {
 		msg := &pm.ServerMessage{
 			Id: NewULID(),
 			Payload: &pm.ServerMessage_RevokeLuksDeviceKey{
-				RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: "01HQ0000000000000000000000", TargetDeviceId: "01HQ0000000000000000000000"},
+				RevokeLuksDeviceKey: &pm.RevokeLuksDeviceKey{ActionId: "01HQ0000000000000000000000"},
 			},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
@@ -191,57 +199,56 @@ func TestDispatch_HandlerPanic_Recovered_LoopSurvives(t *testing.T) {
 // #2 — malformed Action oneof (nil inner) must be dropped, never dereferenced
 // ---------------------------------------------------------------------------
 
-func TestDispatch_Action_NilEnvelope_NoPanic(t *testing.T) {
-	t.Run("correct: well-formed Action dispatches without error", func(t *testing.T) {
+func TestDispatch_ManifestDelivery_Malformed_NoPanic(t *testing.T) {
+	// panicDelivery:true makes every "handler must NOT have been invoked"
+	// assertion BINDING: if a guard regressed and the handler were reached,
+	// signalRan() closes h.ran (before the recovered panic), so the select
+	// fires t.Fatal. Without the flag the handler returns silently and the
+	// assertion could never catch a leak.
+	t.Run("correct: well-formed delivery dispatches without error", func(t *testing.T) {
 		c := NewClient("https://gw.invalid", WithAuth("01HZZZZZZZZZZZZZZZZZZZZZZZZ", ""))
 		h := &panicStreamingHandler{ran: make(chan struct{})}
-		if err := c.dispatchServerMessage(context.Background(), validActionMessage(t), h); err != nil {
-			t.Fatalf("well-formed Action errored: %v", err)
+		if err := c.dispatchServerMessage(context.Background(), validDeliveryMessage(t), h); err != nil {
+			t.Fatalf("well-formed delivery errored: %v", err)
 		}
 	})
 
-	t.Run("absent: nil inner Action must be dropped, not dereferenced", func(t *testing.T) {
+	t.Run("absent: nil inner delivery must be dropped, not dereferenced", func(t *testing.T) {
 		c := NewClient("https://gw.invalid", WithAuth("01HZZZZZZZZZZZZZZZZZZZZZZZZ", ""))
-		// panicAction:true makes the "handler must NOT have been invoked"
-		// assertion BINDING: if the nil-guard regressed and the handler were
-		// reached, signalRan() closes h.ran (before the recovered panic), so
-		// the select below fires t.Fatal. Without the flag the handler returns
-		// silently and the assertion could never catch a leak.
-		h := &panicStreamingHandler{ran: make(chan struct{}), panicAction: true}
-		// ServerMessage_Action with a nil inner ActionEnvelope. The dispatch
-		// path reads p.Action.Envelope / p.Action.Signature; a nil p.Action is
-		// a nil-pointer dereference today (RED → panic).
+		h := &panicStreamingHandler{ran: make(chan struct{}), panicDelivery: true}
 		msg := &pm.ServerMessage{
 			Id:      NewULID(),
-			Payload: &pm.ServerMessage_Action{Action: nil},
+			Payload: &pm.ServerMessage_ManifestDelivery{ManifestDelivery: nil},
 		}
-		err := c.dispatchServerMessage(context.Background(), msg, h)
-		if err != nil {
-			t.Fatalf("nil Action must be dropped non-fatally, got: %v", err)
+		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
+			t.Fatalf("nil delivery must be dropped non-fatally, got: %v", err)
 		}
-		// The handler must NOT have been invoked on a malformed Action.
 		select {
 		case <-h.ran:
-			t.Fatal("handler was invoked on a malformed (nil) Action")
+			t.Fatal("handler was invoked on a malformed (nil) delivery")
 		default:
 		}
 	})
 
-	t.Run("present-but-wrong: Action with nil Id reaches handler safely", func(t *testing.T) {
-		// Intent: an Action on the wire carries an Id ULID. A malformed Action
-		// missing the Id must not crash dispatch. The SDK passes the envelope
-		// bytes/signature straight through; with a nil-inner-Action guard plus
-		// the handler's own fail-closed verify, this is a clean non-fatal path.
+	t.Run("present-but-wrong: delivery with no delivery_id is refused", func(t *testing.T) {
+		// Every delivery on the wire carries a delivery_id ULID; one that does
+		// not cannot be receipted, so executing it would run work whose outcome
+		// control can never match to an assignment. Dropped at the boundary.
 		c := NewClient("https://gw.invalid", WithAuth("01HZZZZZZZZZZZZZZZZZZZZZZZZ", ""))
-		h := &panicStreamingHandler{ran: make(chan struct{})}
+		h := &panicStreamingHandler{ran: make(chan struct{}), panicDelivery: true}
+		d := newTestDelivery()
+		d.DeliveryId = ""
 		msg := &pm.ServerMessage{
-			Id: NewULID(),
-			// ActionEnvelope present but with nil envelope bytes — a malformed
-			// wire Action. Must not panic; dispatch stays non-fatal.
-			Payload: &pm.ServerMessage_Action{Action: &pm.ActionDispatch{Envelope: nil, Signature: nil}},
+			Id:      NewULID(),
+			Payload: &pm.ServerMessage_ManifestDelivery{ManifestDelivery: d},
 		}
 		if err := c.dispatchServerMessage(context.Background(), msg, h); err != nil {
-			t.Fatalf("malformed Action (nil envelope bytes) must be non-fatal, got: %v", err)
+			t.Fatalf("delivery without a delivery_id must be non-fatal, got: %v", err)
+		}
+		select {
+		case <-h.ran:
+			t.Fatal("handler was invoked on a delivery with no delivery_id")
+		default:
 		}
 	})
 }
