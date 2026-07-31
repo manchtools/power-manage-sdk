@@ -1,6 +1,6 @@
 # Power Manage SDK
 
-Shared protocol definitions, generated code, and client libraries for Power Manage. Used by the [Control Server](../server/cmd/control/), [Gateway](../server/cmd/gateway/), [Agent](../agent/), and [Web UI](../web/).
+Shared protocol definitions, generated code, and client libraries for Power Manage. Used by the [Control Server](../server/cmd/control/), [Agent](../agent/), and [Web UI](../web/).
 
 ## Contents
 
@@ -9,10 +9,9 @@ sdk/
 ├── proto/pm/v1/           Protocol Buffer source definitions
 │   ├── common.proto         Base types, enums, error codes
 │   ├── actions.proto        Action types, parameters, scheduling
-│   ├── agent.proto          Bidirectional streaming (Agent ↔ Gateway)
+│   ├── agent.proto          Bidirectional streaming (Agent ↔ Control)
 │   ├── control.proto        Control API (164 RPCs)
-│   ├── device_auth.proto    Agent enrollment via local unix socket
-│   └── internal.proto       Gateway-to-control proxy for credential operations
+│   └── device_auth.proto    Agent enrollment via local unix socket
 │
 ├── gen/go/pm/v1/           Generated Go code (protobuf + Connect RPC)
 │   ├── *.pb.go               Message types with injected validation tags
@@ -72,7 +71,8 @@ Six proto files define the entire API surface:
 | `agent.proto` | `AgentService` — bidirectional streaming RPC + action sync, heartbeat, output streaming, OS queries, log queries. Hello includes `arch` for platform detection. |
 | `control.proto` | `ControlService` — full RPC surface (~164 methods) covering users, devices, groups, actions, sets, definitions, assignments, tokens, executions, roles, user groups, identity providers, SCIM, TOTP, audit, compliance policies, certificate renewal, search, server settings, and more |
 | `device_auth.proto` | `DeviceAuthService` — agent enrollment via local unix socket |
-| `internal.proto` | `InternalService` — gateway-to-control proxy for credential-bearing operations (LUKS keys, LPS passwords) and agent auto-update info |
+
+`internal.proto` is gone. `InternalService` was the gateway's proxy to control for credential-bearing operations (LUKS keys, LPS passwords) and auto-update info; the agent now carries those on its own `AgentService` stream, which control terminates directly.
 
 ## Go SDK
 
@@ -83,7 +83,7 @@ Six proto files define the entire API surface:
 ```go
 import sdk "github.com/manchtools/power-manage-sdk"
 
-client, _ := sdk.NewClient(gatewayURL,
+client, _ := sdk.NewClient(controlStreamURL,
     sdk.WithMTLS(certFile, keyFile, caFile),
 )
 client.Run(ctx, handler)
@@ -93,7 +93,7 @@ Features: mTLS authentication, automatic heartbeat, action result reporting, liv
 
 #### Stream-loop robustness
 
-The receive loop is hardened against a compromised or buggy gateway:
+The receive loop is hardened against a compromised or buggy server:
 
 - **Inbound size bound.** `NewClient` wires `connect.WithReadMaxBytes(maxInboundMessageBytes)` (16 MiB). An over-large `ServerMessage` is refused with a resource-exhausted error and `Run` returns cleanly; the caller's reconnect loop (the agent connection loop) re-establishes the stream, instead of allocating the frame — closing an OOM/DoS vector.
 - **Per-message panic isolation.** `dispatchServerMessage` runs each message under a scoped `recover()`: a panic inside any handler method is caught, logged, and turned into a non-fatal dropped frame so one bad handler invocation cannot crash-loop the whole agent (fleet DoS). Genuine fatal stream send/receive errors still propagate (they return from `Run`, leaving reconnection to the caller).
