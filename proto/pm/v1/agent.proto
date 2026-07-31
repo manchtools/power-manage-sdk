@@ -368,12 +368,15 @@ message GetLuksKeyResponse {
   // Bounded like the storage side, so the two halves of the round trip agree on
   // what a passphrase can be.
   //
-  // NOT marked debug_redact: the option reaches the descriptor but protobuf-go's
-  // generated String() does not honour it, so the annotation would assert a
-  // protection that does not exist. This field IS printed by %v on the enclosing
-  // ServerMessage — see spec 41 open item on secret redaction.
+  // debug_redact marks this field as secret. It does NOT redact anything at
+  // runtime: protobuf-go defines the option and no encoder in it consults the
+  // option, so the generated String() prints this value like any other. What
+  // the annotation buys is a machine-readable marker — TestProtoSecretFieldSinks
+  // reads it off the descriptor to derive the set of fields whose plaintext may
+  // only be touched at an enumerated sink, so a slog or fmt argument fails the
+  // build rather than shipping a credential into a log.
   // @gotags: validate:"required,min=1,max=4096"
-  string passphrase = 1;
+  string passphrase = 1 [debug_redact = true];
 }
 
 // Agent stores a new managed passphrase on the server.
@@ -399,8 +402,10 @@ message StoreLuksKeyRequest {
   // for LUKS the relocation and domain-separation properties carry over exactly.
   // (LPS differs: its transport AAD also bound the username, which the at-rest
   // AAD deliberately omits per ADR 0009. See sdk docs/02-concepts/04-crypto.md.)
+  // debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
+  // runtime protection (see GetLuksKeyResponse.passphrase).
   // @gotags: validate:"required,min=1,max=4096"
-  string passphrase = 3;
+  string passphrase = 3 [debug_redact = true];
   // Why this rotation happened. INITIAL on the first time the action
   // runs on a device (no previous passphrase to retain); SCHEDULED for
   // any subsequent policy-driven rotation. LUKS does not use
@@ -439,8 +444,10 @@ message LpsPasswordRotation {
   // authorised to read one username's password on a device already receives all
   // of them. Closing it means adding username to the at-rest AAD, which is ruled
   // separately (spec 41, criterion 8a).
+  // debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
+  // runtime protection (see GetLuksKeyResponse.passphrase).
   // @gotags: validate:"required,min=1,max=4096"
-  string password = 2;
+  string password = 2 [debug_redact = true];
   // RFC 3339 timestamp the agent observed the rotation. Control keeps the
   // agent's clock here rather than re-stamping at receipt, so the timeline
   // reflects the device's reality.

@@ -1907,10 +1907,13 @@ type GetLuksKeyResponse struct {
 	// Bounded like the storage side, so the two halves of the round trip agree on
 	// what a passphrase can be.
 	//
-	// NOT marked debug_redact: the option reaches the descriptor but protobuf-go's
-	// generated String() does not honour it, so the annotation would assert a
-	// protection that does not exist. This field IS printed by %v on the enclosing
-	// ServerMessage — see spec 41 open item on secret redaction.
+	// debug_redact marks this field as secret. It does NOT redact anything at
+	// runtime: protobuf-go defines the option and no encoder in it consults the
+	// option, so the generated String() prints this value like any other. What
+	// the annotation buys is a machine-readable marker — TestProtoSecretFieldSinks
+	// reads it off the descriptor to derive the set of fields whose plaintext may
+	// only be touched at an enumerated sink, so a slog or fmt argument fails the
+	// build rather than shipping a credential into a log.
 	// @gotags: validate:"required,min=1,max=4096"
 	Passphrase    string `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=4096"`
 	unknownFields protoimpl.UnknownFields
@@ -1978,6 +1981,8 @@ type StoreLuksKeyRequest struct {
 	// for LUKS the relocation and domain-separation properties carry over exactly.
 	// (LPS differs: its transport AAD also bound the username, which the at-rest
 	// AAD deliberately omits per ADR 0009. See sdk docs/02-concepts/04-crypto.md.)
+	// debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
+	// runtime protection (see GetLuksKeyResponse.passphrase).
 	// @gotags: validate:"required,min=1,max=4096"
 	Passphrase string `protobuf:"bytes,3,opt,name=passphrase,proto3" json:"passphrase,omitempty" validate:"required,min=1,max=4096"`
 	// Why this rotation happened. INITIAL on the first time the action
@@ -2119,6 +2124,8 @@ type LpsPasswordRotation struct {
 	// authorised to read one username's password on a device already receives all
 	// of them. Closing it means adding username to the at-rest AAD, which is ruled
 	// separately (spec 41, criterion 8a).
+	// debug_redact marks this secret for TestProtoSecretFieldSinks; it is not a
+	// runtime protection (see GetLuksKeyResponse.passphrase).
 	// @gotags: validate:"required,min=1,max=4096"
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty" validate:"required,min=1,max=4096"`
 	// RFC 3339 timestamp the agent observed the rotation. Control keeps the
@@ -3513,24 +3520,24 @@ const file_pm_v1_agent_proto_rawDesc = "" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\x12(\n" +
 	"\x10target_device_id\x18\x03 \x01(\tR\x0etargetDeviceId\"0\n" +
 	"\x11GetLuksKeyRequest\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\"4\n" +
-	"\x12GetLuksKeyResponse\x12\x1e\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\"9\n" +
+	"\x12GetLuksKeyResponse\x12#\n" +
 	"\n" +
-	"passphrase\x18\x01 \x01(\tR\n" +
-	"passphrase\"\xb3\x01\n" +
+	"passphrase\x18\x01 \x01(\tB\x03\x80\x01\x01R\n" +
+	"passphrase\"\xb8\x01\n" +
 	"\x13StoreLuksKeyRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x02 \x01(\tR\n" +
-	"devicePath\x12\x1e\n" +
+	"devicePath\x12#\n" +
 	"\n" +
-	"passphrase\x18\x03 \x01(\tR\n" +
+	"passphrase\x18\x03 \x01(\tB\x03\x80\x01\x01R\n" +
 	"passphrase\x12>\n" +
 	"\x0frotation_reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x0erotationReason\"0\n" +
 	"\x14StoreLuksKeyResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x9b\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xa0\x01\n" +
 	"\x13LpsPasswordRotation\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1d\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x1f\n" +
+	"\bpassword\x18\x02 \x01(\tB\x03\x80\x01\x01R\bpassword\x12\x1d\n" +
 	"\n" +
 	"rotated_at\x18\x03 \x01(\tR\trotatedAt\x12-\n" +
 	"\x06reason\x18\x04 \x01(\x0e2\x15.pm.v1.RotationReasonR\x06reason\"q\n" +
