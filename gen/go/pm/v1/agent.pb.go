@@ -2427,8 +2427,15 @@ type ValidateLuksTokenRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
-	// @gotags: validate:"required,uuid"
-	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,uuid"`
+	// The one-time token the operator was shown, as issued by
+	// ControlService.CreateLuksToken.
+	//
+	// This was tagged `uuid` — debt from before the repo-wide move to ULIDs, and
+	// a shape the issuer never minted. Nothing rejected it because the redemption
+	// path did not run the validator; once it did, every legitimate redemption
+	// failed. Identifiers here are ULIDs like everywhere else.
+	// @gotags: validate:"required,ulid"
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

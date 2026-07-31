@@ -6,7 +6,7 @@ icon: "🛠️"
 
 # Contributing
 
-The SDK is consumed by the agent, control server, gateway, and web UI. Because
+The SDK is consumed by the agent, control server, and web UI. Because
 those live in separate repositories, the thing most worth understanding before
 you change the SDK is how a change *propagates* without breaking everyone.
 

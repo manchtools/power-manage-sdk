@@ -1,18 +1,23 @@
 ---
 title: Agent client & signed commands
 label: Client & signing
-description: The long-lived bidirectional stream between agent and gateway — dispatch robustness against a hostile relay, fail-closed action-signature verification, and maintenance-window evaluation.
+description: The long-lived bidirectional stream between agent and control — dispatch robustness against a hostile server, fail-closed action-signature verification, and maintenance-window evaluation.
 ---
 
 # Agent client & signed commands
 
 Three pieces of the SDK carry the agent's server-facing behaviour: the
-`Client` (a long-lived bidirectional stream to the gateway), the `verify`
+`Client` (a long-lived bidirectional stream to control), the `verify`
 package (signatures over every server-originated command), and the
 `maintenance` package (when scheduled work is allowed to run). The common
-thread: the gateway is the *least-trusted* server-side actor, so the client
-treats every inbound frame as potentially hostile and every command as
-unauthenticated until a CA signature says otherwise.
+thread: the agent runs as root, so the client treats every inbound frame as
+potentially hostile and every command as unauthenticated until a CA signature
+says otherwise.
+
+Spec 41 removed the gateway, which was the *least-trusted* server-side actor
+and the original reason for that posture. The posture stays: it is what makes
+a compromised control server, not merely a compromised relay, unable to turn
+the fleet into a root-execution service.
 
 ## The stream
 
@@ -21,13 +26,15 @@ heartbeats, action results, inventory, and terminal I/O all multiplex over
 it.
 
 <!-- docref: begin src=client.go#WithMTLSFromPEM:7e7dc2c3,client.go#WithMTLSFromPEMAndSystemRoots:0388329a -->
-Gateway trust is strict: the mTLS options verify the server **only** against
+Stream trust is strict: the mTLS options verify the server **only** against
 the enrolled internal CA — system roots are deliberately not consulted, so a
-certificate signed by any public CA cannot impersonate the gateway even with
-a matching SNI. The `...AndSystemRoots` variant exists solely for
-control-server endpoints fronted by a public CA (a reverse proxy with Let's
-Encrypt); using it for the gateway connection would broaden the gateway's
-trust and is explicitly warned against.
+certificate signed by any public CA cannot impersonate control even with a
+matching SNI. That works because the agent host is passed through the edge
+untouched, so control presents its own CA-signed certificate. The
+`...AndSystemRoots` variant exists solely for the public API host, which is
+fronted by a public CA (a reverse proxy with Let's Encrypt); using it for the
+stream would broaden that connection's trust and is explicitly warned
+against.
 <!-- docref: end -->
 
 <!-- docref: begin src=client.go#MinHeartbeatInterval:2278f3a7,client.go#Client.applyWelcomeHeartbeat:64ed1259 -->
@@ -49,10 +56,10 @@ guarantee survives even an abandoned send.
 
 ## Dispatch robustness
 
-Inbound frames get no benefit of the doubt — a compromised gateway is in the
+Inbound frames get no benefit of the doubt — a compromised server is in the
 threat model.
 
-<!-- docref: begin src=client.go#maxInboundMessageBytes:794c84c6,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:c7b9a824 -->
+<!-- docref: begin src=client.go#maxInboundMessageBytes:be33da55,client.go#Client.validateInbound:e0ff57f2,client.go#Client.dispatchServerMessage:bcd86265 -->
 A single inbound message is size-capped (16 MiB — far above any legitimate
 control frame), so a multi-gigabyte frame cannot force an allocation; the
 connection that receives one is torn down with a resource-exhausted error.
@@ -66,7 +73,7 @@ handler is recovered and turned into a dropped frame** — one hostile or buggy
 invocation cannot crash-loop the agent.
 <!-- docref: end -->
 
-<!-- docref: begin src=client.go#actionQueueDepth:794c84c6,client.go#Client.runDispatchedAction:528ff624 -->
+<!-- docref: begin src=client.go#actionQueueDepth:be33da55,client.go#Client.runDispatchedAction:528ff624 -->
 Server-dispatched actions execute on a single worker goroutine off the
 receive loop — one at a time, in order — so a long-running action can never
 head-of-line-block terminal input or a stop request. The queue is bounded; a
@@ -77,9 +84,10 @@ block the receive loop.
 
 ## Every server command is signed
 
-The stream being authenticated is not enough: the gateway relays commands, it
-does not originate them. Authority comes from a control-server CA signature
-on the command itself.
+The stream being authenticated is not enough. Authority comes from a CA
+signature on the command itself, verified against the CA the device enrolled
+with — so possession of the stream is not possession of the right to run
+anything as root.
 
 <!-- docref: begin src=client.go#StreamHandler:0163986d,verify/verify.go#ActionVerifier.Verify:c3b3df3c,verify/envelope.go#MarshalEnvelope:eeb40f10 -->
 An action arrives as opaque **envelope bytes plus a signature**. The handler

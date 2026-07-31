@@ -1150,7 +1150,14 @@ export type ValidateLuksTokenRequest = Message<"pm.v1.ValidateLuksTokenRequest">
   deviceId: string;
 
   /**
-   * @gotags: validate:"required,uuid"
+   * The one-time token the operator was shown, as issued by
+   * ControlService.CreateLuksToken.
+   *
+   * This was tagged `uuid` — debt from before the repo-wide move to ULIDs, and
+   * a shape the issuer never minted. Nothing rejected it because the redemption
+   * path did not run the validator; once it did, every legitimate redemption
+   * failed. Identifiers here are ULIDs like everywhere else.
+   * @gotags: validate:"required,ulid"
    *
    * @generated from field: string token = 2;
    */
