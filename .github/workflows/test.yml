@@ -94,16 +94,23 @@ jobs:
           node-version: '22'
           cache: npm
 
+      # `npm ci` only — no `|| npm install` fallback. The point of these steps
+      # is that buf comes from package-lock.json; falling back to `npm install`
+      # on a lock mismatch resolves whatever the ranges allow and defeats it.
       - name: Install npm deps
-        run: npm ci || npm install
+        run: npm ci
 
+      # Same resolution the local gate and `make generate` use
+      # (scripts/buf.sh: fail-closed to the lock-installed binary). Previously
+      # `npx --prefix .. buf`, which downloads registry-latest when the package
+      # is absent instead of failing.
       - name: buf lint
         working-directory: proto
-        run: npx --prefix .. buf lint
+        run: ../scripts/buf.sh lint
 
       - name: buf format (drift)
         working-directory: proto
-        run: npx --prefix .. buf format --diff --exit-code
+        run: ../scripts/buf.sh format --diff --exit-code
 
   # Run `make generate` and assert nothing changed. Catches the
   # "edited a .proto but forgot to regenerate" footgun before it
