@@ -1600,13 +1600,13 @@ message AuditEvent {
 message ListAuditEventsRequest {
   // @gotags: validate:"omitempty,min=1,max=100"
   int32 page_size = 1;
-  // @gotags: validate:"omitempty"
+  // @gotags: validate:"omitempty,max=32"
   string page_token = 2;
-  // @gotags: validate:"omitempty"
+  // @gotags: validate:"omitempty,ulid"
   string actor_id = 3;
-  // @gotags: validate:"omitempty"
+  // @gotags: validate:"omitempty,max=64"
   string stream_type = 4;
-  // @gotags: validate:"omitempty"
+  // @gotags: validate:"omitempty,max=128"
   string event_type = 5;
 }
 
@@ -1630,7 +1630,7 @@ message ExportAuditEventsRequest {
   // Export format: "csv" or "json".
   // @gotags: validate:"required,oneof=csv json"
   string format = 1;
-  // @gotags: validate:"omitempty"
+  // @gotags: validate:"omitempty,ulid"
   string actor_id = 2;
   // Empty = all stream types.
   // @gotags: validate:"omitempty,max=64,dive,min=1,max=64"

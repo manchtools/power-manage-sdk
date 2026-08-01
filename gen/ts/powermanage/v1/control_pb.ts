@@ -5909,28 +5909,28 @@ export type ListAuditEventsRequest = Message<"powermanage.v1.ListAuditEventsRequ
   pageSize: number;
 
   /**
-   * @gotags: validate:"omitempty"
+   * @gotags: validate:"omitempty,max=32"
    *
    * @generated from field: string page_token = 2;
    */
   pageToken: string;
 
   /**
-   * @gotags: validate:"omitempty"
+   * @gotags: validate:"omitempty,ulid"
    *
    * @generated from field: string actor_id = 3;
    */
   actorId: string;
 
   /**
-   * @gotags: validate:"omitempty"
+   * @gotags: validate:"omitempty,max=64"
    *
    * @generated from field: string stream_type = 4;
    */
   streamType: string;
 
   /**
-   * @gotags: validate:"omitempty"
+   * @gotags: validate:"omitempty,max=128"
    *
    * @generated from field: string event_type = 5;
    */
@@ -5995,7 +5995,7 @@ export type ExportAuditEventsRequest = Message<"powermanage.v1.ExportAuditEvents
   format: string;
 
   /**
-   * @gotags: validate:"omitempty"
+   * @gotags: validate:"omitempty,ulid"
    *
    * @generated from field: string actor_id = 2;
    */

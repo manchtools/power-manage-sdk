@@ -12101,14 +12101,14 @@ type ListAuditEventsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"omitempty,min=1,max=100"
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty" validate:"omitempty,min=1,max=100"`
-	// @gotags: validate:"omitempty"
-	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty"`
-	// @gotags: validate:"omitempty"
-	ActorId string `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty" validate:"omitempty"`
-	// @gotags: validate:"omitempty"
-	StreamType string `protobuf:"bytes,4,opt,name=stream_type,json=streamType,proto3" json:"stream_type,omitempty" validate:"omitempty"`
-	// @gotags: validate:"omitempty"
-	EventType     string `protobuf:"bytes,5,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,max=32"
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty" validate:"omitempty,max=32"`
+	// @gotags: validate:"omitempty,ulid"
+	ActorId string `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty" validate:"omitempty,ulid"`
+	// @gotags: validate:"omitempty,max=64"
+	StreamType string `protobuf:"bytes,4,opt,name=stream_type,json=streamType,proto3" json:"stream_type,omitempty" validate:"omitempty,max=64"`
+	// @gotags: validate:"omitempty,max=128"
+	EventType     string `protobuf:"bytes,5,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty" validate:"omitempty,max=128"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12253,8 +12253,8 @@ type ExportAuditEventsRequest struct {
 	// Export format: "csv" or "json".
 	// @gotags: validate:"required,oneof=csv json"
 	Format string `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty" validate:"required,oneof=csv json"`
-	// @gotags: validate:"omitempty"
-	ActorId string `protobuf:"bytes,2,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,ulid"
+	ActorId string `protobuf:"bytes,2,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty" validate:"omitempty,ulid"`
 	// Empty = all stream types.
 	// @gotags: validate:"omitempty,max=64,dive,min=1,max=64"
 	StreamTypes []string `protobuf:"bytes,3,rep,name=stream_types,json=streamTypes,proto3" json:"stream_types,omitempty" validate:"omitempty,max=64,dive,min=1,max=64"`
