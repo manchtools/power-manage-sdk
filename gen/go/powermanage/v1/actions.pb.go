@@ -57,7 +57,7 @@ const (
 	// Password management (900-999)
 	ActionType_ACTION_TYPE_LPS ActionType = 900 // Local Password Solution
 	// Encryption management (1000-1099)
-	ActionType_ACTION_TYPE_ENCRYPTION ActionType = 1000 // Disk encryption management (LUKS, GELI, etc.)
+	ActionType_ACTION_TYPE_ENCRYPTION ActionType = 1000 // LUKS disk encryption management
 	// Network management (1100-1199)
 	ActionType_ACTION_TYPE_WIFI ActionType = 1100 // WiFi connection management
 	// Agent management (1200-1299)
@@ -147,234 +147,6 @@ func (ActionType) EnumDescriptor() ([]byte, []int) {
 	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{0}
 }
 
-// ServiceBackend selects which init/service manager the agent targets.
-// The default (SYSTEMD) matches most mainstream distros. OPENRC/RUNIT/S6
-// slots exist so adding those implementations later does not require a
-// second proto rename. Agents set their active backend via
-// sys/service.SetServiceBackend at startup.
-type ServiceBackend int32
-
-const (
-	ServiceBackend_SERVICE_BACKEND_SYSTEMD ServiceBackend = 0 // default
-	ServiceBackend_SERVICE_BACKEND_OPENRC  ServiceBackend = 1
-	ServiceBackend_SERVICE_BACKEND_RUNIT   ServiceBackend = 2
-	ServiceBackend_SERVICE_BACKEND_S6      ServiceBackend = 3
-)
-
-// Enum value maps for ServiceBackend.
-var (
-	ServiceBackend_name = map[int32]string{
-		0: "SERVICE_BACKEND_SYSTEMD",
-		1: "SERVICE_BACKEND_OPENRC",
-		2: "SERVICE_BACKEND_RUNIT",
-		3: "SERVICE_BACKEND_S6",
-	}
-	ServiceBackend_value = map[string]int32{
-		"SERVICE_BACKEND_SYSTEMD": 0,
-		"SERVICE_BACKEND_OPENRC":  1,
-		"SERVICE_BACKEND_RUNIT":   2,
-		"SERVICE_BACKEND_S6":      3,
-	}
-)
-
-func (x ServiceBackend) Enum() *ServiceBackend {
-	p := new(ServiceBackend)
-	*p = x
-	return p
-}
-
-func (x ServiceBackend) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ServiceBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[1].Descriptor()
-}
-
-func (ServiceBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[1]
-}
-
-func (x ServiceBackend) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ServiceBackend.Descriptor instead.
-func (ServiceBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{1}
-}
-
-// FirewallBackend selects which packet-filter framework the agent
-// targets when a future ACTION_TYPE_FIREWALL lands. Defined here up
-// front so the wire format doesn't churn when the feature ships.
-type FirewallBackend int32
-
-const (
-	FirewallBackend_FIREWALL_BACKEND_NFTABLES  FirewallBackend = 0 // default — Linux nftables (modern)
-	FirewallBackend_FIREWALL_BACKEND_IPTABLES  FirewallBackend = 1 // Linux iptables (legacy)
-	FirewallBackend_FIREWALL_BACKEND_FIREWALLD FirewallBackend = 2 // Red Hat firewalld wrapper
-	FirewallBackend_FIREWALL_BACKEND_UFW       FirewallBackend = 3 // Debian/Ubuntu ufw wrapper
-	FirewallBackend_FIREWALL_BACKEND_PF        FirewallBackend = 4 // BSD pf
-)
-
-// Enum value maps for FirewallBackend.
-var (
-	FirewallBackend_name = map[int32]string{
-		0: "FIREWALL_BACKEND_NFTABLES",
-		1: "FIREWALL_BACKEND_IPTABLES",
-		2: "FIREWALL_BACKEND_FIREWALLD",
-		3: "FIREWALL_BACKEND_UFW",
-		4: "FIREWALL_BACKEND_PF",
-	}
-	FirewallBackend_value = map[string]int32{
-		"FIREWALL_BACKEND_NFTABLES":  0,
-		"FIREWALL_BACKEND_IPTABLES":  1,
-		"FIREWALL_BACKEND_FIREWALLD": 2,
-		"FIREWALL_BACKEND_UFW":       3,
-		"FIREWALL_BACKEND_PF":        4,
-	}
-)
-
-func (x FirewallBackend) Enum() *FirewallBackend {
-	p := new(FirewallBackend)
-	*p = x
-	return p
-}
-
-func (x FirewallBackend) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (FirewallBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[2].Descriptor()
-}
-
-func (FirewallBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[2]
-}
-
-func (x FirewallBackend) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use FirewallBackend.Descriptor instead.
-func (FirewallBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{2}
-}
-
-// DnsBackend selects which resolver framework the agent targets when a
-// future ACTION_TYPE_DNS lands. Forward-compat only.
-type DnsBackend int32
-
-const (
-	DnsBackend_DNS_BACKEND_RESOLVED       DnsBackend = 0 // default — systemd-resolved / resolvectl
-	DnsBackend_DNS_BACKEND_RESOLVCONF     DnsBackend = 1 // plain /etc/resolv.conf (via resolvconf or direct)
-	DnsBackend_DNS_BACKEND_DNSMASQ        DnsBackend = 2 // local dnsmasq
-	DnsBackend_DNS_BACKEND_NETWORKMANAGER DnsBackend = 3 // NetworkManager-managed DNS
-)
-
-// Enum value maps for DnsBackend.
-var (
-	DnsBackend_name = map[int32]string{
-		0: "DNS_BACKEND_RESOLVED",
-		1: "DNS_BACKEND_RESOLVCONF",
-		2: "DNS_BACKEND_DNSMASQ",
-		3: "DNS_BACKEND_NETWORKMANAGER",
-	}
-	DnsBackend_value = map[string]int32{
-		"DNS_BACKEND_RESOLVED":       0,
-		"DNS_BACKEND_RESOLVCONF":     1,
-		"DNS_BACKEND_DNSMASQ":        2,
-		"DNS_BACKEND_NETWORKMANAGER": 3,
-	}
-)
-
-func (x DnsBackend) Enum() *DnsBackend {
-	p := new(DnsBackend)
-	*p = x
-	return p
-}
-
-func (x DnsBackend) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (DnsBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[3].Descriptor()
-}
-
-func (DnsBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[3]
-}
-
-func (x DnsBackend) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use DnsBackend.Descriptor instead.
-func (DnsBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{3}
-}
-
-// NetworkConfigBackend selects which tool manages interface IP,
-// routing, and DHCP configuration when a future ACTION_TYPE_NETWORK
-// _CONFIG lands. Distinct from WifiBackend — a device can use one
-// tool for connection profiles and another for IP config.
-type NetworkConfigBackend int32
-
-const (
-	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_NETWORKMANAGER   NetworkConfigBackend = 0 // default — nmcli
-	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD NetworkConfigBackend = 1 // /etc/systemd/network/*.network
-	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_NETPLAN          NetworkConfigBackend = 2 // /etc/netplan/*.yaml
-	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_DHCPCD           NetworkConfigBackend = 3 // /etc/dhcpcd.conf (Alpine, OpenBSD)
-	NetworkConfigBackend_NETWORK_CONFIG_BACKEND_IFUPDOWN         NetworkConfigBackend = 4 // /etc/network/interfaces (classic Debian)
-)
-
-// Enum value maps for NetworkConfigBackend.
-var (
-	NetworkConfigBackend_name = map[int32]string{
-		0: "NETWORK_CONFIG_BACKEND_NETWORKMANAGER",
-		1: "NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD",
-		2: "NETWORK_CONFIG_BACKEND_NETPLAN",
-		3: "NETWORK_CONFIG_BACKEND_DHCPCD",
-		4: "NETWORK_CONFIG_BACKEND_IFUPDOWN",
-	}
-	NetworkConfigBackend_value = map[string]int32{
-		"NETWORK_CONFIG_BACKEND_NETWORKMANAGER":   0,
-		"NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD": 1,
-		"NETWORK_CONFIG_BACKEND_NETPLAN":          2,
-		"NETWORK_CONFIG_BACKEND_DHCPCD":           3,
-		"NETWORK_CONFIG_BACKEND_IFUPDOWN":         4,
-	}
-)
-
-func (x NetworkConfigBackend) Enum() *NetworkConfigBackend {
-	p := new(NetworkConfigBackend)
-	*p = x
-	return p
-}
-
-func (x NetworkConfigBackend) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (NetworkConfigBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[4].Descriptor()
-}
-
-func (NetworkConfigBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[4]
-}
-
-func (x NetworkConfigBackend) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use NetworkConfigBackend.Descriptor instead.
-func (NetworkConfigBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{4}
-}
-
 type ServiceUnitState int32
 
 const (
@@ -411,11 +183,11 @@ func (x ServiceUnitState) String() string {
 }
 
 func (ServiceUnitState) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[5].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[1].Descriptor()
 }
 
 func (ServiceUnitState) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[5]
+	return &file_powermanage_v1_actions_proto_enumTypes[1]
 }
 
 func (x ServiceUnitState) Number() protoreflect.EnumNumber {
@@ -424,7 +196,7 @@ func (x ServiceUnitState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ServiceUnitState.Descriptor instead.
 func (ServiceUnitState) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{5}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{1}
 }
 
 // AdminAccessLevel defines the level of administrative access granted.
@@ -478,11 +250,11 @@ func (x AdminAccessLevel) String() string {
 }
 
 func (AdminAccessLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[6].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[2].Descriptor()
 }
 
 func (AdminAccessLevel) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[6]
+	return &file_powermanage_v1_actions_proto_enumTypes[2]
 }
 
 func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
@@ -491,7 +263,7 @@ func (x AdminAccessLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AdminAccessLevel.Descriptor instead.
 func (AdminAccessLevel) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{6}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{2}
 }
 
 // PrivilegeBackend selects which privilege-escalation tool the agent
@@ -528,11 +300,11 @@ func (x PrivilegeBackend) String() string {
 }
 
 func (PrivilegeBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[7].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[3].Descriptor()
 }
 
 func (PrivilegeBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[7]
+	return &file_powermanage_v1_actions_proto_enumTypes[3]
 }
 
 func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
@@ -541,7 +313,7 @@ func (x PrivilegeBackend) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PrivilegeBackend.Descriptor instead.
 func (PrivilegeBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{7}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{3}
 }
 
 // LpsPasswordComplexity defines the character set for generated passwords.
@@ -578,11 +350,11 @@ func (x LpsPasswordComplexity) String() string {
 }
 
 func (LpsPasswordComplexity) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[8].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[4].Descriptor()
 }
 
 func (LpsPasswordComplexity) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[8]
+	return &file_powermanage_v1_actions_proto_enumTypes[4]
 }
 
 func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
@@ -591,66 +363,10 @@ func (x LpsPasswordComplexity) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LpsPasswordComplexity.Descriptor instead.
 func (LpsPasswordComplexity) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{8}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{4}
 }
 
-// EncryptionBackend selects the disk-encryption implementation the
-// agent targets. LUKS covers virtually all managed Linux today; the
-// other slots exist so implementations for other platforms can land
-// later without another proto rename.
-type EncryptionBackend int32
-
-const (
-	EncryptionBackend_ENCRYPTION_BACKEND_LUKS EncryptionBackend = 0 // default — cryptsetup/LUKS2
-	EncryptionBackend_ENCRYPTION_BACKEND_GELI EncryptionBackend = 1 // FreeBSD GELI
-	EncryptionBackend_ENCRYPTION_BACKEND_CGD  EncryptionBackend = 2 // NetBSD CGD
-)
-
-// Enum value maps for EncryptionBackend.
-var (
-	EncryptionBackend_name = map[int32]string{
-		0: "ENCRYPTION_BACKEND_LUKS",
-		1: "ENCRYPTION_BACKEND_GELI",
-		2: "ENCRYPTION_BACKEND_CGD",
-	}
-	EncryptionBackend_value = map[string]int32{
-		"ENCRYPTION_BACKEND_LUKS": 0,
-		"ENCRYPTION_BACKEND_GELI": 1,
-		"ENCRYPTION_BACKEND_CGD":  2,
-	}
-)
-
-func (x EncryptionBackend) Enum() *EncryptionBackend {
-	p := new(EncryptionBackend)
-	*p = x
-	return p
-}
-
-func (x EncryptionBackend) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (EncryptionBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[9].Descriptor()
-}
-
-func (EncryptionBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[9]
-}
-
-func (x EncryptionBackend) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use EncryptionBackend.Descriptor instead.
-func (EncryptionBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{9}
-}
-
-// EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
-// slot (e.g. LUKS slot 7). Backends without an equivalent concept
-// should treat non-NONE values as best-effort and report whichever
-// subset of modes they support.
+// EncryptionDeviceBoundKeyType determines what goes in LUKS slot 7.
 type EncryptionDeviceBoundKeyType int32
 
 const (
@@ -684,11 +400,11 @@ func (x EncryptionDeviceBoundKeyType) String() string {
 }
 
 func (EncryptionDeviceBoundKeyType) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[10].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[5].Descriptor()
 }
 
 func (EncryptionDeviceBoundKeyType) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[10]
+	return &file_powermanage_v1_actions_proto_enumTypes[5]
 }
 
 func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
@@ -697,7 +413,7 @@ func (x EncryptionDeviceBoundKeyType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncryptionDeviceBoundKeyType.Descriptor instead.
 func (EncryptionDeviceBoundKeyType) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{10}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{5}
 }
 
 // WiFi authentication type.
@@ -734,11 +450,11 @@ func (x WifiAuthType) String() string {
 }
 
 func (WifiAuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[11].Descriptor()
+	return file_powermanage_v1_actions_proto_enumTypes[6].Descriptor()
 }
 
 func (WifiAuthType) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[11]
+	return &file_powermanage_v1_actions_proto_enumTypes[6]
 }
 
 func (x WifiAuthType) Number() protoreflect.EnumNumber {
@@ -747,63 +463,7 @@ func (x WifiAuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WifiAuthType.Descriptor instead.
 func (WifiAuthType) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{11}
-}
-
-// WifiBackend selects which WiFi-management tool the agent targets.
-// NetworkManager covers most mainstream distros; the other slots exist
-// so implementations for connman- or wpa_supplicant-only systems can
-// land later without another proto rename.
-type WifiBackend int32
-
-const (
-	WifiBackend_WIFI_BACKEND_NETWORKMANAGER WifiBackend = 0 // default — nmcli
-	WifiBackend_WIFI_BACKEND_CONNMAN        WifiBackend = 1 // connmanctl
-	WifiBackend_WIFI_BACKEND_WPA_SUPPLICANT WifiBackend = 2 // direct wpa_supplicant.conf management
-	WifiBackend_WIFI_BACKEND_IWD            WifiBackend = 3 // iwctl (systemd / Arch / Alpine default on some installs)
-)
-
-// Enum value maps for WifiBackend.
-var (
-	WifiBackend_name = map[int32]string{
-		0: "WIFI_BACKEND_NETWORKMANAGER",
-		1: "WIFI_BACKEND_CONNMAN",
-		2: "WIFI_BACKEND_WPA_SUPPLICANT",
-		3: "WIFI_BACKEND_IWD",
-	}
-	WifiBackend_value = map[string]int32{
-		"WIFI_BACKEND_NETWORKMANAGER": 0,
-		"WIFI_BACKEND_CONNMAN":        1,
-		"WIFI_BACKEND_WPA_SUPPLICANT": 2,
-		"WIFI_BACKEND_IWD":            3,
-	}
-)
-
-func (x WifiBackend) Enum() *WifiBackend {
-	p := new(WifiBackend)
-	*p = x
-	return p
-}
-
-func (x WifiBackend) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (WifiBackend) Descriptor() protoreflect.EnumDescriptor {
-	return file_powermanage_v1_actions_proto_enumTypes[12].Descriptor()
-}
-
-func (WifiBackend) Type() protoreflect.EnumType {
-	return &file_powermanage_v1_actions_proto_enumTypes[12]
-}
-
-func (x WifiBackend) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use WifiBackend.Descriptor instead.
-func (WifiBackend) EnumDescriptor() ([]byte, []int) {
-	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{12}
+	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{6}
 }
 
 type Action struct {
@@ -1556,10 +1216,8 @@ func (x *ShellParams) GetIsCompliance() bool {
 	return false
 }
 
-// ServiceParams configures a service unit. unit_content is the verbatim
-// unit file; the agent writes it to the location expected by the chosen
-// backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
-// OPENRC: /etc/init.d/<unit_name>; etc.).
+// ServiceParams configures a systemd unit. unit_content is the verbatim unit
+// file written under /etc/systemd/system.
 type ServiceParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,min=1,max=255"
@@ -1569,11 +1227,7 @@ type ServiceParams struct {
 	// @gotags: validate:"omitempty"
 	Enable bool `protobuf:"varint,3,opt,name=enable,proto3" json:"enable,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,max=65536"
-	UnitContent string `protobuf:"bytes,4,opt,name=unit_content,json=unitContent,proto3" json:"unit_content,omitempty" validate:"omitempty,max=65536"`
-	// Service manager backend. Unset means SERVICE_BACKEND_SYSTEMD, which is
-	// what most managed Linux runs.
-	// @gotags: validate:"omitempty"
-	Backend       ServiceBackend `protobuf:"varint,5,opt,name=backend,proto3,enum=powermanage.v1.ServiceBackend" json:"backend,omitempty" validate:"omitempty"`
+	UnitContent   string `protobuf:"bytes,4,opt,name=unit_content,json=unitContent,proto3" json:"unit_content,omitempty" validate:"omitempty,max=65536"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1634,13 +1288,6 @@ func (x *ServiceParams) GetUnitContent() string {
 		return x.UnitContent
 	}
 	return ""
-}
-
-func (x *ServiceParams) GetBackend() ServiceBackend {
-	if x != nil {
-		return x.Backend
-	}
-	return ServiceBackend_SERVICE_BACKEND_SYSTEMD
 }
 
 type FileParams struct {
@@ -3090,12 +2737,9 @@ func (x *LpsParams) GetGracePeriodHours() int32 {
 	return 0
 }
 
-// EncryptionParams configures disk encryption management. The agent
-// auto-detects the primary encrypted volume on the device (format
-// depends on the chosen backend). A managed passphrase is generated,
-// stored on the server, and rotated on schedule. Optionally, a
-// device-bound key (TPM or user passphrase) can be enrolled in the
-// backend's designated slot.
+// EncryptionParams configures LUKS disk encryption management. The agent
+// auto-detects the primary encrypted volume, generates and rotates a managed
+// passphrase, and can enroll a TPM or user passphrase in the device-bound slot.
 type EncryptionParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Pre-shared key for initial ownership (only needed for first run)
@@ -3116,11 +2760,8 @@ type EncryptionParams struct {
 	// Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
 	// @gotags: validate:"omitempty"
 	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
-	// Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
-	// @gotags: validate:"omitempty"
-	Backend       EncryptionBackend `protobuf:"varint,7,opt,name=backend,proto3,enum=powermanage.v1.EncryptionBackend" json:"backend,omitempty" validate:"omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *EncryptionParams) Reset() {
@@ -3195,16 +2836,8 @@ func (x *EncryptionParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
 	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
 }
 
-func (x *EncryptionParams) GetBackend() EncryptionBackend {
-	if x != nil {
-		return x.Backend
-	}
-	return EncryptionBackend_ENCRYPTION_BACKEND_LUKS
-}
-
-// WifiParams configures WiFi connection management.
-// Each action creates a connection profile named pm-wifi-{actionId} in
-// the chosen backend's native format. Supports PSK (password) and
+// WifiParams configures NetworkManager WiFi connection management.
+// Each action creates a connection profile named pm-wifi-{actionId}. Supports PSK (password) and
 // EAP-TLS (certificate) authentication.
 type WifiParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3233,10 +2866,7 @@ type WifiParams struct {
 	Hidden bool `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
 	// Selection priority when multiple known networks are visible (higher wins).
 	// @gotags: validate:"omitempty,gte=-1,lte=999"
-	Priority int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
-	// WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
-	// @gotags: validate:"omitempty"
-	Backend       WifiBackend `protobuf:"varint,11,opt,name=backend,proto3,enum=powermanage.v1.WifiBackend" json:"backend,omitempty" validate:"omitempty"`
+	Priority      int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3339,13 +2969,6 @@ func (x *WifiParams) GetPriority() int32 {
 		return x.Priority
 	}
 	return 0
-}
-
-func (x *WifiParams) GetBackend() WifiBackend {
-	if x != nil {
-		return x.Backend
-	}
-	return WifiBackend_WIFI_BACKEND_NETWORKMANAGER
 }
 
 type ActionResult struct {
@@ -3743,13 +3366,12 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\ris_compliance\x18\a \x01(\bR\fisCompliance\x1a>\n" +
 	"\x10EnvironmentEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe8\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xae\x01\n" +
 	"\rServiceParams\x12\x1b\n" +
 	"\tunit_name\x18\x01 \x01(\tR\bunitName\x12E\n" +
 	"\rdesired_state\x18\x02 \x01(\x0e2 .powermanage.v1.ServiceUnitStateR\fdesiredState\x12\x16\n" +
 	"\x06enable\x18\x03 \x01(\bR\x06enable\x12!\n" +
-	"\funit_content\x18\x04 \x01(\tR\vunitContent\x128\n" +
-	"\abackend\x18\x05 \x01(\x0e2\x1e.powermanage.v1.ServiceBackendR\abackend\"\x9f\x01\n" +
+	"\funit_content\x18\x04 \x01(\tR\vunitContent\"\x9f\x01\n" +
 	"\n" +
 	"FileParams\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
@@ -3863,15 +3485,14 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"complexity\x18\x03 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\n" +
 	"complexity\x124\n" +
 	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
-	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xca\x03\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\x8d\x03\n" +
 	"\x10EncryptionParams\x12#\n" +
 	"\rpreshared_key\x18\x01 \x01(\tR\fpresharedKey\x124\n" +
 	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
 	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12_\n" +
 	"\x15device_bound_key_type\x18\x04 \x01(\x0e2,.powermanage.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
 	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12c\n" +
-	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\x12;\n" +
-	"\abackend\x18\a \x01(\x0e2!.powermanage.v1.EncryptionBackendR\abackend\"\xf0\x02\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xb9\x02\n" +
 	"\n" +
 	"WifiParams\x12\x12\n" +
 	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x129\n" +
@@ -3886,8 +3507,7 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
 	"\bpriority\x18\n" +
-	" \x01(\x05R\bpriority\x125\n" +
-	"\abackend\x18\v \x01(\x0e2\x1b.powermanage.v1.WifiBackendR\abackend\"\xf8\x04\n" +
+	" \x01(\x05R\bpriority\"\xf8\x04\n" +
 	"\fActionResult\x125\n" +
 	"\taction_id\x18\x01 \x01(\v2\x18.powermanage.v1.ActionIdR\bactionId\x127\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1f.powermanage.v1.ExecutionStatusR\x06status\x12\x14\n" +
@@ -3942,30 +3562,7 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x0fACTION_TYPE_LPS\x10\x84\a\x12\x1b\n" +
 	"\x16ACTION_TYPE_ENCRYPTION\x10\xe8\a\x12\x15\n" +
 	"\x10ACTION_TYPE_WIFI\x10\xcc\b\x12\x1d\n" +
-	"\x18ACTION_TYPE_AGENT_UPDATE\x10\xb0\t*|\n" +
-	"\x0eServiceBackend\x12\x1b\n" +
-	"\x17SERVICE_BACKEND_SYSTEMD\x10\x00\x12\x1a\n" +
-	"\x16SERVICE_BACKEND_OPENRC\x10\x01\x12\x19\n" +
-	"\x15SERVICE_BACKEND_RUNIT\x10\x02\x12\x16\n" +
-	"\x12SERVICE_BACKEND_S6\x10\x03*\xa2\x01\n" +
-	"\x0fFirewallBackend\x12\x1d\n" +
-	"\x19FIREWALL_BACKEND_NFTABLES\x10\x00\x12\x1d\n" +
-	"\x19FIREWALL_BACKEND_IPTABLES\x10\x01\x12\x1e\n" +
-	"\x1aFIREWALL_BACKEND_FIREWALLD\x10\x02\x12\x18\n" +
-	"\x14FIREWALL_BACKEND_UFW\x10\x03\x12\x17\n" +
-	"\x13FIREWALL_BACKEND_PF\x10\x04*{\n" +
-	"\n" +
-	"DnsBackend\x12\x18\n" +
-	"\x14DNS_BACKEND_RESOLVED\x10\x00\x12\x1a\n" +
-	"\x16DNS_BACKEND_RESOLVCONF\x10\x01\x12\x17\n" +
-	"\x13DNS_BACKEND_DNSMASQ\x10\x02\x12\x1e\n" +
-	"\x1aDNS_BACKEND_NETWORKMANAGER\x10\x03*\xda\x01\n" +
-	"\x14NetworkConfigBackend\x12)\n" +
-	"%NETWORK_CONFIG_BACKEND_NETWORKMANAGER\x10\x00\x12+\n" +
-	"'NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD\x10\x01\x12\"\n" +
-	"\x1eNETWORK_CONFIG_BACKEND_NETPLAN\x10\x02\x12!\n" +
-	"\x1dNETWORK_CONFIG_BACKEND_DHCPCD\x10\x03\x12#\n" +
-	"\x1fNETWORK_CONFIG_BACKEND_IFUPDOWN\x10\x04*\x98\x01\n" +
+	"\x18ACTION_TYPE_AGENT_UPDATE\x10\xb0\t*\x98\x01\n" +
 	"\x10ServiceUnitState\x12\"\n" +
 	"\x1eSERVICE_UNIT_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aSERVICE_UNIT_STATE_STARTED\x10\x01\x12\x1e\n" +
@@ -3984,11 +3581,7 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\x15LpsPasswordComplexity\x12'\n" +
 	"#LPS_PASSWORD_COMPLEXITY_UNSPECIFIED\x10\x00\x12(\n" +
 	"$LPS_PASSWORD_COMPLEXITY_ALPHANUMERIC\x10\x01\x12#\n" +
-	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02*i\n" +
-	"\x11EncryptionBackend\x12\x1b\n" +
-	"\x17ENCRYPTION_BACKEND_LUKS\x10\x00\x12\x1b\n" +
-	"\x17ENCRYPTION_BACKEND_GELI\x10\x01\x12\x1a\n" +
-	"\x16ENCRYPTION_BACKEND_CGD\x10\x02*\xa9\x01\n" +
+	"\x1fLPS_PASSWORD_COMPLEXITY_COMPLEX\x10\x02*\xa9\x01\n" +
 	"\x1cEncryptionDeviceBoundKeyType\x12)\n" +
 	"%ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE\x10\x00\x12(\n" +
 	"$ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM\x10\x01\x124\n" +
@@ -3996,12 +3589,7 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\fWifiAuthType\x12\x1e\n" +
 	"\x1aWIFI_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12WIFI_AUTH_TYPE_PSK\x10\x01\x12\x1a\n" +
-	"\x16WIFI_AUTH_TYPE_EAP_TLS\x10\x02*\x7f\n" +
-	"\vWifiBackend\x12\x1f\n" +
-	"\x1bWIFI_BACKEND_NETWORKMANAGER\x10\x00\x12\x18\n" +
-	"\x14WIFI_BACKEND_CONNMAN\x10\x01\x12\x1f\n" +
-	"\x1bWIFI_BACKEND_WPA_SUPPLICANT\x10\x02\x12\x14\n" +
-	"\x10WIFI_BACKEND_IWD\x10\x03BLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x16WIFI_AUTH_TYPE_EAP_TLS\x10\x02BLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
 	file_powermanage_v1_actions_proto_rawDescOnce sync.Once
@@ -4015,109 +3603,100 @@ func file_powermanage_v1_actions_proto_rawDescGZIP() []byte {
 	return file_powermanage_v1_actions_proto_rawDescData
 }
 
-var file_powermanage_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
+var file_powermanage_v1_actions_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_powermanage_v1_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_powermanage_v1_actions_proto_goTypes = []any{
 	(ActionType)(0),                   // 0: powermanage.v1.ActionType
-	(ServiceBackend)(0),               // 1: powermanage.v1.ServiceBackend
-	(FirewallBackend)(0),              // 2: powermanage.v1.FirewallBackend
-	(DnsBackend)(0),                   // 3: powermanage.v1.DnsBackend
-	(NetworkConfigBackend)(0),         // 4: powermanage.v1.NetworkConfigBackend
-	(ServiceUnitState)(0),             // 5: powermanage.v1.ServiceUnitState
-	(AdminAccessLevel)(0),             // 6: powermanage.v1.AdminAccessLevel
-	(PrivilegeBackend)(0),             // 7: powermanage.v1.PrivilegeBackend
-	(LpsPasswordComplexity)(0),        // 8: powermanage.v1.LpsPasswordComplexity
-	(EncryptionBackend)(0),            // 9: powermanage.v1.EncryptionBackend
-	(EncryptionDeviceBoundKeyType)(0), // 10: powermanage.v1.EncryptionDeviceBoundKeyType
-	(WifiAuthType)(0),                 // 11: powermanage.v1.WifiAuthType
-	(WifiBackend)(0),                  // 12: powermanage.v1.WifiBackend
-	(*Action)(nil),                    // 13: powermanage.v1.Action
-	(*ActionSchedule)(nil),            // 14: powermanage.v1.ActionSchedule
-	(*PackageParams)(nil),             // 15: powermanage.v1.PackageParams
-	(*AppInstallParams)(nil),          // 16: powermanage.v1.AppInstallParams
-	(*ShellParams)(nil),               // 17: powermanage.v1.ShellParams
-	(*ServiceParams)(nil),             // 18: powermanage.v1.ServiceParams
-	(*FileParams)(nil),                // 19: powermanage.v1.FileParams
-	(*DirectoryParams)(nil),           // 20: powermanage.v1.DirectoryParams
-	(*UpdateParams)(nil),              // 21: powermanage.v1.UpdateParams
-	(*FlatpakParams)(nil),             // 22: powermanage.v1.FlatpakParams
-	(*RepositoryParams)(nil),          // 23: powermanage.v1.RepositoryParams
-	(*AptRepository)(nil),             // 24: powermanage.v1.AptRepository
-	(*DnfRepository)(nil),             // 25: powermanage.v1.DnfRepository
-	(*PacmanRepository)(nil),          // 26: powermanage.v1.PacmanRepository
-	(*ZypperRepository)(nil),          // 27: powermanage.v1.ZypperRepository
-	(*UserParams)(nil),                // 28: powermanage.v1.UserParams
-	(*GroupParams)(nil),               // 29: powermanage.v1.GroupParams
-	(*SshParams)(nil),                 // 30: powermanage.v1.SshParams
-	(*SshdDirective)(nil),             // 31: powermanage.v1.SshdDirective
-	(*SshdParams)(nil),                // 32: powermanage.v1.SshdParams
-	(*AdminPolicyParams)(nil),         // 33: powermanage.v1.AdminPolicyParams
-	(*LpsParams)(nil),                 // 34: powermanage.v1.LpsParams
-	(*EncryptionParams)(nil),          // 35: powermanage.v1.EncryptionParams
-	(*WifiParams)(nil),                // 36: powermanage.v1.WifiParams
-	(*ActionResult)(nil),              // 37: powermanage.v1.ActionResult
-	(*AgentUpdateArch)(nil),           // 38: powermanage.v1.AgentUpdateArch
-	(*AgentUpdateParams)(nil),         // 39: powermanage.v1.AgentUpdateParams
-	nil,                               // 40: powermanage.v1.ShellParams.EnvironmentEntry
-	nil,                               // 41: powermanage.v1.ActionResult.MetadataEntry
-	(*ActionId)(nil),                  // 42: powermanage.v1.ActionId
-	(DesiredState)(0),                 // 43: powermanage.v1.DesiredState
-	(ExecutionStatus)(0),              // 44: powermanage.v1.ExecutionStatus
-	(*CommandOutput)(nil),             // 45: powermanage.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil),     // 46: google.protobuf.Timestamp
+	(ServiceUnitState)(0),             // 1: powermanage.v1.ServiceUnitState
+	(AdminAccessLevel)(0),             // 2: powermanage.v1.AdminAccessLevel
+	(PrivilegeBackend)(0),             // 3: powermanage.v1.PrivilegeBackend
+	(LpsPasswordComplexity)(0),        // 4: powermanage.v1.LpsPasswordComplexity
+	(EncryptionDeviceBoundKeyType)(0), // 5: powermanage.v1.EncryptionDeviceBoundKeyType
+	(WifiAuthType)(0),                 // 6: powermanage.v1.WifiAuthType
+	(*Action)(nil),                    // 7: powermanage.v1.Action
+	(*ActionSchedule)(nil),            // 8: powermanage.v1.ActionSchedule
+	(*PackageParams)(nil),             // 9: powermanage.v1.PackageParams
+	(*AppInstallParams)(nil),          // 10: powermanage.v1.AppInstallParams
+	(*ShellParams)(nil),               // 11: powermanage.v1.ShellParams
+	(*ServiceParams)(nil),             // 12: powermanage.v1.ServiceParams
+	(*FileParams)(nil),                // 13: powermanage.v1.FileParams
+	(*DirectoryParams)(nil),           // 14: powermanage.v1.DirectoryParams
+	(*UpdateParams)(nil),              // 15: powermanage.v1.UpdateParams
+	(*FlatpakParams)(nil),             // 16: powermanage.v1.FlatpakParams
+	(*RepositoryParams)(nil),          // 17: powermanage.v1.RepositoryParams
+	(*AptRepository)(nil),             // 18: powermanage.v1.AptRepository
+	(*DnfRepository)(nil),             // 19: powermanage.v1.DnfRepository
+	(*PacmanRepository)(nil),          // 20: powermanage.v1.PacmanRepository
+	(*ZypperRepository)(nil),          // 21: powermanage.v1.ZypperRepository
+	(*UserParams)(nil),                // 22: powermanage.v1.UserParams
+	(*GroupParams)(nil),               // 23: powermanage.v1.GroupParams
+	(*SshParams)(nil),                 // 24: powermanage.v1.SshParams
+	(*SshdDirective)(nil),             // 25: powermanage.v1.SshdDirective
+	(*SshdParams)(nil),                // 26: powermanage.v1.SshdParams
+	(*AdminPolicyParams)(nil),         // 27: powermanage.v1.AdminPolicyParams
+	(*LpsParams)(nil),                 // 28: powermanage.v1.LpsParams
+	(*EncryptionParams)(nil),          // 29: powermanage.v1.EncryptionParams
+	(*WifiParams)(nil),                // 30: powermanage.v1.WifiParams
+	(*ActionResult)(nil),              // 31: powermanage.v1.ActionResult
+	(*AgentUpdateArch)(nil),           // 32: powermanage.v1.AgentUpdateArch
+	(*AgentUpdateParams)(nil),         // 33: powermanage.v1.AgentUpdateParams
+	nil,                               // 34: powermanage.v1.ShellParams.EnvironmentEntry
+	nil,                               // 35: powermanage.v1.ActionResult.MetadataEntry
+	(*ActionId)(nil),                  // 36: powermanage.v1.ActionId
+	(DesiredState)(0),                 // 37: powermanage.v1.DesiredState
+	(ExecutionStatus)(0),              // 38: powermanage.v1.ExecutionStatus
+	(*CommandOutput)(nil),             // 39: powermanage.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil),     // 40: google.protobuf.Timestamp
 }
 var file_powermanage_v1_actions_proto_depIdxs = []int32{
-	42, // 0: powermanage.v1.Action.id:type_name -> powermanage.v1.ActionId
+	36, // 0: powermanage.v1.Action.id:type_name -> powermanage.v1.ActionId
 	0,  // 1: powermanage.v1.Action.type:type_name -> powermanage.v1.ActionType
-	43, // 2: powermanage.v1.Action.desired_state:type_name -> powermanage.v1.DesiredState
-	14, // 3: powermanage.v1.Action.schedule:type_name -> powermanage.v1.ActionSchedule
-	15, // 4: powermanage.v1.Action.package:type_name -> powermanage.v1.PackageParams
-	16, // 5: powermanage.v1.Action.app:type_name -> powermanage.v1.AppInstallParams
-	17, // 6: powermanage.v1.Action.shell:type_name -> powermanage.v1.ShellParams
-	18, // 7: powermanage.v1.Action.service:type_name -> powermanage.v1.ServiceParams
-	19, // 8: powermanage.v1.Action.file:type_name -> powermanage.v1.FileParams
-	21, // 9: powermanage.v1.Action.update:type_name -> powermanage.v1.UpdateParams
-	23, // 10: powermanage.v1.Action.repository:type_name -> powermanage.v1.RepositoryParams
-	22, // 11: powermanage.v1.Action.flatpak:type_name -> powermanage.v1.FlatpakParams
-	20, // 12: powermanage.v1.Action.directory:type_name -> powermanage.v1.DirectoryParams
-	28, // 13: powermanage.v1.Action.user:type_name -> powermanage.v1.UserParams
-	30, // 14: powermanage.v1.Action.ssh:type_name -> powermanage.v1.SshParams
-	32, // 15: powermanage.v1.Action.sshd:type_name -> powermanage.v1.SshdParams
-	33, // 16: powermanage.v1.Action.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	34, // 17: powermanage.v1.Action.lps:type_name -> powermanage.v1.LpsParams
-	29, // 18: powermanage.v1.Action.group:type_name -> powermanage.v1.GroupParams
-	35, // 19: powermanage.v1.Action.encryption:type_name -> powermanage.v1.EncryptionParams
-	36, // 20: powermanage.v1.Action.wifi:type_name -> powermanage.v1.WifiParams
-	39, // 21: powermanage.v1.Action.agent_update:type_name -> powermanage.v1.AgentUpdateParams
-	40, // 22: powermanage.v1.ShellParams.environment:type_name -> powermanage.v1.ShellParams.EnvironmentEntry
-	5,  // 23: powermanage.v1.ServiceParams.desired_state:type_name -> powermanage.v1.ServiceUnitState
-	1,  // 24: powermanage.v1.ServiceParams.backend:type_name -> powermanage.v1.ServiceBackend
-	24, // 25: powermanage.v1.RepositoryParams.apt:type_name -> powermanage.v1.AptRepository
-	25, // 26: powermanage.v1.RepositoryParams.dnf:type_name -> powermanage.v1.DnfRepository
-	26, // 27: powermanage.v1.RepositoryParams.pacman:type_name -> powermanage.v1.PacmanRepository
-	27, // 28: powermanage.v1.RepositoryParams.zypper:type_name -> powermanage.v1.ZypperRepository
-	31, // 29: powermanage.v1.SshdParams.directives:type_name -> powermanage.v1.SshdDirective
-	6,  // 30: powermanage.v1.AdminPolicyParams.access_level:type_name -> powermanage.v1.AdminAccessLevel
-	7,  // 31: powermanage.v1.AdminPolicyParams.backend:type_name -> powermanage.v1.PrivilegeBackend
-	8,  // 32: powermanage.v1.LpsParams.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	10, // 33: powermanage.v1.EncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
-	8,  // 34: powermanage.v1.EncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	9,  // 35: powermanage.v1.EncryptionParams.backend:type_name -> powermanage.v1.EncryptionBackend
-	11, // 36: powermanage.v1.WifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
-	12, // 37: powermanage.v1.WifiParams.backend:type_name -> powermanage.v1.WifiBackend
-	42, // 38: powermanage.v1.ActionResult.action_id:type_name -> powermanage.v1.ActionId
-	44, // 39: powermanage.v1.ActionResult.status:type_name -> powermanage.v1.ExecutionStatus
-	45, // 40: powermanage.v1.ActionResult.output:type_name -> powermanage.v1.CommandOutput
-	46, // 41: powermanage.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	41, // 42: powermanage.v1.ActionResult.metadata:type_name -> powermanage.v1.ActionResult.MetadataEntry
-	45, // 43: powermanage.v1.ActionResult.detection_output:type_name -> powermanage.v1.CommandOutput
-	38, // 44: powermanage.v1.AgentUpdateParams.amd64:type_name -> powermanage.v1.AgentUpdateArch
-	38, // 45: powermanage.v1.AgentUpdateParams.arm64:type_name -> powermanage.v1.AgentUpdateArch
-	46, // [46:46] is the sub-list for method output_type
-	46, // [46:46] is the sub-list for method input_type
-	46, // [46:46] is the sub-list for extension type_name
-	46, // [46:46] is the sub-list for extension extendee
-	0,  // [0:46] is the sub-list for field type_name
+	37, // 2: powermanage.v1.Action.desired_state:type_name -> powermanage.v1.DesiredState
+	8,  // 3: powermanage.v1.Action.schedule:type_name -> powermanage.v1.ActionSchedule
+	9,  // 4: powermanage.v1.Action.package:type_name -> powermanage.v1.PackageParams
+	10, // 5: powermanage.v1.Action.app:type_name -> powermanage.v1.AppInstallParams
+	11, // 6: powermanage.v1.Action.shell:type_name -> powermanage.v1.ShellParams
+	12, // 7: powermanage.v1.Action.service:type_name -> powermanage.v1.ServiceParams
+	13, // 8: powermanage.v1.Action.file:type_name -> powermanage.v1.FileParams
+	15, // 9: powermanage.v1.Action.update:type_name -> powermanage.v1.UpdateParams
+	17, // 10: powermanage.v1.Action.repository:type_name -> powermanage.v1.RepositoryParams
+	16, // 11: powermanage.v1.Action.flatpak:type_name -> powermanage.v1.FlatpakParams
+	14, // 12: powermanage.v1.Action.directory:type_name -> powermanage.v1.DirectoryParams
+	22, // 13: powermanage.v1.Action.user:type_name -> powermanage.v1.UserParams
+	24, // 14: powermanage.v1.Action.ssh:type_name -> powermanage.v1.SshParams
+	26, // 15: powermanage.v1.Action.sshd:type_name -> powermanage.v1.SshdParams
+	27, // 16: powermanage.v1.Action.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	28, // 17: powermanage.v1.Action.lps:type_name -> powermanage.v1.LpsParams
+	23, // 18: powermanage.v1.Action.group:type_name -> powermanage.v1.GroupParams
+	29, // 19: powermanage.v1.Action.encryption:type_name -> powermanage.v1.EncryptionParams
+	30, // 20: powermanage.v1.Action.wifi:type_name -> powermanage.v1.WifiParams
+	33, // 21: powermanage.v1.Action.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	34, // 22: powermanage.v1.ShellParams.environment:type_name -> powermanage.v1.ShellParams.EnvironmentEntry
+	1,  // 23: powermanage.v1.ServiceParams.desired_state:type_name -> powermanage.v1.ServiceUnitState
+	18, // 24: powermanage.v1.RepositoryParams.apt:type_name -> powermanage.v1.AptRepository
+	19, // 25: powermanage.v1.RepositoryParams.dnf:type_name -> powermanage.v1.DnfRepository
+	20, // 26: powermanage.v1.RepositoryParams.pacman:type_name -> powermanage.v1.PacmanRepository
+	21, // 27: powermanage.v1.RepositoryParams.zypper:type_name -> powermanage.v1.ZypperRepository
+	25, // 28: powermanage.v1.SshdParams.directives:type_name -> powermanage.v1.SshdDirective
+	2,  // 29: powermanage.v1.AdminPolicyParams.access_level:type_name -> powermanage.v1.AdminAccessLevel
+	3,  // 30: powermanage.v1.AdminPolicyParams.backend:type_name -> powermanage.v1.PrivilegeBackend
+	4,  // 31: powermanage.v1.LpsParams.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	5,  // 32: powermanage.v1.EncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	4,  // 33: powermanage.v1.EncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	6,  // 34: powermanage.v1.WifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	36, // 35: powermanage.v1.ActionResult.action_id:type_name -> powermanage.v1.ActionId
+	38, // 36: powermanage.v1.ActionResult.status:type_name -> powermanage.v1.ExecutionStatus
+	39, // 37: powermanage.v1.ActionResult.output:type_name -> powermanage.v1.CommandOutput
+	40, // 38: powermanage.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	35, // 39: powermanage.v1.ActionResult.metadata:type_name -> powermanage.v1.ActionResult.MetadataEntry
+	39, // 40: powermanage.v1.ActionResult.detection_output:type_name -> powermanage.v1.CommandOutput
+	32, // 41: powermanage.v1.AgentUpdateParams.amd64:type_name -> powermanage.v1.AgentUpdateArch
+	32, // 42: powermanage.v1.AgentUpdateParams.arm64:type_name -> powermanage.v1.AgentUpdateArch
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_powermanage_v1_actions_proto_init() }
@@ -4151,7 +3730,7 @@ func file_powermanage_v1_actions_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_actions_proto_rawDesc), len(file_powermanage_v1_actions_proto_rawDesc)),
-			NumEnums:      13,
+			NumEnums:      7,
 			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,

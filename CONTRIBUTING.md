@@ -1,104 +1,83 @@
 # Contributing to the Power Manage SDK
 
-This SDK currently holds protocol definitions and shared libraries used by
-control, agent, and web. During consolidation the contract moves to its own
-monorepo module; the SDK remains the reusable mechanism layer. The sole system
-design authority is `../DESIGN_2026_07_31/00_TARGET_DESIGN.md`.
+The SDK contains the shared contract and reusable mechanism layer. The sole
+system-design authority is
+[`../DESIGN_2026_07_31/00_TARGET_DESIGN.md`](../DESIGN_2026_07_31/00_TARGET_DESIGN.md).
+Do not add compatibility shims, speculative protocol fields, or product policy
+that is absent from that design.
 
-## Before you start
+## Workflow
 
-- **Use an issue.** For anything beyond a typo, file an issue first. The issue is where the proto shape / API surface gets agreed before code is written — it's much cheaper to revise a comment thread than a merged PR that three other repos already depend on.
-- **Branch naming**: `<prefix>/issue-<number>-<short-description>`. Prefixes: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`, `test/`.
-- **Commit messages**: conventional-commit prefixes (`feat:`, `fix:`, `refactor:` …). GitHub's auto-generated release notes group by these prefixes.
+Use a focused branch and small commits. For a behavior or contract change:
 
-## Workspace layout
+1. State the acceptance behavior in a test.
+2. Make the smallest implementation change that passes it.
+3. Regenerate checked-in bindings when protobuf changes.
+4. Verify the SDK and every local consumer affected by the change.
 
-```
-sdk/
-├── proto/pm/v1/       Source of truth for every RPC and message
-├── gen/               Generated Go + TypeScript code (do not edit)
-├── go/                Go libraries consumed by agent + server
-├── ts/                TypeScript libraries consumed by the web UI
-├── docs/              SDK concepts, capabilities, and contributor guidance
-└── Makefile           Proto generation (`make generate`)
-```
+Breaking contract changes are expected during pre-alpha consolidation. Change
+the SDK, server, agent, and web together instead of maintaining old and new
+paths in parallel.
 
-## Local development
+## Layout
+
+| Path | Purpose |
+|------|---------|
+| `proto/powermanage/v1/` | Protobuf source |
+| `gen/go/powermanage/v1/` | Generated Go bindings |
+| `gen/ts/powermanage/v1/` | Generated TypeScript bindings |
+| `client.go` | Agent stream client |
+| `crypto/`, `sys/`, `pkg/` | Reusable Go mechanisms |
+| `ts/` | Framework-independent browser SDK |
+| `docs/` | Mechanism and contributor documentation |
+
+## Contract changes
+
+- Never hand-edit `gen/`.
+- Do not reuse removed field numbers.
+- Keep `AgentService` to its single `Stream` method.
+- Do not add local password/TOTP, Gateway, CRL-distribution, application-frame
+  signing, or parallel agent transport paths.
+- Mark every secret protobuf field with `debug_redact` and carry it as a
+  `SealedValue`.
+- Do not expose an implementation selector until more than one implementation
+  actually exists and is supported end to end.
+- Update the exact current RPC golden only for an explicitly approved RPC
+  change. Keep predecessor deletion evidence separate.
+
+After editing protobuf:
 
 ```bash
-# Regenerate proto bindings after editing any .proto file
+npm ci
 make generate
-
-# Go build + vet + test
-go build ./...
-go vet ./...
-go test ./...
-
-# TypeScript
-cd ts && npm install && npm run build
 ```
 
-Agent and server repos consume the SDK via a `replace ../sdk` directive in dev. That means any change you make here is picked up by `go build` in those checkouts immediately — if you break the Go API, their builds break too. Check both repos compile against your branch before pushing.
+Commit the source and generated outputs together.
 
-## Proto changes
+## Go and TypeScript
 
-The proto tree is the public wire format. Everything about a proto change is high-consequence.
+- Accept `context.Context` first for I/O and subprocess work.
+- Return wrapped, matchable errors; do not swallow failures or panic in library
+  code.
+- Validate deserialized and caller-controlled data before use.
+- Keep secret values out of arguments, logs, errors, and formatted protobufs.
+- Keep `ts/` framework-independent; Svelte-specific behavior belongs in web.
+- Prefer concrete standard-library or platform mechanisms over new abstraction
+  layers and dependencies.
 
-- **Never reuse field numbers.** Even if a field is removed, don't reuse its wire number.
-- **Renames are breaking changes.** Wire numbers are the API; names are the code binding. If a rename is necessary, it's a coordinated breaking change across SDK + agent + server + web in one window, not a deprecation dance. If you can't commit to landing all four in the same release, don't start the rename.
-- **Default values matter.** An unset enum or bool is the zero value, so always pick the zero case to be "most common / safest." Agents built before a new enum value was added will silently see field=0 — make sure that keeps working.
-- **After edits, regenerate** with `make generate` and commit both the proto and the `gen/` changes in the same commit. CI will reject mismatched state.
+## Verification
 
-## Adding a pluggable capability
+The canonical gate is:
 
-If the capability you're adding can be delivered by more than one tool on different distros (think sudo vs doas, systemd vs OpenRC, iptables vs nftables), follow the **backend pattern** documented in [`docs/backend-pattern.md`](docs/backend-pattern.md). Every pluggable `sys/*` package uses that exact shape — copy-paste from an existing one (e.g., `sys/service`) rather than improvising.
+```bash
+./scripts/verify.sh
+```
 
-Short version of what "following the pattern" means:
+It runs the standalone SDK build with `GOWORK=off`, plus static analysis, tests,
+Buf checks, docref, generated-code drift, and TypeScript checks. For a coordinated
+local contract change, also run the server and agent suites from the workspace
+root and the web typecheck/tests against `../sdk/gen/ts`.
 
-1. A `Backend` enum in the Go package + a matching enum in the proto file.
-2. An `atomic.Int32`-backed setter that **ignores unknown values** (so a zero-valued proto enum can't regress a configured agent).
-3. An `ErrBackendNotSupported` sentinel for operations on unimplemented backends.
-4. A Stringer for log output.
-5. Per-operation dispatch (`switch CurrentBackend() {}`) in the public API; backend-specific helpers live in sibling files with the backend name appended.
-6. Tests covering default, unknown-value guard, sentinel error, and Stringer.
-
-See the pattern doc for the full template and the list of packages already using it.
-
-## Go style
-
-- Use `slog` for logging; never `log` or `fmt.Printf` in library code.
-- Return wrapped errors (`fmt.Errorf("context: %w", err)`) — callers should be able to `errors.Is` / `errors.As` against sentinels.
-- Don't silently ignore errors. At minimum log at `slog.Warn` with enough context to debug.
-- No `panic` in library code. Return an error.
-- `context.Context` as the first parameter for any function that performs I/O or subprocess execution.
-- Privileged operations go through `sys/exec.Privileged` — not direct `os/exec`. The only exceptions are at-startup setup code that runs as root (e.g., `internal/setup` in the agent) and stdlib utility like `exec.LookPath` that doesn't actually execute anything.
-
-## TypeScript style
-
-- `sdk/ts/` is framework-agnostic. Don't import SvelteKit, React, or anything UI-specific here. The web repo wraps these utilities with UI-specific concerns.
-- Error shapes mirror the Go error-code system (`common.proto` `ErrorDetail`). `getErrorCode(error)` extracts the structured code; downstream consumers map it to i18n keys.
-
-## Testing
-
-- `_test.go` files are conventional unit tests — keep them fast (<1s) and hermetic.
-- Integration tests go behind the `integration` build tag and live in files named `*_test.go` with `//go:build integration` at the top. These talk to real subsystems (`systemctl`, `cryptsetup`, testcontainers' Postgres) and run in CI as a separate job.
-
-## Release coordination
-
-The SDK is usually released first; agent / server / web bump their SDK dependency in a follow-up PR. When a breaking SDK change lands:
-
-1. Merge the SDK PR into `main` (this breaks downstream CI on every non-same-named branch).
-2. Open and merge the corresponding downstream PRs within the same window.
-3. Tag the SDK if the change is part of a versioned release. Patch releases (`vYYYY.MM.XX`) tag only the changed repo; major/minor (`vYYYY.MM`) tag all four repos.
-
-Keep the PR's body specific about which downstream repos need migration so reviewers can check that coordination happened.
-
-## Anti-patterns
-
-Catalogued in [`docs/backend-pattern.md`](docs/backend-pattern.md#anti-patterns--things-not-to-do); most apply beyond just backend packages. The headline ones:
-
-- Don't runtime-detect which tool is installed. Explicit beats clever.
-- Don't build generic registries when seven copies of the same 60-line file are clearer.
-- Don't use booleans where an enum fits.
-- Don't rename released enum values.
-- Don't swallow errors.
+See
+[`docs/04-contributing/01-release-coordination.md`](docs/04-contributing/01-release-coordination.md)
+for publishing the SDK commit before updating downstream module pins.

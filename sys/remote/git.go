@@ -36,9 +36,8 @@ func NewGit(cfg GitConfig) (Source, error) {
 	return &gitSource{cfg: cfg, backend: backend}, nil
 }
 
-// Fetch is wired in Slice 10; Slice 9 just locks the dispatch path —
-// validateDestination then backend.CloneOrSync. The backend stub
-// returns "not implemented" until Slice 10 fills it in.
+// Fetch validates the destination, skips unchanged revisions, synchronizes the
+// checkout through the selected backend, and applies requested ownership.
 func (g *gitSource) Fetch(ctx context.Context, dest string) (Result, error) {
 	if err := validateDestination(dest); err != nil {
 		return Result{}, err

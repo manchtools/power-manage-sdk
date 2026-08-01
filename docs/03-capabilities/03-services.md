@@ -37,9 +37,7 @@ the caller decides what to do, the SDK never guesses.
 
 <!-- docref: begin src=sys/service/service.go#New:91064f53 -->
 `New` is fail-closed: only the implemented `Systemd` backend is accepted, and a
-nil Runner is rejected, before a Manager is returned. The OpenRC/Runit/S6
-scaffolds were deliberately removed rather than shipped half-working, so an
-unimplemented backend is an explicit error, not a silent no-op.
+nil Runner is rejected before a Manager is returned.
 <!-- docref: end -->
 
 ## Query unit state

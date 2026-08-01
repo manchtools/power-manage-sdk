@@ -55,7 +55,7 @@ enum ActionType {
   ACTION_TYPE_LPS = 900; // Local Password Solution
 
   // Encryption management (1000-1099)
-  ACTION_TYPE_ENCRYPTION = 1000; // Disk encryption management (LUKS, GELI, etc.)
+  ACTION_TYPE_ENCRYPTION = 1000; // LUKS disk encryption management
 
   // Network management (1100-1199)
   ACTION_TYPE_WIFI = 1100; // WiFi connection management
@@ -192,54 +192,8 @@ message ShellParams {
   bool is_compliance = 7;
 }
 
-// ServiceBackend selects which init/service manager the agent targets.
-// The default (SYSTEMD) matches most mainstream distros. OPENRC/RUNIT/S6
-// slots exist so adding those implementations later does not require a
-// second proto rename. Agents set their active backend via
-// sys/service.SetServiceBackend at startup.
-enum ServiceBackend {
-  SERVICE_BACKEND_SYSTEMD = 0; // default
-  SERVICE_BACKEND_OPENRC = 1;
-  SERVICE_BACKEND_RUNIT = 2;
-  SERVICE_BACKEND_S6 = 3;
-}
-
-// FirewallBackend selects which packet-filter framework the agent
-// targets when a future ACTION_TYPE_FIREWALL lands. Defined here up
-// front so the wire format doesn't churn when the feature ships.
-enum FirewallBackend {
-  FIREWALL_BACKEND_NFTABLES = 0; // default — Linux nftables (modern)
-  FIREWALL_BACKEND_IPTABLES = 1; // Linux iptables (legacy)
-  FIREWALL_BACKEND_FIREWALLD = 2; // Red Hat firewalld wrapper
-  FIREWALL_BACKEND_UFW = 3; // Debian/Ubuntu ufw wrapper
-  FIREWALL_BACKEND_PF = 4; // BSD pf
-}
-
-// DnsBackend selects which resolver framework the agent targets when a
-// future ACTION_TYPE_DNS lands. Forward-compat only.
-enum DnsBackend {
-  DNS_BACKEND_RESOLVED = 0; // default — systemd-resolved / resolvectl
-  DNS_BACKEND_RESOLVCONF = 1; // plain /etc/resolv.conf (via resolvconf or direct)
-  DNS_BACKEND_DNSMASQ = 2; // local dnsmasq
-  DNS_BACKEND_NETWORKMANAGER = 3; // NetworkManager-managed DNS
-}
-
-// NetworkConfigBackend selects which tool manages interface IP,
-// routing, and DHCP configuration when a future ACTION_TYPE_NETWORK
-// _CONFIG lands. Distinct from WifiBackend — a device can use one
-// tool for connection profiles and another for IP config.
-enum NetworkConfigBackend {
-  NETWORK_CONFIG_BACKEND_NETWORKMANAGER = 0; // default — nmcli
-  NETWORK_CONFIG_BACKEND_SYSTEMD_NETWORKD = 1; // /etc/systemd/network/*.network
-  NETWORK_CONFIG_BACKEND_NETPLAN = 2; // /etc/netplan/*.yaml
-  NETWORK_CONFIG_BACKEND_DHCPCD = 3; // /etc/dhcpcd.conf (Alpine, OpenBSD)
-  NETWORK_CONFIG_BACKEND_IFUPDOWN = 4; // /etc/network/interfaces (classic Debian)
-}
-
-// ServiceParams configures a service unit. unit_content is the verbatim
-// unit file; the agent writes it to the location expected by the chosen
-// backend (for SYSTEMD: /etc/systemd/system/<unit_name>.service; for
-// OPENRC: /etc/init.d/<unit_name>; etc.).
+// ServiceParams configures a systemd unit. unit_content is the verbatim unit
+// file written under /etc/systemd/system.
 message ServiceParams {
   // @gotags: validate:"required,min=1,max=255"
   string unit_name = 1;
@@ -249,10 +203,6 @@ message ServiceParams {
   bool enable = 3;
   // @gotags: validate:"omitempty,max=65536"
   string unit_content = 4;
-  // Service manager backend. Unset means SERVICE_BACKEND_SYSTEMD, which is
-  // what most managed Linux runs.
-  // @gotags: validate:"omitempty"
-  ServiceBackend backend = 5;
 }
 
 enum ServiceUnitState {
@@ -693,32 +643,16 @@ message LpsParams {
   int32 grace_period_hours = 5;
 }
 
-// EncryptionBackend selects the disk-encryption implementation the
-// agent targets. LUKS covers virtually all managed Linux today; the
-// other slots exist so implementations for other platforms can land
-// later without another proto rename.
-enum EncryptionBackend {
-  ENCRYPTION_BACKEND_LUKS = 0; // default — cryptsetup/LUKS2
-  ENCRYPTION_BACKEND_GELI = 1; // FreeBSD GELI
-  ENCRYPTION_BACKEND_CGD = 2; // NetBSD CGD
-}
-
-// EncryptionDeviceBoundKeyType determines what goes in the "device-bound"
-// slot (e.g. LUKS slot 7). Backends without an equivalent concept
-// should treat non-NONE values as best-effort and report whichever
-// subset of modes they support.
+// EncryptionDeviceBoundKeyType determines what goes in LUKS slot 7.
 enum EncryptionDeviceBoundKeyType {
   ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE = 0; // Managed passphrase only, no device-bound key
   ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM = 1; // TPM2 auto-unlock at boot
   ENCRYPTION_DEVICE_BOUND_KEY_TYPE_USER_PASSPHRASE = 2; // User-defined passphrase via CLI
 }
 
-// EncryptionParams configures disk encryption management. The agent
-// auto-detects the primary encrypted volume on the device (format
-// depends on the chosen backend). A managed passphrase is generated,
-// stored on the server, and rotated on schedule. Optionally, a
-// device-bound key (TPM or user passphrase) can be enrolled in the
-// backend's designated slot.
+// EncryptionParams configures LUKS disk encryption management. The agent
+// auto-detects the primary encrypted volume, generates and rotates a managed
+// passphrase, and can enroll a TPM or user passphrase in the device-bound slot.
 message EncryptionParams {
   // Pre-shared key for initial ownership (only needed for first run)
   // @gotags: validate:"required,min=1,max=256"
@@ -738,9 +672,6 @@ message EncryptionParams {
   // Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty"
   LpsPasswordComplexity user_passphrase_complexity = 6;
-  // Encryption backend. Defaults to ENCRYPTION_BACKEND_LUKS.
-  // @gotags: validate:"omitempty"
-  EncryptionBackend backend = 7;
 }
 
 // WiFi authentication type.
@@ -750,20 +681,8 @@ enum WifiAuthType {
   WIFI_AUTH_TYPE_EAP_TLS = 2; // 802.1X with client certificate
 }
 
-// WifiBackend selects which WiFi-management tool the agent targets.
-// NetworkManager covers most mainstream distros; the other slots exist
-// so implementations for connman- or wpa_supplicant-only systems can
-// land later without another proto rename.
-enum WifiBackend {
-  WIFI_BACKEND_NETWORKMANAGER = 0; // default — nmcli
-  WIFI_BACKEND_CONNMAN = 1; // connmanctl
-  WIFI_BACKEND_WPA_SUPPLICANT = 2; // direct wpa_supplicant.conf management
-  WIFI_BACKEND_IWD = 3; // iwctl (systemd / Arch / Alpine default on some installs)
-}
-
-// WifiParams configures WiFi connection management.
-// Each action creates a connection profile named pm-wifi-{actionId} in
-// the chosen backend's native format. Supports PSK (password) and
+// WifiParams configures NetworkManager WiFi connection management.
+// Each action creates a connection profile named pm-wifi-{actionId}. Supports PSK (password) and
 // EAP-TLS (certificate) authentication.
 message WifiParams {
   // Network name (SSID)
@@ -795,10 +714,6 @@ message WifiParams {
   // Selection priority when multiple known networks are visible (higher wins).
   // @gotags: validate:"omitempty,gte=-1,lte=999"
   int32 priority = 10;
-
-  // WiFi backend. Defaults to WIFI_BACKEND_NETWORKMANAGER.
-  // @gotags: validate:"omitempty"
-  WifiBackend backend = 11;
 }
 
 // ============================================================================

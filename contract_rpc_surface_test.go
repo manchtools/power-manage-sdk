@@ -455,6 +455,39 @@ func TestContract_AgentServiceIsOneStream(t *testing.T) {
 	}
 }
 
+// Design §9–§10: single-implementation details are not public selectors.
+// Speculative backend fields become selectable product surface even when no
+// runtime implements the alternatives.
+func TestContract_HasNoSpeculativeBackendSelectors(t *testing.T) {
+	msgs := contractMessages(t)
+	for _, name := range []protoreflect.Name{"ServiceParams", "EncryptionParams", "WifiParams"} {
+		message, ok := msgs[name]
+		if !ok {
+			t.Errorf("message %s is absent", name)
+			continue
+		}
+		if field := message.Fields().ByName("backend"); field != nil {
+			t.Errorf("%s.backend still ships as a speculative selector", name)
+		}
+	}
+	for _, enumName := range []protoreflect.Name{
+		"ServiceBackend", "EncryptionBackend", "WifiBackend",
+		"FirewallBackend", "DnsBackend", "NetworkConfigBackend",
+	} {
+		found := false
+		protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+			if string(fd.Package()) == contractPackage && fd.Enums().ByName(enumName) != nil {
+				found = true
+				return false
+			}
+			return true
+		})
+		if found {
+			t.Errorf("enum %s still ships without multiple implemented backends", enumName)
+		}
+	}
+}
+
 // Design §8: every field classified secret ships sealed, and no application
 // frame carries a signature or the relay-era device-binding guard. Both are
 // registry sweeps rather than lists — a NEW secret or a NEW signature field

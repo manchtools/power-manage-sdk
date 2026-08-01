@@ -6,9 +6,8 @@ description: How SDK changes propagate to the agent and server without breaking 
 
 # Release coordination
 
-This document explains how SDK changes propagate to downstream repos
-(agent, server, web) without the old "break everything at merge time"
-failure mode.
+This document explains how SDK changes propagate to the agent, server, and web
+repositories.
 
 ## The problem it solves
 
@@ -17,14 +16,6 @@ move freely and downstream bumps are explicit. The moment a breaking SDK
 change lands on main, open agent/server PRs keep compiling against their
 pinned SDK version until their author opens an explicit bump PR — main
 never breaks a PR that hasn't changed.
-
-> **History.** The module used to be named
-> `github.com/manchtools/power-manage/sdk` (packages under `go/`) while
-> the repo URL is `github.com/manchtools/power-manage-sdk`, so every
-> consumer carried a `replace` mapping the import path to the repo URL.
-> The module was renamed to `github.com/manchtools/power-manage-sdk`
-> (matching the repo, packages at the module root), so the `replace` is
-> gone — consumers `require` the module directly.
 
 ## How it works now
 
@@ -82,10 +73,11 @@ cat > go.work <<'EOF'
 go 1.25
 
 use (
-    ./sdk
     ./agent
     ./server
 )
+
+replace github.com/manchtools/power-manage-sdk => ./sdk
 EOF
 ```
 
