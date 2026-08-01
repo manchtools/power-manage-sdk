@@ -1496,8 +1496,8 @@ func (x *ManifestOccurrence) GetOnFailure() OnFailure {
 //
 // Assigning an Action creates a singleton manifest; assigning an ActionSet
 // creates one manifest; assigning a Definition creates one manifest per
-// contained ActionSet, because sets keep independent schedules and failure
-// policies.
+// contained ActionSet. Definition compilation overrides each emitted manifest's
+// schedule without rewriting its ActionSet; set failure policies remain independent.
 type Manifest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"

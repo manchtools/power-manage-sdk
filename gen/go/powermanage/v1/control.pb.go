@@ -6879,10 +6879,9 @@ type Definition struct {
 	CreatedAt   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	CreatedBy   string                 `protobuf:"bytes,6,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
 	UpdatedAt   *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	// Schedule that triggers every action in every member set when fired. Required.
-	// The definition's schedule overrides each member set's schedule and each
-	// member action's own schedule — they never fire on their own when assigned
-	// via this definition.
+	// Schedule used by manifests compiled from this definition. Required.
+	// The override exists only on those emitted manifests: it does not rewrite
+	// member ActionSets, whose schedules still apply when assigned independently.
 	// @gotags: validate:"required"
 	Schedule      *ActionSchedule `protobuf:"bytes,8,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields
@@ -7047,8 +7046,8 @@ type CreateDefinitionRequest struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"omitempty,max=1024"
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty" validate:"omitempty,max=1024"`
-	// Schedule that triggers every action in every member set when fired.
-	// Required: members never fire on their own when assigned via this definition.
+	// Schedule used by manifests compiled from this definition. Required. It
+	// overrides their manifest schedules without rewriting member ActionSets.
 	// @gotags: validate:"required"
 	Schedule      *ActionSchedule `protobuf:"bytes,3,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields
@@ -7473,7 +7472,8 @@ type UpdateDefinitionScheduleRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"required,ulid"
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" validate:"required,ulid"`
-	// Replacement schedule for the definition. Required.
+	// Replacement schedule for manifests compiled from the definition. Required;
+	// member ActionSet schedules are not rewritten.
 	// @gotags: validate:"required"
 	Schedule      *ActionSchedule `protobuf:"bytes,2,opt,name=schedule,proto3" json:"schedule,omitempty" validate:"required"`
 	unknownFields protoimpl.UnknownFields

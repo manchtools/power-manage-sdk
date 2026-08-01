@@ -3396,10 +3396,9 @@ export type Definition = Message<"powermanage.v1.Definition"> & {
   updatedAt?: Timestamp;
 
   /**
-   * Schedule that triggers every action in every member set when fired. Required.
-   * The definition's schedule overrides each member set's schedule and each
-   * member action's own schedule — they never fire on their own when assigned
-   * via this definition.
+   * Schedule used by manifests compiled from this definition. Required.
+   * The override exists only on those emitted manifests: it does not rewrite
+   * member ActionSets, whose schedules still apply when assigned independently.
    * @gotags: validate:"required"
    *
    * @generated from field: powermanage.v1.ActionSchedule schedule = 8;
@@ -3468,8 +3467,8 @@ export type CreateDefinitionRequest = Message<"powermanage.v1.CreateDefinitionRe
   description: string;
 
   /**
-   * Schedule that triggers every action in every member set when fired.
-   * Required: members never fire on their own when assigned via this definition.
+   * Schedule used by manifests compiled from this definition. Required. It
+   * overrides their manifest schedules without rewriting member ActionSets.
    * @gotags: validate:"required"
    *
    * @generated from field: powermanage.v1.ActionSchedule schedule = 3;
@@ -3659,7 +3658,8 @@ export type UpdateDefinitionScheduleRequest = Message<"powermanage.v1.UpdateDefi
   id: string;
 
   /**
-   * Replacement schedule for the definition. Required.
+   * Replacement schedule for manifests compiled from the definition. Required;
+   * member ActionSet schedules are not rewritten.
    * @gotags: validate:"required"
    *
    * @generated from field: powermanage.v1.ActionSchedule schedule = 2;
