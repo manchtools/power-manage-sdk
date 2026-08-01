@@ -230,12 +230,10 @@ func isTwoDigits(s string) bool {
 	return s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9'
 }
 
-// isWeekdayToken accepts only the canonical lowercase tokens the
-// projector and entryListsDay agree on. ToLower'ing here would
-// validate "MON" but then `entryListsDay` would silently never match
-// it at runtime — fail-fast at validation time keeps the two sites
-// honest. Callers that want case-insensitive input must canonicalize
-// before calling Validate.
+// isWeekdayToken accepts only the canonical lowercase tokens used by the
+// evaluator. ToLower'ing here would validate "MON" but entryListsDay would
+// silently never match it at runtime. Callers that want case-insensitive input
+// must canonicalize before calling Validate.
 func isWeekdayToken(d string) bool {
 	if len(d) != 3 {
 		return false
