@@ -1150,8 +1150,7 @@ export type Device = Message<"powermanage.v1.Device"> & {
   assignedGroupIds: string[];
 
   /**
-   * Sync interval in minutes (0 = use default of 30 minutes)
-   * Agent will pull assigned actions at this interval
+   * Stream synchronization interval in minutes (0 = use default of 30 minutes).
    *
    * @generated from field: int32 sync_interval_minutes = 11;
    */

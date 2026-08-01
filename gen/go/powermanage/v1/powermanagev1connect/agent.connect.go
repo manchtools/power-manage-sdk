@@ -35,24 +35,13 @@ const (
 const (
 	// AgentServiceStreamProcedure is the fully-qualified name of the AgentService's Stream RPC.
 	AgentServiceStreamProcedure = "/powermanage.v1.AgentService/Stream"
-	// AgentServiceSyncActionsProcedure is the fully-qualified name of the AgentService's SyncActions
-	// RPC.
-	AgentServiceSyncActionsProcedure = "/powermanage.v1.AgentService/SyncActions"
-	// AgentServiceValidateLuksTokenProcedure is the fully-qualified name of the AgentService's
-	// ValidateLuksToken RPC.
-	AgentServiceValidateLuksTokenProcedure = "/powermanage.v1.AgentService/ValidateLuksToken"
 )
 
 // AgentServiceClient is a client for the powermanage.v1.AgentService service.
 type AgentServiceClient interface {
-	// Bidirectional stream for agent-server communication
+	// The only agent-control transport. Handshake, synchronization, dispatch,
+	// results, secret operations and terminal traffic all use this stream.
 	Stream(context.Context) *connect.BidiStreamForClient[v1.AgentMessage, v1.ServerMessage]
-	// Sync assigned actions (called by agent after successful connection)
-	// Returns all actions currently assigned to the device for local storage
-	SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
-	// Validate a one-time LUKS token and return action details + complexity requirements
-	// Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
-	ValidateLuksToken(context.Context, *connect.Request[v1.ValidateLuksTokenRequest]) (*connect.Response[v1.ValidateLuksTokenResponse], error)
 }
 
 // NewAgentServiceClient constructs a client for the powermanage.v1.AgentService service. By
@@ -72,26 +61,12 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(agentServiceMethods.ByName("Stream")),
 			connect.WithClientOptions(opts...),
 		),
-		syncActions: connect.NewClient[v1.SyncActionsRequest, v1.SyncActionsResponse](
-			httpClient,
-			baseURL+AgentServiceSyncActionsProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("SyncActions")),
-			connect.WithClientOptions(opts...),
-		),
-		validateLuksToken: connect.NewClient[v1.ValidateLuksTokenRequest, v1.ValidateLuksTokenResponse](
-			httpClient,
-			baseURL+AgentServiceValidateLuksTokenProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("ValidateLuksToken")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
 // agentServiceClient implements AgentServiceClient.
 type agentServiceClient struct {
-	stream            *connect.Client[v1.AgentMessage, v1.ServerMessage]
-	syncActions       *connect.Client[v1.SyncActionsRequest, v1.SyncActionsResponse]
-	validateLuksToken *connect.Client[v1.ValidateLuksTokenRequest, v1.ValidateLuksTokenResponse]
+	stream *connect.Client[v1.AgentMessage, v1.ServerMessage]
 }
 
 // Stream calls powermanage.v1.AgentService.Stream.
@@ -99,26 +74,11 @@ func (c *agentServiceClient) Stream(ctx context.Context) *connect.BidiStreamForC
 	return c.stream.CallBidiStream(ctx)
 }
 
-// SyncActions calls powermanage.v1.AgentService.SyncActions.
-func (c *agentServiceClient) SyncActions(ctx context.Context, req *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error) {
-	return c.syncActions.CallUnary(ctx, req)
-}
-
-// ValidateLuksToken calls powermanage.v1.AgentService.ValidateLuksToken.
-func (c *agentServiceClient) ValidateLuksToken(ctx context.Context, req *connect.Request[v1.ValidateLuksTokenRequest]) (*connect.Response[v1.ValidateLuksTokenResponse], error) {
-	return c.validateLuksToken.CallUnary(ctx, req)
-}
-
 // AgentServiceHandler is an implementation of the powermanage.v1.AgentService service.
 type AgentServiceHandler interface {
-	// Bidirectional stream for agent-server communication
+	// The only agent-control transport. Handshake, synchronization, dispatch,
+	// results, secret operations and terminal traffic all use this stream.
 	Stream(context.Context, *connect.BidiStream[v1.AgentMessage, v1.ServerMessage]) error
-	// Sync assigned actions (called by agent after successful connection)
-	// Returns all actions currently assigned to the device for local storage
-	SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error)
-	// Validate a one-time LUKS token and return action details + complexity requirements
-	// Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
-	ValidateLuksToken(context.Context, *connect.Request[v1.ValidateLuksTokenRequest]) (*connect.Response[v1.ValidateLuksTokenResponse], error)
 }
 
 // NewAgentServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -134,26 +94,10 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(agentServiceMethods.ByName("Stream")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceSyncActionsHandler := connect.NewUnaryHandler(
-		AgentServiceSyncActionsProcedure,
-		svc.SyncActions,
-		connect.WithSchema(agentServiceMethods.ByName("SyncActions")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceValidateLuksTokenHandler := connect.NewUnaryHandler(
-		AgentServiceValidateLuksTokenProcedure,
-		svc.ValidateLuksToken,
-		connect.WithSchema(agentServiceMethods.ByName("ValidateLuksToken")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/powermanage.v1.AgentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AgentServiceStreamProcedure:
 			agentServiceStreamHandler.ServeHTTP(w, r)
-		case AgentServiceSyncActionsProcedure:
-			agentServiceSyncActionsHandler.ServeHTTP(w, r)
-		case AgentServiceValidateLuksTokenProcedure:
-			agentServiceValidateLuksTokenHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -165,12 +109,4 @@ type UnimplementedAgentServiceHandler struct{}
 
 func (UnimplementedAgentServiceHandler) Stream(context.Context, *connect.BidiStream[v1.AgentMessage, v1.ServerMessage]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.AgentService.Stream is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) SyncActions(context.Context, *connect.Request[v1.SyncActionsRequest]) (*connect.Response[v1.SyncActionsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.AgentService.SyncActions is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) ValidateLuksToken(context.Context, *connect.Request[v1.ValidateLuksTokenRequest]) (*connect.Response[v1.ValidateLuksTokenResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.AgentService.ValidateLuksToken is not implemented"))
 }

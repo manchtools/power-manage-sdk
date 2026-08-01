@@ -42,17 +42,12 @@ func testSealedValue() *pm.SealedValue {
 // means the agent has already changed the password locally and the report is
 // lost.
 //
-// Spec 41 shipped exactly that bug: StoreLpsPasswords was added as a pending
-// waiter while dispatchServerMessage still delivered only the two LUKS
-// responses, so every LPS batch would have timed out. There was no equivalent
-// test for StoreLuksKey either, which is why nothing caught it.
-//
 // This is table-driven over the response types so a newly added waiter is one
 // line away from being covered, and it asserts delivery rather than absence of
 // error — a dropped frame is silent by design.
 //
 // KNOWN WEAKNESS, left in place deliberately: this list and the dispatch case
-// it mirrors are both handwritten, so a fourth registerPending caller can be
+// it mirrors are both handwritten, so another registerPending caller can be
 // added without either noticing. Hoisting the correlation above the switch
 // removes the list but breaks TestDispatchValidatesEveryInboundCommand, which
 // identifies response arms precisely BY their deliverPending call and would then
@@ -84,6 +79,22 @@ func TestDispatchServerMessage_DeliversEveryPendingResponse(t *testing.T) {
 			payload: func() *pm.ServerMessage {
 				return &pm.ServerMessage{Payload: &pm.ServerMessage_StoreLpsPasswords{
 					StoreLpsPasswords: &pm.StoreLpsPasswordsResponse{Success: true},
+				}}
+			},
+		},
+		{
+			name: "ValidateLuksToken",
+			payload: func() *pm.ServerMessage {
+				return &pm.ServerMessage{Payload: &pm.ServerMessage_ValidateLuksToken{
+					ValidateLuksToken: &pm.ValidateLuksTokenResponse{ActionId: NewULID()},
+				}}
+			},
+		},
+		{
+			name: "SyncState",
+			payload: func() *pm.ServerMessage {
+				return &pm.ServerMessage{Payload: &pm.ServerMessage_SyncState{
+					SyncState: &pm.SyncState{},
 				}}
 			},
 		},
@@ -123,7 +134,7 @@ func TestDispatchServerMessage_DeliversEveryPendingResponse(t *testing.T) {
 
 // A correlated ERROR must reach the caller that is blocked on it.
 //
-// The server answers a rejected StoreLpsPasswords / StoreLuksKey / GetLuksKey
+// The server answers a rejected correlated request
 // with a ServerMessage_Error carrying the request's message ID, and the waiting
 // method already knows how to read one — it returns "server error: …". It never
 // received any: the Error case in the dispatch loop went straight to

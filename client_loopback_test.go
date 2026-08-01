@@ -3,11 +3,8 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/hex"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -48,8 +45,8 @@ type recordingAgentHandler struct {
 	received []*pm.AgentMessage
 
 	onStream func(ctx context.Context, stream *connect.BidiStream[pm.AgentMessage, pm.ServerMessage]) error
-	// syncResp, when set, is returned verbatim by SyncActions (else empty).
-	syncResp *pm.SyncActionsResponse
+	// syncState, when set, is returned verbatim for a stream SyncRequest.
+	syncState *pm.SyncState
 }
 
 func (h *recordingAgentHandler) Stream(ctx context.Context, s *connect.BidiStream[pm.AgentMessage, pm.ServerMessage]) error {
@@ -67,6 +64,18 @@ func (h *recordingAgentHandler) Stream(ctx context.Context, s *connect.BidiStrea
 		h.mu.Lock()
 		h.received = append(h.received, msg)
 		h.mu.Unlock()
+		if msg.GetSyncRequest() != nil {
+			state := h.syncState
+			if state == nil {
+				state = &pm.SyncState{}
+			}
+			if err := s.Send(&pm.ServerMessage{
+				Id:      msg.Id,
+				Payload: &pm.ServerMessage_SyncState{SyncState: state},
+			}); err != nil {
+				return err
+			}
+		}
 	}
 }
 
@@ -76,17 +85,6 @@ func (h *recordingAgentHandler) snapshot() []*pm.AgentMessage {
 	out := make([]*pm.AgentMessage, len(h.received))
 	copy(out, h.received)
 	return out
-}
-
-func (h *recordingAgentHandler) SyncActions(ctx context.Context, req *connect.Request[pm.SyncActionsRequest]) (*connect.Response[pm.SyncActionsResponse], error) {
-	if h.syncResp != nil {
-		return connect.NewResponse(h.syncResp), nil
-	}
-	return connect.NewResponse(&pm.SyncActionsResponse{}), nil
-}
-
-func (h *recordingAgentHandler) ValidateLuksToken(ctx context.Context, req *connect.Request[pm.ValidateLuksTokenRequest]) (*connect.Response[pm.ValidateLuksTokenResponse], error) {
-	return connect.NewResponse(&pm.ValidateLuksTokenResponse{}), nil
 }
 
 func newAgentLoopback(t *testing.T) *agentLoopback {
@@ -347,19 +345,13 @@ func TestConnect_DoubleConnectErrors(t *testing.T) {
 	}
 }
 
-// TestSyncActions_MapsMessageFieldsThroughFacade guards the hand-written
-// SyncActionsResult facade against drift: a proto regen that adds a field but
+// TestSync_MapsMessageFieldsThroughFacade guards the hand-written
+// SyncStateResult facade against drift: a proto regen that adds a field but
 // forgets the facade mapping would silently drop it (the recurring facade-lag
 // bug).
-//
-// This previously pinned LpsPublicKey, which spec 41 removed with the transport
-// sealing. The FIELD is gone; the PROPERTY is not, so the test is re-pointed at
-// MaintenanceWindow — the other nested message on this response, mapped through
-// the same facade — rather than deleted. A guard whose subject disappears should
-// change subject, not vanish.
-func TestSyncActions_MapsMessageFieldsThroughFacade(t *testing.T) {
+func TestSync_MapsMessageFieldsThroughFacade(t *testing.T) {
 	l := newAgentLoopback(t)
-	l.handler.syncResp = &pm.SyncActionsResponse{
+	l.handler.syncState = &pm.SyncState{
 		SyncIntervalMinutes: 42,
 		MaintenanceWindow: &pm.MaintenanceWindow{
 			Schedule: []*pm.MaintenanceWindowEntry{
@@ -368,13 +360,21 @@ func TestSyncActions_MapsMessageFieldsThroughFacade(t *testing.T) {
 		},
 	}
 	c := l.newClient(WithAuth("01HKDEVICE0000000000000000", "tok"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := c.Connect(ctx); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	defer c.Close()
+	stopReceiver := c.StartReceiver(ctx)
+	defer stopReceiver()
 
-	res, err := c.SyncActions(context.Background())
+	res, err := c.Sync(ctx)
 	if err != nil {
-		t.Fatalf("SyncActions: %v", err)
+		t.Fatalf("Sync: %v", err)
 	}
 	if res.MaintenanceWindow == nil {
-		t.Fatal("MaintenanceWindow dropped by the SyncActionsResult facade")
+		t.Fatal("MaintenanceWindow dropped by the SyncStateResult facade")
 	}
 	if len(res.MaintenanceWindow.Schedule) != 1 ||
 		res.MaintenanceWindow.Schedule[0].Allow != "22:00-06:00" ||
@@ -722,12 +722,11 @@ func startMTLSTestServer(t *testing.T, serverCertPEM, serverKeyPEM []byte, clien
 	return srv.URL
 }
 
-// TestWithMTLSFromPEM_RejectsServerSignedByForeignCA pins the core gateway-
-// pinning property (WS9 #10): the STRICT variant trusts the internal CA ONLY,
+// TestWithMTLSFromPEM_RejectsServerSignedByForeignCA pins the strict trust
+// property: the client trusts the internal CA only,
 // so a server whose certificate is signed by a different ("public"/system) CA
 // must be rejected even though it presents a syntactically valid chain. Without
-// this, a publicly-trusted cert with a matching SNI could impersonate the
-// gateway.
+// this, a publicly-trusted cert with a matching SNI could impersonate control.
 func TestWithMTLSFromPEM_RejectsServerSignedByForeignCA(t *testing.T) {
 	internalCAPEM, _, _ := cryptotest.GenCA(t, "internal-ca")
 	// The client identity is signed by the internal CA so the SERVER accepts the
@@ -753,96 +752,6 @@ func TestWithMTLSFromPEM_RejectsServerSignedByForeignCA(t *testing.T) {
 		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
 	if err == nil {
 		t.Fatal("strict mTLS must reject a server signed by a CA other than the pinned internal CA")
-	}
-}
-
-// certFingerprintHex returns the hex SHA-256 of a PEM cert's DER — the same
-// value the control server stores in gateways_projection.fingerprint and hands
-// out in the CRL, so the agent-side check compares like-for-like.
-func certFingerprintHex(t *testing.T, certPEM []byte) string {
-	t.Helper()
-	block, _ := pem.Decode(certPEM)
-	if block == nil {
-		t.Fatal("pem.Decode(cert)")
-	}
-	sum := sha256.Sum256(block.Bytes)
-	return hex.EncodeToString(sum[:])
-}
-
-// TestWithMTLSFromPEMAndRevocationCheck_RejectsRevokedGateway pins spec 31 Part D
-// AC 11: the revocation-gated variant fingerprints the gateway's presented leaf
-// cert and refuses the connection when the caller's check reports it revoked —
-// even though that cert chains to the pinned internal CA and would otherwise be
-// accepted. This is the agent-facing enforcement of RevokeGatewayCertificate.
-func TestWithMTLSFromPEMAndRevocationCheck_RejectsRevokedGateway(t *testing.T) {
-	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
-	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "127.0.0.1", true)
-	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
-	clientCAPool := x509.NewCertPool()
-	if !clientCAPool.AppendCertsFromPEM(caPEM) {
-		t.Fatal("AppendCertsFromPEM(ca)")
-	}
-	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
-
-	revokedFP := certFingerprintHex(t, serverCertPEM)
-	check := func(fp string) error {
-		if fp == revokedFP {
-			return fmt.Errorf("gateway cert %s is revoked", fp)
-		}
-		return nil
-	}
-
-	opt, err := WithMTLSFromPEMAndRevocationCheck(clientCertPEM, clientKeyPEM, caPEM, check)
-	if err != nil {
-		t.Fatalf("WithMTLSFromPEMAndRevocationCheck: %v", err)
-	}
-	if _, err := RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt); err == nil {
-		t.Fatal("revocation check must refuse a revoked gateway cert even though it chains to the pinned CA")
-	}
-}
-
-// TestWithMTLSFromPEMAndRevocationCheck_AllowsUnrevokedGateway pins the happy
-// path: a non-revoked gateway still connects, and the check is actually invoked
-// (guards against the VerifyConnection hook being silently dropped).
-func TestWithMTLSFromPEMAndRevocationCheck_AllowsUnrevokedGateway(t *testing.T) {
-	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
-	serverCertPEM, serverKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "127.0.0.1", true)
-	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
-	clientCAPool := x509.NewCertPool()
-	if !clientCAPool.AppendCertsFromPEM(caPEM) {
-		t.Fatal("AppendCertsFromPEM(ca)")
-	}
-	srvURL := startMTLSTestServer(t, serverCertPEM, serverKeyPEM, clientCAPool)
-
-	var checked atomic.Bool
-	check := func(fp string) error { checked.Store(true); return nil } // nothing revoked
-
-	opt, err := WithMTLSFromPEMAndRevocationCheck(clientCertPEM, clientKeyPEM, caPEM, check)
-	if err != nil {
-		t.Fatalf("WithMTLSFromPEMAndRevocationCheck: %v", err)
-	}
-	got, err := RegisterAgent(context.Background(), srvURL,
-		"tok", "host", "v0", []byte("csr"), testSealingPubKey(), opt)
-	if err != nil {
-		t.Fatalf("unrevoked gateway must connect: %v", err)
-	}
-	if !checked.Load() {
-		t.Error("revocation check was never invoked — VerifyConnection not wired into the TLS config")
-	}
-	if got.DeviceID != "ok" {
-		t.Errorf("DeviceID = %q", got.DeviceID)
-	}
-}
-
-// TestWithMTLSFromPEMAndRevocationCheck_NilCheckRejected pins that the variant
-// refuses a nil check at construction — a nil check would silently disable the
-// fail-closed gate, so it must be a wiring error, not a no-op.
-func TestWithMTLSFromPEMAndRevocationCheck_NilCheckRejected(t *testing.T) {
-	caPEM, caKey, caCert := cryptotest.GenCA(t, "internal-ca")
-	clientCertPEM, clientKeyPEM := cryptotest.GenLeaf(t, caCert, caKey, "device-client", false)
-	if _, err := WithMTLSFromPEMAndRevocationCheck(clientCertPEM, clientKeyPEM, caPEM, nil); err == nil {
-		t.Fatal("a nil revocation check must be rejected (fail-closed), not accepted as a no-op")
 	}
 }
 

@@ -18,7 +18,6 @@ const (
 // and agent for one secret-classified protobuf field. Bindings name the device
 // followed by the relevant action, delivery, terminal session, or username.
 // Length prefixes make the encoding unambiguous without restricting values.
-// docref: begin sealed-field-context
 func FieldSealContext(direction SealDirection, message, field string, bindings ...string) ([]byte, string, error) {
 	if direction != DirectionAgentToControl && direction != DirectionControlToAgent {
 		return nil, "", errors.New("crypto: invalid field-seal direction")
@@ -44,5 +43,3 @@ func FieldSealContext(direction SealDirection, message, field string, bindings .
 	}
 	return encoded, info, nil
 }
-
-// docref: end sealed-field-context

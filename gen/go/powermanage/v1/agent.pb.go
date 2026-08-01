@@ -363,6 +363,7 @@ type AgentMessage struct {
 	//
 	//	*AgentMessage_Hello
 	//	*AgentMessage_Heartbeat
+	//	*AgentMessage_SyncRequest
 	//	*AgentMessage_ActionResult
 	//	*AgentMessage_OutputChunk
 	//	*AgentMessage_DeliveryReceipt
@@ -374,6 +375,7 @@ type AgentMessage struct {
 	//	*AgentMessage_StoreLuksKey
 	//	*AgentMessage_RevokeLuksDeviceKeyResult
 	//	*AgentMessage_StoreLpsPasswords
+	//	*AgentMessage_ValidateLuksToken
 	//	*AgentMessage_LogQueryResult
 	//	*AgentMessage_TerminalOutput
 	//	*AgentMessage_TerminalStateChange
@@ -439,6 +441,15 @@ func (x *AgentMessage) GetHeartbeat() *Heartbeat {
 	if x != nil {
 		if x, ok := x.Payload.(*AgentMessage_Heartbeat); ok {
 			return x.Heartbeat
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetSyncRequest() *SyncRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_SyncRequest); ok {
+			return x.SyncRequest
 		}
 	}
 	return nil
@@ -543,6 +554,15 @@ func (x *AgentMessage) GetStoreLpsPasswords() *StoreLpsPasswordsRequest {
 	return nil
 }
 
+func (x *AgentMessage) GetValidateLuksToken() *ValidateLuksTokenRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_ValidateLuksToken); ok {
+			return x.ValidateLuksToken
+		}
+	}
+	return nil
+}
+
 func (x *AgentMessage) GetLogQueryResult() *LogQueryResult {
 	if x != nil {
 		if x, ok := x.Payload.(*AgentMessage_LogQueryResult); ok {
@@ -582,6 +602,11 @@ type AgentMessage_Hello struct {
 type AgentMessage_Heartbeat struct {
 	// @gotags: validate:"omitempty"
 	Heartbeat *Heartbeat `protobuf:"bytes,11,opt,name=heartbeat,proto3,oneof" validate:"omitempty"`
+}
+
+type AgentMessage_SyncRequest struct {
+	// @gotags: validate:"omitempty"
+	SyncRequest *SyncRequest `protobuf:"bytes,12,opt,name=sync_request,json=syncRequest,proto3,oneof" validate:"omitempty"`
 }
 
 type AgentMessage_ActionResult struct {
@@ -641,6 +666,11 @@ type AgentMessage_StoreLpsPasswords struct {
 	StoreLpsPasswords *StoreLpsPasswordsRequest `protobuf:"bytes,53,opt,name=store_lps_passwords,json=storeLpsPasswords,proto3,oneof" validate:"omitempty"`
 }
 
+type AgentMessage_ValidateLuksToken struct {
+	// @gotags: validate:"omitempty"
+	ValidateLuksToken *ValidateLuksTokenRequest `protobuf:"bytes,54,opt,name=validate_luks_token,json=validateLuksToken,proto3,oneof" validate:"omitempty"`
+}
+
 type AgentMessage_LogQueryResult struct {
 	// Log query result (journalctl output)
 	// @gotags: validate:"omitempty"
@@ -661,6 +691,8 @@ type AgentMessage_TerminalStateChange struct {
 func (*AgentMessage_Hello) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Heartbeat) isAgentMessage_Payload() {}
+
+func (*AgentMessage_SyncRequest) isAgentMessage_Payload() {}
 
 func (*AgentMessage_ActionResult) isAgentMessage_Payload() {}
 
@@ -683,6 +715,8 @@ func (*AgentMessage_StoreLuksKey) isAgentMessage_Payload() {}
 func (*AgentMessage_RevokeLuksDeviceKeyResult) isAgentMessage_Payload() {}
 
 func (*AgentMessage_StoreLpsPasswords) isAgentMessage_Payload() {}
+
+func (*AgentMessage_ValidateLuksToken) isAgentMessage_Payload() {}
 
 func (*AgentMessage_LogQueryResult) isAgentMessage_Payload() {}
 
@@ -988,6 +1022,7 @@ type ServerMessage struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*ServerMessage_Welcome
+	//	*ServerMessage_SyncState
 	//	*ServerMessage_ManifestDelivery
 	//	*ServerMessage_Query
 	//	*ServerMessage_RequestInventory
@@ -996,6 +1031,7 @@ type ServerMessage struct {
 	//	*ServerMessage_StoreLuksKey
 	//	*ServerMessage_RevokeLuksDeviceKey
 	//	*ServerMessage_StoreLpsPasswords
+	//	*ServerMessage_ValidateLuksToken
 	//	*ServerMessage_LogQuery
 	//	*ServerMessage_TerminalStart
 	//	*ServerMessage_TerminalInput
@@ -1054,6 +1090,15 @@ func (x *ServerMessage) GetWelcome() *Welcome {
 	if x != nil {
 		if x, ok := x.Payload.(*ServerMessage_Welcome); ok {
 			return x.Welcome
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetSyncState() *SyncState {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_SyncState); ok {
+			return x.SyncState
 		}
 	}
 	return nil
@@ -1131,6 +1176,15 @@ func (x *ServerMessage) GetStoreLpsPasswords() *StoreLpsPasswordsResponse {
 	return nil
 }
 
+func (x *ServerMessage) GetValidateLuksToken() *ValidateLuksTokenResponse {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_ValidateLuksToken); ok {
+			return x.ValidateLuksToken
+		}
+	}
+	return nil
+}
+
 func (x *ServerMessage) GetLogQuery() *LogQuery {
 	if x != nil {
 		if x, ok := x.Payload.(*ServerMessage_LogQuery); ok {
@@ -1185,6 +1239,11 @@ type ServerMessage_Welcome struct {
 	Welcome *Welcome `protobuf:"bytes,10,opt,name=welcome,proto3,oneof" validate:"omitempty"`
 }
 
+type ServerMessage_SyncState struct {
+	// @gotags: validate:"omitempty"
+	SyncState *SyncState `protobuf:"bytes,12,opt,name=sync_state,json=syncState,proto3,oneof" validate:"omitempty"`
+}
+
 type ServerMessage_ManifestDelivery struct {
 	// @gotags: validate:"omitempty"
 	ManifestDelivery *ManifestDelivery `protobuf:"bytes,20,opt,name=manifest_delivery,json=manifestDelivery,proto3,oneof" validate:"omitempty"`
@@ -1226,6 +1285,11 @@ type ServerMessage_StoreLpsPasswords struct {
 	StoreLpsPasswords *StoreLpsPasswordsResponse `protobuf:"bytes,53,opt,name=store_lps_passwords,json=storeLpsPasswords,proto3,oneof" validate:"omitempty"`
 }
 
+type ServerMessage_ValidateLuksToken struct {
+	// @gotags: validate:"omitempty"
+	ValidateLuksToken *ValidateLuksTokenResponse `protobuf:"bytes,54,opt,name=validate_luks_token,json=validateLuksToken,proto3,oneof" validate:"omitempty"`
+}
+
 type ServerMessage_LogQuery struct {
 	// Log query dispatch (journalctl)
 	// @gotags: validate:"omitempty"
@@ -1255,6 +1319,8 @@ type ServerMessage_TerminalStop struct {
 
 func (*ServerMessage_Welcome) isServerMessage_Payload() {}
 
+func (*ServerMessage_SyncState) isServerMessage_Payload() {}
+
 func (*ServerMessage_ManifestDelivery) isServerMessage_Payload() {}
 
 func (*ServerMessage_Query) isServerMessage_Payload() {}
@@ -1270,6 +1336,8 @@ func (*ServerMessage_StoreLuksKey) isServerMessage_Payload() {}
 func (*ServerMessage_RevokeLuksDeviceKey) isServerMessage_Payload() {}
 
 func (*ServerMessage_StoreLpsPasswords) isServerMessage_Payload() {}
+
+func (*ServerMessage_ValidateLuksToken) isServerMessage_Payload() {}
 
 func (*ServerMessage_LogQuery) isServerMessage_Payload() {}
 
@@ -2819,17 +2887,10 @@ func (x *RevokeLuksDeviceKeyResult) GetError() string {
 
 type ValidateLuksTokenRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required,ulid"
-	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required,ulid"`
 	// The one-time token the operator was shown, as issued by
 	// ControlService.CreateLuksToken.
-	//
-	// This was tagged `uuid` — debt from before the repo-wide move to ULIDs, and
-	// a shape the issuer never minted. Nothing rejected it because the redemption
-	// path did not run the validator; once it did, every legitimate redemption
-	// failed. Identifiers here are ULIDs like everywhere else.
 	// @gotags: validate:"required,ulid"
-	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required,ulid"`
+	Token         string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty" validate:"required,ulid"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2862,13 +2923,6 @@ func (x *ValidateLuksTokenRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ValidateLuksTokenRequest.ProtoReflect.Descriptor instead.
 func (*ValidateLuksTokenRequest) Descriptor() ([]byte, []int) {
 	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{30}
-}
-
-func (x *ValidateLuksTokenRequest) GetDeviceId() string {
-	if x != nil {
-		return x.DeviceId
-	}
-	return ""
 }
 
 func (x *ValidateLuksTokenRequest) GetToken() string {
@@ -2949,28 +3003,26 @@ func (x *ValidateLuksTokenResponse) GetComplexity() LpsPasswordComplexity {
 	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
 }
 
-type SyncActionsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @gotags: validate:"required"
-	DeviceId      *DeviceId `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty" validate:"required"`
+type SyncRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncActionsRequest) Reset() {
-	*x = SyncActionsRequest{}
+func (x *SyncRequest) Reset() {
+	*x = SyncRequest{}
 	mi := &file_powermanage_v1_agent_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncActionsRequest) String() string {
+func (x *SyncRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncActionsRequest) ProtoMessage() {}
+func (*SyncRequest) ProtoMessage() {}
 
-func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
+func (x *SyncRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_powermanage_v1_agent_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2982,58 +3034,50 @@ func (x *SyncActionsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncActionsRequest.ProtoReflect.Descriptor instead.
-func (*SyncActionsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SyncRequest.ProtoReflect.Descriptor instead.
+func (*SyncRequest) Descriptor() ([]byte, []int) {
 	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{32}
 }
 
-func (x *SyncActionsRequest) GetDeviceId() *DeviceId {
-	if x != nil {
-		return x.DeviceId
-	}
-	return nil
-}
-
-// SyncActionsResponse carries the same durable units as the stream. Pull and
-// push are two ways of reaching one dispatch model, not two models: the agent
-// records each delivery under its delivery_id, answers with the same
-// DeliveryReceipt frame, and executes each manifest exactly once no matter
-// which path it arrived on.
-type SyncActionsResponse struct {
+// SyncState carries the current durable deliveries and device policy over the
+// existing authenticated stream. It is a state refresh, not a second dispatch
+// path: every included delivery retains its durable delivery_id and is handled
+// exactly like an unsolicited ManifestDelivery frame.
+type SyncState struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Effective sync interval in minutes for this device. The agent uses it for
 	// the next sync; 0 means the default (30 minutes).
-	SyncIntervalMinutes int32 `protobuf:"varint,2,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
+	SyncIntervalMinutes int32 `protobuf:"varint,1,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
 	// Every delivery currently assigned to this device. delivery_id is the same
 	// value the push path would use for the same delivery row, so a manifest the
 	// agent already recorded from the stream is recognised as a repeat here.
 	// @gotags: validate:"omitempty,dive"
-	Deliveries []*ManifestDelivery `protobuf:"bytes,3,rep,name=deliveries,proto3" json:"deliveries,omitempty" validate:"omitempty,dive"`
+	Deliveries []*ManifestDelivery `protobuf:"bytes,2,rep,name=deliveries,proto3" json:"deliveries,omitempty" validate:"omitempty,dive"`
 	// Resolved maintenance window. Server-computed union across every
 	// group the device belongs to (its own device groups plus any user
 	// groups reaching it through an assignment). Empty schedule = no
 	// gating; the agent dispatches non-instant actions any time. Empty
 	// is also the response when no groups carry a window. The agent
 	// evaluates this against time.Now().Local() at dispatch time.
-	MaintenanceWindow *MaintenanceWindow `protobuf:"bytes,5,opt,name=maintenance_window,json=maintenanceWindow,proto3" json:"maintenance_window,omitempty"`
+	MaintenanceWindow *MaintenanceWindow `protobuf:"bytes,3,opt,name=maintenance_window,json=maintenanceWindow,proto3" json:"maintenance_window,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *SyncActionsResponse) Reset() {
-	*x = SyncActionsResponse{}
+func (x *SyncState) Reset() {
+	*x = SyncState{}
 	mi := &file_powermanage_v1_agent_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncActionsResponse) String() string {
+func (x *SyncState) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncActionsResponse) ProtoMessage() {}
+func (*SyncState) ProtoMessage() {}
 
-func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
+func (x *SyncState) ProtoReflect() protoreflect.Message {
 	mi := &file_powermanage_v1_agent_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -3045,26 +3089,26 @@ func (x *SyncActionsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncActionsResponse.ProtoReflect.Descriptor instead.
-func (*SyncActionsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SyncState.ProtoReflect.Descriptor instead.
+func (*SyncState) Descriptor() ([]byte, []int) {
 	return file_powermanage_v1_agent_proto_rawDescGZIP(), []int{33}
 }
 
-func (x *SyncActionsResponse) GetSyncIntervalMinutes() int32 {
+func (x *SyncState) GetSyncIntervalMinutes() int32 {
 	if x != nil {
 		return x.SyncIntervalMinutes
 	}
 	return 0
 }
 
-func (x *SyncActionsResponse) GetDeliveries() []*ManifestDelivery {
+func (x *SyncState) GetDeliveries() []*ManifestDelivery {
 	if x != nil {
 		return x.Deliveries
 	}
 	return nil
 }
 
-func (x *SyncActionsResponse) GetMaintenanceWindow() *MaintenanceWindow {
+func (x *SyncState) GetMaintenanceWindow() *MaintenanceWindow {
 	if x != nil {
 		return x.MaintenanceWindow
 	}
@@ -3656,12 +3700,14 @@ var File_powermanage_v1_agent_proto protoreflect.FileDescriptor
 
 const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x1apowermanage/v1/agent.proto\x12\x0epowermanage.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cpowermanage/v1/actions.proto\x1a\x1bpowermanage/v1/common.proto\"\xd1\t\n" +
+	"\x1apowermanage/v1/agent.proto\x12\x0epowermanage.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cpowermanage/v1/actions.proto\x1a\x1bpowermanage/v1/common.proto\"\xef\n" +
+	"\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12-\n" +
 	"\x05hello\x18\n" +
 	" \x01(\v2\x15.powermanage.v1.HelloH\x00R\x05hello\x129\n" +
-	"\theartbeat\x18\v \x01(\v2\x19.powermanage.v1.HeartbeatH\x00R\theartbeat\x12C\n" +
+	"\theartbeat\x18\v \x01(\v2\x19.powermanage.v1.HeartbeatH\x00R\theartbeat\x12@\n" +
+	"\fsync_request\x18\f \x01(\v2\x1b.powermanage.v1.SyncRequestH\x00R\vsyncRequest\x12C\n" +
 	"\raction_result\x18\x14 \x01(\v2\x1c.powermanage.v1.ActionResultH\x00R\factionResult\x12@\n" +
 	"\foutput_chunk\x18\x15 \x01(\v2\x1b.powermanage.v1.OutputChunkH\x00R\voutputChunk\x12L\n" +
 	"\x10delivery_receipt\x18\x16 \x01(\v2\x1f.powermanage.v1.DeliveryReceiptH\x00R\x0fdeliveryReceipt\x12I\n" +
@@ -3673,7 +3719,8 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"getLuksKey\x12K\n" +
 	"\x0estore_luks_key\x183 \x01(\v2#.powermanage.v1.StoreLuksKeyRequestH\x00R\fstoreLuksKey\x12m\n" +
 	"\x1drevoke_luks_device_key_result\x184 \x01(\v2).powermanage.v1.RevokeLuksDeviceKeyResultH\x00R\x19revokeLuksDeviceKeyResult\x12Z\n" +
-	"\x13store_lps_passwords\x185 \x01(\v2(.powermanage.v1.StoreLpsPasswordsRequestH\x00R\x11storeLpsPasswords\x12J\n" +
+	"\x13store_lps_passwords\x185 \x01(\v2(.powermanage.v1.StoreLpsPasswordsRequestH\x00R\x11storeLpsPasswords\x12Z\n" +
+	"\x13validate_luks_token\x186 \x01(\v2(.powermanage.v1.ValidateLuksTokenRequestH\x00R\x11validateLuksToken\x12J\n" +
 	"\x10log_query_result\x18< \x01(\v2\x1e.powermanage.v1.LogQueryResultH\x00R\x0elogQueryResult\x12I\n" +
 	"\x0fterminal_output\x18F \x01(\v2\x1e.powermanage.v1.TerminalOutputH\x00R\x0eterminalOutput\x12Y\n" +
 	"\x15terminal_state_change\x18G \x01(\v2#.powermanage.v1.TerminalStateChangeH\x00R\x13terminalStateChangeB\t\n" +
@@ -3702,11 +3749,13 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\adetails\x18\x03 \x03(\v2*.powermanage.v1.SecurityAlert.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x89\b\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa2\t\n" +
 	"\rServerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x123\n" +
 	"\awelcome\x18\n" +
-	" \x01(\v2\x17.powermanage.v1.WelcomeH\x00R\awelcome\x12O\n" +
+	" \x01(\v2\x17.powermanage.v1.WelcomeH\x00R\awelcome\x12:\n" +
+	"\n" +
+	"sync_state\x18\f \x01(\v2\x19.powermanage.v1.SyncStateH\x00R\tsyncState\x12O\n" +
 	"\x11manifest_delivery\x18\x14 \x01(\v2 .powermanage.v1.ManifestDeliveryH\x00R\x10manifestDelivery\x12/\n" +
 	"\x05query\x18\x1e \x01(\v2\x17.powermanage.v1.OSQueryH\x00R\x05query\x12O\n" +
 	"\x11request_inventory\x18\x1f \x01(\v2 .powermanage.v1.RequestInventoryH\x00R\x10requestInventory\x12-\n" +
@@ -3715,7 +3764,8 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"getLuksKey\x12L\n" +
 	"\x0estore_luks_key\x183 \x01(\v2$.powermanage.v1.StoreLuksKeyResponseH\x00R\fstoreLuksKey\x12Z\n" +
 	"\x16revoke_luks_device_key\x184 \x01(\v2#.powermanage.v1.RevokeLuksDeviceKeyH\x00R\x13revokeLuksDeviceKey\x12[\n" +
-	"\x13store_lps_passwords\x185 \x01(\v2).powermanage.v1.StoreLpsPasswordsResponseH\x00R\x11storeLpsPasswords\x127\n" +
+	"\x13store_lps_passwords\x185 \x01(\v2).powermanage.v1.StoreLpsPasswordsResponseH\x00R\x11storeLpsPasswords\x12[\n" +
+	"\x13validate_luks_token\x186 \x01(\v2).powermanage.v1.ValidateLuksTokenResponseH\x00R\x11validateLuksToken\x127\n" +
 	"\tlog_query\x18< \x01(\v2\x18.powermanage.v1.LogQueryH\x00R\blogQuery\x12F\n" +
 	"\x0eterminal_start\x18F \x01(\v2\x1d.powermanage.v1.TerminalStartH\x00R\rterminalStart\x12F\n" +
 	"\x0eterminal_input\x18G \x01(\v2\x1d.powermanage.v1.TerminalInputH\x00R\rterminalInput\x12I\n" +
@@ -3826,10 +3876,9 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\x19RevokeLuksDeviceKeyResult\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"M\n" +
-	"\x18ValidateLuksTokenRequest\x12\x1b\n" +
-	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"\xbf\x01\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"0\n" +
+	"\x18ValidateLuksTokenRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xbf\x01\n" +
 	"\x19ValidateLuksTokenResponse\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x1f\n" +
 	"\vdevice_path\x18\x02 \x01(\tR\n" +
@@ -3838,15 +3887,14 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"min_length\x18\x03 \x01(\x05R\tminLength\x12E\n" +
 	"\n" +
 	"complexity\x18\x04 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\n" +
-	"complexity\"K\n" +
-	"\x12SyncActionsRequest\x125\n" +
-	"\tdevice_id\x18\x01 \x01(\v2\x18.powermanage.v1.DeviceIdR\bdeviceId\"\xdd\x01\n" +
-	"\x13SyncActionsResponse\x122\n" +
-	"\x15sync_interval_minutes\x18\x02 \x01(\x05R\x13syncIntervalMinutes\x12@\n" +
+	"complexity\"\r\n" +
+	"\vSyncRequest\"\xd3\x01\n" +
+	"\tSyncState\x122\n" +
+	"\x15sync_interval_minutes\x18\x01 \x01(\x05R\x13syncIntervalMinutes\x12@\n" +
 	"\n" +
-	"deliveries\x18\x03 \x03(\v2 .powermanage.v1.ManifestDeliveryR\n" +
+	"deliveries\x18\x02 \x03(\v2 .powermanage.v1.ManifestDeliveryR\n" +
 	"deliveries\x12P\n" +
-	"\x12maintenance_window\x18\x05 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xf6\x01\n" +
+	"\x12maintenance_window\x18\x03 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xf6\x01\n" +
 	"\bLogQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x14\n" +
 	"\x05lines\x18\x02 \x01(\x05R\x05lines\x12\x12\n" +
@@ -3920,11 +3968,9 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\"TERMINAL_SESSION_STATE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eTERMINAL_SESSION_STATE_STARTED\x10\x01\x12!\n" +
 	"\x1dTERMINAL_SESSION_STATE_EXITED\x10\x02\x12 \n" +
-	"\x1cTERMINAL_SESSION_STATE_ERROR\x10\x032\x9b\x02\n" +
+	"\x1cTERMINAL_SESSION_STATE_ERROR\x10\x032Y\n" +
 	"\fAgentService\x12I\n" +
-	"\x06Stream\x12\x1c.powermanage.v1.AgentMessage\x1a\x1d.powermanage.v1.ServerMessage(\x010\x01\x12V\n" +
-	"\vSyncActions\x12\".powermanage.v1.SyncActionsRequest\x1a#.powermanage.v1.SyncActionsResponse\x12h\n" +
-	"\x11ValidateLuksToken\x12(.powermanage.v1.ValidateLuksTokenRequest\x1a).powermanage.v1.ValidateLuksTokenResponseBLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
+	"\x06Stream\x12\x1c.powermanage.v1.AgentMessage\x1a\x1d.powermanage.v1.ServerMessage(\x010\x01BLZJgithub.com/manchtools/power-manage-sdk/gen/go/powermanage/v1;powermanagev1b\x06proto3"
 
 var (
 	file_powermanage_v1_agent_proto_rawDescOnce sync.Once
@@ -3979,8 +4025,8 @@ var file_powermanage_v1_agent_proto_goTypes = []any{
 	(*RevokeLuksDeviceKeyResult)(nil), // 35: powermanage.v1.RevokeLuksDeviceKeyResult
 	(*ValidateLuksTokenRequest)(nil),  // 36: powermanage.v1.ValidateLuksTokenRequest
 	(*ValidateLuksTokenResponse)(nil), // 37: powermanage.v1.ValidateLuksTokenResponse
-	(*SyncActionsRequest)(nil),        // 38: powermanage.v1.SyncActionsRequest
-	(*SyncActionsResponse)(nil),       // 39: powermanage.v1.SyncActionsResponse
+	(*SyncRequest)(nil),               // 38: powermanage.v1.SyncRequest
+	(*SyncState)(nil),                 // 39: powermanage.v1.SyncState
 	(*LogQuery)(nil),                  // 40: powermanage.v1.LogQuery
 	(*LogQueryResult)(nil),            // 41: powermanage.v1.LogQueryResult
 	(*TerminalStart)(nil),             // 42: powermanage.v1.TerminalStart
@@ -4006,78 +4052,77 @@ var file_powermanage_v1_agent_proto_goTypes = []any{
 var file_powermanage_v1_agent_proto_depIdxs = []int32{
 	8,  // 0: powermanage.v1.AgentMessage.hello:type_name -> powermanage.v1.Hello
 	9,  // 1: powermanage.v1.AgentMessage.heartbeat:type_name -> powermanage.v1.Heartbeat
-	50, // 2: powermanage.v1.AgentMessage.action_result:type_name -> powermanage.v1.ActionResult
-	7,  // 3: powermanage.v1.AgentMessage.output_chunk:type_name -> powermanage.v1.OutputChunk
-	17, // 4: powermanage.v1.AgentMessage.delivery_receipt:type_name -> powermanage.v1.DeliveryReceipt
-	18, // 5: powermanage.v1.AgentMessage.manifest_result:type_name -> powermanage.v1.ManifestResult
-	22, // 6: powermanage.v1.AgentMessage.query_result:type_name -> powermanage.v1.OSQueryResult
-	24, // 7: powermanage.v1.AgentMessage.inventory:type_name -> powermanage.v1.DeviceInventory
-	10, // 8: powermanage.v1.AgentMessage.security_alert:type_name -> powermanage.v1.SecurityAlert
-	27, // 9: powermanage.v1.AgentMessage.get_luks_key:type_name -> powermanage.v1.GetLuksKeyRequest
-	29, // 10: powermanage.v1.AgentMessage.store_luks_key:type_name -> powermanage.v1.StoreLuksKeyRequest
-	35, // 11: powermanage.v1.AgentMessage.revoke_luks_device_key_result:type_name -> powermanage.v1.RevokeLuksDeviceKeyResult
-	32, // 12: powermanage.v1.AgentMessage.store_lps_passwords:type_name -> powermanage.v1.StoreLpsPasswordsRequest
-	41, // 13: powermanage.v1.AgentMessage.log_query_result:type_name -> powermanage.v1.LogQueryResult
-	46, // 14: powermanage.v1.AgentMessage.terminal_output:type_name -> powermanage.v1.TerminalOutput
-	47, // 15: powermanage.v1.AgentMessage.terminal_state_change:type_name -> powermanage.v1.TerminalStateChange
-	0,  // 16: powermanage.v1.OutputChunk.stream:type_name -> powermanage.v1.OutputStreamType
-	51, // 17: powermanage.v1.Hello.device_id:type_name -> powermanage.v1.DeviceId
-	52, // 18: powermanage.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
-	1,  // 19: powermanage.v1.SecurityAlert.type:type_name -> powermanage.v1.SecurityAlertType
-	48, // 20: powermanage.v1.SecurityAlert.details:type_name -> powermanage.v1.SecurityAlert.DetailsEntry
-	12, // 21: powermanage.v1.ServerMessage.welcome:type_name -> powermanage.v1.Welcome
-	16, // 22: powermanage.v1.ServerMessage.manifest_delivery:type_name -> powermanage.v1.ManifestDelivery
-	20, // 23: powermanage.v1.ServerMessage.query:type_name -> powermanage.v1.OSQuery
-	26, // 24: powermanage.v1.ServerMessage.request_inventory:type_name -> powermanage.v1.RequestInventory
-	19, // 25: powermanage.v1.ServerMessage.error:type_name -> powermanage.v1.Error
-	28, // 26: powermanage.v1.ServerMessage.get_luks_key:type_name -> powermanage.v1.GetLuksKeyResponse
-	30, // 27: powermanage.v1.ServerMessage.store_luks_key:type_name -> powermanage.v1.StoreLuksKeyResponse
-	34, // 28: powermanage.v1.ServerMessage.revoke_luks_device_key:type_name -> powermanage.v1.RevokeLuksDeviceKey
-	33, // 29: powermanage.v1.ServerMessage.store_lps_passwords:type_name -> powermanage.v1.StoreLpsPasswordsResponse
-	40, // 30: powermanage.v1.ServerMessage.log_query:type_name -> powermanage.v1.LogQuery
-	42, // 31: powermanage.v1.ServerMessage.terminal_start:type_name -> powermanage.v1.TerminalStart
-	43, // 32: powermanage.v1.ServerMessage.terminal_input:type_name -> powermanage.v1.TerminalInput
-	44, // 33: powermanage.v1.ServerMessage.terminal_resize:type_name -> powermanage.v1.TerminalResize
-	45, // 34: powermanage.v1.ServerMessage.terminal_stop:type_name -> powermanage.v1.TerminalStop
-	52, // 35: powermanage.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
-	53, // 36: powermanage.v1.ManifestOccurrence.action:type_name -> powermanage.v1.Action
-	2,  // 37: powermanage.v1.ManifestOccurrence.on_failure:type_name -> powermanage.v1.OnFailure
-	13, // 38: powermanage.v1.Manifest.provenance:type_name -> powermanage.v1.ManifestProvenance
-	54, // 39: powermanage.v1.Manifest.schedule:type_name -> powermanage.v1.ActionSchedule
-	2,  // 40: powermanage.v1.Manifest.default_on_failure:type_name -> powermanage.v1.OnFailure
-	14, // 41: powermanage.v1.Manifest.occurrences:type_name -> powermanage.v1.ManifestOccurrence
-	15, // 42: powermanage.v1.ManifestDelivery.manifest:type_name -> powermanage.v1.Manifest
-	55, // 43: powermanage.v1.ManifestResult.status:type_name -> powermanage.v1.ExecutionStatus
-	56, // 44: powermanage.v1.ManifestResult.completed_at:type_name -> google.protobuf.Timestamp
-	21, // 45: powermanage.v1.OSQuery.where:type_name -> powermanage.v1.OSQueryCondition
-	3,  // 46: powermanage.v1.OSQueryCondition.op:type_name -> powermanage.v1.OSQueryOp
-	23, // 47: powermanage.v1.OSQueryResult.rows:type_name -> powermanage.v1.OSQueryRow
-	49, // 48: powermanage.v1.OSQueryRow.data:type_name -> powermanage.v1.OSQueryRow.DataEntry
-	25, // 49: powermanage.v1.DeviceInventory.tables:type_name -> powermanage.v1.InventoryTable
-	23, // 50: powermanage.v1.InventoryTable.rows:type_name -> powermanage.v1.OSQueryRow
-	57, // 51: powermanage.v1.GetLuksKeyResponse.passphrase:type_name -> powermanage.v1.SealedValue
-	57, // 52: powermanage.v1.StoreLuksKeyRequest.passphrase:type_name -> powermanage.v1.SealedValue
-	58, // 53: powermanage.v1.StoreLuksKeyRequest.rotation_reason:type_name -> powermanage.v1.RotationReason
-	57, // 54: powermanage.v1.LpsPasswordRotation.password:type_name -> powermanage.v1.SealedValue
-	58, // 55: powermanage.v1.LpsPasswordRotation.reason:type_name -> powermanage.v1.RotationReason
-	31, // 56: powermanage.v1.StoreLpsPasswordsRequest.rotations:type_name -> powermanage.v1.LpsPasswordRotation
-	59, // 57: powermanage.v1.ValidateLuksTokenResponse.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	51, // 58: powermanage.v1.SyncActionsRequest.device_id:type_name -> powermanage.v1.DeviceId
-	16, // 59: powermanage.v1.SyncActionsResponse.deliveries:type_name -> powermanage.v1.ManifestDelivery
-	60, // 60: powermanage.v1.SyncActionsResponse.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
-	4,  // 61: powermanage.v1.LogQuery.source:type_name -> powermanage.v1.LogSource
-	5,  // 62: powermanage.v1.TerminalStateChange.state:type_name -> powermanage.v1.TerminalSessionState
-	6,  // 63: powermanage.v1.AgentService.Stream:input_type -> powermanage.v1.AgentMessage
-	38, // 64: powermanage.v1.AgentService.SyncActions:input_type -> powermanage.v1.SyncActionsRequest
-	36, // 65: powermanage.v1.AgentService.ValidateLuksToken:input_type -> powermanage.v1.ValidateLuksTokenRequest
-	11, // 66: powermanage.v1.AgentService.Stream:output_type -> powermanage.v1.ServerMessage
-	39, // 67: powermanage.v1.AgentService.SyncActions:output_type -> powermanage.v1.SyncActionsResponse
-	37, // 68: powermanage.v1.AgentService.ValidateLuksToken:output_type -> powermanage.v1.ValidateLuksTokenResponse
-	66, // [66:69] is the sub-list for method output_type
-	63, // [63:66] is the sub-list for method input_type
-	63, // [63:63] is the sub-list for extension type_name
-	63, // [63:63] is the sub-list for extension extendee
-	0,  // [0:63] is the sub-list for field type_name
+	38, // 2: powermanage.v1.AgentMessage.sync_request:type_name -> powermanage.v1.SyncRequest
+	50, // 3: powermanage.v1.AgentMessage.action_result:type_name -> powermanage.v1.ActionResult
+	7,  // 4: powermanage.v1.AgentMessage.output_chunk:type_name -> powermanage.v1.OutputChunk
+	17, // 5: powermanage.v1.AgentMessage.delivery_receipt:type_name -> powermanage.v1.DeliveryReceipt
+	18, // 6: powermanage.v1.AgentMessage.manifest_result:type_name -> powermanage.v1.ManifestResult
+	22, // 7: powermanage.v1.AgentMessage.query_result:type_name -> powermanage.v1.OSQueryResult
+	24, // 8: powermanage.v1.AgentMessage.inventory:type_name -> powermanage.v1.DeviceInventory
+	10, // 9: powermanage.v1.AgentMessage.security_alert:type_name -> powermanage.v1.SecurityAlert
+	27, // 10: powermanage.v1.AgentMessage.get_luks_key:type_name -> powermanage.v1.GetLuksKeyRequest
+	29, // 11: powermanage.v1.AgentMessage.store_luks_key:type_name -> powermanage.v1.StoreLuksKeyRequest
+	35, // 12: powermanage.v1.AgentMessage.revoke_luks_device_key_result:type_name -> powermanage.v1.RevokeLuksDeviceKeyResult
+	32, // 13: powermanage.v1.AgentMessage.store_lps_passwords:type_name -> powermanage.v1.StoreLpsPasswordsRequest
+	36, // 14: powermanage.v1.AgentMessage.validate_luks_token:type_name -> powermanage.v1.ValidateLuksTokenRequest
+	41, // 15: powermanage.v1.AgentMessage.log_query_result:type_name -> powermanage.v1.LogQueryResult
+	46, // 16: powermanage.v1.AgentMessage.terminal_output:type_name -> powermanage.v1.TerminalOutput
+	47, // 17: powermanage.v1.AgentMessage.terminal_state_change:type_name -> powermanage.v1.TerminalStateChange
+	0,  // 18: powermanage.v1.OutputChunk.stream:type_name -> powermanage.v1.OutputStreamType
+	51, // 19: powermanage.v1.Hello.device_id:type_name -> powermanage.v1.DeviceId
+	52, // 20: powermanage.v1.Heartbeat.uptime:type_name -> google.protobuf.Duration
+	1,  // 21: powermanage.v1.SecurityAlert.type:type_name -> powermanage.v1.SecurityAlertType
+	48, // 22: powermanage.v1.SecurityAlert.details:type_name -> powermanage.v1.SecurityAlert.DetailsEntry
+	12, // 23: powermanage.v1.ServerMessage.welcome:type_name -> powermanage.v1.Welcome
+	39, // 24: powermanage.v1.ServerMessage.sync_state:type_name -> powermanage.v1.SyncState
+	16, // 25: powermanage.v1.ServerMessage.manifest_delivery:type_name -> powermanage.v1.ManifestDelivery
+	20, // 26: powermanage.v1.ServerMessage.query:type_name -> powermanage.v1.OSQuery
+	26, // 27: powermanage.v1.ServerMessage.request_inventory:type_name -> powermanage.v1.RequestInventory
+	19, // 28: powermanage.v1.ServerMessage.error:type_name -> powermanage.v1.Error
+	28, // 29: powermanage.v1.ServerMessage.get_luks_key:type_name -> powermanage.v1.GetLuksKeyResponse
+	30, // 30: powermanage.v1.ServerMessage.store_luks_key:type_name -> powermanage.v1.StoreLuksKeyResponse
+	34, // 31: powermanage.v1.ServerMessage.revoke_luks_device_key:type_name -> powermanage.v1.RevokeLuksDeviceKey
+	33, // 32: powermanage.v1.ServerMessage.store_lps_passwords:type_name -> powermanage.v1.StoreLpsPasswordsResponse
+	37, // 33: powermanage.v1.ServerMessage.validate_luks_token:type_name -> powermanage.v1.ValidateLuksTokenResponse
+	40, // 34: powermanage.v1.ServerMessage.log_query:type_name -> powermanage.v1.LogQuery
+	42, // 35: powermanage.v1.ServerMessage.terminal_start:type_name -> powermanage.v1.TerminalStart
+	43, // 36: powermanage.v1.ServerMessage.terminal_input:type_name -> powermanage.v1.TerminalInput
+	44, // 37: powermanage.v1.ServerMessage.terminal_resize:type_name -> powermanage.v1.TerminalResize
+	45, // 38: powermanage.v1.ServerMessage.terminal_stop:type_name -> powermanage.v1.TerminalStop
+	52, // 39: powermanage.v1.Welcome.heartbeat_interval:type_name -> google.protobuf.Duration
+	53, // 40: powermanage.v1.ManifestOccurrence.action:type_name -> powermanage.v1.Action
+	2,  // 41: powermanage.v1.ManifestOccurrence.on_failure:type_name -> powermanage.v1.OnFailure
+	13, // 42: powermanage.v1.Manifest.provenance:type_name -> powermanage.v1.ManifestProvenance
+	54, // 43: powermanage.v1.Manifest.schedule:type_name -> powermanage.v1.ActionSchedule
+	2,  // 44: powermanage.v1.Manifest.default_on_failure:type_name -> powermanage.v1.OnFailure
+	14, // 45: powermanage.v1.Manifest.occurrences:type_name -> powermanage.v1.ManifestOccurrence
+	15, // 46: powermanage.v1.ManifestDelivery.manifest:type_name -> powermanage.v1.Manifest
+	55, // 47: powermanage.v1.ManifestResult.status:type_name -> powermanage.v1.ExecutionStatus
+	56, // 48: powermanage.v1.ManifestResult.completed_at:type_name -> google.protobuf.Timestamp
+	21, // 49: powermanage.v1.OSQuery.where:type_name -> powermanage.v1.OSQueryCondition
+	3,  // 50: powermanage.v1.OSQueryCondition.op:type_name -> powermanage.v1.OSQueryOp
+	23, // 51: powermanage.v1.OSQueryResult.rows:type_name -> powermanage.v1.OSQueryRow
+	49, // 52: powermanage.v1.OSQueryRow.data:type_name -> powermanage.v1.OSQueryRow.DataEntry
+	25, // 53: powermanage.v1.DeviceInventory.tables:type_name -> powermanage.v1.InventoryTable
+	23, // 54: powermanage.v1.InventoryTable.rows:type_name -> powermanage.v1.OSQueryRow
+	57, // 55: powermanage.v1.GetLuksKeyResponse.passphrase:type_name -> powermanage.v1.SealedValue
+	57, // 56: powermanage.v1.StoreLuksKeyRequest.passphrase:type_name -> powermanage.v1.SealedValue
+	58, // 57: powermanage.v1.StoreLuksKeyRequest.rotation_reason:type_name -> powermanage.v1.RotationReason
+	57, // 58: powermanage.v1.LpsPasswordRotation.password:type_name -> powermanage.v1.SealedValue
+	58, // 59: powermanage.v1.LpsPasswordRotation.reason:type_name -> powermanage.v1.RotationReason
+	31, // 60: powermanage.v1.StoreLpsPasswordsRequest.rotations:type_name -> powermanage.v1.LpsPasswordRotation
+	59, // 61: powermanage.v1.ValidateLuksTokenResponse.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	16, // 62: powermanage.v1.SyncState.deliveries:type_name -> powermanage.v1.ManifestDelivery
+	60, // 63: powermanage.v1.SyncState.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	4,  // 64: powermanage.v1.LogQuery.source:type_name -> powermanage.v1.LogSource
+	5,  // 65: powermanage.v1.TerminalStateChange.state:type_name -> powermanage.v1.TerminalSessionState
+	6,  // 66: powermanage.v1.AgentService.Stream:input_type -> powermanage.v1.AgentMessage
+	11, // 67: powermanage.v1.AgentService.Stream:output_type -> powermanage.v1.ServerMessage
+	67, // [67:68] is the sub-list for method output_type
+	66, // [66:67] is the sub-list for method input_type
+	66, // [66:66] is the sub-list for extension type_name
+	66, // [66:66] is the sub-list for extension extendee
+	0,  // [0:66] is the sub-list for field type_name
 }
 
 func init() { file_powermanage_v1_agent_proto_init() }
@@ -4090,6 +4135,7 @@ func file_powermanage_v1_agent_proto_init() {
 	file_powermanage_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
 		(*AgentMessage_Hello)(nil),
 		(*AgentMessage_Heartbeat)(nil),
+		(*AgentMessage_SyncRequest)(nil),
 		(*AgentMessage_ActionResult)(nil),
 		(*AgentMessage_OutputChunk)(nil),
 		(*AgentMessage_DeliveryReceipt)(nil),
@@ -4101,12 +4147,14 @@ func file_powermanage_v1_agent_proto_init() {
 		(*AgentMessage_StoreLuksKey)(nil),
 		(*AgentMessage_RevokeLuksDeviceKeyResult)(nil),
 		(*AgentMessage_StoreLpsPasswords)(nil),
+		(*AgentMessage_ValidateLuksToken)(nil),
 		(*AgentMessage_LogQueryResult)(nil),
 		(*AgentMessage_TerminalOutput)(nil),
 		(*AgentMessage_TerminalStateChange)(nil),
 	}
 	file_powermanage_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ServerMessage_Welcome)(nil),
+		(*ServerMessage_SyncState)(nil),
 		(*ServerMessage_ManifestDelivery)(nil),
 		(*ServerMessage_Query)(nil),
 		(*ServerMessage_RequestInventory)(nil),
@@ -4115,6 +4163,7 @@ func file_powermanage_v1_agent_proto_init() {
 		(*ServerMessage_StoreLuksKey)(nil),
 		(*ServerMessage_RevokeLuksDeviceKey)(nil),
 		(*ServerMessage_StoreLpsPasswords)(nil),
+		(*ServerMessage_ValidateLuksToken)(nil),
 		(*ServerMessage_LogQuery)(nil),
 		(*ServerMessage_TerminalStart)(nil),
 		(*ServerMessage_TerminalInput)(nil),

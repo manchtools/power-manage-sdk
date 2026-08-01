@@ -14,16 +14,9 @@ option go_package = "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v
 // ============================================================================
 
 service AgentService {
-  // Bidirectional stream for agent-server communication
+  // The only agent-control transport. Handshake, synchronization, dispatch,
+  // results, secret operations and terminal traffic all use this stream.
   rpc Stream(stream AgentMessage) returns (stream ServerMessage);
-
-  // Sync assigned actions (called by agent after successful connection)
-  // Returns all actions currently assigned to the device for local storage
-  rpc SyncActions(SyncActionsRequest) returns (SyncActionsResponse);
-
-  // Validate a one-time LUKS token and return action details + complexity requirements
-  // Used by the CLI subcommand (power-manage-agent luks set-passphrase --token <token-value>)
-  rpc ValidateLuksToken(ValidateLuksTokenRequest) returns (ValidateLuksTokenResponse);
 }
 
 // ============================================================================
@@ -39,6 +32,8 @@ message AgentMessage {
     Hello hello = 10;
     // @gotags: validate:"omitempty"
     Heartbeat heartbeat = 11;
+    // @gotags: validate:"omitempty"
+    SyncRequest sync_request = 12;
     // @gotags: validate:"omitempty"
     ActionResult action_result = 20;
     // @gotags: validate:"omitempty"
@@ -63,6 +58,8 @@ message AgentMessage {
     // LPS password rotations, batched per execution.
     // @gotags: validate:"omitempty"
     StoreLpsPasswordsRequest store_lps_passwords = 53;
+    // @gotags: validate:"omitempty"
+    ValidateLuksTokenRequest validate_luks_token = 54;
     // Log query result (journalctl output)
     // @gotags: validate:"omitempty"
     LogQueryResult log_query_result = 60;
@@ -159,6 +156,8 @@ message ServerMessage {
     // @gotags: validate:"omitempty"
     Welcome welcome = 10;
     // @gotags: validate:"omitempty"
+    SyncState sync_state = 12;
+    // @gotags: validate:"omitempty"
     ManifestDelivery manifest_delivery = 20;
     // @gotags: validate:"omitempty"
     OSQuery query = 30;
@@ -175,6 +174,8 @@ message ServerMessage {
     RevokeLuksDeviceKey revoke_luks_device_key = 52;
     // @gotags: validate:"omitempty"
     StoreLpsPasswordsResponse store_lps_passwords = 53;
+    // @gotags: validate:"omitempty"
+    ValidateLuksTokenResponse validate_luks_token = 54;
     // Log query dispatch (journalctl)
     // @gotags: validate:"omitempty"
     LogQuery log_query = 60;
@@ -563,21 +564,14 @@ message RevokeLuksDeviceKeyResult {
 }
 
 // ============================================================================
-// LUKS Token Validation (unary RPC for CLI subcommand)
+// LUKS Token Validation (correlated stream request)
 // ============================================================================
 
 message ValidateLuksTokenRequest {
-  // @gotags: validate:"required,ulid"
-  string device_id = 1;
   // The one-time token the operator was shown, as issued by
   // ControlService.CreateLuksToken.
-  //
-  // This was tagged `uuid` — debt from before the repo-wide move to ULIDs, and
-  // a shape the issuer never minted. Nothing rejected it because the redemption
-  // path did not run the validator; once it did, every legitimate redemption
-  // failed. Identifiers here are ULIDs like everywhere else.
   // @gotags: validate:"required,ulid"
-  string token = 2;
+  string token = 1;
 }
 
 message ValidateLuksTokenResponse {
@@ -591,29 +585,25 @@ message ValidateLuksTokenResponse {
 }
 
 // ============================================================================
-// Action Sync (agent pulls the deliveries currently assigned to it)
+// Stream synchronization
 // ============================================================================
 
-message SyncActionsRequest {
-  // @gotags: validate:"required"
-  DeviceId device_id = 1;
-}
+message SyncRequest {}
 
-// SyncActionsResponse carries the same durable units as the stream. Pull and
-// push are two ways of reaching one dispatch model, not two models: the agent
-// records each delivery under its delivery_id, answers with the same
-// DeliveryReceipt frame, and executes each manifest exactly once no matter
-// which path it arrived on.
-message SyncActionsResponse {
+// SyncState carries the current durable deliveries and device policy over the
+// existing authenticated stream. It is a state refresh, not a second dispatch
+// path: every included delivery retains its durable delivery_id and is handled
+// exactly like an unsolicited ManifestDelivery frame.
+message SyncState {
   // Effective sync interval in minutes for this device. The agent uses it for
   // the next sync; 0 means the default (30 minutes).
-  int32 sync_interval_minutes = 2;
+  int32 sync_interval_minutes = 1;
 
   // Every delivery currently assigned to this device. delivery_id is the same
   // value the push path would use for the same delivery row, so a manifest the
   // agent already recorded from the stream is recognised as a repeat here.
   // @gotags: validate:"omitempty,dive"
-  repeated ManifestDelivery deliveries = 3;
+  repeated ManifestDelivery deliveries = 2;
 
   // Resolved maintenance window. Server-computed union across every
   // group the device belongs to (its own device groups plus any user
@@ -621,7 +611,7 @@ message SyncActionsResponse {
   // gating; the agent dispatches non-instant actions any time. Empty
   // is also the response when no groups carry a window. The agent
   // evaluates this against time.Now().Local() at dispatch time.
-  MaintenanceWindow maintenance_window = 5;
+  MaintenanceWindow maintenance_window = 3;
 }
 
 // ============================================================================

@@ -4,7 +4,7 @@
 // out-of-band controls (resize, close, wait).
 //
 // This package is the SDK foundation for the remote terminal feature; the
-// agent is responsible for wiring it to the bidirectional gateway stream
+// agent is responsible for wiring it to the bidirectional control stream
 // and enforcing authentication, audit, and session limits.
 //
 //	m, _ := terminal.New()

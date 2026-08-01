@@ -16,9 +16,8 @@ import (
 //   - hostless URLs (https:)
 //   - embedded user info (https://user:pass@host) and fragments
 //
-// It is the single source for the agent's https-only trust boundaries —
-// the enrollment server_url and the gateway URL — so a cleartext or
-// malformed endpoint is refused before any network call.
+// It is the single source for the agent's HTTPS-only endpoints, so a cleartext
+// or malformed endpoint is refused before any network call.
 func ValidateHTTPSURL(raw string) error {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {

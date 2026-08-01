@@ -4,10 +4,8 @@ package sdk
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -51,8 +49,7 @@ type Client struct {
 	httpClient *http.Client
 
 	// validator enforces the inbound `validate` gotags on each server command
-	// before dispatch (WS13 #5) — defence-in-depth against a compromised relay
-	// pushing a malformed-but-non-nil frame. Created in NewClient.
+	// before dispatch. Created in NewClient.
 	validator *validator.Validate
 
 	mu     sync.RWMutex
@@ -74,7 +71,7 @@ type Client struct {
 	// NewClient.
 	sendSem chan struct{}
 
-	// pendingMu protects pendingRequests for LUKS request-response correlation.
+	// pendingMu protects correlated request-response traffic on the stream.
 	pendingMu       sync.Mutex
 	pendingRequests map[string]chan *pm.ServerMessage
 
@@ -316,62 +313,6 @@ func WithMTLSFromPEMAndSystemRoots(certPEM, keyPEM, caPEM []byte) (ClientOption,
 	}}, nil
 }
 
-// WithMTLSFromPEMAndRevocationCheck is WithMTLSFromPEM plus a caller-supplied
-// peer revocation gate: trust is still the strict internal CA only, and AFTER
-// normal chain verification the connection's leaf certificate is fingerprinted
-// (hex SHA-256 of its DER) and passed to check. A non-nil return from check
-// FAILS the handshake, so a revoked peer — or, when check reports that it
-// cannot decide, an unverifiable one — is refused fail-closed rather than
-// trusted.
-//
-// check MUST be non-nil: a nil check would silently disable the gate, so it is
-// a construction error, not a no-op. The caller owns the policy — which
-// fingerprints are revoked and when an indeterminate answer fails closed; this
-// option only supplies the mechanism.
-//
-// Spec 41 removed this option's only caller. It existed so an agent could
-// refuse a revoked GATEWAY, and there is no gateway to revoke: the agent dials
-// control directly and control is the CA's own peer. The mechanism is kept
-// because it is exactly that — mechanism, with no policy baked in — and
-// deleting a working dial option would be an API break bought for nothing.
-// Client-side revocation of a server peer is not currently used anywhere.
-func WithMTLSFromPEMAndRevocationCheck(certPEM, keyPEM, caPEM []byte, check func(fingerprintHex string) error) (ClientOption, error) {
-	if check == nil {
-		return nil, errors.New("revocation check is required (fail-closed); pass a non-nil check")
-	}
-
-	cert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		return nil, fmt.Errorf("parse client certificate: %w", err)
-	}
-
-	caPool := x509.NewCertPool()
-	if !caPool.AppendCertsFromPEM(caPEM) {
-		return nil, errors.New("failed to parse CA certificate")
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caPool,
-		MinVersion:   tls.VersionTLS13,
-		// VerifyConnection runs AFTER the standard chain/RootCAs/ServerName
-		// verification (InsecureSkipVerify stays false), so this narrows trust
-		// further — it never widens it. A revoked (or unverifiable) peer
-		// leaf is rejected even though it chains to the pinned CA.
-		VerifyConnection: func(cs tls.ConnectionState) error {
-			if len(cs.PeerCertificates) == 0 {
-				return errors.New("server presented no certificate")
-			}
-			sum := sha256.Sum256(cs.PeerCertificates[0].Raw)
-			return check(hex.EncodeToString(sum[:]))
-		},
-	}
-
-	return &funcOption{func(c *Client, httpClient **http.Client) {
-		*httpClient = newHTTPClientWithTLS(tlsConfig)
-	}}, nil
-}
-
 // newHTTPClientWithTLS creates an HTTP client with HTTP/2 support enabled.
 // A bare http.Transport with a custom TLSClientConfig disables Go's automatic
 // HTTP/2 negotiation, so we explicitly configure it via http2.ConfigureTransport.
@@ -505,18 +446,6 @@ type RenewCertificateResult struct {
 	CACert      []byte // Active CA certificate (non-empty when CA has been rotated)
 }
 
-// Spec 41 removed GatewayCRL and FetchGatewayCRL with the gateway tier. The CRL
-// let an agent check the *gateway* server-cert it was connecting to. With no
-// gateway the agent's peer is control, and re-scoping the list to control's own
-// certificate is circular: the agent would fetch it over a connection
-// authenticated by the certificate under judgement, behind a gate that fails
-// closed before the first load — so it could never connect at all.
-//
-// Agent-certificate revocation, which is the direction that still matters,
-// moves entirely to the control side: a store lookup during the mTLS handshake,
-// with no published list, no distribution RPC and no agent-side cache. A stolen
-// device certificate still stops working.
-
 // RenewCertificate renews a device certificate via the control server.
 // The agent presents its current certificate for identity verification.
 func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert []byte, opts ...ClientOption) (*RenewCertificateResult, error) {
@@ -549,10 +478,8 @@ func RenewCertificate(ctx context.Context, controlURL string, csr, currentCert [
 type StreamHandler interface {
 	// OnWelcome is called when the server sends a welcome message.
 	OnWelcome(ctx context.Context, welcome *pm.Welcome) error
-	// OnManifestDelivery is called when control delivers a manifest, from the
-	// stream or from a SyncActions pull — both carry the same
-	// ManifestDelivery, and the handler cannot tell them apart because it must
-	// not behave differently.
+	// OnManifestDelivery is called when control delivers a manifest on the
+	// authenticated stream.
 	//
 	// The handler MUST durably record the delivery, keyed by its delivery_id,
 	// before returning nil. The SDK sends DeliveryReceipt only on a nil
@@ -786,12 +713,8 @@ func (c *Client) SendManifestResult(ctx context.Context, result *pm.ManifestResu
 // successful socket write, so the caller MUST NOT send it before the local
 // commit has landed.
 //
-// The stream path does not rely on the caller for that: runManifestDelivery
-// emits the receipt only after the handler returns nil, so on that path the
-// ordering is structural. This method is exported for the pull path, where
-// SyncActions returns the same deliveries and the agent sends the receipt from
-// inside its own durable-receipt transaction. The durability lives agent-side;
-// the SDK does not model it and must not pretend to.
+// runManifestDelivery calls this only after the handler returns nil, making the
+// durable-record-before-receipt ordering structural.
 func (c *Client) SendDeliveryReceipt(ctx context.Context, deliveryID string) error {
 	return c.send(ctx, &pm.AgentMessage{
 		Id: NewULID(),
@@ -907,7 +830,10 @@ func (c *Client) GetLuksKey(ctx context.Context, actionID string) (*pm.SealedVal
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case resp := <-ch:
+	case resp, ok := <-ch:
+		if !ok || resp == nil {
+			return nil, errors.New("stream closed while waiting for GetLuksKey response")
+		}
 		if errMsg := resp.GetError(); errMsg != nil {
 			return nil, fmt.Errorf("server error: %s", errMsg.Message)
 		}
@@ -955,7 +881,10 @@ func (c *Client) StoreLuksKey(ctx context.Context, actionID, devicePath string, 
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case resp := <-ch:
+	case resp, ok := <-ch:
+		if !ok || resp == nil {
+			return errors.New("stream closed while waiting for StoreLuksKey response")
+		}
 		if errMsg := resp.GetError(); errMsg != nil {
 			return fmt.Errorf("server error: %s", errMsg.Message)
 		}
@@ -1005,7 +934,10 @@ func (c *Client) StoreLpsPasswords(ctx context.Context, actionID string, rotatio
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case resp := <-ch:
+	case resp, ok := <-ch:
+		if !ok || resp == nil {
+			return errors.New("stream closed while waiting for StoreLpsPasswords response")
+		}
 		if errMsg := resp.GetError(); errMsg != nil {
 			return fmt.Errorf("server error: %s", errMsg.Message)
 		}
@@ -1096,7 +1028,7 @@ func (c *Client) Receive(ctx context.Context) (*pm.ServerMessage, error) {
 	return msg, nil
 }
 
-// Close closes the stream connection and cancels any pending LUKS requests.
+// Close closes the stream connection and cancels every pending request.
 func (c *Client) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -1105,7 +1037,7 @@ func (c *Client) Close() error {
 		return nil
 	}
 
-	// Cancel pending LUKS requests
+	// Cancel pending correlated requests.
 	c.pendingMu.Lock()
 	for id, ch := range c.pendingRequests {
 		close(ch)
@@ -1121,7 +1053,7 @@ func (c *Client) Close() error {
 }
 
 // StartReceiver starts a background goroutine that receives stream messages and
-// delivers them to pending request channels (for GetLuksKey/StoreLuksKey responses).
+// delivers them to pending correlated request channels.
 // Returns a cancel function to stop the receiver. This is useful for CLI tools that
 // need request-response correlation without the full Run() loop.
 // The caller must call Connect() and SendHello() before calling this.
@@ -1547,9 +1479,12 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 			return fmt.Errorf("handle error: %w", err)
 		}
 
-	case *pm.ServerMessage_GetLuksKey, *pm.ServerMessage_StoreLuksKey,
-		*pm.ServerMessage_StoreLpsPasswords:
-		// Secret request-response: deliver to the pending request by message ID.
+	case *pm.ServerMessage_SyncState,
+		*pm.ServerMessage_GetLuksKey,
+		*pm.ServerMessage_StoreLuksKey,
+		*pm.ServerMessage_StoreLpsPasswords,
+		*pm.ServerMessage_ValidateLuksToken:
+		// Correlated response: deliver to the pending request by message ID.
 		// Every Client method that blocks on registerPending MUST be listed here
 		// — a missing case does not error, it drops the frame and the caller
 		// blocks until its context expires.
@@ -1583,10 +1518,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 				// goroutine and would otherwise crash the whole agent.
 				c.safeGo("inventory", func() {
 					defer func() { <-c.invSem }()
-					// Server-originated: verify the signature (inside the
-					// handler) before collecting. A forged RequestInventory
-					// from a compromised server yields nil and never runs
-					// osquery.
+					// The handler may reject the request before running osquery.
 					if inv := invHandler.OnRequestInventory(ctx, req); inv != nil {
 						if err := c.SendInventory(ctx, inv); err != nil {
 							c.logger.Warn("failed to send inventory", "error", err)
@@ -1622,15 +1554,13 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 
 	case *pm.ServerMessage_RevokeLuksDeviceKey:
 		if p.RevokeLuksDeviceKey == nil {
-			// A compromised/buggy server could deliver a nil payload;
-			// dropping it avoids a nil dereference and is harmless (a
-			// real revocation always carries action_id + signature).
+			// A buggy server could deliver a nil payload; dropping it avoids
+			// a nil dereference.
 			c.logger.Warn("dropping RevokeLuksDeviceKey with nil payload", "message_id", msg.Id)
 			return nil
 		}
 		// Defence-in-depth before the irreversible LUKS slot-7 wipe: reject a
-		// malformed action_id at the SDK boundary (the handler still verifies
-		// the CA signature that binds it).
+		// malformed action_id at the SDK boundary.
 		if err := c.validateInbound(p.RevokeLuksDeviceKey); err != nil {
 			c.logger.Warn("dropping invalid RevokeLuksDeviceKey", "message_id", msg.Id, "error", err)
 			return nil
@@ -1649,8 +1579,7 @@ func (c *Client) dispatchServerMessage(ctx context.Context, msg *pm.ServerMessag
 				// spawned goroutine and would otherwise crash the agent.
 				c.safeGo("luks-revoke", func() {
 					defer func() { <-c.luksRevokeSem }()
-					// Pass the full message so the handler can verify the CA
-					// signature binding action_id before the destructive wipe.
+					// Pass the full message so later request fields remain available.
 					success, errMsg := luksHandler.OnRevokeLuksDeviceKey(ctx, req)
 					if err := c.SendRevokeLuksDeviceKeyResult(ctx, actionID, success, errMsg); err != nil {
 						c.logger.Warn("failed to send LUKS revocation result", "action_id", actionID, "error", err)
@@ -1765,37 +1694,48 @@ type ValidateLuksTokenResult struct {
 	Complexity pm.LpsPasswordComplexity
 }
 
-// ValidateLuksToken validates a one-time LUKS token via control's unary RPC.
-// The token is consumed (marked as used) atomically by the server.
+// ValidateLuksToken validates and atomically consumes a one-time LUKS token on
+// the existing authenticated agent stream.
 func (c *Client) ValidateLuksToken(ctx context.Context, token string) (*ValidateLuksTokenResult, error) {
-	c.mu.RLock()
-	deviceID := c.deviceID
-	c.mu.RUnlock()
-
-	if deviceID == "" {
-		return nil, errors.New("device ID not set")
+	id := NewULID()
+	ch := c.registerPending(id)
+	defer c.unregisterPending(id)
+	if err := c.send(ctx, &pm.AgentMessage{
+		Id: id,
+		Payload: &pm.AgentMessage_ValidateLuksToken{
+			ValidateLuksToken: &pm.ValidateLuksTokenRequest{Token: token},
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("send validate luks token request: %w", err)
 	}
-
-	req := connect.NewRequest(&pm.ValidateLuksTokenRequest{
-		DeviceId: deviceID,
-		Token:    token,
-	})
-
-	resp, err := c.client.ValidateLuksToken(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("validate luks token: %w", err)
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case response, ok := <-ch:
+		if !ok || response == nil {
+			return nil, errors.New("stream closed while waiting for ValidateLuksToken response")
+		}
+		if errorMessage := response.GetError(); errorMessage != nil {
+			return nil, fmt.Errorf("server error: %s", errorMessage.Message)
+		}
+		validated := response.GetValidateLuksToken()
+		if validated == nil {
+			return nil, errors.New("unexpected response type")
+		}
+		if err := c.validateInbound(validated); err != nil {
+			return nil, fmt.Errorf("invalid ValidateLuksToken response: %w", err)
+		}
+		return &ValidateLuksTokenResult{
+			ActionID:   validated.ActionId,
+			DevicePath: validated.DevicePath,
+			MinLength:  validated.MinLength,
+			Complexity: validated.Complexity,
+		}, nil
 	}
-
-	return &ValidateLuksTokenResult{
-		ActionID:   resp.Msg.ActionId,
-		DevicePath: resp.Msg.DevicePath,
-		MinLength:  resp.Msg.MinLength,
-		Complexity: resp.Msg.Complexity,
-	}, nil
 }
 
-// SyncActionsResult contains the result of a sync actions call.
-type SyncActionsResult struct {
+// SyncStateResult contains the current device state returned over the stream.
+type SyncStateResult struct {
 	// Deliveries are every manifest delivery currently assigned to this
 	// device, in exactly the form the stream pushes them. The caller records
 	// each one under its delivery_id and receipts it the same way, so a
@@ -1813,31 +1753,39 @@ type SyncActionsResult struct {
 	MaintenanceWindow *pm.MaintenanceWindow
 }
 
-// SyncActions fetches every delivery currently assigned to this device.
-// Called after a successful connection to converge the local store: the
-// returned deliveries are the complete assigned set, so a delivery the agent
-// holds and this response omits has been withdrawn.
-func (c *Client) SyncActions(ctx context.Context) (*SyncActionsResult, error) {
-	c.mu.RLock()
-	deviceID := c.deviceID
-	c.mu.RUnlock()
-
-	if deviceID == "" {
-		return nil, errors.New("device ID not set")
+// Sync requests the current deliveries and device policy on the existing
+// stream. The caller records every delivery before sending its receipt.
+func (c *Client) Sync(ctx context.Context) (*SyncStateResult, error) {
+	id := NewULID()
+	ch := c.registerPending(id)
+	defer c.unregisterPending(id)
+	if err := c.send(ctx, &pm.AgentMessage{
+		Id:      id,
+		Payload: &pm.AgentMessage_SyncRequest{SyncRequest: &pm.SyncRequest{}},
+	}); err != nil {
+		return nil, fmt.Errorf("send sync request: %w", err)
 	}
-
-	req := connect.NewRequest(&pm.SyncActionsRequest{
-		DeviceId: &pm.DeviceId{Value: deviceID},
-	})
-
-	resp, err := c.client.SyncActions(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("sync actions: %w", err)
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case response, ok := <-ch:
+		if !ok || response == nil {
+			return nil, errors.New("stream closed while waiting for SyncState response")
+		}
+		if errorMessage := response.GetError(); errorMessage != nil {
+			return nil, fmt.Errorf("server error: %s", errorMessage.Message)
+		}
+		state := response.GetSyncState()
+		if state == nil {
+			return nil, errors.New("unexpected response type")
+		}
+		if err := c.validateInbound(state); err != nil {
+			return nil, fmt.Errorf("invalid SyncState response: %w", err)
+		}
+		return &SyncStateResult{
+			Deliveries:          state.Deliveries,
+			SyncIntervalMinutes: state.SyncIntervalMinutes,
+			MaintenanceWindow:   state.MaintenanceWindow,
+		}, nil
 	}
-
-	return &SyncActionsResult{
-		Deliveries:          resp.Msg.Deliveries,
-		SyncIntervalMinutes: resp.Msg.SyncIntervalMinutes,
-		MaintenanceWindow:   resp.Msg.MaintenanceWindow,
-	}, nil
 }

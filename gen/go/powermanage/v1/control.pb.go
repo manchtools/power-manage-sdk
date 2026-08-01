@@ -2170,8 +2170,7 @@ type Device struct {
 	Labels           map[string]string      `protobuf:"bytes,8,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	AssignedUserIds  []string               `protobuf:"bytes,9,rep,name=assigned_user_ids,json=assignedUserIds,proto3" json:"assigned_user_ids,omitempty"`     // Users assigned to this device
 	AssignedGroupIds []string               `protobuf:"bytes,10,rep,name=assigned_group_ids,json=assignedGroupIds,proto3" json:"assigned_group_ids,omitempty"` // User groups assigned to this device
-	// Sync interval in minutes (0 = use default of 30 minutes)
-	// Agent will pull assigned actions at this interval
+	// Stream synchronization interval in minutes (0 = use default of 30 minutes).
 	SyncIntervalMinutes int32 `protobuf:"varint,11,opt,name=sync_interval_minutes,json=syncIntervalMinutes,proto3" json:"sync_interval_minutes,omitempty"`
 	// Compliance status based on detection scripts
 	ComplianceStatus    ComplianceStatus       `protobuf:"varint,12,opt,name=compliance_status,json=complianceStatus,proto3,enum=powermanage.v1.ComplianceStatus" json:"compliance_status,omitempty"`

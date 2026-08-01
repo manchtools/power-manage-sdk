@@ -18,10 +18,8 @@ import (
 // Fetch when the source is an extracted archive, a Git checkout, or
 // an S3 prefix (sha256Tree).
 //
-// The verify package in this SDK exposes signature helpers but no
-// file-level sha256 wrapper, so the file-hash + tree-walk live here.
-// Both helpers stream in fixed-size chunks; no path's content is ever
-// loaded entirely into memory.
+// Both helpers stream in fixed-size chunks; no path's content is ever loaded
+// entirely into memory.
 
 // digestBufSize is the per-file read chunk. 64 KiB matches the common
 // io.Copy default and keeps memory pressure bounded regardless of input

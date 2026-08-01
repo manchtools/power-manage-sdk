@@ -9,10 +9,9 @@ import (
 	"fmt"
 )
 
-// Asymmetric sealing: an ECIES-style construction for one-way secrets that a
-// low-trust relay must not be able to read (LPS passwords crossing the
-// gateway). The sender seals to the recipient's long-lived X25519 public key;
-// only the holder of the matching private key can open.
+// Asymmetric sealing: an ECIES-style construction for one-way secrets sent
+// between agent and control. The sender seals to the recipient's long-lived
+// X25519 public key; only the matching private key can open them.
 //
 // Construction, per seal:
 //
@@ -37,10 +36,8 @@ const (
 	// sealedOverhead is the total non-plaintext size of a sealed blob.
 	sealedOverhead = x25519KeyLen + aeadOverhead
 	// MinSealedLen is the smallest possible valid sealed blob: the
-	// construction overhead plus one plaintext byte. Boundary validators
-	// (proto `min=` tags, the gateway's legacy-cleartext guard) use it to
-	// reject anything that cannot possibly be a sealed blob — in particular
-	// a legacy cleartext secret from a pre-sealed-transport agent.
+	// construction overhead plus one plaintext byte. Boundary validators use
+	// it to reject anything that cannot possibly be a sealed blob.
 	MinSealedLen = sealedOverhead + 1
 )
 

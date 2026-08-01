@@ -12,9 +12,8 @@
 // escalate through the Runner (system logs are root-readable). Detect lists the
 // backends usable on the host.
 //
-// The signing/authorization of a remote log request is the consumer's concern
-// (the agent verifies a CA signature before calling this); this package is the
-// reader.
+// Authorization of a remote log request is the consumer's concern; this
+// package is the reader.
 package log
 
 import (

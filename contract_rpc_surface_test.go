@@ -73,6 +73,13 @@ var removedLocalAuth = map[string][]string{
 	},
 }
 
+// removedAgentUnary is the target-design transport consolidation. AgentService
+// exposes one long-lived bidirectional stream; synchronization and token
+// validation are correlated frames on that stream, not parallel unary paths.
+var removedAgentUnary = map[string][]string{
+	"AgentService": {"SyncActions", "ValidateLuksToken"},
+}
+
 // removalDeltas are the approved deltas, subtracted cumulatively from the one
 // golden predecessor. Keyed by name so a failure reports WHICH delta owns the
 // offending RPC instead of just "not expected".
@@ -83,6 +90,7 @@ var removedLocalAuth = map[string][]string{
 var removalDeltas = map[string]map[string][]string{
 	"spec-41-gateway-removal": removedBySpec41,
 	"local-auth-removal":      removedLocalAuth,
+	"single-agent-stream":     removedAgentUnary,
 }
 
 type goldenSurface struct {
@@ -427,7 +435,7 @@ func TestContract_TargetShape(t *testing.T) {
 		{"ActionResult", "occurrence_id", protoreflect.StringKind, "", false, "per-action result ingestion cannot be idempotent"},
 		{"ManifestResult", "delivery_id", protoreflect.StringKind, "", false, "the manifest result cannot be matched to its delivery"},
 		{"ManifestResult", "manifest_id", protoreflect.StringKind, "", false, "the manifest result names no manifest"},
-		{"SyncActionsResponse", "deliveries", protoreflect.MessageKind, "ManifestDelivery", true, "the pull path is not on the one dispatch model"},
+		{"SyncState", "deliveries", protoreflect.MessageKind, "ManifestDelivery", true, "stream synchronization is not on the one dispatch model"},
 		{"ServerMessage", "manifest_delivery", protoreflect.MessageKind, "ManifestDelivery", false, "control cannot deliver a manifest"},
 		{"AgentMessage", "delivery_receipt", protoreflect.MessageKind, "DeliveryReceipt", false, "the agent cannot confirm durable receipt"},
 		{"AgentMessage", "manifest_result", protoreflect.MessageKind, "ManifestResult", false, "there is no result for the complete manifest"},
@@ -465,6 +473,19 @@ func TestContract_TargetShape(t *testing.T) {
 	} else if status.Enum().Values().ByName("EXECUTION_STATUS_INDETERMINATE") == nil {
 		t.Errorf("%s has no EXECUTION_STATUS_INDETERMINATE — a crash after STARTED has no honest terminal status",
 			status.Enum().FullName())
+	}
+}
+
+// Design §3 requires exactly one agent-control transport. This exact-set check
+// prevents a future convenience RPC from silently reintroducing a second path.
+func TestContract_AgentServiceIsOneStream(t *testing.T) {
+	live := liveSurface(t)
+	methods, ok := live["AgentService"]
+	if !ok {
+		t.Fatal("AgentService is absent")
+	}
+	if len(methods) != 1 || methods[0] != "Stream" {
+		t.Fatalf("AgentService methods = %v, want exactly [Stream]", methods)
 	}
 }
 

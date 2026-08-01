@@ -329,8 +329,7 @@ message Device {
   map<string, string> labels = 8;
   repeated string assigned_user_ids = 9; // Users assigned to this device
   repeated string assigned_group_ids = 10; // User groups assigned to this device
-  // Sync interval in minutes (0 = use default of 30 minutes)
-  // Agent will pull assigned actions at this interval
+  // Stream synchronization interval in minutes (0 = use default of 30 minutes).
   int32 sync_interval_minutes = 11;
   // Compliance status based on detection scripts
   ComplianceStatus compliance_status = 12;
