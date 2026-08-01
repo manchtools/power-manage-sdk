@@ -5,8 +5,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint:proto": "buf lint",
-    "format:proto": "buf format --diff --exit-code"
+    "lint:proto": "cd proto && ../scripts/buf.sh lint",
+    "format:proto": "cd proto && ../scripts/buf.sh format --diff --exit-code"
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.64.0",

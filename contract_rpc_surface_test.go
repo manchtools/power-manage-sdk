@@ -14,18 +14,13 @@ import (
 	_ "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1" // registers the contract descriptors
 )
 
-// Spec 41 (gateway removal), acceptance criterion 10.
-//
-// The surviving RPC set is compared against a golden list captured from the
-// PREDECESSOR descriptor, checked in at testdata/rpc_golden_pre_spec41.json.
-//
-// Why a checked-in golden and not a regenerated one: deriving both the expected
-// and the actual set from the post-change descriptor makes the comparison
-// vacuous — an RPC dropped by accident disappears from both sides and the test
-// passes. This is the exact defect the manifest checker was rewritten to remove,
-// so it is not being reintroduced here. The golden file is a reviewed commit; it
-// is never regenerated from the tree under test.
-const goldenPath = "testdata/rpc_golden_pre_spec41.json"
+// The current golden guards the exact public contract. The predecessor golden
+// separately preserves the evidence for the approved removal sets; it is a test
+// oracle, not a compatibility surface.
+const (
+	currentGoldenPath     = "testdata/rpc_golden.json"
+	predecessorGoldenPath = "testdata/rpc_golden_pre_spec41.json"
+)
 
 // removedBySpec41 is the deletion set the spec enumerates: the gateway tier and
 // the relay-only plumbing that exists because an untrusted hop sat between agent
@@ -80,13 +75,8 @@ var removedAgentUnary = map[string][]string{
 	"AgentService": {"SyncActions", "ValidateLuksToken"},
 }
 
-// removalDeltas are the approved deltas, subtracted cumulatively from the one
-// golden predecessor. Keyed by name so a failure reports WHICH delta owns the
-// offending RPC instead of just "not expected".
-//
-// New removals are added as a new delta rather than by growing an existing one
-// or by re-capturing the golden: the golden is a committed reviewed artifact
-// and the deltas are the reviewable record of what left the contract and why.
+// removalDeltas are the complete approved difference between the predecessor
+// and the target contract.
 var removalDeltas = map[string]map[string][]string{
 	"spec-41-gateway-removal": removedBySpec41,
 	"local-auth-removal":      removedLocalAuth,
@@ -98,11 +88,11 @@ type goldenSurface struct {
 	Services map[string][]string `json:"services"`
 }
 
-func loadGolden(t *testing.T) goldenSurface {
+func loadGolden(t *testing.T, path string, minimumTotal, minimumServices int) goldenSurface {
 	t.Helper()
-	raw, err := os.ReadFile(goldenPath)
+	raw, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("read golden: %v (it must be a committed artifact, never regenerated)", err)
+		t.Fatalf("read golden %s: %v", path, err)
 	}
 	var g goldenSurface
 	if err := json.Unmarshal(raw, &g); err != nil {
@@ -110,9 +100,8 @@ func loadGolden(t *testing.T) goldenSurface {
 	}
 	// Matches-zero: a golden that decayed to empty would make every assertion
 	// below trivially true.
-	if g.Total < 100 || len(g.Services) < 4 {
-		t.Fatalf("golden looks truncated (total=%d services=%d) — refusing to verify against it",
-			g.Total, len(g.Services))
+	if g.Total < minimumTotal || len(g.Services) < minimumServices {
+		t.Fatalf("golden %s looks truncated (total=%d services=%d)", path, g.Total, len(g.Services))
 	}
 	// Self-consistency: `total` is recorded independently of the per-service
 	// lists, so it is a second witness. Editing a name out of a list without
@@ -123,8 +112,7 @@ func loadGolden(t *testing.T) goldenSurface {
 		sum += len(v)
 	}
 	if sum != g.Total {
-		t.Fatalf("golden is internally inconsistent: total=%d but its service lists hold %d — "+
-			"it has been edited by hand or regenerated from the wrong tree", g.Total, sum)
+		t.Fatalf("golden %s is internally inconsistent: total=%d but its service lists hold %d", path, g.Total, sum)
 	}
 	return g
 }
@@ -171,124 +159,102 @@ func liveSurface(t *testing.T) map[string][]string {
 	return out
 }
 
-// removalOwner reports which delta deletes svc/name, if any.
-func removalOwner(svc, name string) (string, bool) {
-	for delta, byService := range removalDeltas {
-		if contains(byService[svc], name) {
-			return delta, true
+func assertSurfaceEqual(t *testing.T, got, want map[string][]string) {
+	t.Helper()
+	for svc, wantMethods := range want {
+		gotMethods, ok := got[svc]
+		if !ok {
+			t.Errorf("MISSING service %s", svc)
+			continue
+		}
+		for _, method := range wantMethods {
+			if !contains(gotMethods, method) {
+				t.Errorf("MISSING: %s/%s", svc, method)
+			}
 		}
 	}
-	return "", false
+	for svc, gotMethods := range got {
+		wantMethods, ok := want[svc]
+		if !ok {
+			t.Errorf("UNEXPECTED service %s", svc)
+			continue
+		}
+		for _, method := range gotMethods {
+			if !contains(wantMethods, method) {
+				t.Errorf("UNEXPECTED: %s/%s", svc, method)
+			}
+		}
+	}
 }
 
-// TestRPCSurface_MatchesGoldenMinusApprovedRemovals is the criterion-10 gate,
-// extended to every approved removal delta rather than spec 41 alone.
-func TestRPCSurface_MatchesGoldenMinusApprovedRemovals(t *testing.T) {
-	golden := loadGolden(t)
-	live := liveSurface(t)
-
-	// Matches-zero: a delta map that decayed to empty (or a delta whose lists
-	// all emptied) would turn "golden minus deltas" back into "golden", and the
-	// removals would silently stop being verified as removals.
-	if len(removalDeltas) == 0 {
-		t.Fatal("no removal deltas declared — the subtraction below would be a no-op")
+func surfaceTotal(surface map[string][]string) int {
+	total := 0
+	for _, methods := range surface {
+		total += len(methods)
 	}
-	for delta, byService := range removalDeltas {
-		n := 0
-		for _, names := range byService {
-			n += len(names)
-		}
-		if n == 0 {
-			t.Fatalf("removal delta %q is empty — an empty delta removes nothing and asserts nothing", delta)
-		}
-	}
+	return total
+}
 
-	// Deltas must be disjoint. A name listed twice is subtracted once but
-	// counted twice by any per-delta arithmetic, and it means two reviews each
-	// believe they own the same deletion.
+// TestRPCSurface_MatchesTargetGolden proves the deployed contract is exactly
+// the reviewed target surface. The expected side never comes from the live
+// descriptor, so an accidental deletion cannot disappear from both sides.
+func TestRPCSurface_MatchesTargetGolden(t *testing.T) {
+	want := loadGolden(t, currentGoldenPath, 150, 3)
+	got := liveSurface(t)
+	assertSurfaceEqual(t, got, want.Services)
+	if total := surfaceTotal(got); total != want.Total {
+		t.Errorf("RPC count: shipped %d, want %d", total, want.Total)
+	}
+}
+
+// TestRPCSurface_PredecessorDifferenceIsApproved proves that every departure
+// from the predecessor is named, including exactly 14 Gateway-only RPCs. This
+// records intentional deletion; it does not keep any predecessor endpoint live.
+func TestRPCSurface_PredecessorDifferenceIsApproved(t *testing.T) {
+	predecessor := loadGolden(t, predecessorGoldenPath, 180, 6)
+	current := loadGolden(t, currentGoldenPath, 150, 3)
+
 	seen := map[string]string{}
+	removed := 0
 	for delta, byService := range removalDeltas {
+		deltaCount := 0
 		for svc, names := range byService {
-			for _, n := range names {
-				key := svc + "/" + n
-				if other, dup := seen[key]; dup {
-					t.Errorf("%s is claimed by both removal deltas %q and %q", key, other, delta)
-					continue
+			for _, name := range names {
+				key := svc + "/" + name
+				if owner, duplicate := seen[key]; duplicate {
+					t.Errorf("%s is claimed by both %q and %q", key, owner, delta)
 				}
 				seen[key] = delta
-			}
-		}
-	}
-
-	// Every declared removal must exist in the predecessor. A typo here would
-	// otherwise silently under-remove: the misspelled name is absent from the
-	// golden, so subtracting it changes nothing.
-	for delta, byService := range removalDeltas {
-		for svc, names := range byService {
-			have, ok := golden.Services[svc]
-			if !ok {
-				t.Fatalf("removal delta %q names service %q, absent from the golden predecessor", delta, svc)
-			}
-			for _, n := range names {
-				if !contains(have, n) {
-					t.Errorf("removal delta %q names %s/%s, which the predecessor never had — typo?", delta, svc, n)
+				deltaCount++
+				if !contains(predecessor.Services[svc], name) {
+					t.Errorf("%s names %s, absent from the predecessor", delta, key)
 				}
 			}
 		}
+		if deltaCount == 0 {
+			t.Errorf("removal delta %q is empty", delta)
+		}
+		if delta == "spec-41-gateway-removal" && deltaCount != 14 {
+			t.Errorf("Gateway removal has %d RPCs, want exactly 14", deltaCount)
+		}
+		removed += deltaCount
 	}
 
-	expected := map[string][]string{}
-	for svc, names := range golden.Services {
-		var keep []string
-		for _, n := range names {
-			if _, removed := removalOwner(svc, n); !removed {
-				keep = append(keep, n)
+	wantCurrent := map[string][]string{}
+	for svc, methods := range predecessor.Services {
+		for _, method := range methods {
+			if _, isRemoved := seen[svc+"/"+method]; !isRemoved {
+				wantCurrent[svc] = append(wantCurrent[svc], method)
 			}
 		}
-		if len(keep) > 0 {
-			sort.Strings(keep)
-			expected[svc] = keep
+		if len(wantCurrent[svc]) == 0 {
+			delete(wantCurrent, svc)
 		}
 	}
-
-	for svc, want := range expected {
-		got := live[svc]
-		for _, n := range want {
-			if !contains(got, n) {
-				t.Errorf("MISSING: %s/%s is removed by no approved delta but is absent from the shipped descriptor", svc, n)
-			}
-		}
-	}
-	for svc, got := range live {
-		for _, n := range got {
-			if contains(expected[svc], n) {
-				continue
-			}
-			if delta, removed := removalOwner(svc, n); removed {
-				t.Errorf("UNEXPECTED: %s/%s is still shipped — removal delta %q deletes it", svc, n, delta)
-				continue
-			}
-			t.Errorf("UNEXPECTED: %s/%s is shipped but the golden predecessor never had it "+
-				"and no delta mentions it — the contract grew outside review", svc, n)
-		}
-	}
-
-	// Independent arithmetic witness: count the removals straight off the
-	// deltas instead of re-deriving them from `expected`, so a subtraction bug
-	// in the loop above cannot agree with itself.
-	removed := 0
-	for _, byService := range removalDeltas {
-		for _, names := range byService {
-			removed += len(names)
-		}
-	}
-	gotTotal := 0
-	for _, v := range live {
-		gotTotal += len(v)
-	}
-	if want := golden.Total - removed; gotTotal != want {
-		t.Errorf("RPC count: shipped %d, expected %d (golden %d minus %d removals across %d deltas)",
-			gotTotal, want, golden.Total, removed, len(removalDeltas))
+	assertSurfaceEqual(t, current.Services, wantCurrent)
+	if want := predecessor.Total - removed; current.Total != want {
+		t.Errorf("target total is %d, want predecessor %d minus %d approved removals = %d",
+			current.Total, predecessor.Total, removed, want)
 	}
 }
 

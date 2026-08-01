@@ -297,10 +297,9 @@ func TestRenewCertificate_HappyPath(t *testing.T) {
 // and re-scoping the list to control's own certificate would be circular.
 //
 // Replacement coverage, deliberately stronger than these were: the RPC's
-// ABSENCE is now asserted by TestRPCSurface_MatchesGoldenMinusApprovedRemovals in
-// contract_rpc_surface_test.go, against a golden list captured from the
-// predecessor descriptor. A stub test proves an endpoint answers; the contract
-// test proves the endpoint is gone and that nothing else went with it.
+// ABSENCE is now asserted by TestRPCSurface_MatchesTargetGolden in
+// contract_rpc_surface_test.go. A stub test proves an endpoint answers; the
+// contract test proves the endpoint is gone and the shipped set is exact.
 //
 // The surviving direction — control refusing a revoked AGENT certificate at the
 // mTLS handshake — is server-side and is covered by spec 41 criteria 4-6 in the

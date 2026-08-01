@@ -2,7 +2,6 @@
 // These match the snake_case codes in server/internal/api/errors.go.
 
 export const ErrNotAuthenticated = 'not_authenticated';
-export const ErrInvalidCredentials = 'invalid_credentials';
 export const ErrTokenExpired = 'token_expired';
 export const ErrPermissionDenied = 'permission_denied';
 export const ErrRateLimited = 'rate_limited';

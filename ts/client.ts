@@ -640,10 +640,6 @@ export class ApiClient {
 		await client.deleteToken(create(DeleteTokenRequestSchema, { id }));
 	}
 
-	// Spec 41 removed listGateways and revokeGatewayCertificate with the gateway
-	// tier. Agent-certificate revocation, the direction that still matters, is a
-	// control-side store lookup at the mTLS handshake — not an RPC.
-
 	// ============================================================================
 	// Actions (single executable actions)
 	// ============================================================================
@@ -1779,7 +1775,7 @@ export class ApiClient {
 
 	// Remote terminal (PTY) sessions.
 	//
-	// startTerminal mints a short-lived session token + public gateway
+	// startTerminal mints a short-lived session token + public control
 	// WebSocket URL; stopTerminal ends the session gracefully (owner-
 	// initiated, idempotent). The admin-only listActiveTerminalSessions
 	// / terminateTerminalSession pair is for moderation — see the
