@@ -773,6 +773,10 @@ message ActionSet {
   // member actions never fire on their own when assigned via this set.
   // @gotags: validate:"required"
   ActionSchedule schedule = 8;
+  // Failure policy resolved onto every occurrence in the compiled manifest.
+  // CONTINUE is the default; STOP must be selected explicitly.
+  // @gotags: validate:"omitempty"
+  OnFailure on_failure = 9;
 }
 
 message ActionSetMember {
@@ -796,6 +800,9 @@ message CreateActionSetRequest {
   // member actions never fire on their own when assigned via this set.
   // @gotags: validate:"required"
   ActionSchedule schedule = 3;
+  // CONTINUE is the default; STOP must be selected explicitly.
+  // @gotags: validate:"omitempty"
+  OnFailure on_failure = 4;
 }
 
 message CreateActionSetResponse {
@@ -846,6 +853,9 @@ message UpdateActionSetScheduleRequest {
   // Replacement schedule for the set. Required.
   // @gotags: validate:"required"
   ActionSchedule schedule = 2;
+  // Replacement failure policy. CONTINUE is the default.
+  // @gotags: validate:"omitempty"
+  OnFailure on_failure = 3;
 }
 
 message UpdateActionSetResponse {
