@@ -18,7 +18,6 @@ import {
 	UpdateUserEmailRequestSchema,
 	SetUserDisabledRequestSchema,
 	UpdateUserProfileRequestSchema,
-	DeleteUserRequestSchema,
 	UpdateUserLinuxUsernameRequestSchema,
 	AddUserSshKeyRequestSchema,
 	RemoveUserSshKeyRequestSchema,
@@ -111,9 +110,11 @@ import {
 	ListAuditEventsRequestSchema,
 	ExportAuditEventsRequestSchema,
 	// LPS
-	GetDeviceLpsPasswordsRequestSchema,
+	ListLpsPasswordsRequestSchema,
+	RevealLpsPasswordRequestSchema,
 	// LUKS
-	GetDeviceLuksKeysRequestSchema,
+	ListLuksKeysRequestSchema,
+	RevealLuksKeyRequestSchema,
 	CreateLuksTokenRequestSchema,
 	RevokeLuksDeviceKeyRequestSchema,
 	// OSQuery & Inventory
@@ -454,11 +455,6 @@ export class ApiClient {
 			create(UpdateUserProfileRequestSchema, { id, ...profile })
 		);
 		return response.user;
-	}
-
-	async deleteUser(id: string) {
-		const client = this.getClient();
-		await client.deleteUser(create(DeleteUserRequestSchema, { id }));
 	}
 
 	async updateUserLinuxUsername(userId: string, linuxUsername: string) {
@@ -1187,17 +1183,31 @@ export class ApiClient {
 		);
 	}
 
-	async getDeviceLpsPasswords(deviceId: string) {
+	async listLpsPasswords(deviceId: string) {
 		const client = this.getClient();
-		return client.getDeviceLpsPasswords(
-			create(GetDeviceLpsPasswordsRequestSchema, { deviceId })
+		return client.listLpsPasswords(
+			create(ListLpsPasswordsRequestSchema, { deviceId })
 		);
 	}
 
-	async getDeviceLuksKeys(deviceId: string) {
+	async revealLpsPassword(id: string) {
 		const client = this.getClient();
-		return client.getDeviceLuksKeys(
-			create(GetDeviceLuksKeysRequestSchema, { deviceId })
+		return client.revealLpsPassword(
+			create(RevealLpsPasswordRequestSchema, { id })
+		);
+	}
+
+	async listLuksKeys(deviceId: string) {
+		const client = this.getClient();
+		return client.listLuksKeys(
+			create(ListLuksKeysRequestSchema, { deviceId })
+		);
+	}
+
+	async revealLuksKey(id: string) {
+		const client = this.getClient();
+		return client.revealLuksKey(
+			create(RevealLuksKeyRequestSchema, { id })
 		);
 	}
 

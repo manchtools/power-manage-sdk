@@ -114,9 +114,6 @@ const (
 	// ControlServiceUpdateUserSshSettingsProcedure is the fully-qualified name of the ControlService's
 	// UpdateUserSshSettings RPC.
 	ControlServiceUpdateUserSshSettingsProcedure = "/powermanage.v1.ControlService/UpdateUserSshSettings"
-	// ControlServiceDeleteUserProcedure is the fully-qualified name of the ControlService's DeleteUser
-	// RPC.
-	ControlServiceDeleteUserProcedure = "/powermanage.v1.ControlService/DeleteUser"
 	// ControlServiceListDevicesProcedure is the fully-qualified name of the ControlService's
 	// ListDevices RPC.
 	ControlServiceListDevicesProcedure = "/powermanage.v1.ControlService/ListDevices"
@@ -347,12 +344,18 @@ const (
 	// ControlServiceExportAuditEventsProcedure is the fully-qualified name of the ControlService's
 	// ExportAuditEvents RPC.
 	ControlServiceExportAuditEventsProcedure = "/powermanage.v1.ControlService/ExportAuditEvents"
-	// ControlServiceGetDeviceLpsPasswordsProcedure is the fully-qualified name of the ControlService's
-	// GetDeviceLpsPasswords RPC.
-	ControlServiceGetDeviceLpsPasswordsProcedure = "/powermanage.v1.ControlService/GetDeviceLpsPasswords"
-	// ControlServiceGetDeviceLuksKeysProcedure is the fully-qualified name of the ControlService's
-	// GetDeviceLuksKeys RPC.
-	ControlServiceGetDeviceLuksKeysProcedure = "/powermanage.v1.ControlService/GetDeviceLuksKeys"
+	// ControlServiceListLpsPasswordsProcedure is the fully-qualified name of the ControlService's
+	// ListLpsPasswords RPC.
+	ControlServiceListLpsPasswordsProcedure = "/powermanage.v1.ControlService/ListLpsPasswords"
+	// ControlServiceRevealLpsPasswordProcedure is the fully-qualified name of the ControlService's
+	// RevealLpsPassword RPC.
+	ControlServiceRevealLpsPasswordProcedure = "/powermanage.v1.ControlService/RevealLpsPassword"
+	// ControlServiceListLuksKeysProcedure is the fully-qualified name of the ControlService's
+	// ListLuksKeys RPC.
+	ControlServiceListLuksKeysProcedure = "/powermanage.v1.ControlService/ListLuksKeys"
+	// ControlServiceRevealLuksKeyProcedure is the fully-qualified name of the ControlService's
+	// RevealLuksKey RPC.
+	ControlServiceRevealLuksKeyProcedure = "/powermanage.v1.ControlService/RevealLuksKey"
 	// ControlServiceCreateLuksTokenProcedure is the fully-qualified name of the ControlService's
 	// CreateLuksToken RPC.
 	ControlServiceCreateLuksTokenProcedure = "/powermanage.v1.ControlService/CreateLuksToken"
@@ -539,7 +542,6 @@ type ControlServiceClient interface {
 	AddUserSshKey(context.Context, *connect.Request[v1.AddUserSshKeyRequest]) (*connect.Response[v1.AddUserSshKeyResponse], error)
 	RemoveUserSshKey(context.Context, *connect.Request[v1.RemoveUserSshKeyRequest]) (*connect.Response[v1.RemoveUserSshKeyResponse], error)
 	UpdateUserSshSettings(context.Context, *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error)
-	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
 	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
 	GetDevice(context.Context, *connect.Request[v1.GetDeviceRequest]) (*connect.Response[v1.GetDeviceResponse], error)
@@ -628,9 +630,11 @@ type ControlServiceClient interface {
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
 	ExportAuditEvents(context.Context, *connect.Request[v1.ExportAuditEventsRequest]) (*connect.Response[v1.ExportAuditEventsResponse], error)
 	// LPS (Local Password Solution)
-	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
+	ListLpsPasswords(context.Context, *connect.Request[v1.ListLpsPasswordsRequest]) (*connect.Response[v1.ListLpsPasswordsResponse], error)
+	RevealLpsPassword(context.Context, *connect.Request[v1.RevealLpsPasswordRequest]) (*connect.Response[v1.RevealLpsPasswordResponse], error)
 	// LUKS (Disk Encryption)
-	GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error)
+	ListLuksKeys(context.Context, *connect.Request[v1.ListLuksKeysRequest]) (*connect.Response[v1.ListLuksKeysResponse], error)
+	RevealLuksKey(context.Context, *connect.Request[v1.RevealLuksKeyRequest]) (*connect.Response[v1.RevealLuksKeyResponse], error)
 	CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error)
 	RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error)
 	// OSQuery / Device Inventory
@@ -870,12 +874,6 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceUpdateUserSshSettingsProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("UpdateUserSshSettings")),
-			connect.WithClientOptions(opts...),
-		),
-		deleteUser: connect.NewClient[v1.DeleteUserRequest, v1.DeleteUserResponse](
-			httpClient,
-			baseURL+ControlServiceDeleteUserProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("DeleteUser")),
 			connect.WithClientOptions(opts...),
 		),
 		listDevices: connect.NewClient[v1.ListDevicesRequest, v1.ListDevicesResponse](
@@ -1340,16 +1338,28 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("ExportAuditEvents")),
 			connect.WithClientOptions(opts...),
 		),
-		getDeviceLpsPasswords: connect.NewClient[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse](
+		listLpsPasswords: connect.NewClient[v1.ListLpsPasswordsRequest, v1.ListLpsPasswordsResponse](
 			httpClient,
-			baseURL+ControlServiceGetDeviceLpsPasswordsProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLpsPasswords")),
+			baseURL+ControlServiceListLpsPasswordsProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListLpsPasswords")),
 			connect.WithClientOptions(opts...),
 		),
-		getDeviceLuksKeys: connect.NewClient[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse](
+		revealLpsPassword: connect.NewClient[v1.RevealLpsPasswordRequest, v1.RevealLpsPasswordResponse](
 			httpClient,
-			baseURL+ControlServiceGetDeviceLuksKeysProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("GetDeviceLuksKeys")),
+			baseURL+ControlServiceRevealLpsPasswordProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevealLpsPassword")),
+			connect.WithClientOptions(opts...),
+		),
+		listLuksKeys: connect.NewClient[v1.ListLuksKeysRequest, v1.ListLuksKeysResponse](
+			httpClient,
+			baseURL+ControlServiceListLuksKeysProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ListLuksKeys")),
+			connect.WithClientOptions(opts...),
+		),
+		revealLuksKey: connect.NewClient[v1.RevealLuksKeyRequest, v1.RevealLuksKeyResponse](
+			httpClient,
+			baseURL+ControlServiceRevealLuksKeyProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("RevealLuksKey")),
 			connect.WithClientOptions(opts...),
 		),
 		createLuksToken: connect.NewClient[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse](
@@ -1685,7 +1695,6 @@ type controlServiceClient struct {
 	addUserSshKey                     *connect.Client[v1.AddUserSshKeyRequest, v1.AddUserSshKeyResponse]
 	removeUserSshKey                  *connect.Client[v1.RemoveUserSshKeyRequest, v1.RemoveUserSshKeyResponse]
 	updateUserSshSettings             *connect.Client[v1.UpdateUserSshSettingsRequest, v1.UpdateUserResponse]
-	deleteUser                        *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 	listDevices                       *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
 	getDevice                         *connect.Client[v1.GetDeviceRequest, v1.GetDeviceResponse]
 	setDeviceLabel                    *connect.Client[v1.SetDeviceLabelRequest, v1.UpdateDeviceResponse]
@@ -1763,8 +1772,10 @@ type controlServiceClient struct {
 	listExecutions                    *connect.Client[v1.ListExecutionsRequest, v1.ListExecutionsResponse]
 	listAuditEvents                   *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
 	exportAuditEvents                 *connect.Client[v1.ExportAuditEventsRequest, v1.ExportAuditEventsResponse]
-	getDeviceLpsPasswords             *connect.Client[v1.GetDeviceLpsPasswordsRequest, v1.GetDeviceLpsPasswordsResponse]
-	getDeviceLuksKeys                 *connect.Client[v1.GetDeviceLuksKeysRequest, v1.GetDeviceLuksKeysResponse]
+	listLpsPasswords                  *connect.Client[v1.ListLpsPasswordsRequest, v1.ListLpsPasswordsResponse]
+	revealLpsPassword                 *connect.Client[v1.RevealLpsPasswordRequest, v1.RevealLpsPasswordResponse]
+	listLuksKeys                      *connect.Client[v1.ListLuksKeysRequest, v1.ListLuksKeysResponse]
+	revealLuksKey                     *connect.Client[v1.RevealLuksKeyRequest, v1.RevealLuksKeyResponse]
 	createLuksToken                   *connect.Client[v1.CreateLuksTokenRequest, v1.CreateLuksTokenResponse]
 	revokeLuksDeviceKey               *connect.Client[v1.RevokeLuksDeviceKeyRequest, v1.RevokeLuksDeviceKeyResponse]
 	dispatchOSQuery                   *connect.Client[v1.DispatchOSQueryRequest, v1.DispatchOSQueryResponse]
@@ -1955,11 +1966,6 @@ func (c *controlServiceClient) RemoveUserSshKey(ctx context.Context, req *connec
 // UpdateUserSshSettings calls powermanage.v1.ControlService.UpdateUserSshSettings.
 func (c *controlServiceClient) UpdateUserSshSettings(ctx context.Context, req *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return c.updateUserSshSettings.CallUnary(ctx, req)
-}
-
-// DeleteUser calls powermanage.v1.ControlService.DeleteUser.
-func (c *controlServiceClient) DeleteUser(ctx context.Context, req *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
-	return c.deleteUser.CallUnary(ctx, req)
 }
 
 // ListDevices calls powermanage.v1.ControlService.ListDevices.
@@ -2349,14 +2355,24 @@ func (c *controlServiceClient) ExportAuditEvents(ctx context.Context, req *conne
 	return c.exportAuditEvents.CallUnary(ctx, req)
 }
 
-// GetDeviceLpsPasswords calls powermanage.v1.ControlService.GetDeviceLpsPasswords.
-func (c *controlServiceClient) GetDeviceLpsPasswords(ctx context.Context, req *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
-	return c.getDeviceLpsPasswords.CallUnary(ctx, req)
+// ListLpsPasswords calls powermanage.v1.ControlService.ListLpsPasswords.
+func (c *controlServiceClient) ListLpsPasswords(ctx context.Context, req *connect.Request[v1.ListLpsPasswordsRequest]) (*connect.Response[v1.ListLpsPasswordsResponse], error) {
+	return c.listLpsPasswords.CallUnary(ctx, req)
 }
 
-// GetDeviceLuksKeys calls powermanage.v1.ControlService.GetDeviceLuksKeys.
-func (c *controlServiceClient) GetDeviceLuksKeys(ctx context.Context, req *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error) {
-	return c.getDeviceLuksKeys.CallUnary(ctx, req)
+// RevealLpsPassword calls powermanage.v1.ControlService.RevealLpsPassword.
+func (c *controlServiceClient) RevealLpsPassword(ctx context.Context, req *connect.Request[v1.RevealLpsPasswordRequest]) (*connect.Response[v1.RevealLpsPasswordResponse], error) {
+	return c.revealLpsPassword.CallUnary(ctx, req)
+}
+
+// ListLuksKeys calls powermanage.v1.ControlService.ListLuksKeys.
+func (c *controlServiceClient) ListLuksKeys(ctx context.Context, req *connect.Request[v1.ListLuksKeysRequest]) (*connect.Response[v1.ListLuksKeysResponse], error) {
+	return c.listLuksKeys.CallUnary(ctx, req)
+}
+
+// RevealLuksKey calls powermanage.v1.ControlService.RevealLuksKey.
+func (c *controlServiceClient) RevealLuksKey(ctx context.Context, req *connect.Request[v1.RevealLuksKeyRequest]) (*connect.Response[v1.RevealLuksKeyResponse], error) {
+	return c.revealLuksKey.CallUnary(ctx, req)
 }
 
 // CreateLuksToken calls powermanage.v1.ControlService.CreateLuksToken.
@@ -2647,7 +2663,6 @@ type ControlServiceHandler interface {
 	AddUserSshKey(context.Context, *connect.Request[v1.AddUserSshKeyRequest]) (*connect.Response[v1.AddUserSshKeyResponse], error)
 	RemoveUserSshKey(context.Context, *connect.Request[v1.RemoveUserSshKeyRequest]) (*connect.Response[v1.RemoveUserSshKeyResponse], error)
 	UpdateUserSshSettings(context.Context, *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error)
-	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 	// Devices
 	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
 	GetDevice(context.Context, *connect.Request[v1.GetDeviceRequest]) (*connect.Response[v1.GetDeviceResponse], error)
@@ -2736,9 +2751,11 @@ type ControlServiceHandler interface {
 	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
 	ExportAuditEvents(context.Context, *connect.Request[v1.ExportAuditEventsRequest]) (*connect.Response[v1.ExportAuditEventsResponse], error)
 	// LPS (Local Password Solution)
-	GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error)
+	ListLpsPasswords(context.Context, *connect.Request[v1.ListLpsPasswordsRequest]) (*connect.Response[v1.ListLpsPasswordsResponse], error)
+	RevealLpsPassword(context.Context, *connect.Request[v1.RevealLpsPasswordRequest]) (*connect.Response[v1.RevealLpsPasswordResponse], error)
 	// LUKS (Disk Encryption)
-	GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error)
+	ListLuksKeys(context.Context, *connect.Request[v1.ListLuksKeysRequest]) (*connect.Response[v1.ListLuksKeysResponse], error)
+	RevealLuksKey(context.Context, *connect.Request[v1.RevealLuksKeyRequest]) (*connect.Response[v1.RevealLuksKeyResponse], error)
 	CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error)
 	RevokeLuksDeviceKey(context.Context, *connect.Request[v1.RevokeLuksDeviceKeyRequest]) (*connect.Response[v1.RevokeLuksDeviceKeyResponse], error)
 	// OSQuery / Device Inventory
@@ -2974,12 +2991,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceUpdateUserSshSettingsProcedure,
 		svc.UpdateUserSshSettings,
 		connect.WithSchema(controlServiceMethods.ByName("UpdateUserSshSettings")),
-		connect.WithHandlerOptions(opts...),
-	)
-	controlServiceDeleteUserHandler := connect.NewUnaryHandler(
-		ControlServiceDeleteUserProcedure,
-		svc.DeleteUser,
-		connect.WithSchema(controlServiceMethods.ByName("DeleteUser")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceListDevicesHandler := connect.NewUnaryHandler(
@@ -3444,16 +3455,28 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("ExportAuditEvents")),
 		connect.WithHandlerOptions(opts...),
 	)
-	controlServiceGetDeviceLpsPasswordsHandler := connect.NewUnaryHandler(
-		ControlServiceGetDeviceLpsPasswordsProcedure,
-		svc.GetDeviceLpsPasswords,
-		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLpsPasswords")),
+	controlServiceListLpsPasswordsHandler := connect.NewUnaryHandler(
+		ControlServiceListLpsPasswordsProcedure,
+		svc.ListLpsPasswords,
+		connect.WithSchema(controlServiceMethods.ByName("ListLpsPasswords")),
 		connect.WithHandlerOptions(opts...),
 	)
-	controlServiceGetDeviceLuksKeysHandler := connect.NewUnaryHandler(
-		ControlServiceGetDeviceLuksKeysProcedure,
-		svc.GetDeviceLuksKeys,
-		connect.WithSchema(controlServiceMethods.ByName("GetDeviceLuksKeys")),
+	controlServiceRevealLpsPasswordHandler := connect.NewUnaryHandler(
+		ControlServiceRevealLpsPasswordProcedure,
+		svc.RevealLpsPassword,
+		connect.WithSchema(controlServiceMethods.ByName("RevealLpsPassword")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceListLuksKeysHandler := connect.NewUnaryHandler(
+		ControlServiceListLuksKeysProcedure,
+		svc.ListLuksKeys,
+		connect.WithSchema(controlServiceMethods.ByName("ListLuksKeys")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceRevealLuksKeyHandler := connect.NewUnaryHandler(
+		ControlServiceRevealLuksKeyProcedure,
+		svc.RevealLuksKey,
+		connect.WithSchema(controlServiceMethods.ByName("RevealLuksKey")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceCreateLuksTokenHandler := connect.NewUnaryHandler(
@@ -3814,8 +3837,6 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceRemoveUserSshKeyHandler.ServeHTTP(w, r)
 		case ControlServiceUpdateUserSshSettingsProcedure:
 			controlServiceUpdateUserSshSettingsHandler.ServeHTTP(w, r)
-		case ControlServiceDeleteUserProcedure:
-			controlServiceDeleteUserHandler.ServeHTTP(w, r)
 		case ControlServiceListDevicesProcedure:
 			controlServiceListDevicesHandler.ServeHTTP(w, r)
 		case ControlServiceGetDeviceProcedure:
@@ -3970,10 +3991,14 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceListAuditEventsHandler.ServeHTTP(w, r)
 		case ControlServiceExportAuditEventsProcedure:
 			controlServiceExportAuditEventsHandler.ServeHTTP(w, r)
-		case ControlServiceGetDeviceLpsPasswordsProcedure:
-			controlServiceGetDeviceLpsPasswordsHandler.ServeHTTP(w, r)
-		case ControlServiceGetDeviceLuksKeysProcedure:
-			controlServiceGetDeviceLuksKeysHandler.ServeHTTP(w, r)
+		case ControlServiceListLpsPasswordsProcedure:
+			controlServiceListLpsPasswordsHandler.ServeHTTP(w, r)
+		case ControlServiceRevealLpsPasswordProcedure:
+			controlServiceRevealLpsPasswordHandler.ServeHTTP(w, r)
+		case ControlServiceListLuksKeysProcedure:
+			controlServiceListLuksKeysHandler.ServeHTTP(w, r)
+		case ControlServiceRevealLuksKeyProcedure:
+			controlServiceRevealLuksKeyHandler.ServeHTTP(w, r)
 		case ControlServiceCreateLuksTokenProcedure:
 			controlServiceCreateLuksTokenHandler.ServeHTTP(w, r)
 		case ControlServiceRevokeLuksDeviceKeyProcedure:
@@ -4193,10 +4218,6 @@ func (UnimplementedControlServiceHandler) RemoveUserSshKey(context.Context, *con
 
 func (UnimplementedControlServiceHandler) UpdateUserSshSettings(context.Context, *connect.Request[v1.UpdateUserSshSettingsRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.UpdateUserSshSettings is not implemented"))
-}
-
-func (UnimplementedControlServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.DeleteUser is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error) {
@@ -4507,12 +4528,20 @@ func (UnimplementedControlServiceHandler) ExportAuditEvents(context.Context, *co
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.ExportAuditEvents is not implemented"))
 }
 
-func (UnimplementedControlServiceHandler) GetDeviceLpsPasswords(context.Context, *connect.Request[v1.GetDeviceLpsPasswordsRequest]) (*connect.Response[v1.GetDeviceLpsPasswordsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.GetDeviceLpsPasswords is not implemented"))
+func (UnimplementedControlServiceHandler) ListLpsPasswords(context.Context, *connect.Request[v1.ListLpsPasswordsRequest]) (*connect.Response[v1.ListLpsPasswordsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.ListLpsPasswords is not implemented"))
 }
 
-func (UnimplementedControlServiceHandler) GetDeviceLuksKeys(context.Context, *connect.Request[v1.GetDeviceLuksKeysRequest]) (*connect.Response[v1.GetDeviceLuksKeysResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.GetDeviceLuksKeys is not implemented"))
+func (UnimplementedControlServiceHandler) RevealLpsPassword(context.Context, *connect.Request[v1.RevealLpsPasswordRequest]) (*connect.Response[v1.RevealLpsPasswordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.RevealLpsPassword is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ListLuksKeys(context.Context, *connect.Request[v1.ListLuksKeysRequest]) (*connect.Response[v1.ListLuksKeysResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.ListLuksKeys is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) RevealLuksKey(context.Context, *connect.Request[v1.RevealLuksKeyRequest]) (*connect.Response[v1.RevealLuksKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.RevealLuksKey is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateLuksToken(context.Context, *connect.Request[v1.CreateLuksTokenRequest]) (*connect.Response[v1.CreateLuksTokenResponse], error) {

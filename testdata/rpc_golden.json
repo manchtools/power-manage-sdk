@@ -37,7 +37,6 @@
       "DeleteIdentityProvider",
       "DeleteRole",
       "DeleteToken",
-      "DeleteUser",
       "DeleteUserGroup",
       "DisableSCIM",
       "DispatchAction",
@@ -64,8 +63,6 @@
       "GetDeviceGroup",
       "GetDeviceInventory",
       "GetDeviceLogResult",
-      "GetDeviceLpsPasswords",
-      "GetDeviceLuksKeys",
       "GetExecution",
       "GetIdentityProvider",
       "GetOSQueryResult",
@@ -92,6 +89,8 @@
       "ListExecutions",
       "ListIdentityLinks",
       "ListIdentityProviders",
+      "ListLpsPasswords",
+      "ListLuksKeys",
       "ListPermissions",
       "ListRoles",
       "ListTokens",
@@ -120,6 +119,8 @@
       "RenewCertificate",
       "ReorderActionInSet",
       "ReorderActionSetInDefinition",
+      "RevealLpsPassword",
+      "RevealLuksKey",
       "RevokeLuksDeviceKey",
       "RevokeRoleFromUser",
       "RevokeRoleFromUserGroup",
@@ -169,5 +170,5 @@
       "GetEnrollmentStatus"
     ]
   },
-  "total": 161
+  "total": 162
 }

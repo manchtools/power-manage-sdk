@@ -269,13 +269,6 @@ message UpdateUserProfileRequest {
   string locale = 7;
 }
 
-message DeleteUserRequest {
-  // @gotags: validate:"required,ulid"
-  string id = 1;
-}
-
-message DeleteUserResponse {}
-
 message AddUserSshKeyRequest {
   // @gotags: validate:"required,ulid"
   string user_id = 1;
@@ -1659,42 +1652,53 @@ message ExportAuditEventsResponse {
 // LPS (Local Password Solution)
 // ============================================================================
 
-// LPS password entry stored per device
+// LPS password metadata stored per device. Plaintext is available only from
+// RevealLpsPassword so each access has an independent audit operation.
 message LpsPassword {
-  string device_id = 1;
-  string device_hostname = 2;
-  string action_id = 3;
-  string action_name = 4;
-  string username = 5;
-  string password = 6;
+  string id = 1;
+  string device_id = 2;
+  string device_hostname = 3;
+  string action_id = 4;
+  string action_name = 5;
+  string username = 6;
   google.protobuf.Timestamp rotated_at = 7;
   RotationReason rotation_reason = 8;
 }
 
-message GetDeviceLpsPasswordsRequest {
+message ListLpsPasswordsRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
 }
 
-message GetDeviceLpsPasswordsResponse {
-  // Current passwords (one per LPS action assigned to device)
+message ListLpsPasswordsResponse {
+  // Current entries (one per LPS action and username assigned to the device).
   repeated LpsPassword current = 1;
-  // Previous passwords (most recent first, max 3 per action)
+  // Previous entries (most recent first, max 3 per action).
   repeated LpsPassword history = 2;
+}
+
+message RevealLpsPasswordRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message RevealLpsPasswordResponse {
+  string password = 1;
 }
 
 // ============================================================================
 // LUKS (Disk Encryption)
 // ============================================================================
 
-// LUKS key entry stored per device
+// LUKS key metadata stored per device. Plaintext is available only from
+// RevealLuksKey so each access has an independent audit operation.
 message LuksKey {
-  string device_id = 1;
-  string device_hostname = 2;
-  string action_id = 3;
-  string action_name = 4;
-  string device_path = 5;
-  string passphrase = 6;
+  string id = 1;
+  string device_id = 2;
+  string device_hostname = 3;
+  string action_id = 4;
+  string action_name = 5;
+  string device_path = 6;
   google.protobuf.Timestamp rotated_at = 7;
   RotationReason rotation_reason = 8;
   LuksRevocationStatus revocation_status = 9;
@@ -1704,16 +1708,25 @@ message LuksKey {
   google.protobuf.Timestamp revocation_at = 11;
 }
 
-message GetDeviceLuksKeysRequest {
+message ListLuksKeysRequest {
   // @gotags: validate:"required,ulid"
   string device_id = 1;
 }
 
-message GetDeviceLuksKeysResponse {
-  // Current keys (one per LUKS action assigned to device)
+message ListLuksKeysResponse {
+  // Current key metadata (one per LUKS action assigned to the device).
   repeated LuksKey current = 1;
-  // Previous keys (most recent first, max 3 per action)
+  // Previous key metadata (most recent first, max 3 per action).
   repeated LuksKey history = 2;
+}
+
+message RevealLuksKeyRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
+}
+
+message RevealLuksKeyResponse {
+  string passphrase = 1;
 }
 
 message CreateLuksTokenRequest {
@@ -2683,8 +2696,6 @@ service ControlService {
   rpc AddUserSshKey(AddUserSshKeyRequest) returns (AddUserSshKeyResponse);
   rpc RemoveUserSshKey(RemoveUserSshKeyRequest) returns (RemoveUserSshKeyResponse);
   rpc UpdateUserSshSettings(UpdateUserSshSettingsRequest) returns (UpdateUserResponse);
-  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
-
   // Devices
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
   rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
@@ -2783,10 +2794,12 @@ service ControlService {
   rpc ExportAuditEvents(ExportAuditEventsRequest) returns (ExportAuditEventsResponse);
 
   // LPS (Local Password Solution)
-  rpc GetDeviceLpsPasswords(GetDeviceLpsPasswordsRequest) returns (GetDeviceLpsPasswordsResponse);
+  rpc ListLpsPasswords(ListLpsPasswordsRequest) returns (ListLpsPasswordsResponse);
+  rpc RevealLpsPassword(RevealLpsPasswordRequest) returns (RevealLpsPasswordResponse);
 
   // LUKS (Disk Encryption)
-  rpc GetDeviceLuksKeys(GetDeviceLuksKeysRequest) returns (GetDeviceLuksKeysResponse);
+  rpc ListLuksKeys(ListLuksKeysRequest) returns (ListLuksKeysResponse);
+  rpc RevealLuksKey(RevealLuksKeyRequest) returns (RevealLuksKeyResponse);
   rpc CreateLuksToken(CreateLuksTokenRequest) returns (CreateLuksTokenResponse);
   rpc RevokeLuksDeviceKey(RevokeLuksDeviceKeyRequest) returns (RevokeLuksDeviceKeyResponse);
 

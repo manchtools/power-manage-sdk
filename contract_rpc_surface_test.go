@@ -75,12 +75,36 @@ var removedAgentUnary = map[string][]string{
 	"AgentService": {"SyncActions", "ValidateLuksToken"},
 }
 
+// removedSCIMUserDeletion makes human-subject erasure exclusively SCIM-owned.
+// The broad secret reads are replaced by metadata-only lists plus one-entry
+// reveal RPCs so the audit log identifies every plaintext access.
+var removedSCIMAndBroadSecretReads = map[string][]string{
+	"ControlService": {
+		"DeleteUser",
+		"GetDeviceLpsPasswords",
+		"GetDeviceLuksKeys",
+	},
+}
+
 // removalDeltas are the complete approved difference between the predecessor
 // and the target contract.
 var removalDeltas = map[string]map[string][]string{
 	"spec-41-gateway-removal": removedBySpec41,
 	"local-auth-removal":      removedLocalAuth,
 	"single-agent-stream":     removedAgentUnary,
+	"scim-and-secret-reads":   removedSCIMAndBroadSecretReads,
+}
+
+// additionDeltas are intentional target RPCs with no predecessor equivalent.
+var additionDeltas = map[string]map[string][]string{
+	"auditable-secret-reveal": {
+		"ControlService": {
+			"ListLpsPasswords",
+			"ListLuksKeys",
+			"RevealLpsPassword",
+			"RevealLuksKey",
+		},
+	},
 }
 
 type goldenSurface struct {
@@ -251,10 +275,74 @@ func TestRPCSurface_PredecessorDifferenceIsApproved(t *testing.T) {
 			delete(wantCurrent, svc)
 		}
 	}
+	added := 0
+	seenAdditions := map[string]string{}
+	for delta, byService := range additionDeltas {
+		deltaCount := 0
+		for svc, names := range byService {
+			for _, name := range names {
+				key := svc + "/" + name
+				if owner, duplicate := seenAdditions[key]; duplicate {
+					t.Errorf("%s is added by both %q and %q", key, owner, delta)
+				}
+				seenAdditions[key] = delta
+				deltaCount++
+				if contains(predecessor.Services[svc], name) {
+					t.Errorf("%s names %s, already present in the predecessor", delta, key)
+				}
+				wantCurrent[svc] = append(wantCurrent[svc], name)
+			}
+			sort.Strings(wantCurrent[svc])
+		}
+		if deltaCount == 0 {
+			t.Errorf("addition delta %q is empty", delta)
+		}
+		added += deltaCount
+	}
 	assertSurfaceEqual(t, current.Services, wantCurrent)
-	if want := predecessor.Total - removed; current.Total != want {
-		t.Errorf("target total is %d, want predecessor %d minus %d approved removals = %d",
-			current.Total, predecessor.Total, removed, want)
+	if want := predecessor.Total - removed + added; current.Total != want {
+		t.Errorf("target total is %d, want predecessor %d minus %d approved removals plus %d approved additions = %d",
+			current.Total, predecessor.Total, removed, added, want)
+	}
+}
+
+// TestRPCSurface_SecretListsCannotLeakPlaintext holds the API boundary that
+// makes each plaintext access independently auditable. Lists expose stable
+// entry identifiers and metadata; only the one-entry reveal responses carry a
+// secret value.
+func TestRPCSurface_SecretListsCannotLeakPlaintext(t *testing.T) {
+	for _, message := range []protoreflect.FullName{
+		"powermanage.v1.LpsPassword",
+		"powermanage.v1.LuksKey",
+	} {
+		descriptor, err := protoregistry.GlobalFiles.FindDescriptorByName(message)
+		if err != nil {
+			t.Fatalf("find %s: %v", message, err)
+		}
+		fields := descriptor.(protoreflect.MessageDescriptor).Fields()
+		if fields.ByName("id") == nil {
+			t.Errorf("%s has no stable entry id", message)
+		}
+		for _, forbidden := range []protoreflect.Name{"password", "passphrase"} {
+			if fields.ByName(forbidden) != nil {
+				t.Errorf("%s metadata contains plaintext field %s", message, forbidden)
+			}
+		}
+	}
+
+	for message, secretField := range map[protoreflect.FullName]protoreflect.Name{
+		"powermanage.v1.RevealLpsPasswordResponse": "password",
+		"powermanage.v1.RevealLuksKeyResponse":     "passphrase",
+	} {
+		descriptor, err := protoregistry.GlobalFiles.FindDescriptorByName(message)
+		if err != nil {
+			t.Fatalf("find %s: %v", message, err)
+		}
+		fields := descriptor.(protoreflect.MessageDescriptor).Fields()
+		field := fields.ByName(secretField)
+		if fields.Len() != 1 || field == nil || field.Kind() != protoreflect.StringKind {
+			t.Errorf("%s must contain exactly one string field named %s", message, secretField)
+		}
 	}
 }
 
