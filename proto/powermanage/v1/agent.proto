@@ -278,6 +278,14 @@ message Manifest {
   // Execution order is list order.
   // @gotags: validate:"required,min=1,dive"
   repeated ManifestOccurrence occurrences = 5;
+  // An explicit dispatch: the agent executes this delivery exactly once on
+  // durable receipt and never reschedules it. Marked structurally here — not
+  // by action type and not by schedule shape, because assigned manifests may
+  // legitimately carry an empty schedule (agent-default drift cadence). A
+  // one-shot delivery is also exempt from the agent's maintenance window: an
+  // operator dispatching "now" means now; only scheduled work defers.
+  // @gotags: validate:"omitempty"
+  bool one_shot = 6;
 }
 
 // Control -> agent: one attempt to hand a complete manifest to a device.

@@ -1585,7 +1585,15 @@ type Manifest struct {
 	DefaultOnFailure OnFailure `protobuf:"varint,4,opt,name=default_on_failure,json=defaultOnFailure,proto3,enum=powermanage.v1.OnFailure" json:"default_on_failure,omitempty" validate:"omitempty"`
 	// Execution order is list order.
 	// @gotags: validate:"required,min=1,dive"
-	Occurrences   []*ManifestOccurrence `protobuf:"bytes,5,rep,name=occurrences,proto3" json:"occurrences,omitempty" validate:"required,min=1,dive"`
+	Occurrences []*ManifestOccurrence `protobuf:"bytes,5,rep,name=occurrences,proto3" json:"occurrences,omitempty" validate:"required,min=1,dive"`
+	// An explicit dispatch: the agent executes this delivery exactly once on
+	// durable receipt and never reschedules it. Marked structurally here — not
+	// by action type and not by schedule shape, because assigned manifests may
+	// legitimately carry an empty schedule (agent-default drift cadence). A
+	// one-shot delivery is also exempt from the agent's maintenance window: an
+	// operator dispatching "now" means now; only scheduled work defers.
+	// @gotags: validate:"omitempty"
+	OneShot       bool `protobuf:"varint,6,opt,name=one_shot,json=oneShot,proto3" json:"one_shot,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1653,6 +1661,13 @@ func (x *Manifest) GetOccurrences() []*ManifestOccurrence {
 		return x.Occurrences
 	}
 	return nil
+}
+
+func (x *Manifest) GetOneShot() bool {
+	if x != nil {
+		return x.OneShot
+	}
+	return false
 }
 
 // Control -> agent: one attempt to hand a complete manifest to a device.
@@ -3784,7 +3799,7 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"\roccurrence_id\x18\x01 \x01(\tR\foccurrenceId\x12.\n" +
 	"\x06action\x18\x02 \x01(\v2\x16.powermanage.v1.ActionR\x06action\x128\n" +
 	"\n" +
-	"on_failure\x18\x03 \x01(\x0e2\x19.powermanage.v1.OnFailureR\tonFailure\"\xba\x02\n" +
+	"on_failure\x18\x03 \x01(\x0e2\x19.powermanage.v1.OnFailureR\tonFailure\"\xd5\x02\n" +
 	"\bManifest\x12\x1f\n" +
 	"\vmanifest_id\x18\x01 \x01(\tR\n" +
 	"manifestId\x12B\n" +
@@ -3793,7 +3808,8 @@ const file_powermanage_v1_agent_proto_rawDesc = "" +
 	"provenance\x12:\n" +
 	"\bschedule\x18\x03 \x01(\v2\x1e.powermanage.v1.ActionScheduleR\bschedule\x12G\n" +
 	"\x12default_on_failure\x18\x04 \x01(\x0e2\x19.powermanage.v1.OnFailureR\x10defaultOnFailure\x12D\n" +
-	"\voccurrences\x18\x05 \x03(\v2\".powermanage.v1.ManifestOccurrenceR\voccurrences\"i\n" +
+	"\voccurrences\x18\x05 \x03(\v2\".powermanage.v1.ManifestOccurrenceR\voccurrences\x12\x19\n" +
+	"\bone_shot\x18\x06 \x01(\bR\aoneShot\"i\n" +
 	"\x10ManifestDelivery\x12\x1f\n" +
 	"\vdelivery_id\x18\x01 \x01(\tR\n" +
 	"deliveryId\x124\n" +
