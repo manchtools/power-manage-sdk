@@ -39,7 +39,7 @@ guards remain mandatory.
 ## Certificates
 
 The device generates an Ed25519 identity key and CSR locally. The private key
-never leaves the device. Enrollment may pin the CA fingerprint, and renewal
+never leaves the device. Enrollment requires the CA fingerprint pin, and renewal
 must preserve CA continuity or require clean re-enrollment.
 
 Ordinary application frames are not separately signed. Direct mTLS authenticates
