@@ -3395,10 +3395,14 @@ func (x *CreateTokenRequest) GetOwnerId() string {
 }
 
 type CreateTokenResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         *RegistrationToken     `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Token *RegistrationToken     `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	// SHA-256 fingerprint of the control CA certificate DER. Provisioning
+	// presents this beside token.value; agents require it during enrollment.
+	// @gotags: validate:"required,len=64,hexadecimal"
+	CaFingerprintPin string `protobuf:"bytes,2,opt,name=ca_fingerprint_pin,json=caFingerprintPin,proto3" json:"ca_fingerprint_pin,omitempty" validate:"required,len=64,hexadecimal"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateTokenResponse) Reset() {
@@ -3436,6 +3440,13 @@ func (x *CreateTokenResponse) GetToken() *RegistrationToken {
 		return x.Token
 	}
 	return nil
+}
+
+func (x *CreateTokenResponse) GetCaFingerprintPin() string {
+	if x != nil {
+		return x.CaFingerprintPin
+	}
+	return ""
 }
 
 type ListTokensRequest struct {
@@ -21099,9 +21110,10 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\bmax_uses\x18\x03 \x01(\x05R\amaxUses\x129\n" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x19\n" +
-	"\bowner_id\x18\x05 \x01(\tR\aownerId\"N\n" +
+	"\bowner_id\x18\x05 \x01(\tR\aownerId\"|\n" +
 	"\x13CreateTokenResponse\x127\n" +
-	"\x05token\x18\x01 \x01(\v2!.powermanage.v1.RegistrationTokenR\x05token\"z\n" +
+	"\x05token\x18\x01 \x01(\v2!.powermanage.v1.RegistrationTokenR\x05token\x12,\n" +
+	"\x12ca_fingerprint_pin\x18\x02 \x01(\tR\x10caFingerprintPin\"z\n" +
 	"\x11ListTokensRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +

@@ -37,3 +37,16 @@ func TestEnrollRequest_RequiresValidCAPin(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateTokenResponse_RequiresCAPin(t *testing.T) {
+	t.Parallel()
+	v := pmvalidate.NewValidator()
+	response := &pm.CreateTokenResponse{Token: &pm.RegistrationToken{}}
+	if _, ok := pmvalidate.Struct(v, response); ok {
+		t.Fatal("token creation without the enrollment CA pin passed validation")
+	}
+	response.CaFingerprintPin = strings.Repeat("a", 64)
+	if detail, ok := pmvalidate.Struct(v, response); !ok {
+		t.Fatalf("valid token creation response rejected: %s", detail)
+	}
+}

@@ -491,6 +491,10 @@ message CreateTokenRequest {
 
 message CreateTokenResponse {
   RegistrationToken token = 1;
+  // SHA-256 fingerprint of the control CA certificate DER. Provisioning
+  // presents this beside token.value; agents require it during enrollment.
+  // @gotags: validate:"required,len=64,hexadecimal"
+  string ca_fingerprint_pin = 2;
 }
 
 message ListTokensRequest {
