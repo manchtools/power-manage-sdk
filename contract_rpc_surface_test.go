@@ -75,12 +75,20 @@ var removedAgentUnary = map[string][]string{
 	"AgentService": {"SyncActions", "ValidateLuksToken"},
 }
 
-// removedSCIMUserDeletion makes human-subject erasure exclusively SCIM-owned.
-// The broad secret reads are replaced by metadata-only lists plus one-entry
-// reveal RPCs so the audit log identifies every plaintext access.
-var removedSCIMAndBroadSecretReads = map[string][]string{
+// removedManualUserLifecycle makes provisioning provider-owned. SCIM erases
+// SCIM-created subjects; the explicit replacement below erases only subjects
+// whose immutable creation provenance is OIDC JIT.
+var removedManualUserLifecycle = map[string][]string{
 	"ControlService": {
+		"CreateUser",
 		"DeleteUser",
+	},
+}
+
+// removedBroadSecretReads are replaced by metadata-only lists plus one-entry
+// reveal RPCs so the audit log identifies every plaintext access.
+var removedBroadSecretReads = map[string][]string{
+	"ControlService": {
 		"GetDeviceLpsPasswords",
 		"GetDeviceLuksKeys",
 	},
@@ -92,11 +100,15 @@ var removalDeltas = map[string]map[string][]string{
 	"spec-41-gateway-removal": removedBySpec41,
 	"local-auth-removal":      removedLocalAuth,
 	"single-agent-stream":     removedAgentUnary,
-	"scim-and-secret-reads":   removedSCIMAndBroadSecretReads,
+	"provider-owned-users":    removedManualUserLifecycle,
+	"auditable-secret-reads":  removedBroadSecretReads,
 }
 
 // additionDeltas are intentional target RPCs with no predecessor equivalent.
 var additionDeltas = map[string]map[string][]string{
+	"jit-user-erasure": {
+		"ControlService": {"EraseJITUser"},
+	},
 	"auditable-secret-reveal": {
 		"ControlService": {
 			"ListLpsPasswords",

@@ -191,26 +191,14 @@ message PermissionInfo {
   PermissionTargetKind target_kind = 4;
 }
 
-message CreateUserRequest {
-  // @gotags: validate:"required,email"
-  string email = 1;
-  // Role IDs to assign to the new user. If empty, the default "User" role is assigned.
-  // @gotags: validate:"omitempty,max=256,dive,ulid"
-  repeated string role_ids = 3;
-  // Optional profile fields
-  // @gotags: validate:"omitempty,max=255"
-  string display_name = 4;
-  // @gotags: validate:"omitempty,max=255"
-  string given_name = 5;
-  // @gotags: validate:"omitempty,max=255"
-  string family_name = 6;
-  // @gotags: validate:"omitempty,max=64"
-  string preferred_username = 7;
+// Explicit local erasure for subjects created by optional OIDC JIT.
+// The control server rejects subjects created through SCIM.
+message EraseJITUserRequest {
+  // @gotags: validate:"required,ulid"
+  string id = 1;
 }
 
-message CreateUserResponse {
-  User user = 1;
-}
+message EraseJITUserResponse {}
 
 message GetUserRequest {
   // @gotags: validate:"required,ulid"
@@ -2686,7 +2674,7 @@ service ControlService {
   rpc RotateSCIMToken(RotateSCIMTokenRequest) returns (RotateSCIMTokenResponse);
 
   // Users
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc EraseJITUser(EraseJITUserRequest) returns (EraseJITUserResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc UpdateUserEmail(UpdateUserEmailRequest) returns (UpdateUserResponse);

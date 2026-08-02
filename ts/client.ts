@@ -12,7 +12,7 @@ import {
 	RefreshTokenRequestSchema,
 	LogoutRequestSchema,
 	GetCurrentUserRequestSchema,
-	CreateUserRequestSchema,
+	EraseJITUserRequestSchema,
 	GetUserRequestSchema,
 	ListUsersRequestSchema,
 	UpdateUserEmailRequestSchema,
@@ -400,17 +400,9 @@ export class ApiClient {
 	// Users
 	// ============================================================================
 
-	async createUser(email: string, roleIds: string[] = [], profile?: {
-		displayName?: string;
-		givenName?: string;
-		familyName?: string;
-		preferredUsername?: string;
-	}) {
+	async eraseJITUser(id: string) {
 		const client = this.getClient();
-		const response = await client.createUser(
-			create(CreateUserRequestSchema, { email, roleIds, ...profile })
-		);
-		return response.user;
+		await client.eraseJITUser(create(EraseJITUserRequestSchema, { id }));
 	}
 
 	async getUser(id: string) {

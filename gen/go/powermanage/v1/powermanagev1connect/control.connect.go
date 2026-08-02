@@ -85,9 +85,9 @@ const (
 	// ControlServiceRotateSCIMTokenProcedure is the fully-qualified name of the ControlService's
 	// RotateSCIMToken RPC.
 	ControlServiceRotateSCIMTokenProcedure = "/powermanage.v1.ControlService/RotateSCIMToken"
-	// ControlServiceCreateUserProcedure is the fully-qualified name of the ControlService's CreateUser
-	// RPC.
-	ControlServiceCreateUserProcedure = "/powermanage.v1.ControlService/CreateUser"
+	// ControlServiceEraseJITUserProcedure is the fully-qualified name of the ControlService's
+	// EraseJITUser RPC.
+	ControlServiceEraseJITUserProcedure = "/powermanage.v1.ControlService/EraseJITUser"
 	// ControlServiceGetUserProcedure is the fully-qualified name of the ControlService's GetUser RPC.
 	ControlServiceGetUserProcedure = "/powermanage.v1.ControlService/GetUser"
 	// ControlServiceListUsersProcedure is the fully-qualified name of the ControlService's ListUsers
@@ -532,7 +532,7 @@ type ControlServiceClient interface {
 	DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error)
 	RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error)
 	// Users
-	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
+	EraseJITUser(context.Context, *connect.Request[v1.EraseJITUserRequest]) (*connect.Response[v1.EraseJITUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
@@ -816,10 +816,10 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(controlServiceMethods.ByName("RotateSCIMToken")),
 			connect.WithClientOptions(opts...),
 		),
-		createUser: connect.NewClient[v1.CreateUserRequest, v1.CreateUserResponse](
+		eraseJITUser: connect.NewClient[v1.EraseJITUserRequest, v1.EraseJITUserResponse](
 			httpClient,
-			baseURL+ControlServiceCreateUserProcedure,
-			connect.WithSchema(controlServiceMethods.ByName("CreateUser")),
+			baseURL+ControlServiceEraseJITUserProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("EraseJITUser")),
 			connect.WithClientOptions(opts...),
 		),
 		getUser: connect.NewClient[v1.GetUserRequest, v1.GetUserResponse](
@@ -1685,7 +1685,7 @@ type controlServiceClient struct {
 	enableSCIM                        *connect.Client[v1.EnableSCIMRequest, v1.EnableSCIMResponse]
 	disableSCIM                       *connect.Client[v1.DisableSCIMRequest, v1.DisableSCIMResponse]
 	rotateSCIMToken                   *connect.Client[v1.RotateSCIMTokenRequest, v1.RotateSCIMTokenResponse]
-	createUser                        *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
+	eraseJITUser                      *connect.Client[v1.EraseJITUserRequest, v1.EraseJITUserResponse]
 	getUser                           *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
 	listUsers                         *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
 	updateUserEmail                   *connect.Client[v1.UpdateUserEmailRequest, v1.UpdateUserResponse]
@@ -1918,9 +1918,9 @@ func (c *controlServiceClient) RotateSCIMToken(ctx context.Context, req *connect
 	return c.rotateSCIMToken.CallUnary(ctx, req)
 }
 
-// CreateUser calls powermanage.v1.ControlService.CreateUser.
-func (c *controlServiceClient) CreateUser(ctx context.Context, req *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
-	return c.createUser.CallUnary(ctx, req)
+// EraseJITUser calls powermanage.v1.ControlService.EraseJITUser.
+func (c *controlServiceClient) EraseJITUser(ctx context.Context, req *connect.Request[v1.EraseJITUserRequest]) (*connect.Response[v1.EraseJITUserResponse], error) {
+	return c.eraseJITUser.CallUnary(ctx, req)
 }
 
 // GetUser calls powermanage.v1.ControlService.GetUser.
@@ -2653,7 +2653,7 @@ type ControlServiceHandler interface {
 	DisableSCIM(context.Context, *connect.Request[v1.DisableSCIMRequest]) (*connect.Response[v1.DisableSCIMResponse], error)
 	RotateSCIMToken(context.Context, *connect.Request[v1.RotateSCIMTokenRequest]) (*connect.Response[v1.RotateSCIMTokenResponse], error)
 	// Users
-	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
+	EraseJITUser(context.Context, *connect.Request[v1.EraseJITUserRequest]) (*connect.Response[v1.EraseJITUserResponse], error)
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	UpdateUserEmail(context.Context, *connect.Request[v1.UpdateUserEmailRequest]) (*connect.Response[v1.UpdateUserResponse], error)
@@ -2933,10 +2933,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		connect.WithSchema(controlServiceMethods.ByName("RotateSCIMToken")),
 		connect.WithHandlerOptions(opts...),
 	)
-	controlServiceCreateUserHandler := connect.NewUnaryHandler(
-		ControlServiceCreateUserProcedure,
-		svc.CreateUser,
-		connect.WithSchema(controlServiceMethods.ByName("CreateUser")),
+	controlServiceEraseJITUserHandler := connect.NewUnaryHandler(
+		ControlServiceEraseJITUserProcedure,
+		svc.EraseJITUser,
+		connect.WithSchema(controlServiceMethods.ByName("EraseJITUser")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceGetUserHandler := connect.NewUnaryHandler(
@@ -3817,8 +3817,8 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceDisableSCIMHandler.ServeHTTP(w, r)
 		case ControlServiceRotateSCIMTokenProcedure:
 			controlServiceRotateSCIMTokenHandler.ServeHTTP(w, r)
-		case ControlServiceCreateUserProcedure:
-			controlServiceCreateUserHandler.ServeHTTP(w, r)
+		case ControlServiceEraseJITUserProcedure:
+			controlServiceEraseJITUserHandler.ServeHTTP(w, r)
 		case ControlServiceGetUserProcedure:
 			controlServiceGetUserHandler.ServeHTTP(w, r)
 		case ControlServiceListUsersProcedure:
@@ -4180,8 +4180,8 @@ func (UnimplementedControlServiceHandler) RotateSCIMToken(context.Context, *conn
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.RotateSCIMToken is not implemented"))
 }
 
-func (UnimplementedControlServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.CreateUser is not implemented"))
+func (UnimplementedControlServiceHandler) EraseJITUser(context.Context, *connect.Request[v1.EraseJITUserRequest]) (*connect.Response[v1.EraseJITUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.EraseJITUser is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error) {
