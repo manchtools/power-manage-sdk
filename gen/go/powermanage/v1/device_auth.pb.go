@@ -27,18 +27,18 @@ type EnrollRequest struct {
 	ServerUrl string `protobuf:"bytes,1,opt,name=server_url,json=serverUrl,proto3" json:"server_url,omitempty" validate:"required,url"` // Control server URL (https only — enforced agent-side)
 	// @gotags: validate:"required"
 	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty" validate:"required"` // Registration token from web UI
-	// Optional out-of-band CA fingerprint pin: the 64-char hex SHA-256 of
-	// the control CA certificate DER. When set, the agent verifies the CA
+	// Required out-of-band CA fingerprint pin: the 64-char hex SHA-256 of
+	// the control CA certificate DER. The agent verifies the CA
 	// returned by registration matches this pin BEFORE trusting it,
 	// defending against a first-enrollment trust-anchor swap. Delivered by
 	// the operator alongside the token (e.g. power-manage://…?token=…&pin=…).
-	// Absent = trust-on-first-use (accepted residual). Case-insensitive:
-	// the enroll CLI strips colons and lowercases the operator's value
+	// Missing or mismatched pins fail closed; enrollment has no
+	// trust-on-first-use path. Case-insensitive: the enroll CLI strips colons
 	// (openssl emits uppercase, colon-separated) and the agent compares
 	// with EqualFold, so the `hexadecimal` tag is intentionally permissive
 	// on case.
-	// @gotags: validate:"omitempty,len=64,hexadecimal"
-	CaFingerprintPin string `protobuf:"bytes,3,opt,name=ca_fingerprint_pin,json=caFingerprintPin,proto3" json:"ca_fingerprint_pin,omitempty" validate:"omitempty,len=64,hexadecimal"`
+	// @gotags: validate:"required,len=64,hexadecimal"
+	CaFingerprintPin string `protobuf:"bytes,3,opt,name=ca_fingerprint_pin,json=caFingerprintPin,proto3" json:"ca_fingerprint_pin,omitempty" validate:"required,len=64,hexadecimal"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
