@@ -1647,6 +1647,42 @@ export class ApiClient {
 		return response.provider;
 	}
 
+	// Bootstrap-only provider registration. The host-authorized bootstrap-admin
+	// token is presented to control as `Authorization: PowerManage-Bootstrap <T>`
+	// (NOT a Bearer session token) and is spent on exactly this one call. It goes
+	// through the auth transport — the one WITHOUT the session/Bearer interceptor —
+	// so no access token is ever attached, and the scheme is set as a per-call
+	// header override rather than forking a second transport config. The caller
+	// must never persist or log the token.
+	async createIdentityProviderWithBootstrapToken(
+		bootstrapToken: string,
+		data: {
+			name: string;
+			slug: string;
+			providerType: IdentityProviderType;
+			clientId: string;
+			clientSecret: string;
+			issuerUrl: string;
+			authorizationUrl?: string;
+			tokenUrl?: string;
+			userinfoUrl?: string;
+			scopes?: string[];
+			autoCreateUsers?: boolean;
+			autoLinkByEmail?: boolean;
+			trustEmailAssertions?: boolean;
+			defaultRoleId?: string;
+			groupClaim?: string;
+			groupMapping?: Record<string, string>;
+		}
+	) {
+		const client = this.getAuthClient();
+		const response = await client.createIdentityProvider(
+			create(CreateIdentityProviderRequestSchema, data),
+			{ headers: { Authorization: `PowerManage-Bootstrap ${bootstrapToken}` } }
+		);
+		return response.provider;
+	}
+
 	async getIdentityProvider(id: string) {
 		const client = this.getClient();
 		const response = await client.getIdentityProvider(
