@@ -2,17 +2,22 @@
 package crypto
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 )
 
-// GenerateCSR creates a new ECDSA P-256 key pair and returns the CSR (PEM)
-// and private key (PEM).
+// ErrUnsupportedKeyType is returned when a stored device key is not Ed25519.
+// The Control Server's CA refuses any other identity key type, so a renewal CSR
+// built from one could never be signed.
+var ErrUnsupportedKeyType = errors.New("crypto: device identity key must be Ed25519")
+
+// GenerateCSR creates a new Ed25519 key pair and returns the CSR (PEM)
+// and private key (PKCS#8 PEM).
 //
 // The CSR carries no SANs (no DNSNames, IPAddresses, EmailAddresses,
 // or URIs). Agent certificates are client certs — identified by the
@@ -27,7 +32,7 @@ import (
 // (the CA discards the CN and replaces it with the device ID), but
 // the DNS SAN is omitted.
 func GenerateCSR(hostname string) (csrPEM, keyPEM []byte, err error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate key pair: %w", err)
 	}
@@ -48,30 +53,36 @@ func GenerateCSR(hostname string) (csrPEM, keyPEM []byte, err error) {
 		Bytes: csrDER,
 	})
 
-	keyDER, err := x509.MarshalECPrivateKey(privateKey)
+	keyDER, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshal private key: %w", err)
 	}
 
 	keyPEM = pem.EncodeToMemory(&pem.Block{
-		Type:  "EC PRIVATE KEY",
+		Type:  "PRIVATE KEY",
 		Bytes: keyDER,
 	})
 
 	return csrPEM, keyPEM, nil
 }
 
-// GenerateCSRFromKey creates a CSR using an existing PEM-encoded ECDSA private key.
-// This is used for certificate renewal where the key pair is reused.
+// GenerateCSRFromKey creates a CSR using an existing PKCS#8 PEM-encoded Ed25519
+// private key. This is used for certificate renewal where the key pair is
+// reused: the CA's renewal proof-of-possession requires the CSR's public key to
+// equal the held certificate's.
 func GenerateCSRFromKey(hostname string, keyPEM []byte) (csrPEM []byte, err error) {
 	keyBlock, _ := pem.Decode(keyPEM)
 	if keyBlock == nil {
 		return nil, fmt.Errorf("failed to decode key PEM")
 	}
 
-	privateKey, err := x509.ParseECPrivateKey(keyBlock.Bytes)
+	parsed, err := x509.ParsePKCS8PrivateKey(keyBlock.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("parse private key: %w", err)
+	}
+	privateKey, ok := parsed.(ed25519.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("%w: got %T", ErrUnsupportedKeyType, parsed)
 	}
 
 	// No SANs — see GenerateCSR for the rationale. Renewal CSRs

@@ -2,10 +2,12 @@ package crypto
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"testing"
 )
 
@@ -57,22 +59,25 @@ func TestGenerateCSR(t *testing.T) {
 		t.Fatalf("CSR signature check failed: %v", err)
 	}
 
-	// Verify key PEM is valid ECDSA P-256
+	// Verify key PEM is a PKCS#8 Ed25519 key. Ed25519 is not a preference:
+	// the Control Server's CA rejects any other identity key type outright,
+	// so an ECDSA key here makes enrolment and renewal impossible.
 	keyBlock, _ := pem.Decode(keyPEM)
 	if keyBlock == nil {
 		t.Fatal("key PEM decode returned nil")
 	}
-	if keyBlock.Type != "EC PRIVATE KEY" {
-		t.Fatalf("key PEM type = %q, want EC PRIVATE KEY", keyBlock.Type)
+	if keyBlock.Type != "PRIVATE KEY" {
+		t.Fatalf("key PEM type = %q, want PRIVATE KEY", keyBlock.Type)
 	}
 
-	key, err := x509.ParseECPrivateKey(keyBlock.Bytes)
+	parsed, err := x509.ParsePKCS8PrivateKey(keyBlock.Bytes)
 	if err != nil {
-		t.Fatalf("ParseECPrivateKey: %v", err)
+		t.Fatalf("ParsePKCS8PrivateKey: %v", err)
 	}
 
-	if key.Curve != elliptic.P256() {
-		t.Fatalf("key curve = %v, want P-256", key.Curve.Params().Name)
+	key, ok := parsed.(ed25519.PrivateKey)
+	if !ok {
+		t.Fatalf("key type = %T, want ed25519.PrivateKey", parsed)
 	}
 
 	// The returned private key MUST be the one that signed the CSR — its
@@ -80,11 +85,11 @@ func TestGenerateCSR(t *testing.T) {
 	// bug that signs with key-A but returns key-B (the key-swap path the
 	// other assertions cannot catch) would leave the agent unable to use
 	// the issued certificate. (#5)
-	csrPub, ok := csr.PublicKey.(*ecdsa.PublicKey)
+	csrPub, ok := csr.PublicKey.(ed25519.PublicKey)
 	if !ok {
-		t.Fatalf("CSR public key type = %T, want *ecdsa.PublicKey", csr.PublicKey)
+		t.Fatalf("CSR public key type = %T, want ed25519.PublicKey", csr.PublicKey)
 	}
-	if key.PublicKey.X.Cmp(csrPub.X) != 0 || key.PublicKey.Y.Cmp(csrPub.Y) != 0 {
+	if !csrPub.Equal(key.Public()) {
 		t.Fatal("returned keyPEM does not match the CSR's embedded public key")
 	}
 }
@@ -170,7 +175,7 @@ func TestGenerateCSRFromKey_InvalidPEM(t *testing.T) {
 
 func TestGenerateCSRFromKey_InvalidKey(t *testing.T) {
 	badPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "EC PRIVATE KEY",
+		Type:  "PRIVATE KEY",
 		Bytes: []byte("not-a-key"),
 	})
 
@@ -180,17 +185,43 @@ func TestGenerateCSRFromKey_InvalidKey(t *testing.T) {
 	}
 }
 
-func TestGenerateCSRFromKey_SameKeyProducesDifferentCSR(t *testing.T) {
-	// The CSR itself might differ due to nonces in the signature,
-	// but the public key embedded in both CSRs should be identical.
+// A well-formed PKCS#8 key of the wrong type must be refused here rather than
+// producing a CSR the CA will reject: the agent then reports a key problem
+// instead of an unexplained enrolment failure.
+func TestGenerateCSRFromKey_RejectsNonEd25519Key(t *testing.T) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatalf("generate key: %v", err)
 	}
+	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		t.Fatalf("MarshalPKCS8PrivateKey: %v", err)
+	}
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
 
-	keyDER, _ := x509.MarshalECPrivateKey(key)
+	csrPEM, err := GenerateCSRFromKey("host", keyPEM)
+	if !errors.Is(err, ErrUnsupportedKeyType) {
+		t.Fatalf("err = %v, want ErrUnsupportedKeyType", err)
+	}
+	if csrPEM != nil {
+		t.Fatal("no CSR must be produced for a non-Ed25519 key")
+	}
+}
+
+func TestGenerateCSRFromKey_SameKeyProducesDifferentCSR(t *testing.T) {
+	// The CSR itself might differ due to nonces in the signature,
+	// but the public key embedded in both CSRs should be identical.
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+
+	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		t.Fatalf("MarshalPKCS8PrivateKey: %v", err)
+	}
 	keyPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "EC PRIVATE KEY",
+		Type:  "PRIVATE KEY",
 		Bytes: keyDER,
 	})
 
@@ -211,10 +242,10 @@ func TestGenerateCSRFromKey_SameKeyProducesDifferentCSR(t *testing.T) {
 	block2, _ := pem.Decode(csrPEM2)
 	csr2, _ := x509.ParseCertificateRequest(block2.Bytes)
 
-	pub1 := csr1.PublicKey.(*ecdsa.PublicKey)
-	pub2 := csr2.PublicKey.(*ecdsa.PublicKey)
+	pub1 := csr1.PublicKey.(ed25519.PublicKey)
+	pub2 := csr2.PublicKey.(ed25519.PublicKey)
 
-	if pub1.X.Cmp(pub2.X) != 0 || pub1.Y.Cmp(pub2.Y) != 0 {
+	if !pub1.Equal(pub2) {
 		t.Fatal("CSRs from same key have different public keys")
 	}
 
