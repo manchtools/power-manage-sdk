@@ -8,10 +8,11 @@ import (
 )
 
 func TestWriteKeyFile_TmpfsModeAndContent(t *testing.T) {
-	path, err := writeKeyFile(mustSecret(t, "the-passphrase"))
+	staged, err := writeKeyFile(mustSecret(t, "the-passphrase"))
 	if err != nil {
 		t.Fatalf("writeKeyFile: %v", err)
 	}
+	path := staged.path
 	defer cleanupKeyFile(path)
 
 	if !strings.HasPrefix(path, keyFileDir+"/") {
@@ -24,10 +25,20 @@ func TestWriteKeyFile_TmpfsModeAndContent(t *testing.T) {
 	if perm := info.Mode().Perm(); perm != 0o600 {
 		t.Errorf("key file mode = %o, want 0600", perm)
 	}
-	if dirInfo, err := os.Stat(keyFileDir); err == nil {
-		if perm := dirInfo.Mode().Perm(); perm != 0o700 {
-			t.Errorf("key file dir mode = %o, want 0700", perm)
-		}
+	// The staging directory is created per process under keyFileDir, not AT it:
+	// keyFileDir itself is world-writable tmpfs and its mode is not ours to
+	// assert. What must hold is that the directory the key file actually lands
+	// in is private.
+	stagingDirOfKeyFile := filepath.Dir(path)
+	if stagingDirOfKeyFile == keyFileDir {
+		t.Errorf("key file staged directly in %q; a fixed path there is pre-creatable by any local uid", keyFileDir)
+	}
+	dirInfo, err := os.Lstat(stagingDirOfKeyFile)
+	if err != nil {
+		t.Fatalf("stat staging dir: %v", err)
+	}
+	if perm := dirInfo.Mode().Perm(); perm != 0o700 {
+		t.Errorf("key file dir mode = %o, want 0700", perm)
 	}
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -39,12 +50,12 @@ func TestWriteKeyFile_TmpfsModeAndContent(t *testing.T) {
 }
 
 func TestCleanupKeyFile_Removes(t *testing.T) {
-	path, err := writeKeyFile(mustSecret(t, "x"))
+	staged, err := writeKeyFile(mustSecret(t, "x"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	cleanupKeyFile(path)
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
+	cleanupKeyFile(staged.path)
+	if _, err := os.Stat(staged.path); !os.IsNotExist(err) {
 		t.Errorf("key file still present after cleanup (err=%v)", err)
 	}
 }

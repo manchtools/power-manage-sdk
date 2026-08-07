@@ -40,24 +40,52 @@ func (f *fakeKeyFile) Close() error {
 	return nil
 }
 
+// resetKeyFileStaging drops the cached per-process staging directory so a test
+// neither inherits nor leaves behind a directory created under different seams.
+func resetKeyFileStaging() {
+	stagingMu.Lock()
+	defer stagingMu.Unlock()
+	stagingDir, stagingRoot = "", ""
+}
+
 // swapKeyFileSeams installs fault-injecting key-file seams and returns a restore.
 func swapKeyFileSeams(t *testing.T) func() {
 	t.Helper()
-	m, c, rm, o := mkdirAll, createKeyFile, removeFile, openKeyFile
-	return func() { mkdirAll, createKeyFile, removeFile, openKeyFile = m, c, rm, o }
+	mt, ls, ge, c, rm, o := mkdirTemp, lstatFile, geteuid, createKeyFile, removeFile, openKeyFile
+	resetKeyFileStaging()
+	return func() {
+		mkdirTemp, lstatFile, geteuid, createKeyFile, removeFile, openKeyFile = mt, ls, ge, c, rm, o
+		resetKeyFileStaging()
+	}
+}
+
+// stagingDirSeam points mkdirTemp at a real private (0700, self-owned)
+// directory so a fault test reaches the file operations it is exercising
+// instead of stopping at the staging-directory check.
+func stagingDirSeam(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	// t.TempDir's numbered subdirectory is created 0777&^umask (0755 by
+	// default), which the staging check correctly refuses; chmod it to the mode
+	// the real os.MkdirTemp would produce.
+	if err := os.Chmod(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	mkdirTemp = func(string, string) (string, error) { return dir, nil }
+	return dir
 }
 
 func TestWriteKeyFile_FaultPaths(t *testing.T) {
-	t.Run("mkdir fails", func(t *testing.T) {
+	t.Run("staging directory creation fails", func(t *testing.T) {
 		defer swapKeyFileSeams(t)()
-		mkdirAll = func(string, os.FileMode) error { return errIO }
+		mkdirTemp = func(string, string) (string, error) { return "", errIO }
 		if _, err := writeKeyFile(mustSecret(t, "x")); err == nil {
-			t.Error("writeKeyFile ignored a mkdir failure")
+			t.Error("writeKeyFile ignored a staging-directory failure")
 		}
 	})
 	t.Run("create fails", func(t *testing.T) {
 		defer swapKeyFileSeams(t)()
-		mkdirAll = func(string, os.FileMode) error { return nil }
+		stagingDirSeam(t)
 		createKeyFile = func(string) (keyFileHandle, error) { return nil, errIO }
 		if _, err := writeKeyFile(mustSecret(t, "x")); err == nil {
 			t.Error("writeKeyFile ignored a create failure")
@@ -80,7 +108,7 @@ func TestWriteKeyFile_FaultPaths(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			defer swapKeyFileSeams(t)()
-			mkdirAll = func(string, os.FileMode) error { return nil }
+			stagingDirSeam(t)
 			fk := &fakeKeyFile{name: "/dev/shm/pm-luks/key-xxx"}
 			tc.set(fk)
 			createKeyFile = func(string) (keyFileHandle, error) { return fk, nil }
@@ -101,7 +129,7 @@ func TestWriteKeyFile_FaultPaths(t *testing.T) {
 // removeFile error would hide a leaked LUKS key file.
 func TestWriteKeyFile_CleanupFailureSurfacesResidue(t *testing.T) {
 	defer swapKeyFileSeams(t)()
-	mkdirAll = func(string, os.FileMode) error { return nil }
+	stagingDirSeam(t)
 	createKeyFile = func(string) (keyFileHandle, error) {
 		return &fakeKeyFile{name: "/dev/shm/pm-luks/key-leak", failWrite: true}, nil
 	}
@@ -123,15 +151,21 @@ func TestWriteKeyFile_CleanupFailureSurfacesResidue(t *testing.T) {
 // cryptsetup run.
 func TestAddKey_SecondKeyFileFails(t *testing.T) {
 	defer swapKeyFileSeams(t)()
-	mkdirAll = func(string, os.FileMode) error { return nil }
+	stagingDirSeam(t)
 	removeFile = func(string) error { return nil }
 	calls := 0
-	createKeyFile = func(string) (keyFileHandle, error) {
+	// The first key file is REAL so it survives the identity capture and the
+	// pre-exec re-check; only the second fails, which is what this pins.
+	createKeyFile = func(dir string) (keyFileHandle, error) {
 		calls++
 		if calls == 2 {
 			return nil, errIO // the "new" key file
 		}
-		return &fakeKeyFile{name: "/dev/shm/pm-luks/key-ok"}, nil
+		f, err := os.CreateTemp(dir, "key-ok-*")
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
 	}
 	r := &recordingRunner{}
 	if err := mgr(t, r).AddKey(context.Background(), "/dev/sda2", mustSecret(t, "old"), mustSecret(t, "new"), AddKeyOptions{}); err == nil {
