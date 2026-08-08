@@ -577,8 +577,8 @@ message ManagedAction {
     // @gotags: validate:"omitempty"
     LpsParams lps = 24;
     GroupParams group = 25;
-    EncryptionParams encryption = 26;
-    WifiParams wifi = 27;
+    ManagedEncryptionParams encryption = 26;
+    ManagedWifiParams wifi = 27;
     AgentUpdateParams agent_update = 28;
   }
 }
@@ -629,9 +629,9 @@ message CreateActionRequest {
     // @gotags: validate:"omitempty"
     GroupParams group = 21;
     // @gotags: validate:"omitempty"
-    EncryptionParams encryption = 22;
+    EncryptionAuthoringParams encryption = 22;
     // @gotags: validate:"omitempty"
-    WifiParams wifi = 23;
+    WifiAuthoringParams wifi = 23;
     // @gotags: validate:"omitempty"
     AgentUpdateParams agent_update = 24;
   }
@@ -721,9 +721,9 @@ message UpdateActionParamsRequest {
     // @gotags: validate:"omitempty"
     GroupParams group = 19;
     // @gotags: validate:"omitempty"
-    EncryptionParams encryption = 20;
+    EncryptionAuthoringParams encryption = 20;
     // @gotags: validate:"omitempty"
-    WifiParams wifi = 21;
+    WifiAuthoringParams wifi = 21;
     // @gotags: validate:"omitempty"
     AgentUpdateParams agent_update = 22;
   }
@@ -3009,3 +3009,70 @@ message TerminateTerminalSessionRequest {
 }
 
 message TerminateTerminalSessionResponse {}
+
+// EncryptionAuthoringParams is the HTTPS write boundary for an operator-authored
+// encryption action. preshared_key is write-only: the create handler requires
+// it, while this shared update shape permits omission to preserve the current
+// value, and no response returns it.
+message EncryptionAuthoringParams {
+  // @gotags: validate:"omitempty,min=1,max=256"
+  optional string preshared_key = 1 [debug_redact = true];
+  // @gotags: validate:"required,gte=1,lte=365"
+  int32 rotation_interval_days = 2;
+  // @gotags: validate:"omitempty,gte=3,lte=10"
+  int32 min_words = 3;
+  // @gotags: validate:"omitempty"
+  EncryptionDeviceBoundKeyType device_bound_key_type = 4;
+  // @gotags: validate:"omitempty,gte=16,lte=128"
+  int32 user_passphrase_min_length = 5;
+  // @gotags: validate:"omitempty"
+  LpsPasswordComplexity user_passphrase_complexity = 6;
+}
+
+// ManagedEncryptionParams is safe for ordinary action reads.
+message ManagedEncryptionParams {
+  bool preshared_key_configured = 1;
+  int32 rotation_interval_days = 2;
+  int32 min_words = 3;
+  EncryptionDeviceBoundKeyType device_bound_key_type = 4;
+  int32 user_passphrase_min_length = 5;
+  LpsPasswordComplexity user_passphrase_complexity = 6;
+}
+
+// WifiAuthoringParams is the HTTPS write boundary for an operator-authored
+// WiFi action. psk and client_key are write-only; omission on update preserves
+// the applicable credential.
+message WifiAuthoringParams {
+  // @gotags: validate:"required,min=1,max=255"
+  string ssid = 1;
+  // @gotags: validate:"required,ne=0"
+  WifiAuthType auth_type = 2;
+  // @gotags: validate:"omitempty,min=8,max=64"
+  optional string psk = 3 [debug_redact = true];
+  // @gotags: validate:"omitempty"
+  string ca_cert = 4;
+  // @gotags: validate:"omitempty"
+  string client_cert = 5;
+  // @gotags: validate:"omitempty,max=65536"
+  optional string client_key = 6 [debug_redact = true];
+  // @gotags: validate:"omitempty,max=254"
+  string identity = 7;
+  bool auto_connect = 8;
+  bool hidden = 9;
+  // @gotags: validate:"omitempty,gte=-1,lte=999"
+  int32 priority = 10;
+}
+
+// ManagedWifiParams is safe for ordinary action reads.
+message ManagedWifiParams {
+  string ssid = 1;
+  WifiAuthType auth_type = 2;
+  bool psk_configured = 3;
+  string ca_cert = 4;
+  string client_cert = 5;
+  bool client_key_configured = 6;
+  string identity = 7;
+  bool auto_connect = 8;
+  bool hidden = 9;
+  int32 priority = 10;
+}

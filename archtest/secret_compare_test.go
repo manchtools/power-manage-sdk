@@ -11,7 +11,9 @@ import (
 // heuristic but are not timing-sensitive secret-value compares. Each entry
 // is justified; assertNoStale fails the build if one stops matching.
 // Keyed by "<module-rel path> :: <rendered expression>".
-var secretCompareAllowlist = map[string]string{}
+var secretCompareAllowlist = map[string]string{
+	"sys/network/networkmanager.go :: p.AuthType == AuthPSK": "AuthType is an enum selecting the WiFi authentication mode, not the PSK value",
+}
 
 // TestSecretComparesAreConstantTime forbids comparing secret material
 // (tokens, MACs, signatures, fingerprints, password/digest bytes) with

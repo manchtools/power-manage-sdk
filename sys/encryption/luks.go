@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
@@ -89,21 +90,21 @@ func (l *luks) AddKey(ctx context.Context, dev string, existing, newKey exec.Sec
 	if err != nil {
 		return err
 	}
-	defer cleanupKeyFile(existingFile)
+	defer cleanupKeyFile(existingFile.path)
 	newFile, err := writeKeyFile(newKey)
 	if err != nil {
 		return err
 	}
-	defer cleanupKeyFile(newFile)
+	defer cleanupKeyFile(newFile.path)
 
-	args := []string{"luksAddKey", dev, newFile, "--key-file", existingFile}
+	args := []string{"luksAddKey", dev, newFile.path, "--key-file", existingFile.path}
 	op := "luksAddKey"
 	if opts.Slot != nil {
 		args = append(args, "--key-slot", strconv.Itoa(*opts.Slot))
 		op = fmt.Sprintf("luksAddKey (slot %d)", *opts.Slot)
 	}
 	args = append(args, "--batch-mode")
-	return l.runCryptsetup(ctx, op, args)
+	return l.runCryptsetup(ctx, op, args, existingFile, newFile)
 }
 
 // RemoveKey removes a passphrase from a LUKS volume.
@@ -118,9 +119,9 @@ func (l *luks) RemoveKey(ctx context.Context, dev string, key exec.Secret) error
 	if err != nil {
 		return err
 	}
-	defer cleanupKeyFile(keyFile)
+	defer cleanupKeyFile(keyFile.path)
 	return l.runCryptsetup(ctx, "luksRemoveKey",
-		[]string{"luksRemoveKey", dev, "--key-file", keyFile, "--batch-mode"})
+		[]string{"luksRemoveKey", dev, "--key-file", keyFile.path, "--batch-mode"}, keyFile)
 }
 
 // KillSlot removes a specific keyslot, authenticating with existing.
@@ -138,9 +139,9 @@ func (l *luks) KillSlot(ctx context.Context, dev string, slot int, existing exec
 	if err != nil {
 		return err
 	}
-	defer cleanupKeyFile(keyFile)
+	defer cleanupKeyFile(keyFile.path)
 	return l.runCryptsetup(ctx, fmt.Sprintf("luksKillSlot %d", slot),
-		[]string{"luksKillSlot", dev, strconv.Itoa(slot), "--key-file", keyFile, "--batch-mode"})
+		[]string{"luksKillSlot", dev, strconv.Itoa(slot), "--key-file", keyFile.path, "--batch-mode"}, keyFile)
 }
 
 // VerifyPassphrase reports whether p unlocks dev, without unlocking it.
@@ -152,11 +153,14 @@ func (l *luks) VerifyPassphrase(ctx context.Context, dev string, p exec.Secret) 
 	if err != nil {
 		return false, err
 	}
-	defer cleanupKeyFile(keyFile)
+	defer cleanupKeyFile(keyFile.path)
+	if err := verifyStaged(keyFile); err != nil {
+		return false, err
+	}
 
 	res, err := l.r.Run(ctx, exec.Command{
 		Name:     "cryptsetup",
-		Args:     []string{"open", "--test-passphrase", dev, "--key-file", keyFile, "--batch-mode"},
+		Args:     []string{"open", "--test-passphrase", dev, "--key-file", keyFile.path, "--batch-mode"},
 		Escalate: true,
 	})
 	if err != nil {
@@ -177,8 +181,13 @@ func (l *luks) TPM() (TPMEnroller, bool) {
 }
 
 // runCryptsetup runs an escalated cryptsetup command and maps a non-zero exit to
-// a decoded error.
-func (l *luks) runCryptsetup(ctx context.Context, op string, args []string) error {
+// a decoded error. staged names the key files whose paths appear in args; they
+// are re-checked here, as late as this package can, because cryptsetup resolves
+// those paths itself once it starts.
+func (l *luks) runCryptsetup(ctx context.Context, op string, args []string, staged ...stagedKeyFile) error {
+	if err := verifyStaged(staged...); err != nil {
+		return fmt.Errorf("cryptsetup %s: %w", op, err)
+	}
 	res, err := l.r.Run(ctx, exec.Command{Name: "cryptsetup", Args: args, Escalate: true})
 	if err != nil {
 		return fmt.Errorf("cryptsetup %s: %w", op, err)
@@ -218,10 +227,159 @@ func exitCodeDetail(code int) string {
 	}
 }
 
-// keyFileDir is the private directory for ephemeral key files. /dev/shm is a
-// tmpfs (RAM-backed) — files never touch disk. A var (not const) so tests can
-// redirect it to exercise the fail-closed "no tmpfs" path.
-var keyFileDir = "/dev/shm/pm-luks"
+// keyFileDir is the tmpfs PARENT under which this process stages its own
+// private key-file directory. /dev/shm is a tmpfs (RAM-backed) — files never
+// touch disk — but it is also world-writable, so a FIXED child path is
+// pre-creatable by any local uid and os.MkdirAll adopts an existing directory
+// without checking its owner or mode. A var (not const) so tests can redirect
+// it to exercise the fail-closed "no tmpfs" path.
+var keyFileDir = "/dev/shm"
+
+// ErrKeyFileStaging is returned when the private directory key files are
+// staged in cannot be established, or fails its owner/mode check. Owning that
+// directory is enough to replace a key file regardless of the file's own
+// ownership, so anything unexpected about it is a hard failure.
+var ErrKeyFileStaging = errors.New("encryption: unsafe LUKS key file staging directory")
+
+// ErrKeyFileTampered is returned when a staged key file no longer names the
+// file this process wrote. cryptsetup re-resolves the path it is handed, so a
+// swapped entry would enrol a passphrase the attacker chose.
+var ErrKeyFileTampered = errors.New("encryption: LUKS key file changed between staging and use")
+
+// The staging directory is created once per process and reused; it is a single
+// empty directory in tmpfs, cleared on reboot. stagingRoot records the
+// keyFileDir it was created under so a test that redirects keyFileDir does not
+// keep using a directory from the previous root.
+var (
+	stagingMu   sync.Mutex
+	stagingRoot string
+	stagingDir  string
+)
+
+// ownerUID extracts the owning uid from a FileInfo. It reports false when the
+// platform exposes none, so callers fail closed rather than skip the check.
+func ownerUID(info os.FileInfo) (int, bool) {
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, false
+	}
+	return int(stat.Uid), true
+}
+
+// verifyStagingParent refuses a key-file parent a local attacker could control.
+// Lstat (not Stat) so a symlink planted at the path is refused rather than
+// followed. A parent writable by group or other must carry the sticky bit:
+// without it, anyone with that write permission may rename or delete the
+// private directory created inside it, which is the whole point of creating
+// one. /dev/shm is mode 1777.
+func verifyStagingParent(dir string) error {
+	info, err := lstatFile(dir)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %v", ErrKeyFileStaging, dir, err)
+	}
+	if !info.Mode().IsDir() {
+		return fmt.Errorf("%w: %s is not a directory (mode %s)", ErrKeyFileStaging, dir, info.Mode())
+	}
+	uid, ok := ownerUID(info)
+	if !ok {
+		return fmt.Errorf("%w: %s exposes no owning uid on this platform", ErrKeyFileStaging, dir)
+	}
+	if uid != 0 && uid != geteuid() {
+		return fmt.Errorf("%w: %s is owned by uid %d, neither root nor %d", ErrKeyFileStaging, dir, uid, geteuid())
+	}
+	if info.Mode().Perm()&0o022 != 0 && info.Mode()&os.ModeSticky == 0 {
+		return fmt.Errorf("%w: %s is writable beyond its owner without the sticky bit (mode %s)", ErrKeyFileStaging, dir, info.Mode())
+	}
+	return nil
+}
+
+// verifyStagingDir refuses to stage key material anywhere but a real directory
+// this process owns at mode exactly 0700. Re-run on every writeKeyFile call,
+// not only at creation, so a directory replaced after the fact is caught before
+// the next key file is written.
+func verifyStagingDir(dir string) error {
+	info, err := lstatFile(dir)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %v", ErrKeyFileStaging, dir, err)
+	}
+	if !info.Mode().IsDir() {
+		return fmt.Errorf("%w: %s is not a directory (mode %s)", ErrKeyFileStaging, dir, info.Mode())
+	}
+	if perm := info.Mode().Perm(); perm != 0o700 {
+		return fmt.Errorf("%w: %s has mode %o, want exactly 0700", ErrKeyFileStaging, dir, perm)
+	}
+	uid, ok := ownerUID(info)
+	if !ok {
+		return fmt.Errorf("%w: %s exposes no owning uid on this platform", ErrKeyFileStaging, dir)
+	}
+	if uid != geteuid() {
+		return fmt.Errorf("%w: %s is owned by uid %d, not %d", ErrKeyFileStaging, dir, uid, geteuid())
+	}
+	return nil
+}
+
+// keyFileStagingDir returns this process's private key-file directory, creating
+// it under keyFileDir on first use. Both halves are load-bearing: os.MkdirTemp
+// picks an unpredictable name and refuses to adopt an existing entry, so no
+// local uid can win a once-per-boot race for the path root writes into; and
+// verifyStagingDir re-checks owner and mode every call.
+func keyFileStagingDir() (string, error) {
+	stagingMu.Lock()
+	defer stagingMu.Unlock()
+	if stagingDir != "" && stagingRoot == keyFileDir {
+		if err := verifyStagingDir(stagingDir); err != nil {
+			return "", err
+		}
+		return stagingDir, nil
+	}
+	if err := verifyStagingParent(keyFileDir); err != nil {
+		return "", err
+	}
+	dir, err := mkdirTemp(keyFileDir, "pm-luks-")
+	if err != nil {
+		return "", fmt.Errorf("%w: create under %s: %v", ErrKeyFileStaging, keyFileDir, err)
+	}
+	if err := verifyStagingDir(dir); err != nil {
+		return "", err
+	}
+	stagingDir, stagingRoot = dir, keyFileDir
+	return dir, nil
+}
+
+// stagedKeyFile is a key file written into this process's private staging
+// directory, paired with the identity it had immediately after being written.
+// cryptsetup is handed the PATH and re-resolves it, so verify() re-checks that
+// identity immediately before exec.
+type stagedKeyFile struct {
+	path string
+	id   os.FileInfo
+}
+
+// verify refuses a staged key file that is no longer the file this process
+// wrote — a different inode, a non-regular replacement, or a widened mode.
+func (k stagedKeyFile) verify() error {
+	if k.path == "" || k.id == nil {
+		return fmt.Errorf("%w: %q was never staged", ErrKeyFileTampered, k.path)
+	}
+	now, err := lstatFile(k.path)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %v", ErrKeyFileTampered, k.path, err)
+	}
+	if !now.Mode().IsRegular() || now.Mode().Perm() != 0o600 || !os.SameFile(k.id, now) {
+		return fmt.Errorf("%w: %s (mode %s)", ErrKeyFileTampered, k.path, now.Mode())
+	}
+	return nil
+}
+
+// verifyStaged re-checks every key file about to be handed to an external tool.
+func verifyStaged(files ...stagedKeyFile) error {
+	for _, f := range files {
+		if err := f.verify(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // keyFileHandle / scrubFile are the minimal subsets of *os.File the key-file
 // helpers need. Behind package-var seams so tests can inject per-method I/O
@@ -241,7 +399,9 @@ type scrubFile interface {
 }
 
 var (
-	mkdirAll      = os.MkdirAll
+	mkdirTemp     = os.MkdirTemp
+	lstatFile     = os.Lstat
+	geteuid       = os.Geteuid
 	createKeyFile = func(dir string) (keyFileHandle, error) { return os.CreateTemp(dir, "key-*") }
 	removeFile    = os.Remove
 	openKeyFile   = func(path string) (scrubFile, error) {
@@ -265,29 +425,38 @@ func cleanupKeyFileAfter(stage, name string, cause error) error {
 	return fmt.Errorf("%s: %w", stage, cause)
 }
 
-// writeKeyFile writes a Secret to a 0600 temp file in /dev/shm and returns its
-// path. Reveal() here is the single sanctioned key-file sink. Never falls back
-// to disk: an unavailable /dev/shm is a hard error.
-func writeKeyFile(key exec.Secret) (string, error) {
-	if err := mkdirAll(keyFileDir, 0o700); err != nil {
-		return "", fmt.Errorf("create key file directory %s: %w", keyFileDir, err)
-	}
-	f, err := createKeyFile(keyFileDir)
+// writeKeyFile writes a Secret to a 0600 temp file in this process's private
+// /dev/shm staging directory and returns it together with the identity it must
+// still have at exec time. Reveal() here is the single sanctioned key-file
+// sink. Never falls back to disk: an unavailable or unsafe /dev/shm is a hard
+// error.
+func writeKeyFile(key exec.Secret) (stagedKeyFile, error) {
+	dir, err := keyFileStagingDir()
 	if err != nil {
-		return "", fmt.Errorf("create key file: %w", err)
+		return stagedKeyFile{}, err
+	}
+	f, err := createKeyFile(dir)
+	if err != nil {
+		return stagedKeyFile{}, fmt.Errorf("create key file: %w", err)
 	}
 	if err := f.Chmod(0o600); err != nil {
 		_ = f.Close()
-		return "", cleanupKeyFileAfter("set key file permissions", f.Name(), err)
+		return stagedKeyFile{}, cleanupKeyFileAfter("set key file permissions", f.Name(), err)
 	}
 	if _, err := f.WriteString(key.Reveal()); err != nil {
 		_ = f.Close()
-		return "", cleanupKeyFileAfter("write key file", f.Name(), err)
+		return stagedKeyFile{}, cleanupKeyFileAfter("write key file", f.Name(), err)
 	}
 	if err := f.Close(); err != nil {
-		return "", cleanupKeyFileAfter("close key file", f.Name(), err)
+		return stagedKeyFile{}, cleanupKeyFileAfter("close key file", f.Name(), err)
 	}
-	return f.Name(), nil
+	// Capture the identity now, while the file is still the one just written,
+	// so verify() has something unforgeable to compare against before exec.
+	id, err := lstatFile(f.Name())
+	if err != nil {
+		return stagedKeyFile{}, cleanupKeyFileAfter("identify key file", f.Name(), err)
+	}
+	return stagedKeyFile{path: f.Name(), id: id}, nil
 }
 
 // cleanupKeyFile zero-overwrites and removes a key file. O_NOFOLLOW rejects a

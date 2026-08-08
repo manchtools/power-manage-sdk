@@ -3,6 +3,7 @@ package sdk_test
 import (
 	"encoding/json"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -13,6 +14,20 @@ import (
 
 	_ "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1" // registers the contract descriptors
 )
+
+func assertLiveFields[V any](t *testing.T, name string, fields map[protoreflect.FullName]V) {
+	t.Helper()
+	for fullName := range fields {
+		descriptor, err := protoregistry.GlobalFiles.FindDescriptorByName(fullName)
+		if err != nil {
+			t.Errorf("%s entry %s resolves to no descriptor", name, fullName)
+			continue
+		}
+		if _, ok := descriptor.(protoreflect.FieldDescriptor); !ok {
+			t.Errorf("%s entry %s is not a field descriptor", name, fullName)
+		}
+	}
+}
 
 // The current golden guards the exact public contract. The predecessor golden
 // separately preserves the evidence for the approved removal sets; it is a test
@@ -594,6 +609,14 @@ func TestContract_HasNoSpeculativeBackendSelectors(t *testing.T) {
 // fails without anyone remembering to extend anything.
 func TestContract_SecretsAreSealedAndFramesAreUnsigned(t *testing.T) {
 	msgs := contractMessages(t)
+	// These are the only plaintext secret fields in the contract: authenticated
+	// HTTPS write-only inputs consumed and encrypted by control. They never enter
+	// an agent-facing frame and no response message contains them.
+	writeOnlyInputs := map[protoreflect.FullName]struct{}{
+		"powermanage.v1.EncryptionAuthoringParams.preshared_key": {},
+		"powermanage.v1.WifiAuthoringParams.psk":                 {},
+		"powermanage.v1.WifiAuthoringParams.client_key":          {},
+	}
 	banned := map[protoreflect.Name]string{
 		"signature":          "a CA signature over an application frame",
 		"signed_envelope":    "the signed-envelope indirection",
@@ -615,17 +638,123 @@ func TestContract_SecretsAreSealedAndFramesAreUnsigned(t *testing.T) {
 				continue
 			}
 			classified++
+			if _, allowed := writeOnlyInputs[fd.FullName()]; allowed {
+				continue
+			}
 			if fd.Kind() != protoreflect.MessageKind || fd.Message().Name() != "SealedValue" {
 				t.Errorf("%s.%s is classified secret but ships as %s — it must be a SealedValue",
 					md.Name(), fd.Name(), fd.Kind())
 			}
 		}
 	}
+	assertLiveFields(t, "writeOnlyInputs", writeOnlyInputs)
 	if scanned == 0 {
 		t.Fatal("matches-zero: scanned zero fields — the signing sweep proved nothing")
 	}
 	if classified == 0 {
 		t.Fatal("matches-zero: no field carries the secret classification (debug_redact) — " +
 			"the marker convention was dropped, so the sealing sweep proved nothing")
+	}
+}
+
+// Design §8: credentials authored by an operator are never ordinary strings
+// in the Action message delivered to an agent. These exact fields were the gap
+// that the general classification sweep could not see while they were left
+// unclassified, so pin both their classification and their wire type.
+func TestContract_ActionCredentialsAreSealed(t *testing.T) {
+	messages := contractMessages(t)
+	for messageName, fieldNames := range map[protoreflect.Name][]protoreflect.Name{
+		"EncryptionParams": {"preshared_key"},
+		"WifiParams":       {"psk", "client_key"},
+	} {
+		message, ok := messages[messageName]
+		if !ok {
+			t.Errorf("message %s is absent", messageName)
+			continue
+		}
+		for _, fieldName := range fieldNames {
+			field := message.Fields().ByName(fieldName)
+			if field == nil {
+				t.Errorf("%s.%s is absent", messageName, fieldName)
+				continue
+			}
+			options, _ := field.Options().(*descriptorpb.FieldOptions)
+			if !options.GetDebugRedact() {
+				t.Errorf("%s.%s is not classified with debug_redact", messageName, fieldName)
+			}
+			if field.Kind() != protoreflect.MessageKind || field.Message().Name() != "SealedValue" {
+				t.Errorf("%s.%s ships as %s, want SealedValue", messageName, fieldName, field.Kind())
+			}
+		}
+	}
+}
+
+// Design §8: classification cannot be the only source of truth. A secret-like
+// name that lacks the marker would otherwise be invisible to every downstream
+// redaction/sealing guard at once. Metadata and deliberately plaintext public
+// API fields must be named explicitly here with a narrow justification.
+func TestContract_SecretShapedFieldsAreClassifiedOrJustified(t *testing.T) {
+	secretName := regexp.MustCompile(`(?i)(token|secret|hmac|signature|fingerprint|password|passwd|digest|apikey|psk|private_key|preshared_key|client_key)`)
+	metadataSuffixes := []string{
+		"type", "kind", "id", "name", "len", "length", "count", "version",
+		"expiry", "expiresat", "at", "format", "algorithm", "algo", "method",
+		"status", "enabled", "disabled", "index", "idx", "field", "size", "configured",
+		"url", "pin", "pagetoken", "nextpagetoken",
+	}
+	justifiedPlaintext := map[protoreflect.FullName]string{
+		"powermanage.v1.EnableSCIMResponse.token":                    "one-time SCIM bearer reveal",
+		"powermanage.v1.StartTerminalResponse.session_token":         "short-lived browser bearer output",
+		"powermanage.v1.RegisterRequest.token":                       "one-time enrollment input",
+		"powermanage.v1.RotateSCIMTokenResponse.token":               "one-time SCIM bearer reveal",
+		"powermanage.v1.ValidateLuksTokenRequest.token":              "one-time device-bound LUKS input",
+		"powermanage.v1.CreateTokenResponse.token":                   "one-time registration-token reveal",
+		"powermanage.v1.CreateLuksTokenResponse.token":               "one-time LUKS-token reveal",
+		"powermanage.v1.Hello.auth_token":                            "short-lived direct-stream bootstrap bearer",
+		"powermanage.v1.RefreshTokenRequest.refresh_token":           "public HTTPS authentication input",
+		"powermanage.v1.LogoutRequest.refresh_token":                 "public HTTPS authentication input",
+		"powermanage.v1.EnrollRequest.token":                         "local privileged enrollment input",
+		"powermanage.v1.CreateIdentityProviderRequest.client_secret": "authenticated HTTPS write-only input",
+		"powermanage.v1.UpdateIdentityProviderRequest.client_secret": "authenticated HTTPS write-only input",
+		"powermanage.v1.RevealLpsPasswordResponse.password":          "explicit audited operator reveal",
+		"powermanage.v1.SSOCallbackResponse.access_token":            "public HTTPS authentication output",
+		"powermanage.v1.SSOCallbackResponse.refresh_token":           "public HTTPS authentication output",
+		"powermanage.v1.RefreshTokenResponse.access_token":           "public HTTPS authentication output",
+		"powermanage.v1.RefreshTokenResponse.refresh_token":          "public HTTPS authentication output",
+	}
+
+	matches := 0
+	for _, message := range contractMessages(t) {
+		for i := 0; i < message.Fields().Len(); i++ {
+			field := message.Fields().Get(i)
+			if field.Kind() != protoreflect.StringKind && field.Kind() != protoreflect.BytesKind {
+				continue
+			}
+			if !secretName.MatchString(string(field.Name())) {
+				continue
+			}
+			normalized := strings.ReplaceAll(strings.ToLower(string(field.Name())), "_", "")
+			metadata := false
+			for _, suffix := range metadataSuffixes {
+				if strings.HasSuffix(normalized, suffix) {
+					metadata = true
+					break
+				}
+			}
+			if metadata {
+				continue
+			}
+			matches++
+			options, _ := field.Options().(*descriptorpb.FieldOptions)
+			if options.GetDebugRedact() {
+				continue
+			}
+			if _, allowed := justifiedPlaintext[field.FullName()]; !allowed {
+				t.Errorf("%s looks secret but is neither classified nor justified", field.FullName())
+			}
+		}
+	}
+	assertLiveFields(t, "justifiedPlaintext", justifiedPlaintext)
+	if matches == 0 {
+		t.Fatal("matches-zero: no secret-shaped fields found; inverse classification guard proved nothing")
 	}
 }

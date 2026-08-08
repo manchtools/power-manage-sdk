@@ -52,7 +52,7 @@ func isPresenceComparand(e ast.Expr) bool {
 // "signature"/"hmac" forms are used (bare "sig"/"mac" collide with
 // "assign"/"format"). A match is a violation only when it is not metadata
 // (secretMetaSuffixes) and not a presence check.
-var secretNameRe = regexp.MustCompile(`(?i)(token|secret|hmac|signature|fingerprint|password|passwd|digest|apikey)`)
+var secretNameRe = regexp.MustCompile(`(?i)(token|secret|hmac|signature|fingerprint|password|passwd|digest|apikey|psk|privatekey|clientkey|presharedkey)`)
 
 // secretMetaSuffixes name fields that describe a secret rather than carry
 // its bytes (TokenType, KeyID, SignatureSize, ...).
@@ -66,10 +66,13 @@ var secretMetaSuffixes = []string{
 // that must be compared in constant time.
 func looksLikeSecretOperand(e ast.Expr) bool {
 	name := identName(e)
-	if name == "" || !secretNameRe.MatchString(name) {
+	if name == "" {
 		return false
 	}
-	lower := strings.ToLower(name)
+	lower := strings.ReplaceAll(strings.ToLower(name), "_", "")
+	if !secretNameRe.MatchString(lower) {
+		return false
+	}
 	for _, suf := range secretMetaSuffixes {
 		if strings.HasSuffix(lower, suf) {
 			return false

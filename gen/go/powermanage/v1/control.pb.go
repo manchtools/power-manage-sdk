@@ -4172,7 +4172,7 @@ func (x *ManagedAction) GetGroup() *GroupParams {
 	return nil
 }
 
-func (x *ManagedAction) GetEncryption() *EncryptionParams {
+func (x *ManagedAction) GetEncryption() *ManagedEncryptionParams {
 	if x != nil {
 		if x, ok := x.Params.(*ManagedAction_Encryption); ok {
 			return x.Encryption
@@ -4181,7 +4181,7 @@ func (x *ManagedAction) GetEncryption() *EncryptionParams {
 	return nil
 }
 
-func (x *ManagedAction) GetWifi() *WifiParams {
+func (x *ManagedAction) GetWifi() *ManagedWifiParams {
 	if x != nil {
 		if x, ok := x.Params.(*ManagedAction_Wifi); ok {
 			return x.Wifi
@@ -4265,11 +4265,11 @@ type ManagedAction_Group struct {
 }
 
 type ManagedAction_Encryption struct {
-	Encryption *EncryptionParams `protobuf:"bytes,26,opt,name=encryption,proto3,oneof"`
+	Encryption *ManagedEncryptionParams `protobuf:"bytes,26,opt,name=encryption,proto3,oneof"`
 }
 
 type ManagedAction_Wifi struct {
-	Wifi *WifiParams `protobuf:"bytes,27,opt,name=wifi,proto3,oneof"`
+	Wifi *ManagedWifiParams `protobuf:"bytes,27,opt,name=wifi,proto3,oneof"`
 }
 
 type ManagedAction_AgentUpdate struct {
@@ -4565,7 +4565,7 @@ func (x *CreateActionRequest) GetGroup() *GroupParams {
 	return nil
 }
 
-func (x *CreateActionRequest) GetEncryption() *EncryptionParams {
+func (x *CreateActionRequest) GetEncryption() *EncryptionAuthoringParams {
 	if x != nil {
 		if x, ok := x.Params.(*CreateActionRequest_Encryption); ok {
 			return x.Encryption
@@ -4574,7 +4574,7 @@ func (x *CreateActionRequest) GetEncryption() *EncryptionParams {
 	return nil
 }
 
-func (x *CreateActionRequest) GetWifi() *WifiParams {
+func (x *CreateActionRequest) GetWifi() *WifiAuthoringParams {
 	if x != nil {
 		if x, ok := x.Params.(*CreateActionRequest_Wifi); ok {
 			return x.Wifi
@@ -4673,12 +4673,12 @@ type CreateActionRequest_Group struct {
 
 type CreateActionRequest_Encryption struct {
 	// @gotags: validate:"omitempty"
-	Encryption *EncryptionParams `protobuf:"bytes,22,opt,name=encryption,proto3,oneof" validate:"omitempty"`
+	Encryption *EncryptionAuthoringParams `protobuf:"bytes,22,opt,name=encryption,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_Wifi struct {
 	// @gotags: validate:"omitempty"
-	Wifi *WifiParams `protobuf:"bytes,23,opt,name=wifi,proto3,oneof" validate:"omitempty"`
+	Wifi *WifiAuthoringParams `protobuf:"bytes,23,opt,name=wifi,proto3,oneof" validate:"omitempty"`
 }
 
 type CreateActionRequest_AgentUpdate struct {
@@ -5328,7 +5328,7 @@ func (x *UpdateActionParamsRequest) GetGroup() *GroupParams {
 	return nil
 }
 
-func (x *UpdateActionParamsRequest) GetEncryption() *EncryptionParams {
+func (x *UpdateActionParamsRequest) GetEncryption() *EncryptionAuthoringParams {
 	if x != nil {
 		if x, ok := x.Params.(*UpdateActionParamsRequest_Encryption); ok {
 			return x.Encryption
@@ -5337,7 +5337,7 @@ func (x *UpdateActionParamsRequest) GetEncryption() *EncryptionParams {
 	return nil
 }
 
-func (x *UpdateActionParamsRequest) GetWifi() *WifiParams {
+func (x *UpdateActionParamsRequest) GetWifi() *WifiAuthoringParams {
 	if x != nil {
 		if x, ok := x.Params.(*UpdateActionParamsRequest_Wifi); ok {
 			return x.Wifi
@@ -5436,12 +5436,12 @@ type UpdateActionParamsRequest_Group struct {
 
 type UpdateActionParamsRequest_Encryption struct {
 	// @gotags: validate:"omitempty"
-	Encryption *EncryptionParams `protobuf:"bytes,20,opt,name=encryption,proto3,oneof" validate:"omitempty"`
+	Encryption *EncryptionAuthoringParams `protobuf:"bytes,20,opt,name=encryption,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_Wifi struct {
 	// @gotags: validate:"omitempty"
-	Wifi *WifiParams `protobuf:"bytes,21,opt,name=wifi,proto3,oneof" validate:"omitempty"`
+	Wifi *WifiAuthoringParams `protobuf:"bytes,21,opt,name=wifi,proto3,oneof" validate:"omitempty"`
 }
 
 type UpdateActionParamsRequest_AgentUpdate struct {
@@ -20854,6 +20854,429 @@ func (*TerminateTerminalSessionResponse) Descriptor() ([]byte, []int) {
 	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{334}
 }
 
+// EncryptionAuthoringParams is the HTTPS write boundary for an operator-authored
+// encryption action. preshared_key is write-only: the create handler requires
+// it, while this shared update shape permits omission to preserve the current
+// value, and no response returns it.
+type EncryptionAuthoringParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"omitempty,min=1,max=256"
+	PresharedKey *string `protobuf:"bytes,1,opt,name=preshared_key,json=presharedKey,proto3,oneof" json:"preshared_key,omitempty" validate:"omitempty,min=1,max=256"`
+	// @gotags: validate:"required,gte=1,lte=365"
+	RotationIntervalDays int32 `protobuf:"varint,2,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty" validate:"required,gte=1,lte=365"`
+	// @gotags: validate:"omitempty,gte=3,lte=10"
+	MinWords int32 `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty" validate:"omitempty,gte=3,lte=10"`
+	// @gotags: validate:"omitempty"
+	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,gte=16,lte=128"
+	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
+	// @gotags: validate:"omitempty"
+	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *EncryptionAuthoringParams) Reset() {
+	*x = EncryptionAuthoringParams{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[335]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EncryptionAuthoringParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EncryptionAuthoringParams) ProtoMessage() {}
+
+func (x *EncryptionAuthoringParams) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[335]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EncryptionAuthoringParams.ProtoReflect.Descriptor instead.
+func (*EncryptionAuthoringParams) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{335}
+}
+
+func (x *EncryptionAuthoringParams) GetPresharedKey() string {
+	if x != nil && x.PresharedKey != nil {
+		return *x.PresharedKey
+	}
+	return ""
+}
+
+func (x *EncryptionAuthoringParams) GetRotationIntervalDays() int32 {
+	if x != nil {
+		return x.RotationIntervalDays
+	}
+	return 0
+}
+
+func (x *EncryptionAuthoringParams) GetMinWords() int32 {
+	if x != nil {
+		return x.MinWords
+	}
+	return 0
+}
+
+func (x *EncryptionAuthoringParams) GetDeviceBoundKeyType() EncryptionDeviceBoundKeyType {
+	if x != nil {
+		return x.DeviceBoundKeyType
+	}
+	return EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE
+}
+
+func (x *EncryptionAuthoringParams) GetUserPassphraseMinLength() int32 {
+	if x != nil {
+		return x.UserPassphraseMinLength
+	}
+	return 0
+}
+
+func (x *EncryptionAuthoringParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
+	if x != nil {
+		return x.UserPassphraseComplexity
+	}
+	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
+}
+
+// ManagedEncryptionParams is safe for ordinary action reads.
+type ManagedEncryptionParams struct {
+	state                    protoimpl.MessageState       `protogen:"open.v1"`
+	PresharedKeyConfigured   bool                         `protobuf:"varint,1,opt,name=preshared_key_configured,json=presharedKeyConfigured,proto3" json:"preshared_key_configured,omitempty"`
+	RotationIntervalDays     int32                        `protobuf:"varint,2,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty"`
+	MinWords                 int32                        `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty"`
+	DeviceBoundKeyType       EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty"`
+	UserPassphraseMinLength  int32                        `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty"`
+	UserPassphraseComplexity LpsPasswordComplexity        `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *ManagedEncryptionParams) Reset() {
+	*x = ManagedEncryptionParams{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[336]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManagedEncryptionParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManagedEncryptionParams) ProtoMessage() {}
+
+func (x *ManagedEncryptionParams) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[336]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManagedEncryptionParams.ProtoReflect.Descriptor instead.
+func (*ManagedEncryptionParams) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{336}
+}
+
+func (x *ManagedEncryptionParams) GetPresharedKeyConfigured() bool {
+	if x != nil {
+		return x.PresharedKeyConfigured
+	}
+	return false
+}
+
+func (x *ManagedEncryptionParams) GetRotationIntervalDays() int32 {
+	if x != nil {
+		return x.RotationIntervalDays
+	}
+	return 0
+}
+
+func (x *ManagedEncryptionParams) GetMinWords() int32 {
+	if x != nil {
+		return x.MinWords
+	}
+	return 0
+}
+
+func (x *ManagedEncryptionParams) GetDeviceBoundKeyType() EncryptionDeviceBoundKeyType {
+	if x != nil {
+		return x.DeviceBoundKeyType
+	}
+	return EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_NONE
+}
+
+func (x *ManagedEncryptionParams) GetUserPassphraseMinLength() int32 {
+	if x != nil {
+		return x.UserPassphraseMinLength
+	}
+	return 0
+}
+
+func (x *ManagedEncryptionParams) GetUserPassphraseComplexity() LpsPasswordComplexity {
+	if x != nil {
+		return x.UserPassphraseComplexity
+	}
+	return LpsPasswordComplexity_LPS_PASSWORD_COMPLEXITY_UNSPECIFIED
+}
+
+// WifiAuthoringParams is the HTTPS write boundary for an operator-authored
+// WiFi action. psk and client_key are write-only; omission on update preserves
+// the applicable credential.
+type WifiAuthoringParams struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,min=1,max=255"
+	Ssid string `protobuf:"bytes,1,opt,name=ssid,proto3" json:"ssid,omitempty" validate:"required,min=1,max=255"`
+	// @gotags: validate:"required,ne=0"
+	AuthType WifiAuthType `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=powermanage.v1.WifiAuthType" json:"auth_type,omitempty" validate:"required,ne=0"`
+	// @gotags: validate:"omitempty,min=8,max=64"
+	Psk *string `protobuf:"bytes,3,opt,name=psk,proto3,oneof" json:"psk,omitempty" validate:"omitempty,min=8,max=64"`
+	// @gotags: validate:"omitempty"
+	CaCert string `protobuf:"bytes,4,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty"
+	ClientCert string `protobuf:"bytes,5,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,max=65536"
+	ClientKey *string `protobuf:"bytes,6,opt,name=client_key,json=clientKey,proto3,oneof" json:"client_key,omitempty" validate:"omitempty,max=65536"`
+	// @gotags: validate:"omitempty,max=254"
+	Identity    string `protobuf:"bytes,7,opt,name=identity,proto3" json:"identity,omitempty" validate:"omitempty,max=254"`
+	AutoConnect bool   `protobuf:"varint,8,opt,name=auto_connect,json=autoConnect,proto3" json:"auto_connect,omitempty"`
+	Hidden      bool   `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
+	// @gotags: validate:"omitempty,gte=-1,lte=999"
+	Priority      int32 `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty" validate:"omitempty,gte=-1,lte=999"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WifiAuthoringParams) Reset() {
+	*x = WifiAuthoringParams{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[337]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WifiAuthoringParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WifiAuthoringParams) ProtoMessage() {}
+
+func (x *WifiAuthoringParams) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[337]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WifiAuthoringParams.ProtoReflect.Descriptor instead.
+func (*WifiAuthoringParams) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{337}
+}
+
+func (x *WifiAuthoringParams) GetSsid() string {
+	if x != nil {
+		return x.Ssid
+	}
+	return ""
+}
+
+func (x *WifiAuthoringParams) GetAuthType() WifiAuthType {
+	if x != nil {
+		return x.AuthType
+	}
+	return WifiAuthType_WIFI_AUTH_TYPE_UNSPECIFIED
+}
+
+func (x *WifiAuthoringParams) GetPsk() string {
+	if x != nil && x.Psk != nil {
+		return *x.Psk
+	}
+	return ""
+}
+
+func (x *WifiAuthoringParams) GetCaCert() string {
+	if x != nil {
+		return x.CaCert
+	}
+	return ""
+}
+
+func (x *WifiAuthoringParams) GetClientCert() string {
+	if x != nil {
+		return x.ClientCert
+	}
+	return ""
+}
+
+func (x *WifiAuthoringParams) GetClientKey() string {
+	if x != nil && x.ClientKey != nil {
+		return *x.ClientKey
+	}
+	return ""
+}
+
+func (x *WifiAuthoringParams) GetIdentity() string {
+	if x != nil {
+		return x.Identity
+	}
+	return ""
+}
+
+func (x *WifiAuthoringParams) GetAutoConnect() bool {
+	if x != nil {
+		return x.AutoConnect
+	}
+	return false
+}
+
+func (x *WifiAuthoringParams) GetHidden() bool {
+	if x != nil {
+		return x.Hidden
+	}
+	return false
+}
+
+func (x *WifiAuthoringParams) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
+// ManagedWifiParams is safe for ordinary action reads.
+type ManagedWifiParams struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Ssid                string                 `protobuf:"bytes,1,opt,name=ssid,proto3" json:"ssid,omitempty"`
+	AuthType            WifiAuthType           `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=powermanage.v1.WifiAuthType" json:"auth_type,omitempty"`
+	PskConfigured       bool                   `protobuf:"varint,3,opt,name=psk_configured,json=pskConfigured,proto3" json:"psk_configured,omitempty"`
+	CaCert              string                 `protobuf:"bytes,4,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty"`
+	ClientCert          string                 `protobuf:"bytes,5,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty"`
+	ClientKeyConfigured bool                   `protobuf:"varint,6,opt,name=client_key_configured,json=clientKeyConfigured,proto3" json:"client_key_configured,omitempty"`
+	Identity            string                 `protobuf:"bytes,7,opt,name=identity,proto3" json:"identity,omitempty"`
+	AutoConnect         bool                   `protobuf:"varint,8,opt,name=auto_connect,json=autoConnect,proto3" json:"auto_connect,omitempty"`
+	Hidden              bool                   `protobuf:"varint,9,opt,name=hidden,proto3" json:"hidden,omitempty"`
+	Priority            int32                  `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ManagedWifiParams) Reset() {
+	*x = ManagedWifiParams{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[338]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManagedWifiParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManagedWifiParams) ProtoMessage() {}
+
+func (x *ManagedWifiParams) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[338]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManagedWifiParams.ProtoReflect.Descriptor instead.
+func (*ManagedWifiParams) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{338}
+}
+
+func (x *ManagedWifiParams) GetSsid() string {
+	if x != nil {
+		return x.Ssid
+	}
+	return ""
+}
+
+func (x *ManagedWifiParams) GetAuthType() WifiAuthType {
+	if x != nil {
+		return x.AuthType
+	}
+	return WifiAuthType_WIFI_AUTH_TYPE_UNSPECIFIED
+}
+
+func (x *ManagedWifiParams) GetPskConfigured() bool {
+	if x != nil {
+		return x.PskConfigured
+	}
+	return false
+}
+
+func (x *ManagedWifiParams) GetCaCert() string {
+	if x != nil {
+		return x.CaCert
+	}
+	return ""
+}
+
+func (x *ManagedWifiParams) GetClientCert() string {
+	if x != nil {
+		return x.ClientCert
+	}
+	return ""
+}
+
+func (x *ManagedWifiParams) GetClientKeyConfigured() bool {
+	if x != nil {
+		return x.ClientKeyConfigured
+	}
+	return false
+}
+
+func (x *ManagedWifiParams) GetIdentity() string {
+	if x != nil {
+		return x.Identity
+	}
+	return ""
+}
+
+func (x *ManagedWifiParams) GetAutoConnect() bool {
+	if x != nil {
+		return x.AutoConnect
+	}
+	return false
+}
+
+func (x *ManagedWifiParams) GetHidden() bool {
+	if x != nil {
+		return x.Hidden
+	}
+	return false
+}
+
+func (x *ManagedWifiParams) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
 var File_powermanage_v1_control_proto protoreflect.FileDescriptor
 
 const file_powermanage_v1_control_proto_rawDesc = "" +
@@ -21138,7 +21561,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\v2!.powermanage.v1.RegistrationTokenR\x05token\"$\n" +
 	"\x12DeleteTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteTokenResponse\"\xd4\v\n" +
+	"\x13DeleteTokenResponse\"\xe2\v\n" +
 	"\rManagedAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -21170,13 +21593,13 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x04sshd\x18\x16 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
 	"\fadmin_policy\x18\x17 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
 	"\x03lps\x18\x18 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
-	"\x05group\x18\x19 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
+	"\x05group\x18\x19 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12I\n" +
 	"\n" +
-	"encryption\x18\x1a \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x120\n" +
-	"\x04wifi\x18\x1b \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"encryption\x18\x1a \x01(\v2'.powermanage.v1.ManagedEncryptionParamsH\x00R\n" +
+	"encryption\x127\n" +
+	"\x04wifi\x18\x1b \x01(\v2!.powermanage.v1.ManagedWifiParamsH\x00R\x04wifi\x12F\n" +
 	"\fagent_update\x18\x1c \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
-	"\x06params\"\xb5\n" +
+	"\x06params\"\xc7\n" +
 	"\n" +
 	"\x13CreateActionRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
@@ -21202,11 +21625,11 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x04sshd\x18\x12 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
 	"\fadmin_policy\x18\x13 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
 	"\x03lps\x18\x14 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
-	"\x05group\x18\x15 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
+	"\x05group\x18\x15 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12K\n" +
 	"\n" +
-	"encryption\x18\x16 \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x120\n" +
-	"\x04wifi\x18\x17 \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"encryption\x18\x16 \x01(\v2).powermanage.v1.EncryptionAuthoringParamsH\x00R\n" +
+	"encryption\x129\n" +
+	"\x04wifi\x18\x17 \x01(\v2#.powermanage.v1.WifiAuthoringParamsH\x00R\x04wifi\x12F\n" +
 	"\fagent_update\x18\x18 \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
 	"\x06params\"M\n" +
 	"\x14CreateActionResponse\x125\n" +
@@ -21232,7 +21655,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"R\n" +
 	"\x1eUpdateActionDescriptionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xe5\t\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\xf7\t\n" +
 	"\x19UpdateActionParamsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12A\n" +
 	"\rdesired_state\x18\x02 \x01(\x0e2\x1c.powermanage.v1.DesiredStateR\fdesiredState\x12'\n" +
@@ -21255,11 +21678,11 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x04sshd\x18\x10 \x01(\v2\x1a.powermanage.v1.SshdParamsH\x00R\x04sshd\x12F\n" +
 	"\fadmin_policy\x18\x11 \x01(\v2!.powermanage.v1.AdminPolicyParamsH\x00R\vadminPolicy\x12-\n" +
 	"\x03lps\x18\x12 \x01(\v2\x19.powermanage.v1.LpsParamsH\x00R\x03lps\x123\n" +
-	"\x05group\x18\x13 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12B\n" +
+	"\x05group\x18\x13 \x01(\v2\x1b.powermanage.v1.GroupParamsH\x00R\x05group\x12K\n" +
 	"\n" +
-	"encryption\x18\x14 \x01(\v2 .powermanage.v1.EncryptionParamsH\x00R\n" +
-	"encryption\x120\n" +
-	"\x04wifi\x18\x15 \x01(\v2\x1a.powermanage.v1.WifiParamsH\x00R\x04wifi\x12F\n" +
+	"encryption\x18\x14 \x01(\v2).powermanage.v1.EncryptionAuthoringParamsH\x00R\n" +
+	"encryption\x129\n" +
+	"\x04wifi\x18\x15 \x01(\v2#.powermanage.v1.WifiAuthoringParamsH\x00R\x04wifi\x12F\n" +
 	"\fagent_update\x18\x16 \x01(\v2!.powermanage.v1.AgentUpdateParamsH\x00R\vagentUpdateB\b\n" +
 	"\x06params\"M\n" +
 	"\x14UpdateActionResponse\x125\n" +
@@ -22371,7 +22794,51 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"\"\n" +
-	" TerminateTerminalSessionResponse2\xfd\x82\x01\n" +
+	" TerminateTerminalSessionResponse\"\xb2\x03\n" +
+	"\x19EncryptionAuthoringParams\x12-\n" +
+	"\rpreshared_key\x18\x01 \x01(\tB\x03\x80\x01\x01H\x00R\fpresharedKey\x88\x01\x01\x124\n" +
+	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
+	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12_\n" +
+	"\x15device_bound_key_type\x18\x04 \x01(\x0e2,.powermanage.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
+	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12c\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexityB\x10\n" +
+	"\x0e_preshared_key\"\xa9\x03\n" +
+	"\x17ManagedEncryptionParams\x128\n" +
+	"\x18preshared_key_configured\x18\x01 \x01(\bR\x16presharedKeyConfigured\x124\n" +
+	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
+	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12_\n" +
+	"\x15device_bound_key_type\x18\x04 \x01(\x0e2,.powermanage.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
+	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12c\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xed\x02\n" +
+	"\x13WifiAuthoringParams\x12\x12\n" +
+	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x129\n" +
+	"\tauth_type\x18\x02 \x01(\x0e2\x1c.powermanage.v1.WifiAuthTypeR\bauthType\x12\x1a\n" +
+	"\x03psk\x18\x03 \x01(\tB\x03\x80\x01\x01H\x00R\x03psk\x88\x01\x01\x12\x17\n" +
+	"\aca_cert\x18\x04 \x01(\tR\x06caCert\x12\x1f\n" +
+	"\vclient_cert\x18\x05 \x01(\tR\n" +
+	"clientCert\x12'\n" +
+	"\n" +
+	"client_key\x18\x06 \x01(\tB\x03\x80\x01\x01H\x01R\tclientKey\x88\x01\x01\x12\x1a\n" +
+	"\bidentity\x18\a \x01(\tR\bidentity\x12!\n" +
+	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
+	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
+	"\bpriority\x18\n" +
+	" \x01(\x05R\bpriorityB\x06\n" +
+	"\x04_pskB\r\n" +
+	"\v_client_key\"\xea\x02\n" +
+	"\x11ManagedWifiParams\x12\x12\n" +
+	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x129\n" +
+	"\tauth_type\x18\x02 \x01(\x0e2\x1c.powermanage.v1.WifiAuthTypeR\bauthType\x12%\n" +
+	"\x0epsk_configured\x18\x03 \x01(\bR\rpskConfigured\x12\x17\n" +
+	"\aca_cert\x18\x04 \x01(\tR\x06caCert\x12\x1f\n" +
+	"\vclient_cert\x18\x05 \x01(\tR\n" +
+	"clientCert\x122\n" +
+	"\x15client_key_configured\x18\x06 \x01(\bR\x13clientKeyConfigured\x12\x1a\n" +
+	"\bidentity\x18\a \x01(\tR\bidentity\x12!\n" +
+	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
+	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
+	"\bpriority\x18\n" +
+	" \x01(\x05R\bpriority2\xfd\x82\x01\n" +
 	"\x0eControlService\x12M\n" +
 	"\bRegister\x12\x1f.powermanage.v1.RegisterRequest\x1a .powermanage.v1.RegisterResponse\x12e\n" +
 	"\x10RenewCertificate\x12'.powermanage.v1.RenewCertificateRequest\x1a(.powermanage.v1.RenewCertificateResponse\x12Y\n" +
@@ -22550,7 +23017,7 @@ func file_powermanage_v1_control_proto_rawDescGZIP() []byte {
 	return file_powermanage_v1_control_proto_rawDescData
 }
 
-var file_powermanage_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 342)
+var file_powermanage_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 346)
 var file_powermanage_v1_control_proto_goTypes = []any{
 	(*RegisterRequest)(nil),                          // 0: powermanage.v1.RegisterRequest
 	(*RegisterResponse)(nil),                         // 1: powermanage.v1.RegisterResponse
@@ -22887,205 +23354,210 @@ var file_powermanage_v1_control_proto_goTypes = []any{
 	(*ListActiveTerminalSessionsResponse)(nil),       // 332: powermanage.v1.ListActiveTerminalSessionsResponse
 	(*TerminateTerminalSessionRequest)(nil),          // 333: powermanage.v1.TerminateTerminalSessionRequest
 	(*TerminateTerminalSessionResponse)(nil),         // 334: powermanage.v1.TerminateTerminalSessionResponse
-	nil,                                              // 335: powermanage.v1.Device.LabelsEntry
-	nil,                                              // 336: powermanage.v1.ListDevicesRequest.LabelFilterEntry
-	nil,                                              // 337: powermanage.v1.IdentityProvider.GroupMappingEntry
-	nil,                                              // 338: powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
-	nil,                                              // 339: powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
-	nil,                                              // 340: powermanage.v1.SearchRequest.TagFiltersEntry
-	nil,                                              // 341: powermanage.v1.SearchResult.FieldsEntry
-	(*DeviceId)(nil),                                 // 342: powermanage.v1.DeviceId
-	(*timestamppb.Timestamp)(nil),                    // 343: google.protobuf.Timestamp
-	(RoleGrantScopeKind)(0),                          // 344: powermanage.v1.RoleGrantScopeKind
-	(PermissionTargetKind)(0),                        // 345: powermanage.v1.PermissionTargetKind
-	(DeviceStatus)(0),                                // 346: powermanage.v1.DeviceStatus
-	(ComplianceStatus)(0),                            // 347: powermanage.v1.ComplianceStatus
-	(AssignmentTargetType)(0),                        // 348: powermanage.v1.AssignmentTargetType
-	(ActionType)(0),                                  // 349: powermanage.v1.ActionType
-	(DesiredState)(0),                                // 350: powermanage.v1.DesiredState
-	(*ActionSchedule)(nil),                           // 351: powermanage.v1.ActionSchedule
-	(*PackageParams)(nil),                            // 352: powermanage.v1.PackageParams
-	(*AppInstallParams)(nil),                         // 353: powermanage.v1.AppInstallParams
-	(*ShellParams)(nil),                              // 354: powermanage.v1.ShellParams
-	(*ServiceParams)(nil),                            // 355: powermanage.v1.ServiceParams
-	(*FileParams)(nil),                               // 356: powermanage.v1.FileParams
-	(*UpdateParams)(nil),                             // 357: powermanage.v1.UpdateParams
-	(*RepositoryParams)(nil),                         // 358: powermanage.v1.RepositoryParams
-	(*FlatpakParams)(nil),                            // 359: powermanage.v1.FlatpakParams
-	(*DirectoryParams)(nil),                          // 360: powermanage.v1.DirectoryParams
-	(*UserParams)(nil),                               // 361: powermanage.v1.UserParams
-	(*SshParams)(nil),                                // 362: powermanage.v1.SshParams
-	(*SshdParams)(nil),                               // 363: powermanage.v1.SshdParams
-	(*AdminPolicyParams)(nil),                        // 364: powermanage.v1.AdminPolicyParams
-	(*LpsParams)(nil),                                // 365: powermanage.v1.LpsParams
-	(*GroupParams)(nil),                              // 366: powermanage.v1.GroupParams
-	(*EncryptionParams)(nil),                         // 367: powermanage.v1.EncryptionParams
-	(*WifiParams)(nil),                               // 368: powermanage.v1.WifiParams
-	(*AgentUpdateParams)(nil),                        // 369: powermanage.v1.AgentUpdateParams
-	(OnFailure)(0),                                   // 370: powermanage.v1.OnFailure
-	(*MaintenanceWindow)(nil),                        // 371: powermanage.v1.MaintenanceWindow
-	(AssignmentSourceType)(0),                        // 372: powermanage.v1.AssignmentSourceType
-	(AssignmentMode)(0),                              // 373: powermanage.v1.AssignmentMode
-	(ExecutionStatus)(0),                             // 374: powermanage.v1.ExecutionStatus
-	(*CommandOutput)(nil),                            // 375: powermanage.v1.CommandOutput
-	(*Action)(nil),                                   // 376: powermanage.v1.Action
-	(RotationReason)(0),                              // 377: powermanage.v1.RotationReason
-	(LuksRevocationStatus)(0),                        // 378: powermanage.v1.LuksRevocationStatus
-	(*OSQueryRow)(nil),                               // 379: powermanage.v1.OSQueryRow
-	(IdentityProviderType)(0),                        // 380: powermanage.v1.IdentityProviderType
-	(SearchScope)(0),                                 // 381: powermanage.v1.SearchScope
-	(SortField)(0),                                   // 382: powermanage.v1.SortField
-	(SortDirection)(0),                               // 383: powermanage.v1.SortDirection
+	(*EncryptionAuthoringParams)(nil),                // 335: powermanage.v1.EncryptionAuthoringParams
+	(*ManagedEncryptionParams)(nil),                  // 336: powermanage.v1.ManagedEncryptionParams
+	(*WifiAuthoringParams)(nil),                      // 337: powermanage.v1.WifiAuthoringParams
+	(*ManagedWifiParams)(nil),                        // 338: powermanage.v1.ManagedWifiParams
+	nil,                                              // 339: powermanage.v1.Device.LabelsEntry
+	nil,                                              // 340: powermanage.v1.ListDevicesRequest.LabelFilterEntry
+	nil,                                              // 341: powermanage.v1.IdentityProvider.GroupMappingEntry
+	nil,                                              // 342: powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	nil,                                              // 343: powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	nil,                                              // 344: powermanage.v1.SearchRequest.TagFiltersEntry
+	nil,                                              // 345: powermanage.v1.SearchResult.FieldsEntry
+	(*DeviceId)(nil),                                 // 346: powermanage.v1.DeviceId
+	(*timestamppb.Timestamp)(nil),                    // 347: google.protobuf.Timestamp
+	(RoleGrantScopeKind)(0),                          // 348: powermanage.v1.RoleGrantScopeKind
+	(PermissionTargetKind)(0),                        // 349: powermanage.v1.PermissionTargetKind
+	(DeviceStatus)(0),                                // 350: powermanage.v1.DeviceStatus
+	(ComplianceStatus)(0),                            // 351: powermanage.v1.ComplianceStatus
+	(AssignmentTargetType)(0),                        // 352: powermanage.v1.AssignmentTargetType
+	(ActionType)(0),                                  // 353: powermanage.v1.ActionType
+	(DesiredState)(0),                                // 354: powermanage.v1.DesiredState
+	(*ActionSchedule)(nil),                           // 355: powermanage.v1.ActionSchedule
+	(*PackageParams)(nil),                            // 356: powermanage.v1.PackageParams
+	(*AppInstallParams)(nil),                         // 357: powermanage.v1.AppInstallParams
+	(*ShellParams)(nil),                              // 358: powermanage.v1.ShellParams
+	(*ServiceParams)(nil),                            // 359: powermanage.v1.ServiceParams
+	(*FileParams)(nil),                               // 360: powermanage.v1.FileParams
+	(*UpdateParams)(nil),                             // 361: powermanage.v1.UpdateParams
+	(*RepositoryParams)(nil),                         // 362: powermanage.v1.RepositoryParams
+	(*FlatpakParams)(nil),                            // 363: powermanage.v1.FlatpakParams
+	(*DirectoryParams)(nil),                          // 364: powermanage.v1.DirectoryParams
+	(*UserParams)(nil),                               // 365: powermanage.v1.UserParams
+	(*SshParams)(nil),                                // 366: powermanage.v1.SshParams
+	(*SshdParams)(nil),                               // 367: powermanage.v1.SshdParams
+	(*AdminPolicyParams)(nil),                        // 368: powermanage.v1.AdminPolicyParams
+	(*LpsParams)(nil),                                // 369: powermanage.v1.LpsParams
+	(*GroupParams)(nil),                              // 370: powermanage.v1.GroupParams
+	(*AgentUpdateParams)(nil),                        // 371: powermanage.v1.AgentUpdateParams
+	(OnFailure)(0),                                   // 372: powermanage.v1.OnFailure
+	(*MaintenanceWindow)(nil),                        // 373: powermanage.v1.MaintenanceWindow
+	(AssignmentSourceType)(0),                        // 374: powermanage.v1.AssignmentSourceType
+	(AssignmentMode)(0),                              // 375: powermanage.v1.AssignmentMode
+	(ExecutionStatus)(0),                             // 376: powermanage.v1.ExecutionStatus
+	(*CommandOutput)(nil),                            // 377: powermanage.v1.CommandOutput
+	(*Action)(nil),                                   // 378: powermanage.v1.Action
+	(RotationReason)(0),                              // 379: powermanage.v1.RotationReason
+	(LuksRevocationStatus)(0),                        // 380: powermanage.v1.LuksRevocationStatus
+	(*OSQueryRow)(nil),                               // 381: powermanage.v1.OSQueryRow
+	(IdentityProviderType)(0),                        // 382: powermanage.v1.IdentityProviderType
+	(SearchScope)(0),                                 // 383: powermanage.v1.SearchScope
+	(SortField)(0),                                   // 384: powermanage.v1.SortField
+	(SortDirection)(0),                               // 385: powermanage.v1.SortDirection
+	(EncryptionDeviceBoundKeyType)(0),                // 386: powermanage.v1.EncryptionDeviceBoundKeyType
+	(LpsPasswordComplexity)(0),                       // 387: powermanage.v1.LpsPasswordComplexity
+	(WifiAuthType)(0),                                // 388: powermanage.v1.WifiAuthType
 }
 var file_powermanage_v1_control_proto_depIdxs = []int32{
-	342, // 0: powermanage.v1.RegisterResponse.device_id:type_name -> powermanage.v1.DeviceId
-	343, // 1: powermanage.v1.RenewCertificateResponse.not_after:type_name -> google.protobuf.Timestamp
-	343, // 2: powermanage.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	346, // 0: powermanage.v1.RegisterResponse.device_id:type_name -> powermanage.v1.DeviceId
+	347, // 1: powermanage.v1.RenewCertificateResponse.not_after:type_name -> google.protobuf.Timestamp
+	347, // 2: powermanage.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
 	10,  // 3: powermanage.v1.GetCurrentUserResponse.user:type_name -> powermanage.v1.User
-	343, // 4: powermanage.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	343, // 5: powermanage.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	347, // 4: powermanage.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	347, // 5: powermanage.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	260, // 6: powermanage.v1.User.identity_links:type_name -> powermanage.v1.IdentityLink
 	12,  // 7: powermanage.v1.User.ssh_public_keys:type_name -> powermanage.v1.SshPublicKey
 	11,  // 8: powermanage.v1.User.inherited_roles:type_name -> powermanage.v1.InheritedRole
 	14,  // 9: powermanage.v1.User.role_grants:type_name -> powermanage.v1.RoleGrant
-	343, // 10: powermanage.v1.SshPublicKey.added_at:type_name -> google.protobuf.Timestamp
-	343, // 11: powermanage.v1.Role.created_at:type_name -> google.protobuf.Timestamp
+	347, // 10: powermanage.v1.SshPublicKey.added_at:type_name -> google.protobuf.Timestamp
+	347, // 11: powermanage.v1.Role.created_at:type_name -> google.protobuf.Timestamp
 	13,  // 12: powermanage.v1.RoleGrant.role:type_name -> powermanage.v1.Role
-	344, // 13: powermanage.v1.RoleGrant.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
-	345, // 14: powermanage.v1.PermissionInfo.target_kind:type_name -> powermanage.v1.PermissionTargetKind
+	348, // 13: powermanage.v1.RoleGrant.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	349, // 14: powermanage.v1.PermissionInfo.target_kind:type_name -> powermanage.v1.PermissionTargetKind
 	10,  // 15: powermanage.v1.GetUserResponse.user:type_name -> powermanage.v1.User
 	10,  // 16: powermanage.v1.ListUsersResponse.users:type_name -> powermanage.v1.User
 	10,  // 17: powermanage.v1.UpdateUserResponse.user:type_name -> powermanage.v1.User
 	12,  // 18: powermanage.v1.AddUserSshKeyResponse.key:type_name -> powermanage.v1.SshPublicKey
-	346, // 19: powermanage.v1.Device.status:type_name -> powermanage.v1.DeviceStatus
-	343, // 20: powermanage.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
-	343, // 21: powermanage.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	343, // 22: powermanage.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
-	335, // 23: powermanage.v1.Device.labels:type_name -> powermanage.v1.Device.LabelsEntry
-	347, // 24: powermanage.v1.Device.compliance_status:type_name -> powermanage.v1.ComplianceStatus
-	343, // 25: powermanage.v1.Device.compliance_checked_at:type_name -> google.protobuf.Timestamp
-	343, // 26: powermanage.v1.Device.last_inventory_at:type_name -> google.protobuf.Timestamp
-	346, // 27: powermanage.v1.ListDevicesRequest.status_filter:type_name -> powermanage.v1.DeviceStatus
-	336, // 28: powermanage.v1.ListDevicesRequest.label_filter:type_name -> powermanage.v1.ListDevicesRequest.LabelFilterEntry
+	350, // 19: powermanage.v1.Device.status:type_name -> powermanage.v1.DeviceStatus
+	347, // 20: powermanage.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
+	347, // 21: powermanage.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	347, // 22: powermanage.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
+	339, // 23: powermanage.v1.Device.labels:type_name -> powermanage.v1.Device.LabelsEntry
+	351, // 24: powermanage.v1.Device.compliance_status:type_name -> powermanage.v1.ComplianceStatus
+	347, // 25: powermanage.v1.Device.compliance_checked_at:type_name -> google.protobuf.Timestamp
+	347, // 26: powermanage.v1.Device.last_inventory_at:type_name -> google.protobuf.Timestamp
+	350, // 27: powermanage.v1.ListDevicesRequest.status_filter:type_name -> powermanage.v1.DeviceStatus
+	340, // 28: powermanage.v1.ListDevicesRequest.label_filter:type_name -> powermanage.v1.ListDevicesRequest.LabelFilterEntry
 	32,  // 29: powermanage.v1.ListDevicesResponse.devices:type_name -> powermanage.v1.Device
 	32,  // 30: powermanage.v1.GetDeviceResponse.device:type_name -> powermanage.v1.Device
 	32,  // 31: powermanage.v1.UpdateDeviceResponse.device:type_name -> powermanage.v1.Device
 	32,  // 32: powermanage.v1.AssignDeviceResponse.device:type_name -> powermanage.v1.Device
 	32,  // 33: powermanage.v1.UnassignDeviceResponse.device:type_name -> powermanage.v1.Device
-	348, // 34: powermanage.v1.DeviceAssignee.type:type_name -> powermanage.v1.AssignmentTargetType
+	352, // 34: powermanage.v1.DeviceAssignee.type:type_name -> powermanage.v1.AssignmentTargetType
 	46,  // 35: powermanage.v1.ListDeviceAssigneesResponse.assignees:type_name -> powermanage.v1.DeviceAssignee
-	343, // 36: powermanage.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
-	343, // 37: powermanage.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
-	343, // 38: powermanage.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	347, // 36: powermanage.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
+	347, // 37: powermanage.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
+	347, // 38: powermanage.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
 	51,  // 39: powermanage.v1.CreateTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
 	51,  // 40: powermanage.v1.ListTokensResponse.tokens:type_name -> powermanage.v1.RegistrationToken
 	51,  // 41: powermanage.v1.GetTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
 	51,  // 42: powermanage.v1.UpdateTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
-	349, // 43: powermanage.v1.ManagedAction.type:type_name -> powermanage.v1.ActionType
-	350, // 44: powermanage.v1.ManagedAction.desired_state:type_name -> powermanage.v1.DesiredState
-	343, // 45: powermanage.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	351, // 46: powermanage.v1.ManagedAction.schedule:type_name -> powermanage.v1.ActionSchedule
-	343, // 47: powermanage.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
-	352, // 48: powermanage.v1.ManagedAction.package:type_name -> powermanage.v1.PackageParams
-	353, // 49: powermanage.v1.ManagedAction.app:type_name -> powermanage.v1.AppInstallParams
-	354, // 50: powermanage.v1.ManagedAction.shell:type_name -> powermanage.v1.ShellParams
-	355, // 51: powermanage.v1.ManagedAction.service:type_name -> powermanage.v1.ServiceParams
-	356, // 52: powermanage.v1.ManagedAction.file:type_name -> powermanage.v1.FileParams
-	357, // 53: powermanage.v1.ManagedAction.update:type_name -> powermanage.v1.UpdateParams
-	358, // 54: powermanage.v1.ManagedAction.repository:type_name -> powermanage.v1.RepositoryParams
-	359, // 55: powermanage.v1.ManagedAction.flatpak:type_name -> powermanage.v1.FlatpakParams
-	360, // 56: powermanage.v1.ManagedAction.directory:type_name -> powermanage.v1.DirectoryParams
-	361, // 57: powermanage.v1.ManagedAction.user:type_name -> powermanage.v1.UserParams
-	362, // 58: powermanage.v1.ManagedAction.ssh:type_name -> powermanage.v1.SshParams
-	363, // 59: powermanage.v1.ManagedAction.sshd:type_name -> powermanage.v1.SshdParams
-	364, // 60: powermanage.v1.ManagedAction.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	365, // 61: powermanage.v1.ManagedAction.lps:type_name -> powermanage.v1.LpsParams
-	366, // 62: powermanage.v1.ManagedAction.group:type_name -> powermanage.v1.GroupParams
-	367, // 63: powermanage.v1.ManagedAction.encryption:type_name -> powermanage.v1.EncryptionParams
-	368, // 64: powermanage.v1.ManagedAction.wifi:type_name -> powermanage.v1.WifiParams
-	369, // 65: powermanage.v1.ManagedAction.agent_update:type_name -> powermanage.v1.AgentUpdateParams
-	349, // 66: powermanage.v1.CreateActionRequest.type:type_name -> powermanage.v1.ActionType
-	350, // 67: powermanage.v1.CreateActionRequest.desired_state:type_name -> powermanage.v1.DesiredState
-	351, // 68: powermanage.v1.CreateActionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	352, // 69: powermanage.v1.CreateActionRequest.package:type_name -> powermanage.v1.PackageParams
-	353, // 70: powermanage.v1.CreateActionRequest.app:type_name -> powermanage.v1.AppInstallParams
-	354, // 71: powermanage.v1.CreateActionRequest.shell:type_name -> powermanage.v1.ShellParams
-	355, // 72: powermanage.v1.CreateActionRequest.service:type_name -> powermanage.v1.ServiceParams
-	356, // 73: powermanage.v1.CreateActionRequest.file:type_name -> powermanage.v1.FileParams
-	357, // 74: powermanage.v1.CreateActionRequest.update:type_name -> powermanage.v1.UpdateParams
-	358, // 75: powermanage.v1.CreateActionRequest.repository:type_name -> powermanage.v1.RepositoryParams
-	359, // 76: powermanage.v1.CreateActionRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
-	360, // 77: powermanage.v1.CreateActionRequest.directory:type_name -> powermanage.v1.DirectoryParams
-	361, // 78: powermanage.v1.CreateActionRequest.user:type_name -> powermanage.v1.UserParams
-	362, // 79: powermanage.v1.CreateActionRequest.ssh:type_name -> powermanage.v1.SshParams
-	363, // 80: powermanage.v1.CreateActionRequest.sshd:type_name -> powermanage.v1.SshdParams
-	364, // 81: powermanage.v1.CreateActionRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	365, // 82: powermanage.v1.CreateActionRequest.lps:type_name -> powermanage.v1.LpsParams
-	366, // 83: powermanage.v1.CreateActionRequest.group:type_name -> powermanage.v1.GroupParams
-	367, // 84: powermanage.v1.CreateActionRequest.encryption:type_name -> powermanage.v1.EncryptionParams
-	368, // 85: powermanage.v1.CreateActionRequest.wifi:type_name -> powermanage.v1.WifiParams
-	369, // 86: powermanage.v1.CreateActionRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	353, // 43: powermanage.v1.ManagedAction.type:type_name -> powermanage.v1.ActionType
+	354, // 44: powermanage.v1.ManagedAction.desired_state:type_name -> powermanage.v1.DesiredState
+	347, // 45: powermanage.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	355, // 46: powermanage.v1.ManagedAction.schedule:type_name -> powermanage.v1.ActionSchedule
+	347, // 47: powermanage.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
+	356, // 48: powermanage.v1.ManagedAction.package:type_name -> powermanage.v1.PackageParams
+	357, // 49: powermanage.v1.ManagedAction.app:type_name -> powermanage.v1.AppInstallParams
+	358, // 50: powermanage.v1.ManagedAction.shell:type_name -> powermanage.v1.ShellParams
+	359, // 51: powermanage.v1.ManagedAction.service:type_name -> powermanage.v1.ServiceParams
+	360, // 52: powermanage.v1.ManagedAction.file:type_name -> powermanage.v1.FileParams
+	361, // 53: powermanage.v1.ManagedAction.update:type_name -> powermanage.v1.UpdateParams
+	362, // 54: powermanage.v1.ManagedAction.repository:type_name -> powermanage.v1.RepositoryParams
+	363, // 55: powermanage.v1.ManagedAction.flatpak:type_name -> powermanage.v1.FlatpakParams
+	364, // 56: powermanage.v1.ManagedAction.directory:type_name -> powermanage.v1.DirectoryParams
+	365, // 57: powermanage.v1.ManagedAction.user:type_name -> powermanage.v1.UserParams
+	366, // 58: powermanage.v1.ManagedAction.ssh:type_name -> powermanage.v1.SshParams
+	367, // 59: powermanage.v1.ManagedAction.sshd:type_name -> powermanage.v1.SshdParams
+	368, // 60: powermanage.v1.ManagedAction.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	369, // 61: powermanage.v1.ManagedAction.lps:type_name -> powermanage.v1.LpsParams
+	370, // 62: powermanage.v1.ManagedAction.group:type_name -> powermanage.v1.GroupParams
+	336, // 63: powermanage.v1.ManagedAction.encryption:type_name -> powermanage.v1.ManagedEncryptionParams
+	338, // 64: powermanage.v1.ManagedAction.wifi:type_name -> powermanage.v1.ManagedWifiParams
+	371, // 65: powermanage.v1.ManagedAction.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	353, // 66: powermanage.v1.CreateActionRequest.type:type_name -> powermanage.v1.ActionType
+	354, // 67: powermanage.v1.CreateActionRequest.desired_state:type_name -> powermanage.v1.DesiredState
+	355, // 68: powermanage.v1.CreateActionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	356, // 69: powermanage.v1.CreateActionRequest.package:type_name -> powermanage.v1.PackageParams
+	357, // 70: powermanage.v1.CreateActionRequest.app:type_name -> powermanage.v1.AppInstallParams
+	358, // 71: powermanage.v1.CreateActionRequest.shell:type_name -> powermanage.v1.ShellParams
+	359, // 72: powermanage.v1.CreateActionRequest.service:type_name -> powermanage.v1.ServiceParams
+	360, // 73: powermanage.v1.CreateActionRequest.file:type_name -> powermanage.v1.FileParams
+	361, // 74: powermanage.v1.CreateActionRequest.update:type_name -> powermanage.v1.UpdateParams
+	362, // 75: powermanage.v1.CreateActionRequest.repository:type_name -> powermanage.v1.RepositoryParams
+	363, // 76: powermanage.v1.CreateActionRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
+	364, // 77: powermanage.v1.CreateActionRequest.directory:type_name -> powermanage.v1.DirectoryParams
+	365, // 78: powermanage.v1.CreateActionRequest.user:type_name -> powermanage.v1.UserParams
+	366, // 79: powermanage.v1.CreateActionRequest.ssh:type_name -> powermanage.v1.SshParams
+	367, // 80: powermanage.v1.CreateActionRequest.sshd:type_name -> powermanage.v1.SshdParams
+	368, // 81: powermanage.v1.CreateActionRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	369, // 82: powermanage.v1.CreateActionRequest.lps:type_name -> powermanage.v1.LpsParams
+	370, // 83: powermanage.v1.CreateActionRequest.group:type_name -> powermanage.v1.GroupParams
+	335, // 84: powermanage.v1.CreateActionRequest.encryption:type_name -> powermanage.v1.EncryptionAuthoringParams
+	337, // 85: powermanage.v1.CreateActionRequest.wifi:type_name -> powermanage.v1.WifiAuthoringParams
+	371, // 86: powermanage.v1.CreateActionRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
 	63,  // 87: powermanage.v1.CreateActionResponse.action:type_name -> powermanage.v1.ManagedAction
 	63,  // 88: powermanage.v1.GetActionResponse.action:type_name -> powermanage.v1.ManagedAction
-	349, // 89: powermanage.v1.ListActionsRequest.type_filter:type_name -> powermanage.v1.ActionType
+	353, // 89: powermanage.v1.ListActionsRequest.type_filter:type_name -> powermanage.v1.ActionType
 	63,  // 90: powermanage.v1.ListActionsResponse.actions:type_name -> powermanage.v1.ManagedAction
-	350, // 91: powermanage.v1.UpdateActionParamsRequest.desired_state:type_name -> powermanage.v1.DesiredState
-	351, // 92: powermanage.v1.UpdateActionParamsRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	352, // 93: powermanage.v1.UpdateActionParamsRequest.package:type_name -> powermanage.v1.PackageParams
-	353, // 94: powermanage.v1.UpdateActionParamsRequest.app:type_name -> powermanage.v1.AppInstallParams
-	354, // 95: powermanage.v1.UpdateActionParamsRequest.shell:type_name -> powermanage.v1.ShellParams
-	355, // 96: powermanage.v1.UpdateActionParamsRequest.service:type_name -> powermanage.v1.ServiceParams
-	356, // 97: powermanage.v1.UpdateActionParamsRequest.file:type_name -> powermanage.v1.FileParams
-	357, // 98: powermanage.v1.UpdateActionParamsRequest.update:type_name -> powermanage.v1.UpdateParams
-	358, // 99: powermanage.v1.UpdateActionParamsRequest.repository:type_name -> powermanage.v1.RepositoryParams
-	359, // 100: powermanage.v1.UpdateActionParamsRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
-	360, // 101: powermanage.v1.UpdateActionParamsRequest.directory:type_name -> powermanage.v1.DirectoryParams
-	361, // 102: powermanage.v1.UpdateActionParamsRequest.user:type_name -> powermanage.v1.UserParams
-	362, // 103: powermanage.v1.UpdateActionParamsRequest.ssh:type_name -> powermanage.v1.SshParams
-	363, // 104: powermanage.v1.UpdateActionParamsRequest.sshd:type_name -> powermanage.v1.SshdParams
-	364, // 105: powermanage.v1.UpdateActionParamsRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	365, // 106: powermanage.v1.UpdateActionParamsRequest.lps:type_name -> powermanage.v1.LpsParams
-	366, // 107: powermanage.v1.UpdateActionParamsRequest.group:type_name -> powermanage.v1.GroupParams
-	367, // 108: powermanage.v1.UpdateActionParamsRequest.encryption:type_name -> powermanage.v1.EncryptionParams
-	368, // 109: powermanage.v1.UpdateActionParamsRequest.wifi:type_name -> powermanage.v1.WifiParams
-	369, // 110: powermanage.v1.UpdateActionParamsRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	354, // 91: powermanage.v1.UpdateActionParamsRequest.desired_state:type_name -> powermanage.v1.DesiredState
+	355, // 92: powermanage.v1.UpdateActionParamsRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	356, // 93: powermanage.v1.UpdateActionParamsRequest.package:type_name -> powermanage.v1.PackageParams
+	357, // 94: powermanage.v1.UpdateActionParamsRequest.app:type_name -> powermanage.v1.AppInstallParams
+	358, // 95: powermanage.v1.UpdateActionParamsRequest.shell:type_name -> powermanage.v1.ShellParams
+	359, // 96: powermanage.v1.UpdateActionParamsRequest.service:type_name -> powermanage.v1.ServiceParams
+	360, // 97: powermanage.v1.UpdateActionParamsRequest.file:type_name -> powermanage.v1.FileParams
+	361, // 98: powermanage.v1.UpdateActionParamsRequest.update:type_name -> powermanage.v1.UpdateParams
+	362, // 99: powermanage.v1.UpdateActionParamsRequest.repository:type_name -> powermanage.v1.RepositoryParams
+	363, // 100: powermanage.v1.UpdateActionParamsRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
+	364, // 101: powermanage.v1.UpdateActionParamsRequest.directory:type_name -> powermanage.v1.DirectoryParams
+	365, // 102: powermanage.v1.UpdateActionParamsRequest.user:type_name -> powermanage.v1.UserParams
+	366, // 103: powermanage.v1.UpdateActionParamsRequest.ssh:type_name -> powermanage.v1.SshParams
+	367, // 104: powermanage.v1.UpdateActionParamsRequest.sshd:type_name -> powermanage.v1.SshdParams
+	368, // 105: powermanage.v1.UpdateActionParamsRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	369, // 106: powermanage.v1.UpdateActionParamsRequest.lps:type_name -> powermanage.v1.LpsParams
+	370, // 107: powermanage.v1.UpdateActionParamsRequest.group:type_name -> powermanage.v1.GroupParams
+	335, // 108: powermanage.v1.UpdateActionParamsRequest.encryption:type_name -> powermanage.v1.EncryptionAuthoringParams
+	337, // 109: powermanage.v1.UpdateActionParamsRequest.wifi:type_name -> powermanage.v1.WifiAuthoringParams
+	371, // 110: powermanage.v1.UpdateActionParamsRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
 	63,  // 111: powermanage.v1.UpdateActionResponse.action:type_name -> powermanage.v1.ManagedAction
-	343, // 112: powermanage.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
-	343, // 113: powermanage.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
-	351, // 114: powermanage.v1.ActionSet.schedule:type_name -> powermanage.v1.ActionSchedule
-	370, // 115: powermanage.v1.ActionSet.on_failure:type_name -> powermanage.v1.OnFailure
-	349, // 116: powermanage.v1.ActionSetMember.action_type:type_name -> powermanage.v1.ActionType
-	351, // 117: powermanage.v1.CreateActionSetRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	370, // 118: powermanage.v1.CreateActionSetRequest.on_failure:type_name -> powermanage.v1.OnFailure
+	347, // 112: powermanage.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
+	347, // 113: powermanage.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
+	355, // 114: powermanage.v1.ActionSet.schedule:type_name -> powermanage.v1.ActionSchedule
+	372, // 115: powermanage.v1.ActionSet.on_failure:type_name -> powermanage.v1.OnFailure
+	353, // 116: powermanage.v1.ActionSetMember.action_type:type_name -> powermanage.v1.ActionType
+	355, // 117: powermanage.v1.CreateActionSetRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	372, // 118: powermanage.v1.CreateActionSetRequest.on_failure:type_name -> powermanage.v1.OnFailure
 	76,  // 119: powermanage.v1.CreateActionSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 120: powermanage.v1.GetActionSetResponse.set:type_name -> powermanage.v1.ActionSet
 	77,  // 121: powermanage.v1.GetActionSetResponse.members:type_name -> powermanage.v1.ActionSetMember
 	76,  // 122: powermanage.v1.ListActionSetsResponse.sets:type_name -> powermanage.v1.ActionSet
-	351, // 123: powermanage.v1.UpdateActionSetScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	370, // 124: powermanage.v1.UpdateActionSetScheduleRequest.on_failure:type_name -> powermanage.v1.OnFailure
+	355, // 123: powermanage.v1.UpdateActionSetScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	372, // 124: powermanage.v1.UpdateActionSetScheduleRequest.on_failure:type_name -> powermanage.v1.OnFailure
 	76,  // 125: powermanage.v1.UpdateActionSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 126: powermanage.v1.AddActionToSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 127: powermanage.v1.RemoveActionFromSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 128: powermanage.v1.ReorderActionInSetResponse.set:type_name -> powermanage.v1.ActionSet
-	343, // 129: powermanage.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
-	343, // 130: powermanage.v1.Definition.updated_at:type_name -> google.protobuf.Timestamp
-	351, // 131: powermanage.v1.Definition.schedule:type_name -> powermanage.v1.ActionSchedule
-	351, // 132: powermanage.v1.CreateDefinitionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	347, // 129: powermanage.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
+	347, // 130: powermanage.v1.Definition.updated_at:type_name -> google.protobuf.Timestamp
+	355, // 131: powermanage.v1.Definition.schedule:type_name -> powermanage.v1.ActionSchedule
+	355, // 132: powermanage.v1.CreateDefinitionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
 	96,  // 133: powermanage.v1.CreateDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 134: powermanage.v1.GetDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	97,  // 135: powermanage.v1.GetDefinitionResponse.members:type_name -> powermanage.v1.DefinitionMember
 	96,  // 136: powermanage.v1.ListDefinitionsResponse.definitions:type_name -> powermanage.v1.Definition
-	351, // 137: powermanage.v1.UpdateDefinitionScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	355, // 137: powermanage.v1.UpdateDefinitionScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
 	96,  // 138: powermanage.v1.UpdateDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 139: powermanage.v1.AddActionSetToDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 140: powermanage.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 141: powermanage.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> powermanage.v1.Definition
-	343, // 142: powermanage.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
-	371, // 143: powermanage.v1.DeviceGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	347, // 142: powermanage.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
+	373, // 143: powermanage.v1.DeviceGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
 	116, // 144: powermanage.v1.CreateDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
 	116, // 145: powermanage.v1.GetDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
 	121, // 146: powermanage.v1.GetDeviceGroupResponse.devices:type_name -> powermanage.v1.DeviceGroupMember
-	343, // 147: powermanage.v1.DeviceGroupMember.last_seen_at:type_name -> google.protobuf.Timestamp
+	347, // 147: powermanage.v1.DeviceGroupMember.last_seen_at:type_name -> google.protobuf.Timestamp
 	116, // 148: powermanage.v1.ListDeviceGroupsResponse.groups:type_name -> powermanage.v1.DeviceGroup
 	116, // 149: powermanage.v1.ListDeviceGroupsForDeviceResponse.groups:type_name -> powermanage.v1.DeviceGroup
 	116, // 150: powermanage.v1.UpdateDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
@@ -23093,23 +23565,23 @@ var file_powermanage_v1_control_proto_depIdxs = []int32{
 	116, // 152: powermanage.v1.RemoveDeviceFromGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
 	116, // 153: powermanage.v1.UpdateDeviceGroupQueryResponse.group:type_name -> powermanage.v1.DeviceGroup
 	116, // 154: powermanage.v1.EvaluateDynamicGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
-	371, // 155: powermanage.v1.SetDeviceGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
-	372, // 156: powermanage.v1.Assignment.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	348, // 157: powermanage.v1.Assignment.target_type:type_name -> powermanage.v1.AssignmentTargetType
-	343, // 158: powermanage.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
-	373, // 159: powermanage.v1.Assignment.mode:type_name -> powermanage.v1.AssignmentMode
-	372, // 160: powermanage.v1.CreateAssignmentRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	348, // 161: powermanage.v1.CreateAssignmentRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
-	373, // 162: powermanage.v1.CreateAssignmentRequest.mode:type_name -> powermanage.v1.AssignmentMode
+	373, // 155: powermanage.v1.SetDeviceGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	374, // 156: powermanage.v1.Assignment.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	352, // 157: powermanage.v1.Assignment.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	347, // 158: powermanage.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
+	375, // 159: powermanage.v1.Assignment.mode:type_name -> powermanage.v1.AssignmentMode
+	374, // 160: powermanage.v1.CreateAssignmentRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	352, // 161: powermanage.v1.CreateAssignmentRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	375, // 162: powermanage.v1.CreateAssignmentRequest.mode:type_name -> powermanage.v1.AssignmentMode
 	144, // 163: powermanage.v1.CreateAssignmentResponse.assignment:type_name -> powermanage.v1.Assignment
-	372, // 164: powermanage.v1.ListAssignmentsRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	348, // 165: powermanage.v1.ListAssignmentsRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	374, // 164: powermanage.v1.ListAssignmentsRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	352, // 165: powermanage.v1.ListAssignmentsRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
 	144, // 166: powermanage.v1.ListAssignmentsResponse.assignments:type_name -> powermanage.v1.Assignment
-	372, // 167: powermanage.v1.UserSelection.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	343, // 168: powermanage.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
-	372, // 169: powermanage.v1.SetUserSelectionRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	374, // 167: powermanage.v1.UserSelection.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	347, // 168: powermanage.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
+	374, // 169: powermanage.v1.SetUserSelectionRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
 	151, // 170: powermanage.v1.SetUserSelectionResponse.selection:type_name -> powermanage.v1.UserSelection
-	372, // 171: powermanage.v1.AvailableItem.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	374, // 171: powermanage.v1.AvailableItem.source_type:type_name -> powermanage.v1.AssignmentSourceType
 	63,  // 172: powermanage.v1.AvailableItem.actions:type_name -> powermanage.v1.ManagedAction
 	155, // 173: powermanage.v1.ListAvailableActionsResponse.items:type_name -> powermanage.v1.AvailableItem
 	63,  // 174: powermanage.v1.GetDeviceAssignmentsResponse.actions:type_name -> powermanage.v1.ManagedAction
@@ -23119,98 +23591,98 @@ var file_powermanage_v1_control_proto_depIdxs = []int32{
 	81,  // 178: powermanage.v1.GetDeviceAssignmentsResponse.action_set_details:type_name -> powermanage.v1.GetActionSetResponse
 	101, // 179: powermanage.v1.GetDeviceAssignmentsResponse.definition_details:type_name -> powermanage.v1.GetDefinitionResponse
 	144, // 180: powermanage.v1.GetUserAssignmentsResponse.assignments:type_name -> powermanage.v1.Assignment
-	349, // 181: powermanage.v1.ActionExecution.type:type_name -> powermanage.v1.ActionType
-	374, // 182: powermanage.v1.ActionExecution.status:type_name -> powermanage.v1.ExecutionStatus
-	375, // 183: powermanage.v1.ActionExecution.output:type_name -> powermanage.v1.CommandOutput
-	343, // 184: powermanage.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
-	343, // 185: powermanage.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
-	343, // 186: powermanage.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
-	375, // 187: powermanage.v1.ActionExecution.live_output:type_name -> powermanage.v1.CommandOutput
-	350, // 188: powermanage.v1.ActionExecution.desired_state:type_name -> powermanage.v1.DesiredState
-	375, // 189: powermanage.v1.ActionExecution.detection_output:type_name -> powermanage.v1.CommandOutput
-	343, // 190: powermanage.v1.ActionExecution.scheduled_for:type_name -> google.protobuf.Timestamp
-	376, // 191: powermanage.v1.DispatchActionRequest.inline_action:type_name -> powermanage.v1.Action
-	343, // 192: powermanage.v1.DispatchActionRequest.run_at:type_name -> google.protobuf.Timestamp
+	353, // 181: powermanage.v1.ActionExecution.type:type_name -> powermanage.v1.ActionType
+	376, // 182: powermanage.v1.ActionExecution.status:type_name -> powermanage.v1.ExecutionStatus
+	377, // 183: powermanage.v1.ActionExecution.output:type_name -> powermanage.v1.CommandOutput
+	347, // 184: powermanage.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
+	347, // 185: powermanage.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
+	347, // 186: powermanage.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
+	377, // 187: powermanage.v1.ActionExecution.live_output:type_name -> powermanage.v1.CommandOutput
+	354, // 188: powermanage.v1.ActionExecution.desired_state:type_name -> powermanage.v1.DesiredState
+	377, // 189: powermanage.v1.ActionExecution.detection_output:type_name -> powermanage.v1.CommandOutput
+	347, // 190: powermanage.v1.ActionExecution.scheduled_for:type_name -> google.protobuf.Timestamp
+	378, // 191: powermanage.v1.DispatchActionRequest.inline_action:type_name -> powermanage.v1.Action
+	347, // 192: powermanage.v1.DispatchActionRequest.run_at:type_name -> google.protobuf.Timestamp
 	161, // 193: powermanage.v1.DispatchActionResponse.execution:type_name -> powermanage.v1.ActionExecution
-	376, // 194: powermanage.v1.DispatchToMultipleRequest.inline_action:type_name -> powermanage.v1.Action
+	378, // 194: powermanage.v1.DispatchToMultipleRequest.inline_action:type_name -> powermanage.v1.Action
 	161, // 195: powermanage.v1.DispatchToMultipleResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 196: powermanage.v1.DispatchAssignedActionsResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 197: powermanage.v1.DispatchActionSetResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 198: powermanage.v1.DispatchDefinitionResponse.executions:type_name -> powermanage.v1.ActionExecution
-	376, // 199: powermanage.v1.DispatchToGroupRequest.inline_action:type_name -> powermanage.v1.Action
+	378, // 199: powermanage.v1.DispatchToGroupRequest.inline_action:type_name -> powermanage.v1.Action
 	161, // 200: powermanage.v1.DispatchToGroupResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 201: powermanage.v1.GetExecutionResponse.execution:type_name -> powermanage.v1.ActionExecution
-	374, // 202: powermanage.v1.ListExecutionsRequest.status_filter:type_name -> powermanage.v1.ExecutionStatus
-	349, // 203: powermanage.v1.ListExecutionsRequest.type_filter:type_name -> powermanage.v1.ActionType
+	376, // 202: powermanage.v1.ListExecutionsRequest.status_filter:type_name -> powermanage.v1.ExecutionStatus
+	353, // 203: powermanage.v1.ListExecutionsRequest.type_filter:type_name -> powermanage.v1.ActionType
 	161, // 204: powermanage.v1.ListExecutionsResponse.executions:type_name -> powermanage.v1.ActionExecution
-	349, // 205: powermanage.v1.DispatchInstantActionRequest.instant_action:type_name -> powermanage.v1.ActionType
-	343, // 206: powermanage.v1.DispatchInstantActionRequest.run_at:type_name -> google.protobuf.Timestamp
+	353, // 205: powermanage.v1.DispatchInstantActionRequest.instant_action:type_name -> powermanage.v1.ActionType
+	347, // 206: powermanage.v1.DispatchInstantActionRequest.run_at:type_name -> google.protobuf.Timestamp
 	161, // 207: powermanage.v1.DispatchInstantActionResponse.execution:type_name -> powermanage.v1.ActionExecution
 	161, // 208: powermanage.v1.CancelExecutionResponse.execution:type_name -> powermanage.v1.ActionExecution
-	343, // 209: powermanage.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	347, // 209: powermanage.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
 	182, // 210: powermanage.v1.ListAuditEventsResponse.events:type_name -> powermanage.v1.AuditEvent
-	343, // 211: powermanage.v1.ExportAuditEventsRequest.occurred_from:type_name -> google.protobuf.Timestamp
-	343, // 212: powermanage.v1.ExportAuditEventsRequest.occurred_to:type_name -> google.protobuf.Timestamp
-	343, // 213: powermanage.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
-	377, // 214: powermanage.v1.LpsPassword.rotation_reason:type_name -> powermanage.v1.RotationReason
+	347, // 211: powermanage.v1.ExportAuditEventsRequest.occurred_from:type_name -> google.protobuf.Timestamp
+	347, // 212: powermanage.v1.ExportAuditEventsRequest.occurred_to:type_name -> google.protobuf.Timestamp
+	347, // 213: powermanage.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
+	379, // 214: powermanage.v1.LpsPassword.rotation_reason:type_name -> powermanage.v1.RotationReason
 	187, // 215: powermanage.v1.ListLpsPasswordsResponse.current:type_name -> powermanage.v1.LpsPassword
 	187, // 216: powermanage.v1.ListLpsPasswordsResponse.history:type_name -> powermanage.v1.LpsPassword
-	343, // 217: powermanage.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
-	377, // 218: powermanage.v1.LuksKey.rotation_reason:type_name -> powermanage.v1.RotationReason
-	378, // 219: powermanage.v1.LuksKey.revocation_status:type_name -> powermanage.v1.LuksRevocationStatus
-	343, // 220: powermanage.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
+	347, // 217: powermanage.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
+	379, // 218: powermanage.v1.LuksKey.rotation_reason:type_name -> powermanage.v1.RotationReason
+	380, // 219: powermanage.v1.LuksKey.revocation_status:type_name -> powermanage.v1.LuksRevocationStatus
+	347, // 220: powermanage.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
 	192, // 221: powermanage.v1.ListLuksKeysResponse.current:type_name -> powermanage.v1.LuksKey
 	192, // 222: powermanage.v1.ListLuksKeysResponse.history:type_name -> powermanage.v1.LuksKey
-	379, // 223: powermanage.v1.GetOSQueryResultResponse.rows:type_name -> powermanage.v1.OSQueryRow
-	379, // 224: powermanage.v1.InventoryTableResult.rows:type_name -> powermanage.v1.OSQueryRow
-	343, // 225: powermanage.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
+	381, // 223: powermanage.v1.GetOSQueryResultResponse.rows:type_name -> powermanage.v1.OSQueryRow
+	381, // 224: powermanage.v1.InventoryTableResult.rows:type_name -> powermanage.v1.OSQueryRow
+	347, // 225: powermanage.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
 	206, // 226: powermanage.v1.GetDeviceInventoryResponse.tables:type_name -> powermanage.v1.InventoryTableResult
 	13,  // 227: powermanage.v1.CreateRoleResponse.role:type_name -> powermanage.v1.Role
 	13,  // 228: powermanage.v1.GetRoleResponse.role:type_name -> powermanage.v1.Role
 	13,  // 229: powermanage.v1.ListRolesResponse.roles:type_name -> powermanage.v1.Role
 	13,  // 230: powermanage.v1.UpdateRoleResponse.role:type_name -> powermanage.v1.Role
-	344, // 231: powermanage.v1.AssignRoleToUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
-	344, // 232: powermanage.v1.RevokeRoleFromUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	348, // 231: powermanage.v1.AssignRoleToUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	348, // 232: powermanage.v1.RevokeRoleFromUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
 	15,  // 233: powermanage.v1.ListPermissionsResponse.permissions:type_name -> powermanage.v1.PermissionInfo
-	343, // 234: powermanage.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
-	371, // 235: powermanage.v1.UserGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	347, // 234: powermanage.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
+	373, // 235: powermanage.v1.UserGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
 	14,  // 236: powermanage.v1.UserGroup.role_grants:type_name -> powermanage.v1.RoleGrant
-	343, // 237: powermanage.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
+	347, // 237: powermanage.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
 	230, // 238: powermanage.v1.CreateUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
 	230, // 239: powermanage.v1.GetUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
 	231, // 240: powermanage.v1.GetUserGroupResponse.members:type_name -> powermanage.v1.UserGroupMember
 	230, // 241: powermanage.v1.ListUserGroupsResponse.groups:type_name -> powermanage.v1.UserGroup
 	230, // 242: powermanage.v1.UpdateUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
-	344, // 243: powermanage.v1.AssignRoleToUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
-	344, // 244: powermanage.v1.RevokeRoleFromUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	348, // 243: powermanage.v1.AssignRoleToUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	348, // 244: powermanage.v1.RevokeRoleFromUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
 	230, // 245: powermanage.v1.ListUserGroupsForUserResponse.groups:type_name -> powermanage.v1.UserGroup
 	230, // 246: powermanage.v1.UpdateUserGroupQueryResponse.group:type_name -> powermanage.v1.UserGroup
 	230, // 247: powermanage.v1.EvaluateDynamicUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
-	371, // 248: powermanage.v1.SetUserGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
-	380, // 249: powermanage.v1.IdentityProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
-	337, // 250: powermanage.v1.IdentityProvider.group_mapping:type_name -> powermanage.v1.IdentityProvider.GroupMappingEntry
-	343, // 251: powermanage.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
-	343, // 252: powermanage.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
-	343, // 253: powermanage.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
-	343, // 254: powermanage.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
-	380, // 255: powermanage.v1.CreateIdentityProviderRequest.provider_type:type_name -> powermanage.v1.IdentityProviderType
-	338, // 256: powermanage.v1.CreateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	373, // 248: powermanage.v1.SetUserGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	382, // 249: powermanage.v1.IdentityProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	341, // 250: powermanage.v1.IdentityProvider.group_mapping:type_name -> powermanage.v1.IdentityProvider.GroupMappingEntry
+	347, // 251: powermanage.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
+	347, // 252: powermanage.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
+	347, // 253: powermanage.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
+	347, // 254: powermanage.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
+	382, // 255: powermanage.v1.CreateIdentityProviderRequest.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	342, // 256: powermanage.v1.CreateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
 	259, // 257: powermanage.v1.CreateIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
 	259, // 258: powermanage.v1.GetIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
 	259, // 259: powermanage.v1.ListIdentityProvidersResponse.providers:type_name -> powermanage.v1.IdentityProvider
-	339, // 260: powermanage.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	343, // 260: powermanage.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
 	259, // 261: powermanage.v1.UpdateIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
-	380, // 262: powermanage.v1.AuthMethodProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	382, // 262: powermanage.v1.AuthMethodProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
 	271, // 263: powermanage.v1.ListAuthMethodsResponse.providers:type_name -> powermanage.v1.AuthMethodProvider
-	343, // 264: powermanage.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
+	347, // 264: powermanage.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
 	10,  // 265: powermanage.v1.SSOCallbackResponse.user:type_name -> powermanage.v1.User
 	260, // 266: powermanage.v1.ListIdentityLinksResponse.links:type_name -> powermanage.v1.IdentityLink
-	347, // 267: powermanage.v1.GetDeviceComplianceResponse.status:type_name -> powermanage.v1.ComplianceStatus
+	351, // 267: powermanage.v1.GetDeviceComplianceResponse.status:type_name -> powermanage.v1.ComplianceStatus
 	290, // 268: powermanage.v1.GetDeviceComplianceResponse.checks:type_name -> powermanage.v1.ComplianceCheckResult
-	375, // 269: powermanage.v1.ComplianceCheckResult.detection_output:type_name -> powermanage.v1.CommandOutput
-	343, // 270: powermanage.v1.ComplianceCheckResult.checked_at:type_name -> google.protobuf.Timestamp
+	377, // 269: powermanage.v1.ComplianceCheckResult.detection_output:type_name -> powermanage.v1.CommandOutput
+	347, // 270: powermanage.v1.ComplianceCheckResult.checked_at:type_name -> google.protobuf.Timestamp
 	292, // 271: powermanage.v1.CompliancePolicy.rules:type_name -> powermanage.v1.CompliancePolicyRule
-	343, // 272: powermanage.v1.CompliancePolicy.created_at:type_name -> google.protobuf.Timestamp
+	347, // 272: powermanage.v1.CompliancePolicy.created_at:type_name -> google.protobuf.Timestamp
 	291, // 273: powermanage.v1.CreateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
 	291, // 274: powermanage.v1.GetCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
 	291, // 275: powermanage.v1.ListCompliancePoliciesResponse.policies:type_name -> powermanage.v1.CompliancePolicy
@@ -23218,352 +23690,358 @@ var file_powermanage_v1_control_proto_depIdxs = []int32{
 	291, // 277: powermanage.v1.AddCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
 	291, // 278: powermanage.v1.RemoveCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
 	291, // 279: powermanage.v1.UpdateCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	347, // 280: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.overall_status:type_name -> powermanage.v1.ComplianceStatus
+	351, // 280: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.overall_status:type_name -> powermanage.v1.ComplianceStatus
 	312, // 281: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.policies:type_name -> powermanage.v1.DevicePolicyEvaluation
-	347, // 282: powermanage.v1.DevicePolicyEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
+	351, // 282: powermanage.v1.DevicePolicyEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
 	313, // 283: powermanage.v1.DevicePolicyEvaluation.rules:type_name -> powermanage.v1.DevicePolicyRuleEvaluation
-	347, // 284: powermanage.v1.DevicePolicyRuleEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
-	343, // 285: powermanage.v1.DevicePolicyRuleEvaluation.checked_at:type_name -> google.protobuf.Timestamp
-	343, // 286: powermanage.v1.DevicePolicyRuleEvaluation.first_failed_at:type_name -> google.protobuf.Timestamp
-	343, // 287: powermanage.v1.DevicePolicyRuleEvaluation.grace_expires_at:type_name -> google.protobuf.Timestamp
-	375, // 288: powermanage.v1.DevicePolicyRuleEvaluation.detection_output:type_name -> powermanage.v1.CommandOutput
-	381, // 289: powermanage.v1.SearchRequest.scope:type_name -> powermanage.v1.SearchScope
+	351, // 284: powermanage.v1.DevicePolicyRuleEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
+	347, // 285: powermanage.v1.DevicePolicyRuleEvaluation.checked_at:type_name -> google.protobuf.Timestamp
+	347, // 286: powermanage.v1.DevicePolicyRuleEvaluation.first_failed_at:type_name -> google.protobuf.Timestamp
+	347, // 287: powermanage.v1.DevicePolicyRuleEvaluation.grace_expires_at:type_name -> google.protobuf.Timestamp
+	377, // 288: powermanage.v1.DevicePolicyRuleEvaluation.detection_output:type_name -> powermanage.v1.CommandOutput
+	383, // 289: powermanage.v1.SearchRequest.scope:type_name -> powermanage.v1.SearchScope
 	314, // 290: powermanage.v1.SearchRequest.date_filters:type_name -> powermanage.v1.SearchDateFilter
-	340, // 291: powermanage.v1.SearchRequest.tag_filters:type_name -> powermanage.v1.SearchRequest.TagFiltersEntry
-	382, // 292: powermanage.v1.SearchRequest.sort_field:type_name -> powermanage.v1.SortField
-	383, // 293: powermanage.v1.SearchRequest.sort_direction:type_name -> powermanage.v1.SortDirection
-	381, // 294: powermanage.v1.SearchResult.scope:type_name -> powermanage.v1.SearchScope
-	341, // 295: powermanage.v1.SearchResult.fields:type_name -> powermanage.v1.SearchResult.FieldsEntry
+	344, // 291: powermanage.v1.SearchRequest.tag_filters:type_name -> powermanage.v1.SearchRequest.TagFiltersEntry
+	384, // 292: powermanage.v1.SearchRequest.sort_field:type_name -> powermanage.v1.SortField
+	385, // 293: powermanage.v1.SearchRequest.sort_direction:type_name -> powermanage.v1.SortDirection
+	383, // 294: powermanage.v1.SearchResult.scope:type_name -> powermanage.v1.SearchScope
+	345, // 295: powermanage.v1.SearchResult.fields:type_name -> powermanage.v1.SearchResult.FieldsEntry
 	316, // 296: powermanage.v1.SearchResponse.results:type_name -> powermanage.v1.SearchResult
 	320, // 297: powermanage.v1.GetServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
 	320, // 298: powermanage.v1.UpdateServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
-	343, // 299: powermanage.v1.StartTerminalResponse.expires_at:type_name -> google.protobuf.Timestamp
-	343, // 300: powermanage.v1.TerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
-	343, // 301: powermanage.v1.TerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
+	347, // 299: powermanage.v1.StartTerminalResponse.expires_at:type_name -> google.protobuf.Timestamp
+	347, // 300: powermanage.v1.TerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
+	347, // 301: powermanage.v1.TerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
 	330, // 302: powermanage.v1.ListActiveTerminalSessionsResponse.sessions:type_name -> powermanage.v1.TerminalSessionInfo
-	0,   // 303: powermanage.v1.ControlService.Register:input_type -> powermanage.v1.RegisterRequest
-	2,   // 304: powermanage.v1.ControlService.RenewCertificate:input_type -> powermanage.v1.RenewCertificateRequest
-	4,   // 305: powermanage.v1.ControlService.RefreshToken:input_type -> powermanage.v1.RefreshTokenRequest
-	6,   // 306: powermanage.v1.ControlService.Logout:input_type -> powermanage.v1.LogoutRequest
-	8,   // 307: powermanage.v1.ControlService.GetCurrentUser:input_type -> powermanage.v1.GetCurrentUserRequest
-	272, // 308: powermanage.v1.ControlService.ListAuthMethods:input_type -> powermanage.v1.ListAuthMethodsRequest
-	274, // 309: powermanage.v1.ControlService.GetSSOLoginURL:input_type -> powermanage.v1.GetSSOLoginURLRequest
-	276, // 310: powermanage.v1.ControlService.SSOCallback:input_type -> powermanage.v1.SSOCallbackRequest
-	261, // 311: powermanage.v1.ControlService.CreateIdentityProvider:input_type -> powermanage.v1.CreateIdentityProviderRequest
-	263, // 312: powermanage.v1.ControlService.GetIdentityProvider:input_type -> powermanage.v1.GetIdentityProviderRequest
-	265, // 313: powermanage.v1.ControlService.ListIdentityProviders:input_type -> powermanage.v1.ListIdentityProvidersRequest
-	267, // 314: powermanage.v1.ControlService.UpdateIdentityProvider:input_type -> powermanage.v1.UpdateIdentityProviderRequest
-	269, // 315: powermanage.v1.ControlService.DeleteIdentityProvider:input_type -> powermanage.v1.DeleteIdentityProviderRequest
-	278, // 316: powermanage.v1.ControlService.ListIdentityLinks:input_type -> powermanage.v1.ListIdentityLinksRequest
-	280, // 317: powermanage.v1.ControlService.UnlinkIdentity:input_type -> powermanage.v1.UnlinkIdentityRequest
-	282, // 318: powermanage.v1.ControlService.EnableSCIM:input_type -> powermanage.v1.EnableSCIMRequest
-	284, // 319: powermanage.v1.ControlService.DisableSCIM:input_type -> powermanage.v1.DisableSCIMRequest
-	286, // 320: powermanage.v1.ControlService.RotateSCIMToken:input_type -> powermanage.v1.RotateSCIMTokenRequest
-	16,  // 321: powermanage.v1.ControlService.EraseJITUser:input_type -> powermanage.v1.EraseJITUserRequest
-	18,  // 322: powermanage.v1.ControlService.GetUser:input_type -> powermanage.v1.GetUserRequest
-	20,  // 323: powermanage.v1.ControlService.ListUsers:input_type -> powermanage.v1.ListUsersRequest
-	22,  // 324: powermanage.v1.ControlService.UpdateUserEmail:input_type -> powermanage.v1.UpdateUserEmailRequest
-	23,  // 325: powermanage.v1.ControlService.SetUserDisabled:input_type -> powermanage.v1.SetUserDisabledRequest
-	25,  // 326: powermanage.v1.ControlService.UpdateUserProfile:input_type -> powermanage.v1.UpdateUserProfileRequest
-	31,  // 327: powermanage.v1.ControlService.UpdateUserLinuxUsername:input_type -> powermanage.v1.UpdateUserLinuxUsernameRequest
-	26,  // 328: powermanage.v1.ControlService.AddUserSshKey:input_type -> powermanage.v1.AddUserSshKeyRequest
-	28,  // 329: powermanage.v1.ControlService.RemoveUserSshKey:input_type -> powermanage.v1.RemoveUserSshKeyRequest
-	30,  // 330: powermanage.v1.ControlService.UpdateUserSshSettings:input_type -> powermanage.v1.UpdateUserSshSettingsRequest
-	33,  // 331: powermanage.v1.ControlService.ListDevices:input_type -> powermanage.v1.ListDevicesRequest
-	35,  // 332: powermanage.v1.ControlService.GetDevice:input_type -> powermanage.v1.GetDeviceRequest
-	37,  // 333: powermanage.v1.ControlService.SetDeviceLabel:input_type -> powermanage.v1.SetDeviceLabelRequest
-	38,  // 334: powermanage.v1.ControlService.RemoveDeviceLabel:input_type -> powermanage.v1.RemoveDeviceLabelRequest
-	42,  // 335: powermanage.v1.ControlService.AssignDevice:input_type -> powermanage.v1.AssignDeviceRequest
-	44,  // 336: powermanage.v1.ControlService.UnassignDevice:input_type -> powermanage.v1.UnassignDeviceRequest
-	47,  // 337: powermanage.v1.ControlService.ListDeviceAssignees:input_type -> powermanage.v1.ListDeviceAssigneesRequest
-	49,  // 338: powermanage.v1.ControlService.SetDeviceSyncInterval:input_type -> powermanage.v1.SetDeviceSyncIntervalRequest
-	50,  // 339: powermanage.v1.ControlService.SetDeviceInventoryInterval:input_type -> powermanage.v1.SetDeviceInventoryIntervalRequest
-	40,  // 340: powermanage.v1.ControlService.DeleteDevice:input_type -> powermanage.v1.DeleteDeviceRequest
-	52,  // 341: powermanage.v1.ControlService.CreateToken:input_type -> powermanage.v1.CreateTokenRequest
-	56,  // 342: powermanage.v1.ControlService.GetToken:input_type -> powermanage.v1.GetTokenRequest
-	54,  // 343: powermanage.v1.ControlService.ListTokens:input_type -> powermanage.v1.ListTokensRequest
-	58,  // 344: powermanage.v1.ControlService.RenameToken:input_type -> powermanage.v1.RenameTokenRequest
-	59,  // 345: powermanage.v1.ControlService.SetTokenDisabled:input_type -> powermanage.v1.SetTokenDisabledRequest
-	61,  // 346: powermanage.v1.ControlService.DeleteToken:input_type -> powermanage.v1.DeleteTokenRequest
-	64,  // 347: powermanage.v1.ControlService.CreateAction:input_type -> powermanage.v1.CreateActionRequest
-	66,  // 348: powermanage.v1.ControlService.GetAction:input_type -> powermanage.v1.GetActionRequest
-	68,  // 349: powermanage.v1.ControlService.ListActions:input_type -> powermanage.v1.ListActionsRequest
-	70,  // 350: powermanage.v1.ControlService.RenameAction:input_type -> powermanage.v1.RenameActionRequest
-	71,  // 351: powermanage.v1.ControlService.UpdateActionDescription:input_type -> powermanage.v1.UpdateActionDescriptionRequest
-	72,  // 352: powermanage.v1.ControlService.UpdateActionParams:input_type -> powermanage.v1.UpdateActionParamsRequest
-	74,  // 353: powermanage.v1.ControlService.DeleteAction:input_type -> powermanage.v1.DeleteActionRequest
-	78,  // 354: powermanage.v1.ControlService.CreateActionSet:input_type -> powermanage.v1.CreateActionSetRequest
-	80,  // 355: powermanage.v1.ControlService.GetActionSet:input_type -> powermanage.v1.GetActionSetRequest
-	82,  // 356: powermanage.v1.ControlService.ListActionSets:input_type -> powermanage.v1.ListActionSetsRequest
-	84,  // 357: powermanage.v1.ControlService.RenameActionSet:input_type -> powermanage.v1.RenameActionSetRequest
-	85,  // 358: powermanage.v1.ControlService.UpdateActionSetDescription:input_type -> powermanage.v1.UpdateActionSetDescriptionRequest
-	86,  // 359: powermanage.v1.ControlService.UpdateActionSetSchedule:input_type -> powermanage.v1.UpdateActionSetScheduleRequest
-	88,  // 360: powermanage.v1.ControlService.DeleteActionSet:input_type -> powermanage.v1.DeleteActionSetRequest
-	90,  // 361: powermanage.v1.ControlService.AddActionToSet:input_type -> powermanage.v1.AddActionToSetRequest
-	92,  // 362: powermanage.v1.ControlService.RemoveActionFromSet:input_type -> powermanage.v1.RemoveActionFromSetRequest
-	94,  // 363: powermanage.v1.ControlService.ReorderActionInSet:input_type -> powermanage.v1.ReorderActionInSetRequest
-	98,  // 364: powermanage.v1.ControlService.CreateDefinition:input_type -> powermanage.v1.CreateDefinitionRequest
-	100, // 365: powermanage.v1.ControlService.GetDefinition:input_type -> powermanage.v1.GetDefinitionRequest
-	102, // 366: powermanage.v1.ControlService.ListDefinitions:input_type -> powermanage.v1.ListDefinitionsRequest
-	104, // 367: powermanage.v1.ControlService.RenameDefinition:input_type -> powermanage.v1.RenameDefinitionRequest
-	105, // 368: powermanage.v1.ControlService.UpdateDefinitionDescription:input_type -> powermanage.v1.UpdateDefinitionDescriptionRequest
-	106, // 369: powermanage.v1.ControlService.UpdateDefinitionSchedule:input_type -> powermanage.v1.UpdateDefinitionScheduleRequest
-	108, // 370: powermanage.v1.ControlService.DeleteDefinition:input_type -> powermanage.v1.DeleteDefinitionRequest
-	110, // 371: powermanage.v1.ControlService.AddActionSetToDefinition:input_type -> powermanage.v1.AddActionSetToDefinitionRequest
-	112, // 372: powermanage.v1.ControlService.RemoveActionSetFromDefinition:input_type -> powermanage.v1.RemoveActionSetFromDefinitionRequest
-	114, // 373: powermanage.v1.ControlService.ReorderActionSetInDefinition:input_type -> powermanage.v1.ReorderActionSetInDefinitionRequest
-	117, // 374: powermanage.v1.ControlService.CreateDeviceGroup:input_type -> powermanage.v1.CreateDeviceGroupRequest
-	119, // 375: powermanage.v1.ControlService.GetDeviceGroup:input_type -> powermanage.v1.GetDeviceGroupRequest
-	122, // 376: powermanage.v1.ControlService.ListDeviceGroups:input_type -> powermanage.v1.ListDeviceGroupsRequest
-	124, // 377: powermanage.v1.ControlService.ListDeviceGroupsForDevice:input_type -> powermanage.v1.ListDeviceGroupsForDeviceRequest
-	126, // 378: powermanage.v1.ControlService.RenameDeviceGroup:input_type -> powermanage.v1.RenameDeviceGroupRequest
-	127, // 379: powermanage.v1.ControlService.UpdateDeviceGroupDescription:input_type -> powermanage.v1.UpdateDeviceGroupDescriptionRequest
-	135, // 380: powermanage.v1.ControlService.UpdateDeviceGroupQuery:input_type -> powermanage.v1.UpdateDeviceGroupQueryRequest
-	129, // 381: powermanage.v1.ControlService.DeleteDeviceGroup:input_type -> powermanage.v1.DeleteDeviceGroupRequest
-	131, // 382: powermanage.v1.ControlService.AddDeviceToGroup:input_type -> powermanage.v1.AddDeviceToGroupRequest
-	133, // 383: powermanage.v1.ControlService.RemoveDeviceFromGroup:input_type -> powermanage.v1.RemoveDeviceFromGroupRequest
-	137, // 384: powermanage.v1.ControlService.ValidateDynamicQuery:input_type -> powermanage.v1.ValidateDynamicQueryRequest
-	139, // 385: powermanage.v1.ControlService.EvaluateDynamicGroup:input_type -> powermanage.v1.EvaluateDynamicGroupRequest
-	141, // 386: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> powermanage.v1.SetDeviceGroupSyncIntervalRequest
-	142, // 387: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:input_type -> powermanage.v1.SetDeviceGroupInventoryIntervalRequest
-	143, // 388: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:input_type -> powermanage.v1.SetDeviceGroupMaintenanceWindowRequest
-	145, // 389: powermanage.v1.ControlService.CreateAssignment:input_type -> powermanage.v1.CreateAssignmentRequest
-	147, // 390: powermanage.v1.ControlService.DeleteAssignment:input_type -> powermanage.v1.DeleteAssignmentRequest
-	149, // 391: powermanage.v1.ControlService.ListAssignments:input_type -> powermanage.v1.ListAssignmentsRequest
-	157, // 392: powermanage.v1.ControlService.GetDeviceAssignments:input_type -> powermanage.v1.GetDeviceAssignmentsRequest
-	159, // 393: powermanage.v1.ControlService.GetUserAssignments:input_type -> powermanage.v1.GetUserAssignmentsRequest
-	152, // 394: powermanage.v1.ControlService.SetUserSelection:input_type -> powermanage.v1.SetUserSelectionRequest
-	154, // 395: powermanage.v1.ControlService.ListAvailableActions:input_type -> powermanage.v1.ListAvailableActionsRequest
-	162, // 396: powermanage.v1.ControlService.DispatchAction:input_type -> powermanage.v1.DispatchActionRequest
-	164, // 397: powermanage.v1.ControlService.DispatchToMultiple:input_type -> powermanage.v1.DispatchToMultipleRequest
-	166, // 398: powermanage.v1.ControlService.DispatchAssignedActions:input_type -> powermanage.v1.DispatchAssignedActionsRequest
-	168, // 399: powermanage.v1.ControlService.DispatchActionSet:input_type -> powermanage.v1.DispatchActionSetRequest
-	170, // 400: powermanage.v1.ControlService.DispatchDefinition:input_type -> powermanage.v1.DispatchDefinitionRequest
-	172, // 401: powermanage.v1.ControlService.DispatchToGroup:input_type -> powermanage.v1.DispatchToGroupRequest
-	178, // 402: powermanage.v1.ControlService.DispatchInstantAction:input_type -> powermanage.v1.DispatchInstantActionRequest
-	180, // 403: powermanage.v1.ControlService.CancelExecution:input_type -> powermanage.v1.CancelExecutionRequest
-	174, // 404: powermanage.v1.ControlService.GetExecution:input_type -> powermanage.v1.GetExecutionRequest
-	176, // 405: powermanage.v1.ControlService.ListExecutions:input_type -> powermanage.v1.ListExecutionsRequest
-	183, // 406: powermanage.v1.ControlService.ListAuditEvents:input_type -> powermanage.v1.ListAuditEventsRequest
-	185, // 407: powermanage.v1.ControlService.ExportAuditEvents:input_type -> powermanage.v1.ExportAuditEventsRequest
-	188, // 408: powermanage.v1.ControlService.ListLpsPasswords:input_type -> powermanage.v1.ListLpsPasswordsRequest
-	190, // 409: powermanage.v1.ControlService.RevealLpsPassword:input_type -> powermanage.v1.RevealLpsPasswordRequest
-	193, // 410: powermanage.v1.ControlService.ListLuksKeys:input_type -> powermanage.v1.ListLuksKeysRequest
-	195, // 411: powermanage.v1.ControlService.RevealLuksKey:input_type -> powermanage.v1.RevealLuksKeyRequest
-	197, // 412: powermanage.v1.ControlService.CreateLuksToken:input_type -> powermanage.v1.CreateLuksTokenRequest
-	199, // 413: powermanage.v1.ControlService.RevokeLuksDeviceKey:input_type -> powermanage.v1.RevokeLuksDeviceKeyRequest
-	201, // 414: powermanage.v1.ControlService.DispatchOSQuery:input_type -> powermanage.v1.DispatchOSQueryRequest
-	203, // 415: powermanage.v1.ControlService.GetOSQueryResult:input_type -> powermanage.v1.GetOSQueryResultRequest
-	205, // 416: powermanage.v1.ControlService.GetDeviceInventory:input_type -> powermanage.v1.GetDeviceInventoryRequest
-	208, // 417: powermanage.v1.ControlService.RefreshDeviceInventory:input_type -> powermanage.v1.RefreshDeviceInventoryRequest
-	210, // 418: powermanage.v1.ControlService.QueryDeviceLogs:input_type -> powermanage.v1.QueryDeviceLogsRequest
-	212, // 419: powermanage.v1.ControlService.GetDeviceLogResult:input_type -> powermanage.v1.GetDeviceLogResultRequest
-	214, // 420: powermanage.v1.ControlService.CreateRole:input_type -> powermanage.v1.CreateRoleRequest
-	216, // 421: powermanage.v1.ControlService.GetRole:input_type -> powermanage.v1.GetRoleRequest
-	218, // 422: powermanage.v1.ControlService.ListRoles:input_type -> powermanage.v1.ListRolesRequest
-	220, // 423: powermanage.v1.ControlService.UpdateRole:input_type -> powermanage.v1.UpdateRoleRequest
-	222, // 424: powermanage.v1.ControlService.DeleteRole:input_type -> powermanage.v1.DeleteRoleRequest
-	224, // 425: powermanage.v1.ControlService.AssignRoleToUser:input_type -> powermanage.v1.AssignRoleToUserRequest
-	226, // 426: powermanage.v1.ControlService.RevokeRoleFromUser:input_type -> powermanage.v1.RevokeRoleFromUserRequest
-	228, // 427: powermanage.v1.ControlService.ListPermissions:input_type -> powermanage.v1.ListPermissionsRequest
-	232, // 428: powermanage.v1.ControlService.CreateUserGroup:input_type -> powermanage.v1.CreateUserGroupRequest
-	234, // 429: powermanage.v1.ControlService.GetUserGroup:input_type -> powermanage.v1.GetUserGroupRequest
-	236, // 430: powermanage.v1.ControlService.ListUserGroups:input_type -> powermanage.v1.ListUserGroupsRequest
-	238, // 431: powermanage.v1.ControlService.UpdateUserGroup:input_type -> powermanage.v1.UpdateUserGroupRequest
-	240, // 432: powermanage.v1.ControlService.DeleteUserGroup:input_type -> powermanage.v1.DeleteUserGroupRequest
-	242, // 433: powermanage.v1.ControlService.AddUserToGroup:input_type -> powermanage.v1.AddUserToGroupRequest
-	244, // 434: powermanage.v1.ControlService.RemoveUserFromGroup:input_type -> powermanage.v1.RemoveUserFromGroupRequest
-	246, // 435: powermanage.v1.ControlService.AssignRoleToUserGroup:input_type -> powermanage.v1.AssignRoleToUserGroupRequest
-	248, // 436: powermanage.v1.ControlService.RevokeRoleFromUserGroup:input_type -> powermanage.v1.RevokeRoleFromUserGroupRequest
-	250, // 437: powermanage.v1.ControlService.ListUserGroupsForUser:input_type -> powermanage.v1.ListUserGroupsForUserRequest
-	252, // 438: powermanage.v1.ControlService.UpdateUserGroupQuery:input_type -> powermanage.v1.UpdateUserGroupQueryRequest
-	254, // 439: powermanage.v1.ControlService.ValidateUserGroupQuery:input_type -> powermanage.v1.ValidateUserGroupQueryRequest
-	256, // 440: powermanage.v1.ControlService.EvaluateDynamicUserGroup:input_type -> powermanage.v1.EvaluateDynamicUserGroupRequest
-	258, // 441: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:input_type -> powermanage.v1.SetUserGroupMaintenanceWindowRequest
-	288, // 442: powermanage.v1.ControlService.GetDeviceCompliance:input_type -> powermanage.v1.GetDeviceComplianceRequest
-	293, // 443: powermanage.v1.ControlService.CreateCompliancePolicy:input_type -> powermanage.v1.CreateCompliancePolicyRequest
-	295, // 444: powermanage.v1.ControlService.GetCompliancePolicy:input_type -> powermanage.v1.GetCompliancePolicyRequest
-	297, // 445: powermanage.v1.ControlService.ListCompliancePolicies:input_type -> powermanage.v1.ListCompliancePoliciesRequest
-	299, // 446: powermanage.v1.ControlService.RenameCompliancePolicy:input_type -> powermanage.v1.RenameCompliancePolicyRequest
-	300, // 447: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:input_type -> powermanage.v1.UpdateCompliancePolicyDescriptionRequest
-	302, // 448: powermanage.v1.ControlService.DeleteCompliancePolicy:input_type -> powermanage.v1.DeleteCompliancePolicyRequest
-	304, // 449: powermanage.v1.ControlService.AddCompliancePolicyRule:input_type -> powermanage.v1.AddCompliancePolicyRuleRequest
-	306, // 450: powermanage.v1.ControlService.RemoveCompliancePolicyRule:input_type -> powermanage.v1.RemoveCompliancePolicyRuleRequest
-	308, // 451: powermanage.v1.ControlService.UpdateCompliancePolicyRule:input_type -> powermanage.v1.UpdateCompliancePolicyRuleRequest
-	310, // 452: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:input_type -> powermanage.v1.GetDeviceCompliancePolicyStatusRequest
-	315, // 453: powermanage.v1.ControlService.Search:input_type -> powermanage.v1.SearchRequest
-	318, // 454: powermanage.v1.ControlService.RebuildSearchIndex:input_type -> powermanage.v1.RebuildSearchIndexRequest
-	321, // 455: powermanage.v1.ControlService.GetServerSettings:input_type -> powermanage.v1.GetServerSettingsRequest
-	323, // 456: powermanage.v1.ControlService.UpdateServerSettings:input_type -> powermanage.v1.UpdateServerSettingsRequest
-	325, // 457: powermanage.v1.ControlService.SetUserProvisioningEnabled:input_type -> powermanage.v1.SetUserProvisioningEnabledRequest
-	326, // 458: powermanage.v1.ControlService.StartTerminal:input_type -> powermanage.v1.StartTerminalRequest
-	328, // 459: powermanage.v1.ControlService.StopTerminal:input_type -> powermanage.v1.StopTerminalRequest
-	331, // 460: powermanage.v1.ControlService.ListActiveTerminalSessions:input_type -> powermanage.v1.ListActiveTerminalSessionsRequest
-	333, // 461: powermanage.v1.ControlService.TerminateTerminalSession:input_type -> powermanage.v1.TerminateTerminalSessionRequest
-	1,   // 462: powermanage.v1.ControlService.Register:output_type -> powermanage.v1.RegisterResponse
-	3,   // 463: powermanage.v1.ControlService.RenewCertificate:output_type -> powermanage.v1.RenewCertificateResponse
-	5,   // 464: powermanage.v1.ControlService.RefreshToken:output_type -> powermanage.v1.RefreshTokenResponse
-	7,   // 465: powermanage.v1.ControlService.Logout:output_type -> powermanage.v1.LogoutResponse
-	9,   // 466: powermanage.v1.ControlService.GetCurrentUser:output_type -> powermanage.v1.GetCurrentUserResponse
-	273, // 467: powermanage.v1.ControlService.ListAuthMethods:output_type -> powermanage.v1.ListAuthMethodsResponse
-	275, // 468: powermanage.v1.ControlService.GetSSOLoginURL:output_type -> powermanage.v1.GetSSOLoginURLResponse
-	277, // 469: powermanage.v1.ControlService.SSOCallback:output_type -> powermanage.v1.SSOCallbackResponse
-	262, // 470: powermanage.v1.ControlService.CreateIdentityProvider:output_type -> powermanage.v1.CreateIdentityProviderResponse
-	264, // 471: powermanage.v1.ControlService.GetIdentityProvider:output_type -> powermanage.v1.GetIdentityProviderResponse
-	266, // 472: powermanage.v1.ControlService.ListIdentityProviders:output_type -> powermanage.v1.ListIdentityProvidersResponse
-	268, // 473: powermanage.v1.ControlService.UpdateIdentityProvider:output_type -> powermanage.v1.UpdateIdentityProviderResponse
-	270, // 474: powermanage.v1.ControlService.DeleteIdentityProvider:output_type -> powermanage.v1.DeleteIdentityProviderResponse
-	279, // 475: powermanage.v1.ControlService.ListIdentityLinks:output_type -> powermanage.v1.ListIdentityLinksResponse
-	281, // 476: powermanage.v1.ControlService.UnlinkIdentity:output_type -> powermanage.v1.UnlinkIdentityResponse
-	283, // 477: powermanage.v1.ControlService.EnableSCIM:output_type -> powermanage.v1.EnableSCIMResponse
-	285, // 478: powermanage.v1.ControlService.DisableSCIM:output_type -> powermanage.v1.DisableSCIMResponse
-	287, // 479: powermanage.v1.ControlService.RotateSCIMToken:output_type -> powermanage.v1.RotateSCIMTokenResponse
-	17,  // 480: powermanage.v1.ControlService.EraseJITUser:output_type -> powermanage.v1.EraseJITUserResponse
-	19,  // 481: powermanage.v1.ControlService.GetUser:output_type -> powermanage.v1.GetUserResponse
-	21,  // 482: powermanage.v1.ControlService.ListUsers:output_type -> powermanage.v1.ListUsersResponse
-	24,  // 483: powermanage.v1.ControlService.UpdateUserEmail:output_type -> powermanage.v1.UpdateUserResponse
-	24,  // 484: powermanage.v1.ControlService.SetUserDisabled:output_type -> powermanage.v1.UpdateUserResponse
-	24,  // 485: powermanage.v1.ControlService.UpdateUserProfile:output_type -> powermanage.v1.UpdateUserResponse
-	24,  // 486: powermanage.v1.ControlService.UpdateUserLinuxUsername:output_type -> powermanage.v1.UpdateUserResponse
-	27,  // 487: powermanage.v1.ControlService.AddUserSshKey:output_type -> powermanage.v1.AddUserSshKeyResponse
-	29,  // 488: powermanage.v1.ControlService.RemoveUserSshKey:output_type -> powermanage.v1.RemoveUserSshKeyResponse
-	24,  // 489: powermanage.v1.ControlService.UpdateUserSshSettings:output_type -> powermanage.v1.UpdateUserResponse
-	34,  // 490: powermanage.v1.ControlService.ListDevices:output_type -> powermanage.v1.ListDevicesResponse
-	36,  // 491: powermanage.v1.ControlService.GetDevice:output_type -> powermanage.v1.GetDeviceResponse
-	39,  // 492: powermanage.v1.ControlService.SetDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
-	39,  // 493: powermanage.v1.ControlService.RemoveDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
-	43,  // 494: powermanage.v1.ControlService.AssignDevice:output_type -> powermanage.v1.AssignDeviceResponse
-	45,  // 495: powermanage.v1.ControlService.UnassignDevice:output_type -> powermanage.v1.UnassignDeviceResponse
-	48,  // 496: powermanage.v1.ControlService.ListDeviceAssignees:output_type -> powermanage.v1.ListDeviceAssigneesResponse
-	39,  // 497: powermanage.v1.ControlService.SetDeviceSyncInterval:output_type -> powermanage.v1.UpdateDeviceResponse
-	39,  // 498: powermanage.v1.ControlService.SetDeviceInventoryInterval:output_type -> powermanage.v1.UpdateDeviceResponse
-	41,  // 499: powermanage.v1.ControlService.DeleteDevice:output_type -> powermanage.v1.DeleteDeviceResponse
-	53,  // 500: powermanage.v1.ControlService.CreateToken:output_type -> powermanage.v1.CreateTokenResponse
-	57,  // 501: powermanage.v1.ControlService.GetToken:output_type -> powermanage.v1.GetTokenResponse
-	55,  // 502: powermanage.v1.ControlService.ListTokens:output_type -> powermanage.v1.ListTokensResponse
-	60,  // 503: powermanage.v1.ControlService.RenameToken:output_type -> powermanage.v1.UpdateTokenResponse
-	60,  // 504: powermanage.v1.ControlService.SetTokenDisabled:output_type -> powermanage.v1.UpdateTokenResponse
-	62,  // 505: powermanage.v1.ControlService.DeleteToken:output_type -> powermanage.v1.DeleteTokenResponse
-	65,  // 506: powermanage.v1.ControlService.CreateAction:output_type -> powermanage.v1.CreateActionResponse
-	67,  // 507: powermanage.v1.ControlService.GetAction:output_type -> powermanage.v1.GetActionResponse
-	69,  // 508: powermanage.v1.ControlService.ListActions:output_type -> powermanage.v1.ListActionsResponse
-	73,  // 509: powermanage.v1.ControlService.RenameAction:output_type -> powermanage.v1.UpdateActionResponse
-	73,  // 510: powermanage.v1.ControlService.UpdateActionDescription:output_type -> powermanage.v1.UpdateActionResponse
-	73,  // 511: powermanage.v1.ControlService.UpdateActionParams:output_type -> powermanage.v1.UpdateActionResponse
-	75,  // 512: powermanage.v1.ControlService.DeleteAction:output_type -> powermanage.v1.DeleteActionResponse
-	79,  // 513: powermanage.v1.ControlService.CreateActionSet:output_type -> powermanage.v1.CreateActionSetResponse
-	81,  // 514: powermanage.v1.ControlService.GetActionSet:output_type -> powermanage.v1.GetActionSetResponse
-	83,  // 515: powermanage.v1.ControlService.ListActionSets:output_type -> powermanage.v1.ListActionSetsResponse
-	87,  // 516: powermanage.v1.ControlService.RenameActionSet:output_type -> powermanage.v1.UpdateActionSetResponse
-	87,  // 517: powermanage.v1.ControlService.UpdateActionSetDescription:output_type -> powermanage.v1.UpdateActionSetResponse
-	87,  // 518: powermanage.v1.ControlService.UpdateActionSetSchedule:output_type -> powermanage.v1.UpdateActionSetResponse
-	89,  // 519: powermanage.v1.ControlService.DeleteActionSet:output_type -> powermanage.v1.DeleteActionSetResponse
-	91,  // 520: powermanage.v1.ControlService.AddActionToSet:output_type -> powermanage.v1.AddActionToSetResponse
-	93,  // 521: powermanage.v1.ControlService.RemoveActionFromSet:output_type -> powermanage.v1.RemoveActionFromSetResponse
-	95,  // 522: powermanage.v1.ControlService.ReorderActionInSet:output_type -> powermanage.v1.ReorderActionInSetResponse
-	99,  // 523: powermanage.v1.ControlService.CreateDefinition:output_type -> powermanage.v1.CreateDefinitionResponse
-	101, // 524: powermanage.v1.ControlService.GetDefinition:output_type -> powermanage.v1.GetDefinitionResponse
-	103, // 525: powermanage.v1.ControlService.ListDefinitions:output_type -> powermanage.v1.ListDefinitionsResponse
-	107, // 526: powermanage.v1.ControlService.RenameDefinition:output_type -> powermanage.v1.UpdateDefinitionResponse
-	107, // 527: powermanage.v1.ControlService.UpdateDefinitionDescription:output_type -> powermanage.v1.UpdateDefinitionResponse
-	107, // 528: powermanage.v1.ControlService.UpdateDefinitionSchedule:output_type -> powermanage.v1.UpdateDefinitionResponse
-	109, // 529: powermanage.v1.ControlService.DeleteDefinition:output_type -> powermanage.v1.DeleteDefinitionResponse
-	111, // 530: powermanage.v1.ControlService.AddActionSetToDefinition:output_type -> powermanage.v1.AddActionSetToDefinitionResponse
-	113, // 531: powermanage.v1.ControlService.RemoveActionSetFromDefinition:output_type -> powermanage.v1.RemoveActionSetFromDefinitionResponse
-	115, // 532: powermanage.v1.ControlService.ReorderActionSetInDefinition:output_type -> powermanage.v1.ReorderActionSetInDefinitionResponse
-	118, // 533: powermanage.v1.ControlService.CreateDeviceGroup:output_type -> powermanage.v1.CreateDeviceGroupResponse
-	120, // 534: powermanage.v1.ControlService.GetDeviceGroup:output_type -> powermanage.v1.GetDeviceGroupResponse
-	123, // 535: powermanage.v1.ControlService.ListDeviceGroups:output_type -> powermanage.v1.ListDeviceGroupsResponse
-	125, // 536: powermanage.v1.ControlService.ListDeviceGroupsForDevice:output_type -> powermanage.v1.ListDeviceGroupsForDeviceResponse
-	128, // 537: powermanage.v1.ControlService.RenameDeviceGroup:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	128, // 538: powermanage.v1.ControlService.UpdateDeviceGroupDescription:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	136, // 539: powermanage.v1.ControlService.UpdateDeviceGroupQuery:output_type -> powermanage.v1.UpdateDeviceGroupQueryResponse
-	130, // 540: powermanage.v1.ControlService.DeleteDeviceGroup:output_type -> powermanage.v1.DeleteDeviceGroupResponse
-	132, // 541: powermanage.v1.ControlService.AddDeviceToGroup:output_type -> powermanage.v1.AddDeviceToGroupResponse
-	134, // 542: powermanage.v1.ControlService.RemoveDeviceFromGroup:output_type -> powermanage.v1.RemoveDeviceFromGroupResponse
-	138, // 543: powermanage.v1.ControlService.ValidateDynamicQuery:output_type -> powermanage.v1.ValidateDynamicQueryResponse
-	140, // 544: powermanage.v1.ControlService.EvaluateDynamicGroup:output_type -> powermanage.v1.EvaluateDynamicGroupResponse
-	128, // 545: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	128, // 546: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	128, // 547: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	146, // 548: powermanage.v1.ControlService.CreateAssignment:output_type -> powermanage.v1.CreateAssignmentResponse
-	148, // 549: powermanage.v1.ControlService.DeleteAssignment:output_type -> powermanage.v1.DeleteAssignmentResponse
-	150, // 550: powermanage.v1.ControlService.ListAssignments:output_type -> powermanage.v1.ListAssignmentsResponse
-	158, // 551: powermanage.v1.ControlService.GetDeviceAssignments:output_type -> powermanage.v1.GetDeviceAssignmentsResponse
-	160, // 552: powermanage.v1.ControlService.GetUserAssignments:output_type -> powermanage.v1.GetUserAssignmentsResponse
-	153, // 553: powermanage.v1.ControlService.SetUserSelection:output_type -> powermanage.v1.SetUserSelectionResponse
-	156, // 554: powermanage.v1.ControlService.ListAvailableActions:output_type -> powermanage.v1.ListAvailableActionsResponse
-	163, // 555: powermanage.v1.ControlService.DispatchAction:output_type -> powermanage.v1.DispatchActionResponse
-	165, // 556: powermanage.v1.ControlService.DispatchToMultiple:output_type -> powermanage.v1.DispatchToMultipleResponse
-	167, // 557: powermanage.v1.ControlService.DispatchAssignedActions:output_type -> powermanage.v1.DispatchAssignedActionsResponse
-	169, // 558: powermanage.v1.ControlService.DispatchActionSet:output_type -> powermanage.v1.DispatchActionSetResponse
-	171, // 559: powermanage.v1.ControlService.DispatchDefinition:output_type -> powermanage.v1.DispatchDefinitionResponse
-	173, // 560: powermanage.v1.ControlService.DispatchToGroup:output_type -> powermanage.v1.DispatchToGroupResponse
-	179, // 561: powermanage.v1.ControlService.DispatchInstantAction:output_type -> powermanage.v1.DispatchInstantActionResponse
-	181, // 562: powermanage.v1.ControlService.CancelExecution:output_type -> powermanage.v1.CancelExecutionResponse
-	175, // 563: powermanage.v1.ControlService.GetExecution:output_type -> powermanage.v1.GetExecutionResponse
-	177, // 564: powermanage.v1.ControlService.ListExecutions:output_type -> powermanage.v1.ListExecutionsResponse
-	184, // 565: powermanage.v1.ControlService.ListAuditEvents:output_type -> powermanage.v1.ListAuditEventsResponse
-	186, // 566: powermanage.v1.ControlService.ExportAuditEvents:output_type -> powermanage.v1.ExportAuditEventsResponse
-	189, // 567: powermanage.v1.ControlService.ListLpsPasswords:output_type -> powermanage.v1.ListLpsPasswordsResponse
-	191, // 568: powermanage.v1.ControlService.RevealLpsPassword:output_type -> powermanage.v1.RevealLpsPasswordResponse
-	194, // 569: powermanage.v1.ControlService.ListLuksKeys:output_type -> powermanage.v1.ListLuksKeysResponse
-	196, // 570: powermanage.v1.ControlService.RevealLuksKey:output_type -> powermanage.v1.RevealLuksKeyResponse
-	198, // 571: powermanage.v1.ControlService.CreateLuksToken:output_type -> powermanage.v1.CreateLuksTokenResponse
-	200, // 572: powermanage.v1.ControlService.RevokeLuksDeviceKey:output_type -> powermanage.v1.RevokeLuksDeviceKeyResponse
-	202, // 573: powermanage.v1.ControlService.DispatchOSQuery:output_type -> powermanage.v1.DispatchOSQueryResponse
-	204, // 574: powermanage.v1.ControlService.GetOSQueryResult:output_type -> powermanage.v1.GetOSQueryResultResponse
-	207, // 575: powermanage.v1.ControlService.GetDeviceInventory:output_type -> powermanage.v1.GetDeviceInventoryResponse
-	209, // 576: powermanage.v1.ControlService.RefreshDeviceInventory:output_type -> powermanage.v1.RefreshDeviceInventoryResponse
-	211, // 577: powermanage.v1.ControlService.QueryDeviceLogs:output_type -> powermanage.v1.QueryDeviceLogsResponse
-	213, // 578: powermanage.v1.ControlService.GetDeviceLogResult:output_type -> powermanage.v1.GetDeviceLogResultResponse
-	215, // 579: powermanage.v1.ControlService.CreateRole:output_type -> powermanage.v1.CreateRoleResponse
-	217, // 580: powermanage.v1.ControlService.GetRole:output_type -> powermanage.v1.GetRoleResponse
-	219, // 581: powermanage.v1.ControlService.ListRoles:output_type -> powermanage.v1.ListRolesResponse
-	221, // 582: powermanage.v1.ControlService.UpdateRole:output_type -> powermanage.v1.UpdateRoleResponse
-	223, // 583: powermanage.v1.ControlService.DeleteRole:output_type -> powermanage.v1.DeleteRoleResponse
-	225, // 584: powermanage.v1.ControlService.AssignRoleToUser:output_type -> powermanage.v1.AssignRoleToUserResponse
-	227, // 585: powermanage.v1.ControlService.RevokeRoleFromUser:output_type -> powermanage.v1.RevokeRoleFromUserResponse
-	229, // 586: powermanage.v1.ControlService.ListPermissions:output_type -> powermanage.v1.ListPermissionsResponse
-	233, // 587: powermanage.v1.ControlService.CreateUserGroup:output_type -> powermanage.v1.CreateUserGroupResponse
-	235, // 588: powermanage.v1.ControlService.GetUserGroup:output_type -> powermanage.v1.GetUserGroupResponse
-	237, // 589: powermanage.v1.ControlService.ListUserGroups:output_type -> powermanage.v1.ListUserGroupsResponse
-	239, // 590: powermanage.v1.ControlService.UpdateUserGroup:output_type -> powermanage.v1.UpdateUserGroupResponse
-	241, // 591: powermanage.v1.ControlService.DeleteUserGroup:output_type -> powermanage.v1.DeleteUserGroupResponse
-	243, // 592: powermanage.v1.ControlService.AddUserToGroup:output_type -> powermanage.v1.AddUserToGroupResponse
-	245, // 593: powermanage.v1.ControlService.RemoveUserFromGroup:output_type -> powermanage.v1.RemoveUserFromGroupResponse
-	247, // 594: powermanage.v1.ControlService.AssignRoleToUserGroup:output_type -> powermanage.v1.AssignRoleToUserGroupResponse
-	249, // 595: powermanage.v1.ControlService.RevokeRoleFromUserGroup:output_type -> powermanage.v1.RevokeRoleFromUserGroupResponse
-	251, // 596: powermanage.v1.ControlService.ListUserGroupsForUser:output_type -> powermanage.v1.ListUserGroupsForUserResponse
-	253, // 597: powermanage.v1.ControlService.UpdateUserGroupQuery:output_type -> powermanage.v1.UpdateUserGroupQueryResponse
-	255, // 598: powermanage.v1.ControlService.ValidateUserGroupQuery:output_type -> powermanage.v1.ValidateUserGroupQueryResponse
-	257, // 599: powermanage.v1.ControlService.EvaluateDynamicUserGroup:output_type -> powermanage.v1.EvaluateDynamicUserGroupResponse
-	239, // 600: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateUserGroupResponse
-	289, // 601: powermanage.v1.ControlService.GetDeviceCompliance:output_type -> powermanage.v1.GetDeviceComplianceResponse
-	294, // 602: powermanage.v1.ControlService.CreateCompliancePolicy:output_type -> powermanage.v1.CreateCompliancePolicyResponse
-	296, // 603: powermanage.v1.ControlService.GetCompliancePolicy:output_type -> powermanage.v1.GetCompliancePolicyResponse
-	298, // 604: powermanage.v1.ControlService.ListCompliancePolicies:output_type -> powermanage.v1.ListCompliancePoliciesResponse
-	301, // 605: powermanage.v1.ControlService.RenameCompliancePolicy:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
-	301, // 606: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
-	303, // 607: powermanage.v1.ControlService.DeleteCompliancePolicy:output_type -> powermanage.v1.DeleteCompliancePolicyResponse
-	305, // 608: powermanage.v1.ControlService.AddCompliancePolicyRule:output_type -> powermanage.v1.AddCompliancePolicyRuleResponse
-	307, // 609: powermanage.v1.ControlService.RemoveCompliancePolicyRule:output_type -> powermanage.v1.RemoveCompliancePolicyRuleResponse
-	309, // 610: powermanage.v1.ControlService.UpdateCompliancePolicyRule:output_type -> powermanage.v1.UpdateCompliancePolicyRuleResponse
-	311, // 611: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:output_type -> powermanage.v1.GetDeviceCompliancePolicyStatusResponse
-	317, // 612: powermanage.v1.ControlService.Search:output_type -> powermanage.v1.SearchResponse
-	319, // 613: powermanage.v1.ControlService.RebuildSearchIndex:output_type -> powermanage.v1.RebuildSearchIndexResponse
-	322, // 614: powermanage.v1.ControlService.GetServerSettings:output_type -> powermanage.v1.GetServerSettingsResponse
-	324, // 615: powermanage.v1.ControlService.UpdateServerSettings:output_type -> powermanage.v1.UpdateServerSettingsResponse
-	24,  // 616: powermanage.v1.ControlService.SetUserProvisioningEnabled:output_type -> powermanage.v1.UpdateUserResponse
-	327, // 617: powermanage.v1.ControlService.StartTerminal:output_type -> powermanage.v1.StartTerminalResponse
-	329, // 618: powermanage.v1.ControlService.StopTerminal:output_type -> powermanage.v1.StopTerminalResponse
-	332, // 619: powermanage.v1.ControlService.ListActiveTerminalSessions:output_type -> powermanage.v1.ListActiveTerminalSessionsResponse
-	334, // 620: powermanage.v1.ControlService.TerminateTerminalSession:output_type -> powermanage.v1.TerminateTerminalSessionResponse
-	462, // [462:621] is the sub-list for method output_type
-	303, // [303:462] is the sub-list for method input_type
-	303, // [303:303] is the sub-list for extension type_name
-	303, // [303:303] is the sub-list for extension extendee
-	0,   // [0:303] is the sub-list for field type_name
+	386, // 303: powermanage.v1.EncryptionAuthoringParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	387, // 304: powermanage.v1.EncryptionAuthoringParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	386, // 305: powermanage.v1.ManagedEncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	387, // 306: powermanage.v1.ManagedEncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	388, // 307: powermanage.v1.WifiAuthoringParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	388, // 308: powermanage.v1.ManagedWifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	0,   // 309: powermanage.v1.ControlService.Register:input_type -> powermanage.v1.RegisterRequest
+	2,   // 310: powermanage.v1.ControlService.RenewCertificate:input_type -> powermanage.v1.RenewCertificateRequest
+	4,   // 311: powermanage.v1.ControlService.RefreshToken:input_type -> powermanage.v1.RefreshTokenRequest
+	6,   // 312: powermanage.v1.ControlService.Logout:input_type -> powermanage.v1.LogoutRequest
+	8,   // 313: powermanage.v1.ControlService.GetCurrentUser:input_type -> powermanage.v1.GetCurrentUserRequest
+	272, // 314: powermanage.v1.ControlService.ListAuthMethods:input_type -> powermanage.v1.ListAuthMethodsRequest
+	274, // 315: powermanage.v1.ControlService.GetSSOLoginURL:input_type -> powermanage.v1.GetSSOLoginURLRequest
+	276, // 316: powermanage.v1.ControlService.SSOCallback:input_type -> powermanage.v1.SSOCallbackRequest
+	261, // 317: powermanage.v1.ControlService.CreateIdentityProvider:input_type -> powermanage.v1.CreateIdentityProviderRequest
+	263, // 318: powermanage.v1.ControlService.GetIdentityProvider:input_type -> powermanage.v1.GetIdentityProviderRequest
+	265, // 319: powermanage.v1.ControlService.ListIdentityProviders:input_type -> powermanage.v1.ListIdentityProvidersRequest
+	267, // 320: powermanage.v1.ControlService.UpdateIdentityProvider:input_type -> powermanage.v1.UpdateIdentityProviderRequest
+	269, // 321: powermanage.v1.ControlService.DeleteIdentityProvider:input_type -> powermanage.v1.DeleteIdentityProviderRequest
+	278, // 322: powermanage.v1.ControlService.ListIdentityLinks:input_type -> powermanage.v1.ListIdentityLinksRequest
+	280, // 323: powermanage.v1.ControlService.UnlinkIdentity:input_type -> powermanage.v1.UnlinkIdentityRequest
+	282, // 324: powermanage.v1.ControlService.EnableSCIM:input_type -> powermanage.v1.EnableSCIMRequest
+	284, // 325: powermanage.v1.ControlService.DisableSCIM:input_type -> powermanage.v1.DisableSCIMRequest
+	286, // 326: powermanage.v1.ControlService.RotateSCIMToken:input_type -> powermanage.v1.RotateSCIMTokenRequest
+	16,  // 327: powermanage.v1.ControlService.EraseJITUser:input_type -> powermanage.v1.EraseJITUserRequest
+	18,  // 328: powermanage.v1.ControlService.GetUser:input_type -> powermanage.v1.GetUserRequest
+	20,  // 329: powermanage.v1.ControlService.ListUsers:input_type -> powermanage.v1.ListUsersRequest
+	22,  // 330: powermanage.v1.ControlService.UpdateUserEmail:input_type -> powermanage.v1.UpdateUserEmailRequest
+	23,  // 331: powermanage.v1.ControlService.SetUserDisabled:input_type -> powermanage.v1.SetUserDisabledRequest
+	25,  // 332: powermanage.v1.ControlService.UpdateUserProfile:input_type -> powermanage.v1.UpdateUserProfileRequest
+	31,  // 333: powermanage.v1.ControlService.UpdateUserLinuxUsername:input_type -> powermanage.v1.UpdateUserLinuxUsernameRequest
+	26,  // 334: powermanage.v1.ControlService.AddUserSshKey:input_type -> powermanage.v1.AddUserSshKeyRequest
+	28,  // 335: powermanage.v1.ControlService.RemoveUserSshKey:input_type -> powermanage.v1.RemoveUserSshKeyRequest
+	30,  // 336: powermanage.v1.ControlService.UpdateUserSshSettings:input_type -> powermanage.v1.UpdateUserSshSettingsRequest
+	33,  // 337: powermanage.v1.ControlService.ListDevices:input_type -> powermanage.v1.ListDevicesRequest
+	35,  // 338: powermanage.v1.ControlService.GetDevice:input_type -> powermanage.v1.GetDeviceRequest
+	37,  // 339: powermanage.v1.ControlService.SetDeviceLabel:input_type -> powermanage.v1.SetDeviceLabelRequest
+	38,  // 340: powermanage.v1.ControlService.RemoveDeviceLabel:input_type -> powermanage.v1.RemoveDeviceLabelRequest
+	42,  // 341: powermanage.v1.ControlService.AssignDevice:input_type -> powermanage.v1.AssignDeviceRequest
+	44,  // 342: powermanage.v1.ControlService.UnassignDevice:input_type -> powermanage.v1.UnassignDeviceRequest
+	47,  // 343: powermanage.v1.ControlService.ListDeviceAssignees:input_type -> powermanage.v1.ListDeviceAssigneesRequest
+	49,  // 344: powermanage.v1.ControlService.SetDeviceSyncInterval:input_type -> powermanage.v1.SetDeviceSyncIntervalRequest
+	50,  // 345: powermanage.v1.ControlService.SetDeviceInventoryInterval:input_type -> powermanage.v1.SetDeviceInventoryIntervalRequest
+	40,  // 346: powermanage.v1.ControlService.DeleteDevice:input_type -> powermanage.v1.DeleteDeviceRequest
+	52,  // 347: powermanage.v1.ControlService.CreateToken:input_type -> powermanage.v1.CreateTokenRequest
+	56,  // 348: powermanage.v1.ControlService.GetToken:input_type -> powermanage.v1.GetTokenRequest
+	54,  // 349: powermanage.v1.ControlService.ListTokens:input_type -> powermanage.v1.ListTokensRequest
+	58,  // 350: powermanage.v1.ControlService.RenameToken:input_type -> powermanage.v1.RenameTokenRequest
+	59,  // 351: powermanage.v1.ControlService.SetTokenDisabled:input_type -> powermanage.v1.SetTokenDisabledRequest
+	61,  // 352: powermanage.v1.ControlService.DeleteToken:input_type -> powermanage.v1.DeleteTokenRequest
+	64,  // 353: powermanage.v1.ControlService.CreateAction:input_type -> powermanage.v1.CreateActionRequest
+	66,  // 354: powermanage.v1.ControlService.GetAction:input_type -> powermanage.v1.GetActionRequest
+	68,  // 355: powermanage.v1.ControlService.ListActions:input_type -> powermanage.v1.ListActionsRequest
+	70,  // 356: powermanage.v1.ControlService.RenameAction:input_type -> powermanage.v1.RenameActionRequest
+	71,  // 357: powermanage.v1.ControlService.UpdateActionDescription:input_type -> powermanage.v1.UpdateActionDescriptionRequest
+	72,  // 358: powermanage.v1.ControlService.UpdateActionParams:input_type -> powermanage.v1.UpdateActionParamsRequest
+	74,  // 359: powermanage.v1.ControlService.DeleteAction:input_type -> powermanage.v1.DeleteActionRequest
+	78,  // 360: powermanage.v1.ControlService.CreateActionSet:input_type -> powermanage.v1.CreateActionSetRequest
+	80,  // 361: powermanage.v1.ControlService.GetActionSet:input_type -> powermanage.v1.GetActionSetRequest
+	82,  // 362: powermanage.v1.ControlService.ListActionSets:input_type -> powermanage.v1.ListActionSetsRequest
+	84,  // 363: powermanage.v1.ControlService.RenameActionSet:input_type -> powermanage.v1.RenameActionSetRequest
+	85,  // 364: powermanage.v1.ControlService.UpdateActionSetDescription:input_type -> powermanage.v1.UpdateActionSetDescriptionRequest
+	86,  // 365: powermanage.v1.ControlService.UpdateActionSetSchedule:input_type -> powermanage.v1.UpdateActionSetScheduleRequest
+	88,  // 366: powermanage.v1.ControlService.DeleteActionSet:input_type -> powermanage.v1.DeleteActionSetRequest
+	90,  // 367: powermanage.v1.ControlService.AddActionToSet:input_type -> powermanage.v1.AddActionToSetRequest
+	92,  // 368: powermanage.v1.ControlService.RemoveActionFromSet:input_type -> powermanage.v1.RemoveActionFromSetRequest
+	94,  // 369: powermanage.v1.ControlService.ReorderActionInSet:input_type -> powermanage.v1.ReorderActionInSetRequest
+	98,  // 370: powermanage.v1.ControlService.CreateDefinition:input_type -> powermanage.v1.CreateDefinitionRequest
+	100, // 371: powermanage.v1.ControlService.GetDefinition:input_type -> powermanage.v1.GetDefinitionRequest
+	102, // 372: powermanage.v1.ControlService.ListDefinitions:input_type -> powermanage.v1.ListDefinitionsRequest
+	104, // 373: powermanage.v1.ControlService.RenameDefinition:input_type -> powermanage.v1.RenameDefinitionRequest
+	105, // 374: powermanage.v1.ControlService.UpdateDefinitionDescription:input_type -> powermanage.v1.UpdateDefinitionDescriptionRequest
+	106, // 375: powermanage.v1.ControlService.UpdateDefinitionSchedule:input_type -> powermanage.v1.UpdateDefinitionScheduleRequest
+	108, // 376: powermanage.v1.ControlService.DeleteDefinition:input_type -> powermanage.v1.DeleteDefinitionRequest
+	110, // 377: powermanage.v1.ControlService.AddActionSetToDefinition:input_type -> powermanage.v1.AddActionSetToDefinitionRequest
+	112, // 378: powermanage.v1.ControlService.RemoveActionSetFromDefinition:input_type -> powermanage.v1.RemoveActionSetFromDefinitionRequest
+	114, // 379: powermanage.v1.ControlService.ReorderActionSetInDefinition:input_type -> powermanage.v1.ReorderActionSetInDefinitionRequest
+	117, // 380: powermanage.v1.ControlService.CreateDeviceGroup:input_type -> powermanage.v1.CreateDeviceGroupRequest
+	119, // 381: powermanage.v1.ControlService.GetDeviceGroup:input_type -> powermanage.v1.GetDeviceGroupRequest
+	122, // 382: powermanage.v1.ControlService.ListDeviceGroups:input_type -> powermanage.v1.ListDeviceGroupsRequest
+	124, // 383: powermanage.v1.ControlService.ListDeviceGroupsForDevice:input_type -> powermanage.v1.ListDeviceGroupsForDeviceRequest
+	126, // 384: powermanage.v1.ControlService.RenameDeviceGroup:input_type -> powermanage.v1.RenameDeviceGroupRequest
+	127, // 385: powermanage.v1.ControlService.UpdateDeviceGroupDescription:input_type -> powermanage.v1.UpdateDeviceGroupDescriptionRequest
+	135, // 386: powermanage.v1.ControlService.UpdateDeviceGroupQuery:input_type -> powermanage.v1.UpdateDeviceGroupQueryRequest
+	129, // 387: powermanage.v1.ControlService.DeleteDeviceGroup:input_type -> powermanage.v1.DeleteDeviceGroupRequest
+	131, // 388: powermanage.v1.ControlService.AddDeviceToGroup:input_type -> powermanage.v1.AddDeviceToGroupRequest
+	133, // 389: powermanage.v1.ControlService.RemoveDeviceFromGroup:input_type -> powermanage.v1.RemoveDeviceFromGroupRequest
+	137, // 390: powermanage.v1.ControlService.ValidateDynamicQuery:input_type -> powermanage.v1.ValidateDynamicQueryRequest
+	139, // 391: powermanage.v1.ControlService.EvaluateDynamicGroup:input_type -> powermanage.v1.EvaluateDynamicGroupRequest
+	141, // 392: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> powermanage.v1.SetDeviceGroupSyncIntervalRequest
+	142, // 393: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:input_type -> powermanage.v1.SetDeviceGroupInventoryIntervalRequest
+	143, // 394: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:input_type -> powermanage.v1.SetDeviceGroupMaintenanceWindowRequest
+	145, // 395: powermanage.v1.ControlService.CreateAssignment:input_type -> powermanage.v1.CreateAssignmentRequest
+	147, // 396: powermanage.v1.ControlService.DeleteAssignment:input_type -> powermanage.v1.DeleteAssignmentRequest
+	149, // 397: powermanage.v1.ControlService.ListAssignments:input_type -> powermanage.v1.ListAssignmentsRequest
+	157, // 398: powermanage.v1.ControlService.GetDeviceAssignments:input_type -> powermanage.v1.GetDeviceAssignmentsRequest
+	159, // 399: powermanage.v1.ControlService.GetUserAssignments:input_type -> powermanage.v1.GetUserAssignmentsRequest
+	152, // 400: powermanage.v1.ControlService.SetUserSelection:input_type -> powermanage.v1.SetUserSelectionRequest
+	154, // 401: powermanage.v1.ControlService.ListAvailableActions:input_type -> powermanage.v1.ListAvailableActionsRequest
+	162, // 402: powermanage.v1.ControlService.DispatchAction:input_type -> powermanage.v1.DispatchActionRequest
+	164, // 403: powermanage.v1.ControlService.DispatchToMultiple:input_type -> powermanage.v1.DispatchToMultipleRequest
+	166, // 404: powermanage.v1.ControlService.DispatchAssignedActions:input_type -> powermanage.v1.DispatchAssignedActionsRequest
+	168, // 405: powermanage.v1.ControlService.DispatchActionSet:input_type -> powermanage.v1.DispatchActionSetRequest
+	170, // 406: powermanage.v1.ControlService.DispatchDefinition:input_type -> powermanage.v1.DispatchDefinitionRequest
+	172, // 407: powermanage.v1.ControlService.DispatchToGroup:input_type -> powermanage.v1.DispatchToGroupRequest
+	178, // 408: powermanage.v1.ControlService.DispatchInstantAction:input_type -> powermanage.v1.DispatchInstantActionRequest
+	180, // 409: powermanage.v1.ControlService.CancelExecution:input_type -> powermanage.v1.CancelExecutionRequest
+	174, // 410: powermanage.v1.ControlService.GetExecution:input_type -> powermanage.v1.GetExecutionRequest
+	176, // 411: powermanage.v1.ControlService.ListExecutions:input_type -> powermanage.v1.ListExecutionsRequest
+	183, // 412: powermanage.v1.ControlService.ListAuditEvents:input_type -> powermanage.v1.ListAuditEventsRequest
+	185, // 413: powermanage.v1.ControlService.ExportAuditEvents:input_type -> powermanage.v1.ExportAuditEventsRequest
+	188, // 414: powermanage.v1.ControlService.ListLpsPasswords:input_type -> powermanage.v1.ListLpsPasswordsRequest
+	190, // 415: powermanage.v1.ControlService.RevealLpsPassword:input_type -> powermanage.v1.RevealLpsPasswordRequest
+	193, // 416: powermanage.v1.ControlService.ListLuksKeys:input_type -> powermanage.v1.ListLuksKeysRequest
+	195, // 417: powermanage.v1.ControlService.RevealLuksKey:input_type -> powermanage.v1.RevealLuksKeyRequest
+	197, // 418: powermanage.v1.ControlService.CreateLuksToken:input_type -> powermanage.v1.CreateLuksTokenRequest
+	199, // 419: powermanage.v1.ControlService.RevokeLuksDeviceKey:input_type -> powermanage.v1.RevokeLuksDeviceKeyRequest
+	201, // 420: powermanage.v1.ControlService.DispatchOSQuery:input_type -> powermanage.v1.DispatchOSQueryRequest
+	203, // 421: powermanage.v1.ControlService.GetOSQueryResult:input_type -> powermanage.v1.GetOSQueryResultRequest
+	205, // 422: powermanage.v1.ControlService.GetDeviceInventory:input_type -> powermanage.v1.GetDeviceInventoryRequest
+	208, // 423: powermanage.v1.ControlService.RefreshDeviceInventory:input_type -> powermanage.v1.RefreshDeviceInventoryRequest
+	210, // 424: powermanage.v1.ControlService.QueryDeviceLogs:input_type -> powermanage.v1.QueryDeviceLogsRequest
+	212, // 425: powermanage.v1.ControlService.GetDeviceLogResult:input_type -> powermanage.v1.GetDeviceLogResultRequest
+	214, // 426: powermanage.v1.ControlService.CreateRole:input_type -> powermanage.v1.CreateRoleRequest
+	216, // 427: powermanage.v1.ControlService.GetRole:input_type -> powermanage.v1.GetRoleRequest
+	218, // 428: powermanage.v1.ControlService.ListRoles:input_type -> powermanage.v1.ListRolesRequest
+	220, // 429: powermanage.v1.ControlService.UpdateRole:input_type -> powermanage.v1.UpdateRoleRequest
+	222, // 430: powermanage.v1.ControlService.DeleteRole:input_type -> powermanage.v1.DeleteRoleRequest
+	224, // 431: powermanage.v1.ControlService.AssignRoleToUser:input_type -> powermanage.v1.AssignRoleToUserRequest
+	226, // 432: powermanage.v1.ControlService.RevokeRoleFromUser:input_type -> powermanage.v1.RevokeRoleFromUserRequest
+	228, // 433: powermanage.v1.ControlService.ListPermissions:input_type -> powermanage.v1.ListPermissionsRequest
+	232, // 434: powermanage.v1.ControlService.CreateUserGroup:input_type -> powermanage.v1.CreateUserGroupRequest
+	234, // 435: powermanage.v1.ControlService.GetUserGroup:input_type -> powermanage.v1.GetUserGroupRequest
+	236, // 436: powermanage.v1.ControlService.ListUserGroups:input_type -> powermanage.v1.ListUserGroupsRequest
+	238, // 437: powermanage.v1.ControlService.UpdateUserGroup:input_type -> powermanage.v1.UpdateUserGroupRequest
+	240, // 438: powermanage.v1.ControlService.DeleteUserGroup:input_type -> powermanage.v1.DeleteUserGroupRequest
+	242, // 439: powermanage.v1.ControlService.AddUserToGroup:input_type -> powermanage.v1.AddUserToGroupRequest
+	244, // 440: powermanage.v1.ControlService.RemoveUserFromGroup:input_type -> powermanage.v1.RemoveUserFromGroupRequest
+	246, // 441: powermanage.v1.ControlService.AssignRoleToUserGroup:input_type -> powermanage.v1.AssignRoleToUserGroupRequest
+	248, // 442: powermanage.v1.ControlService.RevokeRoleFromUserGroup:input_type -> powermanage.v1.RevokeRoleFromUserGroupRequest
+	250, // 443: powermanage.v1.ControlService.ListUserGroupsForUser:input_type -> powermanage.v1.ListUserGroupsForUserRequest
+	252, // 444: powermanage.v1.ControlService.UpdateUserGroupQuery:input_type -> powermanage.v1.UpdateUserGroupQueryRequest
+	254, // 445: powermanage.v1.ControlService.ValidateUserGroupQuery:input_type -> powermanage.v1.ValidateUserGroupQueryRequest
+	256, // 446: powermanage.v1.ControlService.EvaluateDynamicUserGroup:input_type -> powermanage.v1.EvaluateDynamicUserGroupRequest
+	258, // 447: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:input_type -> powermanage.v1.SetUserGroupMaintenanceWindowRequest
+	288, // 448: powermanage.v1.ControlService.GetDeviceCompliance:input_type -> powermanage.v1.GetDeviceComplianceRequest
+	293, // 449: powermanage.v1.ControlService.CreateCompliancePolicy:input_type -> powermanage.v1.CreateCompliancePolicyRequest
+	295, // 450: powermanage.v1.ControlService.GetCompliancePolicy:input_type -> powermanage.v1.GetCompliancePolicyRequest
+	297, // 451: powermanage.v1.ControlService.ListCompliancePolicies:input_type -> powermanage.v1.ListCompliancePoliciesRequest
+	299, // 452: powermanage.v1.ControlService.RenameCompliancePolicy:input_type -> powermanage.v1.RenameCompliancePolicyRequest
+	300, // 453: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:input_type -> powermanage.v1.UpdateCompliancePolicyDescriptionRequest
+	302, // 454: powermanage.v1.ControlService.DeleteCompliancePolicy:input_type -> powermanage.v1.DeleteCompliancePolicyRequest
+	304, // 455: powermanage.v1.ControlService.AddCompliancePolicyRule:input_type -> powermanage.v1.AddCompliancePolicyRuleRequest
+	306, // 456: powermanage.v1.ControlService.RemoveCompliancePolicyRule:input_type -> powermanage.v1.RemoveCompliancePolicyRuleRequest
+	308, // 457: powermanage.v1.ControlService.UpdateCompliancePolicyRule:input_type -> powermanage.v1.UpdateCompliancePolicyRuleRequest
+	310, // 458: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:input_type -> powermanage.v1.GetDeviceCompliancePolicyStatusRequest
+	315, // 459: powermanage.v1.ControlService.Search:input_type -> powermanage.v1.SearchRequest
+	318, // 460: powermanage.v1.ControlService.RebuildSearchIndex:input_type -> powermanage.v1.RebuildSearchIndexRequest
+	321, // 461: powermanage.v1.ControlService.GetServerSettings:input_type -> powermanage.v1.GetServerSettingsRequest
+	323, // 462: powermanage.v1.ControlService.UpdateServerSettings:input_type -> powermanage.v1.UpdateServerSettingsRequest
+	325, // 463: powermanage.v1.ControlService.SetUserProvisioningEnabled:input_type -> powermanage.v1.SetUserProvisioningEnabledRequest
+	326, // 464: powermanage.v1.ControlService.StartTerminal:input_type -> powermanage.v1.StartTerminalRequest
+	328, // 465: powermanage.v1.ControlService.StopTerminal:input_type -> powermanage.v1.StopTerminalRequest
+	331, // 466: powermanage.v1.ControlService.ListActiveTerminalSessions:input_type -> powermanage.v1.ListActiveTerminalSessionsRequest
+	333, // 467: powermanage.v1.ControlService.TerminateTerminalSession:input_type -> powermanage.v1.TerminateTerminalSessionRequest
+	1,   // 468: powermanage.v1.ControlService.Register:output_type -> powermanage.v1.RegisterResponse
+	3,   // 469: powermanage.v1.ControlService.RenewCertificate:output_type -> powermanage.v1.RenewCertificateResponse
+	5,   // 470: powermanage.v1.ControlService.RefreshToken:output_type -> powermanage.v1.RefreshTokenResponse
+	7,   // 471: powermanage.v1.ControlService.Logout:output_type -> powermanage.v1.LogoutResponse
+	9,   // 472: powermanage.v1.ControlService.GetCurrentUser:output_type -> powermanage.v1.GetCurrentUserResponse
+	273, // 473: powermanage.v1.ControlService.ListAuthMethods:output_type -> powermanage.v1.ListAuthMethodsResponse
+	275, // 474: powermanage.v1.ControlService.GetSSOLoginURL:output_type -> powermanage.v1.GetSSOLoginURLResponse
+	277, // 475: powermanage.v1.ControlService.SSOCallback:output_type -> powermanage.v1.SSOCallbackResponse
+	262, // 476: powermanage.v1.ControlService.CreateIdentityProvider:output_type -> powermanage.v1.CreateIdentityProviderResponse
+	264, // 477: powermanage.v1.ControlService.GetIdentityProvider:output_type -> powermanage.v1.GetIdentityProviderResponse
+	266, // 478: powermanage.v1.ControlService.ListIdentityProviders:output_type -> powermanage.v1.ListIdentityProvidersResponse
+	268, // 479: powermanage.v1.ControlService.UpdateIdentityProvider:output_type -> powermanage.v1.UpdateIdentityProviderResponse
+	270, // 480: powermanage.v1.ControlService.DeleteIdentityProvider:output_type -> powermanage.v1.DeleteIdentityProviderResponse
+	279, // 481: powermanage.v1.ControlService.ListIdentityLinks:output_type -> powermanage.v1.ListIdentityLinksResponse
+	281, // 482: powermanage.v1.ControlService.UnlinkIdentity:output_type -> powermanage.v1.UnlinkIdentityResponse
+	283, // 483: powermanage.v1.ControlService.EnableSCIM:output_type -> powermanage.v1.EnableSCIMResponse
+	285, // 484: powermanage.v1.ControlService.DisableSCIM:output_type -> powermanage.v1.DisableSCIMResponse
+	287, // 485: powermanage.v1.ControlService.RotateSCIMToken:output_type -> powermanage.v1.RotateSCIMTokenResponse
+	17,  // 486: powermanage.v1.ControlService.EraseJITUser:output_type -> powermanage.v1.EraseJITUserResponse
+	19,  // 487: powermanage.v1.ControlService.GetUser:output_type -> powermanage.v1.GetUserResponse
+	21,  // 488: powermanage.v1.ControlService.ListUsers:output_type -> powermanage.v1.ListUsersResponse
+	24,  // 489: powermanage.v1.ControlService.UpdateUserEmail:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 490: powermanage.v1.ControlService.SetUserDisabled:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 491: powermanage.v1.ControlService.UpdateUserProfile:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 492: powermanage.v1.ControlService.UpdateUserLinuxUsername:output_type -> powermanage.v1.UpdateUserResponse
+	27,  // 493: powermanage.v1.ControlService.AddUserSshKey:output_type -> powermanage.v1.AddUserSshKeyResponse
+	29,  // 494: powermanage.v1.ControlService.RemoveUserSshKey:output_type -> powermanage.v1.RemoveUserSshKeyResponse
+	24,  // 495: powermanage.v1.ControlService.UpdateUserSshSettings:output_type -> powermanage.v1.UpdateUserResponse
+	34,  // 496: powermanage.v1.ControlService.ListDevices:output_type -> powermanage.v1.ListDevicesResponse
+	36,  // 497: powermanage.v1.ControlService.GetDevice:output_type -> powermanage.v1.GetDeviceResponse
+	39,  // 498: powermanage.v1.ControlService.SetDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
+	39,  // 499: powermanage.v1.ControlService.RemoveDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
+	43,  // 500: powermanage.v1.ControlService.AssignDevice:output_type -> powermanage.v1.AssignDeviceResponse
+	45,  // 501: powermanage.v1.ControlService.UnassignDevice:output_type -> powermanage.v1.UnassignDeviceResponse
+	48,  // 502: powermanage.v1.ControlService.ListDeviceAssignees:output_type -> powermanage.v1.ListDeviceAssigneesResponse
+	39,  // 503: powermanage.v1.ControlService.SetDeviceSyncInterval:output_type -> powermanage.v1.UpdateDeviceResponse
+	39,  // 504: powermanage.v1.ControlService.SetDeviceInventoryInterval:output_type -> powermanage.v1.UpdateDeviceResponse
+	41,  // 505: powermanage.v1.ControlService.DeleteDevice:output_type -> powermanage.v1.DeleteDeviceResponse
+	53,  // 506: powermanage.v1.ControlService.CreateToken:output_type -> powermanage.v1.CreateTokenResponse
+	57,  // 507: powermanage.v1.ControlService.GetToken:output_type -> powermanage.v1.GetTokenResponse
+	55,  // 508: powermanage.v1.ControlService.ListTokens:output_type -> powermanage.v1.ListTokensResponse
+	60,  // 509: powermanage.v1.ControlService.RenameToken:output_type -> powermanage.v1.UpdateTokenResponse
+	60,  // 510: powermanage.v1.ControlService.SetTokenDisabled:output_type -> powermanage.v1.UpdateTokenResponse
+	62,  // 511: powermanage.v1.ControlService.DeleteToken:output_type -> powermanage.v1.DeleteTokenResponse
+	65,  // 512: powermanage.v1.ControlService.CreateAction:output_type -> powermanage.v1.CreateActionResponse
+	67,  // 513: powermanage.v1.ControlService.GetAction:output_type -> powermanage.v1.GetActionResponse
+	69,  // 514: powermanage.v1.ControlService.ListActions:output_type -> powermanage.v1.ListActionsResponse
+	73,  // 515: powermanage.v1.ControlService.RenameAction:output_type -> powermanage.v1.UpdateActionResponse
+	73,  // 516: powermanage.v1.ControlService.UpdateActionDescription:output_type -> powermanage.v1.UpdateActionResponse
+	73,  // 517: powermanage.v1.ControlService.UpdateActionParams:output_type -> powermanage.v1.UpdateActionResponse
+	75,  // 518: powermanage.v1.ControlService.DeleteAction:output_type -> powermanage.v1.DeleteActionResponse
+	79,  // 519: powermanage.v1.ControlService.CreateActionSet:output_type -> powermanage.v1.CreateActionSetResponse
+	81,  // 520: powermanage.v1.ControlService.GetActionSet:output_type -> powermanage.v1.GetActionSetResponse
+	83,  // 521: powermanage.v1.ControlService.ListActionSets:output_type -> powermanage.v1.ListActionSetsResponse
+	87,  // 522: powermanage.v1.ControlService.RenameActionSet:output_type -> powermanage.v1.UpdateActionSetResponse
+	87,  // 523: powermanage.v1.ControlService.UpdateActionSetDescription:output_type -> powermanage.v1.UpdateActionSetResponse
+	87,  // 524: powermanage.v1.ControlService.UpdateActionSetSchedule:output_type -> powermanage.v1.UpdateActionSetResponse
+	89,  // 525: powermanage.v1.ControlService.DeleteActionSet:output_type -> powermanage.v1.DeleteActionSetResponse
+	91,  // 526: powermanage.v1.ControlService.AddActionToSet:output_type -> powermanage.v1.AddActionToSetResponse
+	93,  // 527: powermanage.v1.ControlService.RemoveActionFromSet:output_type -> powermanage.v1.RemoveActionFromSetResponse
+	95,  // 528: powermanage.v1.ControlService.ReorderActionInSet:output_type -> powermanage.v1.ReorderActionInSetResponse
+	99,  // 529: powermanage.v1.ControlService.CreateDefinition:output_type -> powermanage.v1.CreateDefinitionResponse
+	101, // 530: powermanage.v1.ControlService.GetDefinition:output_type -> powermanage.v1.GetDefinitionResponse
+	103, // 531: powermanage.v1.ControlService.ListDefinitions:output_type -> powermanage.v1.ListDefinitionsResponse
+	107, // 532: powermanage.v1.ControlService.RenameDefinition:output_type -> powermanage.v1.UpdateDefinitionResponse
+	107, // 533: powermanage.v1.ControlService.UpdateDefinitionDescription:output_type -> powermanage.v1.UpdateDefinitionResponse
+	107, // 534: powermanage.v1.ControlService.UpdateDefinitionSchedule:output_type -> powermanage.v1.UpdateDefinitionResponse
+	109, // 535: powermanage.v1.ControlService.DeleteDefinition:output_type -> powermanage.v1.DeleteDefinitionResponse
+	111, // 536: powermanage.v1.ControlService.AddActionSetToDefinition:output_type -> powermanage.v1.AddActionSetToDefinitionResponse
+	113, // 537: powermanage.v1.ControlService.RemoveActionSetFromDefinition:output_type -> powermanage.v1.RemoveActionSetFromDefinitionResponse
+	115, // 538: powermanage.v1.ControlService.ReorderActionSetInDefinition:output_type -> powermanage.v1.ReorderActionSetInDefinitionResponse
+	118, // 539: powermanage.v1.ControlService.CreateDeviceGroup:output_type -> powermanage.v1.CreateDeviceGroupResponse
+	120, // 540: powermanage.v1.ControlService.GetDeviceGroup:output_type -> powermanage.v1.GetDeviceGroupResponse
+	123, // 541: powermanage.v1.ControlService.ListDeviceGroups:output_type -> powermanage.v1.ListDeviceGroupsResponse
+	125, // 542: powermanage.v1.ControlService.ListDeviceGroupsForDevice:output_type -> powermanage.v1.ListDeviceGroupsForDeviceResponse
+	128, // 543: powermanage.v1.ControlService.RenameDeviceGroup:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	128, // 544: powermanage.v1.ControlService.UpdateDeviceGroupDescription:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	136, // 545: powermanage.v1.ControlService.UpdateDeviceGroupQuery:output_type -> powermanage.v1.UpdateDeviceGroupQueryResponse
+	130, // 546: powermanage.v1.ControlService.DeleteDeviceGroup:output_type -> powermanage.v1.DeleteDeviceGroupResponse
+	132, // 547: powermanage.v1.ControlService.AddDeviceToGroup:output_type -> powermanage.v1.AddDeviceToGroupResponse
+	134, // 548: powermanage.v1.ControlService.RemoveDeviceFromGroup:output_type -> powermanage.v1.RemoveDeviceFromGroupResponse
+	138, // 549: powermanage.v1.ControlService.ValidateDynamicQuery:output_type -> powermanage.v1.ValidateDynamicQueryResponse
+	140, // 550: powermanage.v1.ControlService.EvaluateDynamicGroup:output_type -> powermanage.v1.EvaluateDynamicGroupResponse
+	128, // 551: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	128, // 552: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	128, // 553: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	146, // 554: powermanage.v1.ControlService.CreateAssignment:output_type -> powermanage.v1.CreateAssignmentResponse
+	148, // 555: powermanage.v1.ControlService.DeleteAssignment:output_type -> powermanage.v1.DeleteAssignmentResponse
+	150, // 556: powermanage.v1.ControlService.ListAssignments:output_type -> powermanage.v1.ListAssignmentsResponse
+	158, // 557: powermanage.v1.ControlService.GetDeviceAssignments:output_type -> powermanage.v1.GetDeviceAssignmentsResponse
+	160, // 558: powermanage.v1.ControlService.GetUserAssignments:output_type -> powermanage.v1.GetUserAssignmentsResponse
+	153, // 559: powermanage.v1.ControlService.SetUserSelection:output_type -> powermanage.v1.SetUserSelectionResponse
+	156, // 560: powermanage.v1.ControlService.ListAvailableActions:output_type -> powermanage.v1.ListAvailableActionsResponse
+	163, // 561: powermanage.v1.ControlService.DispatchAction:output_type -> powermanage.v1.DispatchActionResponse
+	165, // 562: powermanage.v1.ControlService.DispatchToMultiple:output_type -> powermanage.v1.DispatchToMultipleResponse
+	167, // 563: powermanage.v1.ControlService.DispatchAssignedActions:output_type -> powermanage.v1.DispatchAssignedActionsResponse
+	169, // 564: powermanage.v1.ControlService.DispatchActionSet:output_type -> powermanage.v1.DispatchActionSetResponse
+	171, // 565: powermanage.v1.ControlService.DispatchDefinition:output_type -> powermanage.v1.DispatchDefinitionResponse
+	173, // 566: powermanage.v1.ControlService.DispatchToGroup:output_type -> powermanage.v1.DispatchToGroupResponse
+	179, // 567: powermanage.v1.ControlService.DispatchInstantAction:output_type -> powermanage.v1.DispatchInstantActionResponse
+	181, // 568: powermanage.v1.ControlService.CancelExecution:output_type -> powermanage.v1.CancelExecutionResponse
+	175, // 569: powermanage.v1.ControlService.GetExecution:output_type -> powermanage.v1.GetExecutionResponse
+	177, // 570: powermanage.v1.ControlService.ListExecutions:output_type -> powermanage.v1.ListExecutionsResponse
+	184, // 571: powermanage.v1.ControlService.ListAuditEvents:output_type -> powermanage.v1.ListAuditEventsResponse
+	186, // 572: powermanage.v1.ControlService.ExportAuditEvents:output_type -> powermanage.v1.ExportAuditEventsResponse
+	189, // 573: powermanage.v1.ControlService.ListLpsPasswords:output_type -> powermanage.v1.ListLpsPasswordsResponse
+	191, // 574: powermanage.v1.ControlService.RevealLpsPassword:output_type -> powermanage.v1.RevealLpsPasswordResponse
+	194, // 575: powermanage.v1.ControlService.ListLuksKeys:output_type -> powermanage.v1.ListLuksKeysResponse
+	196, // 576: powermanage.v1.ControlService.RevealLuksKey:output_type -> powermanage.v1.RevealLuksKeyResponse
+	198, // 577: powermanage.v1.ControlService.CreateLuksToken:output_type -> powermanage.v1.CreateLuksTokenResponse
+	200, // 578: powermanage.v1.ControlService.RevokeLuksDeviceKey:output_type -> powermanage.v1.RevokeLuksDeviceKeyResponse
+	202, // 579: powermanage.v1.ControlService.DispatchOSQuery:output_type -> powermanage.v1.DispatchOSQueryResponse
+	204, // 580: powermanage.v1.ControlService.GetOSQueryResult:output_type -> powermanage.v1.GetOSQueryResultResponse
+	207, // 581: powermanage.v1.ControlService.GetDeviceInventory:output_type -> powermanage.v1.GetDeviceInventoryResponse
+	209, // 582: powermanage.v1.ControlService.RefreshDeviceInventory:output_type -> powermanage.v1.RefreshDeviceInventoryResponse
+	211, // 583: powermanage.v1.ControlService.QueryDeviceLogs:output_type -> powermanage.v1.QueryDeviceLogsResponse
+	213, // 584: powermanage.v1.ControlService.GetDeviceLogResult:output_type -> powermanage.v1.GetDeviceLogResultResponse
+	215, // 585: powermanage.v1.ControlService.CreateRole:output_type -> powermanage.v1.CreateRoleResponse
+	217, // 586: powermanage.v1.ControlService.GetRole:output_type -> powermanage.v1.GetRoleResponse
+	219, // 587: powermanage.v1.ControlService.ListRoles:output_type -> powermanage.v1.ListRolesResponse
+	221, // 588: powermanage.v1.ControlService.UpdateRole:output_type -> powermanage.v1.UpdateRoleResponse
+	223, // 589: powermanage.v1.ControlService.DeleteRole:output_type -> powermanage.v1.DeleteRoleResponse
+	225, // 590: powermanage.v1.ControlService.AssignRoleToUser:output_type -> powermanage.v1.AssignRoleToUserResponse
+	227, // 591: powermanage.v1.ControlService.RevokeRoleFromUser:output_type -> powermanage.v1.RevokeRoleFromUserResponse
+	229, // 592: powermanage.v1.ControlService.ListPermissions:output_type -> powermanage.v1.ListPermissionsResponse
+	233, // 593: powermanage.v1.ControlService.CreateUserGroup:output_type -> powermanage.v1.CreateUserGroupResponse
+	235, // 594: powermanage.v1.ControlService.GetUserGroup:output_type -> powermanage.v1.GetUserGroupResponse
+	237, // 595: powermanage.v1.ControlService.ListUserGroups:output_type -> powermanage.v1.ListUserGroupsResponse
+	239, // 596: powermanage.v1.ControlService.UpdateUserGroup:output_type -> powermanage.v1.UpdateUserGroupResponse
+	241, // 597: powermanage.v1.ControlService.DeleteUserGroup:output_type -> powermanage.v1.DeleteUserGroupResponse
+	243, // 598: powermanage.v1.ControlService.AddUserToGroup:output_type -> powermanage.v1.AddUserToGroupResponse
+	245, // 599: powermanage.v1.ControlService.RemoveUserFromGroup:output_type -> powermanage.v1.RemoveUserFromGroupResponse
+	247, // 600: powermanage.v1.ControlService.AssignRoleToUserGroup:output_type -> powermanage.v1.AssignRoleToUserGroupResponse
+	249, // 601: powermanage.v1.ControlService.RevokeRoleFromUserGroup:output_type -> powermanage.v1.RevokeRoleFromUserGroupResponse
+	251, // 602: powermanage.v1.ControlService.ListUserGroupsForUser:output_type -> powermanage.v1.ListUserGroupsForUserResponse
+	253, // 603: powermanage.v1.ControlService.UpdateUserGroupQuery:output_type -> powermanage.v1.UpdateUserGroupQueryResponse
+	255, // 604: powermanage.v1.ControlService.ValidateUserGroupQuery:output_type -> powermanage.v1.ValidateUserGroupQueryResponse
+	257, // 605: powermanage.v1.ControlService.EvaluateDynamicUserGroup:output_type -> powermanage.v1.EvaluateDynamicUserGroupResponse
+	239, // 606: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateUserGroupResponse
+	289, // 607: powermanage.v1.ControlService.GetDeviceCompliance:output_type -> powermanage.v1.GetDeviceComplianceResponse
+	294, // 608: powermanage.v1.ControlService.CreateCompliancePolicy:output_type -> powermanage.v1.CreateCompliancePolicyResponse
+	296, // 609: powermanage.v1.ControlService.GetCompliancePolicy:output_type -> powermanage.v1.GetCompliancePolicyResponse
+	298, // 610: powermanage.v1.ControlService.ListCompliancePolicies:output_type -> powermanage.v1.ListCompliancePoliciesResponse
+	301, // 611: powermanage.v1.ControlService.RenameCompliancePolicy:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
+	301, // 612: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
+	303, // 613: powermanage.v1.ControlService.DeleteCompliancePolicy:output_type -> powermanage.v1.DeleteCompliancePolicyResponse
+	305, // 614: powermanage.v1.ControlService.AddCompliancePolicyRule:output_type -> powermanage.v1.AddCompliancePolicyRuleResponse
+	307, // 615: powermanage.v1.ControlService.RemoveCompliancePolicyRule:output_type -> powermanage.v1.RemoveCompliancePolicyRuleResponse
+	309, // 616: powermanage.v1.ControlService.UpdateCompliancePolicyRule:output_type -> powermanage.v1.UpdateCompliancePolicyRuleResponse
+	311, // 617: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:output_type -> powermanage.v1.GetDeviceCompliancePolicyStatusResponse
+	317, // 618: powermanage.v1.ControlService.Search:output_type -> powermanage.v1.SearchResponse
+	319, // 619: powermanage.v1.ControlService.RebuildSearchIndex:output_type -> powermanage.v1.RebuildSearchIndexResponse
+	322, // 620: powermanage.v1.ControlService.GetServerSettings:output_type -> powermanage.v1.GetServerSettingsResponse
+	324, // 621: powermanage.v1.ControlService.UpdateServerSettings:output_type -> powermanage.v1.UpdateServerSettingsResponse
+	24,  // 622: powermanage.v1.ControlService.SetUserProvisioningEnabled:output_type -> powermanage.v1.UpdateUserResponse
+	327, // 623: powermanage.v1.ControlService.StartTerminal:output_type -> powermanage.v1.StartTerminalResponse
+	329, // 624: powermanage.v1.ControlService.StopTerminal:output_type -> powermanage.v1.StopTerminalResponse
+	332, // 625: powermanage.v1.ControlService.ListActiveTerminalSessions:output_type -> powermanage.v1.ListActiveTerminalSessionsResponse
+	334, // 626: powermanage.v1.ControlService.TerminateTerminalSession:output_type -> powermanage.v1.TerminateTerminalSessionResponse
+	468, // [468:627] is the sub-list for method output_type
+	309, // [309:468] is the sub-list for method input_type
+	309, // [309:309] is the sub-list for extension type_name
+	309, // [309:309] is the sub-list for extension extendee
+	0,   // [0:309] is the sub-list for field type_name
 }
 
 func init() { file_powermanage_v1_control_proto_init() }
@@ -23648,13 +24126,15 @@ func file_powermanage_v1_control_proto_init() {
 		(*DispatchToGroupRequest_DefinitionId)(nil),
 		(*DispatchToGroupRequest_InlineAction)(nil),
 	}
+	file_powermanage_v1_control_proto_msgTypes[335].OneofWrappers = []any{}
+	file_powermanage_v1_control_proto_msgTypes[337].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_control_proto_rawDesc), len(file_powermanage_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   342,
+			NumMessages:   346,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
