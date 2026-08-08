@@ -32,7 +32,7 @@ ok, err := m.VerifyPassphrase(ctx, "/dev/sda2", existing) // existing is an exec
 vol, err := m.DetectVolume(ctx)                            // the system's LUKS volume
 ```
 
-<!-- docref: begin src=sys/encryption/luks.go#luks.VerifyPassphrase:55af258e -->
+<!-- docref: begin src=sys/encryption/luks.go#luks.VerifyPassphrase:1a83767d -->
 `VerifyPassphrase` is a read-only probe: a wrong passphrase returns
 `(false, nil)`, not an error, so testing a guess never looks like a failure.
 <!-- docref: end -->
@@ -56,14 +56,14 @@ Runner before returning a Manager.
 The key-slot operations take their key material as `exec.Secret`, so a passphrase
 is never rendered into a log or a panic:
 
-<!-- docref: begin src=sys/encryption/luks.go#luks.AddKey:ba80fabe -->
+<!-- docref: begin src=sys/encryption/luks.go#luks.AddKey:d57720e5 -->
 `AddKey` rejects empty key material up front (`ErrEmptyKeyMaterial`) — both an
 empty new key (which would create an empty-passphrase unlock slot) and an empty
 authenticating passphrase — before `cryptsetup` is ever run.
 <!-- docref: end -->
 
 {% callout type="warning" title="Key-slot operations are destructive" %}
-<!-- docref: begin src=sys/encryption/luks.go#luks.KillSlot:8e6852ce,sys/encryption/luks.go#luks.RemoveKey:b9040d71 -->
+<!-- docref: begin src=sys/encryption/luks.go#luks.KillSlot:d60b781e,sys/encryption/luks.go#luks.RemoveKey:ca91f591 -->
 `KillSlot` erases a specific key slot, authenticating with an existing
 passphrase; `RemoveKey` removes the slot matching a passphrase.
 Removing the last usable key makes the volume unopenable — the SDK validates

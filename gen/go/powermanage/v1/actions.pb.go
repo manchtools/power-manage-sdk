@@ -2742,9 +2742,9 @@ func (x *LpsParams) GetGracePeriodHours() int32 {
 // passphrase, and can enroll a TPM or user passphrase in the device-bound slot.
 type EncryptionParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Pre-shared key for initial ownership (only needed for first run)
-	// @gotags: validate:"required,min=1,max=256"
-	PresharedKey string `protobuf:"bytes,1,opt,name=preshared_key,json=presharedKey,proto3" json:"preshared_key,omitempty" validate:"required,min=1,max=256"`
+	// Pre-shared key for initial ownership, sealed by control to this agent.
+	// @gotags: validate:"required"
+	PresharedKey *SealedValue `protobuf:"bytes,1,opt,name=preshared_key,json=presharedKey,proto3" json:"preshared_key,omitempty" validate:"required"`
 	// Days between scheduled passphrase rotations (1-365)
 	// @gotags: validate:"required,gte=1,lte=365"
 	RotationIntervalDays int32 `protobuf:"varint,2,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty" validate:"required,gte=1,lte=365"`
@@ -2794,11 +2794,11 @@ func (*EncryptionParams) Descriptor() ([]byte, []int) {
 	return file_powermanage_v1_actions_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *EncryptionParams) GetPresharedKey() string {
+func (x *EncryptionParams) GetPresharedKey() *SealedValue {
 	if x != nil {
 		return x.PresharedKey
 	}
-	return ""
+	return nil
 }
 
 func (x *EncryptionParams) GetRotationIntervalDays() int32 {
@@ -2847,16 +2847,17 @@ type WifiParams struct {
 	// Authentication type
 	// @gotags: validate:"required,ne=0"
 	AuthType WifiAuthType `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=powermanage.v1.WifiAuthType" json:"auth_type,omitempty" validate:"required,ne=0"`
-	// PSK authentication (WPA2/WPA3 Personal)
-	// @gotags: validate:"omitempty,max=63"
-	Psk string `protobuf:"bytes,3,opt,name=psk,proto3" json:"psk,omitempty" validate:"omitempty,max=63"`
+	// PSK authentication (WPA2/WPA3 Personal), sealed by control to this agent.
+	// @gotags: validate:"omitempty"
+	Psk *SealedValue `protobuf:"bytes,3,opt,name=psk,proto3" json:"psk,omitempty" validate:"omitempty"`
 	// EAP-TLS authentication (802.1X with client certificate)
 	// @gotags: validate:"omitempty"
 	CaCert string `protobuf:"bytes,4,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"omitempty"` // CA certificate (PEM)
 	// @gotags: validate:"omitempty"
 	ClientCert string `protobuf:"bytes,5,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty" validate:"omitempty"` // Client certificate (PEM)
+	// Client private key (PEM), sealed by control to this agent.
 	// @gotags: validate:"omitempty"
-	ClientKey string `protobuf:"bytes,6,opt,name=client_key,json=clientKey,proto3" json:"client_key,omitempty" validate:"omitempty"` // Client private key (PEM)
+	ClientKey *SealedValue `protobuf:"bytes,6,opt,name=client_key,json=clientKey,proto3" json:"client_key,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty,max=254"
 	Identity string `protobuf:"bytes,7,opt,name=identity,proto3" json:"identity,omitempty" validate:"omitempty,max=254"` // EAP identity (e.g., user@corp.com)
 	// Connection settings
@@ -2915,11 +2916,11 @@ func (x *WifiParams) GetAuthType() WifiAuthType {
 	return WifiAuthType_WIFI_AUTH_TYPE_UNSPECIFIED
 }
 
-func (x *WifiParams) GetPsk() string {
+func (x *WifiParams) GetPsk() *SealedValue {
 	if x != nil {
 		return x.Psk
 	}
-	return ""
+	return nil
 }
 
 func (x *WifiParams) GetCaCert() string {
@@ -2936,11 +2937,11 @@ func (x *WifiParams) GetClientCert() string {
 	return ""
 }
 
-func (x *WifiParams) GetClientKey() string {
+func (x *WifiParams) GetClientKey() *SealedValue {
 	if x != nil {
 		return x.ClientKey
 	}
-	return ""
+	return nil
 }
 
 func (x *WifiParams) GetIdentity() string {
@@ -3485,24 +3486,24 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"complexity\x18\x03 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\n" +
 	"complexity\x124\n" +
 	"\x16rotation_interval_days\x18\x04 \x01(\x05R\x14rotationIntervalDays\x12,\n" +
-	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\x8d\x03\n" +
-	"\x10EncryptionParams\x12#\n" +
-	"\rpreshared_key\x18\x01 \x01(\tR\fpresharedKey\x124\n" +
+	"\x12grace_period_hours\x18\x05 \x01(\x05R\x10gracePeriodHours\"\xaf\x03\n" +
+	"\x10EncryptionParams\x12E\n" +
+	"\rpreshared_key\x18\x01 \x01(\v2\x1b.powermanage.v1.SealedValueB\x03\x80\x01\x01R\fpresharedKey\x124\n" +
 	"\x16rotation_interval_days\x18\x02 \x01(\x05R\x14rotationIntervalDays\x12\x1b\n" +
 	"\tmin_words\x18\x03 \x01(\x05R\bminWords\x12_\n" +
 	"\x15device_bound_key_type\x18\x04 \x01(\x0e2,.powermanage.v1.EncryptionDeviceBoundKeyTypeR\x12deviceBoundKeyType\x12;\n" +
 	"\x1auser_passphrase_min_length\x18\x05 \x01(\x05R\x17userPassphraseMinLength\x12c\n" +
-	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xb9\x02\n" +
+	"\x1auser_passphrase_complexity\x18\x06 \x01(\x0e2%.powermanage.v1.LpsPasswordComplexityR\x18userPassphraseComplexity\"\xfd\x02\n" +
 	"\n" +
 	"WifiParams\x12\x12\n" +
 	"\x04ssid\x18\x01 \x01(\tR\x04ssid\x129\n" +
-	"\tauth_type\x18\x02 \x01(\x0e2\x1c.powermanage.v1.WifiAuthTypeR\bauthType\x12\x10\n" +
-	"\x03psk\x18\x03 \x01(\tR\x03psk\x12\x17\n" +
+	"\tauth_type\x18\x02 \x01(\x0e2\x1c.powermanage.v1.WifiAuthTypeR\bauthType\x122\n" +
+	"\x03psk\x18\x03 \x01(\v2\x1b.powermanage.v1.SealedValueB\x03\x80\x01\x01R\x03psk\x12\x17\n" +
 	"\aca_cert\x18\x04 \x01(\tR\x06caCert\x12\x1f\n" +
 	"\vclient_cert\x18\x05 \x01(\tR\n" +
-	"clientCert\x12\x1d\n" +
+	"clientCert\x12?\n" +
 	"\n" +
-	"client_key\x18\x06 \x01(\tR\tclientKey\x12\x1a\n" +
+	"client_key\x18\x06 \x01(\v2\x1b.powermanage.v1.SealedValueB\x03\x80\x01\x01R\tclientKey\x12\x1a\n" +
 	"\bidentity\x18\a \x01(\tR\bidentity\x12!\n" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
@@ -3644,9 +3645,10 @@ var file_powermanage_v1_actions_proto_goTypes = []any{
 	nil,                               // 35: powermanage.v1.ActionResult.MetadataEntry
 	(*ActionId)(nil),                  // 36: powermanage.v1.ActionId
 	(DesiredState)(0),                 // 37: powermanage.v1.DesiredState
-	(ExecutionStatus)(0),              // 38: powermanage.v1.ExecutionStatus
-	(*CommandOutput)(nil),             // 39: powermanage.v1.CommandOutput
-	(*timestamppb.Timestamp)(nil),     // 40: google.protobuf.Timestamp
+	(*SealedValue)(nil),               // 38: powermanage.v1.SealedValue
+	(ExecutionStatus)(0),              // 39: powermanage.v1.ExecutionStatus
+	(*CommandOutput)(nil),             // 40: powermanage.v1.CommandOutput
+	(*timestamppb.Timestamp)(nil),     // 41: google.protobuf.Timestamp
 }
 var file_powermanage_v1_actions_proto_depIdxs = []int32{
 	36, // 0: powermanage.v1.Action.id:type_name -> powermanage.v1.ActionId
@@ -3681,22 +3683,25 @@ var file_powermanage_v1_actions_proto_depIdxs = []int32{
 	2,  // 29: powermanage.v1.AdminPolicyParams.access_level:type_name -> powermanage.v1.AdminAccessLevel
 	3,  // 30: powermanage.v1.AdminPolicyParams.backend:type_name -> powermanage.v1.PrivilegeBackend
 	4,  // 31: powermanage.v1.LpsParams.complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	5,  // 32: powermanage.v1.EncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
-	4,  // 33: powermanage.v1.EncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	6,  // 34: powermanage.v1.WifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
-	36, // 35: powermanage.v1.ActionResult.action_id:type_name -> powermanage.v1.ActionId
-	38, // 36: powermanage.v1.ActionResult.status:type_name -> powermanage.v1.ExecutionStatus
-	39, // 37: powermanage.v1.ActionResult.output:type_name -> powermanage.v1.CommandOutput
-	40, // 38: powermanage.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
-	35, // 39: powermanage.v1.ActionResult.metadata:type_name -> powermanage.v1.ActionResult.MetadataEntry
-	39, // 40: powermanage.v1.ActionResult.detection_output:type_name -> powermanage.v1.CommandOutput
-	32, // 41: powermanage.v1.AgentUpdateParams.amd64:type_name -> powermanage.v1.AgentUpdateArch
-	32, // 42: powermanage.v1.AgentUpdateParams.arm64:type_name -> powermanage.v1.AgentUpdateArch
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	38, // 32: powermanage.v1.EncryptionParams.preshared_key:type_name -> powermanage.v1.SealedValue
+	5,  // 33: powermanage.v1.EncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	4,  // 34: powermanage.v1.EncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	6,  // 35: powermanage.v1.WifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	38, // 36: powermanage.v1.WifiParams.psk:type_name -> powermanage.v1.SealedValue
+	38, // 37: powermanage.v1.WifiParams.client_key:type_name -> powermanage.v1.SealedValue
+	36, // 38: powermanage.v1.ActionResult.action_id:type_name -> powermanage.v1.ActionId
+	39, // 39: powermanage.v1.ActionResult.status:type_name -> powermanage.v1.ExecutionStatus
+	40, // 40: powermanage.v1.ActionResult.output:type_name -> powermanage.v1.CommandOutput
+	41, // 41: powermanage.v1.ActionResult.completed_at:type_name -> google.protobuf.Timestamp
+	35, // 42: powermanage.v1.ActionResult.metadata:type_name -> powermanage.v1.ActionResult.MetadataEntry
+	40, // 43: powermanage.v1.ActionResult.detection_output:type_name -> powermanage.v1.CommandOutput
+	32, // 44: powermanage.v1.AgentUpdateParams.amd64:type_name -> powermanage.v1.AgentUpdateArch
+	32, // 45: powermanage.v1.AgentUpdateParams.arm64:type_name -> powermanage.v1.AgentUpdateArch
+	46, // [46:46] is the sub-list for method output_type
+	46, // [46:46] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_powermanage_v1_actions_proto_init() }

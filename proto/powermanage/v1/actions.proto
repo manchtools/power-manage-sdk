@@ -654,9 +654,9 @@ enum EncryptionDeviceBoundKeyType {
 // auto-detects the primary encrypted volume, generates and rotates a managed
 // passphrase, and can enroll a TPM or user passphrase in the device-bound slot.
 message EncryptionParams {
-  // Pre-shared key for initial ownership (only needed for first run)
-  // @gotags: validate:"required,min=1,max=256"
-  string preshared_key = 1;
+  // Pre-shared key for initial ownership, sealed by control to this agent.
+  // @gotags: validate:"required"
+  SealedValue preshared_key = 1 [debug_redact = true];
   // Days between scheduled passphrase rotations (1-365)
   // @gotags: validate:"required,gte=1,lte=365"
   int32 rotation_interval_days = 2;
@@ -692,17 +692,18 @@ message WifiParams {
   // @gotags: validate:"required,ne=0"
   WifiAuthType auth_type = 2;
 
-  // PSK authentication (WPA2/WPA3 Personal)
-  // @gotags: validate:"omitempty,max=63"
-  string psk = 3;
+  // PSK authentication (WPA2/WPA3 Personal), sealed by control to this agent.
+  // @gotags: validate:"omitempty"
+  SealedValue psk = 3 [debug_redact = true];
 
   // EAP-TLS authentication (802.1X with client certificate)
   // @gotags: validate:"omitempty"
   string ca_cert = 4; // CA certificate (PEM)
   // @gotags: validate:"omitempty"
   string client_cert = 5; // Client certificate (PEM)
+  // Client private key (PEM), sealed by control to this agent.
   // @gotags: validate:"omitempty"
-  string client_key = 6; // Client private key (PEM)
+  SealedValue client_key = 6 [debug_redact = true];
   // @gotags: validate:"omitempty,max=254"
   string identity = 7; // EAP identity (e.g., user@corp.com)
 

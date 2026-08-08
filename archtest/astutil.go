@@ -52,7 +52,7 @@ func isPresenceComparand(e ast.Expr) bool {
 // "signature"/"hmac" forms are used (bare "sig"/"mac" collide with
 // "assign"/"format"). A match is a violation only when it is not metadata
 // (secretMetaSuffixes) and not a presence check.
-var secretNameRe = regexp.MustCompile(`(?i)(token|secret|hmac|signature|fingerprint|password|passwd|digest|apikey)`)
+var secretNameRe = regexp.MustCompile(`(?i)(token|secret|hmac|signature|fingerprint|password|passwd|digest|apikey|psk|privatekey|clientkey|presharedkey)`)
 
 // secretMetaSuffixes name fields that describe a secret rather than carry
 // its bytes (TokenType, KeyID, SignatureSize, ...).
