@@ -62,6 +62,13 @@ empty new key (which would create an empty-passphrase unlock slot) and an empty
 authenticating passphrase — before `cryptsetup` is ever run.
 <!-- docref: end -->
 
+<!-- docref: begin src=sys/encryption/luks.go#ErrKeyFileStaging:49fe7a68,sys/encryption/luks.go#ErrKeyFileTampered:cbfa4211 -->
+Secret-bearing key-slot operations also fail closed when private in-memory
+staging cannot be established or validated (`ErrKeyFileStaging`), or when a
+staged key changes before `cryptsetup` uses it (`ErrKeyFileTampered`). There is
+no disk-backed fallback.
+<!-- docref: end -->
+
 {% callout type="warning" title="Key-slot operations are destructive" %}
 <!-- docref: begin src=sys/encryption/luks.go#luks.KillSlot:d60b781e,sys/encryption/luks.go#luks.RemoveKey:ca91f591 -->
 `KillSlot` erases a specific key slot, authenticating with an existing

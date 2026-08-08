@@ -259,11 +259,11 @@ var (
 // ownerUID extracts the owning uid from a FileInfo. It reports false when the
 // platform exposes none, so callers fail closed rather than skip the check.
 func ownerUID(info os.FileInfo) (int, bool) {
-	st, ok := info.Sys().(*syscall.Stat_t)
+	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
 		return 0, false
 	}
-	return int(st.Uid), true
+	return int(stat.Uid), true
 }
 
 // verifyStagingParent refuses a key-file parent a local attacker could control.
@@ -279,6 +279,13 @@ func verifyStagingParent(dir string) error {
 	}
 	if !info.Mode().IsDir() {
 		return fmt.Errorf("%w: %s is not a directory (mode %s)", ErrKeyFileStaging, dir, info.Mode())
+	}
+	uid, ok := ownerUID(info)
+	if !ok {
+		return fmt.Errorf("%w: %s exposes no owning uid on this platform", ErrKeyFileStaging, dir)
+	}
+	if uid != 0 && uid != geteuid() {
+		return fmt.Errorf("%w: %s is owned by uid %d, neither root nor %d", ErrKeyFileStaging, dir, uid, geteuid())
 	}
 	if info.Mode().Perm()&0o022 != 0 && info.Mode()&os.ModeSticky == 0 {
 		return fmt.Errorf("%w: %s is writable beyond its owner without the sticky bit (mode %s)", ErrKeyFileStaging, dir, info.Mode())

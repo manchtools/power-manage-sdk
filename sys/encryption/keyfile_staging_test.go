@@ -48,12 +48,12 @@ func assertNeverStagedIn(t *testing.T, path string, err error, hostileDir string
 	if perm := info.Mode().Perm(); perm != 0o700 {
 		t.Fatalf("staging directory %s mode = %o, want exactly 0700; a wider mode lets another local uid replace the staged key file", dir, perm)
 	}
-	st, ok := info.Sys().(*syscall.Stat_t)
+	uid, ok := ownerUID(info)
 	if !ok {
 		t.Fatalf("staging directory %s exposes no owning uid; ownership must be checkable or the write must fail closed", dir)
 	}
-	if int(st.Uid) != os.Geteuid() {
-		t.Fatalf("staging directory %s is owned by uid %d, want this process's euid %d", dir, st.Uid, os.Geteuid())
+	if uid != os.Geteuid() {
+		t.Fatalf("staging directory %s is owned by uid %d, want this process's euid %d", dir, uid, os.Geteuid())
 	}
 }
 
@@ -136,6 +136,25 @@ func TestVerifyStagingDir_RefusesForeignOwner(t *testing.T) {
 		t.Fatalf("verifyStagingDir(foreign owner) = %v, want ErrKeyFileStaging", err)
 	}
 }
+
+func TestVerifyStagingParent_RefusesForeignOwner(t *testing.T) {
+	defer swapKeyFileSeams(t)()
+	dir := t.TempDir()
+	lstatFile = func(path string) (os.FileInfo, error) {
+		info, err := os.Lstat(path)
+		return ownerOverride{FileInfo: info, uid: uint32(os.Geteuid() + 1)}, err
+	}
+	if err := verifyStagingParent(dir); !errors.Is(err, ErrKeyFileStaging) {
+		t.Fatalf("verifyStagingParent(foreign owner) = %v, want ErrKeyFileStaging", err)
+	}
+}
+
+type ownerOverride struct {
+	os.FileInfo
+	uid uint32
+}
+
+func (i ownerOverride) Sys() any { return &syscall.Stat_t{Uid: i.uid} }
 
 // TestVerifyStagingDir_RefusesWidenedModeAndNonDirectories pins the rest of the
 // predicate: only a real directory at mode exactly 0700 may hold key material.
@@ -314,7 +333,12 @@ func TestEverySecretMethodRefusesHostileStagingDir(t *testing.T) {
 				args[p] = reflect.Zero(pt)
 			}
 		}
-		fn.Call(args)
+		out := fn.Call(args)
+		if len(out) == 0 {
+			t.Errorf("%s exposes no error result", name)
+		} else if err, ok := out[len(out)-1].Interface().(error); !ok || err == nil {
+			t.Errorf("%s returned no error with an attacker-owned staging parent", name)
+		}
 		for _, c := range r.calls {
 			if strings.HasPrefix(c.cmd.Name, "cryptsetup") {
 				t.Errorf("%s ran %s with a key file staged in an attacker-owned directory", name, c.cmd.Name)

@@ -245,8 +245,8 @@ func TestGenerateCSRFromKey_SameKeyProducesDifferentCSR(t *testing.T) {
 	pub1 := csr1.PublicKey.(ed25519.PublicKey)
 	pub2 := csr2.PublicKey.(ed25519.PublicKey)
 
-	if !pub1.Equal(pub2) {
-		t.Fatal("CSRs from same key have different public keys")
+	if !pub1.Equal(key.Public()) || !pub2.Equal(key.Public()) {
+		t.Fatal("CSR public key does not match the supplied private key")
 	}
 
 	// But hostnames should differ

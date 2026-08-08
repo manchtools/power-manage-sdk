@@ -20855,8 +20855,9 @@ func (*TerminateTerminalSessionResponse) Descriptor() ([]byte, []int) {
 }
 
 // EncryptionAuthoringParams is the HTTPS write boundary for an operator-authored
-// encryption action. preshared_key is write-only: create requires it, update
-// omits it to preserve the current value, and no response returns it.
+// encryption action. preshared_key is write-only: the create handler requires
+// it, while this shared update shape permits omission to preserve the current
+// value, and no response returns it.
 type EncryptionAuthoringParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// @gotags: validate:"omitempty,min=1,max=256"
@@ -21041,14 +21042,14 @@ type WifiAuthoringParams struct {
 	Ssid string `protobuf:"bytes,1,opt,name=ssid,proto3" json:"ssid,omitempty" validate:"required,min=1,max=255"`
 	// @gotags: validate:"required,ne=0"
 	AuthType WifiAuthType `protobuf:"varint,2,opt,name=auth_type,json=authType,proto3,enum=powermanage.v1.WifiAuthType" json:"auth_type,omitempty" validate:"required,ne=0"`
-	// @gotags: validate:"omitempty,max=63"
-	Psk *string `protobuf:"bytes,3,opt,name=psk,proto3,oneof" json:"psk,omitempty" validate:"omitempty,max=63"`
+	// @gotags: validate:"omitempty,min=8,max=64"
+	Psk *string `protobuf:"bytes,3,opt,name=psk,proto3,oneof" json:"psk,omitempty" validate:"omitempty,min=8,max=64"`
 	// @gotags: validate:"omitempty"
 	CaCert string `protobuf:"bytes,4,opt,name=ca_cert,json=caCert,proto3" json:"ca_cert,omitempty" validate:"omitempty"`
 	// @gotags: validate:"omitempty"
 	ClientCert string `protobuf:"bytes,5,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty" validate:"omitempty"`
-	// @gotags: validate:"omitempty"
-	ClientKey *string `protobuf:"bytes,6,opt,name=client_key,json=clientKey,proto3,oneof" json:"client_key,omitempty" validate:"omitempty"`
+	// @gotags: validate:"omitempty,max=65536"
+	ClientKey *string `protobuf:"bytes,6,opt,name=client_key,json=clientKey,proto3,oneof" json:"client_key,omitempty" validate:"omitempty,max=65536"`
 	// @gotags: validate:"omitempty,max=254"
 	Identity    string `protobuf:"bytes,7,opt,name=identity,proto3" json:"identity,omitempty" validate:"omitempty,max=254"`
 	AutoConnect bool   `protobuf:"varint,8,opt,name=auto_connect,json=autoConnect,proto3" json:"auto_connect,omitempty"`

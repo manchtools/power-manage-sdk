@@ -10153,8 +10153,9 @@ export const TerminateTerminalSessionResponseSchema: GenMessage<TerminateTermina
 
 /**
  * EncryptionAuthoringParams is the HTTPS write boundary for an operator-authored
- * encryption action. preshared_key is write-only: create requires it, update
- * omits it to preserve the current value, and no response returns it.
+ * encryption action. preshared_key is write-only: the create handler requires
+ * it, while this shared update shape permits omission to preserve the current
+ * value, and no response returns it.
  *
  * @generated from message powermanage.v1.EncryptionAuthoringParams
  */
@@ -10276,7 +10277,7 @@ export type WifiAuthoringParams = Message<"powermanage.v1.WifiAuthoringParams"> 
   authType: WifiAuthType;
 
   /**
-   * @gotags: validate:"omitempty,max=63"
+   * @gotags: validate:"omitempty,min=8,max=64"
    *
    * @generated from field: optional string psk = 3;
    */
@@ -10297,7 +10298,7 @@ export type WifiAuthoringParams = Message<"powermanage.v1.WifiAuthoringParams"> 
   clientCert: string;
 
   /**
-   * @gotags: validate:"omitempty"
+   * @gotags: validate:"omitempty,max=65536"
    *
    * @generated from field: optional string client_key = 6;
    */

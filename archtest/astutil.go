@@ -66,10 +66,13 @@ var secretMetaSuffixes = []string{
 // that must be compared in constant time.
 func looksLikeSecretOperand(e ast.Expr) bool {
 	name := identName(e)
-	if name == "" || !secretNameRe.MatchString(name) {
+	if name == "" {
 		return false
 	}
-	lower := strings.ToLower(name)
+	lower := strings.ReplaceAll(strings.ToLower(name), "_", "")
+	if !secretNameRe.MatchString(lower) {
+		return false
+	}
 	for _, suf := range secretMetaSuffixes {
 		if strings.HasSuffix(lower, suf) {
 			return false

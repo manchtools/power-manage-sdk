@@ -15,6 +15,20 @@ import (
 	_ "github.com/manchtools/power-manage-sdk/gen/go/powermanage/v1" // registers the contract descriptors
 )
 
+func assertLiveFields[V any](t *testing.T, name string, fields map[protoreflect.FullName]V) {
+	t.Helper()
+	for fullName := range fields {
+		descriptor, err := protoregistry.GlobalFiles.FindDescriptorByName(fullName)
+		if err != nil {
+			t.Errorf("%s entry %s resolves to no descriptor", name, fullName)
+			continue
+		}
+		if _, ok := descriptor.(protoreflect.FieldDescriptor); !ok {
+			t.Errorf("%s entry %s is not a field descriptor", name, fullName)
+		}
+	}
+}
+
 // The current golden guards the exact public contract. The predecessor golden
 // separately preserves the evidence for the approved removal sets; it is a test
 // oracle, not a compatibility surface.
@@ -633,6 +647,7 @@ func TestContract_SecretsAreSealedAndFramesAreUnsigned(t *testing.T) {
 			}
 		}
 	}
+	assertLiveFields(t, "writeOnlyInputs", writeOnlyInputs)
 	if scanned == 0 {
 		t.Fatal("matches-zero: scanned zero fields — the signing sweep proved nothing")
 	}
@@ -738,6 +753,7 @@ func TestContract_SecretShapedFieldsAreClassifiedOrJustified(t *testing.T) {
 			}
 		}
 	}
+	assertLiveFields(t, "justifiedPlaintext", justifiedPlaintext)
 	if matches == 0 {
 		t.Fatal("matches-zero: no secret-shaped fields found; inverse classification guard proved nothing")
 	}
