@@ -55,6 +55,12 @@ const (
 	// ControlServiceSSOCallbackProcedure is the fully-qualified name of the ControlService's
 	// SSOCallback RPC.
 	ControlServiceSSOCallbackProcedure = "/powermanage.v1.ControlService/SSOCallback"
+	// ControlServiceBeginCLILoginProcedure is the fully-qualified name of the ControlService's
+	// BeginCLILogin RPC.
+	ControlServiceBeginCLILoginProcedure = "/powermanage.v1.ControlService/BeginCLILogin"
+	// ControlServiceExchangeCLISessionProcedure is the fully-qualified name of the ControlService's
+	// ExchangeCLISession RPC.
+	ControlServiceExchangeCLISessionProcedure = "/powermanage.v1.ControlService/ExchangeCLISession"
 	// ControlServiceCreateIdentityProviderProcedure is the fully-qualified name of the ControlService's
 	// CreateIdentityProvider RPC.
 	ControlServiceCreateIdentityProviderProcedure = "/powermanage.v1.ControlService/CreateIdentityProvider"
@@ -520,6 +526,8 @@ type ControlServiceClient interface {
 	ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error)
 	GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error)
 	SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error)
+	BeginCLILogin(context.Context, *connect.Request[v1.BeginCLILoginRequest]) (*connect.Response[v1.BeginCLILoginResponse], error)
+	ExchangeCLISession(context.Context, *connect.Request[v1.ExchangeCLISessionRequest]) (*connect.Response[v1.ExchangeCLISessionResponse], error)
 	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error)
 	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error)
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
@@ -754,6 +762,18 @@ func NewControlServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ControlServiceSSOCallbackProcedure,
 			connect.WithSchema(controlServiceMethods.ByName("SSOCallback")),
+			connect.WithClientOptions(opts...),
+		),
+		beginCLILogin: connect.NewClient[v1.BeginCLILoginRequest, v1.BeginCLILoginResponse](
+			httpClient,
+			baseURL+ControlServiceBeginCLILoginProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("BeginCLILogin")),
+			connect.WithClientOptions(opts...),
+		),
+		exchangeCLISession: connect.NewClient[v1.ExchangeCLISessionRequest, v1.ExchangeCLISessionResponse](
+			httpClient,
+			baseURL+ControlServiceExchangeCLISessionProcedure,
+			connect.WithSchema(controlServiceMethods.ByName("ExchangeCLISession")),
 			connect.WithClientOptions(opts...),
 		),
 		createIdentityProvider: connect.NewClient[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse](
@@ -1675,6 +1695,8 @@ type controlServiceClient struct {
 	listAuthMethods                   *connect.Client[v1.ListAuthMethodsRequest, v1.ListAuthMethodsResponse]
 	getSSOLoginURL                    *connect.Client[v1.GetSSOLoginURLRequest, v1.GetSSOLoginURLResponse]
 	sSOCallback                       *connect.Client[v1.SSOCallbackRequest, v1.SSOCallbackResponse]
+	beginCLILogin                     *connect.Client[v1.BeginCLILoginRequest, v1.BeginCLILoginResponse]
+	exchangeCLISession                *connect.Client[v1.ExchangeCLISessionRequest, v1.ExchangeCLISessionResponse]
 	createIdentityProvider            *connect.Client[v1.CreateIdentityProviderRequest, v1.CreateIdentityProviderResponse]
 	getIdentityProvider               *connect.Client[v1.GetIdentityProviderRequest, v1.GetIdentityProviderResponse]
 	listIdentityProviders             *connect.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
@@ -1866,6 +1888,16 @@ func (c *controlServiceClient) GetSSOLoginURL(ctx context.Context, req *connect.
 // SSOCallback calls powermanage.v1.ControlService.SSOCallback.
 func (c *controlServiceClient) SSOCallback(ctx context.Context, req *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error) {
 	return c.sSOCallback.CallUnary(ctx, req)
+}
+
+// BeginCLILogin calls powermanage.v1.ControlService.BeginCLILogin.
+func (c *controlServiceClient) BeginCLILogin(ctx context.Context, req *connect.Request[v1.BeginCLILoginRequest]) (*connect.Response[v1.BeginCLILoginResponse], error) {
+	return c.beginCLILogin.CallUnary(ctx, req)
+}
+
+// ExchangeCLISession calls powermanage.v1.ControlService.ExchangeCLISession.
+func (c *controlServiceClient) ExchangeCLISession(ctx context.Context, req *connect.Request[v1.ExchangeCLISessionRequest]) (*connect.Response[v1.ExchangeCLISessionResponse], error) {
+	return c.exchangeCLISession.CallUnary(ctx, req)
 }
 
 // CreateIdentityProvider calls powermanage.v1.ControlService.CreateIdentityProvider.
@@ -2641,6 +2673,8 @@ type ControlServiceHandler interface {
 	ListAuthMethods(context.Context, *connect.Request[v1.ListAuthMethodsRequest]) (*connect.Response[v1.ListAuthMethodsResponse], error)
 	GetSSOLoginURL(context.Context, *connect.Request[v1.GetSSOLoginURLRequest]) (*connect.Response[v1.GetSSOLoginURLResponse], error)
 	SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error)
+	BeginCLILogin(context.Context, *connect.Request[v1.BeginCLILoginRequest]) (*connect.Response[v1.BeginCLILoginResponse], error)
+	ExchangeCLISession(context.Context, *connect.Request[v1.ExchangeCLISessionRequest]) (*connect.Response[v1.ExchangeCLISessionResponse], error)
 	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error)
 	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.GetIdentityProviderResponse], error)
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
@@ -2871,6 +2905,18 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 		ControlServiceSSOCallbackProcedure,
 		svc.SSOCallback,
 		connect.WithSchema(controlServiceMethods.ByName("SSOCallback")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceBeginCLILoginHandler := connect.NewUnaryHandler(
+		ControlServiceBeginCLILoginProcedure,
+		svc.BeginCLILogin,
+		connect.WithSchema(controlServiceMethods.ByName("BeginCLILogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	controlServiceExchangeCLISessionHandler := connect.NewUnaryHandler(
+		ControlServiceExchangeCLISessionProcedure,
+		svc.ExchangeCLISession,
+		connect.WithSchema(controlServiceMethods.ByName("ExchangeCLISession")),
 		connect.WithHandlerOptions(opts...),
 	)
 	controlServiceCreateIdentityProviderHandler := connect.NewUnaryHandler(
@@ -3797,6 +3843,10 @@ func NewControlServiceHandler(svc ControlServiceHandler, opts ...connect.Handler
 			controlServiceGetSSOLoginURLHandler.ServeHTTP(w, r)
 		case ControlServiceSSOCallbackProcedure:
 			controlServiceSSOCallbackHandler.ServeHTTP(w, r)
+		case ControlServiceBeginCLILoginProcedure:
+			controlServiceBeginCLILoginHandler.ServeHTTP(w, r)
+		case ControlServiceExchangeCLISessionProcedure:
+			controlServiceExchangeCLISessionHandler.ServeHTTP(w, r)
 		case ControlServiceCreateIdentityProviderProcedure:
 			controlServiceCreateIdentityProviderHandler.ServeHTTP(w, r)
 		case ControlServiceGetIdentityProviderProcedure:
@@ -4138,6 +4188,14 @@ func (UnimplementedControlServiceHandler) GetSSOLoginURL(context.Context, *conne
 
 func (UnimplementedControlServiceHandler) SSOCallback(context.Context, *connect.Request[v1.SSOCallbackRequest]) (*connect.Response[v1.SSOCallbackResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.SSOCallback is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) BeginCLILogin(context.Context, *connect.Request[v1.BeginCLILoginRequest]) (*connect.Response[v1.BeginCLILoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.BeginCLILogin is not implemented"))
+}
+
+func (UnimplementedControlServiceHandler) ExchangeCLISession(context.Context, *connect.Request[v1.ExchangeCLISessionRequest]) (*connect.Response[v1.ExchangeCLISessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("powermanage.v1.ControlService.ExchangeCLISession is not implemented"))
 }
 
 func (UnimplementedControlServiceHandler) CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.CreateIdentityProviderResponse], error) {

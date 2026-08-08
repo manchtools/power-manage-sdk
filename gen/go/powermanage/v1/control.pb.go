@@ -16300,8 +16300,11 @@ type IdentityProvider struct {
 	// email to a pre-existing account; default false refuses that
 	// (account-takeover guard across providers).
 	TrustEmailAssertions bool `protobuf:"varint,22,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Public OIDC client used by native CLI login. This is an identifier, not a
+	// client secret.
+	CliClientId   string `protobuf:"bytes,23,opt,name=cli_client_id,json=cliClientId,proto3" json:"cli_client_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IdentityProvider) Reset() {
@@ -16481,6 +16484,13 @@ func (x *IdentityProvider) GetTrustEmailAssertions() bool {
 	return false
 }
 
+func (x *IdentityProvider) GetCliClientId() string {
+	if x != nil {
+		return x.CliClientId
+	}
+	return ""
+}
+
 type IdentityLink struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -16605,10 +16615,10 @@ type CreateIdentityProviderRequest struct {
 	Slug string `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty" validate:"required,min=1,max=64,alphanum"`
 	// @gotags: validate:"required,gte=1,lte=1"
 	ProviderType IdentityProviderType `protobuf:"varint,3,opt,name=provider_type,json=providerType,proto3,enum=powermanage.v1.IdentityProviderType" json:"provider_type,omitempty" validate:"required,gte=1,lte=1"`
-	// @gotags: validate:"required,min=1"
-	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" validate:"required,min=1"`
-	// @gotags: validate:"required,min=1"
-	ClientSecret string `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty" validate:"required,min=1"`
+	// @gotags: validate:"omitempty,max=255"
+	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" validate:"omitempty,max=255"`
+	// @gotags: validate:"omitempty,max=4096"
+	ClientSecret string `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty" validate:"omitempty,max=4096"`
 	// @gotags: validate:"required,url"
 	IssuerUrl string `protobuf:"bytes,6,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty" validate:"required,url"`
 	// @gotags: validate:"omitempty,url"
@@ -16629,8 +16639,10 @@ type CreateIdentityProviderRequest struct {
 	GroupMapping map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=255"`
 	// See IdentityProvider.trust_email_assertions. Default false (secure).
 	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// @gotags: validate:"omitempty,max=255"
+	CliClientId   string `protobuf:"bytes,18,opt,name=cli_client_id,json=cliClientId,proto3" json:"cli_client_id,omitempty" validate:"omitempty,max=255"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateIdentityProviderRequest) Reset() {
@@ -16773,6 +16785,13 @@ func (x *CreateIdentityProviderRequest) GetTrustEmailAssertions() bool {
 		return x.TrustEmailAssertions
 	}
 	return false
+}
+
+func (x *CreateIdentityProviderRequest) GetCliClientId() string {
+	if x != nil {
+		return x.CliClientId
+	}
+	return ""
 }
 
 type CreateIdentityProviderResponse struct {
@@ -17054,8 +17073,11 @@ type UpdateIdentityProviderRequest struct {
 	GroupMapping map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=255"`
 	// See IdentityProvider.trust_email_assertions. Default false (secure).
 	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Omit to keep the current CLI client; send empty to remove it.
+	// @gotags: validate:"omitempty,max=255"
+	CliClientId   *string `protobuf:"bytes,18,opt,name=cli_client_id,json=cliClientId,proto3,oneof" json:"cli_client_id,omitempty" validate:"omitempty,max=255"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateIdentityProviderRequest) Reset() {
@@ -17200,6 +17222,13 @@ func (x *UpdateIdentityProviderRequest) GetTrustEmailAssertions() bool {
 	return false
 }
 
+func (x *UpdateIdentityProviderRequest) GetCliClientId() string {
+	if x != nil && x.CliClientId != nil {
+		return *x.CliClientId
+	}
+	return ""
+}
+
 type UpdateIdentityProviderResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Provider      *IdentityProvider      `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
@@ -17330,6 +17359,8 @@ type AuthMethodProvider struct {
 	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	ProviderType  IdentityProviderType   `protobuf:"varint,3,opt,name=provider_type,json=providerType,proto3,enum=powermanage.v1.IdentityProviderType" json:"provider_type,omitempty"`
+	BrowserLogin  bool                   `protobuf:"varint,4,opt,name=browser_login,json=browserLogin,proto3" json:"browser_login,omitempty"`
+	CliLogin      bool                   `protobuf:"varint,5,opt,name=cli_login,json=cliLogin,proto3" json:"cli_login,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -17383,6 +17414,20 @@ func (x *AuthMethodProvider) GetProviderType() IdentityProviderType {
 		return x.ProviderType
 	}
 	return IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
+}
+
+func (x *AuthMethodProvider) GetBrowserLogin() bool {
+	if x != nil {
+		return x.BrowserLogin
+	}
+	return false
+}
+
+func (x *AuthMethodProvider) GetCliLogin() bool {
+	if x != nil {
+		return x.CliLogin
+	}
+	return false
 }
 
 type ListAuthMethodsRequest struct {
@@ -17704,6 +17749,276 @@ func (x *SSOCallbackResponse) GetUser() *User {
 	return nil
 }
 
+type BeginCLILoginRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,min=1,max=64"
+	Slug string `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty" validate:"required,min=1,max=64"`
+	// @gotags: validate:"required,url,max=2048"
+	RedirectUrl string `protobuf:"bytes,2,opt,name=redirect_url,json=redirectUrl,proto3" json:"redirect_url,omitempty" validate:"required,url,max=2048"`
+	// @gotags: validate:"required,len=43"
+	CodeChallenge string `protobuf:"bytes,3,opt,name=code_challenge,json=codeChallenge,proto3" json:"code_challenge,omitempty" validate:"required,len=43"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginCLILoginRequest) Reset() {
+	*x = BeginCLILoginRequest{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[278]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginCLILoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginCLILoginRequest) ProtoMessage() {}
+
+func (x *BeginCLILoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[278]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginCLILoginRequest.ProtoReflect.Descriptor instead.
+func (*BeginCLILoginRequest) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{278}
+}
+
+func (x *BeginCLILoginRequest) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *BeginCLILoginRequest) GetRedirectUrl() string {
+	if x != nil {
+		return x.RedirectUrl
+	}
+	return ""
+}
+
+func (x *BeginCLILoginRequest) GetCodeChallenge() string {
+	if x != nil {
+		return x.CodeChallenge
+	}
+	return ""
+}
+
+type BeginCLILoginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LoginUrl      string                 `protobuf:"bytes,1,opt,name=login_url,json=loginUrl,proto3" json:"login_url,omitempty"`
+	State         string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	TokenUrl      string                 `protobuf:"bytes,3,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
+	ClientId      string                 `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginCLILoginResponse) Reset() {
+	*x = BeginCLILoginResponse{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[279]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginCLILoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginCLILoginResponse) ProtoMessage() {}
+
+func (x *BeginCLILoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[279]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginCLILoginResponse.ProtoReflect.Descriptor instead.
+func (*BeginCLILoginResponse) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{279}
+}
+
+func (x *BeginCLILoginResponse) GetLoginUrl() string {
+	if x != nil {
+		return x.LoginUrl
+	}
+	return ""
+}
+
+func (x *BeginCLILoginResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *BeginCLILoginResponse) GetTokenUrl() string {
+	if x != nil {
+		return x.TokenUrl
+	}
+	return ""
+}
+
+func (x *BeginCLILoginResponse) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *BeginCLILoginResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+type ExchangeCLISessionRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// @gotags: validate:"required,min=1,max=64"
+	Slug string `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty" validate:"required,min=1,max=64"`
+	// @gotags: validate:"required,max=512"
+	State string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty" validate:"required,max=512"`
+	// @gotags: validate:"required,max=65536"
+	IdToken       string `protobuf:"bytes,3,opt,name=id_token,json=idToken,proto3" json:"id_token,omitempty" validate:"required,max=65536"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExchangeCLISessionRequest) Reset() {
+	*x = ExchangeCLISessionRequest{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[280]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExchangeCLISessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExchangeCLISessionRequest) ProtoMessage() {}
+
+func (x *ExchangeCLISessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[280]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExchangeCLISessionRequest.ProtoReflect.Descriptor instead.
+func (*ExchangeCLISessionRequest) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{280}
+}
+
+func (x *ExchangeCLISessionRequest) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *ExchangeCLISessionRequest) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *ExchangeCLISessionRequest) GetIdToken() string {
+	if x != nil {
+		return x.IdToken
+	}
+	return ""
+}
+
+type ExchangeCLISessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	User          *User                  `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExchangeCLISessionResponse) Reset() {
+	*x = ExchangeCLISessionResponse{}
+	mi := &file_powermanage_v1_control_proto_msgTypes[281]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExchangeCLISessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExchangeCLISessionResponse) ProtoMessage() {}
+
+func (x *ExchangeCLISessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_powermanage_v1_control_proto_msgTypes[281]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExchangeCLISessionResponse.ProtoReflect.Descriptor instead.
+func (*ExchangeCLISessionResponse) Descriptor() ([]byte, []int) {
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{281}
+}
+
+func (x *ExchangeCLISessionResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ExchangeCLISessionResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+func (x *ExchangeCLISessionResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+func (x *ExchangeCLISessionResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 type ListIdentityLinksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -17712,7 +18027,7 @@ type ListIdentityLinksRequest struct {
 
 func (x *ListIdentityLinksRequest) Reset() {
 	*x = ListIdentityLinksRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[278]
+	mi := &file_powermanage_v1_control_proto_msgTypes[282]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17724,7 +18039,7 @@ func (x *ListIdentityLinksRequest) String() string {
 func (*ListIdentityLinksRequest) ProtoMessage() {}
 
 func (x *ListIdentityLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[278]
+	mi := &file_powermanage_v1_control_proto_msgTypes[282]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17737,7 +18052,7 @@ func (x *ListIdentityLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListIdentityLinksRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{278}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{282}
 }
 
 type ListIdentityLinksResponse struct {
@@ -17749,7 +18064,7 @@ type ListIdentityLinksResponse struct {
 
 func (x *ListIdentityLinksResponse) Reset() {
 	*x = ListIdentityLinksResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[279]
+	mi := &file_powermanage_v1_control_proto_msgTypes[283]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17761,7 +18076,7 @@ func (x *ListIdentityLinksResponse) String() string {
 func (*ListIdentityLinksResponse) ProtoMessage() {}
 
 func (x *ListIdentityLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[279]
+	mi := &file_powermanage_v1_control_proto_msgTypes[283]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17774,7 +18089,7 @@ func (x *ListIdentityLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentityLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListIdentityLinksResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{279}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{283}
 }
 
 func (x *ListIdentityLinksResponse) GetLinks() []*IdentityLink {
@@ -17794,7 +18109,7 @@ type UnlinkIdentityRequest struct {
 
 func (x *UnlinkIdentityRequest) Reset() {
 	*x = UnlinkIdentityRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[280]
+	mi := &file_powermanage_v1_control_proto_msgTypes[284]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17806,7 +18121,7 @@ func (x *UnlinkIdentityRequest) String() string {
 func (*UnlinkIdentityRequest) ProtoMessage() {}
 
 func (x *UnlinkIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[280]
+	mi := &file_powermanage_v1_control_proto_msgTypes[284]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17819,7 +18134,7 @@ func (x *UnlinkIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlinkIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UnlinkIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{280}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{284}
 }
 
 func (x *UnlinkIdentityRequest) GetLinkId() string {
@@ -17837,7 +18152,7 @@ type UnlinkIdentityResponse struct {
 
 func (x *UnlinkIdentityResponse) Reset() {
 	*x = UnlinkIdentityResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[281]
+	mi := &file_powermanage_v1_control_proto_msgTypes[285]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17849,7 +18164,7 @@ func (x *UnlinkIdentityResponse) String() string {
 func (*UnlinkIdentityResponse) ProtoMessage() {}
 
 func (x *UnlinkIdentityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[281]
+	mi := &file_powermanage_v1_control_proto_msgTypes[285]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17862,7 +18177,7 @@ func (x *UnlinkIdentityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlinkIdentityResponse.ProtoReflect.Descriptor instead.
 func (*UnlinkIdentityResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{281}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{285}
 }
 
 // SCIM Provisioning
@@ -17876,7 +18191,7 @@ type EnableSCIMRequest struct {
 
 func (x *EnableSCIMRequest) Reset() {
 	*x = EnableSCIMRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[282]
+	mi := &file_powermanage_v1_control_proto_msgTypes[286]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17888,7 +18203,7 @@ func (x *EnableSCIMRequest) String() string {
 func (*EnableSCIMRequest) ProtoMessage() {}
 
 func (x *EnableSCIMRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[282]
+	mi := &file_powermanage_v1_control_proto_msgTypes[286]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17901,7 +18216,7 @@ func (x *EnableSCIMRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableSCIMRequest.ProtoReflect.Descriptor instead.
 func (*EnableSCIMRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{282}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{286}
 }
 
 func (x *EnableSCIMRequest) GetId() string {
@@ -17921,7 +18236,7 @@ type EnableSCIMResponse struct {
 
 func (x *EnableSCIMResponse) Reset() {
 	*x = EnableSCIMResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[283]
+	mi := &file_powermanage_v1_control_proto_msgTypes[287]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17933,7 +18248,7 @@ func (x *EnableSCIMResponse) String() string {
 func (*EnableSCIMResponse) ProtoMessage() {}
 
 func (x *EnableSCIMResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[283]
+	mi := &file_powermanage_v1_control_proto_msgTypes[287]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17946,7 +18261,7 @@ func (x *EnableSCIMResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableSCIMResponse.ProtoReflect.Descriptor instead.
 func (*EnableSCIMResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{283}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{287}
 }
 
 func (x *EnableSCIMResponse) GetToken() string {
@@ -17973,7 +18288,7 @@ type DisableSCIMRequest struct {
 
 func (x *DisableSCIMRequest) Reset() {
 	*x = DisableSCIMRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[284]
+	mi := &file_powermanage_v1_control_proto_msgTypes[288]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17985,7 +18300,7 @@ func (x *DisableSCIMRequest) String() string {
 func (*DisableSCIMRequest) ProtoMessage() {}
 
 func (x *DisableSCIMRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[284]
+	mi := &file_powermanage_v1_control_proto_msgTypes[288]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17998,7 +18313,7 @@ func (x *DisableSCIMRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableSCIMRequest.ProtoReflect.Descriptor instead.
 func (*DisableSCIMRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{284}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{288}
 }
 
 func (x *DisableSCIMRequest) GetId() string {
@@ -18016,7 +18331,7 @@ type DisableSCIMResponse struct {
 
 func (x *DisableSCIMResponse) Reset() {
 	*x = DisableSCIMResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[285]
+	mi := &file_powermanage_v1_control_proto_msgTypes[289]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18028,7 +18343,7 @@ func (x *DisableSCIMResponse) String() string {
 func (*DisableSCIMResponse) ProtoMessage() {}
 
 func (x *DisableSCIMResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[285]
+	mi := &file_powermanage_v1_control_proto_msgTypes[289]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18041,7 +18356,7 @@ func (x *DisableSCIMResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableSCIMResponse.ProtoReflect.Descriptor instead.
 func (*DisableSCIMResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{285}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{289}
 }
 
 type RotateSCIMTokenRequest struct {
@@ -18054,7 +18369,7 @@ type RotateSCIMTokenRequest struct {
 
 func (x *RotateSCIMTokenRequest) Reset() {
 	*x = RotateSCIMTokenRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[286]
+	mi := &file_powermanage_v1_control_proto_msgTypes[290]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18066,7 +18381,7 @@ func (x *RotateSCIMTokenRequest) String() string {
 func (*RotateSCIMTokenRequest) ProtoMessage() {}
 
 func (x *RotateSCIMTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[286]
+	mi := &file_powermanage_v1_control_proto_msgTypes[290]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18079,7 +18394,7 @@ func (x *RotateSCIMTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSCIMTokenRequest.ProtoReflect.Descriptor instead.
 func (*RotateSCIMTokenRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{286}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{290}
 }
 
 func (x *RotateSCIMTokenRequest) GetId() string {
@@ -18098,7 +18413,7 @@ type RotateSCIMTokenResponse struct {
 
 func (x *RotateSCIMTokenResponse) Reset() {
 	*x = RotateSCIMTokenResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[287]
+	mi := &file_powermanage_v1_control_proto_msgTypes[291]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18110,7 +18425,7 @@ func (x *RotateSCIMTokenResponse) String() string {
 func (*RotateSCIMTokenResponse) ProtoMessage() {}
 
 func (x *RotateSCIMTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[287]
+	mi := &file_powermanage_v1_control_proto_msgTypes[291]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18123,7 +18438,7 @@ func (x *RotateSCIMTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSCIMTokenResponse.ProtoReflect.Descriptor instead.
 func (*RotateSCIMTokenResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{287}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{291}
 }
 
 func (x *RotateSCIMTokenResponse) GetToken() string {
@@ -18143,7 +18458,7 @@ type GetDeviceComplianceRequest struct {
 
 func (x *GetDeviceComplianceRequest) Reset() {
 	*x = GetDeviceComplianceRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[288]
+	mi := &file_powermanage_v1_control_proto_msgTypes[292]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18155,7 +18470,7 @@ func (x *GetDeviceComplianceRequest) String() string {
 func (*GetDeviceComplianceRequest) ProtoMessage() {}
 
 func (x *GetDeviceComplianceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[288]
+	mi := &file_powermanage_v1_control_proto_msgTypes[292]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18168,7 +18483,7 @@ func (x *GetDeviceComplianceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceComplianceRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceComplianceRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{288}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{292}
 }
 
 func (x *GetDeviceComplianceRequest) GetDeviceId() string {
@@ -18188,7 +18503,7 @@ type GetDeviceComplianceResponse struct {
 
 func (x *GetDeviceComplianceResponse) Reset() {
 	*x = GetDeviceComplianceResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[289]
+	mi := &file_powermanage_v1_control_proto_msgTypes[293]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18200,7 +18515,7 @@ func (x *GetDeviceComplianceResponse) String() string {
 func (*GetDeviceComplianceResponse) ProtoMessage() {}
 
 func (x *GetDeviceComplianceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[289]
+	mi := &file_powermanage_v1_control_proto_msgTypes[293]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18213,7 +18528,7 @@ func (x *GetDeviceComplianceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeviceComplianceResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceComplianceResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{289}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{293}
 }
 
 func (x *GetDeviceComplianceResponse) GetStatus() ComplianceStatus {
@@ -18243,7 +18558,7 @@ type ComplianceCheckResult struct {
 
 func (x *ComplianceCheckResult) Reset() {
 	*x = ComplianceCheckResult{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[290]
+	mi := &file_powermanage_v1_control_proto_msgTypes[294]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18255,7 +18570,7 @@ func (x *ComplianceCheckResult) String() string {
 func (*ComplianceCheckResult) ProtoMessage() {}
 
 func (x *ComplianceCheckResult) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[290]
+	mi := &file_powermanage_v1_control_proto_msgTypes[294]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18268,7 +18583,7 @@ func (x *ComplianceCheckResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComplianceCheckResult.ProtoReflect.Descriptor instead.
 func (*ComplianceCheckResult) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{290}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{294}
 }
 
 func (x *ComplianceCheckResult) GetActionId() string {
@@ -18321,7 +18636,7 @@ type CompliancePolicy struct {
 
 func (x *CompliancePolicy) Reset() {
 	*x = CompliancePolicy{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[291]
+	mi := &file_powermanage_v1_control_proto_msgTypes[295]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18333,7 +18648,7 @@ func (x *CompliancePolicy) String() string {
 func (*CompliancePolicy) ProtoMessage() {}
 
 func (x *CompliancePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[291]
+	mi := &file_powermanage_v1_control_proto_msgTypes[295]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18346,7 +18661,7 @@ func (x *CompliancePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompliancePolicy.ProtoReflect.Descriptor instead.
 func (*CompliancePolicy) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{291}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{295}
 }
 
 func (x *CompliancePolicy) GetId() string {
@@ -18409,7 +18724,7 @@ type CompliancePolicyRule struct {
 
 func (x *CompliancePolicyRule) Reset() {
 	*x = CompliancePolicyRule{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[292]
+	mi := &file_powermanage_v1_control_proto_msgTypes[296]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18421,7 +18736,7 @@ func (x *CompliancePolicyRule) String() string {
 func (*CompliancePolicyRule) ProtoMessage() {}
 
 func (x *CompliancePolicyRule) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[292]
+	mi := &file_powermanage_v1_control_proto_msgTypes[296]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18434,7 +18749,7 @@ func (x *CompliancePolicyRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompliancePolicyRule.ProtoReflect.Descriptor instead.
 func (*CompliancePolicyRule) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{292}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{296}
 }
 
 func (x *CompliancePolicyRule) GetActionId() string {
@@ -18470,7 +18785,7 @@ type CreateCompliancePolicyRequest struct {
 
 func (x *CreateCompliancePolicyRequest) Reset() {
 	*x = CreateCompliancePolicyRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[293]
+	mi := &file_powermanage_v1_control_proto_msgTypes[297]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18482,7 +18797,7 @@ func (x *CreateCompliancePolicyRequest) String() string {
 func (*CreateCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *CreateCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[293]
+	mi := &file_powermanage_v1_control_proto_msgTypes[297]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18495,7 +18810,7 @@ func (x *CreateCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*CreateCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{293}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{297}
 }
 
 func (x *CreateCompliancePolicyRequest) GetName() string {
@@ -18521,7 +18836,7 @@ type CreateCompliancePolicyResponse struct {
 
 func (x *CreateCompliancePolicyResponse) Reset() {
 	*x = CreateCompliancePolicyResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[294]
+	mi := &file_powermanage_v1_control_proto_msgTypes[298]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18533,7 +18848,7 @@ func (x *CreateCompliancePolicyResponse) String() string {
 func (*CreateCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *CreateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[294]
+	mi := &file_powermanage_v1_control_proto_msgTypes[298]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18546,7 +18861,7 @@ func (x *CreateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*CreateCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{294}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{298}
 }
 
 func (x *CreateCompliancePolicyResponse) GetPolicy() *CompliancePolicy {
@@ -18566,7 +18881,7 @@ type GetCompliancePolicyRequest struct {
 
 func (x *GetCompliancePolicyRequest) Reset() {
 	*x = GetCompliancePolicyRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[295]
+	mi := &file_powermanage_v1_control_proto_msgTypes[299]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18578,7 +18893,7 @@ func (x *GetCompliancePolicyRequest) String() string {
 func (*GetCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *GetCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[295]
+	mi := &file_powermanage_v1_control_proto_msgTypes[299]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18591,7 +18906,7 @@ func (x *GetCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*GetCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{295}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{299}
 }
 
 func (x *GetCompliancePolicyRequest) GetId() string {
@@ -18610,7 +18925,7 @@ type GetCompliancePolicyResponse struct {
 
 func (x *GetCompliancePolicyResponse) Reset() {
 	*x = GetCompliancePolicyResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[296]
+	mi := &file_powermanage_v1_control_proto_msgTypes[300]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18622,7 +18937,7 @@ func (x *GetCompliancePolicyResponse) String() string {
 func (*GetCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *GetCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[296]
+	mi := &file_powermanage_v1_control_proto_msgTypes[300]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18635,7 +18950,7 @@ func (x *GetCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*GetCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{296}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{300}
 }
 
 func (x *GetCompliancePolicyResponse) GetPolicy() *CompliancePolicy {
@@ -18657,7 +18972,7 @@ type ListCompliancePoliciesRequest struct {
 
 func (x *ListCompliancePoliciesRequest) Reset() {
 	*x = ListCompliancePoliciesRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[297]
+	mi := &file_powermanage_v1_control_proto_msgTypes[301]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18669,7 +18984,7 @@ func (x *ListCompliancePoliciesRequest) String() string {
 func (*ListCompliancePoliciesRequest) ProtoMessage() {}
 
 func (x *ListCompliancePoliciesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[297]
+	mi := &file_powermanage_v1_control_proto_msgTypes[301]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18682,7 +18997,7 @@ func (x *ListCompliancePoliciesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCompliancePoliciesRequest.ProtoReflect.Descriptor instead.
 func (*ListCompliancePoliciesRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{297}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{301}
 }
 
 func (x *ListCompliancePoliciesRequest) GetPageSize() int32 {
@@ -18710,7 +19025,7 @@ type ListCompliancePoliciesResponse struct {
 
 func (x *ListCompliancePoliciesResponse) Reset() {
 	*x = ListCompliancePoliciesResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[298]
+	mi := &file_powermanage_v1_control_proto_msgTypes[302]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18722,7 +19037,7 @@ func (x *ListCompliancePoliciesResponse) String() string {
 func (*ListCompliancePoliciesResponse) ProtoMessage() {}
 
 func (x *ListCompliancePoliciesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[298]
+	mi := &file_powermanage_v1_control_proto_msgTypes[302]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18735,7 +19050,7 @@ func (x *ListCompliancePoliciesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCompliancePoliciesResponse.ProtoReflect.Descriptor instead.
 func (*ListCompliancePoliciesResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{298}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{302}
 }
 
 func (x *ListCompliancePoliciesResponse) GetPolicies() []*CompliancePolicy {
@@ -18771,7 +19086,7 @@ type RenameCompliancePolicyRequest struct {
 
 func (x *RenameCompliancePolicyRequest) Reset() {
 	*x = RenameCompliancePolicyRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[299]
+	mi := &file_powermanage_v1_control_proto_msgTypes[303]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18783,7 +19098,7 @@ func (x *RenameCompliancePolicyRequest) String() string {
 func (*RenameCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *RenameCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[299]
+	mi := &file_powermanage_v1_control_proto_msgTypes[303]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18796,7 +19111,7 @@ func (x *RenameCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*RenameCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{299}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{303}
 }
 
 func (x *RenameCompliancePolicyRequest) GetId() string {
@@ -18825,7 +19140,7 @@ type UpdateCompliancePolicyDescriptionRequest struct {
 
 func (x *UpdateCompliancePolicyDescriptionRequest) Reset() {
 	*x = UpdateCompliancePolicyDescriptionRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[300]
+	mi := &file_powermanage_v1_control_proto_msgTypes[304]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18837,7 +19152,7 @@ func (x *UpdateCompliancePolicyDescriptionRequest) String() string {
 func (*UpdateCompliancePolicyDescriptionRequest) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyDescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[300]
+	mi := &file_powermanage_v1_control_proto_msgTypes[304]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18850,7 +19165,7 @@ func (x *UpdateCompliancePolicyDescriptionRequest) ProtoReflect() protoreflect.M
 
 // Deprecated: Use UpdateCompliancePolicyDescriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyDescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{300}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{304}
 }
 
 func (x *UpdateCompliancePolicyDescriptionRequest) GetId() string {
@@ -18876,7 +19191,7 @@ type UpdateCompliancePolicyResponse struct {
 
 func (x *UpdateCompliancePolicyResponse) Reset() {
 	*x = UpdateCompliancePolicyResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[301]
+	mi := &file_powermanage_v1_control_proto_msgTypes[305]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18888,7 +19203,7 @@ func (x *UpdateCompliancePolicyResponse) String() string {
 func (*UpdateCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[301]
+	mi := &file_powermanage_v1_control_proto_msgTypes[305]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18901,7 +19216,7 @@ func (x *UpdateCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{301}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{305}
 }
 
 func (x *UpdateCompliancePolicyResponse) GetPolicy() *CompliancePolicy {
@@ -18921,7 +19236,7 @@ type DeleteCompliancePolicyRequest struct {
 
 func (x *DeleteCompliancePolicyRequest) Reset() {
 	*x = DeleteCompliancePolicyRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[302]
+	mi := &file_powermanage_v1_control_proto_msgTypes[306]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18933,7 +19248,7 @@ func (x *DeleteCompliancePolicyRequest) String() string {
 func (*DeleteCompliancePolicyRequest) ProtoMessage() {}
 
 func (x *DeleteCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[302]
+	mi := &file_powermanage_v1_control_proto_msgTypes[306]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18946,7 +19261,7 @@ func (x *DeleteCompliancePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCompliancePolicyRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCompliancePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{302}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{306}
 }
 
 func (x *DeleteCompliancePolicyRequest) GetId() string {
@@ -18964,7 +19279,7 @@ type DeleteCompliancePolicyResponse struct {
 
 func (x *DeleteCompliancePolicyResponse) Reset() {
 	*x = DeleteCompliancePolicyResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[303]
+	mi := &file_powermanage_v1_control_proto_msgTypes[307]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18976,7 +19291,7 @@ func (x *DeleteCompliancePolicyResponse) String() string {
 func (*DeleteCompliancePolicyResponse) ProtoMessage() {}
 
 func (x *DeleteCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[303]
+	mi := &file_powermanage_v1_control_proto_msgTypes[307]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18989,7 +19304,7 @@ func (x *DeleteCompliancePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCompliancePolicyResponse.ProtoReflect.Descriptor instead.
 func (*DeleteCompliancePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{303}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{307}
 }
 
 type AddCompliancePolicyRuleRequest struct {
@@ -19006,7 +19321,7 @@ type AddCompliancePolicyRuleRequest struct {
 
 func (x *AddCompliancePolicyRuleRequest) Reset() {
 	*x = AddCompliancePolicyRuleRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[304]
+	mi := &file_powermanage_v1_control_proto_msgTypes[308]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19018,7 +19333,7 @@ func (x *AddCompliancePolicyRuleRequest) String() string {
 func (*AddCompliancePolicyRuleRequest) ProtoMessage() {}
 
 func (x *AddCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[304]
+	mi := &file_powermanage_v1_control_proto_msgTypes[308]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19031,7 +19346,7 @@ func (x *AddCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddCompliancePolicyRuleRequest.ProtoReflect.Descriptor instead.
 func (*AddCompliancePolicyRuleRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{304}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{308}
 }
 
 func (x *AddCompliancePolicyRuleRequest) GetPolicyId() string {
@@ -19064,7 +19379,7 @@ type AddCompliancePolicyRuleResponse struct {
 
 func (x *AddCompliancePolicyRuleResponse) Reset() {
 	*x = AddCompliancePolicyRuleResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[305]
+	mi := &file_powermanage_v1_control_proto_msgTypes[309]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19076,7 +19391,7 @@ func (x *AddCompliancePolicyRuleResponse) String() string {
 func (*AddCompliancePolicyRuleResponse) ProtoMessage() {}
 
 func (x *AddCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[305]
+	mi := &file_powermanage_v1_control_proto_msgTypes[309]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19089,7 +19404,7 @@ func (x *AddCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddCompliancePolicyRuleResponse.ProtoReflect.Descriptor instead.
 func (*AddCompliancePolicyRuleResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{305}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{309}
 }
 
 func (x *AddCompliancePolicyRuleResponse) GetPolicy() *CompliancePolicy {
@@ -19111,7 +19426,7 @@ type RemoveCompliancePolicyRuleRequest struct {
 
 func (x *RemoveCompliancePolicyRuleRequest) Reset() {
 	*x = RemoveCompliancePolicyRuleRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[306]
+	mi := &file_powermanage_v1_control_proto_msgTypes[310]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19123,7 +19438,7 @@ func (x *RemoveCompliancePolicyRuleRequest) String() string {
 func (*RemoveCompliancePolicyRuleRequest) ProtoMessage() {}
 
 func (x *RemoveCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[306]
+	mi := &file_powermanage_v1_control_proto_msgTypes[310]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19136,7 +19451,7 @@ func (x *RemoveCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use RemoveCompliancePolicyRuleRequest.ProtoReflect.Descriptor instead.
 func (*RemoveCompliancePolicyRuleRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{306}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{310}
 }
 
 func (x *RemoveCompliancePolicyRuleRequest) GetPolicyId() string {
@@ -19162,7 +19477,7 @@ type RemoveCompliancePolicyRuleResponse struct {
 
 func (x *RemoveCompliancePolicyRuleResponse) Reset() {
 	*x = RemoveCompliancePolicyRuleResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[307]
+	mi := &file_powermanage_v1_control_proto_msgTypes[311]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19174,7 +19489,7 @@ func (x *RemoveCompliancePolicyRuleResponse) String() string {
 func (*RemoveCompliancePolicyRuleResponse) ProtoMessage() {}
 
 func (x *RemoveCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[307]
+	mi := &file_powermanage_v1_control_proto_msgTypes[311]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19187,7 +19502,7 @@ func (x *RemoveCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use RemoveCompliancePolicyRuleResponse.ProtoReflect.Descriptor instead.
 func (*RemoveCompliancePolicyRuleResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{307}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{311}
 }
 
 func (x *RemoveCompliancePolicyRuleResponse) GetPolicy() *CompliancePolicy {
@@ -19211,7 +19526,7 @@ type UpdateCompliancePolicyRuleRequest struct {
 
 func (x *UpdateCompliancePolicyRuleRequest) Reset() {
 	*x = UpdateCompliancePolicyRuleRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[308]
+	mi := &file_powermanage_v1_control_proto_msgTypes[312]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19223,7 +19538,7 @@ func (x *UpdateCompliancePolicyRuleRequest) String() string {
 func (*UpdateCompliancePolicyRuleRequest) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[308]
+	mi := &file_powermanage_v1_control_proto_msgTypes[312]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19236,7 +19551,7 @@ func (x *UpdateCompliancePolicyRuleRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateCompliancePolicyRuleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyRuleRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{308}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{312}
 }
 
 func (x *UpdateCompliancePolicyRuleRequest) GetPolicyId() string {
@@ -19269,7 +19584,7 @@ type UpdateCompliancePolicyRuleResponse struct {
 
 func (x *UpdateCompliancePolicyRuleResponse) Reset() {
 	*x = UpdateCompliancePolicyRuleResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[309]
+	mi := &file_powermanage_v1_control_proto_msgTypes[313]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19281,7 +19596,7 @@ func (x *UpdateCompliancePolicyRuleResponse) String() string {
 func (*UpdateCompliancePolicyRuleResponse) ProtoMessage() {}
 
 func (x *UpdateCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[309]
+	mi := &file_powermanage_v1_control_proto_msgTypes[313]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19294,7 +19609,7 @@ func (x *UpdateCompliancePolicyRuleResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use UpdateCompliancePolicyRuleResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCompliancePolicyRuleResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{309}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{313}
 }
 
 func (x *UpdateCompliancePolicyRuleResponse) GetPolicy() *CompliancePolicy {
@@ -19314,7 +19629,7 @@ type GetDeviceCompliancePolicyStatusRequest struct {
 
 func (x *GetDeviceCompliancePolicyStatusRequest) Reset() {
 	*x = GetDeviceCompliancePolicyStatusRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[310]
+	mi := &file_powermanage_v1_control_proto_msgTypes[314]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19326,7 +19641,7 @@ func (x *GetDeviceCompliancePolicyStatusRequest) String() string {
 func (*GetDeviceCompliancePolicyStatusRequest) ProtoMessage() {}
 
 func (x *GetDeviceCompliancePolicyStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[310]
+	mi := &file_powermanage_v1_control_proto_msgTypes[314]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19339,7 +19654,7 @@ func (x *GetDeviceCompliancePolicyStatusRequest) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use GetDeviceCompliancePolicyStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetDeviceCompliancePolicyStatusRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{310}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{314}
 }
 
 func (x *GetDeviceCompliancePolicyStatusRequest) GetDeviceId() string {
@@ -19359,7 +19674,7 @@ type GetDeviceCompliancePolicyStatusResponse struct {
 
 func (x *GetDeviceCompliancePolicyStatusResponse) Reset() {
 	*x = GetDeviceCompliancePolicyStatusResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[311]
+	mi := &file_powermanage_v1_control_proto_msgTypes[315]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19371,7 +19686,7 @@ func (x *GetDeviceCompliancePolicyStatusResponse) String() string {
 func (*GetDeviceCompliancePolicyStatusResponse) ProtoMessage() {}
 
 func (x *GetDeviceCompliancePolicyStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[311]
+	mi := &file_powermanage_v1_control_proto_msgTypes[315]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19384,7 +19699,7 @@ func (x *GetDeviceCompliancePolicyStatusResponse) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use GetDeviceCompliancePolicyStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetDeviceCompliancePolicyStatusResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{311}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{315}
 }
 
 func (x *GetDeviceCompliancePolicyStatusResponse) GetOverallStatus() ComplianceStatus {
@@ -19413,7 +19728,7 @@ type DevicePolicyEvaluation struct {
 
 func (x *DevicePolicyEvaluation) Reset() {
 	*x = DevicePolicyEvaluation{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[312]
+	mi := &file_powermanage_v1_control_proto_msgTypes[316]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19425,7 +19740,7 @@ func (x *DevicePolicyEvaluation) String() string {
 func (*DevicePolicyEvaluation) ProtoMessage() {}
 
 func (x *DevicePolicyEvaluation) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[312]
+	mi := &file_powermanage_v1_control_proto_msgTypes[316]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19438,7 +19753,7 @@ func (x *DevicePolicyEvaluation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevicePolicyEvaluation.ProtoReflect.Descriptor instead.
 func (*DevicePolicyEvaluation) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{312}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{316}
 }
 
 func (x *DevicePolicyEvaluation) GetPolicyId() string {
@@ -19486,7 +19801,7 @@ type DevicePolicyRuleEvaluation struct {
 
 func (x *DevicePolicyRuleEvaluation) Reset() {
 	*x = DevicePolicyRuleEvaluation{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[313]
+	mi := &file_powermanage_v1_control_proto_msgTypes[317]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19498,7 +19813,7 @@ func (x *DevicePolicyRuleEvaluation) String() string {
 func (*DevicePolicyRuleEvaluation) ProtoMessage() {}
 
 func (x *DevicePolicyRuleEvaluation) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[313]
+	mi := &file_powermanage_v1_control_proto_msgTypes[317]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19511,7 +19826,7 @@ func (x *DevicePolicyRuleEvaluation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevicePolicyRuleEvaluation.ProtoReflect.Descriptor instead.
 func (*DevicePolicyRuleEvaluation) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{313}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{317}
 }
 
 func (x *DevicePolicyRuleEvaluation) GetActionId() string {
@@ -19588,7 +19903,7 @@ type SearchDateFilter struct {
 
 func (x *SearchDateFilter) Reset() {
 	*x = SearchDateFilter{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[314]
+	mi := &file_powermanage_v1_control_proto_msgTypes[318]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19600,7 +19915,7 @@ func (x *SearchDateFilter) String() string {
 func (*SearchDateFilter) ProtoMessage() {}
 
 func (x *SearchDateFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[314]
+	mi := &file_powermanage_v1_control_proto_msgTypes[318]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19613,7 +19928,7 @@ func (x *SearchDateFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchDateFilter.ProtoReflect.Descriptor instead.
 func (*SearchDateFilter) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{314}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{318}
 }
 
 func (x *SearchDateFilter) GetField() string {
@@ -19663,7 +19978,7 @@ type SearchRequest struct {
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[315]
+	mi := &file_powermanage_v1_control_proto_msgTypes[319]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19675,7 +19990,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[315]
+	mi := &file_powermanage_v1_control_proto_msgTypes[319]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19688,7 +20003,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{315}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{319}
 }
 
 func (x *SearchRequest) GetQuery() string {
@@ -19761,7 +20076,7 @@ type SearchResult struct {
 
 func (x *SearchResult) Reset() {
 	*x = SearchResult{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[316]
+	mi := &file_powermanage_v1_control_proto_msgTypes[320]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19773,7 +20088,7 @@ func (x *SearchResult) String() string {
 func (*SearchResult) ProtoMessage() {}
 
 func (x *SearchResult) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[316]
+	mi := &file_powermanage_v1_control_proto_msgTypes[320]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19786,7 +20101,7 @@ func (x *SearchResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchResult.ProtoReflect.Descriptor instead.
 func (*SearchResult) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{316}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{320}
 }
 
 func (x *SearchResult) GetId() string {
@@ -19842,7 +20157,7 @@ type SearchResponse struct {
 
 func (x *SearchResponse) Reset() {
 	*x = SearchResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[317]
+	mi := &file_powermanage_v1_control_proto_msgTypes[321]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19854,7 +20169,7 @@ func (x *SearchResponse) String() string {
 func (*SearchResponse) ProtoMessage() {}
 
 func (x *SearchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[317]
+	mi := &file_powermanage_v1_control_proto_msgTypes[321]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19867,7 +20182,7 @@ func (x *SearchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchResponse.ProtoReflect.Descriptor instead.
 func (*SearchResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{317}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{321}
 }
 
 func (x *SearchResponse) GetResults() []*SearchResult {
@@ -19899,7 +20214,7 @@ type RebuildSearchIndexRequest struct {
 
 func (x *RebuildSearchIndexRequest) Reset() {
 	*x = RebuildSearchIndexRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[318]
+	mi := &file_powermanage_v1_control_proto_msgTypes[322]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19911,7 +20226,7 @@ func (x *RebuildSearchIndexRequest) String() string {
 func (*RebuildSearchIndexRequest) ProtoMessage() {}
 
 func (x *RebuildSearchIndexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[318]
+	mi := &file_powermanage_v1_control_proto_msgTypes[322]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19924,7 +20239,7 @@ func (x *RebuildSearchIndexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RebuildSearchIndexRequest.ProtoReflect.Descriptor instead.
 func (*RebuildSearchIndexRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{318}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{322}
 }
 
 type RebuildSearchIndexResponse struct {
@@ -19935,7 +20250,7 @@ type RebuildSearchIndexResponse struct {
 
 func (x *RebuildSearchIndexResponse) Reset() {
 	*x = RebuildSearchIndexResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[319]
+	mi := &file_powermanage_v1_control_proto_msgTypes[323]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19947,7 +20262,7 @@ func (x *RebuildSearchIndexResponse) String() string {
 func (*RebuildSearchIndexResponse) ProtoMessage() {}
 
 func (x *RebuildSearchIndexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[319]
+	mi := &file_powermanage_v1_control_proto_msgTypes[323]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19960,7 +20275,7 @@ func (x *RebuildSearchIndexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RebuildSearchIndexResponse.ProtoReflect.Descriptor instead.
 func (*RebuildSearchIndexResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{319}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{323}
 }
 
 type ServerSettings struct {
@@ -19973,7 +20288,7 @@ type ServerSettings struct {
 
 func (x *ServerSettings) Reset() {
 	*x = ServerSettings{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[320]
+	mi := &file_powermanage_v1_control_proto_msgTypes[324]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19985,7 +20300,7 @@ func (x *ServerSettings) String() string {
 func (*ServerSettings) ProtoMessage() {}
 
 func (x *ServerSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[320]
+	mi := &file_powermanage_v1_control_proto_msgTypes[324]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19998,7 +20313,7 @@ func (x *ServerSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerSettings.ProtoReflect.Descriptor instead.
 func (*ServerSettings) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{320}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{324}
 }
 
 func (x *ServerSettings) GetUserProvisioningEnabled() bool {
@@ -20023,7 +20338,7 @@ type GetServerSettingsRequest struct {
 
 func (x *GetServerSettingsRequest) Reset() {
 	*x = GetServerSettingsRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[321]
+	mi := &file_powermanage_v1_control_proto_msgTypes[325]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20035,7 +20350,7 @@ func (x *GetServerSettingsRequest) String() string {
 func (*GetServerSettingsRequest) ProtoMessage() {}
 
 func (x *GetServerSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[321]
+	mi := &file_powermanage_v1_control_proto_msgTypes[325]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20048,7 +20363,7 @@ func (x *GetServerSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServerSettingsRequest.ProtoReflect.Descriptor instead.
 func (*GetServerSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{321}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{325}
 }
 
 type GetServerSettingsResponse struct {
@@ -20060,7 +20375,7 @@ type GetServerSettingsResponse struct {
 
 func (x *GetServerSettingsResponse) Reset() {
 	*x = GetServerSettingsResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[322]
+	mi := &file_powermanage_v1_control_proto_msgTypes[326]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20072,7 +20387,7 @@ func (x *GetServerSettingsResponse) String() string {
 func (*GetServerSettingsResponse) ProtoMessage() {}
 
 func (x *GetServerSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[322]
+	mi := &file_powermanage_v1_control_proto_msgTypes[326]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20085,7 +20400,7 @@ func (x *GetServerSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServerSettingsResponse.ProtoReflect.Descriptor instead.
 func (*GetServerSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{322}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{326}
 }
 
 func (x *GetServerSettingsResponse) GetSettings() *ServerSettings {
@@ -20105,7 +20420,7 @@ type UpdateServerSettingsRequest struct {
 
 func (x *UpdateServerSettingsRequest) Reset() {
 	*x = UpdateServerSettingsRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[323]
+	mi := &file_powermanage_v1_control_proto_msgTypes[327]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20117,7 +20432,7 @@ func (x *UpdateServerSettingsRequest) String() string {
 func (*UpdateServerSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateServerSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[323]
+	mi := &file_powermanage_v1_control_proto_msgTypes[327]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20130,7 +20445,7 @@ func (x *UpdateServerSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateServerSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateServerSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{323}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{327}
 }
 
 func (x *UpdateServerSettingsRequest) GetUserProvisioningEnabled() bool {
@@ -20156,7 +20471,7 @@ type UpdateServerSettingsResponse struct {
 
 func (x *UpdateServerSettingsResponse) Reset() {
 	*x = UpdateServerSettingsResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[324]
+	mi := &file_powermanage_v1_control_proto_msgTypes[328]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20168,7 +20483,7 @@ func (x *UpdateServerSettingsResponse) String() string {
 func (*UpdateServerSettingsResponse) ProtoMessage() {}
 
 func (x *UpdateServerSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[324]
+	mi := &file_powermanage_v1_control_proto_msgTypes[328]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20181,7 +20496,7 @@ func (x *UpdateServerSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateServerSettingsResponse.ProtoReflect.Descriptor instead.
 func (*UpdateServerSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{324}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{328}
 }
 
 func (x *UpdateServerSettingsResponse) GetSettings() *ServerSettings {
@@ -20202,7 +20517,7 @@ type SetUserProvisioningEnabledRequest struct {
 
 func (x *SetUserProvisioningEnabledRequest) Reset() {
 	*x = SetUserProvisioningEnabledRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[325]
+	mi := &file_powermanage_v1_control_proto_msgTypes[329]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20214,7 +20529,7 @@ func (x *SetUserProvisioningEnabledRequest) String() string {
 func (*SetUserProvisioningEnabledRequest) ProtoMessage() {}
 
 func (x *SetUserProvisioningEnabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[325]
+	mi := &file_powermanage_v1_control_proto_msgTypes[329]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20227,7 +20542,7 @@ func (x *SetUserProvisioningEnabledRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use SetUserProvisioningEnabledRequest.ProtoReflect.Descriptor instead.
 func (*SetUserProvisioningEnabledRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{325}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{329}
 }
 
 func (x *SetUserProvisioningEnabledRequest) GetUserId() string {
@@ -20260,7 +20575,7 @@ type StartTerminalRequest struct {
 
 func (x *StartTerminalRequest) Reset() {
 	*x = StartTerminalRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[326]
+	mi := &file_powermanage_v1_control_proto_msgTypes[330]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20272,7 +20587,7 @@ func (x *StartTerminalRequest) String() string {
 func (*StartTerminalRequest) ProtoMessage() {}
 
 func (x *StartTerminalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[326]
+	mi := &file_powermanage_v1_control_proto_msgTypes[330]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20285,7 +20600,7 @@ func (x *StartTerminalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartTerminalRequest.ProtoReflect.Descriptor instead.
 func (*StartTerminalRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{326}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{330}
 }
 
 func (x *StartTerminalRequest) GetDeviceId() string {
@@ -20339,7 +20654,7 @@ type StartTerminalResponse struct {
 
 func (x *StartTerminalResponse) Reset() {
 	*x = StartTerminalResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[327]
+	mi := &file_powermanage_v1_control_proto_msgTypes[331]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20351,7 +20666,7 @@ func (x *StartTerminalResponse) String() string {
 func (*StartTerminalResponse) ProtoMessage() {}
 
 func (x *StartTerminalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[327]
+	mi := &file_powermanage_v1_control_proto_msgTypes[331]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20364,7 +20679,7 @@ func (x *StartTerminalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartTerminalResponse.ProtoReflect.Descriptor instead.
 func (*StartTerminalResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{327}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{331}
 }
 
 func (x *StartTerminalResponse) GetSessionId() string {
@@ -20444,7 +20759,7 @@ type StopTerminalRequest struct {
 
 func (x *StopTerminalRequest) Reset() {
 	*x = StopTerminalRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[328]
+	mi := &file_powermanage_v1_control_proto_msgTypes[332]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20456,7 +20771,7 @@ func (x *StopTerminalRequest) String() string {
 func (*StopTerminalRequest) ProtoMessage() {}
 
 func (x *StopTerminalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[328]
+	mi := &file_powermanage_v1_control_proto_msgTypes[332]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20469,7 +20784,7 @@ func (x *StopTerminalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopTerminalRequest.ProtoReflect.Descriptor instead.
 func (*StopTerminalRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{328}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{332}
 }
 
 func (x *StopTerminalRequest) GetSessionId() string {
@@ -20487,7 +20802,7 @@ type StopTerminalResponse struct {
 
 func (x *StopTerminalResponse) Reset() {
 	*x = StopTerminalResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[329]
+	mi := &file_powermanage_v1_control_proto_msgTypes[333]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20499,7 +20814,7 @@ func (x *StopTerminalResponse) String() string {
 func (*StopTerminalResponse) ProtoMessage() {}
 
 func (x *StopTerminalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[329]
+	mi := &file_powermanage_v1_control_proto_msgTypes[333]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20512,7 +20827,7 @@ func (x *StopTerminalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopTerminalResponse.ProtoReflect.Descriptor instead.
 func (*StopTerminalResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{329}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{333}
 }
 
 // TerminalSessionInfo is the admin view of an active session, returned
@@ -20537,7 +20852,7 @@ type TerminalSessionInfo struct {
 
 func (x *TerminalSessionInfo) Reset() {
 	*x = TerminalSessionInfo{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[330]
+	mi := &file_powermanage_v1_control_proto_msgTypes[334]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20549,7 +20864,7 @@ func (x *TerminalSessionInfo) String() string {
 func (*TerminalSessionInfo) ProtoMessage() {}
 
 func (x *TerminalSessionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[330]
+	mi := &file_powermanage_v1_control_proto_msgTypes[334]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20562,7 +20877,7 @@ func (x *TerminalSessionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalSessionInfo.ProtoReflect.Descriptor instead.
 func (*TerminalSessionInfo) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{330}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{334}
 }
 
 func (x *TerminalSessionInfo) GetSessionId() string {
@@ -20641,7 +20956,7 @@ type ListActiveTerminalSessionsRequest struct {
 
 func (x *ListActiveTerminalSessionsRequest) Reset() {
 	*x = ListActiveTerminalSessionsRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[331]
+	mi := &file_powermanage_v1_control_proto_msgTypes[335]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20653,7 +20968,7 @@ func (x *ListActiveTerminalSessionsRequest) String() string {
 func (*ListActiveTerminalSessionsRequest) ProtoMessage() {}
 
 func (x *ListActiveTerminalSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[331]
+	mi := &file_powermanage_v1_control_proto_msgTypes[335]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20666,7 +20981,7 @@ func (x *ListActiveTerminalSessionsRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ListActiveTerminalSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActiveTerminalSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{331}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{335}
 }
 
 func (x *ListActiveTerminalSessionsRequest) GetPageSize() int32 {
@@ -20708,7 +21023,7 @@ type ListActiveTerminalSessionsResponse struct {
 
 func (x *ListActiveTerminalSessionsResponse) Reset() {
 	*x = ListActiveTerminalSessionsResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[332]
+	mi := &file_powermanage_v1_control_proto_msgTypes[336]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20720,7 +21035,7 @@ func (x *ListActiveTerminalSessionsResponse) String() string {
 func (*ListActiveTerminalSessionsResponse) ProtoMessage() {}
 
 func (x *ListActiveTerminalSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[332]
+	mi := &file_powermanage_v1_control_proto_msgTypes[336]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20733,7 +21048,7 @@ func (x *ListActiveTerminalSessionsResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ListActiveTerminalSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActiveTerminalSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{332}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{336}
 }
 
 func (x *ListActiveTerminalSessionsResponse) GetSessions() []*TerminalSessionInfo {
@@ -20776,7 +21091,7 @@ type TerminateTerminalSessionRequest struct {
 
 func (x *TerminateTerminalSessionRequest) Reset() {
 	*x = TerminateTerminalSessionRequest{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[333]
+	mi := &file_powermanage_v1_control_proto_msgTypes[337]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20788,7 +21103,7 @@ func (x *TerminateTerminalSessionRequest) String() string {
 func (*TerminateTerminalSessionRequest) ProtoMessage() {}
 
 func (x *TerminateTerminalSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[333]
+	mi := &file_powermanage_v1_control_proto_msgTypes[337]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20801,7 +21116,7 @@ func (x *TerminateTerminalSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateTerminalSessionRequest.ProtoReflect.Descriptor instead.
 func (*TerminateTerminalSessionRequest) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{333}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{337}
 }
 
 func (x *TerminateTerminalSessionRequest) GetSessionId() string {
@@ -20826,7 +21141,7 @@ type TerminateTerminalSessionResponse struct {
 
 func (x *TerminateTerminalSessionResponse) Reset() {
 	*x = TerminateTerminalSessionResponse{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[334]
+	mi := &file_powermanage_v1_control_proto_msgTypes[338]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20838,7 +21153,7 @@ func (x *TerminateTerminalSessionResponse) String() string {
 func (*TerminateTerminalSessionResponse) ProtoMessage() {}
 
 func (x *TerminateTerminalSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[334]
+	mi := &file_powermanage_v1_control_proto_msgTypes[338]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20851,7 +21166,7 @@ func (x *TerminateTerminalSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateTerminalSessionResponse.ProtoReflect.Descriptor instead.
 func (*TerminateTerminalSessionResponse) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{334}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{338}
 }
 
 // EncryptionAuthoringParams is the HTTPS write boundary for an operator-authored
@@ -20878,7 +21193,7 @@ type EncryptionAuthoringParams struct {
 
 func (x *EncryptionAuthoringParams) Reset() {
 	*x = EncryptionAuthoringParams{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[335]
+	mi := &file_powermanage_v1_control_proto_msgTypes[339]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20890,7 +21205,7 @@ func (x *EncryptionAuthoringParams) String() string {
 func (*EncryptionAuthoringParams) ProtoMessage() {}
 
 func (x *EncryptionAuthoringParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[335]
+	mi := &file_powermanage_v1_control_proto_msgTypes[339]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20903,7 +21218,7 @@ func (x *EncryptionAuthoringParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EncryptionAuthoringParams.ProtoReflect.Descriptor instead.
 func (*EncryptionAuthoringParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{335}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{339}
 }
 
 func (x *EncryptionAuthoringParams) GetPresharedKey() string {
@@ -20963,7 +21278,7 @@ type ManagedEncryptionParams struct {
 
 func (x *ManagedEncryptionParams) Reset() {
 	*x = ManagedEncryptionParams{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[336]
+	mi := &file_powermanage_v1_control_proto_msgTypes[340]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20975,7 +21290,7 @@ func (x *ManagedEncryptionParams) String() string {
 func (*ManagedEncryptionParams) ProtoMessage() {}
 
 func (x *ManagedEncryptionParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[336]
+	mi := &file_powermanage_v1_control_proto_msgTypes[340]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20988,7 +21303,7 @@ func (x *ManagedEncryptionParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagedEncryptionParams.ProtoReflect.Descriptor instead.
 func (*ManagedEncryptionParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{336}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{340}
 }
 
 func (x *ManagedEncryptionParams) GetPresharedKeyConfigured() bool {
@@ -21062,7 +21377,7 @@ type WifiAuthoringParams struct {
 
 func (x *WifiAuthoringParams) Reset() {
 	*x = WifiAuthoringParams{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[337]
+	mi := &file_powermanage_v1_control_proto_msgTypes[341]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21074,7 +21389,7 @@ func (x *WifiAuthoringParams) String() string {
 func (*WifiAuthoringParams) ProtoMessage() {}
 
 func (x *WifiAuthoringParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[337]
+	mi := &file_powermanage_v1_control_proto_msgTypes[341]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21087,7 +21402,7 @@ func (x *WifiAuthoringParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WifiAuthoringParams.ProtoReflect.Descriptor instead.
 func (*WifiAuthoringParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{337}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{341}
 }
 
 func (x *WifiAuthoringParams) GetSsid() string {
@@ -21179,7 +21494,7 @@ type ManagedWifiParams struct {
 
 func (x *ManagedWifiParams) Reset() {
 	*x = ManagedWifiParams{}
-	mi := &file_powermanage_v1_control_proto_msgTypes[338]
+	mi := &file_powermanage_v1_control_proto_msgTypes[342]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -21191,7 +21506,7 @@ func (x *ManagedWifiParams) String() string {
 func (*ManagedWifiParams) ProtoMessage() {}
 
 func (x *ManagedWifiParams) ProtoReflect() protoreflect.Message {
-	mi := &file_powermanage_v1_control_proto_msgTypes[338]
+	mi := &file_powermanage_v1_control_proto_msgTypes[342]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -21204,7 +21519,7 @@ func (x *ManagedWifiParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagedWifiParams.ProtoReflect.Descriptor instead.
 func (*ManagedWifiParams) Descriptor() ([]byte, []int) {
-	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{338}
+	return file_powermanage_v1_control_proto_rawDescGZIP(), []int{342}
 }
 
 func (x *ManagedWifiParams) GetSsid() string {
@@ -22451,7 +22766,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\rusers_removed\x18\x03 \x01(\x05R\fusersRemoved\"\x88\x01\n" +
 	"$SetUserGroupMaintenanceWindowRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12P\n" +
-	"\x12maintenance_window\x18\x02 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xa7\a\n" +
+	"\x12maintenance_window\x18\x02 \x01(\v2!.powermanage.v1.MaintenanceWindowR\x11maintenanceWindow\"\xcb\a\n" +
 	"\x10IdentityProvider\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -22478,7 +22793,8 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"updated_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12!\n" +
 	"\fscim_enabled\x18\x14 \x01(\bR\vscimEnabled\x12*\n" +
 	"\x11scim_endpoint_url\x18\x15 \x01(\tR\x0fscimEndpointUrl\x124\n" +
-	"\x16trust_email_assertions\x18\x16 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
+	"\x16trust_email_assertions\x18\x16 \x01(\bR\x14trustEmailAssertions\x12\"\n" +
+	"\rcli_client_id\x18\x17 \x01(\tR\vcliClientId\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x03\n" +
@@ -22495,7 +22811,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\rexternal_name\x18\b \x01(\tR\fexternalName\x127\n" +
 	"\tlinked_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\blinkedAt\x12>\n" +
 	"\rlast_login_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\"\xf7\x05\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\"\x9b\x06\n" +
 	"\x1dCreateIdentityProviderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12I\n" +
@@ -22515,7 +22831,8 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
 	"groupClaim\x12d\n" +
 	"\rgroup_mapping\x18\x10 \x03(\v2?.powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
-	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
+	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x12\"\n" +
+	"\rcli_client_id\x18\x12 \x01(\tR\vcliClientId\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"^\n" +
@@ -22533,7 +22850,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\tproviders\x18\x01 \x03(\v2 .powermanage.v1.IdentityProviderR\tproviders\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xc2\x05\n" +
+	"totalCount\"\xfd\x05\n" +
 	"\x1dUpdateIdentityProviderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -22553,19 +22870,23 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
 	"groupClaim\x12d\n" +
 	"\rgroup_mapping\x18\x10 \x03(\v2?.powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
-	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x1a?\n" +
+	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x12'\n" +
+	"\rcli_client_id\x18\x12 \x01(\tH\x00R\vcliClientId\x88\x01\x01\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"^\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
+	"\x0e_cli_client_id\"^\n" +
 	"\x1eUpdateIdentityProviderResponse\x12<\n" +
 	"\bprovider\x18\x01 \x01(\v2 .powermanage.v1.IdentityProviderR\bprovider\"/\n" +
 	"\x1dDeleteIdentityProviderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\" \n" +
-	"\x1eDeleteIdentityProviderResponse\"\x87\x01\n" +
+	"\x1eDeleteIdentityProviderResponse\"\xc9\x01\n" +
 	"\x12AuthMethodProvider\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12I\n" +
-	"\rprovider_type\x18\x03 \x01(\x0e2$.powermanage.v1.IdentityProviderTypeR\fproviderType\".\n" +
+	"\rprovider_type\x18\x03 \x01(\x0e2$.powermanage.v1.IdentityProviderTypeR\fproviderType\x12#\n" +
+	"\rbrowser_login\x18\x04 \x01(\bR\fbrowserLogin\x12\x1b\n" +
+	"\tcli_login\x18\x05 \x01(\bR\bcliLogin\".\n" +
 	"\x16ListAuthMethodsRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"[\n" +
 	"\x17ListAuthMethodsResponse\x12@\n" +
@@ -22580,6 +22901,27 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12\x14\n" +
 	"\x05state\x18\x03 \x01(\tR\x05state\"\xc2\x01\n" +
 	"\x13SSOCallbackResponse\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
+	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x129\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12(\n" +
+	"\x04user\x18\x04 \x01(\v2\x14.powermanage.v1.UserR\x04user\"t\n" +
+	"\x14BeginCLILoginRequest\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12!\n" +
+	"\fredirect_url\x18\x02 \x01(\tR\vredirectUrl\x12%\n" +
+	"\x0ecode_challenge\x18\x03 \x01(\tR\rcodeChallenge\"\xbf\x01\n" +
+	"\x15BeginCLILoginResponse\x12\x1b\n" +
+	"\tlogin_url\x18\x01 \x01(\tR\bloginUrl\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12\x1b\n" +
+	"\ttoken_url\x18\x03 \x01(\tR\btokenUrl\x12\x1b\n" +
+	"\tclient_id\x18\x04 \x01(\tR\bclientId\x129\n" +
+	"\n" +
+	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"`\n" +
+	"\x19ExchangeCLISessionRequest\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12\x19\n" +
+	"\bid_token\x18\x03 \x01(\tR\aidToken\"\xc9\x01\n" +
+	"\x1aExchangeCLISessionResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x129\n" +
 	"\n" +
@@ -22838,7 +23180,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\fauto_connect\x18\b \x01(\bR\vautoConnect\x12\x16\n" +
 	"\x06hidden\x18\t \x01(\bR\x06hidden\x12\x1a\n" +
 	"\bpriority\x18\n" +
-	" \x01(\x05R\bpriority2\xfd\x82\x01\n" +
+	" \x01(\x05R\bpriority2Ȅ\x01\n" +
 	"\x0eControlService\x12M\n" +
 	"\bRegister\x12\x1f.powermanage.v1.RegisterRequest\x1a .powermanage.v1.RegisterResponse\x12e\n" +
 	"\x10RenewCertificate\x12'.powermanage.v1.RenewCertificateRequest\x1a(.powermanage.v1.RenewCertificateResponse\x12Y\n" +
@@ -22847,7 +23189,9 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\x0eGetCurrentUser\x12%.powermanage.v1.GetCurrentUserRequest\x1a&.powermanage.v1.GetCurrentUserResponse\x12b\n" +
 	"\x0fListAuthMethods\x12&.powermanage.v1.ListAuthMethodsRequest\x1a'.powermanage.v1.ListAuthMethodsResponse\x12_\n" +
 	"\x0eGetSSOLoginURL\x12%.powermanage.v1.GetSSOLoginURLRequest\x1a&.powermanage.v1.GetSSOLoginURLResponse\x12V\n" +
-	"\vSSOCallback\x12\".powermanage.v1.SSOCallbackRequest\x1a#.powermanage.v1.SSOCallbackResponse\x12w\n" +
+	"\vSSOCallback\x12\".powermanage.v1.SSOCallbackRequest\x1a#.powermanage.v1.SSOCallbackResponse\x12\\\n" +
+	"\rBeginCLILogin\x12$.powermanage.v1.BeginCLILoginRequest\x1a%.powermanage.v1.BeginCLILoginResponse\x12k\n" +
+	"\x12ExchangeCLISession\x12).powermanage.v1.ExchangeCLISessionRequest\x1a*.powermanage.v1.ExchangeCLISessionResponse\x12w\n" +
 	"\x16CreateIdentityProvider\x12-.powermanage.v1.CreateIdentityProviderRequest\x1a..powermanage.v1.CreateIdentityProviderResponse\x12n\n" +
 	"\x13GetIdentityProvider\x12*.powermanage.v1.GetIdentityProviderRequest\x1a+.powermanage.v1.GetIdentityProviderResponse\x12t\n" +
 	"\x15ListIdentityProviders\x12,.powermanage.v1.ListIdentityProvidersRequest\x1a-.powermanage.v1.ListIdentityProvidersResponse\x12w\n" +
@@ -23017,7 +23361,7 @@ func file_powermanage_v1_control_proto_rawDescGZIP() []byte {
 	return file_powermanage_v1_control_proto_rawDescData
 }
 
-var file_powermanage_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 346)
+var file_powermanage_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 350)
 var file_powermanage_v1_control_proto_goTypes = []any{
 	(*RegisterRequest)(nil),                          // 0: powermanage.v1.RegisterRequest
 	(*RegisterResponse)(nil),                         // 1: powermanage.v1.RegisterResponse
@@ -23297,267 +23641,271 @@ var file_powermanage_v1_control_proto_goTypes = []any{
 	(*GetSSOLoginURLResponse)(nil),                   // 275: powermanage.v1.GetSSOLoginURLResponse
 	(*SSOCallbackRequest)(nil),                       // 276: powermanage.v1.SSOCallbackRequest
 	(*SSOCallbackResponse)(nil),                      // 277: powermanage.v1.SSOCallbackResponse
-	(*ListIdentityLinksRequest)(nil),                 // 278: powermanage.v1.ListIdentityLinksRequest
-	(*ListIdentityLinksResponse)(nil),                // 279: powermanage.v1.ListIdentityLinksResponse
-	(*UnlinkIdentityRequest)(nil),                    // 280: powermanage.v1.UnlinkIdentityRequest
-	(*UnlinkIdentityResponse)(nil),                   // 281: powermanage.v1.UnlinkIdentityResponse
-	(*EnableSCIMRequest)(nil),                        // 282: powermanage.v1.EnableSCIMRequest
-	(*EnableSCIMResponse)(nil),                       // 283: powermanage.v1.EnableSCIMResponse
-	(*DisableSCIMRequest)(nil),                       // 284: powermanage.v1.DisableSCIMRequest
-	(*DisableSCIMResponse)(nil),                      // 285: powermanage.v1.DisableSCIMResponse
-	(*RotateSCIMTokenRequest)(nil),                   // 286: powermanage.v1.RotateSCIMTokenRequest
-	(*RotateSCIMTokenResponse)(nil),                  // 287: powermanage.v1.RotateSCIMTokenResponse
-	(*GetDeviceComplianceRequest)(nil),               // 288: powermanage.v1.GetDeviceComplianceRequest
-	(*GetDeviceComplianceResponse)(nil),              // 289: powermanage.v1.GetDeviceComplianceResponse
-	(*ComplianceCheckResult)(nil),                    // 290: powermanage.v1.ComplianceCheckResult
-	(*CompliancePolicy)(nil),                         // 291: powermanage.v1.CompliancePolicy
-	(*CompliancePolicyRule)(nil),                     // 292: powermanage.v1.CompliancePolicyRule
-	(*CreateCompliancePolicyRequest)(nil),            // 293: powermanage.v1.CreateCompliancePolicyRequest
-	(*CreateCompliancePolicyResponse)(nil),           // 294: powermanage.v1.CreateCompliancePolicyResponse
-	(*GetCompliancePolicyRequest)(nil),               // 295: powermanage.v1.GetCompliancePolicyRequest
-	(*GetCompliancePolicyResponse)(nil),              // 296: powermanage.v1.GetCompliancePolicyResponse
-	(*ListCompliancePoliciesRequest)(nil),            // 297: powermanage.v1.ListCompliancePoliciesRequest
-	(*ListCompliancePoliciesResponse)(nil),           // 298: powermanage.v1.ListCompliancePoliciesResponse
-	(*RenameCompliancePolicyRequest)(nil),            // 299: powermanage.v1.RenameCompliancePolicyRequest
-	(*UpdateCompliancePolicyDescriptionRequest)(nil), // 300: powermanage.v1.UpdateCompliancePolicyDescriptionRequest
-	(*UpdateCompliancePolicyResponse)(nil),           // 301: powermanage.v1.UpdateCompliancePolicyResponse
-	(*DeleteCompliancePolicyRequest)(nil),            // 302: powermanage.v1.DeleteCompliancePolicyRequest
-	(*DeleteCompliancePolicyResponse)(nil),           // 303: powermanage.v1.DeleteCompliancePolicyResponse
-	(*AddCompliancePolicyRuleRequest)(nil),           // 304: powermanage.v1.AddCompliancePolicyRuleRequest
-	(*AddCompliancePolicyRuleResponse)(nil),          // 305: powermanage.v1.AddCompliancePolicyRuleResponse
-	(*RemoveCompliancePolicyRuleRequest)(nil),        // 306: powermanage.v1.RemoveCompliancePolicyRuleRequest
-	(*RemoveCompliancePolicyRuleResponse)(nil),       // 307: powermanage.v1.RemoveCompliancePolicyRuleResponse
-	(*UpdateCompliancePolicyRuleRequest)(nil),        // 308: powermanage.v1.UpdateCompliancePolicyRuleRequest
-	(*UpdateCompliancePolicyRuleResponse)(nil),       // 309: powermanage.v1.UpdateCompliancePolicyRuleResponse
-	(*GetDeviceCompliancePolicyStatusRequest)(nil),   // 310: powermanage.v1.GetDeviceCompliancePolicyStatusRequest
-	(*GetDeviceCompliancePolicyStatusResponse)(nil),  // 311: powermanage.v1.GetDeviceCompliancePolicyStatusResponse
-	(*DevicePolicyEvaluation)(nil),                   // 312: powermanage.v1.DevicePolicyEvaluation
-	(*DevicePolicyRuleEvaluation)(nil),               // 313: powermanage.v1.DevicePolicyRuleEvaluation
-	(*SearchDateFilter)(nil),                         // 314: powermanage.v1.SearchDateFilter
-	(*SearchRequest)(nil),                            // 315: powermanage.v1.SearchRequest
-	(*SearchResult)(nil),                             // 316: powermanage.v1.SearchResult
-	(*SearchResponse)(nil),                           // 317: powermanage.v1.SearchResponse
-	(*RebuildSearchIndexRequest)(nil),                // 318: powermanage.v1.RebuildSearchIndexRequest
-	(*RebuildSearchIndexResponse)(nil),               // 319: powermanage.v1.RebuildSearchIndexResponse
-	(*ServerSettings)(nil),                           // 320: powermanage.v1.ServerSettings
-	(*GetServerSettingsRequest)(nil),                 // 321: powermanage.v1.GetServerSettingsRequest
-	(*GetServerSettingsResponse)(nil),                // 322: powermanage.v1.GetServerSettingsResponse
-	(*UpdateServerSettingsRequest)(nil),              // 323: powermanage.v1.UpdateServerSettingsRequest
-	(*UpdateServerSettingsResponse)(nil),             // 324: powermanage.v1.UpdateServerSettingsResponse
-	(*SetUserProvisioningEnabledRequest)(nil),        // 325: powermanage.v1.SetUserProvisioningEnabledRequest
-	(*StartTerminalRequest)(nil),                     // 326: powermanage.v1.StartTerminalRequest
-	(*StartTerminalResponse)(nil),                    // 327: powermanage.v1.StartTerminalResponse
-	(*StopTerminalRequest)(nil),                      // 328: powermanage.v1.StopTerminalRequest
-	(*StopTerminalResponse)(nil),                     // 329: powermanage.v1.StopTerminalResponse
-	(*TerminalSessionInfo)(nil),                      // 330: powermanage.v1.TerminalSessionInfo
-	(*ListActiveTerminalSessionsRequest)(nil),        // 331: powermanage.v1.ListActiveTerminalSessionsRequest
-	(*ListActiveTerminalSessionsResponse)(nil),       // 332: powermanage.v1.ListActiveTerminalSessionsResponse
-	(*TerminateTerminalSessionRequest)(nil),          // 333: powermanage.v1.TerminateTerminalSessionRequest
-	(*TerminateTerminalSessionResponse)(nil),         // 334: powermanage.v1.TerminateTerminalSessionResponse
-	(*EncryptionAuthoringParams)(nil),                // 335: powermanage.v1.EncryptionAuthoringParams
-	(*ManagedEncryptionParams)(nil),                  // 336: powermanage.v1.ManagedEncryptionParams
-	(*WifiAuthoringParams)(nil),                      // 337: powermanage.v1.WifiAuthoringParams
-	(*ManagedWifiParams)(nil),                        // 338: powermanage.v1.ManagedWifiParams
-	nil,                                              // 339: powermanage.v1.Device.LabelsEntry
-	nil,                                              // 340: powermanage.v1.ListDevicesRequest.LabelFilterEntry
-	nil,                                              // 341: powermanage.v1.IdentityProvider.GroupMappingEntry
-	nil,                                              // 342: powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
-	nil,                                              // 343: powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
-	nil,                                              // 344: powermanage.v1.SearchRequest.TagFiltersEntry
-	nil,                                              // 345: powermanage.v1.SearchResult.FieldsEntry
-	(*DeviceId)(nil),                                 // 346: powermanage.v1.DeviceId
-	(*timestamppb.Timestamp)(nil),                    // 347: google.protobuf.Timestamp
-	(RoleGrantScopeKind)(0),                          // 348: powermanage.v1.RoleGrantScopeKind
-	(PermissionTargetKind)(0),                        // 349: powermanage.v1.PermissionTargetKind
-	(DeviceStatus)(0),                                // 350: powermanage.v1.DeviceStatus
-	(ComplianceStatus)(0),                            // 351: powermanage.v1.ComplianceStatus
-	(AssignmentTargetType)(0),                        // 352: powermanage.v1.AssignmentTargetType
-	(ActionType)(0),                                  // 353: powermanage.v1.ActionType
-	(DesiredState)(0),                                // 354: powermanage.v1.DesiredState
-	(*ActionSchedule)(nil),                           // 355: powermanage.v1.ActionSchedule
-	(*PackageParams)(nil),                            // 356: powermanage.v1.PackageParams
-	(*AppInstallParams)(nil),                         // 357: powermanage.v1.AppInstallParams
-	(*ShellParams)(nil),                              // 358: powermanage.v1.ShellParams
-	(*ServiceParams)(nil),                            // 359: powermanage.v1.ServiceParams
-	(*FileParams)(nil),                               // 360: powermanage.v1.FileParams
-	(*UpdateParams)(nil),                             // 361: powermanage.v1.UpdateParams
-	(*RepositoryParams)(nil),                         // 362: powermanage.v1.RepositoryParams
-	(*FlatpakParams)(nil),                            // 363: powermanage.v1.FlatpakParams
-	(*DirectoryParams)(nil),                          // 364: powermanage.v1.DirectoryParams
-	(*UserParams)(nil),                               // 365: powermanage.v1.UserParams
-	(*SshParams)(nil),                                // 366: powermanage.v1.SshParams
-	(*SshdParams)(nil),                               // 367: powermanage.v1.SshdParams
-	(*AdminPolicyParams)(nil),                        // 368: powermanage.v1.AdminPolicyParams
-	(*LpsParams)(nil),                                // 369: powermanage.v1.LpsParams
-	(*GroupParams)(nil),                              // 370: powermanage.v1.GroupParams
-	(*AgentUpdateParams)(nil),                        // 371: powermanage.v1.AgentUpdateParams
-	(OnFailure)(0),                                   // 372: powermanage.v1.OnFailure
-	(*MaintenanceWindow)(nil),                        // 373: powermanage.v1.MaintenanceWindow
-	(AssignmentSourceType)(0),                        // 374: powermanage.v1.AssignmentSourceType
-	(AssignmentMode)(0),                              // 375: powermanage.v1.AssignmentMode
-	(ExecutionStatus)(0),                             // 376: powermanage.v1.ExecutionStatus
-	(*CommandOutput)(nil),                            // 377: powermanage.v1.CommandOutput
-	(*Action)(nil),                                   // 378: powermanage.v1.Action
-	(RotationReason)(0),                              // 379: powermanage.v1.RotationReason
-	(LuksRevocationStatus)(0),                        // 380: powermanage.v1.LuksRevocationStatus
-	(*OSQueryRow)(nil),                               // 381: powermanage.v1.OSQueryRow
-	(IdentityProviderType)(0),                        // 382: powermanage.v1.IdentityProviderType
-	(SearchScope)(0),                                 // 383: powermanage.v1.SearchScope
-	(SortField)(0),                                   // 384: powermanage.v1.SortField
-	(SortDirection)(0),                               // 385: powermanage.v1.SortDirection
-	(EncryptionDeviceBoundKeyType)(0),                // 386: powermanage.v1.EncryptionDeviceBoundKeyType
-	(LpsPasswordComplexity)(0),                       // 387: powermanage.v1.LpsPasswordComplexity
-	(WifiAuthType)(0),                                // 388: powermanage.v1.WifiAuthType
+	(*BeginCLILoginRequest)(nil),                     // 278: powermanage.v1.BeginCLILoginRequest
+	(*BeginCLILoginResponse)(nil),                    // 279: powermanage.v1.BeginCLILoginResponse
+	(*ExchangeCLISessionRequest)(nil),                // 280: powermanage.v1.ExchangeCLISessionRequest
+	(*ExchangeCLISessionResponse)(nil),               // 281: powermanage.v1.ExchangeCLISessionResponse
+	(*ListIdentityLinksRequest)(nil),                 // 282: powermanage.v1.ListIdentityLinksRequest
+	(*ListIdentityLinksResponse)(nil),                // 283: powermanage.v1.ListIdentityLinksResponse
+	(*UnlinkIdentityRequest)(nil),                    // 284: powermanage.v1.UnlinkIdentityRequest
+	(*UnlinkIdentityResponse)(nil),                   // 285: powermanage.v1.UnlinkIdentityResponse
+	(*EnableSCIMRequest)(nil),                        // 286: powermanage.v1.EnableSCIMRequest
+	(*EnableSCIMResponse)(nil),                       // 287: powermanage.v1.EnableSCIMResponse
+	(*DisableSCIMRequest)(nil),                       // 288: powermanage.v1.DisableSCIMRequest
+	(*DisableSCIMResponse)(nil),                      // 289: powermanage.v1.DisableSCIMResponse
+	(*RotateSCIMTokenRequest)(nil),                   // 290: powermanage.v1.RotateSCIMTokenRequest
+	(*RotateSCIMTokenResponse)(nil),                  // 291: powermanage.v1.RotateSCIMTokenResponse
+	(*GetDeviceComplianceRequest)(nil),               // 292: powermanage.v1.GetDeviceComplianceRequest
+	(*GetDeviceComplianceResponse)(nil),              // 293: powermanage.v1.GetDeviceComplianceResponse
+	(*ComplianceCheckResult)(nil),                    // 294: powermanage.v1.ComplianceCheckResult
+	(*CompliancePolicy)(nil),                         // 295: powermanage.v1.CompliancePolicy
+	(*CompliancePolicyRule)(nil),                     // 296: powermanage.v1.CompliancePolicyRule
+	(*CreateCompliancePolicyRequest)(nil),            // 297: powermanage.v1.CreateCompliancePolicyRequest
+	(*CreateCompliancePolicyResponse)(nil),           // 298: powermanage.v1.CreateCompliancePolicyResponse
+	(*GetCompliancePolicyRequest)(nil),               // 299: powermanage.v1.GetCompliancePolicyRequest
+	(*GetCompliancePolicyResponse)(nil),              // 300: powermanage.v1.GetCompliancePolicyResponse
+	(*ListCompliancePoliciesRequest)(nil),            // 301: powermanage.v1.ListCompliancePoliciesRequest
+	(*ListCompliancePoliciesResponse)(nil),           // 302: powermanage.v1.ListCompliancePoliciesResponse
+	(*RenameCompliancePolicyRequest)(nil),            // 303: powermanage.v1.RenameCompliancePolicyRequest
+	(*UpdateCompliancePolicyDescriptionRequest)(nil), // 304: powermanage.v1.UpdateCompliancePolicyDescriptionRequest
+	(*UpdateCompliancePolicyResponse)(nil),           // 305: powermanage.v1.UpdateCompliancePolicyResponse
+	(*DeleteCompliancePolicyRequest)(nil),            // 306: powermanage.v1.DeleteCompliancePolicyRequest
+	(*DeleteCompliancePolicyResponse)(nil),           // 307: powermanage.v1.DeleteCompliancePolicyResponse
+	(*AddCompliancePolicyRuleRequest)(nil),           // 308: powermanage.v1.AddCompliancePolicyRuleRequest
+	(*AddCompliancePolicyRuleResponse)(nil),          // 309: powermanage.v1.AddCompliancePolicyRuleResponse
+	(*RemoveCompliancePolicyRuleRequest)(nil),        // 310: powermanage.v1.RemoveCompliancePolicyRuleRequest
+	(*RemoveCompliancePolicyRuleResponse)(nil),       // 311: powermanage.v1.RemoveCompliancePolicyRuleResponse
+	(*UpdateCompliancePolicyRuleRequest)(nil),        // 312: powermanage.v1.UpdateCompliancePolicyRuleRequest
+	(*UpdateCompliancePolicyRuleResponse)(nil),       // 313: powermanage.v1.UpdateCompliancePolicyRuleResponse
+	(*GetDeviceCompliancePolicyStatusRequest)(nil),   // 314: powermanage.v1.GetDeviceCompliancePolicyStatusRequest
+	(*GetDeviceCompliancePolicyStatusResponse)(nil),  // 315: powermanage.v1.GetDeviceCompliancePolicyStatusResponse
+	(*DevicePolicyEvaluation)(nil),                   // 316: powermanage.v1.DevicePolicyEvaluation
+	(*DevicePolicyRuleEvaluation)(nil),               // 317: powermanage.v1.DevicePolicyRuleEvaluation
+	(*SearchDateFilter)(nil),                         // 318: powermanage.v1.SearchDateFilter
+	(*SearchRequest)(nil),                            // 319: powermanage.v1.SearchRequest
+	(*SearchResult)(nil),                             // 320: powermanage.v1.SearchResult
+	(*SearchResponse)(nil),                           // 321: powermanage.v1.SearchResponse
+	(*RebuildSearchIndexRequest)(nil),                // 322: powermanage.v1.RebuildSearchIndexRequest
+	(*RebuildSearchIndexResponse)(nil),               // 323: powermanage.v1.RebuildSearchIndexResponse
+	(*ServerSettings)(nil),                           // 324: powermanage.v1.ServerSettings
+	(*GetServerSettingsRequest)(nil),                 // 325: powermanage.v1.GetServerSettingsRequest
+	(*GetServerSettingsResponse)(nil),                // 326: powermanage.v1.GetServerSettingsResponse
+	(*UpdateServerSettingsRequest)(nil),              // 327: powermanage.v1.UpdateServerSettingsRequest
+	(*UpdateServerSettingsResponse)(nil),             // 328: powermanage.v1.UpdateServerSettingsResponse
+	(*SetUserProvisioningEnabledRequest)(nil),        // 329: powermanage.v1.SetUserProvisioningEnabledRequest
+	(*StartTerminalRequest)(nil),                     // 330: powermanage.v1.StartTerminalRequest
+	(*StartTerminalResponse)(nil),                    // 331: powermanage.v1.StartTerminalResponse
+	(*StopTerminalRequest)(nil),                      // 332: powermanage.v1.StopTerminalRequest
+	(*StopTerminalResponse)(nil),                     // 333: powermanage.v1.StopTerminalResponse
+	(*TerminalSessionInfo)(nil),                      // 334: powermanage.v1.TerminalSessionInfo
+	(*ListActiveTerminalSessionsRequest)(nil),        // 335: powermanage.v1.ListActiveTerminalSessionsRequest
+	(*ListActiveTerminalSessionsResponse)(nil),       // 336: powermanage.v1.ListActiveTerminalSessionsResponse
+	(*TerminateTerminalSessionRequest)(nil),          // 337: powermanage.v1.TerminateTerminalSessionRequest
+	(*TerminateTerminalSessionResponse)(nil),         // 338: powermanage.v1.TerminateTerminalSessionResponse
+	(*EncryptionAuthoringParams)(nil),                // 339: powermanage.v1.EncryptionAuthoringParams
+	(*ManagedEncryptionParams)(nil),                  // 340: powermanage.v1.ManagedEncryptionParams
+	(*WifiAuthoringParams)(nil),                      // 341: powermanage.v1.WifiAuthoringParams
+	(*ManagedWifiParams)(nil),                        // 342: powermanage.v1.ManagedWifiParams
+	nil,                                              // 343: powermanage.v1.Device.LabelsEntry
+	nil,                                              // 344: powermanage.v1.ListDevicesRequest.LabelFilterEntry
+	nil,                                              // 345: powermanage.v1.IdentityProvider.GroupMappingEntry
+	nil,                                              // 346: powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	nil,                                              // 347: powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	nil,                                              // 348: powermanage.v1.SearchRequest.TagFiltersEntry
+	nil,                                              // 349: powermanage.v1.SearchResult.FieldsEntry
+	(*DeviceId)(nil),                                 // 350: powermanage.v1.DeviceId
+	(*timestamppb.Timestamp)(nil),                    // 351: google.protobuf.Timestamp
+	(RoleGrantScopeKind)(0),                          // 352: powermanage.v1.RoleGrantScopeKind
+	(PermissionTargetKind)(0),                        // 353: powermanage.v1.PermissionTargetKind
+	(DeviceStatus)(0),                                // 354: powermanage.v1.DeviceStatus
+	(ComplianceStatus)(0),                            // 355: powermanage.v1.ComplianceStatus
+	(AssignmentTargetType)(0),                        // 356: powermanage.v1.AssignmentTargetType
+	(ActionType)(0),                                  // 357: powermanage.v1.ActionType
+	(DesiredState)(0),                                // 358: powermanage.v1.DesiredState
+	(*ActionSchedule)(nil),                           // 359: powermanage.v1.ActionSchedule
+	(*PackageParams)(nil),                            // 360: powermanage.v1.PackageParams
+	(*AppInstallParams)(nil),                         // 361: powermanage.v1.AppInstallParams
+	(*ShellParams)(nil),                              // 362: powermanage.v1.ShellParams
+	(*ServiceParams)(nil),                            // 363: powermanage.v1.ServiceParams
+	(*FileParams)(nil),                               // 364: powermanage.v1.FileParams
+	(*UpdateParams)(nil),                             // 365: powermanage.v1.UpdateParams
+	(*RepositoryParams)(nil),                         // 366: powermanage.v1.RepositoryParams
+	(*FlatpakParams)(nil),                            // 367: powermanage.v1.FlatpakParams
+	(*DirectoryParams)(nil),                          // 368: powermanage.v1.DirectoryParams
+	(*UserParams)(nil),                               // 369: powermanage.v1.UserParams
+	(*SshParams)(nil),                                // 370: powermanage.v1.SshParams
+	(*SshdParams)(nil),                               // 371: powermanage.v1.SshdParams
+	(*AdminPolicyParams)(nil),                        // 372: powermanage.v1.AdminPolicyParams
+	(*LpsParams)(nil),                                // 373: powermanage.v1.LpsParams
+	(*GroupParams)(nil),                              // 374: powermanage.v1.GroupParams
+	(*AgentUpdateParams)(nil),                        // 375: powermanage.v1.AgentUpdateParams
+	(OnFailure)(0),                                   // 376: powermanage.v1.OnFailure
+	(*MaintenanceWindow)(nil),                        // 377: powermanage.v1.MaintenanceWindow
+	(AssignmentSourceType)(0),                        // 378: powermanage.v1.AssignmentSourceType
+	(AssignmentMode)(0),                              // 379: powermanage.v1.AssignmentMode
+	(ExecutionStatus)(0),                             // 380: powermanage.v1.ExecutionStatus
+	(*CommandOutput)(nil),                            // 381: powermanage.v1.CommandOutput
+	(*Action)(nil),                                   // 382: powermanage.v1.Action
+	(RotationReason)(0),                              // 383: powermanage.v1.RotationReason
+	(LuksRevocationStatus)(0),                        // 384: powermanage.v1.LuksRevocationStatus
+	(*OSQueryRow)(nil),                               // 385: powermanage.v1.OSQueryRow
+	(IdentityProviderType)(0),                        // 386: powermanage.v1.IdentityProviderType
+	(SearchScope)(0),                                 // 387: powermanage.v1.SearchScope
+	(SortField)(0),                                   // 388: powermanage.v1.SortField
+	(SortDirection)(0),                               // 389: powermanage.v1.SortDirection
+	(EncryptionDeviceBoundKeyType)(0),                // 390: powermanage.v1.EncryptionDeviceBoundKeyType
+	(LpsPasswordComplexity)(0),                       // 391: powermanage.v1.LpsPasswordComplexity
+	(WifiAuthType)(0),                                // 392: powermanage.v1.WifiAuthType
 }
 var file_powermanage_v1_control_proto_depIdxs = []int32{
-	346, // 0: powermanage.v1.RegisterResponse.device_id:type_name -> powermanage.v1.DeviceId
-	347, // 1: powermanage.v1.RenewCertificateResponse.not_after:type_name -> google.protobuf.Timestamp
-	347, // 2: powermanage.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	350, // 0: powermanage.v1.RegisterResponse.device_id:type_name -> powermanage.v1.DeviceId
+	351, // 1: powermanage.v1.RenewCertificateResponse.not_after:type_name -> google.protobuf.Timestamp
+	351, // 2: powermanage.v1.RefreshTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
 	10,  // 3: powermanage.v1.GetCurrentUserResponse.user:type_name -> powermanage.v1.User
-	347, // 4: powermanage.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	347, // 5: powermanage.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	351, // 4: powermanage.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	351, // 5: powermanage.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	260, // 6: powermanage.v1.User.identity_links:type_name -> powermanage.v1.IdentityLink
 	12,  // 7: powermanage.v1.User.ssh_public_keys:type_name -> powermanage.v1.SshPublicKey
 	11,  // 8: powermanage.v1.User.inherited_roles:type_name -> powermanage.v1.InheritedRole
 	14,  // 9: powermanage.v1.User.role_grants:type_name -> powermanage.v1.RoleGrant
-	347, // 10: powermanage.v1.SshPublicKey.added_at:type_name -> google.protobuf.Timestamp
-	347, // 11: powermanage.v1.Role.created_at:type_name -> google.protobuf.Timestamp
+	351, // 10: powermanage.v1.SshPublicKey.added_at:type_name -> google.protobuf.Timestamp
+	351, // 11: powermanage.v1.Role.created_at:type_name -> google.protobuf.Timestamp
 	13,  // 12: powermanage.v1.RoleGrant.role:type_name -> powermanage.v1.Role
-	348, // 13: powermanage.v1.RoleGrant.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
-	349, // 14: powermanage.v1.PermissionInfo.target_kind:type_name -> powermanage.v1.PermissionTargetKind
+	352, // 13: powermanage.v1.RoleGrant.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	353, // 14: powermanage.v1.PermissionInfo.target_kind:type_name -> powermanage.v1.PermissionTargetKind
 	10,  // 15: powermanage.v1.GetUserResponse.user:type_name -> powermanage.v1.User
 	10,  // 16: powermanage.v1.ListUsersResponse.users:type_name -> powermanage.v1.User
 	10,  // 17: powermanage.v1.UpdateUserResponse.user:type_name -> powermanage.v1.User
 	12,  // 18: powermanage.v1.AddUserSshKeyResponse.key:type_name -> powermanage.v1.SshPublicKey
-	350, // 19: powermanage.v1.Device.status:type_name -> powermanage.v1.DeviceStatus
-	347, // 20: powermanage.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
-	347, // 21: powermanage.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	347, // 22: powermanage.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
-	339, // 23: powermanage.v1.Device.labels:type_name -> powermanage.v1.Device.LabelsEntry
-	351, // 24: powermanage.v1.Device.compliance_status:type_name -> powermanage.v1.ComplianceStatus
-	347, // 25: powermanage.v1.Device.compliance_checked_at:type_name -> google.protobuf.Timestamp
-	347, // 26: powermanage.v1.Device.last_inventory_at:type_name -> google.protobuf.Timestamp
-	350, // 27: powermanage.v1.ListDevicesRequest.status_filter:type_name -> powermanage.v1.DeviceStatus
-	340, // 28: powermanage.v1.ListDevicesRequest.label_filter:type_name -> powermanage.v1.ListDevicesRequest.LabelFilterEntry
+	354, // 19: powermanage.v1.Device.status:type_name -> powermanage.v1.DeviceStatus
+	351, // 20: powermanage.v1.Device.registered_at:type_name -> google.protobuf.Timestamp
+	351, // 21: powermanage.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	351, // 22: powermanage.v1.Device.cert_expires_at:type_name -> google.protobuf.Timestamp
+	343, // 23: powermanage.v1.Device.labels:type_name -> powermanage.v1.Device.LabelsEntry
+	355, // 24: powermanage.v1.Device.compliance_status:type_name -> powermanage.v1.ComplianceStatus
+	351, // 25: powermanage.v1.Device.compliance_checked_at:type_name -> google.protobuf.Timestamp
+	351, // 26: powermanage.v1.Device.last_inventory_at:type_name -> google.protobuf.Timestamp
+	354, // 27: powermanage.v1.ListDevicesRequest.status_filter:type_name -> powermanage.v1.DeviceStatus
+	344, // 28: powermanage.v1.ListDevicesRequest.label_filter:type_name -> powermanage.v1.ListDevicesRequest.LabelFilterEntry
 	32,  // 29: powermanage.v1.ListDevicesResponse.devices:type_name -> powermanage.v1.Device
 	32,  // 30: powermanage.v1.GetDeviceResponse.device:type_name -> powermanage.v1.Device
 	32,  // 31: powermanage.v1.UpdateDeviceResponse.device:type_name -> powermanage.v1.Device
 	32,  // 32: powermanage.v1.AssignDeviceResponse.device:type_name -> powermanage.v1.Device
 	32,  // 33: powermanage.v1.UnassignDeviceResponse.device:type_name -> powermanage.v1.Device
-	352, // 34: powermanage.v1.DeviceAssignee.type:type_name -> powermanage.v1.AssignmentTargetType
+	356, // 34: powermanage.v1.DeviceAssignee.type:type_name -> powermanage.v1.AssignmentTargetType
 	46,  // 35: powermanage.v1.ListDeviceAssigneesResponse.assignees:type_name -> powermanage.v1.DeviceAssignee
-	347, // 36: powermanage.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
-	347, // 37: powermanage.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
-	347, // 38: powermanage.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	351, // 36: powermanage.v1.RegistrationToken.expires_at:type_name -> google.protobuf.Timestamp
+	351, // 37: powermanage.v1.RegistrationToken.created_at:type_name -> google.protobuf.Timestamp
+	351, // 38: powermanage.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
 	51,  // 39: powermanage.v1.CreateTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
 	51,  // 40: powermanage.v1.ListTokensResponse.tokens:type_name -> powermanage.v1.RegistrationToken
 	51,  // 41: powermanage.v1.GetTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
 	51,  // 42: powermanage.v1.UpdateTokenResponse.token:type_name -> powermanage.v1.RegistrationToken
-	353, // 43: powermanage.v1.ManagedAction.type:type_name -> powermanage.v1.ActionType
-	354, // 44: powermanage.v1.ManagedAction.desired_state:type_name -> powermanage.v1.DesiredState
-	347, // 45: powermanage.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
-	355, // 46: powermanage.v1.ManagedAction.schedule:type_name -> powermanage.v1.ActionSchedule
-	347, // 47: powermanage.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
-	356, // 48: powermanage.v1.ManagedAction.package:type_name -> powermanage.v1.PackageParams
-	357, // 49: powermanage.v1.ManagedAction.app:type_name -> powermanage.v1.AppInstallParams
-	358, // 50: powermanage.v1.ManagedAction.shell:type_name -> powermanage.v1.ShellParams
-	359, // 51: powermanage.v1.ManagedAction.service:type_name -> powermanage.v1.ServiceParams
-	360, // 52: powermanage.v1.ManagedAction.file:type_name -> powermanage.v1.FileParams
-	361, // 53: powermanage.v1.ManagedAction.update:type_name -> powermanage.v1.UpdateParams
-	362, // 54: powermanage.v1.ManagedAction.repository:type_name -> powermanage.v1.RepositoryParams
-	363, // 55: powermanage.v1.ManagedAction.flatpak:type_name -> powermanage.v1.FlatpakParams
-	364, // 56: powermanage.v1.ManagedAction.directory:type_name -> powermanage.v1.DirectoryParams
-	365, // 57: powermanage.v1.ManagedAction.user:type_name -> powermanage.v1.UserParams
-	366, // 58: powermanage.v1.ManagedAction.ssh:type_name -> powermanage.v1.SshParams
-	367, // 59: powermanage.v1.ManagedAction.sshd:type_name -> powermanage.v1.SshdParams
-	368, // 60: powermanage.v1.ManagedAction.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	369, // 61: powermanage.v1.ManagedAction.lps:type_name -> powermanage.v1.LpsParams
-	370, // 62: powermanage.v1.ManagedAction.group:type_name -> powermanage.v1.GroupParams
-	336, // 63: powermanage.v1.ManagedAction.encryption:type_name -> powermanage.v1.ManagedEncryptionParams
-	338, // 64: powermanage.v1.ManagedAction.wifi:type_name -> powermanage.v1.ManagedWifiParams
-	371, // 65: powermanage.v1.ManagedAction.agent_update:type_name -> powermanage.v1.AgentUpdateParams
-	353, // 66: powermanage.v1.CreateActionRequest.type:type_name -> powermanage.v1.ActionType
-	354, // 67: powermanage.v1.CreateActionRequest.desired_state:type_name -> powermanage.v1.DesiredState
-	355, // 68: powermanage.v1.CreateActionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	356, // 69: powermanage.v1.CreateActionRequest.package:type_name -> powermanage.v1.PackageParams
-	357, // 70: powermanage.v1.CreateActionRequest.app:type_name -> powermanage.v1.AppInstallParams
-	358, // 71: powermanage.v1.CreateActionRequest.shell:type_name -> powermanage.v1.ShellParams
-	359, // 72: powermanage.v1.CreateActionRequest.service:type_name -> powermanage.v1.ServiceParams
-	360, // 73: powermanage.v1.CreateActionRequest.file:type_name -> powermanage.v1.FileParams
-	361, // 74: powermanage.v1.CreateActionRequest.update:type_name -> powermanage.v1.UpdateParams
-	362, // 75: powermanage.v1.CreateActionRequest.repository:type_name -> powermanage.v1.RepositoryParams
-	363, // 76: powermanage.v1.CreateActionRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
-	364, // 77: powermanage.v1.CreateActionRequest.directory:type_name -> powermanage.v1.DirectoryParams
-	365, // 78: powermanage.v1.CreateActionRequest.user:type_name -> powermanage.v1.UserParams
-	366, // 79: powermanage.v1.CreateActionRequest.ssh:type_name -> powermanage.v1.SshParams
-	367, // 80: powermanage.v1.CreateActionRequest.sshd:type_name -> powermanage.v1.SshdParams
-	368, // 81: powermanage.v1.CreateActionRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	369, // 82: powermanage.v1.CreateActionRequest.lps:type_name -> powermanage.v1.LpsParams
-	370, // 83: powermanage.v1.CreateActionRequest.group:type_name -> powermanage.v1.GroupParams
-	335, // 84: powermanage.v1.CreateActionRequest.encryption:type_name -> powermanage.v1.EncryptionAuthoringParams
-	337, // 85: powermanage.v1.CreateActionRequest.wifi:type_name -> powermanage.v1.WifiAuthoringParams
-	371, // 86: powermanage.v1.CreateActionRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	357, // 43: powermanage.v1.ManagedAction.type:type_name -> powermanage.v1.ActionType
+	358, // 44: powermanage.v1.ManagedAction.desired_state:type_name -> powermanage.v1.DesiredState
+	351, // 45: powermanage.v1.ManagedAction.created_at:type_name -> google.protobuf.Timestamp
+	359, // 46: powermanage.v1.ManagedAction.schedule:type_name -> powermanage.v1.ActionSchedule
+	351, // 47: powermanage.v1.ManagedAction.updated_at:type_name -> google.protobuf.Timestamp
+	360, // 48: powermanage.v1.ManagedAction.package:type_name -> powermanage.v1.PackageParams
+	361, // 49: powermanage.v1.ManagedAction.app:type_name -> powermanage.v1.AppInstallParams
+	362, // 50: powermanage.v1.ManagedAction.shell:type_name -> powermanage.v1.ShellParams
+	363, // 51: powermanage.v1.ManagedAction.service:type_name -> powermanage.v1.ServiceParams
+	364, // 52: powermanage.v1.ManagedAction.file:type_name -> powermanage.v1.FileParams
+	365, // 53: powermanage.v1.ManagedAction.update:type_name -> powermanage.v1.UpdateParams
+	366, // 54: powermanage.v1.ManagedAction.repository:type_name -> powermanage.v1.RepositoryParams
+	367, // 55: powermanage.v1.ManagedAction.flatpak:type_name -> powermanage.v1.FlatpakParams
+	368, // 56: powermanage.v1.ManagedAction.directory:type_name -> powermanage.v1.DirectoryParams
+	369, // 57: powermanage.v1.ManagedAction.user:type_name -> powermanage.v1.UserParams
+	370, // 58: powermanage.v1.ManagedAction.ssh:type_name -> powermanage.v1.SshParams
+	371, // 59: powermanage.v1.ManagedAction.sshd:type_name -> powermanage.v1.SshdParams
+	372, // 60: powermanage.v1.ManagedAction.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	373, // 61: powermanage.v1.ManagedAction.lps:type_name -> powermanage.v1.LpsParams
+	374, // 62: powermanage.v1.ManagedAction.group:type_name -> powermanage.v1.GroupParams
+	340, // 63: powermanage.v1.ManagedAction.encryption:type_name -> powermanage.v1.ManagedEncryptionParams
+	342, // 64: powermanage.v1.ManagedAction.wifi:type_name -> powermanage.v1.ManagedWifiParams
+	375, // 65: powermanage.v1.ManagedAction.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	357, // 66: powermanage.v1.CreateActionRequest.type:type_name -> powermanage.v1.ActionType
+	358, // 67: powermanage.v1.CreateActionRequest.desired_state:type_name -> powermanage.v1.DesiredState
+	359, // 68: powermanage.v1.CreateActionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	360, // 69: powermanage.v1.CreateActionRequest.package:type_name -> powermanage.v1.PackageParams
+	361, // 70: powermanage.v1.CreateActionRequest.app:type_name -> powermanage.v1.AppInstallParams
+	362, // 71: powermanage.v1.CreateActionRequest.shell:type_name -> powermanage.v1.ShellParams
+	363, // 72: powermanage.v1.CreateActionRequest.service:type_name -> powermanage.v1.ServiceParams
+	364, // 73: powermanage.v1.CreateActionRequest.file:type_name -> powermanage.v1.FileParams
+	365, // 74: powermanage.v1.CreateActionRequest.update:type_name -> powermanage.v1.UpdateParams
+	366, // 75: powermanage.v1.CreateActionRequest.repository:type_name -> powermanage.v1.RepositoryParams
+	367, // 76: powermanage.v1.CreateActionRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
+	368, // 77: powermanage.v1.CreateActionRequest.directory:type_name -> powermanage.v1.DirectoryParams
+	369, // 78: powermanage.v1.CreateActionRequest.user:type_name -> powermanage.v1.UserParams
+	370, // 79: powermanage.v1.CreateActionRequest.ssh:type_name -> powermanage.v1.SshParams
+	371, // 80: powermanage.v1.CreateActionRequest.sshd:type_name -> powermanage.v1.SshdParams
+	372, // 81: powermanage.v1.CreateActionRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	373, // 82: powermanage.v1.CreateActionRequest.lps:type_name -> powermanage.v1.LpsParams
+	374, // 83: powermanage.v1.CreateActionRequest.group:type_name -> powermanage.v1.GroupParams
+	339, // 84: powermanage.v1.CreateActionRequest.encryption:type_name -> powermanage.v1.EncryptionAuthoringParams
+	341, // 85: powermanage.v1.CreateActionRequest.wifi:type_name -> powermanage.v1.WifiAuthoringParams
+	375, // 86: powermanage.v1.CreateActionRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
 	63,  // 87: powermanage.v1.CreateActionResponse.action:type_name -> powermanage.v1.ManagedAction
 	63,  // 88: powermanage.v1.GetActionResponse.action:type_name -> powermanage.v1.ManagedAction
-	353, // 89: powermanage.v1.ListActionsRequest.type_filter:type_name -> powermanage.v1.ActionType
+	357, // 89: powermanage.v1.ListActionsRequest.type_filter:type_name -> powermanage.v1.ActionType
 	63,  // 90: powermanage.v1.ListActionsResponse.actions:type_name -> powermanage.v1.ManagedAction
-	354, // 91: powermanage.v1.UpdateActionParamsRequest.desired_state:type_name -> powermanage.v1.DesiredState
-	355, // 92: powermanage.v1.UpdateActionParamsRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	356, // 93: powermanage.v1.UpdateActionParamsRequest.package:type_name -> powermanage.v1.PackageParams
-	357, // 94: powermanage.v1.UpdateActionParamsRequest.app:type_name -> powermanage.v1.AppInstallParams
-	358, // 95: powermanage.v1.UpdateActionParamsRequest.shell:type_name -> powermanage.v1.ShellParams
-	359, // 96: powermanage.v1.UpdateActionParamsRequest.service:type_name -> powermanage.v1.ServiceParams
-	360, // 97: powermanage.v1.UpdateActionParamsRequest.file:type_name -> powermanage.v1.FileParams
-	361, // 98: powermanage.v1.UpdateActionParamsRequest.update:type_name -> powermanage.v1.UpdateParams
-	362, // 99: powermanage.v1.UpdateActionParamsRequest.repository:type_name -> powermanage.v1.RepositoryParams
-	363, // 100: powermanage.v1.UpdateActionParamsRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
-	364, // 101: powermanage.v1.UpdateActionParamsRequest.directory:type_name -> powermanage.v1.DirectoryParams
-	365, // 102: powermanage.v1.UpdateActionParamsRequest.user:type_name -> powermanage.v1.UserParams
-	366, // 103: powermanage.v1.UpdateActionParamsRequest.ssh:type_name -> powermanage.v1.SshParams
-	367, // 104: powermanage.v1.UpdateActionParamsRequest.sshd:type_name -> powermanage.v1.SshdParams
-	368, // 105: powermanage.v1.UpdateActionParamsRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
-	369, // 106: powermanage.v1.UpdateActionParamsRequest.lps:type_name -> powermanage.v1.LpsParams
-	370, // 107: powermanage.v1.UpdateActionParamsRequest.group:type_name -> powermanage.v1.GroupParams
-	335, // 108: powermanage.v1.UpdateActionParamsRequest.encryption:type_name -> powermanage.v1.EncryptionAuthoringParams
-	337, // 109: powermanage.v1.UpdateActionParamsRequest.wifi:type_name -> powermanage.v1.WifiAuthoringParams
-	371, // 110: powermanage.v1.UpdateActionParamsRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
+	358, // 91: powermanage.v1.UpdateActionParamsRequest.desired_state:type_name -> powermanage.v1.DesiredState
+	359, // 92: powermanage.v1.UpdateActionParamsRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	360, // 93: powermanage.v1.UpdateActionParamsRequest.package:type_name -> powermanage.v1.PackageParams
+	361, // 94: powermanage.v1.UpdateActionParamsRequest.app:type_name -> powermanage.v1.AppInstallParams
+	362, // 95: powermanage.v1.UpdateActionParamsRequest.shell:type_name -> powermanage.v1.ShellParams
+	363, // 96: powermanage.v1.UpdateActionParamsRequest.service:type_name -> powermanage.v1.ServiceParams
+	364, // 97: powermanage.v1.UpdateActionParamsRequest.file:type_name -> powermanage.v1.FileParams
+	365, // 98: powermanage.v1.UpdateActionParamsRequest.update:type_name -> powermanage.v1.UpdateParams
+	366, // 99: powermanage.v1.UpdateActionParamsRequest.repository:type_name -> powermanage.v1.RepositoryParams
+	367, // 100: powermanage.v1.UpdateActionParamsRequest.flatpak:type_name -> powermanage.v1.FlatpakParams
+	368, // 101: powermanage.v1.UpdateActionParamsRequest.directory:type_name -> powermanage.v1.DirectoryParams
+	369, // 102: powermanage.v1.UpdateActionParamsRequest.user:type_name -> powermanage.v1.UserParams
+	370, // 103: powermanage.v1.UpdateActionParamsRequest.ssh:type_name -> powermanage.v1.SshParams
+	371, // 104: powermanage.v1.UpdateActionParamsRequest.sshd:type_name -> powermanage.v1.SshdParams
+	372, // 105: powermanage.v1.UpdateActionParamsRequest.admin_policy:type_name -> powermanage.v1.AdminPolicyParams
+	373, // 106: powermanage.v1.UpdateActionParamsRequest.lps:type_name -> powermanage.v1.LpsParams
+	374, // 107: powermanage.v1.UpdateActionParamsRequest.group:type_name -> powermanage.v1.GroupParams
+	339, // 108: powermanage.v1.UpdateActionParamsRequest.encryption:type_name -> powermanage.v1.EncryptionAuthoringParams
+	341, // 109: powermanage.v1.UpdateActionParamsRequest.wifi:type_name -> powermanage.v1.WifiAuthoringParams
+	375, // 110: powermanage.v1.UpdateActionParamsRequest.agent_update:type_name -> powermanage.v1.AgentUpdateParams
 	63,  // 111: powermanage.v1.UpdateActionResponse.action:type_name -> powermanage.v1.ManagedAction
-	347, // 112: powermanage.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
-	347, // 113: powermanage.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
-	355, // 114: powermanage.v1.ActionSet.schedule:type_name -> powermanage.v1.ActionSchedule
-	372, // 115: powermanage.v1.ActionSet.on_failure:type_name -> powermanage.v1.OnFailure
-	353, // 116: powermanage.v1.ActionSetMember.action_type:type_name -> powermanage.v1.ActionType
-	355, // 117: powermanage.v1.CreateActionSetRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	372, // 118: powermanage.v1.CreateActionSetRequest.on_failure:type_name -> powermanage.v1.OnFailure
+	351, // 112: powermanage.v1.ActionSet.created_at:type_name -> google.protobuf.Timestamp
+	351, // 113: powermanage.v1.ActionSet.updated_at:type_name -> google.protobuf.Timestamp
+	359, // 114: powermanage.v1.ActionSet.schedule:type_name -> powermanage.v1.ActionSchedule
+	376, // 115: powermanage.v1.ActionSet.on_failure:type_name -> powermanage.v1.OnFailure
+	357, // 116: powermanage.v1.ActionSetMember.action_type:type_name -> powermanage.v1.ActionType
+	359, // 117: powermanage.v1.CreateActionSetRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	376, // 118: powermanage.v1.CreateActionSetRequest.on_failure:type_name -> powermanage.v1.OnFailure
 	76,  // 119: powermanage.v1.CreateActionSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 120: powermanage.v1.GetActionSetResponse.set:type_name -> powermanage.v1.ActionSet
 	77,  // 121: powermanage.v1.GetActionSetResponse.members:type_name -> powermanage.v1.ActionSetMember
 	76,  // 122: powermanage.v1.ListActionSetsResponse.sets:type_name -> powermanage.v1.ActionSet
-	355, // 123: powermanage.v1.UpdateActionSetScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
-	372, // 124: powermanage.v1.UpdateActionSetScheduleRequest.on_failure:type_name -> powermanage.v1.OnFailure
+	359, // 123: powermanage.v1.UpdateActionSetScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	376, // 124: powermanage.v1.UpdateActionSetScheduleRequest.on_failure:type_name -> powermanage.v1.OnFailure
 	76,  // 125: powermanage.v1.UpdateActionSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 126: powermanage.v1.AddActionToSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 127: powermanage.v1.RemoveActionFromSetResponse.set:type_name -> powermanage.v1.ActionSet
 	76,  // 128: powermanage.v1.ReorderActionInSetResponse.set:type_name -> powermanage.v1.ActionSet
-	347, // 129: powermanage.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
-	347, // 130: powermanage.v1.Definition.updated_at:type_name -> google.protobuf.Timestamp
-	355, // 131: powermanage.v1.Definition.schedule:type_name -> powermanage.v1.ActionSchedule
-	355, // 132: powermanage.v1.CreateDefinitionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	351, // 129: powermanage.v1.Definition.created_at:type_name -> google.protobuf.Timestamp
+	351, // 130: powermanage.v1.Definition.updated_at:type_name -> google.protobuf.Timestamp
+	359, // 131: powermanage.v1.Definition.schedule:type_name -> powermanage.v1.ActionSchedule
+	359, // 132: powermanage.v1.CreateDefinitionRequest.schedule:type_name -> powermanage.v1.ActionSchedule
 	96,  // 133: powermanage.v1.CreateDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 134: powermanage.v1.GetDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	97,  // 135: powermanage.v1.GetDefinitionResponse.members:type_name -> powermanage.v1.DefinitionMember
 	96,  // 136: powermanage.v1.ListDefinitionsResponse.definitions:type_name -> powermanage.v1.Definition
-	355, // 137: powermanage.v1.UpdateDefinitionScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
+	359, // 137: powermanage.v1.UpdateDefinitionScheduleRequest.schedule:type_name -> powermanage.v1.ActionSchedule
 	96,  // 138: powermanage.v1.UpdateDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 139: powermanage.v1.AddActionSetToDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 140: powermanage.v1.RemoveActionSetFromDefinitionResponse.definition:type_name -> powermanage.v1.Definition
 	96,  // 141: powermanage.v1.ReorderActionSetInDefinitionResponse.definition:type_name -> powermanage.v1.Definition
-	347, // 142: powermanage.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
-	373, // 143: powermanage.v1.DeviceGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	351, // 142: powermanage.v1.DeviceGroup.created_at:type_name -> google.protobuf.Timestamp
+	377, // 143: powermanage.v1.DeviceGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
 	116, // 144: powermanage.v1.CreateDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
 	116, // 145: powermanage.v1.GetDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
 	121, // 146: powermanage.v1.GetDeviceGroupResponse.devices:type_name -> powermanage.v1.DeviceGroupMember
-	347, // 147: powermanage.v1.DeviceGroupMember.last_seen_at:type_name -> google.protobuf.Timestamp
+	351, // 147: powermanage.v1.DeviceGroupMember.last_seen_at:type_name -> google.protobuf.Timestamp
 	116, // 148: powermanage.v1.ListDeviceGroupsResponse.groups:type_name -> powermanage.v1.DeviceGroup
 	116, // 149: powermanage.v1.ListDeviceGroupsForDeviceResponse.groups:type_name -> powermanage.v1.DeviceGroup
 	116, // 150: powermanage.v1.UpdateDeviceGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
@@ -23565,483 +23913,490 @@ var file_powermanage_v1_control_proto_depIdxs = []int32{
 	116, // 152: powermanage.v1.RemoveDeviceFromGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
 	116, // 153: powermanage.v1.UpdateDeviceGroupQueryResponse.group:type_name -> powermanage.v1.DeviceGroup
 	116, // 154: powermanage.v1.EvaluateDynamicGroupResponse.group:type_name -> powermanage.v1.DeviceGroup
-	373, // 155: powermanage.v1.SetDeviceGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
-	374, // 156: powermanage.v1.Assignment.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	352, // 157: powermanage.v1.Assignment.target_type:type_name -> powermanage.v1.AssignmentTargetType
-	347, // 158: powermanage.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
-	375, // 159: powermanage.v1.Assignment.mode:type_name -> powermanage.v1.AssignmentMode
-	374, // 160: powermanage.v1.CreateAssignmentRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	352, // 161: powermanage.v1.CreateAssignmentRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
-	375, // 162: powermanage.v1.CreateAssignmentRequest.mode:type_name -> powermanage.v1.AssignmentMode
+	377, // 155: powermanage.v1.SetDeviceGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	378, // 156: powermanage.v1.Assignment.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	356, // 157: powermanage.v1.Assignment.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	351, // 158: powermanage.v1.Assignment.created_at:type_name -> google.protobuf.Timestamp
+	379, // 159: powermanage.v1.Assignment.mode:type_name -> powermanage.v1.AssignmentMode
+	378, // 160: powermanage.v1.CreateAssignmentRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	356, // 161: powermanage.v1.CreateAssignmentRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	379, // 162: powermanage.v1.CreateAssignmentRequest.mode:type_name -> powermanage.v1.AssignmentMode
 	144, // 163: powermanage.v1.CreateAssignmentResponse.assignment:type_name -> powermanage.v1.Assignment
-	374, // 164: powermanage.v1.ListAssignmentsRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	352, // 165: powermanage.v1.ListAssignmentsRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
+	378, // 164: powermanage.v1.ListAssignmentsRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	356, // 165: powermanage.v1.ListAssignmentsRequest.target_type:type_name -> powermanage.v1.AssignmentTargetType
 	144, // 166: powermanage.v1.ListAssignmentsResponse.assignments:type_name -> powermanage.v1.Assignment
-	374, // 167: powermanage.v1.UserSelection.source_type:type_name -> powermanage.v1.AssignmentSourceType
-	347, // 168: powermanage.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
-	374, // 169: powermanage.v1.SetUserSelectionRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	378, // 167: powermanage.v1.UserSelection.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	351, // 168: powermanage.v1.UserSelection.updated_at:type_name -> google.protobuf.Timestamp
+	378, // 169: powermanage.v1.SetUserSelectionRequest.source_type:type_name -> powermanage.v1.AssignmentSourceType
 	151, // 170: powermanage.v1.SetUserSelectionResponse.selection:type_name -> powermanage.v1.UserSelection
-	374, // 171: powermanage.v1.AvailableItem.source_type:type_name -> powermanage.v1.AssignmentSourceType
+	378, // 171: powermanage.v1.AvailableItem.source_type:type_name -> powermanage.v1.AssignmentSourceType
 	63,  // 172: powermanage.v1.AvailableItem.actions:type_name -> powermanage.v1.ManagedAction
 	155, // 173: powermanage.v1.ListAvailableActionsResponse.items:type_name -> powermanage.v1.AvailableItem
 	63,  // 174: powermanage.v1.GetDeviceAssignmentsResponse.actions:type_name -> powermanage.v1.ManagedAction
 	76,  // 175: powermanage.v1.GetDeviceAssignmentsResponse.action_sets:type_name -> powermanage.v1.ActionSet
 	96,  // 176: powermanage.v1.GetDeviceAssignmentsResponse.definitions:type_name -> powermanage.v1.Definition
-	291, // 177: powermanage.v1.GetDeviceAssignmentsResponse.compliance_policies:type_name -> powermanage.v1.CompliancePolicy
+	295, // 177: powermanage.v1.GetDeviceAssignmentsResponse.compliance_policies:type_name -> powermanage.v1.CompliancePolicy
 	81,  // 178: powermanage.v1.GetDeviceAssignmentsResponse.action_set_details:type_name -> powermanage.v1.GetActionSetResponse
 	101, // 179: powermanage.v1.GetDeviceAssignmentsResponse.definition_details:type_name -> powermanage.v1.GetDefinitionResponse
 	144, // 180: powermanage.v1.GetUserAssignmentsResponse.assignments:type_name -> powermanage.v1.Assignment
-	353, // 181: powermanage.v1.ActionExecution.type:type_name -> powermanage.v1.ActionType
-	376, // 182: powermanage.v1.ActionExecution.status:type_name -> powermanage.v1.ExecutionStatus
-	377, // 183: powermanage.v1.ActionExecution.output:type_name -> powermanage.v1.CommandOutput
-	347, // 184: powermanage.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
-	347, // 185: powermanage.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
-	347, // 186: powermanage.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
-	377, // 187: powermanage.v1.ActionExecution.live_output:type_name -> powermanage.v1.CommandOutput
-	354, // 188: powermanage.v1.ActionExecution.desired_state:type_name -> powermanage.v1.DesiredState
-	377, // 189: powermanage.v1.ActionExecution.detection_output:type_name -> powermanage.v1.CommandOutput
-	347, // 190: powermanage.v1.ActionExecution.scheduled_for:type_name -> google.protobuf.Timestamp
-	378, // 191: powermanage.v1.DispatchActionRequest.inline_action:type_name -> powermanage.v1.Action
-	347, // 192: powermanage.v1.DispatchActionRequest.run_at:type_name -> google.protobuf.Timestamp
+	357, // 181: powermanage.v1.ActionExecution.type:type_name -> powermanage.v1.ActionType
+	380, // 182: powermanage.v1.ActionExecution.status:type_name -> powermanage.v1.ExecutionStatus
+	381, // 183: powermanage.v1.ActionExecution.output:type_name -> powermanage.v1.CommandOutput
+	351, // 184: powermanage.v1.ActionExecution.created_at:type_name -> google.protobuf.Timestamp
+	351, // 185: powermanage.v1.ActionExecution.dispatched_at:type_name -> google.protobuf.Timestamp
+	351, // 186: powermanage.v1.ActionExecution.completed_at:type_name -> google.protobuf.Timestamp
+	381, // 187: powermanage.v1.ActionExecution.live_output:type_name -> powermanage.v1.CommandOutput
+	358, // 188: powermanage.v1.ActionExecution.desired_state:type_name -> powermanage.v1.DesiredState
+	381, // 189: powermanage.v1.ActionExecution.detection_output:type_name -> powermanage.v1.CommandOutput
+	351, // 190: powermanage.v1.ActionExecution.scheduled_for:type_name -> google.protobuf.Timestamp
+	382, // 191: powermanage.v1.DispatchActionRequest.inline_action:type_name -> powermanage.v1.Action
+	351, // 192: powermanage.v1.DispatchActionRequest.run_at:type_name -> google.protobuf.Timestamp
 	161, // 193: powermanage.v1.DispatchActionResponse.execution:type_name -> powermanage.v1.ActionExecution
-	378, // 194: powermanage.v1.DispatchToMultipleRequest.inline_action:type_name -> powermanage.v1.Action
+	382, // 194: powermanage.v1.DispatchToMultipleRequest.inline_action:type_name -> powermanage.v1.Action
 	161, // 195: powermanage.v1.DispatchToMultipleResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 196: powermanage.v1.DispatchAssignedActionsResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 197: powermanage.v1.DispatchActionSetResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 198: powermanage.v1.DispatchDefinitionResponse.executions:type_name -> powermanage.v1.ActionExecution
-	378, // 199: powermanage.v1.DispatchToGroupRequest.inline_action:type_name -> powermanage.v1.Action
+	382, // 199: powermanage.v1.DispatchToGroupRequest.inline_action:type_name -> powermanage.v1.Action
 	161, // 200: powermanage.v1.DispatchToGroupResponse.executions:type_name -> powermanage.v1.ActionExecution
 	161, // 201: powermanage.v1.GetExecutionResponse.execution:type_name -> powermanage.v1.ActionExecution
-	376, // 202: powermanage.v1.ListExecutionsRequest.status_filter:type_name -> powermanage.v1.ExecutionStatus
-	353, // 203: powermanage.v1.ListExecutionsRequest.type_filter:type_name -> powermanage.v1.ActionType
+	380, // 202: powermanage.v1.ListExecutionsRequest.status_filter:type_name -> powermanage.v1.ExecutionStatus
+	357, // 203: powermanage.v1.ListExecutionsRequest.type_filter:type_name -> powermanage.v1.ActionType
 	161, // 204: powermanage.v1.ListExecutionsResponse.executions:type_name -> powermanage.v1.ActionExecution
-	353, // 205: powermanage.v1.DispatchInstantActionRequest.instant_action:type_name -> powermanage.v1.ActionType
-	347, // 206: powermanage.v1.DispatchInstantActionRequest.run_at:type_name -> google.protobuf.Timestamp
+	357, // 205: powermanage.v1.DispatchInstantActionRequest.instant_action:type_name -> powermanage.v1.ActionType
+	351, // 206: powermanage.v1.DispatchInstantActionRequest.run_at:type_name -> google.protobuf.Timestamp
 	161, // 207: powermanage.v1.DispatchInstantActionResponse.execution:type_name -> powermanage.v1.ActionExecution
 	161, // 208: powermanage.v1.CancelExecutionResponse.execution:type_name -> powermanage.v1.ActionExecution
-	347, // 209: powermanage.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	351, // 209: powermanage.v1.AuditEvent.occurred_at:type_name -> google.protobuf.Timestamp
 	182, // 210: powermanage.v1.ListAuditEventsResponse.events:type_name -> powermanage.v1.AuditEvent
-	347, // 211: powermanage.v1.ExportAuditEventsRequest.occurred_from:type_name -> google.protobuf.Timestamp
-	347, // 212: powermanage.v1.ExportAuditEventsRequest.occurred_to:type_name -> google.protobuf.Timestamp
-	347, // 213: powermanage.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
-	379, // 214: powermanage.v1.LpsPassword.rotation_reason:type_name -> powermanage.v1.RotationReason
+	351, // 211: powermanage.v1.ExportAuditEventsRequest.occurred_from:type_name -> google.protobuf.Timestamp
+	351, // 212: powermanage.v1.ExportAuditEventsRequest.occurred_to:type_name -> google.protobuf.Timestamp
+	351, // 213: powermanage.v1.LpsPassword.rotated_at:type_name -> google.protobuf.Timestamp
+	383, // 214: powermanage.v1.LpsPassword.rotation_reason:type_name -> powermanage.v1.RotationReason
 	187, // 215: powermanage.v1.ListLpsPasswordsResponse.current:type_name -> powermanage.v1.LpsPassword
 	187, // 216: powermanage.v1.ListLpsPasswordsResponse.history:type_name -> powermanage.v1.LpsPassword
-	347, // 217: powermanage.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
-	379, // 218: powermanage.v1.LuksKey.rotation_reason:type_name -> powermanage.v1.RotationReason
-	380, // 219: powermanage.v1.LuksKey.revocation_status:type_name -> powermanage.v1.LuksRevocationStatus
-	347, // 220: powermanage.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
+	351, // 217: powermanage.v1.LuksKey.rotated_at:type_name -> google.protobuf.Timestamp
+	383, // 218: powermanage.v1.LuksKey.rotation_reason:type_name -> powermanage.v1.RotationReason
+	384, // 219: powermanage.v1.LuksKey.revocation_status:type_name -> powermanage.v1.LuksRevocationStatus
+	351, // 220: powermanage.v1.LuksKey.revocation_at:type_name -> google.protobuf.Timestamp
 	192, // 221: powermanage.v1.ListLuksKeysResponse.current:type_name -> powermanage.v1.LuksKey
 	192, // 222: powermanage.v1.ListLuksKeysResponse.history:type_name -> powermanage.v1.LuksKey
-	381, // 223: powermanage.v1.GetOSQueryResultResponse.rows:type_name -> powermanage.v1.OSQueryRow
-	381, // 224: powermanage.v1.InventoryTableResult.rows:type_name -> powermanage.v1.OSQueryRow
-	347, // 225: powermanage.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
+	385, // 223: powermanage.v1.GetOSQueryResultResponse.rows:type_name -> powermanage.v1.OSQueryRow
+	385, // 224: powermanage.v1.InventoryTableResult.rows:type_name -> powermanage.v1.OSQueryRow
+	351, // 225: powermanage.v1.InventoryTableResult.collected_at:type_name -> google.protobuf.Timestamp
 	206, // 226: powermanage.v1.GetDeviceInventoryResponse.tables:type_name -> powermanage.v1.InventoryTableResult
 	13,  // 227: powermanage.v1.CreateRoleResponse.role:type_name -> powermanage.v1.Role
 	13,  // 228: powermanage.v1.GetRoleResponse.role:type_name -> powermanage.v1.Role
 	13,  // 229: powermanage.v1.ListRolesResponse.roles:type_name -> powermanage.v1.Role
 	13,  // 230: powermanage.v1.UpdateRoleResponse.role:type_name -> powermanage.v1.Role
-	348, // 231: powermanage.v1.AssignRoleToUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
-	348, // 232: powermanage.v1.RevokeRoleFromUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	352, // 231: powermanage.v1.AssignRoleToUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	352, // 232: powermanage.v1.RevokeRoleFromUserRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
 	15,  // 233: powermanage.v1.ListPermissionsResponse.permissions:type_name -> powermanage.v1.PermissionInfo
-	347, // 234: powermanage.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
-	373, // 235: powermanage.v1.UserGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	351, // 234: powermanage.v1.UserGroup.created_at:type_name -> google.protobuf.Timestamp
+	377, // 235: powermanage.v1.UserGroup.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
 	14,  // 236: powermanage.v1.UserGroup.role_grants:type_name -> powermanage.v1.RoleGrant
-	347, // 237: powermanage.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
+	351, // 237: powermanage.v1.UserGroupMember.added_at:type_name -> google.protobuf.Timestamp
 	230, // 238: powermanage.v1.CreateUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
 	230, // 239: powermanage.v1.GetUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
 	231, // 240: powermanage.v1.GetUserGroupResponse.members:type_name -> powermanage.v1.UserGroupMember
 	230, // 241: powermanage.v1.ListUserGroupsResponse.groups:type_name -> powermanage.v1.UserGroup
 	230, // 242: powermanage.v1.UpdateUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
-	348, // 243: powermanage.v1.AssignRoleToUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
-	348, // 244: powermanage.v1.RevokeRoleFromUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	352, // 243: powermanage.v1.AssignRoleToUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
+	352, // 244: powermanage.v1.RevokeRoleFromUserGroupRequest.scope_kind:type_name -> powermanage.v1.RoleGrantScopeKind
 	230, // 245: powermanage.v1.ListUserGroupsForUserResponse.groups:type_name -> powermanage.v1.UserGroup
 	230, // 246: powermanage.v1.UpdateUserGroupQueryResponse.group:type_name -> powermanage.v1.UserGroup
 	230, // 247: powermanage.v1.EvaluateDynamicUserGroupResponse.group:type_name -> powermanage.v1.UserGroup
-	373, // 248: powermanage.v1.SetUserGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
-	382, // 249: powermanage.v1.IdentityProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
-	341, // 250: powermanage.v1.IdentityProvider.group_mapping:type_name -> powermanage.v1.IdentityProvider.GroupMappingEntry
-	347, // 251: powermanage.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
-	347, // 252: powermanage.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
-	347, // 253: powermanage.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
-	347, // 254: powermanage.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
-	382, // 255: powermanage.v1.CreateIdentityProviderRequest.provider_type:type_name -> powermanage.v1.IdentityProviderType
-	342, // 256: powermanage.v1.CreateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
+	377, // 248: powermanage.v1.SetUserGroupMaintenanceWindowRequest.maintenance_window:type_name -> powermanage.v1.MaintenanceWindow
+	386, // 249: powermanage.v1.IdentityProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	345, // 250: powermanage.v1.IdentityProvider.group_mapping:type_name -> powermanage.v1.IdentityProvider.GroupMappingEntry
+	351, // 251: powermanage.v1.IdentityProvider.created_at:type_name -> google.protobuf.Timestamp
+	351, // 252: powermanage.v1.IdentityProvider.updated_at:type_name -> google.protobuf.Timestamp
+	351, // 253: powermanage.v1.IdentityLink.linked_at:type_name -> google.protobuf.Timestamp
+	351, // 254: powermanage.v1.IdentityLink.last_login_at:type_name -> google.protobuf.Timestamp
+	386, // 255: powermanage.v1.CreateIdentityProviderRequest.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	346, // 256: powermanage.v1.CreateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.CreateIdentityProviderRequest.GroupMappingEntry
 	259, // 257: powermanage.v1.CreateIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
 	259, // 258: powermanage.v1.GetIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
 	259, // 259: powermanage.v1.ListIdentityProvidersResponse.providers:type_name -> powermanage.v1.IdentityProvider
-	343, // 260: powermanage.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
+	347, // 260: powermanage.v1.UpdateIdentityProviderRequest.group_mapping:type_name -> powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntry
 	259, // 261: powermanage.v1.UpdateIdentityProviderResponse.provider:type_name -> powermanage.v1.IdentityProvider
-	382, // 262: powermanage.v1.AuthMethodProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
+	386, // 262: powermanage.v1.AuthMethodProvider.provider_type:type_name -> powermanage.v1.IdentityProviderType
 	271, // 263: powermanage.v1.ListAuthMethodsResponse.providers:type_name -> powermanage.v1.AuthMethodProvider
-	347, // 264: powermanage.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
+	351, // 264: powermanage.v1.SSOCallbackResponse.expires_at:type_name -> google.protobuf.Timestamp
 	10,  // 265: powermanage.v1.SSOCallbackResponse.user:type_name -> powermanage.v1.User
-	260, // 266: powermanage.v1.ListIdentityLinksResponse.links:type_name -> powermanage.v1.IdentityLink
-	351, // 267: powermanage.v1.GetDeviceComplianceResponse.status:type_name -> powermanage.v1.ComplianceStatus
-	290, // 268: powermanage.v1.GetDeviceComplianceResponse.checks:type_name -> powermanage.v1.ComplianceCheckResult
-	377, // 269: powermanage.v1.ComplianceCheckResult.detection_output:type_name -> powermanage.v1.CommandOutput
-	347, // 270: powermanage.v1.ComplianceCheckResult.checked_at:type_name -> google.protobuf.Timestamp
-	292, // 271: powermanage.v1.CompliancePolicy.rules:type_name -> powermanage.v1.CompliancePolicyRule
-	347, // 272: powermanage.v1.CompliancePolicy.created_at:type_name -> google.protobuf.Timestamp
-	291, // 273: powermanage.v1.CreateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	291, // 274: powermanage.v1.GetCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	291, // 275: powermanage.v1.ListCompliancePoliciesResponse.policies:type_name -> powermanage.v1.CompliancePolicy
-	291, // 276: powermanage.v1.UpdateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	291, // 277: powermanage.v1.AddCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	291, // 278: powermanage.v1.RemoveCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	291, // 279: powermanage.v1.UpdateCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
-	351, // 280: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.overall_status:type_name -> powermanage.v1.ComplianceStatus
-	312, // 281: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.policies:type_name -> powermanage.v1.DevicePolicyEvaluation
-	351, // 282: powermanage.v1.DevicePolicyEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
-	313, // 283: powermanage.v1.DevicePolicyEvaluation.rules:type_name -> powermanage.v1.DevicePolicyRuleEvaluation
-	351, // 284: powermanage.v1.DevicePolicyRuleEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
-	347, // 285: powermanage.v1.DevicePolicyRuleEvaluation.checked_at:type_name -> google.protobuf.Timestamp
-	347, // 286: powermanage.v1.DevicePolicyRuleEvaluation.first_failed_at:type_name -> google.protobuf.Timestamp
-	347, // 287: powermanage.v1.DevicePolicyRuleEvaluation.grace_expires_at:type_name -> google.protobuf.Timestamp
-	377, // 288: powermanage.v1.DevicePolicyRuleEvaluation.detection_output:type_name -> powermanage.v1.CommandOutput
-	383, // 289: powermanage.v1.SearchRequest.scope:type_name -> powermanage.v1.SearchScope
-	314, // 290: powermanage.v1.SearchRequest.date_filters:type_name -> powermanage.v1.SearchDateFilter
-	344, // 291: powermanage.v1.SearchRequest.tag_filters:type_name -> powermanage.v1.SearchRequest.TagFiltersEntry
-	384, // 292: powermanage.v1.SearchRequest.sort_field:type_name -> powermanage.v1.SortField
-	385, // 293: powermanage.v1.SearchRequest.sort_direction:type_name -> powermanage.v1.SortDirection
-	383, // 294: powermanage.v1.SearchResult.scope:type_name -> powermanage.v1.SearchScope
-	345, // 295: powermanage.v1.SearchResult.fields:type_name -> powermanage.v1.SearchResult.FieldsEntry
-	316, // 296: powermanage.v1.SearchResponse.results:type_name -> powermanage.v1.SearchResult
-	320, // 297: powermanage.v1.GetServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
-	320, // 298: powermanage.v1.UpdateServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
-	347, // 299: powermanage.v1.StartTerminalResponse.expires_at:type_name -> google.protobuf.Timestamp
-	347, // 300: powermanage.v1.TerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
-	347, // 301: powermanage.v1.TerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
-	330, // 302: powermanage.v1.ListActiveTerminalSessionsResponse.sessions:type_name -> powermanage.v1.TerminalSessionInfo
-	386, // 303: powermanage.v1.EncryptionAuthoringParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
-	387, // 304: powermanage.v1.EncryptionAuthoringParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	386, // 305: powermanage.v1.ManagedEncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
-	387, // 306: powermanage.v1.ManagedEncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
-	388, // 307: powermanage.v1.WifiAuthoringParams.auth_type:type_name -> powermanage.v1.WifiAuthType
-	388, // 308: powermanage.v1.ManagedWifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
-	0,   // 309: powermanage.v1.ControlService.Register:input_type -> powermanage.v1.RegisterRequest
-	2,   // 310: powermanage.v1.ControlService.RenewCertificate:input_type -> powermanage.v1.RenewCertificateRequest
-	4,   // 311: powermanage.v1.ControlService.RefreshToken:input_type -> powermanage.v1.RefreshTokenRequest
-	6,   // 312: powermanage.v1.ControlService.Logout:input_type -> powermanage.v1.LogoutRequest
-	8,   // 313: powermanage.v1.ControlService.GetCurrentUser:input_type -> powermanage.v1.GetCurrentUserRequest
-	272, // 314: powermanage.v1.ControlService.ListAuthMethods:input_type -> powermanage.v1.ListAuthMethodsRequest
-	274, // 315: powermanage.v1.ControlService.GetSSOLoginURL:input_type -> powermanage.v1.GetSSOLoginURLRequest
-	276, // 316: powermanage.v1.ControlService.SSOCallback:input_type -> powermanage.v1.SSOCallbackRequest
-	261, // 317: powermanage.v1.ControlService.CreateIdentityProvider:input_type -> powermanage.v1.CreateIdentityProviderRequest
-	263, // 318: powermanage.v1.ControlService.GetIdentityProvider:input_type -> powermanage.v1.GetIdentityProviderRequest
-	265, // 319: powermanage.v1.ControlService.ListIdentityProviders:input_type -> powermanage.v1.ListIdentityProvidersRequest
-	267, // 320: powermanage.v1.ControlService.UpdateIdentityProvider:input_type -> powermanage.v1.UpdateIdentityProviderRequest
-	269, // 321: powermanage.v1.ControlService.DeleteIdentityProvider:input_type -> powermanage.v1.DeleteIdentityProviderRequest
-	278, // 322: powermanage.v1.ControlService.ListIdentityLinks:input_type -> powermanage.v1.ListIdentityLinksRequest
-	280, // 323: powermanage.v1.ControlService.UnlinkIdentity:input_type -> powermanage.v1.UnlinkIdentityRequest
-	282, // 324: powermanage.v1.ControlService.EnableSCIM:input_type -> powermanage.v1.EnableSCIMRequest
-	284, // 325: powermanage.v1.ControlService.DisableSCIM:input_type -> powermanage.v1.DisableSCIMRequest
-	286, // 326: powermanage.v1.ControlService.RotateSCIMToken:input_type -> powermanage.v1.RotateSCIMTokenRequest
-	16,  // 327: powermanage.v1.ControlService.EraseJITUser:input_type -> powermanage.v1.EraseJITUserRequest
-	18,  // 328: powermanage.v1.ControlService.GetUser:input_type -> powermanage.v1.GetUserRequest
-	20,  // 329: powermanage.v1.ControlService.ListUsers:input_type -> powermanage.v1.ListUsersRequest
-	22,  // 330: powermanage.v1.ControlService.UpdateUserEmail:input_type -> powermanage.v1.UpdateUserEmailRequest
-	23,  // 331: powermanage.v1.ControlService.SetUserDisabled:input_type -> powermanage.v1.SetUserDisabledRequest
-	25,  // 332: powermanage.v1.ControlService.UpdateUserProfile:input_type -> powermanage.v1.UpdateUserProfileRequest
-	31,  // 333: powermanage.v1.ControlService.UpdateUserLinuxUsername:input_type -> powermanage.v1.UpdateUserLinuxUsernameRequest
-	26,  // 334: powermanage.v1.ControlService.AddUserSshKey:input_type -> powermanage.v1.AddUserSshKeyRequest
-	28,  // 335: powermanage.v1.ControlService.RemoveUserSshKey:input_type -> powermanage.v1.RemoveUserSshKeyRequest
-	30,  // 336: powermanage.v1.ControlService.UpdateUserSshSettings:input_type -> powermanage.v1.UpdateUserSshSettingsRequest
-	33,  // 337: powermanage.v1.ControlService.ListDevices:input_type -> powermanage.v1.ListDevicesRequest
-	35,  // 338: powermanage.v1.ControlService.GetDevice:input_type -> powermanage.v1.GetDeviceRequest
-	37,  // 339: powermanage.v1.ControlService.SetDeviceLabel:input_type -> powermanage.v1.SetDeviceLabelRequest
-	38,  // 340: powermanage.v1.ControlService.RemoveDeviceLabel:input_type -> powermanage.v1.RemoveDeviceLabelRequest
-	42,  // 341: powermanage.v1.ControlService.AssignDevice:input_type -> powermanage.v1.AssignDeviceRequest
-	44,  // 342: powermanage.v1.ControlService.UnassignDevice:input_type -> powermanage.v1.UnassignDeviceRequest
-	47,  // 343: powermanage.v1.ControlService.ListDeviceAssignees:input_type -> powermanage.v1.ListDeviceAssigneesRequest
-	49,  // 344: powermanage.v1.ControlService.SetDeviceSyncInterval:input_type -> powermanage.v1.SetDeviceSyncIntervalRequest
-	50,  // 345: powermanage.v1.ControlService.SetDeviceInventoryInterval:input_type -> powermanage.v1.SetDeviceInventoryIntervalRequest
-	40,  // 346: powermanage.v1.ControlService.DeleteDevice:input_type -> powermanage.v1.DeleteDeviceRequest
-	52,  // 347: powermanage.v1.ControlService.CreateToken:input_type -> powermanage.v1.CreateTokenRequest
-	56,  // 348: powermanage.v1.ControlService.GetToken:input_type -> powermanage.v1.GetTokenRequest
-	54,  // 349: powermanage.v1.ControlService.ListTokens:input_type -> powermanage.v1.ListTokensRequest
-	58,  // 350: powermanage.v1.ControlService.RenameToken:input_type -> powermanage.v1.RenameTokenRequest
-	59,  // 351: powermanage.v1.ControlService.SetTokenDisabled:input_type -> powermanage.v1.SetTokenDisabledRequest
-	61,  // 352: powermanage.v1.ControlService.DeleteToken:input_type -> powermanage.v1.DeleteTokenRequest
-	64,  // 353: powermanage.v1.ControlService.CreateAction:input_type -> powermanage.v1.CreateActionRequest
-	66,  // 354: powermanage.v1.ControlService.GetAction:input_type -> powermanage.v1.GetActionRequest
-	68,  // 355: powermanage.v1.ControlService.ListActions:input_type -> powermanage.v1.ListActionsRequest
-	70,  // 356: powermanage.v1.ControlService.RenameAction:input_type -> powermanage.v1.RenameActionRequest
-	71,  // 357: powermanage.v1.ControlService.UpdateActionDescription:input_type -> powermanage.v1.UpdateActionDescriptionRequest
-	72,  // 358: powermanage.v1.ControlService.UpdateActionParams:input_type -> powermanage.v1.UpdateActionParamsRequest
-	74,  // 359: powermanage.v1.ControlService.DeleteAction:input_type -> powermanage.v1.DeleteActionRequest
-	78,  // 360: powermanage.v1.ControlService.CreateActionSet:input_type -> powermanage.v1.CreateActionSetRequest
-	80,  // 361: powermanage.v1.ControlService.GetActionSet:input_type -> powermanage.v1.GetActionSetRequest
-	82,  // 362: powermanage.v1.ControlService.ListActionSets:input_type -> powermanage.v1.ListActionSetsRequest
-	84,  // 363: powermanage.v1.ControlService.RenameActionSet:input_type -> powermanage.v1.RenameActionSetRequest
-	85,  // 364: powermanage.v1.ControlService.UpdateActionSetDescription:input_type -> powermanage.v1.UpdateActionSetDescriptionRequest
-	86,  // 365: powermanage.v1.ControlService.UpdateActionSetSchedule:input_type -> powermanage.v1.UpdateActionSetScheduleRequest
-	88,  // 366: powermanage.v1.ControlService.DeleteActionSet:input_type -> powermanage.v1.DeleteActionSetRequest
-	90,  // 367: powermanage.v1.ControlService.AddActionToSet:input_type -> powermanage.v1.AddActionToSetRequest
-	92,  // 368: powermanage.v1.ControlService.RemoveActionFromSet:input_type -> powermanage.v1.RemoveActionFromSetRequest
-	94,  // 369: powermanage.v1.ControlService.ReorderActionInSet:input_type -> powermanage.v1.ReorderActionInSetRequest
-	98,  // 370: powermanage.v1.ControlService.CreateDefinition:input_type -> powermanage.v1.CreateDefinitionRequest
-	100, // 371: powermanage.v1.ControlService.GetDefinition:input_type -> powermanage.v1.GetDefinitionRequest
-	102, // 372: powermanage.v1.ControlService.ListDefinitions:input_type -> powermanage.v1.ListDefinitionsRequest
-	104, // 373: powermanage.v1.ControlService.RenameDefinition:input_type -> powermanage.v1.RenameDefinitionRequest
-	105, // 374: powermanage.v1.ControlService.UpdateDefinitionDescription:input_type -> powermanage.v1.UpdateDefinitionDescriptionRequest
-	106, // 375: powermanage.v1.ControlService.UpdateDefinitionSchedule:input_type -> powermanage.v1.UpdateDefinitionScheduleRequest
-	108, // 376: powermanage.v1.ControlService.DeleteDefinition:input_type -> powermanage.v1.DeleteDefinitionRequest
-	110, // 377: powermanage.v1.ControlService.AddActionSetToDefinition:input_type -> powermanage.v1.AddActionSetToDefinitionRequest
-	112, // 378: powermanage.v1.ControlService.RemoveActionSetFromDefinition:input_type -> powermanage.v1.RemoveActionSetFromDefinitionRequest
-	114, // 379: powermanage.v1.ControlService.ReorderActionSetInDefinition:input_type -> powermanage.v1.ReorderActionSetInDefinitionRequest
-	117, // 380: powermanage.v1.ControlService.CreateDeviceGroup:input_type -> powermanage.v1.CreateDeviceGroupRequest
-	119, // 381: powermanage.v1.ControlService.GetDeviceGroup:input_type -> powermanage.v1.GetDeviceGroupRequest
-	122, // 382: powermanage.v1.ControlService.ListDeviceGroups:input_type -> powermanage.v1.ListDeviceGroupsRequest
-	124, // 383: powermanage.v1.ControlService.ListDeviceGroupsForDevice:input_type -> powermanage.v1.ListDeviceGroupsForDeviceRequest
-	126, // 384: powermanage.v1.ControlService.RenameDeviceGroup:input_type -> powermanage.v1.RenameDeviceGroupRequest
-	127, // 385: powermanage.v1.ControlService.UpdateDeviceGroupDescription:input_type -> powermanage.v1.UpdateDeviceGroupDescriptionRequest
-	135, // 386: powermanage.v1.ControlService.UpdateDeviceGroupQuery:input_type -> powermanage.v1.UpdateDeviceGroupQueryRequest
-	129, // 387: powermanage.v1.ControlService.DeleteDeviceGroup:input_type -> powermanage.v1.DeleteDeviceGroupRequest
-	131, // 388: powermanage.v1.ControlService.AddDeviceToGroup:input_type -> powermanage.v1.AddDeviceToGroupRequest
-	133, // 389: powermanage.v1.ControlService.RemoveDeviceFromGroup:input_type -> powermanage.v1.RemoveDeviceFromGroupRequest
-	137, // 390: powermanage.v1.ControlService.ValidateDynamicQuery:input_type -> powermanage.v1.ValidateDynamicQueryRequest
-	139, // 391: powermanage.v1.ControlService.EvaluateDynamicGroup:input_type -> powermanage.v1.EvaluateDynamicGroupRequest
-	141, // 392: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> powermanage.v1.SetDeviceGroupSyncIntervalRequest
-	142, // 393: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:input_type -> powermanage.v1.SetDeviceGroupInventoryIntervalRequest
-	143, // 394: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:input_type -> powermanage.v1.SetDeviceGroupMaintenanceWindowRequest
-	145, // 395: powermanage.v1.ControlService.CreateAssignment:input_type -> powermanage.v1.CreateAssignmentRequest
-	147, // 396: powermanage.v1.ControlService.DeleteAssignment:input_type -> powermanage.v1.DeleteAssignmentRequest
-	149, // 397: powermanage.v1.ControlService.ListAssignments:input_type -> powermanage.v1.ListAssignmentsRequest
-	157, // 398: powermanage.v1.ControlService.GetDeviceAssignments:input_type -> powermanage.v1.GetDeviceAssignmentsRequest
-	159, // 399: powermanage.v1.ControlService.GetUserAssignments:input_type -> powermanage.v1.GetUserAssignmentsRequest
-	152, // 400: powermanage.v1.ControlService.SetUserSelection:input_type -> powermanage.v1.SetUserSelectionRequest
-	154, // 401: powermanage.v1.ControlService.ListAvailableActions:input_type -> powermanage.v1.ListAvailableActionsRequest
-	162, // 402: powermanage.v1.ControlService.DispatchAction:input_type -> powermanage.v1.DispatchActionRequest
-	164, // 403: powermanage.v1.ControlService.DispatchToMultiple:input_type -> powermanage.v1.DispatchToMultipleRequest
-	166, // 404: powermanage.v1.ControlService.DispatchAssignedActions:input_type -> powermanage.v1.DispatchAssignedActionsRequest
-	168, // 405: powermanage.v1.ControlService.DispatchActionSet:input_type -> powermanage.v1.DispatchActionSetRequest
-	170, // 406: powermanage.v1.ControlService.DispatchDefinition:input_type -> powermanage.v1.DispatchDefinitionRequest
-	172, // 407: powermanage.v1.ControlService.DispatchToGroup:input_type -> powermanage.v1.DispatchToGroupRequest
-	178, // 408: powermanage.v1.ControlService.DispatchInstantAction:input_type -> powermanage.v1.DispatchInstantActionRequest
-	180, // 409: powermanage.v1.ControlService.CancelExecution:input_type -> powermanage.v1.CancelExecutionRequest
-	174, // 410: powermanage.v1.ControlService.GetExecution:input_type -> powermanage.v1.GetExecutionRequest
-	176, // 411: powermanage.v1.ControlService.ListExecutions:input_type -> powermanage.v1.ListExecutionsRequest
-	183, // 412: powermanage.v1.ControlService.ListAuditEvents:input_type -> powermanage.v1.ListAuditEventsRequest
-	185, // 413: powermanage.v1.ControlService.ExportAuditEvents:input_type -> powermanage.v1.ExportAuditEventsRequest
-	188, // 414: powermanage.v1.ControlService.ListLpsPasswords:input_type -> powermanage.v1.ListLpsPasswordsRequest
-	190, // 415: powermanage.v1.ControlService.RevealLpsPassword:input_type -> powermanage.v1.RevealLpsPasswordRequest
-	193, // 416: powermanage.v1.ControlService.ListLuksKeys:input_type -> powermanage.v1.ListLuksKeysRequest
-	195, // 417: powermanage.v1.ControlService.RevealLuksKey:input_type -> powermanage.v1.RevealLuksKeyRequest
-	197, // 418: powermanage.v1.ControlService.CreateLuksToken:input_type -> powermanage.v1.CreateLuksTokenRequest
-	199, // 419: powermanage.v1.ControlService.RevokeLuksDeviceKey:input_type -> powermanage.v1.RevokeLuksDeviceKeyRequest
-	201, // 420: powermanage.v1.ControlService.DispatchOSQuery:input_type -> powermanage.v1.DispatchOSQueryRequest
-	203, // 421: powermanage.v1.ControlService.GetOSQueryResult:input_type -> powermanage.v1.GetOSQueryResultRequest
-	205, // 422: powermanage.v1.ControlService.GetDeviceInventory:input_type -> powermanage.v1.GetDeviceInventoryRequest
-	208, // 423: powermanage.v1.ControlService.RefreshDeviceInventory:input_type -> powermanage.v1.RefreshDeviceInventoryRequest
-	210, // 424: powermanage.v1.ControlService.QueryDeviceLogs:input_type -> powermanage.v1.QueryDeviceLogsRequest
-	212, // 425: powermanage.v1.ControlService.GetDeviceLogResult:input_type -> powermanage.v1.GetDeviceLogResultRequest
-	214, // 426: powermanage.v1.ControlService.CreateRole:input_type -> powermanage.v1.CreateRoleRequest
-	216, // 427: powermanage.v1.ControlService.GetRole:input_type -> powermanage.v1.GetRoleRequest
-	218, // 428: powermanage.v1.ControlService.ListRoles:input_type -> powermanage.v1.ListRolesRequest
-	220, // 429: powermanage.v1.ControlService.UpdateRole:input_type -> powermanage.v1.UpdateRoleRequest
-	222, // 430: powermanage.v1.ControlService.DeleteRole:input_type -> powermanage.v1.DeleteRoleRequest
-	224, // 431: powermanage.v1.ControlService.AssignRoleToUser:input_type -> powermanage.v1.AssignRoleToUserRequest
-	226, // 432: powermanage.v1.ControlService.RevokeRoleFromUser:input_type -> powermanage.v1.RevokeRoleFromUserRequest
-	228, // 433: powermanage.v1.ControlService.ListPermissions:input_type -> powermanage.v1.ListPermissionsRequest
-	232, // 434: powermanage.v1.ControlService.CreateUserGroup:input_type -> powermanage.v1.CreateUserGroupRequest
-	234, // 435: powermanage.v1.ControlService.GetUserGroup:input_type -> powermanage.v1.GetUserGroupRequest
-	236, // 436: powermanage.v1.ControlService.ListUserGroups:input_type -> powermanage.v1.ListUserGroupsRequest
-	238, // 437: powermanage.v1.ControlService.UpdateUserGroup:input_type -> powermanage.v1.UpdateUserGroupRequest
-	240, // 438: powermanage.v1.ControlService.DeleteUserGroup:input_type -> powermanage.v1.DeleteUserGroupRequest
-	242, // 439: powermanage.v1.ControlService.AddUserToGroup:input_type -> powermanage.v1.AddUserToGroupRequest
-	244, // 440: powermanage.v1.ControlService.RemoveUserFromGroup:input_type -> powermanage.v1.RemoveUserFromGroupRequest
-	246, // 441: powermanage.v1.ControlService.AssignRoleToUserGroup:input_type -> powermanage.v1.AssignRoleToUserGroupRequest
-	248, // 442: powermanage.v1.ControlService.RevokeRoleFromUserGroup:input_type -> powermanage.v1.RevokeRoleFromUserGroupRequest
-	250, // 443: powermanage.v1.ControlService.ListUserGroupsForUser:input_type -> powermanage.v1.ListUserGroupsForUserRequest
-	252, // 444: powermanage.v1.ControlService.UpdateUserGroupQuery:input_type -> powermanage.v1.UpdateUserGroupQueryRequest
-	254, // 445: powermanage.v1.ControlService.ValidateUserGroupQuery:input_type -> powermanage.v1.ValidateUserGroupQueryRequest
-	256, // 446: powermanage.v1.ControlService.EvaluateDynamicUserGroup:input_type -> powermanage.v1.EvaluateDynamicUserGroupRequest
-	258, // 447: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:input_type -> powermanage.v1.SetUserGroupMaintenanceWindowRequest
-	288, // 448: powermanage.v1.ControlService.GetDeviceCompliance:input_type -> powermanage.v1.GetDeviceComplianceRequest
-	293, // 449: powermanage.v1.ControlService.CreateCompliancePolicy:input_type -> powermanage.v1.CreateCompliancePolicyRequest
-	295, // 450: powermanage.v1.ControlService.GetCompliancePolicy:input_type -> powermanage.v1.GetCompliancePolicyRequest
-	297, // 451: powermanage.v1.ControlService.ListCompliancePolicies:input_type -> powermanage.v1.ListCompliancePoliciesRequest
-	299, // 452: powermanage.v1.ControlService.RenameCompliancePolicy:input_type -> powermanage.v1.RenameCompliancePolicyRequest
-	300, // 453: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:input_type -> powermanage.v1.UpdateCompliancePolicyDescriptionRequest
-	302, // 454: powermanage.v1.ControlService.DeleteCompliancePolicy:input_type -> powermanage.v1.DeleteCompliancePolicyRequest
-	304, // 455: powermanage.v1.ControlService.AddCompliancePolicyRule:input_type -> powermanage.v1.AddCompliancePolicyRuleRequest
-	306, // 456: powermanage.v1.ControlService.RemoveCompliancePolicyRule:input_type -> powermanage.v1.RemoveCompliancePolicyRuleRequest
-	308, // 457: powermanage.v1.ControlService.UpdateCompliancePolicyRule:input_type -> powermanage.v1.UpdateCompliancePolicyRuleRequest
-	310, // 458: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:input_type -> powermanage.v1.GetDeviceCompliancePolicyStatusRequest
-	315, // 459: powermanage.v1.ControlService.Search:input_type -> powermanage.v1.SearchRequest
-	318, // 460: powermanage.v1.ControlService.RebuildSearchIndex:input_type -> powermanage.v1.RebuildSearchIndexRequest
-	321, // 461: powermanage.v1.ControlService.GetServerSettings:input_type -> powermanage.v1.GetServerSettingsRequest
-	323, // 462: powermanage.v1.ControlService.UpdateServerSettings:input_type -> powermanage.v1.UpdateServerSettingsRequest
-	325, // 463: powermanage.v1.ControlService.SetUserProvisioningEnabled:input_type -> powermanage.v1.SetUserProvisioningEnabledRequest
-	326, // 464: powermanage.v1.ControlService.StartTerminal:input_type -> powermanage.v1.StartTerminalRequest
-	328, // 465: powermanage.v1.ControlService.StopTerminal:input_type -> powermanage.v1.StopTerminalRequest
-	331, // 466: powermanage.v1.ControlService.ListActiveTerminalSessions:input_type -> powermanage.v1.ListActiveTerminalSessionsRequest
-	333, // 467: powermanage.v1.ControlService.TerminateTerminalSession:input_type -> powermanage.v1.TerminateTerminalSessionRequest
-	1,   // 468: powermanage.v1.ControlService.Register:output_type -> powermanage.v1.RegisterResponse
-	3,   // 469: powermanage.v1.ControlService.RenewCertificate:output_type -> powermanage.v1.RenewCertificateResponse
-	5,   // 470: powermanage.v1.ControlService.RefreshToken:output_type -> powermanage.v1.RefreshTokenResponse
-	7,   // 471: powermanage.v1.ControlService.Logout:output_type -> powermanage.v1.LogoutResponse
-	9,   // 472: powermanage.v1.ControlService.GetCurrentUser:output_type -> powermanage.v1.GetCurrentUserResponse
-	273, // 473: powermanage.v1.ControlService.ListAuthMethods:output_type -> powermanage.v1.ListAuthMethodsResponse
-	275, // 474: powermanage.v1.ControlService.GetSSOLoginURL:output_type -> powermanage.v1.GetSSOLoginURLResponse
-	277, // 475: powermanage.v1.ControlService.SSOCallback:output_type -> powermanage.v1.SSOCallbackResponse
-	262, // 476: powermanage.v1.ControlService.CreateIdentityProvider:output_type -> powermanage.v1.CreateIdentityProviderResponse
-	264, // 477: powermanage.v1.ControlService.GetIdentityProvider:output_type -> powermanage.v1.GetIdentityProviderResponse
-	266, // 478: powermanage.v1.ControlService.ListIdentityProviders:output_type -> powermanage.v1.ListIdentityProvidersResponse
-	268, // 479: powermanage.v1.ControlService.UpdateIdentityProvider:output_type -> powermanage.v1.UpdateIdentityProviderResponse
-	270, // 480: powermanage.v1.ControlService.DeleteIdentityProvider:output_type -> powermanage.v1.DeleteIdentityProviderResponse
-	279, // 481: powermanage.v1.ControlService.ListIdentityLinks:output_type -> powermanage.v1.ListIdentityLinksResponse
-	281, // 482: powermanage.v1.ControlService.UnlinkIdentity:output_type -> powermanage.v1.UnlinkIdentityResponse
-	283, // 483: powermanage.v1.ControlService.EnableSCIM:output_type -> powermanage.v1.EnableSCIMResponse
-	285, // 484: powermanage.v1.ControlService.DisableSCIM:output_type -> powermanage.v1.DisableSCIMResponse
-	287, // 485: powermanage.v1.ControlService.RotateSCIMToken:output_type -> powermanage.v1.RotateSCIMTokenResponse
-	17,  // 486: powermanage.v1.ControlService.EraseJITUser:output_type -> powermanage.v1.EraseJITUserResponse
-	19,  // 487: powermanage.v1.ControlService.GetUser:output_type -> powermanage.v1.GetUserResponse
-	21,  // 488: powermanage.v1.ControlService.ListUsers:output_type -> powermanage.v1.ListUsersResponse
-	24,  // 489: powermanage.v1.ControlService.UpdateUserEmail:output_type -> powermanage.v1.UpdateUserResponse
-	24,  // 490: powermanage.v1.ControlService.SetUserDisabled:output_type -> powermanage.v1.UpdateUserResponse
-	24,  // 491: powermanage.v1.ControlService.UpdateUserProfile:output_type -> powermanage.v1.UpdateUserResponse
-	24,  // 492: powermanage.v1.ControlService.UpdateUserLinuxUsername:output_type -> powermanage.v1.UpdateUserResponse
-	27,  // 493: powermanage.v1.ControlService.AddUserSshKey:output_type -> powermanage.v1.AddUserSshKeyResponse
-	29,  // 494: powermanage.v1.ControlService.RemoveUserSshKey:output_type -> powermanage.v1.RemoveUserSshKeyResponse
-	24,  // 495: powermanage.v1.ControlService.UpdateUserSshSettings:output_type -> powermanage.v1.UpdateUserResponse
-	34,  // 496: powermanage.v1.ControlService.ListDevices:output_type -> powermanage.v1.ListDevicesResponse
-	36,  // 497: powermanage.v1.ControlService.GetDevice:output_type -> powermanage.v1.GetDeviceResponse
-	39,  // 498: powermanage.v1.ControlService.SetDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
-	39,  // 499: powermanage.v1.ControlService.RemoveDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
-	43,  // 500: powermanage.v1.ControlService.AssignDevice:output_type -> powermanage.v1.AssignDeviceResponse
-	45,  // 501: powermanage.v1.ControlService.UnassignDevice:output_type -> powermanage.v1.UnassignDeviceResponse
-	48,  // 502: powermanage.v1.ControlService.ListDeviceAssignees:output_type -> powermanage.v1.ListDeviceAssigneesResponse
-	39,  // 503: powermanage.v1.ControlService.SetDeviceSyncInterval:output_type -> powermanage.v1.UpdateDeviceResponse
-	39,  // 504: powermanage.v1.ControlService.SetDeviceInventoryInterval:output_type -> powermanage.v1.UpdateDeviceResponse
-	41,  // 505: powermanage.v1.ControlService.DeleteDevice:output_type -> powermanage.v1.DeleteDeviceResponse
-	53,  // 506: powermanage.v1.ControlService.CreateToken:output_type -> powermanage.v1.CreateTokenResponse
-	57,  // 507: powermanage.v1.ControlService.GetToken:output_type -> powermanage.v1.GetTokenResponse
-	55,  // 508: powermanage.v1.ControlService.ListTokens:output_type -> powermanage.v1.ListTokensResponse
-	60,  // 509: powermanage.v1.ControlService.RenameToken:output_type -> powermanage.v1.UpdateTokenResponse
-	60,  // 510: powermanage.v1.ControlService.SetTokenDisabled:output_type -> powermanage.v1.UpdateTokenResponse
-	62,  // 511: powermanage.v1.ControlService.DeleteToken:output_type -> powermanage.v1.DeleteTokenResponse
-	65,  // 512: powermanage.v1.ControlService.CreateAction:output_type -> powermanage.v1.CreateActionResponse
-	67,  // 513: powermanage.v1.ControlService.GetAction:output_type -> powermanage.v1.GetActionResponse
-	69,  // 514: powermanage.v1.ControlService.ListActions:output_type -> powermanage.v1.ListActionsResponse
-	73,  // 515: powermanage.v1.ControlService.RenameAction:output_type -> powermanage.v1.UpdateActionResponse
-	73,  // 516: powermanage.v1.ControlService.UpdateActionDescription:output_type -> powermanage.v1.UpdateActionResponse
-	73,  // 517: powermanage.v1.ControlService.UpdateActionParams:output_type -> powermanage.v1.UpdateActionResponse
-	75,  // 518: powermanage.v1.ControlService.DeleteAction:output_type -> powermanage.v1.DeleteActionResponse
-	79,  // 519: powermanage.v1.ControlService.CreateActionSet:output_type -> powermanage.v1.CreateActionSetResponse
-	81,  // 520: powermanage.v1.ControlService.GetActionSet:output_type -> powermanage.v1.GetActionSetResponse
-	83,  // 521: powermanage.v1.ControlService.ListActionSets:output_type -> powermanage.v1.ListActionSetsResponse
-	87,  // 522: powermanage.v1.ControlService.RenameActionSet:output_type -> powermanage.v1.UpdateActionSetResponse
-	87,  // 523: powermanage.v1.ControlService.UpdateActionSetDescription:output_type -> powermanage.v1.UpdateActionSetResponse
-	87,  // 524: powermanage.v1.ControlService.UpdateActionSetSchedule:output_type -> powermanage.v1.UpdateActionSetResponse
-	89,  // 525: powermanage.v1.ControlService.DeleteActionSet:output_type -> powermanage.v1.DeleteActionSetResponse
-	91,  // 526: powermanage.v1.ControlService.AddActionToSet:output_type -> powermanage.v1.AddActionToSetResponse
-	93,  // 527: powermanage.v1.ControlService.RemoveActionFromSet:output_type -> powermanage.v1.RemoveActionFromSetResponse
-	95,  // 528: powermanage.v1.ControlService.ReorderActionInSet:output_type -> powermanage.v1.ReorderActionInSetResponse
-	99,  // 529: powermanage.v1.ControlService.CreateDefinition:output_type -> powermanage.v1.CreateDefinitionResponse
-	101, // 530: powermanage.v1.ControlService.GetDefinition:output_type -> powermanage.v1.GetDefinitionResponse
-	103, // 531: powermanage.v1.ControlService.ListDefinitions:output_type -> powermanage.v1.ListDefinitionsResponse
-	107, // 532: powermanage.v1.ControlService.RenameDefinition:output_type -> powermanage.v1.UpdateDefinitionResponse
-	107, // 533: powermanage.v1.ControlService.UpdateDefinitionDescription:output_type -> powermanage.v1.UpdateDefinitionResponse
-	107, // 534: powermanage.v1.ControlService.UpdateDefinitionSchedule:output_type -> powermanage.v1.UpdateDefinitionResponse
-	109, // 535: powermanage.v1.ControlService.DeleteDefinition:output_type -> powermanage.v1.DeleteDefinitionResponse
-	111, // 536: powermanage.v1.ControlService.AddActionSetToDefinition:output_type -> powermanage.v1.AddActionSetToDefinitionResponse
-	113, // 537: powermanage.v1.ControlService.RemoveActionSetFromDefinition:output_type -> powermanage.v1.RemoveActionSetFromDefinitionResponse
-	115, // 538: powermanage.v1.ControlService.ReorderActionSetInDefinition:output_type -> powermanage.v1.ReorderActionSetInDefinitionResponse
-	118, // 539: powermanage.v1.ControlService.CreateDeviceGroup:output_type -> powermanage.v1.CreateDeviceGroupResponse
-	120, // 540: powermanage.v1.ControlService.GetDeviceGroup:output_type -> powermanage.v1.GetDeviceGroupResponse
-	123, // 541: powermanage.v1.ControlService.ListDeviceGroups:output_type -> powermanage.v1.ListDeviceGroupsResponse
-	125, // 542: powermanage.v1.ControlService.ListDeviceGroupsForDevice:output_type -> powermanage.v1.ListDeviceGroupsForDeviceResponse
-	128, // 543: powermanage.v1.ControlService.RenameDeviceGroup:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	128, // 544: powermanage.v1.ControlService.UpdateDeviceGroupDescription:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	136, // 545: powermanage.v1.ControlService.UpdateDeviceGroupQuery:output_type -> powermanage.v1.UpdateDeviceGroupQueryResponse
-	130, // 546: powermanage.v1.ControlService.DeleteDeviceGroup:output_type -> powermanage.v1.DeleteDeviceGroupResponse
-	132, // 547: powermanage.v1.ControlService.AddDeviceToGroup:output_type -> powermanage.v1.AddDeviceToGroupResponse
-	134, // 548: powermanage.v1.ControlService.RemoveDeviceFromGroup:output_type -> powermanage.v1.RemoveDeviceFromGroupResponse
-	138, // 549: powermanage.v1.ControlService.ValidateDynamicQuery:output_type -> powermanage.v1.ValidateDynamicQueryResponse
-	140, // 550: powermanage.v1.ControlService.EvaluateDynamicGroup:output_type -> powermanage.v1.EvaluateDynamicGroupResponse
-	128, // 551: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	128, // 552: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	128, // 553: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateDeviceGroupResponse
-	146, // 554: powermanage.v1.ControlService.CreateAssignment:output_type -> powermanage.v1.CreateAssignmentResponse
-	148, // 555: powermanage.v1.ControlService.DeleteAssignment:output_type -> powermanage.v1.DeleteAssignmentResponse
-	150, // 556: powermanage.v1.ControlService.ListAssignments:output_type -> powermanage.v1.ListAssignmentsResponse
-	158, // 557: powermanage.v1.ControlService.GetDeviceAssignments:output_type -> powermanage.v1.GetDeviceAssignmentsResponse
-	160, // 558: powermanage.v1.ControlService.GetUserAssignments:output_type -> powermanage.v1.GetUserAssignmentsResponse
-	153, // 559: powermanage.v1.ControlService.SetUserSelection:output_type -> powermanage.v1.SetUserSelectionResponse
-	156, // 560: powermanage.v1.ControlService.ListAvailableActions:output_type -> powermanage.v1.ListAvailableActionsResponse
-	163, // 561: powermanage.v1.ControlService.DispatchAction:output_type -> powermanage.v1.DispatchActionResponse
-	165, // 562: powermanage.v1.ControlService.DispatchToMultiple:output_type -> powermanage.v1.DispatchToMultipleResponse
-	167, // 563: powermanage.v1.ControlService.DispatchAssignedActions:output_type -> powermanage.v1.DispatchAssignedActionsResponse
-	169, // 564: powermanage.v1.ControlService.DispatchActionSet:output_type -> powermanage.v1.DispatchActionSetResponse
-	171, // 565: powermanage.v1.ControlService.DispatchDefinition:output_type -> powermanage.v1.DispatchDefinitionResponse
-	173, // 566: powermanage.v1.ControlService.DispatchToGroup:output_type -> powermanage.v1.DispatchToGroupResponse
-	179, // 567: powermanage.v1.ControlService.DispatchInstantAction:output_type -> powermanage.v1.DispatchInstantActionResponse
-	181, // 568: powermanage.v1.ControlService.CancelExecution:output_type -> powermanage.v1.CancelExecutionResponse
-	175, // 569: powermanage.v1.ControlService.GetExecution:output_type -> powermanage.v1.GetExecutionResponse
-	177, // 570: powermanage.v1.ControlService.ListExecutions:output_type -> powermanage.v1.ListExecutionsResponse
-	184, // 571: powermanage.v1.ControlService.ListAuditEvents:output_type -> powermanage.v1.ListAuditEventsResponse
-	186, // 572: powermanage.v1.ControlService.ExportAuditEvents:output_type -> powermanage.v1.ExportAuditEventsResponse
-	189, // 573: powermanage.v1.ControlService.ListLpsPasswords:output_type -> powermanage.v1.ListLpsPasswordsResponse
-	191, // 574: powermanage.v1.ControlService.RevealLpsPassword:output_type -> powermanage.v1.RevealLpsPasswordResponse
-	194, // 575: powermanage.v1.ControlService.ListLuksKeys:output_type -> powermanage.v1.ListLuksKeysResponse
-	196, // 576: powermanage.v1.ControlService.RevealLuksKey:output_type -> powermanage.v1.RevealLuksKeyResponse
-	198, // 577: powermanage.v1.ControlService.CreateLuksToken:output_type -> powermanage.v1.CreateLuksTokenResponse
-	200, // 578: powermanage.v1.ControlService.RevokeLuksDeviceKey:output_type -> powermanage.v1.RevokeLuksDeviceKeyResponse
-	202, // 579: powermanage.v1.ControlService.DispatchOSQuery:output_type -> powermanage.v1.DispatchOSQueryResponse
-	204, // 580: powermanage.v1.ControlService.GetOSQueryResult:output_type -> powermanage.v1.GetOSQueryResultResponse
-	207, // 581: powermanage.v1.ControlService.GetDeviceInventory:output_type -> powermanage.v1.GetDeviceInventoryResponse
-	209, // 582: powermanage.v1.ControlService.RefreshDeviceInventory:output_type -> powermanage.v1.RefreshDeviceInventoryResponse
-	211, // 583: powermanage.v1.ControlService.QueryDeviceLogs:output_type -> powermanage.v1.QueryDeviceLogsResponse
-	213, // 584: powermanage.v1.ControlService.GetDeviceLogResult:output_type -> powermanage.v1.GetDeviceLogResultResponse
-	215, // 585: powermanage.v1.ControlService.CreateRole:output_type -> powermanage.v1.CreateRoleResponse
-	217, // 586: powermanage.v1.ControlService.GetRole:output_type -> powermanage.v1.GetRoleResponse
-	219, // 587: powermanage.v1.ControlService.ListRoles:output_type -> powermanage.v1.ListRolesResponse
-	221, // 588: powermanage.v1.ControlService.UpdateRole:output_type -> powermanage.v1.UpdateRoleResponse
-	223, // 589: powermanage.v1.ControlService.DeleteRole:output_type -> powermanage.v1.DeleteRoleResponse
-	225, // 590: powermanage.v1.ControlService.AssignRoleToUser:output_type -> powermanage.v1.AssignRoleToUserResponse
-	227, // 591: powermanage.v1.ControlService.RevokeRoleFromUser:output_type -> powermanage.v1.RevokeRoleFromUserResponse
-	229, // 592: powermanage.v1.ControlService.ListPermissions:output_type -> powermanage.v1.ListPermissionsResponse
-	233, // 593: powermanage.v1.ControlService.CreateUserGroup:output_type -> powermanage.v1.CreateUserGroupResponse
-	235, // 594: powermanage.v1.ControlService.GetUserGroup:output_type -> powermanage.v1.GetUserGroupResponse
-	237, // 595: powermanage.v1.ControlService.ListUserGroups:output_type -> powermanage.v1.ListUserGroupsResponse
-	239, // 596: powermanage.v1.ControlService.UpdateUserGroup:output_type -> powermanage.v1.UpdateUserGroupResponse
-	241, // 597: powermanage.v1.ControlService.DeleteUserGroup:output_type -> powermanage.v1.DeleteUserGroupResponse
-	243, // 598: powermanage.v1.ControlService.AddUserToGroup:output_type -> powermanage.v1.AddUserToGroupResponse
-	245, // 599: powermanage.v1.ControlService.RemoveUserFromGroup:output_type -> powermanage.v1.RemoveUserFromGroupResponse
-	247, // 600: powermanage.v1.ControlService.AssignRoleToUserGroup:output_type -> powermanage.v1.AssignRoleToUserGroupResponse
-	249, // 601: powermanage.v1.ControlService.RevokeRoleFromUserGroup:output_type -> powermanage.v1.RevokeRoleFromUserGroupResponse
-	251, // 602: powermanage.v1.ControlService.ListUserGroupsForUser:output_type -> powermanage.v1.ListUserGroupsForUserResponse
-	253, // 603: powermanage.v1.ControlService.UpdateUserGroupQuery:output_type -> powermanage.v1.UpdateUserGroupQueryResponse
-	255, // 604: powermanage.v1.ControlService.ValidateUserGroupQuery:output_type -> powermanage.v1.ValidateUserGroupQueryResponse
-	257, // 605: powermanage.v1.ControlService.EvaluateDynamicUserGroup:output_type -> powermanage.v1.EvaluateDynamicUserGroupResponse
-	239, // 606: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateUserGroupResponse
-	289, // 607: powermanage.v1.ControlService.GetDeviceCompliance:output_type -> powermanage.v1.GetDeviceComplianceResponse
-	294, // 608: powermanage.v1.ControlService.CreateCompliancePolicy:output_type -> powermanage.v1.CreateCompliancePolicyResponse
-	296, // 609: powermanage.v1.ControlService.GetCompliancePolicy:output_type -> powermanage.v1.GetCompliancePolicyResponse
-	298, // 610: powermanage.v1.ControlService.ListCompliancePolicies:output_type -> powermanage.v1.ListCompliancePoliciesResponse
-	301, // 611: powermanage.v1.ControlService.RenameCompliancePolicy:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
-	301, // 612: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
-	303, // 613: powermanage.v1.ControlService.DeleteCompliancePolicy:output_type -> powermanage.v1.DeleteCompliancePolicyResponse
-	305, // 614: powermanage.v1.ControlService.AddCompliancePolicyRule:output_type -> powermanage.v1.AddCompliancePolicyRuleResponse
-	307, // 615: powermanage.v1.ControlService.RemoveCompliancePolicyRule:output_type -> powermanage.v1.RemoveCompliancePolicyRuleResponse
-	309, // 616: powermanage.v1.ControlService.UpdateCompliancePolicyRule:output_type -> powermanage.v1.UpdateCompliancePolicyRuleResponse
-	311, // 617: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:output_type -> powermanage.v1.GetDeviceCompliancePolicyStatusResponse
-	317, // 618: powermanage.v1.ControlService.Search:output_type -> powermanage.v1.SearchResponse
-	319, // 619: powermanage.v1.ControlService.RebuildSearchIndex:output_type -> powermanage.v1.RebuildSearchIndexResponse
-	322, // 620: powermanage.v1.ControlService.GetServerSettings:output_type -> powermanage.v1.GetServerSettingsResponse
-	324, // 621: powermanage.v1.ControlService.UpdateServerSettings:output_type -> powermanage.v1.UpdateServerSettingsResponse
-	24,  // 622: powermanage.v1.ControlService.SetUserProvisioningEnabled:output_type -> powermanage.v1.UpdateUserResponse
-	327, // 623: powermanage.v1.ControlService.StartTerminal:output_type -> powermanage.v1.StartTerminalResponse
-	329, // 624: powermanage.v1.ControlService.StopTerminal:output_type -> powermanage.v1.StopTerminalResponse
-	332, // 625: powermanage.v1.ControlService.ListActiveTerminalSessions:output_type -> powermanage.v1.ListActiveTerminalSessionsResponse
-	334, // 626: powermanage.v1.ControlService.TerminateTerminalSession:output_type -> powermanage.v1.TerminateTerminalSessionResponse
-	468, // [468:627] is the sub-list for method output_type
-	309, // [309:468] is the sub-list for method input_type
-	309, // [309:309] is the sub-list for extension type_name
-	309, // [309:309] is the sub-list for extension extendee
-	0,   // [0:309] is the sub-list for field type_name
+	351, // 266: powermanage.v1.BeginCLILoginResponse.expires_at:type_name -> google.protobuf.Timestamp
+	351, // 267: powermanage.v1.ExchangeCLISessionResponse.expires_at:type_name -> google.protobuf.Timestamp
+	10,  // 268: powermanage.v1.ExchangeCLISessionResponse.user:type_name -> powermanage.v1.User
+	260, // 269: powermanage.v1.ListIdentityLinksResponse.links:type_name -> powermanage.v1.IdentityLink
+	355, // 270: powermanage.v1.GetDeviceComplianceResponse.status:type_name -> powermanage.v1.ComplianceStatus
+	294, // 271: powermanage.v1.GetDeviceComplianceResponse.checks:type_name -> powermanage.v1.ComplianceCheckResult
+	381, // 272: powermanage.v1.ComplianceCheckResult.detection_output:type_name -> powermanage.v1.CommandOutput
+	351, // 273: powermanage.v1.ComplianceCheckResult.checked_at:type_name -> google.protobuf.Timestamp
+	296, // 274: powermanage.v1.CompliancePolicy.rules:type_name -> powermanage.v1.CompliancePolicyRule
+	351, // 275: powermanage.v1.CompliancePolicy.created_at:type_name -> google.protobuf.Timestamp
+	295, // 276: powermanage.v1.CreateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	295, // 277: powermanage.v1.GetCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	295, // 278: powermanage.v1.ListCompliancePoliciesResponse.policies:type_name -> powermanage.v1.CompliancePolicy
+	295, // 279: powermanage.v1.UpdateCompliancePolicyResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	295, // 280: powermanage.v1.AddCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	295, // 281: powermanage.v1.RemoveCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	295, // 282: powermanage.v1.UpdateCompliancePolicyRuleResponse.policy:type_name -> powermanage.v1.CompliancePolicy
+	355, // 283: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.overall_status:type_name -> powermanage.v1.ComplianceStatus
+	316, // 284: powermanage.v1.GetDeviceCompliancePolicyStatusResponse.policies:type_name -> powermanage.v1.DevicePolicyEvaluation
+	355, // 285: powermanage.v1.DevicePolicyEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
+	317, // 286: powermanage.v1.DevicePolicyEvaluation.rules:type_name -> powermanage.v1.DevicePolicyRuleEvaluation
+	355, // 287: powermanage.v1.DevicePolicyRuleEvaluation.status:type_name -> powermanage.v1.ComplianceStatus
+	351, // 288: powermanage.v1.DevicePolicyRuleEvaluation.checked_at:type_name -> google.protobuf.Timestamp
+	351, // 289: powermanage.v1.DevicePolicyRuleEvaluation.first_failed_at:type_name -> google.protobuf.Timestamp
+	351, // 290: powermanage.v1.DevicePolicyRuleEvaluation.grace_expires_at:type_name -> google.protobuf.Timestamp
+	381, // 291: powermanage.v1.DevicePolicyRuleEvaluation.detection_output:type_name -> powermanage.v1.CommandOutput
+	387, // 292: powermanage.v1.SearchRequest.scope:type_name -> powermanage.v1.SearchScope
+	318, // 293: powermanage.v1.SearchRequest.date_filters:type_name -> powermanage.v1.SearchDateFilter
+	348, // 294: powermanage.v1.SearchRequest.tag_filters:type_name -> powermanage.v1.SearchRequest.TagFiltersEntry
+	388, // 295: powermanage.v1.SearchRequest.sort_field:type_name -> powermanage.v1.SortField
+	389, // 296: powermanage.v1.SearchRequest.sort_direction:type_name -> powermanage.v1.SortDirection
+	387, // 297: powermanage.v1.SearchResult.scope:type_name -> powermanage.v1.SearchScope
+	349, // 298: powermanage.v1.SearchResult.fields:type_name -> powermanage.v1.SearchResult.FieldsEntry
+	320, // 299: powermanage.v1.SearchResponse.results:type_name -> powermanage.v1.SearchResult
+	324, // 300: powermanage.v1.GetServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
+	324, // 301: powermanage.v1.UpdateServerSettingsResponse.settings:type_name -> powermanage.v1.ServerSettings
+	351, // 302: powermanage.v1.StartTerminalResponse.expires_at:type_name -> google.protobuf.Timestamp
+	351, // 303: powermanage.v1.TerminalSessionInfo.started_at:type_name -> google.protobuf.Timestamp
+	351, // 304: powermanage.v1.TerminalSessionInfo.last_activity_at:type_name -> google.protobuf.Timestamp
+	334, // 305: powermanage.v1.ListActiveTerminalSessionsResponse.sessions:type_name -> powermanage.v1.TerminalSessionInfo
+	390, // 306: powermanage.v1.EncryptionAuthoringParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	391, // 307: powermanage.v1.EncryptionAuthoringParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	390, // 308: powermanage.v1.ManagedEncryptionParams.device_bound_key_type:type_name -> powermanage.v1.EncryptionDeviceBoundKeyType
+	391, // 309: powermanage.v1.ManagedEncryptionParams.user_passphrase_complexity:type_name -> powermanage.v1.LpsPasswordComplexity
+	392, // 310: powermanage.v1.WifiAuthoringParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	392, // 311: powermanage.v1.ManagedWifiParams.auth_type:type_name -> powermanage.v1.WifiAuthType
+	0,   // 312: powermanage.v1.ControlService.Register:input_type -> powermanage.v1.RegisterRequest
+	2,   // 313: powermanage.v1.ControlService.RenewCertificate:input_type -> powermanage.v1.RenewCertificateRequest
+	4,   // 314: powermanage.v1.ControlService.RefreshToken:input_type -> powermanage.v1.RefreshTokenRequest
+	6,   // 315: powermanage.v1.ControlService.Logout:input_type -> powermanage.v1.LogoutRequest
+	8,   // 316: powermanage.v1.ControlService.GetCurrentUser:input_type -> powermanage.v1.GetCurrentUserRequest
+	272, // 317: powermanage.v1.ControlService.ListAuthMethods:input_type -> powermanage.v1.ListAuthMethodsRequest
+	274, // 318: powermanage.v1.ControlService.GetSSOLoginURL:input_type -> powermanage.v1.GetSSOLoginURLRequest
+	276, // 319: powermanage.v1.ControlService.SSOCallback:input_type -> powermanage.v1.SSOCallbackRequest
+	278, // 320: powermanage.v1.ControlService.BeginCLILogin:input_type -> powermanage.v1.BeginCLILoginRequest
+	280, // 321: powermanage.v1.ControlService.ExchangeCLISession:input_type -> powermanage.v1.ExchangeCLISessionRequest
+	261, // 322: powermanage.v1.ControlService.CreateIdentityProvider:input_type -> powermanage.v1.CreateIdentityProviderRequest
+	263, // 323: powermanage.v1.ControlService.GetIdentityProvider:input_type -> powermanage.v1.GetIdentityProviderRequest
+	265, // 324: powermanage.v1.ControlService.ListIdentityProviders:input_type -> powermanage.v1.ListIdentityProvidersRequest
+	267, // 325: powermanage.v1.ControlService.UpdateIdentityProvider:input_type -> powermanage.v1.UpdateIdentityProviderRequest
+	269, // 326: powermanage.v1.ControlService.DeleteIdentityProvider:input_type -> powermanage.v1.DeleteIdentityProviderRequest
+	282, // 327: powermanage.v1.ControlService.ListIdentityLinks:input_type -> powermanage.v1.ListIdentityLinksRequest
+	284, // 328: powermanage.v1.ControlService.UnlinkIdentity:input_type -> powermanage.v1.UnlinkIdentityRequest
+	286, // 329: powermanage.v1.ControlService.EnableSCIM:input_type -> powermanage.v1.EnableSCIMRequest
+	288, // 330: powermanage.v1.ControlService.DisableSCIM:input_type -> powermanage.v1.DisableSCIMRequest
+	290, // 331: powermanage.v1.ControlService.RotateSCIMToken:input_type -> powermanage.v1.RotateSCIMTokenRequest
+	16,  // 332: powermanage.v1.ControlService.EraseJITUser:input_type -> powermanage.v1.EraseJITUserRequest
+	18,  // 333: powermanage.v1.ControlService.GetUser:input_type -> powermanage.v1.GetUserRequest
+	20,  // 334: powermanage.v1.ControlService.ListUsers:input_type -> powermanage.v1.ListUsersRequest
+	22,  // 335: powermanage.v1.ControlService.UpdateUserEmail:input_type -> powermanage.v1.UpdateUserEmailRequest
+	23,  // 336: powermanage.v1.ControlService.SetUserDisabled:input_type -> powermanage.v1.SetUserDisabledRequest
+	25,  // 337: powermanage.v1.ControlService.UpdateUserProfile:input_type -> powermanage.v1.UpdateUserProfileRequest
+	31,  // 338: powermanage.v1.ControlService.UpdateUserLinuxUsername:input_type -> powermanage.v1.UpdateUserLinuxUsernameRequest
+	26,  // 339: powermanage.v1.ControlService.AddUserSshKey:input_type -> powermanage.v1.AddUserSshKeyRequest
+	28,  // 340: powermanage.v1.ControlService.RemoveUserSshKey:input_type -> powermanage.v1.RemoveUserSshKeyRequest
+	30,  // 341: powermanage.v1.ControlService.UpdateUserSshSettings:input_type -> powermanage.v1.UpdateUserSshSettingsRequest
+	33,  // 342: powermanage.v1.ControlService.ListDevices:input_type -> powermanage.v1.ListDevicesRequest
+	35,  // 343: powermanage.v1.ControlService.GetDevice:input_type -> powermanage.v1.GetDeviceRequest
+	37,  // 344: powermanage.v1.ControlService.SetDeviceLabel:input_type -> powermanage.v1.SetDeviceLabelRequest
+	38,  // 345: powermanage.v1.ControlService.RemoveDeviceLabel:input_type -> powermanage.v1.RemoveDeviceLabelRequest
+	42,  // 346: powermanage.v1.ControlService.AssignDevice:input_type -> powermanage.v1.AssignDeviceRequest
+	44,  // 347: powermanage.v1.ControlService.UnassignDevice:input_type -> powermanage.v1.UnassignDeviceRequest
+	47,  // 348: powermanage.v1.ControlService.ListDeviceAssignees:input_type -> powermanage.v1.ListDeviceAssigneesRequest
+	49,  // 349: powermanage.v1.ControlService.SetDeviceSyncInterval:input_type -> powermanage.v1.SetDeviceSyncIntervalRequest
+	50,  // 350: powermanage.v1.ControlService.SetDeviceInventoryInterval:input_type -> powermanage.v1.SetDeviceInventoryIntervalRequest
+	40,  // 351: powermanage.v1.ControlService.DeleteDevice:input_type -> powermanage.v1.DeleteDeviceRequest
+	52,  // 352: powermanage.v1.ControlService.CreateToken:input_type -> powermanage.v1.CreateTokenRequest
+	56,  // 353: powermanage.v1.ControlService.GetToken:input_type -> powermanage.v1.GetTokenRequest
+	54,  // 354: powermanage.v1.ControlService.ListTokens:input_type -> powermanage.v1.ListTokensRequest
+	58,  // 355: powermanage.v1.ControlService.RenameToken:input_type -> powermanage.v1.RenameTokenRequest
+	59,  // 356: powermanage.v1.ControlService.SetTokenDisabled:input_type -> powermanage.v1.SetTokenDisabledRequest
+	61,  // 357: powermanage.v1.ControlService.DeleteToken:input_type -> powermanage.v1.DeleteTokenRequest
+	64,  // 358: powermanage.v1.ControlService.CreateAction:input_type -> powermanage.v1.CreateActionRequest
+	66,  // 359: powermanage.v1.ControlService.GetAction:input_type -> powermanage.v1.GetActionRequest
+	68,  // 360: powermanage.v1.ControlService.ListActions:input_type -> powermanage.v1.ListActionsRequest
+	70,  // 361: powermanage.v1.ControlService.RenameAction:input_type -> powermanage.v1.RenameActionRequest
+	71,  // 362: powermanage.v1.ControlService.UpdateActionDescription:input_type -> powermanage.v1.UpdateActionDescriptionRequest
+	72,  // 363: powermanage.v1.ControlService.UpdateActionParams:input_type -> powermanage.v1.UpdateActionParamsRequest
+	74,  // 364: powermanage.v1.ControlService.DeleteAction:input_type -> powermanage.v1.DeleteActionRequest
+	78,  // 365: powermanage.v1.ControlService.CreateActionSet:input_type -> powermanage.v1.CreateActionSetRequest
+	80,  // 366: powermanage.v1.ControlService.GetActionSet:input_type -> powermanage.v1.GetActionSetRequest
+	82,  // 367: powermanage.v1.ControlService.ListActionSets:input_type -> powermanage.v1.ListActionSetsRequest
+	84,  // 368: powermanage.v1.ControlService.RenameActionSet:input_type -> powermanage.v1.RenameActionSetRequest
+	85,  // 369: powermanage.v1.ControlService.UpdateActionSetDescription:input_type -> powermanage.v1.UpdateActionSetDescriptionRequest
+	86,  // 370: powermanage.v1.ControlService.UpdateActionSetSchedule:input_type -> powermanage.v1.UpdateActionSetScheduleRequest
+	88,  // 371: powermanage.v1.ControlService.DeleteActionSet:input_type -> powermanage.v1.DeleteActionSetRequest
+	90,  // 372: powermanage.v1.ControlService.AddActionToSet:input_type -> powermanage.v1.AddActionToSetRequest
+	92,  // 373: powermanage.v1.ControlService.RemoveActionFromSet:input_type -> powermanage.v1.RemoveActionFromSetRequest
+	94,  // 374: powermanage.v1.ControlService.ReorderActionInSet:input_type -> powermanage.v1.ReorderActionInSetRequest
+	98,  // 375: powermanage.v1.ControlService.CreateDefinition:input_type -> powermanage.v1.CreateDefinitionRequest
+	100, // 376: powermanage.v1.ControlService.GetDefinition:input_type -> powermanage.v1.GetDefinitionRequest
+	102, // 377: powermanage.v1.ControlService.ListDefinitions:input_type -> powermanage.v1.ListDefinitionsRequest
+	104, // 378: powermanage.v1.ControlService.RenameDefinition:input_type -> powermanage.v1.RenameDefinitionRequest
+	105, // 379: powermanage.v1.ControlService.UpdateDefinitionDescription:input_type -> powermanage.v1.UpdateDefinitionDescriptionRequest
+	106, // 380: powermanage.v1.ControlService.UpdateDefinitionSchedule:input_type -> powermanage.v1.UpdateDefinitionScheduleRequest
+	108, // 381: powermanage.v1.ControlService.DeleteDefinition:input_type -> powermanage.v1.DeleteDefinitionRequest
+	110, // 382: powermanage.v1.ControlService.AddActionSetToDefinition:input_type -> powermanage.v1.AddActionSetToDefinitionRequest
+	112, // 383: powermanage.v1.ControlService.RemoveActionSetFromDefinition:input_type -> powermanage.v1.RemoveActionSetFromDefinitionRequest
+	114, // 384: powermanage.v1.ControlService.ReorderActionSetInDefinition:input_type -> powermanage.v1.ReorderActionSetInDefinitionRequest
+	117, // 385: powermanage.v1.ControlService.CreateDeviceGroup:input_type -> powermanage.v1.CreateDeviceGroupRequest
+	119, // 386: powermanage.v1.ControlService.GetDeviceGroup:input_type -> powermanage.v1.GetDeviceGroupRequest
+	122, // 387: powermanage.v1.ControlService.ListDeviceGroups:input_type -> powermanage.v1.ListDeviceGroupsRequest
+	124, // 388: powermanage.v1.ControlService.ListDeviceGroupsForDevice:input_type -> powermanage.v1.ListDeviceGroupsForDeviceRequest
+	126, // 389: powermanage.v1.ControlService.RenameDeviceGroup:input_type -> powermanage.v1.RenameDeviceGroupRequest
+	127, // 390: powermanage.v1.ControlService.UpdateDeviceGroupDescription:input_type -> powermanage.v1.UpdateDeviceGroupDescriptionRequest
+	135, // 391: powermanage.v1.ControlService.UpdateDeviceGroupQuery:input_type -> powermanage.v1.UpdateDeviceGroupQueryRequest
+	129, // 392: powermanage.v1.ControlService.DeleteDeviceGroup:input_type -> powermanage.v1.DeleteDeviceGroupRequest
+	131, // 393: powermanage.v1.ControlService.AddDeviceToGroup:input_type -> powermanage.v1.AddDeviceToGroupRequest
+	133, // 394: powermanage.v1.ControlService.RemoveDeviceFromGroup:input_type -> powermanage.v1.RemoveDeviceFromGroupRequest
+	137, // 395: powermanage.v1.ControlService.ValidateDynamicQuery:input_type -> powermanage.v1.ValidateDynamicQueryRequest
+	139, // 396: powermanage.v1.ControlService.EvaluateDynamicGroup:input_type -> powermanage.v1.EvaluateDynamicGroupRequest
+	141, // 397: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:input_type -> powermanage.v1.SetDeviceGroupSyncIntervalRequest
+	142, // 398: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:input_type -> powermanage.v1.SetDeviceGroupInventoryIntervalRequest
+	143, // 399: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:input_type -> powermanage.v1.SetDeviceGroupMaintenanceWindowRequest
+	145, // 400: powermanage.v1.ControlService.CreateAssignment:input_type -> powermanage.v1.CreateAssignmentRequest
+	147, // 401: powermanage.v1.ControlService.DeleteAssignment:input_type -> powermanage.v1.DeleteAssignmentRequest
+	149, // 402: powermanage.v1.ControlService.ListAssignments:input_type -> powermanage.v1.ListAssignmentsRequest
+	157, // 403: powermanage.v1.ControlService.GetDeviceAssignments:input_type -> powermanage.v1.GetDeviceAssignmentsRequest
+	159, // 404: powermanage.v1.ControlService.GetUserAssignments:input_type -> powermanage.v1.GetUserAssignmentsRequest
+	152, // 405: powermanage.v1.ControlService.SetUserSelection:input_type -> powermanage.v1.SetUserSelectionRequest
+	154, // 406: powermanage.v1.ControlService.ListAvailableActions:input_type -> powermanage.v1.ListAvailableActionsRequest
+	162, // 407: powermanage.v1.ControlService.DispatchAction:input_type -> powermanage.v1.DispatchActionRequest
+	164, // 408: powermanage.v1.ControlService.DispatchToMultiple:input_type -> powermanage.v1.DispatchToMultipleRequest
+	166, // 409: powermanage.v1.ControlService.DispatchAssignedActions:input_type -> powermanage.v1.DispatchAssignedActionsRequest
+	168, // 410: powermanage.v1.ControlService.DispatchActionSet:input_type -> powermanage.v1.DispatchActionSetRequest
+	170, // 411: powermanage.v1.ControlService.DispatchDefinition:input_type -> powermanage.v1.DispatchDefinitionRequest
+	172, // 412: powermanage.v1.ControlService.DispatchToGroup:input_type -> powermanage.v1.DispatchToGroupRequest
+	178, // 413: powermanage.v1.ControlService.DispatchInstantAction:input_type -> powermanage.v1.DispatchInstantActionRequest
+	180, // 414: powermanage.v1.ControlService.CancelExecution:input_type -> powermanage.v1.CancelExecutionRequest
+	174, // 415: powermanage.v1.ControlService.GetExecution:input_type -> powermanage.v1.GetExecutionRequest
+	176, // 416: powermanage.v1.ControlService.ListExecutions:input_type -> powermanage.v1.ListExecutionsRequest
+	183, // 417: powermanage.v1.ControlService.ListAuditEvents:input_type -> powermanage.v1.ListAuditEventsRequest
+	185, // 418: powermanage.v1.ControlService.ExportAuditEvents:input_type -> powermanage.v1.ExportAuditEventsRequest
+	188, // 419: powermanage.v1.ControlService.ListLpsPasswords:input_type -> powermanage.v1.ListLpsPasswordsRequest
+	190, // 420: powermanage.v1.ControlService.RevealLpsPassword:input_type -> powermanage.v1.RevealLpsPasswordRequest
+	193, // 421: powermanage.v1.ControlService.ListLuksKeys:input_type -> powermanage.v1.ListLuksKeysRequest
+	195, // 422: powermanage.v1.ControlService.RevealLuksKey:input_type -> powermanage.v1.RevealLuksKeyRequest
+	197, // 423: powermanage.v1.ControlService.CreateLuksToken:input_type -> powermanage.v1.CreateLuksTokenRequest
+	199, // 424: powermanage.v1.ControlService.RevokeLuksDeviceKey:input_type -> powermanage.v1.RevokeLuksDeviceKeyRequest
+	201, // 425: powermanage.v1.ControlService.DispatchOSQuery:input_type -> powermanage.v1.DispatchOSQueryRequest
+	203, // 426: powermanage.v1.ControlService.GetOSQueryResult:input_type -> powermanage.v1.GetOSQueryResultRequest
+	205, // 427: powermanage.v1.ControlService.GetDeviceInventory:input_type -> powermanage.v1.GetDeviceInventoryRequest
+	208, // 428: powermanage.v1.ControlService.RefreshDeviceInventory:input_type -> powermanage.v1.RefreshDeviceInventoryRequest
+	210, // 429: powermanage.v1.ControlService.QueryDeviceLogs:input_type -> powermanage.v1.QueryDeviceLogsRequest
+	212, // 430: powermanage.v1.ControlService.GetDeviceLogResult:input_type -> powermanage.v1.GetDeviceLogResultRequest
+	214, // 431: powermanage.v1.ControlService.CreateRole:input_type -> powermanage.v1.CreateRoleRequest
+	216, // 432: powermanage.v1.ControlService.GetRole:input_type -> powermanage.v1.GetRoleRequest
+	218, // 433: powermanage.v1.ControlService.ListRoles:input_type -> powermanage.v1.ListRolesRequest
+	220, // 434: powermanage.v1.ControlService.UpdateRole:input_type -> powermanage.v1.UpdateRoleRequest
+	222, // 435: powermanage.v1.ControlService.DeleteRole:input_type -> powermanage.v1.DeleteRoleRequest
+	224, // 436: powermanage.v1.ControlService.AssignRoleToUser:input_type -> powermanage.v1.AssignRoleToUserRequest
+	226, // 437: powermanage.v1.ControlService.RevokeRoleFromUser:input_type -> powermanage.v1.RevokeRoleFromUserRequest
+	228, // 438: powermanage.v1.ControlService.ListPermissions:input_type -> powermanage.v1.ListPermissionsRequest
+	232, // 439: powermanage.v1.ControlService.CreateUserGroup:input_type -> powermanage.v1.CreateUserGroupRequest
+	234, // 440: powermanage.v1.ControlService.GetUserGroup:input_type -> powermanage.v1.GetUserGroupRequest
+	236, // 441: powermanage.v1.ControlService.ListUserGroups:input_type -> powermanage.v1.ListUserGroupsRequest
+	238, // 442: powermanage.v1.ControlService.UpdateUserGroup:input_type -> powermanage.v1.UpdateUserGroupRequest
+	240, // 443: powermanage.v1.ControlService.DeleteUserGroup:input_type -> powermanage.v1.DeleteUserGroupRequest
+	242, // 444: powermanage.v1.ControlService.AddUserToGroup:input_type -> powermanage.v1.AddUserToGroupRequest
+	244, // 445: powermanage.v1.ControlService.RemoveUserFromGroup:input_type -> powermanage.v1.RemoveUserFromGroupRequest
+	246, // 446: powermanage.v1.ControlService.AssignRoleToUserGroup:input_type -> powermanage.v1.AssignRoleToUserGroupRequest
+	248, // 447: powermanage.v1.ControlService.RevokeRoleFromUserGroup:input_type -> powermanage.v1.RevokeRoleFromUserGroupRequest
+	250, // 448: powermanage.v1.ControlService.ListUserGroupsForUser:input_type -> powermanage.v1.ListUserGroupsForUserRequest
+	252, // 449: powermanage.v1.ControlService.UpdateUserGroupQuery:input_type -> powermanage.v1.UpdateUserGroupQueryRequest
+	254, // 450: powermanage.v1.ControlService.ValidateUserGroupQuery:input_type -> powermanage.v1.ValidateUserGroupQueryRequest
+	256, // 451: powermanage.v1.ControlService.EvaluateDynamicUserGroup:input_type -> powermanage.v1.EvaluateDynamicUserGroupRequest
+	258, // 452: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:input_type -> powermanage.v1.SetUserGroupMaintenanceWindowRequest
+	292, // 453: powermanage.v1.ControlService.GetDeviceCompliance:input_type -> powermanage.v1.GetDeviceComplianceRequest
+	297, // 454: powermanage.v1.ControlService.CreateCompliancePolicy:input_type -> powermanage.v1.CreateCompliancePolicyRequest
+	299, // 455: powermanage.v1.ControlService.GetCompliancePolicy:input_type -> powermanage.v1.GetCompliancePolicyRequest
+	301, // 456: powermanage.v1.ControlService.ListCompliancePolicies:input_type -> powermanage.v1.ListCompliancePoliciesRequest
+	303, // 457: powermanage.v1.ControlService.RenameCompliancePolicy:input_type -> powermanage.v1.RenameCompliancePolicyRequest
+	304, // 458: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:input_type -> powermanage.v1.UpdateCompliancePolicyDescriptionRequest
+	306, // 459: powermanage.v1.ControlService.DeleteCompliancePolicy:input_type -> powermanage.v1.DeleteCompliancePolicyRequest
+	308, // 460: powermanage.v1.ControlService.AddCompliancePolicyRule:input_type -> powermanage.v1.AddCompliancePolicyRuleRequest
+	310, // 461: powermanage.v1.ControlService.RemoveCompliancePolicyRule:input_type -> powermanage.v1.RemoveCompliancePolicyRuleRequest
+	312, // 462: powermanage.v1.ControlService.UpdateCompliancePolicyRule:input_type -> powermanage.v1.UpdateCompliancePolicyRuleRequest
+	314, // 463: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:input_type -> powermanage.v1.GetDeviceCompliancePolicyStatusRequest
+	319, // 464: powermanage.v1.ControlService.Search:input_type -> powermanage.v1.SearchRequest
+	322, // 465: powermanage.v1.ControlService.RebuildSearchIndex:input_type -> powermanage.v1.RebuildSearchIndexRequest
+	325, // 466: powermanage.v1.ControlService.GetServerSettings:input_type -> powermanage.v1.GetServerSettingsRequest
+	327, // 467: powermanage.v1.ControlService.UpdateServerSettings:input_type -> powermanage.v1.UpdateServerSettingsRequest
+	329, // 468: powermanage.v1.ControlService.SetUserProvisioningEnabled:input_type -> powermanage.v1.SetUserProvisioningEnabledRequest
+	330, // 469: powermanage.v1.ControlService.StartTerminal:input_type -> powermanage.v1.StartTerminalRequest
+	332, // 470: powermanage.v1.ControlService.StopTerminal:input_type -> powermanage.v1.StopTerminalRequest
+	335, // 471: powermanage.v1.ControlService.ListActiveTerminalSessions:input_type -> powermanage.v1.ListActiveTerminalSessionsRequest
+	337, // 472: powermanage.v1.ControlService.TerminateTerminalSession:input_type -> powermanage.v1.TerminateTerminalSessionRequest
+	1,   // 473: powermanage.v1.ControlService.Register:output_type -> powermanage.v1.RegisterResponse
+	3,   // 474: powermanage.v1.ControlService.RenewCertificate:output_type -> powermanage.v1.RenewCertificateResponse
+	5,   // 475: powermanage.v1.ControlService.RefreshToken:output_type -> powermanage.v1.RefreshTokenResponse
+	7,   // 476: powermanage.v1.ControlService.Logout:output_type -> powermanage.v1.LogoutResponse
+	9,   // 477: powermanage.v1.ControlService.GetCurrentUser:output_type -> powermanage.v1.GetCurrentUserResponse
+	273, // 478: powermanage.v1.ControlService.ListAuthMethods:output_type -> powermanage.v1.ListAuthMethodsResponse
+	275, // 479: powermanage.v1.ControlService.GetSSOLoginURL:output_type -> powermanage.v1.GetSSOLoginURLResponse
+	277, // 480: powermanage.v1.ControlService.SSOCallback:output_type -> powermanage.v1.SSOCallbackResponse
+	279, // 481: powermanage.v1.ControlService.BeginCLILogin:output_type -> powermanage.v1.BeginCLILoginResponse
+	281, // 482: powermanage.v1.ControlService.ExchangeCLISession:output_type -> powermanage.v1.ExchangeCLISessionResponse
+	262, // 483: powermanage.v1.ControlService.CreateIdentityProvider:output_type -> powermanage.v1.CreateIdentityProviderResponse
+	264, // 484: powermanage.v1.ControlService.GetIdentityProvider:output_type -> powermanage.v1.GetIdentityProviderResponse
+	266, // 485: powermanage.v1.ControlService.ListIdentityProviders:output_type -> powermanage.v1.ListIdentityProvidersResponse
+	268, // 486: powermanage.v1.ControlService.UpdateIdentityProvider:output_type -> powermanage.v1.UpdateIdentityProviderResponse
+	270, // 487: powermanage.v1.ControlService.DeleteIdentityProvider:output_type -> powermanage.v1.DeleteIdentityProviderResponse
+	283, // 488: powermanage.v1.ControlService.ListIdentityLinks:output_type -> powermanage.v1.ListIdentityLinksResponse
+	285, // 489: powermanage.v1.ControlService.UnlinkIdentity:output_type -> powermanage.v1.UnlinkIdentityResponse
+	287, // 490: powermanage.v1.ControlService.EnableSCIM:output_type -> powermanage.v1.EnableSCIMResponse
+	289, // 491: powermanage.v1.ControlService.DisableSCIM:output_type -> powermanage.v1.DisableSCIMResponse
+	291, // 492: powermanage.v1.ControlService.RotateSCIMToken:output_type -> powermanage.v1.RotateSCIMTokenResponse
+	17,  // 493: powermanage.v1.ControlService.EraseJITUser:output_type -> powermanage.v1.EraseJITUserResponse
+	19,  // 494: powermanage.v1.ControlService.GetUser:output_type -> powermanage.v1.GetUserResponse
+	21,  // 495: powermanage.v1.ControlService.ListUsers:output_type -> powermanage.v1.ListUsersResponse
+	24,  // 496: powermanage.v1.ControlService.UpdateUserEmail:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 497: powermanage.v1.ControlService.SetUserDisabled:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 498: powermanage.v1.ControlService.UpdateUserProfile:output_type -> powermanage.v1.UpdateUserResponse
+	24,  // 499: powermanage.v1.ControlService.UpdateUserLinuxUsername:output_type -> powermanage.v1.UpdateUserResponse
+	27,  // 500: powermanage.v1.ControlService.AddUserSshKey:output_type -> powermanage.v1.AddUserSshKeyResponse
+	29,  // 501: powermanage.v1.ControlService.RemoveUserSshKey:output_type -> powermanage.v1.RemoveUserSshKeyResponse
+	24,  // 502: powermanage.v1.ControlService.UpdateUserSshSettings:output_type -> powermanage.v1.UpdateUserResponse
+	34,  // 503: powermanage.v1.ControlService.ListDevices:output_type -> powermanage.v1.ListDevicesResponse
+	36,  // 504: powermanage.v1.ControlService.GetDevice:output_type -> powermanage.v1.GetDeviceResponse
+	39,  // 505: powermanage.v1.ControlService.SetDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
+	39,  // 506: powermanage.v1.ControlService.RemoveDeviceLabel:output_type -> powermanage.v1.UpdateDeviceResponse
+	43,  // 507: powermanage.v1.ControlService.AssignDevice:output_type -> powermanage.v1.AssignDeviceResponse
+	45,  // 508: powermanage.v1.ControlService.UnassignDevice:output_type -> powermanage.v1.UnassignDeviceResponse
+	48,  // 509: powermanage.v1.ControlService.ListDeviceAssignees:output_type -> powermanage.v1.ListDeviceAssigneesResponse
+	39,  // 510: powermanage.v1.ControlService.SetDeviceSyncInterval:output_type -> powermanage.v1.UpdateDeviceResponse
+	39,  // 511: powermanage.v1.ControlService.SetDeviceInventoryInterval:output_type -> powermanage.v1.UpdateDeviceResponse
+	41,  // 512: powermanage.v1.ControlService.DeleteDevice:output_type -> powermanage.v1.DeleteDeviceResponse
+	53,  // 513: powermanage.v1.ControlService.CreateToken:output_type -> powermanage.v1.CreateTokenResponse
+	57,  // 514: powermanage.v1.ControlService.GetToken:output_type -> powermanage.v1.GetTokenResponse
+	55,  // 515: powermanage.v1.ControlService.ListTokens:output_type -> powermanage.v1.ListTokensResponse
+	60,  // 516: powermanage.v1.ControlService.RenameToken:output_type -> powermanage.v1.UpdateTokenResponse
+	60,  // 517: powermanage.v1.ControlService.SetTokenDisabled:output_type -> powermanage.v1.UpdateTokenResponse
+	62,  // 518: powermanage.v1.ControlService.DeleteToken:output_type -> powermanage.v1.DeleteTokenResponse
+	65,  // 519: powermanage.v1.ControlService.CreateAction:output_type -> powermanage.v1.CreateActionResponse
+	67,  // 520: powermanage.v1.ControlService.GetAction:output_type -> powermanage.v1.GetActionResponse
+	69,  // 521: powermanage.v1.ControlService.ListActions:output_type -> powermanage.v1.ListActionsResponse
+	73,  // 522: powermanage.v1.ControlService.RenameAction:output_type -> powermanage.v1.UpdateActionResponse
+	73,  // 523: powermanage.v1.ControlService.UpdateActionDescription:output_type -> powermanage.v1.UpdateActionResponse
+	73,  // 524: powermanage.v1.ControlService.UpdateActionParams:output_type -> powermanage.v1.UpdateActionResponse
+	75,  // 525: powermanage.v1.ControlService.DeleteAction:output_type -> powermanage.v1.DeleteActionResponse
+	79,  // 526: powermanage.v1.ControlService.CreateActionSet:output_type -> powermanage.v1.CreateActionSetResponse
+	81,  // 527: powermanage.v1.ControlService.GetActionSet:output_type -> powermanage.v1.GetActionSetResponse
+	83,  // 528: powermanage.v1.ControlService.ListActionSets:output_type -> powermanage.v1.ListActionSetsResponse
+	87,  // 529: powermanage.v1.ControlService.RenameActionSet:output_type -> powermanage.v1.UpdateActionSetResponse
+	87,  // 530: powermanage.v1.ControlService.UpdateActionSetDescription:output_type -> powermanage.v1.UpdateActionSetResponse
+	87,  // 531: powermanage.v1.ControlService.UpdateActionSetSchedule:output_type -> powermanage.v1.UpdateActionSetResponse
+	89,  // 532: powermanage.v1.ControlService.DeleteActionSet:output_type -> powermanage.v1.DeleteActionSetResponse
+	91,  // 533: powermanage.v1.ControlService.AddActionToSet:output_type -> powermanage.v1.AddActionToSetResponse
+	93,  // 534: powermanage.v1.ControlService.RemoveActionFromSet:output_type -> powermanage.v1.RemoveActionFromSetResponse
+	95,  // 535: powermanage.v1.ControlService.ReorderActionInSet:output_type -> powermanage.v1.ReorderActionInSetResponse
+	99,  // 536: powermanage.v1.ControlService.CreateDefinition:output_type -> powermanage.v1.CreateDefinitionResponse
+	101, // 537: powermanage.v1.ControlService.GetDefinition:output_type -> powermanage.v1.GetDefinitionResponse
+	103, // 538: powermanage.v1.ControlService.ListDefinitions:output_type -> powermanage.v1.ListDefinitionsResponse
+	107, // 539: powermanage.v1.ControlService.RenameDefinition:output_type -> powermanage.v1.UpdateDefinitionResponse
+	107, // 540: powermanage.v1.ControlService.UpdateDefinitionDescription:output_type -> powermanage.v1.UpdateDefinitionResponse
+	107, // 541: powermanage.v1.ControlService.UpdateDefinitionSchedule:output_type -> powermanage.v1.UpdateDefinitionResponse
+	109, // 542: powermanage.v1.ControlService.DeleteDefinition:output_type -> powermanage.v1.DeleteDefinitionResponse
+	111, // 543: powermanage.v1.ControlService.AddActionSetToDefinition:output_type -> powermanage.v1.AddActionSetToDefinitionResponse
+	113, // 544: powermanage.v1.ControlService.RemoveActionSetFromDefinition:output_type -> powermanage.v1.RemoveActionSetFromDefinitionResponse
+	115, // 545: powermanage.v1.ControlService.ReorderActionSetInDefinition:output_type -> powermanage.v1.ReorderActionSetInDefinitionResponse
+	118, // 546: powermanage.v1.ControlService.CreateDeviceGroup:output_type -> powermanage.v1.CreateDeviceGroupResponse
+	120, // 547: powermanage.v1.ControlService.GetDeviceGroup:output_type -> powermanage.v1.GetDeviceGroupResponse
+	123, // 548: powermanage.v1.ControlService.ListDeviceGroups:output_type -> powermanage.v1.ListDeviceGroupsResponse
+	125, // 549: powermanage.v1.ControlService.ListDeviceGroupsForDevice:output_type -> powermanage.v1.ListDeviceGroupsForDeviceResponse
+	128, // 550: powermanage.v1.ControlService.RenameDeviceGroup:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	128, // 551: powermanage.v1.ControlService.UpdateDeviceGroupDescription:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	136, // 552: powermanage.v1.ControlService.UpdateDeviceGroupQuery:output_type -> powermanage.v1.UpdateDeviceGroupQueryResponse
+	130, // 553: powermanage.v1.ControlService.DeleteDeviceGroup:output_type -> powermanage.v1.DeleteDeviceGroupResponse
+	132, // 554: powermanage.v1.ControlService.AddDeviceToGroup:output_type -> powermanage.v1.AddDeviceToGroupResponse
+	134, // 555: powermanage.v1.ControlService.RemoveDeviceFromGroup:output_type -> powermanage.v1.RemoveDeviceFromGroupResponse
+	138, // 556: powermanage.v1.ControlService.ValidateDynamicQuery:output_type -> powermanage.v1.ValidateDynamicQueryResponse
+	140, // 557: powermanage.v1.ControlService.EvaluateDynamicGroup:output_type -> powermanage.v1.EvaluateDynamicGroupResponse
+	128, // 558: powermanage.v1.ControlService.SetDeviceGroupSyncInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	128, // 559: powermanage.v1.ControlService.SetDeviceGroupInventoryInterval:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	128, // 560: powermanage.v1.ControlService.SetDeviceGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateDeviceGroupResponse
+	146, // 561: powermanage.v1.ControlService.CreateAssignment:output_type -> powermanage.v1.CreateAssignmentResponse
+	148, // 562: powermanage.v1.ControlService.DeleteAssignment:output_type -> powermanage.v1.DeleteAssignmentResponse
+	150, // 563: powermanage.v1.ControlService.ListAssignments:output_type -> powermanage.v1.ListAssignmentsResponse
+	158, // 564: powermanage.v1.ControlService.GetDeviceAssignments:output_type -> powermanage.v1.GetDeviceAssignmentsResponse
+	160, // 565: powermanage.v1.ControlService.GetUserAssignments:output_type -> powermanage.v1.GetUserAssignmentsResponse
+	153, // 566: powermanage.v1.ControlService.SetUserSelection:output_type -> powermanage.v1.SetUserSelectionResponse
+	156, // 567: powermanage.v1.ControlService.ListAvailableActions:output_type -> powermanage.v1.ListAvailableActionsResponse
+	163, // 568: powermanage.v1.ControlService.DispatchAction:output_type -> powermanage.v1.DispatchActionResponse
+	165, // 569: powermanage.v1.ControlService.DispatchToMultiple:output_type -> powermanage.v1.DispatchToMultipleResponse
+	167, // 570: powermanage.v1.ControlService.DispatchAssignedActions:output_type -> powermanage.v1.DispatchAssignedActionsResponse
+	169, // 571: powermanage.v1.ControlService.DispatchActionSet:output_type -> powermanage.v1.DispatchActionSetResponse
+	171, // 572: powermanage.v1.ControlService.DispatchDefinition:output_type -> powermanage.v1.DispatchDefinitionResponse
+	173, // 573: powermanage.v1.ControlService.DispatchToGroup:output_type -> powermanage.v1.DispatchToGroupResponse
+	179, // 574: powermanage.v1.ControlService.DispatchInstantAction:output_type -> powermanage.v1.DispatchInstantActionResponse
+	181, // 575: powermanage.v1.ControlService.CancelExecution:output_type -> powermanage.v1.CancelExecutionResponse
+	175, // 576: powermanage.v1.ControlService.GetExecution:output_type -> powermanage.v1.GetExecutionResponse
+	177, // 577: powermanage.v1.ControlService.ListExecutions:output_type -> powermanage.v1.ListExecutionsResponse
+	184, // 578: powermanage.v1.ControlService.ListAuditEvents:output_type -> powermanage.v1.ListAuditEventsResponse
+	186, // 579: powermanage.v1.ControlService.ExportAuditEvents:output_type -> powermanage.v1.ExportAuditEventsResponse
+	189, // 580: powermanage.v1.ControlService.ListLpsPasswords:output_type -> powermanage.v1.ListLpsPasswordsResponse
+	191, // 581: powermanage.v1.ControlService.RevealLpsPassword:output_type -> powermanage.v1.RevealLpsPasswordResponse
+	194, // 582: powermanage.v1.ControlService.ListLuksKeys:output_type -> powermanage.v1.ListLuksKeysResponse
+	196, // 583: powermanage.v1.ControlService.RevealLuksKey:output_type -> powermanage.v1.RevealLuksKeyResponse
+	198, // 584: powermanage.v1.ControlService.CreateLuksToken:output_type -> powermanage.v1.CreateLuksTokenResponse
+	200, // 585: powermanage.v1.ControlService.RevokeLuksDeviceKey:output_type -> powermanage.v1.RevokeLuksDeviceKeyResponse
+	202, // 586: powermanage.v1.ControlService.DispatchOSQuery:output_type -> powermanage.v1.DispatchOSQueryResponse
+	204, // 587: powermanage.v1.ControlService.GetOSQueryResult:output_type -> powermanage.v1.GetOSQueryResultResponse
+	207, // 588: powermanage.v1.ControlService.GetDeviceInventory:output_type -> powermanage.v1.GetDeviceInventoryResponse
+	209, // 589: powermanage.v1.ControlService.RefreshDeviceInventory:output_type -> powermanage.v1.RefreshDeviceInventoryResponse
+	211, // 590: powermanage.v1.ControlService.QueryDeviceLogs:output_type -> powermanage.v1.QueryDeviceLogsResponse
+	213, // 591: powermanage.v1.ControlService.GetDeviceLogResult:output_type -> powermanage.v1.GetDeviceLogResultResponse
+	215, // 592: powermanage.v1.ControlService.CreateRole:output_type -> powermanage.v1.CreateRoleResponse
+	217, // 593: powermanage.v1.ControlService.GetRole:output_type -> powermanage.v1.GetRoleResponse
+	219, // 594: powermanage.v1.ControlService.ListRoles:output_type -> powermanage.v1.ListRolesResponse
+	221, // 595: powermanage.v1.ControlService.UpdateRole:output_type -> powermanage.v1.UpdateRoleResponse
+	223, // 596: powermanage.v1.ControlService.DeleteRole:output_type -> powermanage.v1.DeleteRoleResponse
+	225, // 597: powermanage.v1.ControlService.AssignRoleToUser:output_type -> powermanage.v1.AssignRoleToUserResponse
+	227, // 598: powermanage.v1.ControlService.RevokeRoleFromUser:output_type -> powermanage.v1.RevokeRoleFromUserResponse
+	229, // 599: powermanage.v1.ControlService.ListPermissions:output_type -> powermanage.v1.ListPermissionsResponse
+	233, // 600: powermanage.v1.ControlService.CreateUserGroup:output_type -> powermanage.v1.CreateUserGroupResponse
+	235, // 601: powermanage.v1.ControlService.GetUserGroup:output_type -> powermanage.v1.GetUserGroupResponse
+	237, // 602: powermanage.v1.ControlService.ListUserGroups:output_type -> powermanage.v1.ListUserGroupsResponse
+	239, // 603: powermanage.v1.ControlService.UpdateUserGroup:output_type -> powermanage.v1.UpdateUserGroupResponse
+	241, // 604: powermanage.v1.ControlService.DeleteUserGroup:output_type -> powermanage.v1.DeleteUserGroupResponse
+	243, // 605: powermanage.v1.ControlService.AddUserToGroup:output_type -> powermanage.v1.AddUserToGroupResponse
+	245, // 606: powermanage.v1.ControlService.RemoveUserFromGroup:output_type -> powermanage.v1.RemoveUserFromGroupResponse
+	247, // 607: powermanage.v1.ControlService.AssignRoleToUserGroup:output_type -> powermanage.v1.AssignRoleToUserGroupResponse
+	249, // 608: powermanage.v1.ControlService.RevokeRoleFromUserGroup:output_type -> powermanage.v1.RevokeRoleFromUserGroupResponse
+	251, // 609: powermanage.v1.ControlService.ListUserGroupsForUser:output_type -> powermanage.v1.ListUserGroupsForUserResponse
+	253, // 610: powermanage.v1.ControlService.UpdateUserGroupQuery:output_type -> powermanage.v1.UpdateUserGroupQueryResponse
+	255, // 611: powermanage.v1.ControlService.ValidateUserGroupQuery:output_type -> powermanage.v1.ValidateUserGroupQueryResponse
+	257, // 612: powermanage.v1.ControlService.EvaluateDynamicUserGroup:output_type -> powermanage.v1.EvaluateDynamicUserGroupResponse
+	239, // 613: powermanage.v1.ControlService.SetUserGroupMaintenanceWindow:output_type -> powermanage.v1.UpdateUserGroupResponse
+	293, // 614: powermanage.v1.ControlService.GetDeviceCompliance:output_type -> powermanage.v1.GetDeviceComplianceResponse
+	298, // 615: powermanage.v1.ControlService.CreateCompliancePolicy:output_type -> powermanage.v1.CreateCompliancePolicyResponse
+	300, // 616: powermanage.v1.ControlService.GetCompliancePolicy:output_type -> powermanage.v1.GetCompliancePolicyResponse
+	302, // 617: powermanage.v1.ControlService.ListCompliancePolicies:output_type -> powermanage.v1.ListCompliancePoliciesResponse
+	305, // 618: powermanage.v1.ControlService.RenameCompliancePolicy:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
+	305, // 619: powermanage.v1.ControlService.UpdateCompliancePolicyDescription:output_type -> powermanage.v1.UpdateCompliancePolicyResponse
+	307, // 620: powermanage.v1.ControlService.DeleteCompliancePolicy:output_type -> powermanage.v1.DeleteCompliancePolicyResponse
+	309, // 621: powermanage.v1.ControlService.AddCompliancePolicyRule:output_type -> powermanage.v1.AddCompliancePolicyRuleResponse
+	311, // 622: powermanage.v1.ControlService.RemoveCompliancePolicyRule:output_type -> powermanage.v1.RemoveCompliancePolicyRuleResponse
+	313, // 623: powermanage.v1.ControlService.UpdateCompliancePolicyRule:output_type -> powermanage.v1.UpdateCompliancePolicyRuleResponse
+	315, // 624: powermanage.v1.ControlService.GetDeviceCompliancePolicyStatus:output_type -> powermanage.v1.GetDeviceCompliancePolicyStatusResponse
+	321, // 625: powermanage.v1.ControlService.Search:output_type -> powermanage.v1.SearchResponse
+	323, // 626: powermanage.v1.ControlService.RebuildSearchIndex:output_type -> powermanage.v1.RebuildSearchIndexResponse
+	326, // 627: powermanage.v1.ControlService.GetServerSettings:output_type -> powermanage.v1.GetServerSettingsResponse
+	328, // 628: powermanage.v1.ControlService.UpdateServerSettings:output_type -> powermanage.v1.UpdateServerSettingsResponse
+	24,  // 629: powermanage.v1.ControlService.SetUserProvisioningEnabled:output_type -> powermanage.v1.UpdateUserResponse
+	331, // 630: powermanage.v1.ControlService.StartTerminal:output_type -> powermanage.v1.StartTerminalResponse
+	333, // 631: powermanage.v1.ControlService.StopTerminal:output_type -> powermanage.v1.StopTerminalResponse
+	336, // 632: powermanage.v1.ControlService.ListActiveTerminalSessions:output_type -> powermanage.v1.ListActiveTerminalSessionsResponse
+	338, // 633: powermanage.v1.ControlService.TerminateTerminalSession:output_type -> powermanage.v1.TerminateTerminalSessionResponse
+	473, // [473:634] is the sub-list for method output_type
+	312, // [312:473] is the sub-list for method input_type
+	312, // [312:312] is the sub-list for extension type_name
+	312, // [312:312] is the sub-list for extension extendee
+	0,   // [0:312] is the sub-list for field type_name
 }
 
 func init() { file_powermanage_v1_control_proto_init() }
@@ -24126,15 +24481,16 @@ func file_powermanage_v1_control_proto_init() {
 		(*DispatchToGroupRequest_DefinitionId)(nil),
 		(*DispatchToGroupRequest_InlineAction)(nil),
 	}
-	file_powermanage_v1_control_proto_msgTypes[335].OneofWrappers = []any{}
-	file_powermanage_v1_control_proto_msgTypes[337].OneofWrappers = []any{}
+	file_powermanage_v1_control_proto_msgTypes[267].OneofWrappers = []any{}
+	file_powermanage_v1_control_proto_msgTypes[339].OneofWrappers = []any{}
+	file_powermanage_v1_control_proto_msgTypes[341].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_powermanage_v1_control_proto_rawDesc), len(file_powermanage_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   346,
+			NumMessages:   350,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
