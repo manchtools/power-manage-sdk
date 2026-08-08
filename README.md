@@ -34,6 +34,7 @@ second architecture.
 | `proto/powermanage/v1/` | Contract source |
 | `gen/go/powermanage/v1/` | Generated protobuf and Connect Go packages |
 | `gen/ts/powermanage/v1/` | Generated TypeScript messages |
+| `cmd/powermanage/` | Operator CLI for bootstrap, OIDC login, and named control RPCs |
 | `client.go` | Agent-side stream client and correlated stream operations |
 | `crypto/` | Enrollment CSR and transport-field sealing helpers |
 | `sys/` | Device capability implementations |

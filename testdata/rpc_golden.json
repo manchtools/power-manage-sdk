@@ -14,6 +14,7 @@
       "AssignDevice",
       "AssignRoleToUser",
       "AssignRoleToUserGroup",
+      "BeginCLILogin",
       "CancelExecution",
       "CreateAction",
       "CreateActionSet",
@@ -50,6 +51,7 @@
       "EraseJITUser",
       "EvaluateDynamicGroup",
       "EvaluateDynamicUserGroup",
+      "ExchangeCLISession",
       "ExportAuditEvents",
       "GetAction",
       "GetActionSet",
@@ -170,5 +172,5 @@
       "GetEnrollmentStatus"
     ]
   },
-  "total": 162
+  "total": 164
 }

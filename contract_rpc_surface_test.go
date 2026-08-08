@@ -121,6 +121,12 @@ var removalDeltas = map[string]map[string][]string{
 
 // additionDeltas are intentional target RPCs with no predecessor equivalent.
 var additionDeltas = map[string]map[string][]string{
+	"native-cli-auth": {
+		"ControlService": {
+			"BeginCLILogin",
+			"ExchangeCLISession",
+		},
+	},
 	"jit-user-erasure": {
 		"ControlService": {"EraseJITUser"},
 	},
@@ -132,6 +138,47 @@ var additionDeltas = map[string]map[string][]string{
 			"RevealLuksKey",
 		},
 	},
+}
+
+func TestRPCSurface_NativeCLIAuthIsExplicitAndProviderCapabilitiesArePublic(t *testing.T) {
+	live := liveSurface(t)
+	for _, method := range []string{"BeginCLILogin", "ExchangeCLISession"} {
+		if !contains(live["ControlService"], method) {
+			t.Errorf("ControlService is missing native CLI method %s", method)
+		}
+	}
+
+	for messageName, fields := range map[protoreflect.FullName]map[protoreflect.Name]protoreflect.Kind{
+		"powermanage.v1.IdentityProvider": {
+			"cli_client_id": protoreflect.StringKind,
+		},
+		"powermanage.v1.CreateIdentityProviderRequest": {
+			"cli_client_id": protoreflect.StringKind,
+		},
+		"powermanage.v1.UpdateIdentityProviderRequest": {
+			"cli_client_id": protoreflect.StringKind,
+		},
+		"powermanage.v1.AuthMethodProvider": {
+			"browser_login": protoreflect.BoolKind,
+			"cli_login":     protoreflect.BoolKind,
+		},
+	} {
+		descriptor, err := protoregistry.GlobalFiles.FindDescriptorByName(messageName)
+		if err != nil {
+			t.Fatalf("find %s: %v", messageName, err)
+		}
+		message := descriptor.(protoreflect.MessageDescriptor)
+		for fieldName, wantKind := range fields {
+			field := message.Fields().ByName(fieldName)
+			if field == nil {
+				t.Errorf("%s is missing field %s", messageName, fieldName)
+				continue
+			}
+			if field.Kind() != wantKind {
+				t.Errorf("%s.%s kind = %s, want %s", messageName, fieldName, field.Kind(), wantKind)
+			}
+		}
+	}
 }
 
 type goldenSurface struct {
@@ -718,6 +765,9 @@ func TestContract_SecretShapedFieldsAreClassifiedOrJustified(t *testing.T) {
 		"powermanage.v1.RevealLpsPasswordResponse.password":          "explicit audited operator reveal",
 		"powermanage.v1.SSOCallbackResponse.access_token":            "public HTTPS authentication output",
 		"powermanage.v1.SSOCallbackResponse.refresh_token":           "public HTTPS authentication output",
+		"powermanage.v1.ExchangeCLISessionRequest.id_token":          "public HTTPS OIDC authentication assertion",
+		"powermanage.v1.ExchangeCLISessionResponse.access_token":     "public HTTPS authentication output",
+		"powermanage.v1.ExchangeCLISessionResponse.refresh_token":    "public HTTPS authentication output",
 		"powermanage.v1.RefreshTokenResponse.access_token":           "public HTTPS authentication output",
 		"powermanage.v1.RefreshTokenResponse.refresh_token":          "public HTTPS authentication output",
 	}

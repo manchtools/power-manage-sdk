@@ -2184,6 +2184,9 @@ message IdentityProvider {
   // email to a pre-existing account; default false refuses that
   // (account-takeover guard across providers).
   bool trust_email_assertions = 22;
+  // Public OIDC client used by native CLI login. This is an identifier, not a
+  // client secret.
+  string cli_client_id = 23;
 }
 
 message IdentityLink {
@@ -2206,9 +2209,9 @@ message CreateIdentityProviderRequest {
   string slug = 2;
   // @gotags: validate:"required,gte=1,lte=1"
   IdentityProviderType provider_type = 3;
-  // @gotags: validate:"required,min=1"
+  // @gotags: validate:"omitempty,max=255"
   string client_id = 4;
-  // @gotags: validate:"required,min=1"
+  // @gotags: validate:"omitempty,max=4096"
   string client_secret = 5;
   // @gotags: validate:"required,url"
   string issuer_url = 6;
@@ -2230,6 +2233,8 @@ message CreateIdentityProviderRequest {
   map<string, string> group_mapping = 16;
   // See IdentityProvider.trust_email_assertions. Default false (secure).
   bool trust_email_assertions = 17;
+  // @gotags: validate:"omitempty,max=255"
+  string cli_client_id = 18;
 }
 
 message CreateIdentityProviderResponse {
@@ -2289,6 +2294,8 @@ message UpdateIdentityProviderRequest {
   map<string, string> group_mapping = 16;
   // See IdentityProvider.trust_email_assertions. Default false (secure).
   bool trust_email_assertions = 17;
+  // @gotags: validate:"omitempty,max=255"
+  string cli_client_id = 18;
 }
 
 message UpdateIdentityProviderResponse {
@@ -2310,6 +2317,8 @@ message AuthMethodProvider {
   string slug = 1;
   string name = 2;
   IdentityProviderType provider_type = 3;
+  bool browser_login = 4;
+  bool cli_login = 5;
 }
 
 message ListAuthMethodsRequest {
@@ -2343,6 +2352,39 @@ message SSOCallbackRequest {
 }
 
 message SSOCallbackResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  User user = 4;
+}
+
+message BeginCLILoginRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string slug = 1;
+  // @gotags: validate:"required,url,max=2048"
+  string redirect_url = 2;
+  // @gotags: validate:"required,len=43"
+  string code_challenge = 3;
+}
+
+message BeginCLILoginResponse {
+  string login_url = 1;
+  string state = 2;
+  string token_url = 3;
+  string client_id = 4;
+  google.protobuf.Timestamp expires_at = 5;
+}
+
+message ExchangeCLISessionRequest {
+  // @gotags: validate:"required,min=1,max=64"
+  string slug = 1;
+  // @gotags: validate:"required,max=512"
+  string state = 2;
+  // @gotags: validate:"required,max=1048576"
+  string id_token = 3;
+}
+
+message ExchangeCLISessionResponse {
   string access_token = 1;
   string refresh_token = 2;
   google.protobuf.Timestamp expires_at = 3;
@@ -2664,6 +2706,8 @@ service ControlService {
   rpc ListAuthMethods(ListAuthMethodsRequest) returns (ListAuthMethodsResponse);
   rpc GetSSOLoginURL(GetSSOLoginURLRequest) returns (GetSSOLoginURLResponse);
   rpc SSOCallback(SSOCallbackRequest) returns (SSOCallbackResponse);
+  rpc BeginCLILogin(BeginCLILoginRequest) returns (BeginCLILoginResponse);
+  rpc ExchangeCLISession(ExchangeCLISessionRequest) returns (ExchangeCLISessionResponse);
   rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (CreateIdentityProviderResponse);
   rpc GetIdentityProvider(GetIdentityProviderRequest) returns (GetIdentityProviderResponse);
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse);

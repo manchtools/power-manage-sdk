@@ -42,4 +42,7 @@ for how downstream repos pin and bump it.
   {% card title="Contributing" href="/contributing" icon="🛠️" %}
   How SDK changes reach the agent and server, and the release flow.
   {% /card %}
+  {% card title="Operator CLI" href="/getting-started/operator-cli" icon="⌨️" %}
+  Bootstrap OIDC, sign in locally, and call the operator resource commands.
+  {% /card %}
 {% /cards %}
