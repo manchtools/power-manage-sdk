@@ -177,6 +177,9 @@ func TestRPCSurface_NativeCLIAuthIsExplicitAndProviderCapabilitiesArePublic(t *t
 			if field.Kind() != wantKind {
 				t.Errorf("%s.%s kind = %s, want %s", messageName, fieldName, field.Kind(), wantKind)
 			}
+			if messageName == "powermanage.v1.UpdateIdentityProviderRequest" && fieldName == "cli_client_id" && !field.HasPresence() {
+				t.Error("UpdateIdentityProviderRequest.cli_client_id must preserve field presence")
+			}
 		}
 	}
 }

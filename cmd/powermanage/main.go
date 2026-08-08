@@ -108,6 +108,9 @@ func (a *app) bootstrapCommand() *cobra.Command {
 			if !tokenStdin {
 				return errors.New("--token-stdin is required")
 			}
+			if file == "-" {
+				return errors.New("--token-stdin and --file - cannot share stdin")
+			}
 			token, err := readBootstrapToken(a.stdin)
 			if err != nil {
 				return err
@@ -320,8 +323,7 @@ func readProtoJSONFile(path string, stdin io.Reader, message proto.Message) erro
 	if err != nil {
 		return fmt.Errorf("open ProtoJSON file: %w", err)
 	}
-	defer file.Close()
-	return readProtoJSON(file, message)
+	return errors.Join(readProtoJSON(file, message), file.Close())
 }
 
 func callAuthenticated[I, O any](ctx context.Context, a *app, message *I, call func(context.Context, powermanagev1connect.ControlServiceClient, *connect.Request[I]) (*connect.Response[O], error)) (*connect.Response[O], error) {
@@ -379,7 +381,7 @@ func (a *app) currentSession(ctx context.Context, forceRefresh bool) (sessionFil
 	return a.refreshSession(ctx, forceRefresh)
 }
 
-func (a *app) refreshSession(ctx context.Context, force bool) (sessionFile, error) {
+func (a *app) refreshSession(ctx context.Context, force bool) (_ sessionFile, resultErr error) {
 	lockPath := a.sessionPath + ".lock"
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o700); err != nil {
 		return sessionFile{}, fmt.Errorf("create config directory: %w", err)
@@ -388,7 +390,11 @@ func (a *app) refreshSession(ctx context.Context, force bool) (sessionFile, erro
 	if err != nil {
 		return sessionFile{}, fmt.Errorf("open session lock: %w", err)
 	}
-	defer unix.Close(fd)
+	defer func() {
+		if err := unix.Close(fd); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close session lock: %w", err))
+		}
+	}()
 	if err := unix.Flock(fd, unix.LOCK_EX); err != nil {
 		return sessionFile{}, fmt.Errorf("lock session: %w", err)
 	}
@@ -492,7 +498,7 @@ func setTokenDisabledRPC(a *app, use string, disabled bool) *cobra.Command {
 		})
 }
 
-func (a *app) login(ctx context.Context, provider string, callbackPort int) error {
+func (a *app) login(ctx context.Context, provider string, callbackPort int) (resultErr error) {
 	if _, err := parsePort(fmt.Sprint(callbackPort)); err != nil {
 		return err
 	}
@@ -500,7 +506,11 @@ func (a *app) login(ctx context.Context, provider string, callbackPort int) erro
 	if err != nil {
 		return fmt.Errorf("bind loopback callback: %w", err)
 	}
-	defer listener.Close()
+	defer func() {
+		if err := listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close loopback callback: %w", err))
+		}
+	}()
 	redirectURL := "http://" + listener.Addr().String() + "/callback"
 	verifierBytes := make([]byte, 32)
 	if _, err := rand.Read(verifierBytes); err != nil {
@@ -537,10 +547,17 @@ func (a *app) login(ctx context.Context, provider string, callbackPort int) erro
 		}
 	})
 	callbackServer := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	defer func() {
+		if err := callbackServer.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close loopback server: %w", err))
+		}
+	}()
 	serveDone := make(chan error, 1)
 	go func() { serveDone <- callbackServer.Serve(listener) }()
 	if err := a.openBrowser(begin.Msg.LoginUrl); err != nil {
-		fmt.Fprintln(a.stderr, "Open this URL to sign in:", begin.Msg.LoginUrl)
+		if _, writeErr := fmt.Fprintln(a.stderr, "Open this URL to sign in:", begin.Msg.LoginUrl); writeErr != nil {
+			return fmt.Errorf("show login URL after browser launch failed: %w", errors.Join(err, writeErr))
+		}
 	}
 	var received callbackResult
 	wait := time.Until(begin.Msg.ExpiresAt.AsTime())

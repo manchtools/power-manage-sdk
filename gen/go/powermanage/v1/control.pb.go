@@ -17073,8 +17073,9 @@ type UpdateIdentityProviderRequest struct {
 	GroupMapping map[string]string `protobuf:"bytes,16,rep,name=group_mapping,json=groupMapping,proto3" json:"group_mapping,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value" validate:"omitempty,dive,keys,max=255,endkeys,max=255"`
 	// See IdentityProvider.trust_email_assertions. Default false (secure).
 	TrustEmailAssertions bool `protobuf:"varint,17,opt,name=trust_email_assertions,json=trustEmailAssertions,proto3" json:"trust_email_assertions,omitempty"`
+	// Omit to keep the current CLI client; send empty to remove it.
 	// @gotags: validate:"omitempty,max=255"
-	CliClientId   string `protobuf:"bytes,18,opt,name=cli_client_id,json=cliClientId,proto3" json:"cli_client_id,omitempty" validate:"omitempty,max=255"`
+	CliClientId   *string `protobuf:"bytes,18,opt,name=cli_client_id,json=cliClientId,proto3,oneof" json:"cli_client_id,omitempty" validate:"omitempty,max=255"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -17222,8 +17223,8 @@ func (x *UpdateIdentityProviderRequest) GetTrustEmailAssertions() bool {
 }
 
 func (x *UpdateIdentityProviderRequest) GetCliClientId() string {
-	if x != nil {
-		return x.CliClientId
+	if x != nil && x.CliClientId != nil {
+		return *x.CliClientId
 	}
 	return ""
 }
@@ -17893,8 +17894,8 @@ type ExchangeCLISessionRequest struct {
 	Slug string `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty" validate:"required,min=1,max=64"`
 	// @gotags: validate:"required,max=512"
 	State string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty" validate:"required,max=512"`
-	// @gotags: validate:"required,max=1048576"
-	IdToken       string `protobuf:"bytes,3,opt,name=id_token,json=idToken,proto3" json:"id_token,omitempty" validate:"required,max=1048576"`
+	// @gotags: validate:"required,max=65536"
+	IdToken       string `protobuf:"bytes,3,opt,name=id_token,json=idToken,proto3" json:"id_token,omitempty" validate:"required,max=65536"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22849,7 +22850,7 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\tproviders\x18\x01 \x03(\v2 .powermanage.v1.IdentityProviderR\tproviders\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xe6\x05\n" +
+	"totalCount\"\xfd\x05\n" +
 	"\x1dUpdateIdentityProviderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -22869,11 +22870,12 @@ const file_powermanage_v1_control_proto_rawDesc = "" +
 	"\vgroup_claim\x18\x0f \x01(\tR\n" +
 	"groupClaim\x12d\n" +
 	"\rgroup_mapping\x18\x10 \x03(\v2?.powermanage.v1.UpdateIdentityProviderRequest.GroupMappingEntryR\fgroupMapping\x124\n" +
-	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x12\"\n" +
-	"\rcli_client_id\x18\x12 \x01(\tR\vcliClientId\x1a?\n" +
+	"\x16trust_email_assertions\x18\x11 \x01(\bR\x14trustEmailAssertions\x12'\n" +
+	"\rcli_client_id\x18\x12 \x01(\tH\x00R\vcliClientId\x88\x01\x01\x1a?\n" +
 	"\x11GroupMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"^\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
+	"\x0e_cli_client_id\"^\n" +
 	"\x1eUpdateIdentityProviderResponse\x12<\n" +
 	"\bprovider\x18\x01 \x01(\v2 .powermanage.v1.IdentityProviderR\bprovider\"/\n" +
 	"\x1dDeleteIdentityProviderRequest\x12\x0e\n" +
@@ -24479,6 +24481,7 @@ func file_powermanage_v1_control_proto_init() {
 		(*DispatchToGroupRequest_DefinitionId)(nil),
 		(*DispatchToGroupRequest_InlineAction)(nil),
 	}
+	file_powermanage_v1_control_proto_msgTypes[267].OneofWrappers = []any{}
 	file_powermanage_v1_control_proto_msgTypes[339].OneofWrappers = []any{}
 	file_powermanage_v1_control_proto_msgTypes[341].OneofWrappers = []any{}
 	type x struct{}

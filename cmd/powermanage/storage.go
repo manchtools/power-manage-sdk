@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,6 +26,7 @@ import (
 const (
 	maxProtoJSONBytes         = 8 << 20
 	maxOIDCTokenResponseBytes = 1 << 20
+	maxCredentialFileBytes    = 64 << 10
 )
 
 type configFile struct {
@@ -122,91 +125,152 @@ func readSession(path string) (sessionFile, error) {
 	return session, nil
 }
 
-func writePrivateJSON(path string, value any) error {
+func openPrivateDirectory(path string) (int, error) {
+	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+	if err != nil {
+		return -1, fmt.Errorf("open config directory: %w", err)
+	}
+	var info unix.Stat_t
+	if err := unix.Fstat(fd, &info); err != nil {
+		return -1, errors.Join(fmt.Errorf("inspect config directory: %w", err), unix.Close(fd))
+	}
+	if info.Mode&unix.S_IFMT != unix.S_IFDIR || info.Mode&0o077 != 0 || info.Uid != uint32(unix.Geteuid()) {
+		return -1, errors.Join(errors.New("config directory must be private, owned by the current user, and not a symlink"), unix.Close(fd))
+	}
+	return fd, nil
+}
+
+func createTemporaryCredential(dirFD int) (*os.File, string, error) {
+	for range 100 {
+		var suffix [16]byte
+		if _, err := rand.Read(suffix[:]); err != nil {
+			return nil, "", fmt.Errorf("name temporary credential file: %w", err)
+		}
+		name := ".powermanage-" + hex.EncodeToString(suffix[:])
+		fd, err := unix.Openat(dirFD, name, unix.O_WRONLY|unix.O_CREAT|unix.O_EXCL|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0o600)
+		if errors.Is(err, unix.EEXIST) {
+			continue
+		}
+		if err != nil {
+			return nil, "", fmt.Errorf("create credential file: %w", err)
+		}
+		file := os.NewFile(uintptr(fd), name)
+		if file == nil {
+			return nil, "", errors.Join(errors.New("create credential file"), unix.Close(fd), unix.Unlinkat(dirFD, name, 0))
+		}
+		return file, name, nil
+	}
+	return nil, "", errors.New("create unique credential file")
+}
+
+func writePrivateJSON(path string, value any) (resultErr error) {
 	directory := filepath.Dir(path)
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}
-	info, err := os.Lstat(directory)
+	dirFD, err := openPrivateDirectory(directory)
 	if err != nil {
-		return fmt.Errorf("inspect config directory: %w", err)
+		return err
 	}
-	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm()&0o077 != 0 {
-		return errors.New("config directory must be a private non-symlink directory")
-	}
-	if existing, err := os.Lstat(path); err == nil {
-		if existing.Mode()&os.ModeSymlink != 0 || !existing.Mode().IsRegular() || existing.Mode().Perm()&0o077 != 0 {
-			return errors.New("credential file must be a private regular file")
+	defer func() {
+		if err := unix.Close(dirFD); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close config directory: %w", err))
 		}
-	} else if !errors.Is(err, os.ErrNotExist) {
+	}()
+	name := filepath.Base(path)
+	if name == "." || name == ".." || name == string(filepath.Separator) {
+		return errors.New("credential file path is invalid")
+	}
+	var existing unix.Stat_t
+	if err := unix.Fstatat(dirFD, name, &existing, unix.AT_SYMLINK_NOFOLLOW); err == nil {
+		if existing.Mode&unix.S_IFMT != unix.S_IFREG || existing.Mode&0o077 != 0 || existing.Uid != uint32(unix.Geteuid()) {
+			return errors.New("credential file must be a private regular file owned by the current user")
+		}
+	} else if !errors.Is(err, unix.ENOENT) {
 		return fmt.Errorf("inspect credential file: %w", err)
 	}
 	raw, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("encode credential file: %w", err)
 	}
-	temporary, err := os.CreateTemp(directory, ".powermanage-*")
+	temporary, temporaryName, err := createTemporaryCredential(dirFD)
 	if err != nil {
-		return fmt.Errorf("create credential file: %w", err)
+		return err
 	}
-	temporaryPath := temporary.Name()
-	keep := false
+	temporaryClosed := false
+	renamed := false
 	defer func() {
-		_ = temporary.Close()
-		if !keep {
-			_ = os.Remove(temporaryPath)
+		if !temporaryClosed {
+			if err := temporary.Close(); err != nil {
+				resultErr = errors.Join(resultErr, fmt.Errorf("close credential file: %w", err))
+			}
+		}
+		if !renamed {
+			if err := unix.Unlinkat(dirFD, temporaryName, 0); err != nil && !errors.Is(err, unix.ENOENT) {
+				resultErr = errors.Join(resultErr, fmt.Errorf("remove temporary credential file: %w", err))
+			}
 		}
 	}()
-	if err := temporary.Chmod(0o600); err != nil {
-		return fmt.Errorf("protect credential file: %w", err)
-	}
 	if _, err := temporary.Write(append(raw, '\n')); err != nil {
 		return fmt.Errorf("write credential file: %w", err)
 	}
 	if err := temporary.Sync(); err != nil {
 		return fmt.Errorf("sync credential file: %w", err)
 	}
-	if err := temporary.Close(); err != nil {
-		return fmt.Errorf("close credential file: %w", err)
+	closeErr := temporary.Close()
+	temporaryClosed = true
+	if closeErr != nil {
+		return fmt.Errorf("close credential file: %w", closeErr)
 	}
-	if err := os.Rename(temporaryPath, path); err != nil {
+	if err := unix.Renameat(dirFD, temporaryName, dirFD, name); err != nil {
 		return fmt.Errorf("replace credential file: %w", err)
 	}
-	keep = true
-	dir, err := os.Open(directory)
-	if err != nil {
-		return fmt.Errorf("open config directory: %w", err)
-	}
-	defer dir.Close()
-	if err := dir.Sync(); err != nil {
+	renamed = true
+	if err := unix.Fsync(dirFD); err != nil {
 		return fmt.Errorf("sync config directory: %w", err)
 	}
 	return nil
 }
 
-func readPrivateJSON(path string, value any) error {
-	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+func readPrivateJSON(path string, value any) (resultErr error) {
+	dirFD, err := openPrivateDirectory(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := unix.Close(dirFD); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close config directory: %w", err))
+		}
+	}()
+	name := filepath.Base(path)
+	if name == "." || name == ".." || name == string(filepath.Separator) {
+		return errors.New("credential file path is invalid")
+	}
+	fd, err := unix.Openat(dirFD, name, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
 	if err != nil {
 		return fmt.Errorf("open credential file: %w", err)
 	}
-	file := os.NewFile(uintptr(fd), path)
+	file := os.NewFile(uintptr(fd), name)
 	if file == nil {
-		_ = unix.Close(fd)
-		return errors.New("open credential file")
+		return errors.Join(errors.New("open credential file"), unix.Close(fd))
 	}
-	defer file.Close()
-	info, err := file.Stat()
-	if err != nil {
+	defer func() {
+		if err := file.Close(); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close credential file: %w", err))
+		}
+	}()
+	var info unix.Stat_t
+	if err := unix.Fstat(fd, &info); err != nil {
 		return fmt.Errorf("inspect credential file: %w", err)
 	}
-	if !info.Mode().IsRegular() || info.Mode().Perm()&0o077 != 0 {
-		return errors.New("credential file must be a private regular file")
+	if info.Mode&unix.S_IFMT != unix.S_IFREG || info.Mode&0o077 != 0 || info.Uid != uint32(unix.Geteuid()) {
+		return errors.New("credential file must be a private regular file owned by the current user")
 	}
-	raw, err := io.ReadAll(io.LimitReader(file, maxProtoJSONBytes+1))
+	raw, err := io.ReadAll(io.LimitReader(file, maxCredentialFileBytes+1))
 	if err != nil {
 		return fmt.Errorf("read credential file: %w", err)
 	}
-	if len(raw) > maxProtoJSONBytes {
+	if len(raw) > maxCredentialFileBytes {
 		return errors.New("credential file is too large")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -224,7 +288,7 @@ func readPrivateJSON(path string, value any) error {
 	return nil
 }
 
-func exchangeOIDCCode(ctx context.Context, client *http.Client, tokenURL, clientID, code, redirectURL, verifier string) (string, error) {
+func exchangeOIDCCode(ctx context.Context, client *http.Client, tokenURL, clientID, code, redirectURL, verifier string) (_ string, resultErr error) {
 	if client == nil {
 		return "", errors.New("OIDC HTTP client is required")
 	}
@@ -247,7 +311,11 @@ func exchangeOIDCCode(ctx context.Context, client *http.Client, tokenURL, client
 	if err != nil {
 		return "", fmt.Errorf("identity provider exchange failed: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close identity provider response: %w", err))
+		}
+	}()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return "", fmt.Errorf("identity provider exchange failed with HTTP %d", response.StatusCode)
 	}
@@ -260,8 +328,15 @@ func exchangeOIDCCode(ctx context.Context, client *http.Client, tokenURL, client
 	}
 	var token struct {
 		IDToken string `json:"id_token"`
+		Error   string `json:"error"`
 	}
-	if err := json.Unmarshal(raw, &token); err != nil || token.IDToken == "" {
+	if err := json.Unmarshal(raw, &token); err != nil {
+		return "", errors.New("identity provider returned no valid ID token")
+	}
+	if token.Error != "" {
+		return "", errors.New("identity provider rejected the exchange")
+	}
+	if token.IDToken == "" {
 		return "", errors.New("identity provider returned no valid ID token")
 	}
 	return token.IDToken, nil

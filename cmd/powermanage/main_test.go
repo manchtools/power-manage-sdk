@@ -57,6 +57,15 @@ func TestRootCommandDoesNotAdvertiseOutOfScopeCompletion(t *testing.T) {
 	}
 }
 
+func TestBootstrapRejectsSharedTokenAndRequestStdin(t *testing.T) {
+	a := &app{stdin: strings.NewReader("unused")}
+	command := a.bootstrapCommand()
+	command.SetArgs([]string{"oidc", "--token-stdin", "--file", "-"})
+	err := command.ExecuteContext(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot share stdin")
+}
+
 func TestReadProtoJSONRejectsUnknownAndOversizedInput(t *testing.T) {
 	for name, input := range map[string]string{
 		"unknown":   `{"name":"token","unknown":true}`,
@@ -113,7 +122,7 @@ func TestWriteSessionUsesPrivateAtomicStorage(t *testing.T) {
 
 	raw, err := os.ReadFile(path)
 	require.NoError(t, err)
-	assert.True(t, bytes.Contains(raw, []byte("refresh")), "the local session intentionally retains the refresh token")
+	assert.True(t, bytes.Contains(raw, []byte(`"refresh_token":"refresh"`)), "the local session intentionally retains the expected refresh token")
 }
 
 func TestReadSessionRejectsSymlinksAndBroadPermissions(t *testing.T) {
@@ -130,6 +139,11 @@ func TestReadSessionRejectsSymlinksAndBroadPermissions(t *testing.T) {
 	require.NoError(t, os.Remove(symlinkPath))
 	require.NoError(t, os.Rename(realPath, symlinkPath))
 	require.NoError(t, os.Chmod(symlinkPath, 0o640))
+	_, err = readSession(symlinkPath)
+	assert.Error(t, err)
+
+	require.NoError(t, os.Chmod(symlinkPath, 0o600))
+	require.NoError(t, os.Chmod(directory, 0o750))
 	_, err = readSession(symlinkPath)
 	assert.Error(t, err)
 }
@@ -195,13 +209,26 @@ func TestExchangeOIDCCodeRejectsOversizedResponse(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestExchangeOIDCCodeRejectsOAuthErrorAtHTTP200(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `{"error":"invalid_grant","error_description":"do not reflect me"}`)
+	}))
+	t.Cleanup(server.Close)
+	_, err := exchangeOIDCCode(t.Context(), server.Client(), server.URL, "client", "code", "http://127.0.0.1:1/callback", "verifier")
+	require.Error(t, err)
+	assert.Equal(t, "identity provider rejected the exchange", err.Error())
+}
+
 func TestActionCreateMapsProtoJSONDirectlyToTheGeneratedRPC(t *testing.T) {
+	var mu sync.Mutex
 	var calls int
 	mux := http.NewServeMux()
 	mux.Handle(powermanagev1connect.ControlServiceCreateActionProcedure,
 		connect.NewUnaryHandler(powermanagev1connect.ControlServiceCreateActionProcedure,
 			func(_ context.Context, request *connect.Request[pmv1.CreateActionRequest]) (*connect.Response[pmv1.CreateActionResponse], error) {
+				mu.Lock()
 				calls++
+				mu.Unlock()
 				assert.Equal(t, "Bearer access", request.Header().Get("Authorization"))
 				return connect.NewResponse(&pmv1.CreateActionResponse{Action: &pmv1.ManagedAction{Name: request.Msg.Name}}), nil
 			}))
@@ -222,7 +249,9 @@ func TestActionCreateMapsProtoJSONDirectlyToTheGeneratedRPC(t *testing.T) {
 	command := a.actionCommand()
 	command.SetArgs([]string{"create", "--file", requestPath})
 	require.NoError(t, command.ExecuteContext(t.Context()))
+	mu.Lock()
 	assert.Equal(t, 1, calls)
+	mu.Unlock()
 	var output pmv1.CreateActionResponse
 	require.NoError(t, protojson.Unmarshal(a.stdout.(*bytes.Buffer).Bytes(), &output))
 	assert.Equal(t, "package update", output.Action.Name)
@@ -231,16 +260,21 @@ func TestActionCreateMapsProtoJSONDirectlyToTheGeneratedRPC(t *testing.T) {
 	command = a.actionCommand()
 	command.SetArgs([]string{"create", "--file", requestPath})
 	assert.Error(t, command.ExecuteContext(t.Context()))
+	mu.Lock()
 	assert.Equal(t, 1, calls, "invalid ProtoJSON must fail before any RPC")
+	mu.Unlock()
 }
 
 func TestLoginKeepsTheAuthorizationCodeAndVerifierAtTheIdentityProvider(t *testing.T) {
+	var mu sync.Mutex
 	var tokenForm url.Values
 	var tokenCalls int
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenCalls++
 		require.NoError(t, r.ParseForm())
+		mu.Lock()
+		tokenCalls++
 		tokenForm = r.Form
+		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{"id_token":"signed.assertion","access_token":"idp-access","refresh_token":"idp-refresh"}`)
 	}))
@@ -262,9 +296,12 @@ func TestLoginKeepsTheAuthorizationCodeAndVerifierAtTheIdentityProvider(t *testi
 	mux.Handle(powermanagev1connect.ControlServiceExchangeCLISessionProcedure,
 		connect.NewUnaryHandler(powermanagev1connect.ControlServiceExchangeCLISessionProcedure,
 			func(_ context.Context, request *connect.Request[pmv1.ExchangeCLISessionRequest]) (*connect.Response[pmv1.ExchangeCLISessionResponse], error) {
+				mu.Lock()
+				verifier := tokenForm.Get("code_verifier")
+				mu.Unlock()
 				assert.Equal(t, "signed.assertion", request.Msg.IdToken)
 				assert.NotContains(t, request.Msg.String(), "authorization-code")
-				assert.NotContains(t, request.Msg.String(), tokenForm.Get("code_verifier"))
+				assert.NotContains(t, request.Msg.String(), verifier)
 				return connect.NewResponse(&pmv1.ExchangeCLISessionResponse{
 					AccessToken: "pm-access", RefreshToken: "pm-refresh",
 					ExpiresAt: timestamppb.New(time.Now().Add(time.Hour)),
@@ -280,21 +317,28 @@ func TestLoginKeepsTheAuthorizationCodeAndVerifierAtTheIdentityProvider(t *testi
 		configPath: filepath.Join(directory, "config.json"), sessionPath: filepath.Join(directory, "session.json"),
 	}
 	require.NoError(t, writePrivateJSON(a.configPath, configFile{ServerURL: control.URL}))
+	testCtx := t.Context()
 	a.openBrowser = func(loginURL string) error {
 		parsed, err := url.Parse(loginURL)
 		require.NoError(t, err)
 		callback := parsed.Query().Get("redirect_uri") + "?code=authorization-code&state=" + loginState
-		response, err := http.Get(callback)
+		request, err := http.NewRequestWithContext(testCtx, http.MethodGet, callback, nil)
+		if err != nil {
+			return err
+		}
+		response, err := http.DefaultClient.Do(request)
 		if err == nil {
 			_ = response.Body.Close()
 		}
 		return err
 	}
 	require.NoError(t, a.login(t.Context(), "corp", 0))
+	mu.Lock()
 	assert.Equal(t, "authorization-code", tokenForm.Get("code"))
 	assert.NotEmpty(t, tokenForm.Get("code_verifier"))
 	assert.Empty(t, tokenForm.Get("client_secret"))
 	assert.Equal(t, 1, tokenCalls)
+	mu.Unlock()
 	session, err := readSession(a.sessionPath)
 	require.NoError(t, err)
 	assert.Equal(t, "pm-refresh", session.RefreshToken)
@@ -310,12 +354,18 @@ func TestLoginKeepsTheAuthorizationCodeAndVerifierAtTheIdentityProvider(t *testi
 		parsed, err := url.Parse(loginURL)
 		require.NoError(t, err)
 		callback := parsed.Query().Get("redirect_uri") + "?code=stolen-code&state=wrong-state"
-		response, err := http.Get(callback)
+		request, err := http.NewRequestWithContext(testCtx, http.MethodGet, callback, nil)
+		if err != nil {
+			return err
+		}
+		response, err := http.DefaultClient.Do(request)
 		if err == nil {
 			_ = response.Body.Close()
 		}
 		return err
 	}
 	assert.Error(t, wrongStateApp.login(t.Context(), "corp", 0))
+	mu.Lock()
 	assert.Equal(t, 1, tokenCalls, "wrong callback state must stop before the IdP token endpoint")
+	mu.Unlock()
 }

@@ -11,12 +11,17 @@ Build or install the `powermanage` command from this module:
 go install github.com/manchtools/power-manage-sdk/cmd/powermanage@latest
 ```
 
+The first release supports Unix-like operator workstations; Windows support is
+out of scope.
+
+<!-- docref: begin src=cmd/powermanage/storage.go#validateServerURL:2e5ba220 -->
 Set the control-server URL once. Production URLs must use HTTPS; literal
 loopback HTTP is accepted for local development.
 
 ```bash
 powermanage config set-server https://control.example
 ```
+<!-- docref: end -->
 
 ## Bootstrap OIDC
 
@@ -36,6 +41,7 @@ request in the contract's ProtoJSON format:
 }
 ```
 
+<!-- docref: begin src=cmd/powermanage/main.go#app.bootstrapCommand:2cb480ba -->
 On the control host, pipe the single-use token directly to the CLI:
 
 ```bash
@@ -45,10 +51,11 @@ control bootstrap-admin --output token \
 
 The token is spent only on `CreateIdentityProvider`; it is not stored or
 converted into a session.
+<!-- docref: end -->
 
 ## Sign in
 
-<!-- docref: begin src=cmd/powermanage/main.go#newRootCommand:7e75aac9,cmd/powermanage/main.go#app.login:996bcf79 -->
+<!-- docref: begin src=cmd/powermanage/main.go#newRootCommand:7e75aac9,cmd/powermanage/main.go#app.login:d1bd9b1f,cmd/powermanage/storage.go#writePrivateJSON:1b9a0673,cmd/powermanage/storage.go#readPrivateJSON:36202d81 -->
 ```bash
 powermanage login --provider company
 powermanage whoami
@@ -68,9 +75,11 @@ For an identity provider that requires an exact redirect port:
 powermanage login --provider company --callback-port 8400
 ```
 
+<!-- docref: begin src=cmd/powermanage/main.go#app.authCommand:1a215758 -->
 `powermanage auth token` prints only the server URL, short-lived Power Manage
 access token, and expiry for a local Terraform exec-credential integration.
 It never prints the refresh token.
+<!-- docref: end -->
 
 ## Resource commands
 

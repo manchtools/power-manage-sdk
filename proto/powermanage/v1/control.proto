@@ -2294,8 +2294,9 @@ message UpdateIdentityProviderRequest {
   map<string, string> group_mapping = 16;
   // See IdentityProvider.trust_email_assertions. Default false (secure).
   bool trust_email_assertions = 17;
+  // Omit to keep the current CLI client; send empty to remove it.
   // @gotags: validate:"omitempty,max=255"
-  string cli_client_id = 18;
+  optional string cli_client_id = 18;
 }
 
 message UpdateIdentityProviderResponse {
@@ -2380,7 +2381,7 @@ message ExchangeCLISessionRequest {
   string slug = 1;
   // @gotags: validate:"required,max=512"
   string state = 2;
-  // @gotags: validate:"required,max=1048576"
+  // @gotags: validate:"required,max=65536"
   string id_token = 3;
 }
 
