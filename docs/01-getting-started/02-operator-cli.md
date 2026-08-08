@@ -8,7 +8,7 @@ description: Bootstrap OIDC, sign in locally, and operate Power Manage without t
 Build or install the `powermanage` command from this module:
 
 ```bash
-go install github.com/manchtools/power-manage-sdk/cmd/powermanage@latest
+go install github.com/manchtools/power-manage-sdk/cmd/powermanage@main
 ```
 
 The first release supports Unix-like operator workstations; Windows support is
