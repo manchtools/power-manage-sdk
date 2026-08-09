@@ -3505,11 +3505,11 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\roccurrence_id\x18\f \x01(\tR\foccurrenceId\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"S\n" +
 	"\x0fAgentUpdateArch\x12\x1d\n" +
 	"\n" +
 	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
-	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrlJ\x04\b\x03\x10\x04R\x0fexpected_sha256\"\xd1\x01\n" +
+	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\"\xd1\x01\n" +
 	"\x11AgentUpdateParams\x125\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x1f.powermanage.v1.AgentUpdateArchR\x05amd64\x125\n" +
 	"\x05arm64\x18\x02 \x01(\v2\x1f.powermanage.v1.AgentUpdateArchR\x05arm64\x12'\n" +

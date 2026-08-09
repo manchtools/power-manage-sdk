@@ -778,9 +778,6 @@ message AgentUpdateArch {
   // trusting the candidate binary hash. This is the only update-integrity path.
   // @gotags: validate:"required,url,startswith=https://"
   string checksum_url = 2;
-
-  reserved 3;
-  reserved "expected_sha256";
 }
 
 // AgentUpdateParams configures agent self-update via direct binary download.

@@ -13,8 +13,8 @@ func TestAgentUpdateArchRequiresSignedChecksumManifest(t *testing.T) {
 	if descriptor.Fields().ByName("expected_sha256") != nil || descriptor.Fields().ByNumber(3) != nil {
 		t.Fatal("expected_sha256 remains in the public agent-update contract")
 	}
-	if !descriptor.ReservedNames().Has("expected_sha256") || !descriptor.ReservedRanges().Has(3) {
-		t.Fatal("removed expected_sha256 name and field number must remain reserved")
+	if descriptor.ReservedNames().Has("expected_sha256") || descriptor.ReservedRanges().Has(3) {
+		t.Fatal("expected_sha256 remains as reserved pre-alpha contract history")
 	}
 
 	validator := pmvalidate.NewValidator()
