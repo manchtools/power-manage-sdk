@@ -3130,34 +3130,20 @@ func (x *ActionResult) GetOccurrenceId() string {
 	return ""
 }
 
-// Per-architecture binary source with checksum.
+// Per-architecture binary source authenticated by a signed checksum manifest.
 type AgentUpdateArch struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Direct download URL for the agent binary (HTTPS only)
 	// @gotags: validate:"required,url,startswith=https://"
 	BinaryUrl string `protobuf:"bytes,1,opt,name=binary_url,json=binaryUrl,proto3" json:"binary_url,omitempty" validate:"required,url,startswith=https://"`
-	// URL to a SHA256SUMS-style checksum file for the binary (HTTPS only).
-	// The DEFAULT integrity source: with it set (and expected_sha256
-	// unset) the agent fetches and verifies against this file, which lets
-	// an action point binary_url + checksum_url at "latest" release assets
-	// and have the fleet track new releases hands-off. Authenticity here is
-	// origin-trust (TLS + the operator's release host); an operator can
-	// host the checksum file on a SEPARATE host from the binary to mitigate
-	// the single-origin risk. At least one of checksum_url / expected_sha256
-	// must be set (enforced by the server validator).
-	// @gotags: validate:"omitempty,url,startswith=https://"
-	ChecksumUrl string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"omitempty,url,startswith=https://"`
-	// Optional pinned SHA-256 of the binary, lowercase hex. When set it is
-	// the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: the agent
-	// verifies the downloaded binary against a hash control authored and sent
-	// over the authenticated mTLS stream, rather than against a checksum file
-	// fetched from the download origin. Use it to pin an exact binary (staged
-	// rollouts) or for stronger authenticity; leave it unset to track "latest"
-	// via checksum_url.
-	// @gotags: validate:"omitempty,len=64,hexadecimal"
-	ExpectedSha256 string `protobuf:"bytes,3,opt,name=expected_sha256,json=expectedSha256,proto3" json:"expected_sha256,omitempty" validate:"omitempty,len=64,hexadecimal"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// URL to the release's SHA256SUMS-style checksum manifest (HTTPS only).
+	// The agent requires an adjacent detached signature and verifies the exact
+	// manifest bytes with its embedded Ed25519 release-signing public key before
+	// trusting the candidate binary hash. This is the only update-integrity path.
+	// @gotags: validate:"required,url,startswith=https://"
+	ChecksumUrl   string `protobuf:"bytes,2,opt,name=checksum_url,json=checksumUrl,proto3" json:"checksum_url,omitempty" validate:"required,url,startswith=https://"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AgentUpdateArch) Reset() {
@@ -3204,13 +3190,6 @@ func (x *AgentUpdateArch) GetChecksumUrl() string {
 	return ""
 }
 
-func (x *AgentUpdateArch) GetExpectedSha256() string {
-	if x != nil {
-		return x.ExpectedSha256
-	}
-	return ""
-}
-
 // AgentUpdateParams configures agent self-update via direct binary download.
 // At least one architecture must be specified. The agent selects the entry
 // matching its own architecture (runtime.GOARCH) and skips if no match.
@@ -3232,11 +3211,10 @@ type AgentUpdateParams struct {
 	// GitHub release assets, which 302 from github.com to
 	// release-assets.githubusercontent.com. Default false: a cross-origin
 	// redirect is refused and the download must reach the configured host
-	// directly. The binary is still verified against SHA-256 and an
-	// https->http downgrade is refused regardless; when expected_sha256 is
-	// set that hash is the pinned gate, otherwise verification comes from
-	// checksum_url. So this opts into a host-changing hop, not into unchecked
-	// bytes, and it is an explicit operator decision either way.
+	// directly. The binary is still verified against the publisher-signed
+	// checksum manifest and an https->http downgrade is refused regardless.
+	// This opts into a host-changing hop, not into unchecked bytes, and it is
+	// an explicit operator decision either way.
 	// @gotags: validate:"omitempty"
 	AllowRedirect bool `protobuf:"varint,4,opt,name=allow_redirect,json=allowRedirect,proto3" json:"allow_redirect,omitempty" validate:"omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3527,12 +3505,11 @@ const file_powermanage_v1_actions_proto_rawDesc = "" +
 	"\roccurrence_id\x18\f \x01(\tR\foccurrenceId\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"|\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
 	"\x0fAgentUpdateArch\x12\x1d\n" +
 	"\n" +
 	"binary_url\x18\x01 \x01(\tR\tbinaryUrl\x12!\n" +
-	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrl\x12'\n" +
-	"\x0fexpected_sha256\x18\x03 \x01(\tR\x0eexpectedSha256\"\xd1\x01\n" +
+	"\fchecksum_url\x18\x02 \x01(\tR\vchecksumUrlJ\x04\b\x03\x10\x04R\x0fexpected_sha256\"\xd1\x01\n" +
 	"\x11AgentUpdateParams\x125\n" +
 	"\x05amd64\x18\x01 \x01(\v2\x1f.powermanage.v1.AgentUpdateArchR\x05amd64\x125\n" +
 	"\x05arm64\x18\x02 \x01(\v2\x1f.powermanage.v1.AgentUpdateArchR\x05arm64\x12'\n" +
