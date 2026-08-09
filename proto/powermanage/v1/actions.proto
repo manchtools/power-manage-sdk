@@ -766,33 +766,18 @@ message ActionResult {
 // Agent Update Parameters
 // ============================================================================
 
-// Per-architecture binary source with checksum.
+// Per-architecture binary source authenticated by a signed checksum manifest.
 message AgentUpdateArch {
   // Direct download URL for the agent binary (HTTPS only)
   // @gotags: validate:"required,url,startswith=https://"
   string binary_url = 1;
 
-  // URL to a SHA256SUMS-style checksum file for the binary (HTTPS only).
-  // The DEFAULT integrity source: with it set (and expected_sha256
-  // unset) the agent fetches and verifies against this file, which lets
-  // an action point binary_url + checksum_url at "latest" release assets
-  // and have the fleet track new releases hands-off. Authenticity here is
-  // origin-trust (TLS + the operator's release host); an operator can
-  // host the checksum file on a SEPARATE host from the binary to mitigate
-  // the single-origin risk. At least one of checksum_url / expected_sha256
-  // must be set (enforced by the server validator).
-  // @gotags: validate:"omitempty,url,startswith=https://"
+  // URL to the release's SHA256SUMS-style checksum manifest (HTTPS only).
+  // The agent requires an adjacent detached signature and verifies the exact
+  // manifest bytes with its embedded Ed25519 release-signing public key before
+  // trusting the candidate binary hash. This is the only update-integrity path.
+  // @gotags: validate:"required,url,startswith=https://"
   string checksum_url = 2;
-
-  // Optional pinned SHA-256 of the binary, lowercase hex. When set it is
-  // the AUTHORITATIVE integrity gate and OVERRIDES checksum_url: the agent
-  // verifies the downloaded binary against a hash control authored and sent
-  // over the authenticated mTLS stream, rather than against a checksum file
-  // fetched from the download origin. Use it to pin an exact binary (staged
-  // rollouts) or for stronger authenticity; leave it unset to track "latest"
-  // via checksum_url.
-  // @gotags: validate:"omitempty,len=64,hexadecimal"
-  string expected_sha256 = 3;
 }
 
 // AgentUpdateParams configures agent self-update via direct binary download.
@@ -818,11 +803,10 @@ message AgentUpdateParams {
   // GitHub release assets, which 302 from github.com to
   // release-assets.githubusercontent.com. Default false: a cross-origin
   // redirect is refused and the download must reach the configured host
-  // directly. The binary is still verified against SHA-256 and an
-  // https->http downgrade is refused regardless; when expected_sha256 is
-  // set that hash is the pinned gate, otherwise verification comes from
-  // checksum_url. So this opts into a host-changing hop, not into unchecked
-  // bytes, and it is an explicit operator decision either way.
+  // directly. The binary is still verified against the publisher-signed
+  // checksum manifest and an https->http downgrade is refused regardless.
+  // This opts into a host-changing hop, not into unchecked bytes, and it is
+  // an explicit operator decision either way.
   // @gotags: validate:"omitempty"
   bool allow_redirect = 4;
 }
