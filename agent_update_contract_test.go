@@ -7,6 +7,7 @@ import (
 	pmvalidate "github.com/manchtools/power-manage-sdk/validate"
 )
 
+// TestAgentUpdateArchRequiresSignedChecksumManifest pins the signed-only public contract.
 func TestAgentUpdateArchRequiresSignedChecksumManifest(t *testing.T) {
 	t.Parallel()
 	descriptor := (&pm.AgentUpdateArch{}).ProtoReflect().Descriptor()
