@@ -200,3 +200,54 @@ func TestNMModifyArgs_V6Gateway(t *testing.T) {
 		t.Errorf("must not emit ipv4.gateway for a v6-only config: %q", args)
 	}
 }
+
+// nmPairIndexes returns every position — counted in property/value PAIRS, so
+// the numbers are directly comparable as "which setting nmcli applies later" —
+// at which nmModifyArgs emitted (prop, val). It also asserts the argv really is
+// strictly alternating, which is what makes pair arithmetic meaningful.
+func nmPairIndexes(t *testing.T, args []string, prop, val string) []int {
+	t.Helper()
+	if len(args)%2 != 0 {
+		t.Fatalf("nmModifyArgs must emit property/value pairs, got odd length %d: %v", len(args), args)
+	}
+	var at []int
+	for i := 0; i < len(args); i += 2 {
+		if args[i] == prop && args[i+1] == val {
+			at = append(at, i/2)
+		}
+	}
+	return at
+}
+
+// TestNMModifyArgs_DHCPClearsStaleDNSAndRoutes pins the DHCP branch's stated
+// contract — "make DHCP authoritative" — against the whole manual
+// configuration, not just addresses and gateway. Switching an interface that
+// was previously configured statically back to DHCP left ipv4.dns/ipv6.dns and
+// ipv4.routes/ipv6.routes on the connection profile, so the box kept resolving
+// through the old nameservers and routing over the old next-hops while
+// reporting itself as DHCP.
+func TestNMModifyArgs_DHCPClearsStaleDNSAndRoutes(t *testing.T) {
+	args := nmModifyArgs(InterfaceConfig{Name: "eth0", Mode: DHCP})
+	for _, prop := range []string{"ipv4.dns", "ipv6.dns", "ipv4.routes", "ipv6.routes"} {
+		if at := nmPairIndexes(t, args, prop, ""); len(at) == 0 {
+			t.Errorf("DHCP argv never clears %s, so a previous manual value survives the switch to DHCP; got %v", prop, args)
+		}
+	}
+}
+
+// TestNMModifyArgs_DHCPWithDNSClearsBeforeSetting pins the ORDER the clearing
+// depends on. nmcli applies the last occurrence of a repeated property, so a
+// DHCP config that deliberately carries DNS must emit clear-then-set: the
+// caller's nameservers win, and the reset still wipes anything left over. The
+// reverse order would silently discard the requested DNS.
+func TestNMModifyArgs_DHCPWithDNSClearsBeforeSetting(t *testing.T) {
+	args := nmModifyArgs(InterfaceConfig{Name: "eth0", Mode: DHCP, DNS: []string{"1.1.1.1"}})
+	clears := nmPairIndexes(t, args, "ipv4.dns", "")
+	sets := nmPairIndexes(t, args, "ipv4.dns", "1.1.1.1")
+	if len(clears) != 1 || len(sets) != 1 {
+		t.Fatalf("want exactly one ipv4.dns clear and one ipv4.dns set, got clears=%v sets=%v in %v", clears, sets, args)
+	}
+	if clears[0] >= sets[0] {
+		t.Errorf("ipv4.dns cleared at pair %d but set at pair %d; nmcli honours the LAST occurrence, so the clear must come first or the requested DNS is thrown away: %v", clears[0], sets[0], args)
+	}
+}
