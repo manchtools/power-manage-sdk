@@ -591,7 +591,10 @@ export class ApiClient {
 				ownerId
 			})
 		);
-		return response.token;
+		// Return the whole response, not just the token: caFingerprintPin rides
+		// beside token.value by contract — agents cannot enroll without it, so a
+		// wrapper that dropped it made every web-created token un-enrollable.
+		return response;
 	}
 
 	async getToken(id: string) {
