@@ -1408,8 +1408,11 @@ export type EncryptionParams = Message<"powermanage.v1.EncryptionParams"> & {
   minWords: number;
 
   /**
-   * What to put in the device-bound key slot — TPM, user passphrase, or nothing
-   * @gotags: validate:"omitempty"
+   * What to put in the device-bound key slot — TPM, user passphrase, or nothing.
+   * Range-checked: the agent switches on this value and its default branch means
+   * "no device-bound key", so an unvalidated out-of-range value would silently
+   * downgrade a requested TPM enrollment instead of being refused.
+   * @gotags: validate:"omitempty,oneof=0 1 2"
    *
    * @generated from field: powermanage.v1.EncryptionDeviceBoundKeyType device_bound_key_type = 4;
    */

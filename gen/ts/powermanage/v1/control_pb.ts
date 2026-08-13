@@ -10350,7 +10350,10 @@ export type EncryptionAuthoringParams = Message<"powermanage.v1.EncryptionAuthor
   minWords: number;
 
   /**
-   * @gotags: validate:"omitempty"
+   * Range-checked for the same reason as EncryptionParams.device_bound_key_type:
+   * the agent's switch default means "no device-bound key", so an out-of-range
+   * value must be refused here rather than silently downgraded there.
+   * @gotags: validate:"omitempty,oneof=0 1 2"
    *
    * @generated from field: powermanage.v1.EncryptionDeviceBoundKeyType device_bound_key_type = 4;
    */

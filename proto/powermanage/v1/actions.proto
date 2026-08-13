@@ -663,8 +663,11 @@ message EncryptionParams {
   // Minimum words in generated managed passphrase (default 5, min 3, max 10)
   // @gotags: validate:"omitempty,gte=3,lte=10"
   int32 min_words = 3;
-  // What to put in the device-bound key slot — TPM, user passphrase, or nothing
-  // @gotags: validate:"omitempty"
+  // What to put in the device-bound key slot — TPM, user passphrase, or nothing.
+  // Range-checked: the agent switches on this value and its default branch means
+  // "no device-bound key", so an unvalidated out-of-range value would silently
+  // downgrade a requested TPM enrollment instead of being refused.
+  // @gotags: validate:"omitempty,oneof=0 1 2"
   EncryptionDeviceBoundKeyType device_bound_key_type = 4;
   // Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
   // @gotags: validate:"omitempty,gte=16,lte=128"
