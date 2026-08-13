@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
@@ -55,9 +54,11 @@ func TestUFWBuildAddArgs_Deny(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ufwBuildAddArgs: %v", err)
 	}
-	if got[0] != "deny" {
-		t.Fatalf("expected first arg 'deny', got %q in %v", got[0], got)
-	}
+	// Full argv, not just got[0]: checking only the verb leaves the rest of the
+	// wire format (port/proto rendering, comment placement) unpinned, so a
+	// builder refactor could silently widen or misdirect a DENY rule.
+	want := []string{"deny", "22/tcp", "comment", "fwtest:block-ssh"}
+	assertArgsEqual(t, got, want)
 }
 
 // TestUFWBuildAddArgs_SourceScope — once a rule has a source CIDR ufw
@@ -75,12 +76,13 @@ func TestUFWBuildAddArgs_SourceScope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ufwBuildAddArgs: %v", err)
 	}
-	joined := strings.Join(got, " ")
-	for _, want := range []string{"from 10.0.0.0/8", "to any", "port 22", "proto tcp", "comment fwtest:from-lan"} {
-		if !strings.Contains(joined, want) {
-			t.Errorf("missing %q in args: %v", want, got)
-		}
-	}
+	// Exact argv, not substring matching on the joined string: "port 22" is a
+	// prefix of an emitted "port 220" and "from 10.0.0.0/8" a prefix of
+	// "from 10.0.0.0/80", so a Contains check passes on a rule that opens the
+	// wrong port or the wrong network. Order matters to ufw too, and only a
+	// full compare pins it.
+	want := []string{"allow", "from", "10.0.0.0/8", "to", "any", "port", "22", "proto", "tcp", "comment", "fwtest:from-lan"}
+	assertArgsEqual(t, got, want)
 }
 
 // TestUFWBuildAddArgs_DestScope — symmetric guard on the destination
@@ -96,10 +98,11 @@ func TestUFWBuildAddArgs_DestScope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ufwBuildAddArgs: %v", err)
 	}
-	joined := strings.Join(got, " ")
-	if !strings.Contains(joined, "from any") || !strings.Contains(joined, "to 192.168.1.1") {
-		t.Errorf("missing scoped from/to in args: %v", got)
-	}
+	// Same reasoning as the source-scope test: "to 192.168.1.1" is a prefix of
+	// "to 192.168.1.10", so only an exact full-argv compare proves the rule
+	// targets the host the caller asked for.
+	want := []string{"allow", "from", "any", "to", "192.168.1.1", "port", "22", "proto", "tcp", "comment", "fwtest:to-host"}
+	assertArgsEqual(t, got, want)
 }
 
 // TestUFWBuildAddArgs_RejectsPortWithoutProto — same rejection nftables
