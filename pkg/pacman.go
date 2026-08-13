@@ -354,7 +354,11 @@ func (p *pacman) Show(ctx context.Context, name string) (*Package, error) {
 		case strings.HasPrefix(line, "Description"):
 			pkg.Description = parseColonValue(line)
 		case strings.HasPrefix(line, "Installed Size"):
-			pkg.Size = parsePacmanSize(parseColonValue(line))
+			// Display metadata: keep what we have on an unparseable size rather
+			// than fabricating a 0-byte package. See parseSizeWithUnits.
+			if n, sizeOK := parsePacmanSize(parseColonValue(line)); sizeOK {
+				pkg.Size = n
+			}
 		case strings.HasPrefix(line, "Repository"):
 			pkg.Repository = parseColonValue(line)
 		}
@@ -670,7 +674,9 @@ func buildIgnorePkgConf(conf string, ignored []string) string {
 	return b.String()
 }
 
-func parsePacmanSize(s string) int64 {
+// parsePacmanSize renders pacman's human size into bytes. ok=false means the
+// text was not a size at all; it is not the same as a zero size.
+func parsePacmanSize(s string) (int64, bool) {
 	return parseSizeWithUnits(s, []sizeUnit{
 		{" KiB", 1024},
 		{" MiB", 1024 * 1024},

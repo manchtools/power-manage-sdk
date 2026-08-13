@@ -384,7 +384,13 @@ func (d *dnf) Show(ctx context.Context, name string) (*Package, error) {
 		case strings.HasPrefix(line, "Architecture"):
 			pkg.Architecture = parseColonValue(line)
 		case strings.HasPrefix(line, "Size"):
-			pkg.Size = parseSize(parseColonValue(line))
+			// Size is display metadata, so an unparseable size line is not worth
+			// failing Show over — but it must not fabricate a 0-byte package
+			// either. Leave whatever we already have (the zero value when nothing
+			// parsed) rather than assigning the parser's failure result.
+			if n, sizeOK := parseSize(parseColonValue(line)); sizeOK {
+				pkg.Size = n
+			}
 		case strings.HasPrefix(line, "Summary"):
 			pkg.Description = parseColonValue(line)
 		case strings.HasPrefix(line, "Repository"):
@@ -585,7 +591,9 @@ func (d *dnf) getPinnedSet(ctx context.Context) (map[string]bool, error) {
 	return pinned, nil
 }
 
-func parseSize(s string) int64 {
+// parseSize renders dnf's human size into bytes. ok=false means the text was
+// not a size at all (see parseSizeWithUnits); it is not the same as a zero size.
+func parseSize(s string) (int64, bool) {
 	return parseSizeWithUnits(s, []sizeUnit{
 		{" k", 1024},
 		{" K", 1024},

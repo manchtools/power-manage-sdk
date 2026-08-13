@@ -329,7 +329,11 @@ func (z *zypper) Show(ctx context.Context, name string) (*Package, error) {
 		case strings.HasPrefix(line, "Summary"):
 			pkg.Description = parseColonValue(line)
 		case strings.HasPrefix(line, "Installed Size"):
-			pkg.Size = parseZypperSize(parseColonValue(line))
+			// Display metadata: keep what we have on an unparseable size rather
+			// than fabricating a 0-byte package. See parseSizeWithUnits.
+			if n, sizeOK := parseZypperSize(parseColonValue(line)); sizeOK {
+				pkg.Size = n
+			}
 		case strings.HasPrefix(line, "Repository"):
 			pkg.Repository = parseColonValue(line)
 		case strings.HasPrefix(line, "Status"):
@@ -587,7 +591,9 @@ func (z *zypper) getPinnedSet(ctx context.Context) (map[string]bool, error) {
 	return pinned, nil
 }
 
-func parseZypperSize(s string) int64 {
+// parseZypperSize renders zypper's human size into bytes. ok=false means the
+// text was not a size at all; it is not the same as a zero size.
+func parseZypperSize(s string) (int64, bool) {
 	return parseSizeWithUnits(s, []sizeUnit{
 		{" KiB", 1024},
 		{" MiB", 1024 * 1024},

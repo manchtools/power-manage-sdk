@@ -220,12 +220,20 @@ func (f *flatpak) List(ctx context.Context) ([]Package, error) {
 		if len(fields) > 5 {
 			repo = fields[5]
 		}
+		// Display metadata: an unparseable size column reports 0 rather than
+		// dropping the bundle from the listing — the identity fields are what
+		// the caller acts on. Explicit here so the parser can report the failure
+		// instead of swallowing it. See parseSizeWithUnits.
+		var size int64
+		if n, sizeOK := parseFlatpakSize(fields[3]); sizeOK {
+			size = n
+		}
 		packages = append(packages, Package{
 			Name:         fields[0],
 			Version:      fields[1],
 			Architecture: fields[2],
 			Status:       "installed",
-			Size:         parseFlatpakSize(fields[3]),
+			Size:         size,
 			Description:  desc,
 			Repository:   repo,
 			Pinned:       pinned[fields[0]],
@@ -295,7 +303,13 @@ func (f *flatpak) Show(ctx context.Context, name string) (*Package, error) {
 		case strings.HasPrefix(line, "Description:"):
 			pkg.Description = parseFlatpakValue(line)
 		case strings.HasPrefix(line, "Installed:"), strings.HasPrefix(line, "Size:"):
-			pkg.Size = parseFlatpakSize(parseFlatpakValue(line))
+			// Both prefixes land here, so `flatpak info` can hit this case twice.
+			// Assigning unconditionally let an unparseable second line overwrite
+			// the good size read from the first with a fabricated 0 — keep what
+			// we have unless the text really parsed. See parseSizeWithUnits.
+			if n, sizeOK := parseFlatpakSize(parseFlatpakValue(line)); sizeOK {
+				pkg.Size = n
+			}
 		case strings.HasPrefix(line, "Origin:"):
 			pkg.Repository = parseFlatpakValue(line)
 		}
@@ -332,7 +346,10 @@ func (f *flatpak) showFromRemote(ctx context.Context, name string) (*Package, er
 		case strings.HasPrefix(line, "Description:"):
 			pkg.Description = parseFlatpakValue(line)
 		case strings.HasPrefix(line, "Download:"), strings.HasPrefix(line, "Size:"):
-			pkg.Size = parseFlatpakSize(parseFlatpakValue(line))
+			// Same two-prefix overwrite hazard as Show's installed path above.
+			if n, sizeOK := parseFlatpakSize(parseFlatpakValue(line)); sizeOK {
+				pkg.Size = n
+			}
 		}
 	}
 	return pkg, nil
@@ -589,7 +606,9 @@ func parseFlatpakValue(line string) string {
 	return strings.TrimSpace(parts[1])
 }
 
-func parseFlatpakSize(s string) int64 {
+// parseFlatpakSize renders flatpak's human size into bytes. ok=false means the
+// text was not a size at all; it is not the same as a zero size.
+func parseFlatpakSize(s string) (int64, bool) {
 	// flatpak's human sizes can carry thousands separators ("1,536 MB"); strip
 	// them before the shared unit parser, which only space-trims.
 	s = strings.ReplaceAll(s, ",", "")

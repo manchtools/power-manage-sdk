@@ -152,12 +152,19 @@ type sizeUnit struct {
 // order, so a caller must list more specific suffixes before any that are a
 // suffix of them. A matched suffix is stripped and its multiplier applied; a
 // unit with mult == 1 is a no-op-multiplier suffix that is merely trimmed. The
-// remaining text is parsed with strconv.ParseFloat: an empty string, an
-// unrecognised suffix, or unparseable digits all yield 0 (ParseFloat's error is
-// intentionally ignored, mirroring the per-backend originals). The input is
-// space-trimmed before matching; callers needing other preprocessing (e.g.
-// flatpak's comma stripping) do it before calling.
-func parseSizeWithUnits(s string, units []sizeUnit) int64 {
+// input is space-trimmed before matching; callers needing other preprocessing
+// (e.g. flatpak's comma stripping) do it before calling.
+//
+// ok reports whether the remaining text actually parsed as a number. It is NOT
+// a redundant "was the result non-zero": the helper used to discard
+// strconv.ParseFloat's error and return a bare 0, so an empty line, an
+// unrecognised suffix, and outright junk were all indistinguishable from a
+// genuine zero-byte package — and a caller assigning the result unconditionally
+// would overwrite an already-parsed good size with that fabricated 0. Mapping a
+// parse failure to 0 is a legitimate choice for display metadata, but it is the
+// CALLER's choice to make explicitly, so the failure is reported here rather
+// than swallowed.
+func parseSizeWithUnits(s string, units []sizeUnit) (size int64, ok bool) {
 	s = strings.TrimSpace(s)
 	multiplier := int64(1)
 	for _, u := range units {
@@ -167,8 +174,11 @@ func parseSizeWithUnits(s string, units []sizeUnit) int64 {
 			break
 		}
 	}
-	size, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	return int64(size * float64(multiplier))
+	n, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return 0, false
+	}
+	return int64(n * float64(multiplier)), true
 }
 
 // splitPositionalFields splits VALUE-ONLY one-field-per-line command output (rpm

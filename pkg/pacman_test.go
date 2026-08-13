@@ -923,11 +923,23 @@ func TestPacman_ParseValueAndSize(t *testing.T) {
 		"2 GiB":    2 * 1024 * 1024 * 1024,
 		"900 B":    900,
 		"42":       42,
-		"":         0,
 	}
 	for in, want := range cases {
-		if got := parsePacmanSize(in); got != want {
+		got, sizeOK := parsePacmanSize(in)
+		if !sizeOK {
+			t.Errorf("parsePacmanSize(%q) reported a parse failure on valid input", in)
+			continue
+		}
+		if got != want {
 			t.Errorf("parsePacmanSize(%q)=%d want %d", in, got, want)
+		}
+	}
+	// Unparseable input is reported, not silently rendered as a 0-byte package.
+	for _, in := range []string{"", "unknown", "3.00 MiB extra"} {
+		if got, sizeOK := parsePacmanSize(in); sizeOK {
+			t.Errorf("parsePacmanSize(%q)=(%d, true), want ok=false", in, got)
+		} else if got != 0 {
+			t.Errorf("parsePacmanSize(%q) failed but returned %d, want 0", in, got)
 		}
 	}
 }
