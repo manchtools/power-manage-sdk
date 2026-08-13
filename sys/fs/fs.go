@@ -63,6 +63,13 @@ var ErrUnsafeMode = errors.New("setuid/setgid mode is not permitted")
 // (e.g. /home/alice) and single-file SetOwnership are unaffected.
 var ErrProtectedTarget = errors.New("recursive ownership change of a protected system tree is not permitted")
 
+// ErrExists is returned by WriteFileExclusive when the destination already
+// exists. It is a distinct sentinel, not a generic failure, because the whole
+// point of an exclusive create is to let the caller BRANCH on it: "someone else
+// owns this file" is a normal, expected outcome that usually means "fall back to
+// an ordinary overwrite", while every other error means the write failed.
+var ErrExists = errors.New("destination exists")
+
 // WriteOptions configures a Manager.WriteFile (or Copy) call.
 type WriteOptions struct {
 	// Mode is the file mode applied before the file is reachable by name. Zero
@@ -108,6 +115,16 @@ type Manager interface {
 	// WriteFile writes data to path atomically. When the Runner's backend is
 	// Direct the write is also symlink-safe (fd-anchored); see the package doc.
 	WriteFile(ctx context.Context, path string, data []byte, opts WriteOptions) error
+	// WriteFileExclusive writes data to path only if path does not already
+	// exist, returning ErrExists (matchable with errors.Is) when it does. The
+	// existence test and the create are the SAME atomic operation — on Linux a
+	// RENAME_NOREPLACE rename, on the escalated backend an ln(1) — so unlike
+	// Exists-then-WriteFile there is no window in which another writer can slip a
+	// file in between. Callers that need to know whether THEY created a file, in
+	// order to decide whether they may later delete it, must use this rather than
+	// probing first: a probe would let them adopt, and then destroy, someone
+	// else's file.
+	WriteFileExclusive(ctx context.Context, path string, data []byte, opts WriteOptions) error
 	// Exists reports whether path exists. The probe runs through the privilege
 	// backend so it can see paths in directories the caller cannot traverse
 	// (e.g. /etc/sudoers.d, mode 0750). A runner/ctx failure is returned as an

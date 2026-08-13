@@ -858,16 +858,34 @@ func TestDnf_ParseValue(t *testing.T) {
 
 func TestDnf_ParseSize(t *testing.T) {
 	cases := map[string]int64{
-		"3.0 M":  3 * 1024 * 1024,
-		"512 k":  512 * 1024,
-		"2 G":    2 * 1024 * 1024 * 1024,
-		"100":    100,
-		"":       0,
-		"bad MB": 0, // " MB" not a recognised suffix here -> ParseFloat("bad MB") -> 0
+		"3.0 M": 3 * 1024 * 1024,
+		"512 k": 512 * 1024,
+		"2 G":   2 * 1024 * 1024 * 1024,
+		"100":   100,
 	}
 	for in, want := range cases {
-		if got := parseSize(in); got != want {
+		got, ok := parseSize(in)
+		if !ok {
+			t.Errorf("parseSize(%q) reported a parse failure on valid input", in)
+			continue
+		}
+		if got != want {
 			t.Errorf("parseSize(%q) = %d, want %d", in, got, want)
+		}
+	}
+	// Input that is not a size at all must be REPORTED, not silently rendered as
+	// 0 — a 0-byte package and "dnf printed something we can't read" are
+	// different facts and the caller decides what to do about the second.
+	for _, in := range []string{
+		"",                  // no value on the line
+		"bad MB",            // " MB" is not a suffix this table knows
+		"unknown",           // literal junk
+		"3.0 MB extra text", // trailing garbage after a plausible size
+	} {
+		if got, ok := parseSize(in); ok {
+			t.Errorf("parseSize(%q) = (%d, true), want ok=false for unparseable input", in, got)
+		} else if got != 0 {
+			t.Errorf("parseSize(%q) failed but returned %d, want 0", in, got)
 		}
 	}
 }

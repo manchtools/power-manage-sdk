@@ -200,3 +200,104 @@ func TestNMModifyArgs_V6Gateway(t *testing.T) {
 		t.Errorf("must not emit ipv4.gateway for a v6-only config: %q", args)
 	}
 }
+
+// nmPairIndexes returns every position — counted in property/value PAIRS, so
+// the numbers are directly comparable as "which setting nmcli applies later" —
+// at which nmModifyArgs emitted (prop, val). It also asserts the argv really is
+// strictly alternating, which is what makes pair arithmetic meaningful.
+func nmPairIndexes(t *testing.T, args []string, prop, val string) []int {
+	t.Helper()
+	if len(args)%2 != 0 {
+		t.Fatalf("nmModifyArgs must emit property/value pairs, got odd length %d: %v", len(args), args)
+	}
+	var at []int
+	for i := 0; i < len(args); i += 2 {
+		if args[i] == prop && args[i+1] == val {
+			at = append(at, i/2)
+		}
+	}
+	return at
+}
+
+// TestNMModifyArgs_DHCPClearsStaleDNSAndRoutes pins the DHCP branch's stated
+// contract — "make DHCP authoritative" — against the whole manual
+// configuration, not just addresses and gateway. Switching an interface that
+// was previously configured statically back to DHCP left ipv4.dns/ipv6.dns and
+// ipv4.routes/ipv6.routes on the connection profile, so the box kept resolving
+// through the old nameservers and routing over the old next-hops while
+// reporting itself as DHCP.
+func TestNMModifyArgs_DHCPClearsStaleDNSAndRoutes(t *testing.T) {
+	args := nmModifyArgs(InterfaceConfig{Name: "eth0", Mode: DHCP})
+	for _, prop := range []string{"ipv4.dns", "ipv6.dns", "ipv4.routes", "ipv6.routes"} {
+		if at := nmPairIndexes(t, args, prop, ""); len(at) == 0 {
+			t.Errorf("DHCP argv never clears %s, so a previous manual value survives the switch to DHCP; got %v", prop, args)
+		}
+	}
+}
+
+// TestNMModifyArgs_DHCPWithDNSClearsBeforeSetting pins the ORDER the clearing
+// depends on. nmcli applies the last occurrence of a repeated property, so a
+// DHCP config that deliberately carries DNS must emit clear-then-set: the
+// caller's nameservers win, and the reset still wipes anything left over. The
+// reverse order would silently discard the requested DNS.
+func TestNMModifyArgs_DHCPWithDNSClearsBeforeSetting(t *testing.T) {
+	args := nmModifyArgs(InterfaceConfig{Name: "eth0", Mode: DHCP, DNS: []string{"1.1.1.1"}})
+	clears := nmPairIndexes(t, args, "ipv4.dns", "")
+	sets := nmPairIndexes(t, args, "ipv4.dns", "1.1.1.1")
+	if len(clears) != 1 || len(sets) != 1 {
+		t.Fatalf("want exactly one ipv4.dns clear and one ipv4.dns set, got clears=%v sets=%v in %v", clears, sets, args)
+	}
+	if clears[0] >= sets[0] {
+		t.Errorf("ipv4.dns cleared at pair %d but set at pair %d; nmcli honours the LAST occurrence, so the clear must come first or the requested DNS is thrown away: %v", clears[0], sets[0], args)
+	}
+}
+
+// TestNMModifyArgs_DHCPWithRoutesClearBeforeSetting is the routes half of the
+// same ordering contract. Routes are independent of addressing mode — a DHCP
+// interface may legitimately carry a static route — so the DHCP reset must not
+// swallow one the caller asked for. Both families are covered because they are
+// emitted by separate branches and only a per-family assertion catches one of
+// them regressing alone.
+func TestNMModifyArgs_DHCPWithRoutesClearBeforeSetting(t *testing.T) {
+	cases := []struct {
+		name     string
+		route    Route
+		prop     string
+		wantSet  string
+		otherPro string // the family that gets no route: cleared, never set
+	}{
+		{
+			name:     "ipv4",
+			route:    Route{Destination: "10.0.0.0/8", Gateway: "192.0.2.254", Metric: 100},
+			prop:     "ipv4.routes",
+			wantSet:  "10.0.0.0/8 192.0.2.254 100",
+			otherPro: "ipv6.routes",
+		},
+		{
+			name:     "ipv6",
+			route:    Route{Destination: "default", Gateway: "2001:db8::1"},
+			prop:     "ipv6.routes",
+			wantSet:  "::/0 2001:db8::1",
+			otherPro: "ipv4.routes",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			args := nmModifyArgs(InterfaceConfig{Name: "eth0", Mode: DHCP, Routes: []Route{tc.route}})
+
+			clears := nmPairIndexes(t, args, tc.prop, "")
+			sets := nmPairIndexes(t, args, tc.prop, tc.wantSet)
+			if len(clears) != 1 || len(sets) != 1 {
+				t.Fatalf("want exactly one %s clear and one set of %q, got clears=%v sets=%v in %v", tc.prop, tc.wantSet, clears, sets, args)
+			}
+			if clears[0] >= sets[0] {
+				t.Errorf("%s cleared at pair %d but set at pair %d; nmcli honours the LAST occurrence, so the clear must come first or the requested route is thrown away: %v", tc.prop, clears[0], sets[0], args)
+			}
+			// The family with no route keeps a bare clear — the DHCP reset still
+			// has to wipe whatever a previous static config left there.
+			if at := nmPairIndexes(t, args, tc.otherPro, ""); len(at) != 1 {
+				t.Errorf("%s clear pairs = %v, want exactly 1 even though no route was requested for that family: %v", tc.otherPro, at, args)
+			}
+		})
+	}
+}

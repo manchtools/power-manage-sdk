@@ -46,12 +46,14 @@ err = m.Remove(ctx, "corp-root")
 anchors, err := m.List(ctx) // the trusted anchors this manager can see
 ```
 
-<!-- docref: begin src=sys/catrust/catrust.go#manager.Install:c6b15d2f -->
+<!-- docref: begin src=sys/catrust/catrust.go#manager.Install:4a59e802 -->
 `Install` writes the anchor under the backend's local-anchors directory and runs
 the store-rebuild tool (`update-ca-certificates` / `update-ca-trust`) so the new
 root takes effect host-wide. The name identifies the anchor for later removal,
 and the certificate is validated as a single PEM certificate before it is
-written.
+written. If the store rebuild fails, the just-written anchor file is removed
+again so the failed install leaves nothing behind; when even that cleanup
+fails, the returned error names the leftover file.
 <!-- docref: end -->
 
 {% callout type="warning" title="Trust is host-wide" %}

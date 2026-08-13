@@ -1408,8 +1408,11 @@ export type EncryptionParams = Message<"powermanage.v1.EncryptionParams"> & {
   minWords: number;
 
   /**
-   * What to put in the device-bound key slot — TPM, user passphrase, or nothing
-   * @gotags: validate:"omitempty"
+   * What to put in the device-bound key slot — TPM, user passphrase, or nothing.
+   * Range-checked: the agent switches on this value and its default branch means
+   * "no device-bound key", so an unvalidated out-of-range value would silently
+   * downgrade a requested TPM enrollment instead of being refused.
+   * @gotags: validate:"omitempty,oneof=0 1 2"
    *
    * @generated from field: powermanage.v1.EncryptionDeviceBoundKeyType device_bound_key_type = 4;
    */
@@ -1425,7 +1428,11 @@ export type EncryptionParams = Message<"powermanage.v1.EncryptionParams"> & {
 
   /**
    * Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
-   * @gotags: validate:"omitempty"
+   * Range-checked for the same reason as device_bound_key_type: this selects the
+   * alphabet the agent draws the passphrase from, and its switch default is a
+   * weaker alphabet than an out-of-range value was asking for. Stays optional —
+   * UNSPECIFIED (0) is legal because the field only applies to USER_PASSPHRASE.
+   * @gotags: validate:"omitempty,oneof=0 1 2"
    *
    * @generated from field: powermanage.v1.LpsPasswordComplexity user_passphrase_complexity = 6;
    */

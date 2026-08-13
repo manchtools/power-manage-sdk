@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/manchtools/power-manage-sdk/sys/exec"
 	"github.com/manchtools/power-manage-sdk/sys/fs"
@@ -186,7 +187,21 @@ func (m *manager) anchorPath(name string) string {
 
 const anchorExt = ".crt"
 
+// anchorRollbackTimeout bounds the detached anchor removal Install performs when
+// the trust-store refresh fails. It is deliberately short: the work is a single
+// unlink of a path we just wrote, and the caller is already on an error path, so
+// a wedged filesystem must not turn a failed Install into a hang.
+const anchorRollbackTimeout = 10 * time.Second
+
 // Install validates name + certPEM, writes the anchor, and refreshes the store.
+//
+// The write happens before the refresh, so a refresh failure would otherwise
+// leave the anchor on disk after Install reported failure — a CA the operator
+// believes is not installed, which the next successful refresh by anything else
+// (a distro package hook, another tool, the next boot) would silently activate.
+// Install therefore removes its own anchor before returning the error. The
+// rollback is best-effort: if it too fails, the returned error names the file
+// left behind rather than hiding it.
 func (m *manager) Install(ctx context.Context, name string, certPEM []byte) error {
 	if err := validateName(name); err != nil {
 		return err
@@ -199,7 +214,19 @@ func (m *manager) Install(ctx context.Context, name string, certPEM []byte) erro
 		return fmt.Errorf("catrust: write %s: %w", path, err)
 	}
 	if err := m.refresh(ctx, m.cfg.installRefresh); err != nil {
-		return err
+		// The rollback runs on a context DETACHED from the caller's cancellation.
+		// A dead context is one of the main reasons the refresh fails — a deadline
+		// expiring while update-ca-certificates runs — and reusing it here would
+		// fail the removal too, leaving the anchor behind in precisely the case
+		// this cleanup exists for. WithoutCancel keeps the caller's values (so
+		// logging/tracing still correlate) while dropping the cancellation, and a
+		// short independent bound stops a wedged rm from hanging Install.
+		rollbackCtx, cancelRollback := context.WithTimeout(context.WithoutCancel(ctx), anchorRollbackTimeout)
+		defer cancelRollback()
+		if rmErr := m.fsm.Remove(rollbackCtx, path); rmErr != nil {
+			return fmt.Errorf("catrust: trust-store refresh failed and the new anchor %s could NOT be removed (%v), so it is still on disk: %w", path, rmErr, err)
+		}
+		return fmt.Errorf("catrust: trust-store refresh failed; removed the new anchor %s: %w", path, err)
 	}
 	return nil
 }

@@ -220,8 +220,9 @@ var forcedEnv = []string{"LC_ALL=C", "LANG=C", "NO_COLOR=1"}
 // BASH_ENV, …) plus the forced-locale/NO_COLOR names are enforced on Command.Env;
 // a curated PATH goes through ChildPath, which REPLACES (never augments) the
 // parent env — the isolation the per-user runuser fan-out needs. The default
-// (no ChildPath, no Env) inherits the parent fully; in every case forcedEnv is
-// appended last so the deterministic vars always win.
+// (no ChildPath, no Env) inherits the parent minus the hijack vars, with the
+// parent's PATH re-added (it is itself blocklisted, so the filter drops it); in
+// every case forcedEnv is appended last so the deterministic vars always win.
 func buildChildEnv(c Command) ([]string, error) {
 	// Identical gate the FakeRunner applies (ValidateCommandEnv): KEY=VALUE,
 	// hijack-blocklist, and the forced-locale/NO_COLOR reserved names a consumer
@@ -249,6 +250,12 @@ func buildChildEnv(c Command) ([]string, error) {
 			}
 			env = append(env, e)
 		}
-		return append(env, forcedEnv...), nil
+		// PATH is ON that blocklist, so the filter above just stripped the
+		// parent's PATH and a child spawned with neither ChildPath nor Env would
+		// get NO PATH at all — every bare-name tool lookup would fail. Re-add the
+		// parent's PATH through the same composeEnv seam the other two branches
+		// use, so there is exactly one PATH entry and one place that decides its
+		// shape.
+		return append(composeEnv(os.Getenv("PATH"), env), forcedEnv...), nil
 	}
 }

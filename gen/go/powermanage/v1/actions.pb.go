@@ -2751,15 +2751,22 @@ type EncryptionParams struct {
 	// Minimum words in generated managed passphrase (default 5, min 3, max 10)
 	// @gotags: validate:"omitempty,gte=3,lte=10"
 	MinWords int32 `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty" validate:"omitempty,gte=3,lte=10"`
-	// What to put in the device-bound key slot — TPM, user passphrase, or nothing
-	// @gotags: validate:"omitempty"
-	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
+	// What to put in the device-bound key slot — TPM, user passphrase, or nothing.
+	// Range-checked: the agent switches on this value and its default branch means
+	// "no device-bound key", so an unvalidated out-of-range value would silently
+	// downgrade a requested TPM enrollment instead of being refused.
+	// @gotags: validate:"omitempty,oneof=0 1 2"
+	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty,oneof=0 1 2"`
 	// Minimum length for user-defined passphrases (16-128, only used when device_bound_key_type = USER_PASSPHRASE)
 	// @gotags: validate:"omitempty,gte=16,lte=128"
 	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
 	// Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
-	// @gotags: validate:"omitempty"
-	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
+	// Range-checked for the same reason as device_bound_key_type: this selects the
+	// alphabet the agent draws the passphrase from, and its switch default is a
+	// weaker alphabet than an out-of-range value was asking for. Stays optional —
+	// UNSPECIFIED (0) is legal because the field only applies to USER_PASSPHRASE.
+	// @gotags: validate:"omitempty,oneof=0 1 2"
+	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty,oneof=0 1 2"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }

@@ -54,7 +54,27 @@ func (m *resolvedManager) Apply(ctx context.Context, cfg Config) error {
 		}
 		if len(cfg.SearchDomains) > 0 {
 			if err := runPriv(ctx, m.r, "resolvectl", resolvectlDomainArgs(cfg.Interface, cfg.SearchDomains)...); err != nil {
-				return fmt.Errorf("resolvectl domain %s: %w", cfg.Interface, err)
+				// The dns call already landed, so returning here would report a
+				// rejected config while the link had actually switched resolvers —
+				// with the OLD search domains still in force.
+				//
+				// `resolvectl revert` resets the link to systemd-resolved's per-link
+				// DEFAULTS. That is deliberately NOT a restore of the pre-call state:
+				// it also drops per-link runtime settings this package never touched
+				// (LLMNR, mDNS, DNSSEC, DNS-over-TLS, …) if something else had set
+				// them at runtime. We take that tradeoff on purpose — a deterministic,
+				// known state beats a half-applied one, and capturing and replaying
+				// the full per-link surface would multiply the failure modes on an
+				// error path. Runtime per-link settings are re-established by the next
+				// apply from whoever owns them; nothing persistent is lost.
+				//
+				// Best-effort: if the revert fails too, the link really is
+				// half-configured and the error says so rather than implying a clean
+				// reset.
+				if rvErr := runPriv(ctx, m.r, "resolvectl", "revert", cfg.Interface); rvErr != nil {
+					return fmt.Errorf("resolvectl domain %s failed and resetting the link failed too (%v), so %s is left with the new nameservers and the old search domains: %w", cfg.Interface, rvErr, cfg.Interface, err)
+				}
+				return fmt.Errorf("resolvectl domain %s (link reset to systemd-resolved's per-link defaults, not to its pre-call state): %w", cfg.Interface, err)
 			}
 		}
 		return nil

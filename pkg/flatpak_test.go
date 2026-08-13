@@ -387,6 +387,25 @@ func TestFlatpak_Show(t *testing.T) {
 			t.Fatalf("p=%+v", p)
 		}
 	})
+	// The size parser used to swallow strconv's error and return 0, so an
+	// unparseable size line was indistinguishable from a genuine 0-byte
+	// package. `flatpak info` matches BOTH "Installed:" and "Size:" into the
+	// same case, so a junk second line silently OVERWROTE the good size already
+	// read from the first — the operator saw 0 bytes for a 3 MB bundle. Size is
+	// display metadata, so the caller's decision is "keep what we have and move
+	// on", but it must be the caller's decision, made on a reported failure.
+	t.Run("unparseable size line does not erase an already-parsed size", func(t *testing.T) {
+		m, f := flatpakM(t)
+		f.Push(pmexec.Result{ExitCode: 0, Stdout: "Version: 9.0\nArch: x86_64\nInstalled: 3.0 MB\nSize: unknown\nOrigin: flathub\n"}, nil)
+		ok(f, "") // IsPinned mask: not pinned
+		p, err := m.Show(ctx, "org.vim.Vim")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if p.Size != 3*1000*1000 {
+			t.Errorf("Size = %d, want %d: an unparseable size must leave the good value alone, not fabricate 0", p.Size, 3*1000*1000)
+		}
+	})
 	t.Run("not installed falls back to remote-info", func(t *testing.T) {
 		m, f := flatpakM(t)
 		f.Push(pmexec.Result{ExitCode: 1}, nil) // info: not installed
@@ -774,11 +793,24 @@ func TestFlatpak_ParseHelpers(t *testing.T) {
 			"1 GiB":     1024 * 1024 * 1024,
 			"512 bytes": 512,
 			"1,024 KiB": 1024 * 1024, // comma stripped
-			"":          0,
 		}
 		for in, want := range cases {
-			if got := parseFlatpakSize(in); got != want {
+			got, sizeOK := parseFlatpakSize(in)
+			if !sizeOK {
+				t.Errorf("parseFlatpakSize(%q) reported a parse failure on valid input", in)
+				continue
+			}
+			if got != want {
 				t.Errorf("parseFlatpakSize(%q)=%d want %d", in, got, want)
+			}
+		}
+		// Unparseable input is reported, not silently rendered as 0 bytes — the
+		// caller (Show, List) decides what to do with the failure.
+		for _, in := range []string{"", "unknown", "n/a", "5 MB and change"} {
+			if got, sizeOK := parseFlatpakSize(in); sizeOK {
+				t.Errorf("parseFlatpakSize(%q)=(%d, true), want ok=false", in, got)
+			} else if got != 0 {
+				t.Errorf("parseFlatpakSize(%q) failed but returned %d, want 0", in, got)
 			}
 		}
 	})

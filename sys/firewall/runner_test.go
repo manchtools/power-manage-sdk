@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -16,6 +17,11 @@ import (
 type fakeFS struct {
 	writeFn  func(path string, data []byte, opts fs.WriteOptions) error
 	removeFn func(path string) error
+	// present models files already on disk, keyed by path. WriteFileExclusive
+	// refuses those with fs.ErrExists exactly as the real one does, and a
+	// successful exclusive create adds to the set — so a test can plant a
+	// "foreign" definition and watch the backend correctly decline ownership.
+	present map[string]bool
 }
 
 func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
@@ -29,6 +35,25 @@ func (f *fakeFS) Remove(_ context.Context, path string) error {
 	if f.removeFn != nil {
 		return f.removeFn(path)
 	}
+	return nil
+}
+
+// WriteFileExclusive refuses a path already in `present` with fs.ErrExists and
+// otherwise records the create. Default (nil map) is "nothing on disk", i.e. the
+// common fresh-create case the existing firewalld tests were written for.
+func (f *fakeFS) WriteFileExclusive(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
+	if f.present[path] {
+		return fmt.Errorf("write file %s: %w", path, fs.ErrExists)
+	}
+	if f.writeFn != nil {
+		if err := f.writeFn(path, data, opts); err != nil {
+			return err
+		}
+	}
+	if f.present == nil {
+		f.present = map[string]bool{}
+	}
+	f.present[path] = true
 	return nil
 }
 
@@ -338,6 +363,145 @@ func TestFirewalld_ApplyRule_Failures(t *testing.T) {
 		if err := m.ApplyRule(context.Background(), Rule{ID: "r", Allow: true, Protocol: ProtocolTCP, Port: 1}); err == nil ||
 			!strings.Contains(err.Error(), "post-enable") {
 			t.Errorf("err = %v", err)
+		}
+	})
+}
+
+// TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated pins the failure
+// atomicity of ApplyRule, and its deliberate asymmetry.
+//
+// The service XML is written before the reload/add-service/reload sequence, so
+// a failure in any of those used to leave the file on disk. That matters
+// because firewalld PARSES every file in /etc/firewalld/services on the next
+// reload by anything at all: an Apply the caller was told had failed would
+// quietly become a real, loadable service definition.
+//
+// But ApplyRule also UPDATES an existing rule, overwriting a service that may
+// still be enabled in the zone. Deleting on failure there would destroy a
+// working definition that nothing asked us to touch, turning a failed update
+// into an outage. So cleanup is create-only: remove when this Apply brought the
+// file into existence, leave it when it was already there — and when the
+// existence probe itself fails, leave it, because "we don't know" must never
+// resolve to "delete".
+func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
+	const wantPath = "/etc/firewalld/services/app-r.xml"
+	rule := Rule{ID: "r", Allow: true, Protocol: ProtocolTCP, Port: 1}
+
+	// failAt scripts the zone lookup plus n successful firewall-cmd calls, then
+	// one failing call — so each post-write step can be made to fail in turn.
+	failAt := func(r *recordingRunner, okCalls int) {
+		r.pushOut("public\n") // --get-default-zone
+		for i := 0; i < okCalls; i++ {
+			r.pushOut("")
+		}
+		r.push(exec.Result{ExitCode: 1}, nil)
+	}
+
+	steps := map[string]int{
+		"reload fails":             0,
+		"add-service fails":        1,
+		"post-enable reload fails": 2,
+	}
+
+	for name, okCalls := range steps {
+		t.Run("created, "+name+" → xml removed", func(t *testing.T) {
+			swapFirewalldSeams(t)
+			var removed []string
+			useFS(&fakeFS{ // nothing on disk → the exclusive create succeeds, we own it
+				removeFn: func(p string) error { removed = append(removed, p); return nil },
+			})
+			r := &recordingRunner{}
+			failAt(r, okCalls)
+			m := newMgr(t, Firewalld, "app", r)
+			if err := m.ApplyRule(context.Background(), rule); err == nil {
+				t.Fatal("the failing firewall-cmd step must propagate")
+			}
+			if len(removed) != 1 || removed[0] != wantPath {
+				t.Errorf("removed = %v, want the just-created %q cleaned up", removed, wantPath)
+			}
+		})
+
+		t.Run("pre-existing, "+name+" → xml kept", func(t *testing.T) {
+			swapFirewalldSeams(t)
+			var removed []string
+			useFS(&fakeFS{
+				// Already on disk → the exclusive create reports fs.ErrExists and the
+				// backend falls back to an overwrite it does NOT own.
+				present:  map[string]bool{wantPath: true},
+				removeFn: func(p string) error { removed = append(removed, p); return nil },
+			})
+			r := &recordingRunner{}
+			failAt(r, okCalls)
+			m := newMgr(t, Firewalld, "app", r)
+			if err := m.ApplyRule(context.Background(), rule); err == nil {
+				t.Fatal("the failing firewall-cmd step must propagate")
+			}
+			if len(removed) != 0 {
+				t.Errorf("removed = %v; a failed UPDATE must not delete the pre-existing service definition, which may still be enabled in the zone", removed)
+			}
+		})
+	}
+
+	// The race the create-exclusive design exists to close. Under the old
+	// Exists-then-WriteFile shape, a definition landing in the gap between the
+	// probe (which said "absent") and the write would be overwritten AND then
+	// deleted on failure, destroying a service someone else owns and may still
+	// have enabled in the zone. Here the foreign file is present by the time the
+	// write happens, so the exclusive create reports it and ownership is declined.
+	t.Run("foreign file appears before the write → left untouched on failure", func(t *testing.T) {
+		swapFirewalldSeams(t)
+		var removed []string
+		ff := &fakeFS{removeFn: func(p string) error { removed = append(removed, p); return nil }}
+		// Plant it exactly as a competing writer would: present before our write,
+		// with no cooperation from us.
+		ff.present = map[string]bool{wantPath: true}
+		useFS(ff)
+		r := &recordingRunner{}
+		failAt(r, 0)
+		m := newMgr(t, Firewalld, "app", r)
+		if err := m.ApplyRule(context.Background(), rule); err == nil {
+			t.Fatal("the failing firewall-cmd step must propagate")
+		}
+		if len(removed) != 0 {
+			t.Errorf("removed = %v; a file this Apply did not create must survive the failure — deleting it would destroy a definition another owner may still have enabled", removed)
+		}
+	})
+
+	// Positive control: a fully successful Apply keeps its XML.
+	t.Run("success keeps the xml", func(t *testing.T) {
+		swapFirewalldSeams(t)
+		var removed []string
+		useFS(&fakeFS{removeFn: func(p string) error { removed = append(removed, p); return nil }})
+		r := &recordingRunner{}
+		r.pushOut("public\n")
+		r.pushOut("")
+		r.pushOut("")
+		r.pushOut("")
+		m := newMgr(t, Firewalld, "app", r)
+		if err := m.ApplyRule(context.Background(), rule); err != nil {
+			t.Fatal(err)
+		}
+		if len(removed) != 0 {
+			t.Errorf("removed = %v, want the XML kept after a successful Apply", removed)
+		}
+	})
+
+	// The cleanup is best-effort: when the removal ALSO fails the file is still
+	// there, and the error must say so rather than implying a clean rollback.
+	t.Run("cleanup failure is reported", func(t *testing.T) {
+		swapFirewalldSeams(t)
+		useFS(&fakeFS{ // fresh create → owned, so cleanup is attempted
+			removeFn: func(string) error { return errors.New("read-only fs") },
+		})
+		r := &recordingRunner{}
+		failAt(r, 0)
+		m := newMgr(t, Firewalld, "app", r)
+		err := m.ApplyRule(context.Background(), rule)
+		if err == nil {
+			t.Fatal("the failing firewall-cmd step must propagate")
+		}
+		if !strings.Contains(err.Error(), wantPath) {
+			t.Errorf("err = %v, want it to name the %q left behind", err, wantPath)
 		}
 	})
 }

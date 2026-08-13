@@ -73,6 +73,93 @@ func TestResolved_ApplyScoped_DomainFailurePropagates(t *testing.T) {
 	}
 }
 
+// TestResolved_ApplyScoped_DomainFailureResetsTheLink pins that a scoped Apply
+// does not leave a half-applied link. `resolvectl dns` lands first, so a failing
+// `resolvectl domain` used to return an error while the new nameservers stayed
+// applied — the caller was told the config was rejected while the box had
+// already switched resolvers, with the OLD search domains.
+//
+// Apply issues `resolvectl revert <iface>`, which resets the link to
+// systemd-resolved's per-link DEFAULTS. That is deliberately not a restore of
+// the pre-call state — see the comment on Apply — so this asserts the reset was
+// issued and the original failure preserved, NOT that prior settings came back.
+func TestResolved_ApplyScoped_DomainFailureResetsTheLink(t *testing.T) {
+	m, r := newResolved(t, &fakeFS{})
+	r.Push(exec.Result{}, nil)                                  // dns ok
+	r.Push(exec.Result{ExitCode: 1, Stderr: "bad domain"}, nil) // domain fails
+	r.Push(exec.Result{}, nil)                                  // revert
+	err := m.Apply(context.Background(), Config{Interface: "eth0", Nameservers: []string{"1.1.1.1"}, SearchDomains: []string{"corp.example"}})
+	if err == nil {
+		t.Fatal("a failed resolvectl domain must propagate")
+	}
+	calls := r.Calls()
+	if len(calls) != 3 {
+		t.Fatalf("got %d calls, want 3 (dns, domain, revert): %v", len(calls), calls)
+	}
+	if got := strings.Join(calls[2].Args, " "); got != "revert eth0" {
+		t.Errorf("reset argv = %q, want `revert eth0`", got)
+	}
+	if !calls[2].Escalate {
+		t.Error("the reset must escalate like the calls it undoes")
+	}
+	// The reset is the remedy, not the news: the operator still needs the
+	// domain failure that caused it.
+	if !strings.Contains(err.Error(), "bad domain") {
+		t.Errorf("err = %v, want the original resolvectl domain failure preserved", err)
+	}
+	// And the message must not oversell what revert did — an operator reading
+	// "reverted" as "your previous per-link settings are back" would be wrong.
+	if !strings.Contains(err.Error(), "default") {
+		t.Errorf("err = %v, want it to say the link was reset to systemd-resolved's per-link defaults rather than restored", err)
+	}
+}
+
+// The rollback is best-effort: when the revert ALSO fails the link is left in
+// the half-applied state, and the error must say so instead of pretending the
+// link was restored.
+func TestResolved_ApplyScoped_RevertFailureIsReported(t *testing.T) {
+	m, r := newResolved(t, &fakeFS{})
+	r.Push(exec.Result{}, nil)                                     // dns ok
+	r.Push(exec.Result{ExitCode: 1, Stderr: "bad domain"}, nil)    // domain fails
+	r.Push(exec.Result{ExitCode: 1, Stderr: "revert failed"}, nil) // revert fails too
+	err := m.Apply(context.Background(), Config{Interface: "eth0", Nameservers: []string{"1.1.1.1"}, SearchDomains: []string{"corp.example"}})
+	if err == nil {
+		t.Fatal("a failed resolvectl domain must propagate")
+	}
+	calls := r.Calls()
+	if len(calls) != 3 {
+		t.Fatalf("got %d calls, want 3 (dns, domain, attempted revert): %v", len(calls), calls)
+	}
+	if got := strings.Join(calls[2].Args, " "); got != "revert eth0" {
+		t.Fatalf("rollback argv = %q, want `revert eth0`", got)
+	}
+	if !strings.Contains(err.Error(), "bad domain") {
+		t.Errorf("err = %v, want the original resolvectl domain failure preserved", err)
+	}
+	// A failed revert leaves the link half-configured, which is a materially
+	// different operator situation from a clean rollback — the message must not
+	// read the same as the successful-revert one.
+	if !strings.Contains(err.Error(), "revert failed") {
+		t.Errorf("err = %v, want the revert's own failure surfaced so the operator knows the link is still half-configured", err)
+	}
+}
+
+// A scoped Apply whose calls all succeed must NOT revert — the positive control
+// for the rollback above.
+func TestResolved_ApplyScoped_SuccessDoesNotRevert(t *testing.T) {
+	m, r := newResolved(t, &fakeFS{})
+	r.Push(exec.Result{}, nil) // dns
+	r.Push(exec.Result{}, nil) // domain
+	if err := m.Apply(context.Background(), Config{Interface: "eth0", Nameservers: []string{"1.1.1.1"}, SearchDomains: []string{"corp.example"}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range r.Calls() {
+		if len(c.Args) > 0 && c.Args[0] == "revert" {
+			t.Errorf("a successful Apply must not revert the link: %v", r.Calls())
+		}
+	}
+}
+
 func TestResolved_ApplyGlobal(t *testing.T) {
 	ff := &fakeFS{}
 	m, r := newResolved(t, ff)

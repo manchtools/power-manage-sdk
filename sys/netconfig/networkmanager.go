@@ -56,11 +56,22 @@ func (b *nmBackend) activeConnection(ctx context.Context, iface string) (string,
 func nmModifyArgs(cfg InterfaceConfig) []string {
 	var a []string
 	if cfg.Mode == DHCP {
-		// Make DHCP authoritative: switch both families to auto and clear any
-		// stale manual addressing.
+		// Make DHCP authoritative: switch both families to auto and clear the
+		// WHOLE manual configuration — addressing, resolvers, and routes.
+		// Clearing only addresses/gateway left ipv4.dns/ipv6.dns and
+		// ipv4.routes/ipv6.routes from a previous static config on the profile,
+		// so an interface switched back to DHCP kept resolving through the old
+		// nameservers and routing over the old next-hops.
+		//
+		// The generic DNS/routes appends below run AFTER this block, and nmcli
+		// honours the LAST occurrence of a repeated property — so a DHCP config
+		// that deliberately carries DNS or routes still wins, and only the
+		// leftovers are wiped.
 		a = append(a,
 			"ipv4.method", "auto", "ipv4.addresses", "", "ipv4.gateway", "",
 			"ipv6.method", "auto", "ipv6.addresses", "", "ipv6.gateway", "",
+			"ipv4.dns", "", "ipv6.dns", "",
+			"ipv4.routes", "", "ipv6.routes", "",
 		)
 	} else {
 		v4addr, v6addr := partitionAddrsByFamily(cfg.Addresses)

@@ -21181,12 +21181,17 @@ type EncryptionAuthoringParams struct {
 	RotationIntervalDays int32 `protobuf:"varint,2,opt,name=rotation_interval_days,json=rotationIntervalDays,proto3" json:"rotation_interval_days,omitempty" validate:"required,gte=1,lte=365"`
 	// @gotags: validate:"omitempty,gte=3,lte=10"
 	MinWords int32 `protobuf:"varint,3,opt,name=min_words,json=minWords,proto3" json:"min_words,omitempty" validate:"omitempty,gte=3,lte=10"`
-	// @gotags: validate:"omitempty"
-	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty"`
+	// Range-checked for the same reason as EncryptionParams.device_bound_key_type:
+	// the agent's switch default means "no device-bound key", so an out-of-range
+	// value must be refused here rather than silently downgraded there.
+	// @gotags: validate:"omitempty,oneof=0 1 2"
+	DeviceBoundKeyType EncryptionDeviceBoundKeyType `protobuf:"varint,4,opt,name=device_bound_key_type,json=deviceBoundKeyType,proto3,enum=powermanage.v1.EncryptionDeviceBoundKeyType" json:"device_bound_key_type,omitempty" validate:"omitempty,oneof=0 1 2"`
 	// @gotags: validate:"omitempty,gte=16,lte=128"
 	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
-	// @gotags: validate:"omitempty"
-	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
+	// Range-checked for the same reason as EncryptionParams
+	// .user_passphrase_complexity, and optional for the same reason.
+	// @gotags: validate:"omitempty,oneof=0 1 2"
+	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty,oneof=0 1 2"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
