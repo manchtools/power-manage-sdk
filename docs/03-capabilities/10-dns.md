@@ -56,13 +56,15 @@ err := m.Apply(ctx, dns.Config{
 })
 ```
 
-<!-- docref: begin src=sys/dns/resolved.go#resolvedManager.Apply:8a4c7c2d -->
+<!-- docref: begin src=sys/dns/resolved.go#resolvedManager.Apply:a31cb8d9 -->
 `Apply` validates the whole `Config` (rejecting non-IP nameservers, malformed or
 flag-shaped search domains, and bad interface names) *before* it touches any
 backend, so an invalid configuration has no side effects. On the Resolved
 backend a host-global apply (empty `Interface`) writes the managed
 `resolved.conf.d` drop-in and restarts the service; a set `Interface` uses
-per-link runtime settings.
+per-link runtime settings. If the per-link domain step fails after the DNS
+servers were already applied, the link is reverted (`resolvectl revert`) so a
+failed apply does not leave the link half-configured.
 <!-- docref: end -->
 
 {% callout type="info" title="Backend scope" %}
