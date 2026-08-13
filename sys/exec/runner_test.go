@@ -162,6 +162,35 @@ func TestBuildChildEnv_DefaultBranchDropsHijackVars(t *testing.T) {
 	}
 }
 
+// TestBuildChildEnv_DefaultBranchKeepsPATH pins that the inherit-the-parent
+// branch still hands the child a PATH. PATH is on the hijack blocklist, so the
+// os.Environ() filter that keeps LD_PRELOAD out ALSO strips the parent's PATH —
+// leaving a child spawned with neither ChildPath nor Command.Env with no PATH at
+// all, so every bare-name tool lookup fails. The other two branches already
+// re-add a PATH (ChildPath sets it; the Env branch composes the parent's), so
+// this branch must too: exactly one PATH entry, carrying the parent's value.
+func TestBuildChildEnv_DefaultBranchKeepsPATH(t *testing.T) {
+	const parentPath = "/usr/local/bin:/usr/bin:/bin"
+	t.Setenv("PATH", parentPath)
+
+	env, err := buildChildEnv(Command{}) // default branch: inherit parent
+	if err != nil {
+		t.Fatalf("buildChildEnv: %v", err)
+	}
+	var paths []string
+	for _, e := range env {
+		if v, ok := strings.CutPrefix(e, "PATH="); ok {
+			paths = append(paths, v)
+		}
+	}
+	if len(paths) != 1 {
+		t.Fatalf("child env carries %d PATH entries %q, want exactly 1; env = %v", len(paths), paths, env)
+	}
+	if paths[0] != parentPath {
+		t.Errorf("child PATH = %q, want the parent's %q", paths[0], parentPath)
+	}
+}
+
 // The escalation contract requires an ABSOLUTE path (sudoers/doas match on
 // absolute paths; escalating a relative path is a security risk). exec.LookPath
 // returns a slash-containing relative Name UNCHANGED and with a nil error, so
