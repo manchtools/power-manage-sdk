@@ -154,3 +154,47 @@ func TestCountNonEmptyLines(t *testing.T) {
 		}
 	}
 }
+
+// TestParseSizeWithUnits_RejectsNonFiniteAndOutOfRange pins the numeric domain
+// of the shared size parser.
+//
+// strconv.ParseFloat happily accepts "NaN", "Inf", "+Inf" and "-Inf", and a
+// finite-but-huge mantissa like "1e308" overflows to +Inf once the unit
+// multiplier is applied. Converting any of those to int64 is
+// implementation-defined in Go — the result is not merely wrong, it is not
+// specified — so a package manager emitting junk (or a crafted local .deb/.rpm
+// name) could put an arbitrary value into Package.Size. A negative size is
+// equally meaningless for a package.
+//
+// All of them must take the same honest exit the parser already has for
+// unparseable text: (0, false), leaving the caller to decide.
+func TestParseSizeWithUnits_RejectsNonFiniteAndOutOfRange(t *testing.T) {
+	units := []sizeUnit{
+		{" KiB", 1024},
+		{" MiB", 1024 * 1024},
+		{" B", 1},
+	}
+	for _, in := range []string{
+		"NaN MiB",   // ParseFloat accepts NaN
+		"nan B",     // and it is case-insensitive
+		"+Inf B",    // as are the infinities
+		"-Inf B",    //
+		"Inf MiB",   //
+		"1e308 B",   // finite, but far beyond int64
+		"1e308 MiB", // finite input, +Inf after the multiplier
+		"-5 MiB",    // negative size
+		"-1 B",      //
+	} {
+		if got, ok := parseSizeWithUnits(in, units); ok {
+			t.Errorf("parseSizeWithUnits(%q) = (%d, true), want (0, false): a non-finite, negative or out-of-range size must be reported, not converted", in, got)
+		} else if got != 0 {
+			t.Errorf("parseSizeWithUnits(%q) failed but returned %d, want 0", in, got)
+		}
+	}
+
+	// Positive control: the largest value that still fits must survive, so the
+	// range guard cannot be satisfied by simply rejecting everything big.
+	if got, ok := parseSizeWithUnits("8000000000 B", units); !ok || got != 8000000000 {
+		t.Errorf("parseSizeWithUnits(8000000000 B) = (%d, %v), want (8000000000, true)", got, ok)
+	}
+}

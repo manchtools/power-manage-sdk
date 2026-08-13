@@ -2,6 +2,7 @@ package fs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,6 +50,108 @@ func (m *manager) WriteFile(ctx context.Context, path string, data []byte, opts 
 	}
 	return m.writeEscalated(ctx, path, data, opts)
 }
+
+// WriteFileExclusive writes data to path only when path does not already exist,
+// returning ErrExists otherwise. See the Manager interface for why this exists
+// as a primitive rather than as Exists-then-WriteFile.
+//
+// Backup is rejected: a backup only makes sense when replacing existing content,
+// and this call by construction never replaces anything.
+func (m *manager) WriteFileExclusive(ctx context.Context, path string, data []byte, opts WriteOptions) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := ValidatePath(path); err != nil {
+		return err
+	}
+	if err := validateMode(opts.Mode); err != nil {
+		return err
+	}
+	if opts.Backup != "" {
+		return fmt.Errorf("%w: WriteFileExclusive never replaces existing content, so a backup path is meaningless", ErrInvalidPath)
+	}
+	if m.direct() {
+		return writeExclusiveDirect(path, data, opts)
+	}
+	return m.writeExclusiveEscalated(ctx, path, data, opts)
+}
+
+// writeExclusiveDirect reuses the same temp-file + atomic-rename machinery as
+// writeDirect, with removeExisting=false so the rename is RENAME_NOREPLACE:
+// the kernel itself refuses to clobber, and reports EEXIST, in one syscall.
+func writeExclusiveDirect(path string, data []byte, opts WriteOptions) error {
+	perm := opts.Mode
+	if perm == 0 {
+		perm = 0o644
+	}
+	if err := safeReplaceFile(path, data, perm, false); err != nil {
+		if errors.Is(err, ErrExists) {
+			return fmt.Errorf("write file %s: %w", path, ErrExists)
+		}
+		return fmt.Errorf("write file %s: %w", path, err)
+	}
+	if opts.Owner != "" || opts.Group != "" {
+		uid, gid, err := ResolveOwnership(opts.Owner, opts.Group)
+		if err != nil {
+			return err
+		}
+		if err := FchownNoFollow(path, uid, gid); err != nil {
+			return fmt.Errorf("set ownership on %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// writeExclusiveEscalated is the sudo/doas counterpart. The exclusivity comes
+// from ln(1): a hard link fails with EEXIST if the destination exists, and the
+// check and the create are the same syscall, so it is the shell's equivalent of
+// RENAME_NOREPLACE. Exit status 3 distinguishes "the destination already
+// existed" from a genuine failure.
+func (m *manager) writeExclusiveEscalated(ctx context.Context, path string, data []byte, opts WriteOptions) error {
+	perm := opts.Mode
+	if perm == 0 {
+		perm = 0o644
+	}
+	if err := escalatedParentSafe(filepath.Dir(path)); err != nil {
+		return err
+	}
+	res, err := m.runPrivStdin(ctx, string(data), "sh", "-c", escalatedWriteExclusiveScript,
+		"sh", path, modeArg(perm), Ownership(opts.Owner, opts.Group))
+	if err != nil {
+		return fmt.Errorf("write file %s: %w", path, err)
+	}
+	if res.ExitCode == exclusiveExistsExit {
+		return fmt.Errorf("write file %s: %w", path, ErrExists)
+	}
+	if cerr := cmdError("write file", res); cerr != nil {
+		return fmt.Errorf("write file %s: %w", path, cerr)
+	}
+	return nil
+}
+
+// exclusiveExistsExit is the status escalatedWriteExclusiveScript uses to report
+// "the destination already existed", keeping it distinct from a real failure.
+const exclusiveExistsExit = 3
+
+// escalatedWriteExclusiveScript builds the content in a same-directory temp file
+// and then hard-links it into place. ln(1) never clobbers: if the target exists
+// it fails, and the trap removes the temp. Positional args: $1=target,
+// $2=chmod mode, $3=chown owner (":group" form, "" to skip). Content is stdin.
+const escalatedWriteExclusiveScript = `set -eu
+target=$1; mode=$2; owner=$3
+dir=$(dirname -- "$target")
+tmp=$(mktemp "$dir/.pm-XXXXXXXXXX")
+trap 'rm -f -- "$tmp"' EXIT
+cat > "$tmp"
+chmod "$mode" -- "$tmp"
+if [ -n "$owner" ]; then
+	chown "$owner" -- "$tmp"
+fi
+if ln -- "$tmp" "$target" 2>/dev/null; then
+	exit 0
+fi
+exit 3
+`
 
 // writeDirect is the fd-based, symlink-safe path (WS6 #2). It runs the syscalls
 // directly with the process's own (root) privilege — no Runner round trip.

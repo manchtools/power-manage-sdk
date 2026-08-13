@@ -46,7 +46,7 @@ err = m.Remove(ctx, "corp-root")
 anchors, err := m.List(ctx) // the trusted anchors this manager can see
 ```
 
-<!-- docref: begin src=sys/catrust/catrust.go#manager.Install:fb24d764 -->
+<!-- docref: begin src=sys/catrust/catrust.go#manager.Install:4a59e802 -->
 `Install` writes the anchor under the backend's local-anchors directory and runs
 the store-rebuild tool (`update-ca-certificates` / `update-ca-trust`) so the new
 root takes effect host-wide. The name identifies the anchor for later removal,

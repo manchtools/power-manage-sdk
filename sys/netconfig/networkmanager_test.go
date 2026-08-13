@@ -251,3 +251,53 @@ func TestNMModifyArgs_DHCPWithDNSClearsBeforeSetting(t *testing.T) {
 		t.Errorf("ipv4.dns cleared at pair %d but set at pair %d; nmcli honours the LAST occurrence, so the clear must come first or the requested DNS is thrown away: %v", clears[0], sets[0], args)
 	}
 }
+
+// TestNMModifyArgs_DHCPWithRoutesClearBeforeSetting is the routes half of the
+// same ordering contract. Routes are independent of addressing mode — a DHCP
+// interface may legitimately carry a static route — so the DHCP reset must not
+// swallow one the caller asked for. Both families are covered because they are
+// emitted by separate branches and only a per-family assertion catches one of
+// them regressing alone.
+func TestNMModifyArgs_DHCPWithRoutesClearBeforeSetting(t *testing.T) {
+	cases := []struct {
+		name     string
+		route    Route
+		prop     string
+		wantSet  string
+		otherPro string // the family that gets no route: cleared, never set
+	}{
+		{
+			name:     "ipv4",
+			route:    Route{Destination: "10.0.0.0/8", Gateway: "192.0.2.254", Metric: 100},
+			prop:     "ipv4.routes",
+			wantSet:  "10.0.0.0/8 192.0.2.254 100",
+			otherPro: "ipv6.routes",
+		},
+		{
+			name:     "ipv6",
+			route:    Route{Destination: "default", Gateway: "2001:db8::1"},
+			prop:     "ipv6.routes",
+			wantSet:  "::/0 2001:db8::1",
+			otherPro: "ipv4.routes",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			args := nmModifyArgs(InterfaceConfig{Name: "eth0", Mode: DHCP, Routes: []Route{tc.route}})
+
+			clears := nmPairIndexes(t, args, tc.prop, "")
+			sets := nmPairIndexes(t, args, tc.prop, tc.wantSet)
+			if len(clears) != 1 || len(sets) != 1 {
+				t.Fatalf("want exactly one %s clear and one set of %q, got clears=%v sets=%v in %v", tc.prop, tc.wantSet, clears, sets, args)
+			}
+			if clears[0] >= sets[0] {
+				t.Errorf("%s cleared at pair %d but set at pair %d; nmcli honours the LAST occurrence, so the clear must come first or the requested route is thrown away: %v", tc.prop, clears[0], sets[0], args)
+			}
+			// The family with no route keeps a bare clear — the DHCP reset still
+			// has to wipe whatever a previous static config left there.
+			if at := nmPairIndexes(t, args, tc.otherPro, ""); len(at) != 1 {
+				t.Errorf("%s clear pairs = %v, want exactly 1 even though no route was requested for that family: %v", tc.otherPro, at, args)
+			}
+		})
+	}
+}

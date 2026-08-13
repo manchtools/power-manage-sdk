@@ -38,7 +38,7 @@ func safeRename(oldPath, newPath string, removeExisting bool) error {
 	case nil:
 		return nil
 	case unix.EEXIST:
-		return fmt.Errorf("rename %s -> %s: destination exists", oldPath, newPath)
+		return fmt.Errorf("rename %s -> %s: %w", oldPath, newPath, ErrExists)
 	case unix.ENOSYS, unix.EINVAL:
 		// Kernel doesn't support RENAME_NOREPLACE — fall through to
 		// the racy fallback documented in the function comment.
@@ -48,7 +48,7 @@ func safeRename(oldPath, newPath string, removeExisting bool) error {
 
 	// Fallback: best-effort existence check + regular Rename.
 	if _, statErr := os.Lstat(newPath); statErr == nil {
-		return fmt.Errorf("rename %s -> %s: destination exists", oldPath, newPath)
+		return fmt.Errorf("rename %s -> %s: %w", oldPath, newPath, ErrExists)
 	} else if !os.IsNotExist(statErr) {
 		return fmt.Errorf("lstat %s: %w", newPath, statErr)
 	}

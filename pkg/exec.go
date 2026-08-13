@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 
@@ -178,7 +179,23 @@ func parseSizeWithUnits(s string, units []sizeUnit) (size int64, ok bool) {
 	if err != nil {
 		return 0, false
 	}
-	return int64(n * float64(multiplier)), true
+	// ParseFloat accepts "NaN", "Inf", "+Inf" and "-Inf" (case-insensitively), and
+	// a finite-but-huge mantissa overflows to +Inf once the multiplier is applied.
+	// Converting a non-finite or out-of-range float to int64 is
+	// IMPLEMENTATION-DEFINED in Go, so junk from a package manager would land in
+	// Package.Size as an arbitrary value (in practice int64's minimum) while
+	// reporting success. A negative size is meaningless for a package. All of
+	// them take the same honest exit as unparseable text.
+	if math.IsNaN(n) || math.IsInf(n, 0) || n < 0 {
+		return 0, false
+	}
+	scaled := n * float64(multiplier)
+	// float64(math.MaxInt64) rounds UP to exactly 2^63, one past the largest
+	// int64, so >= is the correct boundary: anything at or above it overflows.
+	if math.IsInf(scaled, 0) || scaled >= float64(math.MaxInt64) {
+		return 0, false
+	}
+	return int64(scaled), true
 }
 
 // splitPositionalFields splits VALUE-ONLY one-field-per-line command output (rpm

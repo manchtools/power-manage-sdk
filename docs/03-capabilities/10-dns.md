@@ -56,15 +56,20 @@ err := m.Apply(ctx, dns.Config{
 })
 ```
 
-<!-- docref: begin src=sys/dns/resolved.go#resolvedManager.Apply:a31cb8d9 -->
+<!-- docref: begin src=sys/dns/resolved.go#resolvedManager.Apply:8bd678ae -->
 `Apply` validates the whole `Config` (rejecting non-IP nameservers, malformed or
 flag-shaped search domains, and bad interface names) *before* it touches any
 backend, so an invalid configuration has no side effects. On the Resolved
 backend a host-global apply (empty `Interface`) writes the managed
 `resolved.conf.d` drop-in and restarts the service; a set `Interface` uses
 per-link runtime settings. If the per-link domain step fails after the DNS
-servers were already applied, the link is reverted (`resolvectl revert`) so a
-failed apply does not leave the link half-configured.
+servers were already applied, the link is reset with `resolvectl revert`, which
+returns it to systemd-resolved's per-link **defaults** — not to its pre-call
+state. This is a deliberate tradeoff: a deterministic known state is preferred
+over a partially-applied one. Note that the reset also clears per-link runtime
+settings this package never sets (LLMNR, mDNS, DNSSEC, DNS-over-TLS) if another
+owner had set them at runtime; those are re-established by that owner's next
+apply, and nothing persistent is lost.
 <!-- docref: end -->
 
 {% callout type="info" title="Backend scope" %}

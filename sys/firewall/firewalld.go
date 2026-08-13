@@ -2,6 +2,7 @@ package firewall
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -60,8 +61,13 @@ func firewalldServiceName(namespace, id string) string {
 // updates an existing rule, overwriting a service that may still be enabled in
 // the zone; deleting on failure there would destroy a working definition and
 // turn a failed update into an outage. So the file is removed only when this
-// call brought it into existence — and when the existence probe itself fails,
-// it is kept, because "we don't know" must never resolve to "delete".
+// call brought it into existence.
+//
+// Ownership is established BY the write, not by a probe before it: the first
+// attempt is an exclusive create, and only if that reports fs.ErrExists do we
+// fall back to an ordinary overwrite, marked not-owned. Probing first would be a
+// check-then-write race — a foreign definition appearing in the gap would be
+// silently overwritten and then, on failure, deleted.
 func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
 	if err := validateRule(rule); err != nil {
 		return err
@@ -77,32 +83,35 @@ func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
 	xml := firewalldServiceXML(f.ns, rule)
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
 
-	// Probe BEFORE the write — afterwards every path exists. A probe failure is
-	// an explicit decision, not a swallowed error: assume the file was already
-	// there, which is the choice that can only ever preserve state.
-	preExisting := true
-	if existed, probeErr := f.fsm.Exists(ctx, path); probeErr == nil {
-		preExisting = existed
-	}
-
-	if err := f.fsm.WriteFile(ctx, path, []byte(xml), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"}); err != nil {
-		return fmt.Errorf("write service xml %s: %w", path, err)
+	opts := fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"}
+	// Try to create it exclusively. Success means the file is ours and may be
+	// rolled back; fs.ErrExists means someone already owns that name, so we
+	// update it in place and must leave it alone on failure.
+	created := true
+	if err := f.fsm.WriteFileExclusive(ctx, path, []byte(xml), opts); err != nil {
+		if !errors.Is(err, fs.ErrExists) {
+			return fmt.Errorf("write service xml %s: %w", path, err)
+		}
+		created = false
+		if err := f.fsm.WriteFile(ctx, path, []byte(xml), opts); err != nil {
+			return fmt.Errorf("write service xml %s: %w", path, err)
+		}
 	}
 	// Reload so the new service definition is parsed. Without this,
 	// --add-service rejects the name.
 	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
-		return f.discardCreatedServiceXML(ctx, path, preExisting, fmt.Errorf("firewall-cmd --reload: %w", err))
+		return f.discardCreatedServiceXML(ctx, path, created, fmt.Errorf("firewall-cmd --reload: %w", err))
 	}
 	// --permanent so the change survives reboot; --add-service is
 	// idempotent at the API level (no-op when already enabled).
 	if _, err := f.run(ctx, "firewall-cmd",
 		"--permanent", "--zone="+zone, "--add-service="+svc,
 	); err != nil {
-		return f.discardCreatedServiceXML(ctx, path, preExisting, fmt.Errorf("firewall-cmd add-service: %w", err))
+		return f.discardCreatedServiceXML(ctx, path, created, fmt.Errorf("firewall-cmd add-service: %w", err))
 	}
 	// Final reload so the runtime config matches permanent.
 	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
-		return f.discardCreatedServiceXML(ctx, path, preExisting, fmt.Errorf("firewall-cmd --reload (post-enable): %w", err))
+		return f.discardCreatedServiceXML(ctx, path, created, fmt.Errorf("firewall-cmd --reload (post-enable): %w", err))
 	}
 	return nil
 }
@@ -112,8 +121,8 @@ func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
 // removal is best-effort: if it fails, the returned error names the file left on
 // disk instead of implying a clean rollback, because that file WILL be parsed by
 // the next firewalld reload.
-func (f *firewalld) discardCreatedServiceXML(ctx context.Context, path string, preExisting bool, applyErr error) error {
-	if preExisting {
+func (f *firewalld) discardCreatedServiceXML(ctx context.Context, path string, created bool, applyErr error) error {
+	if !created {
 		return applyErr
 	}
 	if err := f.fsm.Remove(ctx, path); err != nil {

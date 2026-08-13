@@ -60,6 +60,9 @@ type fakeFS struct {
 	removed   []string
 	writeErr  error
 	removeErr error
+	// onWrite runs after a write is recorded, so a test can make the world change
+	// mid-Install (e.g. cancel the caller's context the way a deadline would).
+	onWrite func()
 }
 type fakeWrite struct {
 	path string
@@ -69,9 +72,20 @@ type fakeWrite struct {
 
 func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts sdkfs.WriteOptions) error {
 	f.writes = append(f.writes, fakeWrite{path, data, opts})
+	if f.onWrite != nil {
+		f.onWrite()
+	}
 	return f.writeErr
 }
-func (f *fakeFS) Remove(_ context.Context, path string) error {
+
+// Remove HONOURS the context, because the real fs.Manager does: it shells `rm`
+// through the Runner, which short-circuits a cancelled context without ever
+// executing. A fake that ignored ctx would report a removal that production
+// would never perform, hiding exactly the bug this models.
+func (f *fakeFS) Remove(ctx context.Context, path string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	f.removed = append(f.removed, path)
 	return f.removeErr
 }
@@ -354,6 +368,30 @@ func TestInstall_RemovesAnchorWhenRefreshFails(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), wantPath) {
 			t.Errorf("err = %v, want it to name the anchor %q left behind", err, wantPath)
+		}
+	})
+	// The rollback must survive the caller's context dying, because a dead
+	// context is one of the main REASONS the refresh fails: a deadline expiring
+	// while update-ca-certificates runs fails the refresh and would then fail the
+	// cleanup on the very same context, leaving the anchor behind in exactly the
+	// case the cleanup exists for. The rollback therefore runs on a fresh,
+	// short-bounded context detached from the caller's cancellation.
+	t.Run("context cancelled during refresh still removes the anchor", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		// Cancel once the anchor is on disk: the write succeeded, the refresh is
+		// what dies.
+		ff := &fakeFS{onWrite: func() { cancel() }}
+		m, _ := newMgr(t, CaCertificates, ff)
+		err := m.Install(ctx, "acme-root", validCAPEM(t))
+		if err == nil {
+			t.Fatal("a refresh under a cancelled context must propagate")
+		}
+		if len(ff.removed) != 1 || ff.removed[0] != wantPath {
+			t.Errorf("removed = %v, want the anchor %q removed despite the caller's context being cancelled", ff.removed, wantPath)
+		}
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("err = %v, want the original context.Canceled refresh failure preserved", err)
 		}
 	})
 	// A refresh that SUCCEEDS must of course keep the anchor.

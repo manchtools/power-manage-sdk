@@ -73,14 +73,17 @@ func TestResolved_ApplyScoped_DomainFailurePropagates(t *testing.T) {
 	}
 }
 
-// TestResolved_ApplyScoped_DomainFailureRevertsTheLink pins that a scoped Apply
-// is all-or-nothing on the link. `resolvectl dns` lands first, so a failing
+// TestResolved_ApplyScoped_DomainFailureResetsTheLink pins that a scoped Apply
+// does not leave a half-applied link. `resolvectl dns` lands first, so a failing
 // `resolvectl domain` used to return an error while the new nameservers stayed
 // applied — the caller was told the config was rejected while the box had
-// already switched resolvers, with the OLD search domains. Apply must put the
-// link back with `resolvectl revert <iface>` and still report the original
-// failure.
-func TestResolved_ApplyScoped_DomainFailureRevertsTheLink(t *testing.T) {
+// already switched resolvers, with the OLD search domains.
+//
+// Apply issues `resolvectl revert <iface>`, which resets the link to
+// systemd-resolved's per-link DEFAULTS. That is deliberately not a restore of
+// the pre-call state — see the comment on Apply — so this asserts the reset was
+// issued and the original failure preserved, NOT that prior settings came back.
+func TestResolved_ApplyScoped_DomainFailureResetsTheLink(t *testing.T) {
 	m, r := newResolved(t, &fakeFS{})
 	r.Push(exec.Result{}, nil)                                  // dns ok
 	r.Push(exec.Result{ExitCode: 1, Stderr: "bad domain"}, nil) // domain fails
@@ -94,15 +97,20 @@ func TestResolved_ApplyScoped_DomainFailureRevertsTheLink(t *testing.T) {
 		t.Fatalf("got %d calls, want 3 (dns, domain, revert): %v", len(calls), calls)
 	}
 	if got := strings.Join(calls[2].Args, " "); got != "revert eth0" {
-		t.Errorf("rollback argv = %q, want `revert eth0`", got)
+		t.Errorf("reset argv = %q, want `revert eth0`", got)
 	}
 	if !calls[2].Escalate {
-		t.Error("the revert must escalate like the calls it undoes")
+		t.Error("the reset must escalate like the calls it undoes")
 	}
-	// The revert is the remedy, not the news: the operator still needs the
+	// The reset is the remedy, not the news: the operator still needs the
 	// domain failure that caused it.
 	if !strings.Contains(err.Error(), "bad domain") {
 		t.Errorf("err = %v, want the original resolvectl domain failure preserved", err)
+	}
+	// And the message must not oversell what revert did — an operator reading
+	// "reverted" as "your previous per-link settings are back" would be wrong.
+	if !strings.Contains(err.Error(), "default") {
+		t.Errorf("err = %v, want it to say the link was reset to systemd-resolved's per-link defaults rather than restored", err)
 	}
 }
 

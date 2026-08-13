@@ -55,9 +55,46 @@ func undefinedEnumValues[E ~int32](t *testing.T, names map[int32]string) []E {
 }
 
 // mentionsField reports whether the validator's detail string blames the field
-// under test. Asserting on the FIELD rather than on overall validity keeps each
-// case independent of the other members' fixtures.
+// under test. Used for the REJECTION cases, where the point is that the refusal
+// is attributed to the enum and not to some other member. The acceptance cases
+// deliberately do NOT use it — see TestDefinedEnumLoopsRequireAValidFixture.
 func mentionsField(detail, field string) bool { return strings.Contains(detail, field) }
+
+// TestDefinedEnumLoopsRequireAValidFixture pins the blind spot the acceptance
+// loops used to have, so it cannot be reintroduced.
+//
+// Those loops originally asserted only "the detail does not mention my field".
+// That predicate is silently satisfied whenever validation fails for an
+// UNRELATED reason: the detail names the other member, never ours, so the loop
+// reports success while proving nothing about the enum it exists to test.
+//
+// This reproduces exactly that state — a params value whose enum is a defined,
+// legal value but whose rotation_interval_days is invalid — and pins both
+// halves: validation genuinely fails, AND the detail genuinely does not name the
+// enum. Those two facts together are what made the old predicate a false pass,
+// which is why the loops now require ok instead.
+func TestDefinedEnumLoopsRequireAValidFixture(t *testing.T) {
+	t.Parallel()
+	v := pmvalidate.NewValidator()
+
+	p := encryptionParamsFixture()
+	p.DeviceBoundKeyType = pm.EncryptionDeviceBoundKeyType_ENCRYPTION_DEVICE_BOUND_KEY_TYPE_TPM // legal
+	p.RotationIntervalDays = 0                                                                  // invalid, and unrelated to the enum
+
+	detail, ok := pmvalidate.Struct(v, p)
+	if ok {
+		t.Fatalf("premise broken: rotation_interval_days = 0 must fail validation, got a pass (%s)", detail)
+	}
+	if !mentionsField(detail, "rotation_interval_days") {
+		t.Errorf("expected the unrelated member to be blamed, got: %s", detail)
+	}
+	// The old acceptance predicate was `!mentionsField(detail, field)`. Here that
+	// is true while validation is failing — a false pass. Requiring ok is what
+	// closes it.
+	if mentionsField(detail, "device_bound_key_type") {
+		t.Errorf("premise broken: a legal enum value must not be blamed, got: %s", detail)
+	}
+}
 
 // encryptionParamsFixture is a fully valid EncryptionParams; each test mutates
 // exactly one enum member so that member is the only thing under test.
@@ -88,8 +125,8 @@ func TestEncryptionParams_RejectsUndefinedDeviceBoundKeyType(t *testing.T) {
 	for _, kt := range definedEnumValues[pm.EncryptionDeviceBoundKeyType](t, pm.EncryptionDeviceBoundKeyType_name) {
 		p := encryptionParamsFixture()
 		p.DeviceBoundKeyType = kt
-		if detail, _ := pmvalidate.Struct(v, p); mentionsField(detail, field) {
-			t.Errorf("defined value %d (%s) was rejected: %s", int32(kt), kt, detail)
+		if detail, valid := pmvalidate.Struct(v, p); !valid {
+			t.Errorf("defined %s = %d (%s) must validate, got: %s", field, int32(kt), kt, detail)
 		}
 	}
 	for _, kt := range undefinedEnumValues[pm.EncryptionDeviceBoundKeyType](t, pm.EncryptionDeviceBoundKeyType_name) {
@@ -114,8 +151,8 @@ func TestEncryptionAuthoringParams_RejectsUndefinedDeviceBoundKeyType(t *testing
 	for _, kt := range definedEnumValues[pm.EncryptionDeviceBoundKeyType](t, pm.EncryptionDeviceBoundKeyType_name) {
 		p := encryptionAuthoringParamsFixture()
 		p.DeviceBoundKeyType = kt
-		if detail, _ := pmvalidate.Struct(v, p); mentionsField(detail, field) {
-			t.Errorf("defined value %d (%s) was rejected: %s", int32(kt), kt, detail)
+		if detail, valid := pmvalidate.Struct(v, p); !valid {
+			t.Errorf("defined %s = %d (%s) must validate, got: %s", field, int32(kt), kt, detail)
 		}
 	}
 	for _, kt := range undefinedEnumValues[pm.EncryptionDeviceBoundKeyType](t, pm.EncryptionDeviceBoundKeyType_name) {
@@ -149,8 +186,8 @@ func TestEncryptionParams_RejectsUndefinedUserPassphraseComplexity(t *testing.T)
 	for _, c := range definedEnumValues[pm.LpsPasswordComplexity](t, pm.LpsPasswordComplexity_name) {
 		p := encryptionParamsFixture()
 		p.UserPassphraseComplexity = c
-		if detail, _ := pmvalidate.Struct(v, p); mentionsField(detail, field) {
-			t.Errorf("defined value %d (%s) was rejected: %s", int32(c), c, detail)
+		if detail, valid := pmvalidate.Struct(v, p); !valid {
+			t.Errorf("defined %s = %d (%s) must validate, got: %s", field, int32(c), c, detail)
 		}
 	}
 	for _, c := range undefinedEnumValues[pm.LpsPasswordComplexity](t, pm.LpsPasswordComplexity_name) {
@@ -175,8 +212,8 @@ func TestEncryptionAuthoringParams_RejectsUndefinedUserPassphraseComplexity(t *t
 	for _, c := range definedEnumValues[pm.LpsPasswordComplexity](t, pm.LpsPasswordComplexity_name) {
 		p := encryptionAuthoringParamsFixture()
 		p.UserPassphraseComplexity = c
-		if detail, _ := pmvalidate.Struct(v, p); mentionsField(detail, field) {
-			t.Errorf("defined value %d (%s) was rejected: %s", int32(c), c, detail)
+		if detail, valid := pmvalidate.Struct(v, p); !valid {
+			t.Errorf("defined %s = %d (%s) must validate, got: %s", field, int32(c), c, detail)
 		}
 	}
 	for _, c := range undefinedEnumValues[pm.LpsPasswordComplexity](t, pm.LpsPasswordComplexity_name) {

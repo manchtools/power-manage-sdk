@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -16,7 +17,11 @@ import (
 type fakeFS struct {
 	writeFn  func(path string, data []byte, opts fs.WriteOptions) error
 	removeFn func(path string) error
-	existsFn func(path string) (bool, error)
+	// present models files already on disk, keyed by path. WriteFileExclusive
+	// refuses those with fs.ErrExists exactly as the real one does, and a
+	// successful exclusive create adds to the set — so a test can plant a
+	// "foreign" definition and watch the backend correctly decline ownership.
+	present map[string]bool
 }
 
 func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
@@ -33,13 +38,23 @@ func (f *fakeFS) Remove(_ context.Context, path string) error {
 	return nil
 }
 
-// Exists defaults to "absent", i.e. the common fresh-create case, so the
-// existing firewalld tests keep exercising the path they were written for.
-func (f *fakeFS) Exists(_ context.Context, path string) (bool, error) {
-	if f.existsFn != nil {
-		return f.existsFn(path)
+// WriteFileExclusive refuses a path already in `present` with fs.ErrExists and
+// otherwise records the create. Default (nil map) is "nothing on disk", i.e. the
+// common fresh-create case the existing firewalld tests were written for.
+func (f *fakeFS) WriteFileExclusive(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
+	if f.present[path] {
+		return fmt.Errorf("write file %s: %w", path, fs.ErrExists)
 	}
-	return false, nil
+	if f.writeFn != nil {
+		if err := f.writeFn(path, data, opts); err != nil {
+			return err
+		}
+	}
+	if f.present == nil {
+		f.present = map[string]bool{}
+	}
+	f.present[path] = true
+	return nil
 }
 
 // useFS points the newFS seam at f for the rest of the test (paired with
@@ -392,8 +407,7 @@ func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
 		t.Run("created, "+name+" → xml removed", func(t *testing.T) {
 			swapFirewalldSeams(t)
 			var removed []string
-			useFS(&fakeFS{
-				existsFn: func(string) (bool, error) { return false, nil }, // fresh create
+			useFS(&fakeFS{ // nothing on disk → the exclusive create succeeds, we own it
 				removeFn: func(p string) error { removed = append(removed, p); return nil },
 			})
 			r := &recordingRunner{}
@@ -411,7 +425,9 @@ func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
 			swapFirewalldSeams(t)
 			var removed []string
 			useFS(&fakeFS{
-				existsFn: func(string) (bool, error) { return true, nil }, // update, not create
+				// Already on disk → the exclusive create reports fs.ErrExists and the
+				// backend falls back to an overwrite it does NOT own.
+				present:  map[string]bool{wantPath: true},
 				removeFn: func(p string) error { removed = append(removed, p); return nil },
 			})
 			r := &recordingRunner{}
@@ -426,13 +442,20 @@ func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
 		})
 	}
 
-	t.Run("existence probe fails → xml kept", func(t *testing.T) {
+	// The race the create-exclusive design exists to close. Under the old
+	// Exists-then-WriteFile shape, a definition landing in the gap between the
+	// probe (which said "absent") and the write would be overwritten AND then
+	// deleted on failure, destroying a service someone else owns and may still
+	// have enabled in the zone. Here the foreign file is present by the time the
+	// write happens, so the exclusive create reports it and ownership is declined.
+	t.Run("foreign file appears before the write → left untouched on failure", func(t *testing.T) {
 		swapFirewalldSeams(t)
 		var removed []string
-		useFS(&fakeFS{
-			existsFn: func(string) (bool, error) { return false, errors.New("escalation denied") },
-			removeFn: func(p string) error { removed = append(removed, p); return nil },
-		})
+		ff := &fakeFS{removeFn: func(p string) error { removed = append(removed, p); return nil }}
+		// Plant it exactly as a competing writer would: present before our write,
+		// with no cooperation from us.
+		ff.present = map[string]bool{wantPath: true}
+		useFS(ff)
 		r := &recordingRunner{}
 		failAt(r, 0)
 		m := newMgr(t, Firewalld, "app", r)
@@ -440,7 +463,7 @@ func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
 			t.Fatal("the failing firewall-cmd step must propagate")
 		}
 		if len(removed) != 0 {
-			t.Errorf("removed = %v; an unreadable existence probe must not license deleting a file we cannot prove we created", removed)
+			t.Errorf("removed = %v; a file this Apply did not create must survive the failure — deleting it would destroy a definition another owner may still have enabled", removed)
 		}
 	})
 
@@ -467,8 +490,7 @@ func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
 	// there, and the error must say so rather than implying a clean rollback.
 	t.Run("cleanup failure is reported", func(t *testing.T) {
 		swapFirewalldSeams(t)
-		useFS(&fakeFS{
-			existsFn: func(string) (bool, error) { return false, nil },
+		useFS(&fakeFS{ // fresh create → owned, so cleanup is attempted
 			removeFn: func(string) error { return errors.New("read-only fs") },
 		})
 		r := &recordingRunner{}
