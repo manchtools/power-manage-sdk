@@ -18,9 +18,17 @@ GEN_DIR := gen
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 BUF := $(MAKEFILE_DIR)scripts/buf.sh
 
+# The code-generating plugins are pinned to the module versions go.mod
+# already records, discovered at run time rather than written down twice:
+# @latest let a protoc-gen-go release change the version stamp inside every
+# .pb.go file and fail the generated-drift gate on unrelated PRs. Bumping the
+# module in go.mod moves the plugin with it. `go list -m` fails loudly if a
+# module disappears, so an empty version can never silently mean @latest.
+# protoc-go-inject-tag is a build-only tool absent from go.mod and stays
+# @latest deliberately.
 install-tools:
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@$$(go list -m -f '{{.Version}}' google.golang.org/protobuf)
+	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@$$(go list -m -f '{{.Version}}' connectrpc.com/connect)
 	go install github.com/favadi/protoc-go-inject-tag@latest
 
 # NOT prerequisites: make may satisfy those in any order, and concurrently
