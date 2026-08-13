@@ -187,6 +187,14 @@ func (m *manager) anchorPath(name string) string {
 const anchorExt = ".crt"
 
 // Install validates name + certPEM, writes the anchor, and refreshes the store.
+//
+// The write happens before the refresh, so a refresh failure would otherwise
+// leave the anchor on disk after Install reported failure — a CA the operator
+// believes is not installed, which the next successful refresh by anything else
+// (a distro package hook, another tool, the next boot) would silently activate.
+// Install therefore removes its own anchor before returning the error. The
+// rollback is best-effort: if it too fails, the returned error names the file
+// left behind rather than hiding it.
 func (m *manager) Install(ctx context.Context, name string, certPEM []byte) error {
 	if err := validateName(name); err != nil {
 		return err
@@ -199,7 +207,13 @@ func (m *manager) Install(ctx context.Context, name string, certPEM []byte) erro
 		return fmt.Errorf("catrust: write %s: %w", path, err)
 	}
 	if err := m.refresh(ctx, m.cfg.installRefresh); err != nil {
-		return err
+		// Best-effort rollback under the caller's ctx. A cancelled ctx is one way
+		// refresh fails, and the removal would then fail too — which is exactly
+		// why the outcome is reported instead of discarded.
+		if rmErr := m.fsm.Remove(ctx, path); rmErr != nil {
+			return fmt.Errorf("catrust: trust-store refresh failed and the new anchor %s could NOT be removed (%v), so it is still on disk: %w", path, rmErr, err)
+		}
+		return fmt.Errorf("catrust: trust-store refresh failed; removed the new anchor %s: %w", path, err)
 	}
 	return nil
 }

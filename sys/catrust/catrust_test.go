@@ -308,6 +308,67 @@ func TestInstall_WriteAndRefreshErrors(t *testing.T) {
 	}
 }
 
+// TestInstall_RemovesAnchorWhenRefreshFails pins the failure atomicity of
+// Install. The anchor file is written BEFORE the trust-store refresh, so a
+// refresh that fails used to return an error while leaving the .crt sitting in
+// the anchors dir — an anchor the operator was told was not installed, which
+// the very next successful refresh by anyone (a distro package hook, another
+// tool, the next boot) would silently activate. Install must undo its own write
+// before reporting failure.
+func TestInstall_RemovesAnchorWhenRefreshFails(t *testing.T) {
+	const wantPath = "/usr/local/share/ca-certificates/acme-root.crt"
+	t.Run("non-zero refresh exit", func(t *testing.T) {
+		ff := &fakeFS{}
+		m, r := newMgr(t, CaCertificates, ff)
+		r.Push(exec.Result{ExitCode: 1, Stderr: "boom"}, nil)
+		err := m.Install(context.Background(), "acme-root", validCAPEM(t))
+		if err == nil {
+			t.Fatal("a refresh non-zero exit must propagate")
+		}
+		if len(ff.removed) != 1 || ff.removed[0] != wantPath {
+			t.Errorf("removed = %v, want the just-written anchor %q cleaned up", ff.removed, wantPath)
+		}
+	})
+	t.Run("refresh runner failure", func(t *testing.T) {
+		ff := &fakeFS{}
+		m, r := newMgr(t, CaCertificates, ff)
+		r.Push(exec.Result{}, errors.New("update-ca-certificates not found"))
+		err := m.Install(context.Background(), "acme-root", validCAPEM(t))
+		if err == nil {
+			t.Fatal("a refresh Runner error must propagate")
+		}
+		if len(ff.removed) != 1 || ff.removed[0] != wantPath {
+			t.Errorf("removed = %v, want the just-written anchor %q cleaned up", ff.removed, wantPath)
+		}
+	})
+	// Cleanup is best-effort: when the rollback ALSO fails the operator must
+	// still get the original refresh failure, plus the fact that a file was left
+	// behind — silently returning the refresh error alone would hide the anchor.
+	t.Run("cleanup failure is reported, refresh error still wrapped", func(t *testing.T) {
+		ff := &fakeFS{removeErr: errors.New("read-only fs")}
+		m, r := newMgr(t, CaCertificates, ff)
+		r.Push(exec.Result{ExitCode: 1, Stderr: "boom"}, nil)
+		err := m.Install(context.Background(), "acme-root", validCAPEM(t))
+		if err == nil {
+			t.Fatal("a refresh non-zero exit must propagate")
+		}
+		if !strings.Contains(err.Error(), wantPath) {
+			t.Errorf("err = %v, want it to name the anchor %q left behind", err, wantPath)
+		}
+	})
+	// A refresh that SUCCEEDS must of course keep the anchor.
+	t.Run("successful refresh keeps the anchor", func(t *testing.T) {
+		ff := &fakeFS{}
+		m, _ := newMgr(t, CaCertificates, ff)
+		if err := m.Install(context.Background(), "acme-root", validCAPEM(t)); err != nil {
+			t.Fatal(err)
+		}
+		if len(ff.removed) != 0 {
+			t.Errorf("removed = %v, want the anchor kept after a successful refresh", ff.removed)
+		}
+	})
+}
+
 func TestRemove_Success(t *testing.T) {
 	ff := &fakeFS{}
 	m, r := newMgr(t, CaCertificates, ff)
