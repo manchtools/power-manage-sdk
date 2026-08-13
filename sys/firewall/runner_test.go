@@ -16,6 +16,7 @@ import (
 type fakeFS struct {
 	writeFn  func(path string, data []byte, opts fs.WriteOptions) error
 	removeFn func(path string) error
+	existsFn func(path string) (bool, error)
 }
 
 func (f *fakeFS) WriteFile(_ context.Context, path string, data []byte, opts fs.WriteOptions) error {
@@ -30,6 +31,15 @@ func (f *fakeFS) Remove(_ context.Context, path string) error {
 		return f.removeFn(path)
 	}
 	return nil
+}
+
+// Exists defaults to "absent", i.e. the common fresh-create case, so the
+// existing firewalld tests keep exercising the path they were written for.
+func (f *fakeFS) Exists(_ context.Context, path string) (bool, error) {
+	if f.existsFn != nil {
+		return f.existsFn(path)
+	}
+	return false, nil
 }
 
 // useFS points the newFS seam at f for the rest of the test (paired with
@@ -338,6 +348,138 @@ func TestFirewalld_ApplyRule_Failures(t *testing.T) {
 		if err := m.ApplyRule(context.Background(), Rule{ID: "r", Allow: true, Protocol: ProtocolTCP, Port: 1}); err == nil ||
 			!strings.Contains(err.Error(), "post-enable") {
 			t.Errorf("err = %v", err)
+		}
+	})
+}
+
+// TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated pins the failure
+// atomicity of ApplyRule, and its deliberate asymmetry.
+//
+// The service XML is written before the reload/add-service/reload sequence, so
+// a failure in any of those used to leave the file on disk. That matters
+// because firewalld PARSES every file in /etc/firewalld/services on the next
+// reload by anything at all: an Apply the caller was told had failed would
+// quietly become a real, loadable service definition.
+//
+// But ApplyRule also UPDATES an existing rule, overwriting a service that may
+// still be enabled in the zone. Deleting on failure there would destroy a
+// working definition that nothing asked us to touch, turning a failed update
+// into an outage. So cleanup is create-only: remove when this Apply brought the
+// file into existence, leave it when it was already there — and when the
+// existence probe itself fails, leave it, because "we don't know" must never
+// resolve to "delete".
+func TestFirewalld_ApplyRule_CleansUpOnlyTheXMLItCreated(t *testing.T) {
+	const wantPath = "/etc/firewalld/services/app-r.xml"
+	rule := Rule{ID: "r", Allow: true, Protocol: ProtocolTCP, Port: 1}
+
+	// failAt scripts the zone lookup plus n successful firewall-cmd calls, then
+	// one failing call — so each post-write step can be made to fail in turn.
+	failAt := func(r *recordingRunner, okCalls int) {
+		r.pushOut("public\n") // --get-default-zone
+		for i := 0; i < okCalls; i++ {
+			r.pushOut("")
+		}
+		r.push(exec.Result{ExitCode: 1}, nil)
+	}
+
+	steps := map[string]int{
+		"reload fails":             0,
+		"add-service fails":        1,
+		"post-enable reload fails": 2,
+	}
+
+	for name, okCalls := range steps {
+		t.Run("created, "+name+" → xml removed", func(t *testing.T) {
+			swapFirewalldSeams(t)
+			var removed []string
+			useFS(&fakeFS{
+				existsFn: func(string) (bool, error) { return false, nil }, // fresh create
+				removeFn: func(p string) error { removed = append(removed, p); return nil },
+			})
+			r := &recordingRunner{}
+			failAt(r, okCalls)
+			m := newMgr(t, Firewalld, "app", r)
+			if err := m.ApplyRule(context.Background(), rule); err == nil {
+				t.Fatal("the failing firewall-cmd step must propagate")
+			}
+			if len(removed) != 1 || removed[0] != wantPath {
+				t.Errorf("removed = %v, want the just-created %q cleaned up", removed, wantPath)
+			}
+		})
+
+		t.Run("pre-existing, "+name+" → xml kept", func(t *testing.T) {
+			swapFirewalldSeams(t)
+			var removed []string
+			useFS(&fakeFS{
+				existsFn: func(string) (bool, error) { return true, nil }, // update, not create
+				removeFn: func(p string) error { removed = append(removed, p); return nil },
+			})
+			r := &recordingRunner{}
+			failAt(r, okCalls)
+			m := newMgr(t, Firewalld, "app", r)
+			if err := m.ApplyRule(context.Background(), rule); err == nil {
+				t.Fatal("the failing firewall-cmd step must propagate")
+			}
+			if len(removed) != 0 {
+				t.Errorf("removed = %v; a failed UPDATE must not delete the pre-existing service definition, which may still be enabled in the zone", removed)
+			}
+		})
+	}
+
+	t.Run("existence probe fails → xml kept", func(t *testing.T) {
+		swapFirewalldSeams(t)
+		var removed []string
+		useFS(&fakeFS{
+			existsFn: func(string) (bool, error) { return false, errors.New("escalation denied") },
+			removeFn: func(p string) error { removed = append(removed, p); return nil },
+		})
+		r := &recordingRunner{}
+		failAt(r, 0)
+		m := newMgr(t, Firewalld, "app", r)
+		if err := m.ApplyRule(context.Background(), rule); err == nil {
+			t.Fatal("the failing firewall-cmd step must propagate")
+		}
+		if len(removed) != 0 {
+			t.Errorf("removed = %v; an unreadable existence probe must not license deleting a file we cannot prove we created", removed)
+		}
+	})
+
+	// Positive control: a fully successful Apply keeps its XML.
+	t.Run("success keeps the xml", func(t *testing.T) {
+		swapFirewalldSeams(t)
+		var removed []string
+		useFS(&fakeFS{removeFn: func(p string) error { removed = append(removed, p); return nil }})
+		r := &recordingRunner{}
+		r.pushOut("public\n")
+		r.pushOut("")
+		r.pushOut("")
+		r.pushOut("")
+		m := newMgr(t, Firewalld, "app", r)
+		if err := m.ApplyRule(context.Background(), rule); err != nil {
+			t.Fatal(err)
+		}
+		if len(removed) != 0 {
+			t.Errorf("removed = %v, want the XML kept after a successful Apply", removed)
+		}
+	})
+
+	// The cleanup is best-effort: when the removal ALSO fails the file is still
+	// there, and the error must say so rather than implying a clean rollback.
+	t.Run("cleanup failure is reported", func(t *testing.T) {
+		swapFirewalldSeams(t)
+		useFS(&fakeFS{
+			existsFn: func(string) (bool, error) { return false, nil },
+			removeFn: func(string) error { return errors.New("read-only fs") },
+		})
+		r := &recordingRunner{}
+		failAt(r, 0)
+		m := newMgr(t, Firewalld, "app", r)
+		err := m.ApplyRule(context.Background(), rule)
+		if err == nil {
+			t.Fatal("the failing firewall-cmd step must propagate")
+		}
+		if !strings.Contains(err.Error(), wantPath) {
+			t.Errorf("err = %v, want it to name the %q left behind", err, wantPath)
 		}
 	})
 }

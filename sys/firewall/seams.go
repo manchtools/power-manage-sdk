@@ -14,6 +14,10 @@ import (
 type fsManager interface {
 	WriteFile(ctx context.Context, path string, data []byte, opts fs.WriteOptions) error
 	Remove(ctx context.Context, path string) error
+	// Exists reports whether path is already there. ApplyRule needs it to tell
+	// "this Apply CREATED the service XML" from "this Apply overwrote an existing
+	// one", because only the former may be deleted when a later step fails.
+	Exists(ctx context.Context, path string) (bool, error)
 }
 
 // newFS builds the fs.Manager each Manager uses for privileged writes, over the

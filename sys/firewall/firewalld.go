@@ -49,6 +49,19 @@ func firewalldServiceName(namespace, id string) string {
 // ApplyRule installs or updates rule. Writes the service XML, reloads firewalld
 // so the new definition is recognised, and adds it to the default zone (no-op if
 // already present).
+//
+// The XML lands before the three firewall-cmd calls, so a failure in any of them
+// would otherwise leave the file behind — and firewalld parses every file in the
+// services dir on the next reload by anything at all, so a rule the caller was
+// told had failed would quietly become a loadable service definition. ApplyRule
+// therefore deletes the file it wrote before returning the error.
+//
+// That cleanup is CREATE-ONLY, and the asymmetry is deliberate. ApplyRule also
+// updates an existing rule, overwriting a service that may still be enabled in
+// the zone; deleting on failure there would destroy a working definition and
+// turn a failed update into an outage. So the file is removed only when this
+// call brought it into existence — and when the existence probe itself fails,
+// it is kept, because "we don't know" must never resolve to "delete".
 func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
 	if err := validateRule(rule); err != nil {
 		return err
@@ -63,26 +76,50 @@ func (f *firewalld) ApplyRule(ctx context.Context, rule Rule) error {
 	svc := firewalldServiceName(f.ns, rule.ID)
 	xml := firewalldServiceXML(f.ns, rule)
 	path := filepath.Join(firewalldServicesDir, svc+".xml")
+
+	// Probe BEFORE the write — afterwards every path exists. A probe failure is
+	// an explicit decision, not a swallowed error: assume the file was already
+	// there, which is the choice that can only ever preserve state.
+	preExisting := true
+	if existed, probeErr := f.fsm.Exists(ctx, path); probeErr == nil {
+		preExisting = existed
+	}
+
 	if err := f.fsm.WriteFile(ctx, path, []byte(xml), fs.WriteOptions{Mode: 0o644, Owner: "root", Group: "root"}); err != nil {
 		return fmt.Errorf("write service xml %s: %w", path, err)
 	}
 	// Reload so the new service definition is parsed. Without this,
 	// --add-service rejects the name.
 	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
-		return fmt.Errorf("firewall-cmd --reload: %w", err)
+		return f.discardCreatedServiceXML(ctx, path, preExisting, fmt.Errorf("firewall-cmd --reload: %w", err))
 	}
 	// --permanent so the change survives reboot; --add-service is
 	// idempotent at the API level (no-op when already enabled).
 	if _, err := f.run(ctx, "firewall-cmd",
 		"--permanent", "--zone="+zone, "--add-service="+svc,
 	); err != nil {
-		return fmt.Errorf("firewall-cmd add-service: %w", err)
+		return f.discardCreatedServiceXML(ctx, path, preExisting, fmt.Errorf("firewall-cmd add-service: %w", err))
 	}
 	// Final reload so the runtime config matches permanent.
 	if _, err := f.run(ctx, "firewall-cmd", "--reload"); err != nil {
-		return fmt.Errorf("firewall-cmd --reload (post-enable): %w", err)
+		return f.discardCreatedServiceXML(ctx, path, preExisting, fmt.Errorf("firewall-cmd --reload (post-enable): %w", err))
 	}
 	return nil
+}
+
+// discardCreatedServiceXML rolls back ApplyRule's own write and returns applyErr.
+// It is a no-op when the file pre-existed (that XML is not ours to delete). The
+// removal is best-effort: if it fails, the returned error names the file left on
+// disk instead of implying a clean rollback, because that file WILL be parsed by
+// the next firewalld reload.
+func (f *firewalld) discardCreatedServiceXML(ctx context.Context, path string, preExisting bool, applyErr error) error {
+	if preExisting {
+		return applyErr
+	}
+	if err := f.fsm.Remove(ctx, path); err != nil {
+		return fmt.Errorf("%w (the new service xml %s could NOT be removed: %v, so firewalld will parse it on the next reload)", applyErr, path, err)
+	}
+	return fmt.Errorf("%w (removed the new service xml %s)", applyErr, path)
 }
 
 // RemoveRule disables the service in the default zone and deletes its XML file.
