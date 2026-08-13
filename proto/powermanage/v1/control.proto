@@ -3073,7 +3073,9 @@ message EncryptionAuthoringParams {
   EncryptionDeviceBoundKeyType device_bound_key_type = 4;
   // @gotags: validate:"omitempty,gte=16,lte=128"
   int32 user_passphrase_min_length = 5;
-  // @gotags: validate:"omitempty"
+  // Range-checked for the same reason as EncryptionParams
+  // .user_passphrase_complexity, and optional for the same reason.
+  // @gotags: validate:"omitempty,oneof=0 1 2"
   LpsPasswordComplexity user_passphrase_complexity = 6;
 }
 

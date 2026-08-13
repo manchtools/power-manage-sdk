@@ -2761,8 +2761,12 @@ type EncryptionParams struct {
 	// @gotags: validate:"omitempty,gte=16,lte=128"
 	UserPassphraseMinLength int32 `protobuf:"varint,5,opt,name=user_passphrase_min_length,json=userPassphraseMinLength,proto3" json:"user_passphrase_min_length,omitempty" validate:"omitempty,gte=16,lte=128"`
 	// Complexity requirement for user-defined passphrases (only used when device_bound_key_type = USER_PASSPHRASE)
-	// @gotags: validate:"omitempty"
-	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty"`
+	// Range-checked for the same reason as device_bound_key_type: this selects the
+	// alphabet the agent draws the passphrase from, and its switch default is a
+	// weaker alphabet than an out-of-range value was asking for. Stays optional —
+	// UNSPECIFIED (0) is legal because the field only applies to USER_PASSPHRASE.
+	// @gotags: validate:"omitempty,oneof=0 1 2"
+	UserPassphraseComplexity LpsPasswordComplexity `protobuf:"varint,6,opt,name=user_passphrase_complexity,json=userPassphraseComplexity,proto3,enum=powermanage.v1.LpsPasswordComplexity" json:"user_passphrase_complexity,omitempty" validate:"omitempty,oneof=0 1 2"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
